@@ -1016,6 +1016,13 @@ class MultibodyTree {
   /// retrieve a local copy of their topology.
   const MultibodyTreeTopology& get_topology() const { return topology_; }
 
+  /// Returns the mobilizer model for joint with index `joint_index`. The index
+  /// is invalid if the joint is not modeled with a mobilizer.
+  MobilizerIndex get_joint_mobilizer(JointIndex joint_index) const {
+    DRAKE_DEMAND(joint_index < num_joints());
+    return joint_to_mobilizer_[joint_index];
+  }
+
   /// @name Model instance accessors
   /// Many functions on %MultibodyTree expect vectors of tree state or
   /// joint actuator inputs which encompass the entire tree.  Methods
@@ -1935,6 +1942,7 @@ class MultibodyTree {
     tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
     tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
     tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
+    tree_clone->joint_to_mobilizer_ = this->joint_to_mobilizer_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().
@@ -2510,6 +2518,12 @@ class MultibodyTree {
   // i-th level body_node_levels_[i] contains the list of all body node indexes
   // in that level.
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
+
+  // Joint to Mobilizer map, of size num_joints(). For a joint with index
+  // joint_index, mobilizer_index = joint_to_mobilizer_[joint_index] maps to the
+  // mobilizer model of the joint, or an invalid index if the joint is modeled
+  // with constraints instead.
+  std::vector<MobilizerIndex> joint_to_mobilizer_;
 
   MultibodyTreeTopology topology_;
 

@@ -230,11 +230,18 @@ void MultibodyTree<T>::Finalize() {
   // implementation will therefore change the tree topology. Since topology
   // changes are NOT allowed after Finalize(), joint implementations MUST be
   // assembled BEFORE the tree's topology is finalized.
+  joint_to_mobilizer_.resize(num_joints());
   for (auto& joint : owned_joints_) {
     std::vector<Mobilizer<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+    // Below we assume a single mobilizer per joint, the sane thing to do.
+    // TODO(amcastro-tri): clean up the JointImplementationBuilder so that this
+    // assumption (one mobilizer per joint) is set in stone once and for all.
+    DRAKE_DEMAND(mobilizers.size() == 1);
     for (Mobilizer<T>* mobilizer : mobilizers) {
       mobilizer->set_model_instance(joint->model_instance());
+      // Record the joint to mobilizer map.
+      joint_to_mobilizer_[joint->index()] = mobilizer->index();
     }
   }
   // It is VERY important to add quaternions if needed only AFTER joints had a
