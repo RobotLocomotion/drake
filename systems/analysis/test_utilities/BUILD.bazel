@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":cubic_scalar_system",
         ":discontinuous_spring_mass_damper_system",
         ":explicit_error_controlled_integrator_test",
+        ":implicit_integrator_test",
         ":linear_scalar_system",
         ":logistic_system",
         ":my_spring_mass_system",
@@ -70,6 +71,15 @@ drake_cc_library(
     name = "explicit_error_controlled_integrator_test",
     testonly = 1,
     hdrs = ["explicit_error_controlled_integrator_test.h"],
+    deps = [
+        ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_integrator_test",
+    testonly = 1,
+    hdrs = ["implicit_integrator_test.h"],
     deps = [
         ":my_spring_mass_system",
     ],

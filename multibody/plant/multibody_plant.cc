@@ -692,18 +692,18 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
   if (num_collision_geometries() > 0 &&
-      stribeck_model_.stiction_tolerance() < 0)
+      friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
-    implicit_stribeck_solver_ =
-        std::make_unique<ImplicitStribeckSolver<T>>(num_velocities());
+    tamsi_solver_ =
+        std::make_unique<TamsiSolver<T>>(num_velocities());
     // Set the stiction tolerance according to the values set by users with
     // set_stiction_tolerance().
-    ImplicitStribeckSolverParameters solver_parameters;
+    TamsiSolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
-        stribeck_model_.stiction_tolerance();
-    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+        friction_model_.stiction_tolerance();
+    tamsi_solver_->set_solver_parameters(solver_parameters);
   } else {
     // We only build hydroelastics if the user requested it AND if geometry was
     // registered with a SceneGraph. Since by default bodies are rigid, we use
@@ -1148,7 +1148,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
       EvalContactSurfaces(context);
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
-      stribeck_model_.stiction_tolerance());
+      friction_model_.stiction_tolerance());
 
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
@@ -1210,6 +1210,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
   const internal::VelocityKinematicsCache<T>& vc =
       EvalVelocityKinematics(context);
 
+  contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
@@ -1275,7 +1276,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
       if (vt_squared > kNonZeroSqd) {
         slip_velocity = sqrt(vt_squared);
         // Stribeck friction coefficient.
-        const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
+        const T mu_stribeck = friction_model_.ComputeFrictionCoefficient(
             slip_velocity, combined_friction_pairs[icontact]);
         // Tangential direction.
         const Vector3<T> that_W = vt_AcBc_W / slip_velocity;
@@ -1306,8 +1307,8 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
       EvalPointPairPenetrations(context);
   const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context);
+  const internal::TamsiSolverResults<T>& solver_results =
+      EvalTamsiResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -1442,7 +1443,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
       EvalContactSurfaces(context);
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
-      stribeck_model_.stiction_tolerance());
+      friction_model_.stiction_tolerance());
 
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
@@ -1652,7 +1653,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
+TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
     const VectorX<T>& minus_tau,
@@ -1666,8 +1667,8 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
   VectorX<T> phi0_substep = phi0;
 
   // Initialize info to an unsuccessful result.
-  ImplicitStribeckSolverResult info{
-      ImplicitStribeckSolverResult::kMaxIterationsReached};
+  TamsiSolverResult info{
+      TamsiSolverResult::kMaxIterationsReached};
 
   for (int substep = 0; substep < num_substeps; ++substep) {
     // Discrete update before applying friction forces.
@@ -1676,23 +1677,23 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
 
     // Update the data.
-    implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+    tamsi_solver_->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
         &p_star_substep, &phi0_substep,
         &stiffness, &damping, &mu);
 
-    info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
+    info = tamsi_solver_->SolveWithGuess(dt_substep,
                                                      v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
-    if (info != ImplicitStribeckSolverResult::kSuccess) break;
+    if (info != TamsiSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
-    v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
+    v0_substep = tamsi_solver_->get_generalized_velocities();
 
     // Update penetration distance consistently with the solver update.
     const auto vn_substep =
-        implicit_stribeck_solver_->get_normal_velocities();
+        tamsi_solver_->get_normal_velocities();
     phi0_substep = phi0_substep - dt_substep * vn_substep;
   }
 
@@ -1714,9 +1715,9 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcImplicitStribeckResults(
+void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
-    internal::ImplicitStribeckSolverResults<T>* results) const {
+    internal::TamsiSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
@@ -1817,15 +1818,15 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
       num_contacts, penalty_method_contact_parameters_.damping);
 
   // Solve for v and the contact forces.
-  ImplicitStribeckSolverResult info{
-      ImplicitStribeckSolverResult::kMaxIterationsReached};
+  TamsiSolverResult info{
+      TamsiSolverResult::kMaxIterationsReached};
 
-  ImplicitStribeckSolverParameters params =
-      implicit_stribeck_solver_->get_solver_parameters();
+  TamsiSolverParameters params =
+      tamsi_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
-  implicit_stribeck_solver_->set_solver_parameters(params);
+  tamsi_solver_->set_solver_parameters(params);
 
   // We attempt to compute the update during the time interval dt using a
   // progressively larger number of sub-steps (i.e each using a smaller time
@@ -1841,22 +1842,22 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
     info = SolveUsingSubStepping(num_substeps, M0, contact_jacobians.Jn,
                                  contact_jacobians.Jt, minus_tau, stiffness,
                                  damping, mu, v0, phi0);
-  } while (info != ImplicitStribeckSolverResult::kSuccess &&
+  } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
-  DRAKE_DEMAND(info == ImplicitStribeckSolverResult::kSuccess);
+  DRAKE_DEMAND(info == TamsiSolverResult::kSuccess);
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
 
   // Update the results.
-  results->v_next = implicit_stribeck_solver_->get_generalized_velocities();
-  results->fn = implicit_stribeck_solver_->get_normal_forces();
-  results->ft = implicit_stribeck_solver_->get_friction_forces();
-  results->vn = implicit_stribeck_solver_->get_normal_velocities();
-  results->vt = implicit_stribeck_solver_->get_tangential_velocities();
+  results->v_next = tamsi_solver_->get_generalized_velocities();
+  results->fn = tamsi_solver_->get_normal_forces();
+  results->ft = tamsi_solver_->get_friction_forces();
+  results->vn = tamsi_solver_->get_normal_velocities();
+  results->vt = tamsi_solver_->get_tangential_velocities();
   results->tau_contact =
-      implicit_stribeck_solver_->get_generalized_contact_forces();
+      tamsi_solver_->get_generalized_contact_forces();
 }
 
 template <typename T>
@@ -1955,8 +1956,8 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsDiscrete(
   DRAKE_DEMAND(is_discrete());
 
   // Evaluate contact results.
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context0);
+  const internal::TamsiSolverResults<T>& solver_results =
+      EvalTamsiResults(context0);
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
@@ -2116,21 +2117,21 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     if (instance_num_velocities == 0) {
       continue;
     }
-    const auto& implicit_stribeck_solver_results_cache_entry =
-        this->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results);
+    const auto& tamsi_solver_results_cache_entry =
+        this->get_cache_entry(cache_indexes_.tamsi_solver_results);
     auto calc = [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
-      const internal::ImplicitStribeckSolverResults<T>& solver_results =
-          EvalImplicitStribeckResults(context);
-      this->CopyGeneralizedContactForcesOut(solver_results,
-                                            model_instance_index, result);
+      const internal::TamsiSolverResults<T>& solver_results =
+          EvalTamsiResults(context);
+      this->CopyGeneralizedContactForcesOut(
+          solver_results, model_instance_index, result);
     };
     instance_generalized_contact_forces_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
                 internal_tree().GetModelInstanceName(model_instance_index) +
                     "_generalized_contact_forces",
                 BasicVector<T>(instance_num_velocities), calc,
-                {implicit_stribeck_solver_results_cache_entry.ticket()})
+                {tamsi_solver_results_cache_entry.ticket()})
             .get_index();
   }
 
@@ -2203,20 +2204,20 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
-  // Cache ImplicitStribeckSolver computations.
-  auto& implicit_stribeck_solver_cache_entry = this->DeclareCacheEntry(
+  // Cache TamsiSolver computations.
+  auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
       std::string("Implicit Stribeck solver computations."),
       []() {
         return AbstractValue::Make(
-            internal::ImplicitStribeckSolverResults<T>());
+            internal::TamsiSolverResults<T>());
       },
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& implicit_stribeck_solver_cache = cache_value->get_mutable_value<
-            internal::ImplicitStribeckSolverResults<T>>();
-        this->CalcImplicitStribeckResults(context,
-                                          &implicit_stribeck_solver_cache);
+        auto& tamsi_solver_cache = cache_value->get_mutable_value<
+            internal::TamsiSolverResults<T>>();
+        this->CalcTamsiResults(context,
+                                          &tamsi_solver_cache);
       },
       // The Correct Solution:
       // The Implicit Stribeck solver solution S is a function of state x,
@@ -2225,7 +2226,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // as S = S(t, x, u).
       // Even though this variables can change continuously with time, we want
       // the solver solution to be updated periodically (with period
-      // time_step()) only. That is, ImplicitStribeckSolverResults should be
+      // time_step()) only. That is, TamsiSolverResults should be
       // handled as an abstract state with periodic updates. In the systems::
       // framework terminology, we'd like to have an "unrestricted update" with
       // a periodic event trigger.
@@ -2240,8 +2241,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // discrete update of these values as if zero-order held, which is what we
       // want.
       {this->xd_ticket()});
-  cache_indexes_.implicit_stribeck_solver_results =
-      implicit_stribeck_solver_cache_entry.cache_index();
+  cache_indexes_.tamsi_solver_results =
+      tamsi_solver_cache_entry.cache_index();
 
   // Cache contact results.
   // In discrete mode contact forces computation requires to advance the system
@@ -2249,7 +2250,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // In continuous mode contact forces are simply a function of state.
   const systems::DependencyTicket& dependency_ticket =
       is_discrete() ? this->cache_entry_ticket(
-                          cache_indexes_.implicit_stribeck_solver_results)
+                          cache_indexes_.tamsi_solver_results)
                     : this->kinematics_ticket();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
       std::string("Contact results."),
@@ -2338,7 +2339,7 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    const internal::ImplicitStribeckSolverResults<T>& solver_results,
+    const internal::TamsiSolverResults<T>& solver_results,
     ModelInstanceIndex model_instance, BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());

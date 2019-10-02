@@ -22,8 +22,8 @@
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/implicit_stribeck_solver.h"
-#include "drake/multibody/plant/implicit_stribeck_solver_results.h"
+#include "drake/multibody/plant/tamsi_solver.h"
+#include "drake/multibody/plant/tamsi_solver_results.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -91,14 +91,14 @@ enum class ContactModel {
 /// the dynamics of a multibody system modeled with %MultibodyPlant are
 /// [Featherstone 2008, Jain 2010]: <pre>
 ///          q̇ = N(q)v
-///   (1)    M(q)v̇ + C(q, v)v = tau
+///   (1)    M(q)v̇ + C(q, v)v = τ
 /// </pre>
 /// where `M(q)` is the mass matrix of the multibody system, `C(q, v)v`
 /// corresponds to the bias term containing Coriolis and gyroscopic effects and
 /// `N(q)` is the kinematic coupling matrix describing the relationship between
 /// the rate of change of the generalized coordinates and the generalized
 /// velocities, [Seth 2010]. N(q) is an `nq x nv` matrix.
-/// The vector `tau ∈ ℝⁿᵛ` on the right hand side of Eq. (1) corresponds to
+/// The vector `τ ∈ ℝⁿᵛ` on the right hand side of Eq. (1) corresponds to
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
 ///
@@ -3241,17 +3241,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// See also @ref stribeck_approximation.
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
-    stribeck_model_.set_stiction_tolerance(v_stiction);
+    friction_model_.set_stiction_tolerance(v_stiction);
     // We allow calling this method post-finalize. Therefore, if the plant is
     // modeled as a discrete system, we must update the solver's stiction
     // parameter. Pre-Finalize the solver is not yet created and therefore we
     // check for nullptr.
-    if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
-      ImplicitStribeckSolverParameters solver_parameters =
-          implicit_stribeck_solver_->get_solver_parameters();
+    if (is_discrete() && tamsi_solver_ != nullptr) {
+      TamsiSolverParameters solver_parameters =
+          tamsi_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
-          stribeck_model_.stiction_tolerance();
-      implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+          friction_model_.stiction_tolerance();
+      tamsi_solver_->set_solver_parameters(solver_parameters);
     }
   }
   /// @}
@@ -3318,7 +3318,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex hydro_contact_forces;
-    systems::CacheIndex implicit_stribeck_solver_results;
+    systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
   };
 
@@ -3442,7 +3442,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // to perform the update using a step size dt_substep = dt/num_substeps.
   // During the time span dt the problem data M, Jn, Jt and minus_tau, are
   // approximated to be constant, a first order approximation.
-  ImplicitStribeckSolverResult SolveUsingSubStepping(
+  TamsiSolverResult SolveUsingSubStepping(
       int num_substeps,
       const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
       const VectorX<T>& minus_tau,
@@ -3451,20 +3451,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const VectorX<T>& v0, const VectorX<T>& phi0) const;
 
   // This method uses the time stepping method described in
-  // ImplicitStribeckSolver to advance the model's state stored in
+  // TamsiSolver to advance the model's state stored in
   // `context0` taking a time step of size time_step().
   // Contact forces and velocities are computed and stored in `results`. See
-  // ImplicitStribeckSolverResults for further details on the returned data.
-  void CalcImplicitStribeckResults(
+  // TamsiSolverResults for further details on the returned data.
+  void CalcTamsiResults(
       const drake::systems::Context<T>& context0,
-      internal::ImplicitStribeckSolverResults<T>* results) const;
+      internal::TamsiSolverResults<T>* results) const;
 
-  // Eval version of the method CalcImplicitStribeckResults().
-  const internal::ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
+  // Eval version of the method CalcTamsiResults().
+  const internal::TamsiSolverResults<T>& EvalTamsiResults(
       const systems::Context<T>& context) const {
     return this
-        ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results)
-        .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
+        ->get_cache_entry(cache_indexes_.tamsi_solver_results)
+        .template Eval<internal::TamsiSolverResults<T>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
@@ -3501,9 +3501,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is discrete. If cached contact solver results are not up-to-date
-  // with `context`, they'll be  recomputed, see EvalImplicitStribeckResults().
-  // The solver results are then used to compute contact results into
-  // `contact_results`.
+  // with `context`, they'll be  recomputed, see EvalTamsiResults(). The solver
+  // results are then used to compute contact results into `contacts`.
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
 
@@ -3585,7 +3584,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Calc method to output per model instance vector of generalized contact
   // forces.
   void CopyGeneralizedContactForcesOut(
-      const internal::ImplicitStribeckSolverResults<T>&,
+      const internal::TamsiSolverResults<T>&,
       ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
 
   // Helper method to declare output ports used by this plant to communicate
@@ -3823,7 +3822,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // A negative value indicates it was not properly initialized.
     double inv_v_stiction_tolerance_{-1};
   };
-  StribeckModel stribeck_model_;
+  StribeckModel friction_model_;
 
   // This structure aids in the bookkeeping of parameters associated with joint
   // limits and the penalty method parameters used to enforce them.
@@ -3934,7 +3933,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   double time_step_{0};
 
   // The solver used when the plant is modeled as a discrete system.
-  std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
+  std::unique_ptr<TamsiSolver<T>> tamsi_solver_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 

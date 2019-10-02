@@ -243,21 +243,36 @@ PYBIND11_MODULE(sensors, m) {
   rgbd_camera_discrete.attr("kDefaultPeriod") =
       double{RgbdSensorDiscrete::kDefaultPeriod};
 
-  py::class_<CameraInfo>(m, "CameraInfo", doc.CameraInfo.doc)
-      .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
-          py::arg("fov_y"), doc.CameraInfo.ctor.doc_3args)
-      .def(py::init<int, int, double, double, double, double>(),
-          py::arg("width"), py::arg("height"), py::arg("focal_x"),
-          py::arg("focal_y"), py::arg("center_x"), py::arg("center_y"),
-          doc.CameraInfo.ctor.doc_6args)
-      .def("width", &CameraInfo::width, doc.CameraInfo.width.doc)
-      .def("height", &CameraInfo::height, doc.CameraInfo.height.doc)
-      .def("focal_x", &CameraInfo::focal_x, doc.CameraInfo.focal_x.doc)
-      .def("focal_y", &CameraInfo::focal_y, doc.CameraInfo.focal_y.doc)
-      .def("center_x", &CameraInfo::center_x, doc.CameraInfo.center_x.doc)
-      .def("center_y", &CameraInfo::center_y, doc.CameraInfo.center_y.doc)
-      .def("intrinsic_matrix", &CameraInfo::intrinsic_matrix,
-          doc.CameraInfo.intrinsic_matrix.doc);
+  {
+    using Class = CameraInfo;
+    constexpr auto& cls_doc = doc.CameraInfo;
+    py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
+    cls  // BR
+        .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
+            py::arg("fov_y"), cls_doc.ctor.doc_3args)
+        .def(py::init<int, int, double, double, double, double>(),
+            py::arg("width"), py::arg("height"), py::arg("focal_x"),
+            py::arg("focal_y"), py::arg("center_x"), py::arg("center_y"),
+            cls_doc.ctor.doc_6args)
+        .def("width", &Class::width, cls_doc.width.doc)
+        .def("height", &Class::height, cls_doc.height.doc)
+        .def("focal_x", &Class::focal_x, cls_doc.focal_x.doc)
+        .def("focal_y", &Class::focal_y, cls_doc.focal_y.doc)
+        .def("center_x", &Class::center_x, cls_doc.center_x.doc)
+        .def("center_y", &Class::center_y, cls_doc.center_y.doc)
+        .def("intrinsic_matrix", &Class::intrinsic_matrix,
+            cls_doc.intrinsic_matrix.doc);
+    DefPickle(&cls,
+        [](const Class& self) {
+          return py::make_tuple(self.width(), self.height(), self.focal_x(),
+              self.focal_y(), self.center_x(), self.center_y());
+        },
+        [](py::tuple t) {
+          DRAKE_DEMAND(t.size() == 6);
+          return Class(t[0].cast<int>(), t[1].cast<int>(), t[2].cast<double>(),
+              t[3].cast<double>(), t[4].cast<double>(), t[5].cast<double>());
+        });
+  }
 
   {
     using Class = ImageToLcmImageArrayT;
