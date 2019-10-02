@@ -141,11 +141,22 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       VectorX<T>* xtplus);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
       const VectorX<T>& dx0, VectorX<T>* xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&, Context<T>*);
-  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&, Context<T>*);
-  MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
-                                     const Context<T>& context);
+  // Jacobian computation
+  MatrixX<T>& get_mutable_velocity_jacobian() { return Jv_; }
+  const MatrixX<T>& CalcVelocityJacobian(const T& tf, const VectorX<T>& xtplus);
+  void ComputeForwardDiffVelocityJacobian(const T& t,
+      const VectorX<T>& xt, Context<T>* context, MatrixX<T>* J);
 
+  // this is where we just break everything and do things our way. I'm not sure if override is wise
+  virtual bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
+      int trial,
+      const std::function<void(const MatrixX<T>& J, const T& h,
+          typename ImplicitIntegrator<T>::IterationMatrix*)>&
+      compute_and_factor_iteration_matrix,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) override;
+  // This function evaluates g(y) with y from the context. Context should be at time tf
+  void eval_g_with_y_from_context(const VectorX<T>& qt0,
+      const T& h, const VectorX<T>& qk, VectorX<T>* result);
   // The last computed iteration matrix and factorization, used for both the
   // integrator and the error estimator.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_;
@@ -161,6 +172,9 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
+
+  // The last computed velocity+misc Jacobian matrix.
+  MatrixX<T> Jv_;
 
   // Second order Runge-Kutta method for estimating the integration error when
   // the requested step size lies below the working step size.

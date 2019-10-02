@@ -256,7 +256,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @pre 1 <= `trial` <= 4.
   /// @post the state in the internal context may or may not be altered on
   ///       return; if altered, it will be set to (t, xt).
-  bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
+  virtual bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
       int trial,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
