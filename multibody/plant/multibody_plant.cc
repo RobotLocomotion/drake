@@ -1716,6 +1716,37 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcAppliedForces(
+    const drake::systems::Context<T>& context,
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
+
+  const internal::PositionKinematicsCache<T>& pc =
+      EvalPositionKinematics(context);
+  const internal::VelocityKinematicsCache<T>& vc =
+      EvalVelocityKinematics(context);
+
+  // Compute forces applied through force elements.
+  internal_tree().CalcForceElementsContribution(context, pc, vc, forces);
+
+  // Externally applied forces.
+  AddJointActuationForces(context, forces);
+  AddAppliedExternalSpatialForces(context, forces);
+
+  // Only discrete models support joint limits.
+  if (is_discrete()) AddJointLimitsPenaltyForces(context, forces);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context)) {
+    forces->mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
     internal::TamsiSolverResults<T>* results) const {
