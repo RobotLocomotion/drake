@@ -5,19 +5,15 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
+#include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/robertson_system.h"
 #include "drake/systems/analysis/test_utilities/stationary_system.h"
 
-using drake::systems::analysis_test::CubicScalarSystem;
-using drake::systems::analysis_test::LinearScalarSystem;
-using drake::systems::analysis_test::QuadraticScalarSystem;
-using drake::systems::analysis_test::StationarySystem;
-
 namespace drake {
 namespace systems {
-namespace {
+namespace analysis_test {
 
 // Tests the Jacobian and iteration matrix reuse strategies using a test
 // problem and integrator for which we have knowledge of the convergence
@@ -331,7 +327,12 @@ GTEST_TEST(RadauIntegratorTest, LinearTest) {
       10 * std::numeric_limits<double>::epsilon());
 }
 
-}  // namespace
+// Test both 1-stage (1st order) and 2-stage (3rd order) Radau integrators.
+typedef ::testing::Types<RadauIntegrator<double, 1>, RadauIntegrator<double, 2>>
+    MyTypes;
+INSTANTIATE_TYPED_TEST_CASE_P(My, ImplicitIntegratorTest, MyTypes);
+
+}  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
 
