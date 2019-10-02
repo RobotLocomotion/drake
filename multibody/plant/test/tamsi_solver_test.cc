@@ -1,21 +1,21 @@
-#include "drake/multibody/plant/implicit_stribeck_solver.h"
+#include "drake/multibody/plant/tamsi_solver.h"
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/plant/test/implicit_stribeck_solver_test_util.h"
+#include "drake/multibody/plant/test/tamsi_solver_test_util.h"
 
 namespace drake {
 namespace multibody {
 
-// This class has friend access to ImplicitStribeckSolver so that we can test
+// This class has friend access to TamsiSolver so that we can test
 // its internals.
-class ImplicitStribeckSolverTester {
+class TamsiSolverTester {
  public:
   static MatrixX<double> CalcJacobian(
-      const ImplicitStribeckSolver<double>& solver,
+      const TamsiSolver<double>& solver,
       const Eigen::Ref<const VectorX<double>>& v,
       double dt) {
     const int nv = solver.nv_;
@@ -71,7 +71,7 @@ class ImplicitStribeckSolverTester {
 };
 namespace {
 
-// A test fixture to test DirectionChangeLimiter for a very standard
+// A test fixture to test TalsLimiter for a very standard
 // configuration of parameters.
 class DirectionLimiter : public ::testing::Test {
  protected:
@@ -80,7 +80,7 @@ class DirectionLimiter : public ::testing::Test {
     return Eigen::Rotation2D<double>(theta).toRotationMatrix();
   }
 
-  // Limiter parameters. See DirectionChangeLimiter for further details.
+  // Limiter parameters. See TalsLimiter for further details.
   const double v_stiction = 1.0e-4;  // m/s
   const double theta_max = M_PI / 6.0;  // radians.
   const double cos_min = std::cos(theta_max);
@@ -93,17 +93,17 @@ class DirectionLimiter : public ::testing::Test {
 TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>::Zero();
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
 // Verify implementation when vt = 0 and the update dvt takes the velocity
-// to within the Stribeck circle.
+// to within the stiction region.
 TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stiction;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -112,7 +112,7 @@ TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
 TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(0.3, -0.1);
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   const Vector2<double> vt_alpha_expected = dvt.normalized() * v_stiction / 2.0;
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -124,13 +124,13 @@ TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
 TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> vt = Vector2<double>(0.3, -0.1);
   const Vector2<double> dvt = -vt;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
-  // DirectionChangeLimiter does not allow changes from outside the Stribeck
-  // circle (where friction is constant) to exactly zero velocity, since this
+  // TalsLimiter does not allow changes from outside the stiction region
+  // (where friction is constant) to exactly zero velocity, since this
   // would imply leaving the solver in a state where gradients are negligible
   // (not strong). The solver can recover from this, but placing the velocity
-  // within the Stribeck circle in the direction of the initial v, helps the
+  // within the stiction region in the direction of the initial v, helps the
   // iterative process even more.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
   const Vector2<double> vt_alpha_expected = vt.normalized() * v_stiction / 2.0;
@@ -138,7 +138,7 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
       vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
 }
 
-// A vt that lies outside the Stribeck circle lies somewhere within the circle
+// A vt that lies outside the stiction region lies somewhere within the circle
 // after the update v_alpha = v + dv, alpha = 1. Since gradients are strong
 // within this region, the limiter allows it.
 TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
@@ -146,18 +146,18 @@ TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
   const Vector2<double> vt_alpha_expected =
       Vector2<double>(-0.3, 0.45) * v_stiction;
   const Vector2<double> dvt = vt_alpha_expected - vt;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
-// Similar to ZeroVtoSlidingRegion, a velocity vt within the Stribeck
+// Similar to ZeroVtoSlidingRegion, a velocity vt within the stiction
 // region (but not to zero) is updated to a sliding configuration. Since vt
 // falls in a region of strong gradients, the limiter allows it.
 TEST_F(DirectionLimiter, WithinStictionRegionToSlidingRegion) {
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -169,10 +169,10 @@ TEST_F(DirectionLimiter, StictionToSliding) {
       Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
   const Vector2<double> dvt(0.3, 0.15);
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
-  // For this case DirectionChangeLimiter neglects the very small initial vt
+  // For this case TalsLimiter neglects the very small initial vt
   // (since we always have tolerance << 1.0) so that:
   // vα = vt + αΔvt ≈ αΔvt = Δvt/‖Δvt‖⋅vₛ/2.
   // Therefore we expect α = 1 / ‖Δvt‖⋅vₛ/2.
@@ -186,7 +186,7 @@ TEST_F(DirectionLimiter, VerySmallDeltaV) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt =
       Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -198,7 +198,7 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt(-0.3, -0.15);  // dvt = -3 * vt.
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   // Since the change crosses zero exactly, we expect
@@ -212,10 +212,10 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
 }
 
 // Test a direction change from vt to v1 = vt + dvt that crosses through the
-// Stribeck circle. In this case the limiter will find a scalar 0 < alpha < 1
+// stiction region. In this case the limiter will find a scalar 0 < alpha < 1
 // such that v_alpha = vt + alpha * dvt is the closest vector to the origin.
 TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
-  // We construct a v_alpha expected to be within the Stribeck circle.
+  // We construct a v_alpha expected to be within the stiction region.
   const Vector2<double> vt_alpha_expected =
       Vector2<double>(0.3, 0.2) * v_stiction;
 
@@ -223,20 +223,20 @@ TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   const Vector2<double> vt_normal =
       Vector2<double>(vt_alpha_expected(1), -vt_alpha_expected(0)).normalized();
 
-  // Construct a vt away from the circle in a large magnitude (>>v_stribec) in
+  // Construct a vt away from the circle in a large magnitude (>>v_s) in
   // the direction normal to vt_alpha_expected.
   const Vector2<double> vt = vt_alpha_expected + 0.5 * vt_normal;
 
-  // Construct a v1 away from the circle in a large magnitude (>>v_stribec) in
+  // Construct a v1 away from the circle in a large magnitude (>>v_s) in
   // the direction normal to vt_alpha_expected. This time in the opposite
   // direction to that of vt.
   const Vector2<double> v1 = vt_alpha_expected - 0.8 * vt_normal;
 
-  // Velocity change from vt to v1 (this is what the implicit Stribeck iteration
+  // Velocity change from vt to v1 (this is what the TAMSI iteration
   // would compute).
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   // Verify the result from the limiter.
@@ -246,13 +246,13 @@ TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
 }
 
 // Tests the limiter for a case in which both vt and v1 = vt + dvt are both
-// outside the Stribeck circle. In this test, the angle formed by vt and v1 is
+// outside the stiction region. In this test, the angle formed by vt and v1 is
 // smaller than theta_max and the limiter allows it, i.e. it returns alpha = 1.
 TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   // an angle smaller that theta_max = M_PI / 6.
   const double theta = M_PI / 8.0;
 
-  // A vt outside the Stribeck circle
+  // A vt outside the stiction region
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7);
 
   // A v1 at forming an angle of theta with vt.
@@ -261,14 +261,14 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
 // Tests the limiter for a case in which both vt and v1 = vt + dvt are both
-// outside the Stribeck circle. In this test, the angle formed by vt and v1 is
+// outside the stiction region. In this test, the angle formed by vt and v1 is
 // larger than theta_max and the limiter will limit the change to a
 // vt_alpha = vt + alpha * dvt so that vt_alpha forms an angle theta_max with
 // vt.
@@ -278,7 +278,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   // Angle formed by v1 and vt, an angle larger that theta_max = M_PI / 6.
   const double theta1 = M_PI / 3.0;
 
-  // A vt outside the Stribeck circle
+  // A vt outside the stiction region
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7);
 
   // A v1 at forming an angle of theta with vt.
@@ -287,7 +287,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -301,7 +301,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
 }
 
 // Tests the limiter for a case in which both vt and v1 = vt + dvt are both
-// outside the Stribeck circle. In this test, the angle formed by vt and v1 is
+// outside the stiction region. In this test, the angle formed by vt and v1 is
 // MUCH larger than theta_max and the limiter will limit the change to a
 // vt_alpha = vt + alpha * dvt so that vt_alpha forms an angle theta_max with
 // vt.
@@ -311,7 +311,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   // Angle formed by v1 and vt, an angle larger that theta_max = M_PI / 6.
   const double theta1 = 5.0 * M_PI / 6.0;
 
-  // A vt outside the Stribeck circle
+  // A vt outside the stiction region
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7);
 
   // A v1 at forming an angle of theta with vt.
@@ -320,7 +320,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -340,7 +340,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
 // Even though this will rarely (or impossibly) happen, we make sure we consider
 // it for maximum robustness.
 TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
-  // A vt outside the Stribeck circle
+  // A vt outside the stiction region
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7);
 
   // A dvt forming an angle of theta_max with vt not necessarily having the same
@@ -353,7 +353,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   double theta1 = std::cos(vt.dot(v1)/vt.norm()/v1.norm());
   ASSERT_GT(theta1, theta_max);
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -492,8 +492,8 @@ class PizzaSaver : public ::testing::Test {
   // Tangential velocities Jacobian.
   MatrixX<double> Jt_{2 * nc_, nv_};
 
-  // The implicit Stribeck solver for this problem.
-  ImplicitStribeckSolver<double> solver_{nv_};
+  // The TAMSI solver for this problem.
+  TamsiSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   Vector3<double> p_star_;  // Generalized momentum.
@@ -502,9 +502,10 @@ class PizzaSaver : public ::testing::Test {
 };
 
 // This tests the solver when we apply a moment Mz about COM to the pizza saver.
-// If Mz < mu * m * g * R, the saver should be in stiction (within the Stribeck
-// approximation). Otherwise the saver will start sliding.
-// For this setup the transition occurs at M_transition = mu * m * g * R = 5.0
+// If Mz < mu * m * g * R, the saver should be in stiction (that is, the sliding
+// velocity should be smaller than the regularization parameter). Otherwise the
+// saver will start sliding. For this setup the transition occurs at
+// M_transition = mu * m * g * R = 5.0
 TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   const double dt = 1.0e-3;  // time step in seconds.
@@ -523,13 +524,13 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -566,8 +567,8 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   EXPECT_NEAR(v_slipA, v_slipC, kTolerance);
   EXPECT_NEAR(v_slipC, v_slipB, kTolerance);
 
-  // For this case where Mz < M_transition, we expect stiction (within the
-  // Stribeck's stiction tolerance)
+  // For this case where Mz < M_transition, we expect stiction (slip velocities
+  // are smaller than the regularization parameter).
   EXPECT_LT(v_slipA, parameters.stiction_tolerance);
   EXPECT_LT(v_slipB, parameters.stiction_tolerance);
   EXPECT_LT(v_slipC, parameters.stiction_tolerance);
@@ -582,7 +583,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -625,13 +626,13 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -688,7 +689,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -722,8 +723,8 @@ TEST_F(PizzaSaver, NoContact) {
 
   SetNoContactProblem(v0, tau, dt);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   EXPECT_EQ(solver_.get_generalized_friction_forces(), Vector3<double>::Zero());
 
@@ -746,11 +747,11 @@ TEST_F(PizzaSaver, NoContact) {
   EXPECT_EQ(solver_.get_tangential_velocities().size(), 0);
 }
 
-// This test verifies that the implicit stribeck solver can correctly predict
-// transitions in a problem with impact. In this test the y axis is in the "up"
-// vertical direction, the x axis points to the right and the z axis comes out
-// of the x-y plane forming a right handed basis. Gravity points in the minus
-// y direction. The x-z plane is the ground.
+// This test verifies that TAMSI can correctly predict transitions in a problem
+// with impact. In this test the y axis is in the "up" vertical direction, the x
+// axis points to the right and the z axis comes out of the x-y plane forming a
+// right handed basis. Gravity points in the minus y direction. The x-z plane is
+// the ground.
 // In this test a cylinder moves parallel to the ground with its revolute axis
 // parallel to the z axis at all times. The cylinder's COM is constrained to
 // move in the x-y plane. Therefore, the cylinder's motions are described by
@@ -766,13 +767,13 @@ TEST_F(PizzaSaver, NoContact) {
 // will be vy = -sqrt(2 g h0), with g the acceleration of gravity. Therefore the
 // change of momentum, in the vertical direction, at the time of impact will be
 // py = m * vy.
-// The implicit Stribeck solver needs to know the normal forces in advance. We
-// compute the normal force in order to exactly bring the cylinder to a stop in
-// the vertical direction within a time interval dt from the time that the
-// bodies first make contact. That is, we set the normal force to
-// fn = -m * vy / dt + m * g, where the small contribution due to gravity is
-// needed to exactly bring the cylinder's vertical velocity to zero. The solver
-// keeps this value constant throughout the computation.
+// TAMSI needs to know the normal forces in advance. We compute the normal force
+// in order to exactly bring the cylinder to a stop in the vertical direction
+// within a time interval dt from the time that the bodies first make contact.
+// That is, we set the normal force to fn = -m * vy / dt + m * g, where the
+// small contribution due to gravity is needed to exactly bring the cylinder's
+// vertical velocity to zero. The solver keeps this value constant throughout
+// the computation.
 // The equations governing the motion for the cylinder during impact are:
 //   (1)  I Δω = pt R,  Δω  = ω, since ω0 = 0.
 //   (2)  m Δvx = pt ,  Δvx = vx - vx0
@@ -817,7 +818,7 @@ class RollingCylinder : public ::testing::Test {
     return D;
   }
 
-  // Sets the ImplicitStribeckSolver to solve this cylinder case from the
+  // Sets the TamsiSolver to solve this cylinder case from the
   // input data:
   //   v0: velocity right before impact.
   //   tau: vector of externally applied generalized forces.
@@ -894,8 +895,8 @@ class RollingCylinder : public ::testing::Test {
   VectorX<double> dissipation_{nc_};
   VectorX<double> x0_{nc_};
 
-  // The implicit Stribeck solver for this problem.
-  ImplicitStribeckSolver<double> solver_{nv_};
+  // TAMSI solver for this problem.
+  TamsiSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
@@ -926,12 +927,12 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -967,7 +968,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -1016,12 +1017,12 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -1060,7 +1061,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // Compute the Newton-Raphson Jacobian of the (two-way coupled)
   // residual J = ∇ᵥR using the solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -1082,7 +1083,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
 GTEST_TEST(EmptyWorld, Solve) {
   const int nv = 0;
-  ImplicitStribeckSolver<double> solver{nv};
+  TamsiSolver<double> solver{nv};
 
   // (Empty) problem data.
   VectorX<double> p_star, mu_vector, x0, stiffness, dissipation;
