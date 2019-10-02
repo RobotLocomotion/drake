@@ -14,21 +14,21 @@ namespace multibody {
 template <typename T> class Body;
 
 /// This %ForceElement models a massless bushing that connects a frame Aʙ of a
-/// body A to a frame Bᴀ of a body B.  The bushing has both rotational and
-/// translational stiffness and damping properties.
+/// body A to a frame Bᴀ of a body B.  The bushing can apply both a torque and
+/// force, due to spring (stiffness) and damping (dissipation) properties.
 ///
-/// The bushing's rotational stiffness depends on the roll-pitch-yaw angles
-/// q₀, q₁, q₂ and its rotational damping depends on q̇₀, q̇₁, q̇₂.  The angles
+/// The bushing's stiffness torque stiffness depends on roll-pitch-yaw angles
+/// q₀, q₁, q₂ and its torque damping depends on q̇₀, q̇₁, q̇₂.  The angles
 /// q₀, q₁, q₂ are calculated from the orientation between frames Aʙ and Bᴀ and
 /// have the range `-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`.
 ///
-/// The bushing's translational stiffness is linear in displacements x, y, z and
-/// its translational damping is linear in ẋ, ẏ, ż.  The displacements x, y, z
+/// The bushing's force stiffness is linear in displacements x, y, z and
+/// its force damping is linear in ẋ, ẏ, ż.  The displacements x, y, z
 /// are defined so the position vector from Aʙₒ (frame Aʙ's origin) to Bᴀₒ
 /// (frame Bᴀ's origin) expressed in frame Aʙ is `[x, y, z]`.
 ///
 /// The set of forces on body A from the bushing is equivalent to a torque τ
-/// on frame Aʙ and a force f applied to point Aʙₒ, as
+/// on frame Aʙ and a force f applied to point a Acₒ of A, as
 /// <pre>
 /// f = (kx x + bx ẋ) Aʙx  +  (ky y + by ẏ) Aʙy + (kz z + bz ż) Aʙz
 /// τ = (k₀q₀ + b₀q̇₀) Bᴀx  +  (k₁q₁ + b₁q̇₁) Iy  + (k₂q₂ + b₂q̇₂) Aʙz

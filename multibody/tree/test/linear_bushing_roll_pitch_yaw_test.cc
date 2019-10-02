@@ -34,9 +34,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     bodyA_ = &(model->world_body());
     bodyB_ = &(model->AddRigidBody("BodyB", M_BBo_B));
 
-    // Calculate "reasonable" rotational and translational stiffness and damping
-    // constants, where "reasonable" means a critical damping ratio ζ = 0.1 and
-    // damped natural periods of a few seconds.
+    // Calculate "reasonable" torque and force stiffness and damping constants,
+    // where "reasonable" means a critical damping ratio ζ = 0.1 and damped
+    // natural periods of a few seconds.
     Vector3<double> torque_stiffness_constants;
     Vector3<double> torque_damping_constants;
     Vector3<double> force_stiffness_constants;
@@ -91,9 +91,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   const Vector3<double> p_BoBcm_{0, 0, 0};    // Position from Bo to Bcm (m).
 
  private:
-  // Calculates "reasonable" rotational and translational stiffness and damping
-  // constants, where "reasonable" means a critical damping ratio ζ = 0.1 and
-  // damped natural periods of a few seconds.
+  // Calculates "reasonable" torque and force stiffness and damping constants,
+  // where "reasonable" means a critical damping ratio ζ = 0.1 and damped
+  // natural periods of a few seconds.
   // @param[out] torque_stiffness_constants For torque τ, the stiffness
   //   constants `[k₀, k₁, k₂]` associated with angles `[q₀, q₁, q₂]`.
   // @param[out] torque_damping_constants For torque τ, the damping
@@ -122,9 +122,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // For this analysis, a critical damping ratio ζ = 0.1 was chosen with a
     // damped period of vibration τᴅᴀᴍᴩ ≈ 1 second for rotational motions and
     // damped periods of translation vibration of τx ≈ 2 s, τy ≈ 3 s, τz ≈ 4 s.
-    // Use τᴅᴀᴍᴩ = 2π/ωᴅᴀᴍᴩ and ωᴅᴀᴍᴩ = ωₙ√(1-ζ²) to find ωₙ = ωᴅᴀᴍᴩ / √(1-ζ²).
+    // Use τᴅᴀᴍᴩ = 2π/ωᴅᴀᴍᴩ, ωᴅᴀᴍᴩ = ωₙ√(1-ζ²) to find ωₙ = ωᴅᴀᴍᴩ / √(1-ζ²).
     // Since ζ = b /(2 √(m k)), the associated damping constant b = 2 ζ √(m k).
-    // --------- Rotational stiffness and damping calculations ------------
+    // ------------ Torque stiffness and damping calculations ------------
     const double tau_rotate = 1;                                 // seconds
     const double wDamped_rotate = 2 * M_PI / tau_rotate;         // rad/sec
     const double zeta = 0.1;                                     // No units
@@ -138,7 +138,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     *torque_stiffness_constants = Vector3<double>(k0, k1, k2);
     *torque_damping_constants = Vector3<double>(b0, b1, b2);
 
-    // --------- Translational stiffness and damping calculations --------
+    // ------------ Force stiffness and damping calculations -------------
     const double tauX = 2, tauY = 3, tauZ = 3;                   // seconds
     const double wDampedX = 2 * M_PI / tauX;                     // rad/sec
     const double wDampedY = 2 * M_PI / tauY;                     // rad/sec
