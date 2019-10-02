@@ -2968,6 +2968,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize, see Finalize().
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
+  /// Returns the port for joint reaction forces.
+  /// A Joint models the kinematical relationship which characterizes the
+  /// possible relative motion between two bodies. In Drake, a joint connects a
+  /// frame `Jp` on _parent_ body P with a frame `Jc` on a _child_ body C. This
+  /// usage of the terms _parent_ and _child_ is just a convention and implies
+  /// nothing about the inboard-outboard relationship between the bodies. Since
+  /// a Joint imposes a kinematical relationship which characterizes the
+  /// possible relative motion between frames Jp and Jc, reaction forces on each
+  /// body are established. That is, we could cut the model at the joint and
+  /// replace it with equivalent forces equal to these reaction forces in order
+  /// to attain the same motions of the mechanical system.
+  ///
+  /// This output port allows to evaluate the reaction force `F_CJc_Jc` on the
+  /// _child_ body C, at `Jc`, and expressed in Jc for all joints in the model.
+  /// This port evaluates to a vector of type std::vector<SpatialForce<T>> and
+  /// size num_joints() indexed by JointIndex, see Joint::index(). Each entry
+  /// corresponds to the spatial force `F_CJc_Jc` applied on the joint's child
+  /// body C (Joint::child_body()), at the joint's child frame `Jc`
+  /// (Joint::frame_on_child()) and expressed in frame `Jc`.
+  ///
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_reaction_forces_output_port() const;
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return internal_tree().world_body();
@@ -3412,6 +3435,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> AssembleActuationInput(
       const systems::Context<T>& context) const;
 
+  // Computes all externally applied forces including:
+  //  - Force elements.
+  //  - Joint actuation.
+  //  - Externally applied spatial forces.
+  //  - Joint limits.
+  void CalcAppliedForces(const drake::systems::Context<T>& context,
+                         MultibodyForces<T>* forces) const;
+
   // Implements the system dynamics according to this class's documentation.
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
@@ -3532,6 +3563,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return this->get_cache_entry(cache_indexes_.generalized_accelerations)
         .template Eval<VectorX<T>>(context);
   }
+
+  // Calc method for the reaction forces output port.
+  // A joint constraints the motion between a frame Jp on a "parent" P and a
+  // frame Jc on a "child" frame C. This generates reaction forces on bodies P
+  // and C in order to satisfy the kinematic constraint between Jp and Jc. This
+  // method computes the spatial force F_CJc_Jc on body C at frame Jc and
+  // expressed in frame Jc. See get_reaction_forces_output_port() for further
+  // details.
+  void CalcReactionForces(const systems::Context<T>& context,
+                          std::vector<SpatialForce<T>>* F_CJc_Jc) const;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -3915,6 +3956,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Index for the output port of ContactResults.
   systems::OutputPortIndex contact_results_port_;
+
+  // Joint reactions forces port index.
+  systems::OutputPortIndex reaction_forces_port_;
 
   // A vector containing the index for the generalized contact forces port for
   // each model instance. This vector is indexed by ModelInstanceIndex. An
