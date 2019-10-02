@@ -1181,6 +1181,19 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper, &lower));
 }
 
+// Utility to verify that the only port of MultibodyPlant that is a feedthrough
+// is the port for joint reaction forces.
+bool OnlyJointReactionForcesFeedthrough(const MultibodyPlant<double>& plant) {
+  const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
+  bool only_reaction_forces_feedthrough = true;
+  for (auto inout_pair : feedthroughs) {
+    if (inout_pair.second !=
+        plant.get_reaction_forces_output_port().get_index())
+      only_reaction_forces_feedthrough = false;
+  }
+  return only_reaction_forces_feedthrough;
+}
+
 // Verifies the process of collision geometry registration with a
 // SceneGraph.
 // We build a model with two spheres and a ground plane. The ground plane is
@@ -1221,9 +1234,9 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // We are done defining the model.
   plant.Finalize();
 
-  // There is no direct feedthrough of any kind, even with the new ports
+  // Only joint reaction forces feedthrough, even with the new ports
   // related to SceneGraph interaction.
-  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(OnlyJointReactionForcesFeedthrough(plant));
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
@@ -2067,9 +2080,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
                            plant_->GetFrameByName("iiwa_link_0"));
     plant_->Finalize();
 
-    // There is no direct feedthrough of any kind, for either continuous or
+    // Only joint reaction forces feedthrough, for either continuous or
     // discrete plants.
-    EXPECT_FALSE(plant_->HasAnyDirectFeedthrough());
+    EXPECT_TRUE(OnlyJointReactionForcesFeedthrough(*plant_));
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);

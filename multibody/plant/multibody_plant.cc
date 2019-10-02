@@ -1285,6 +1285,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   if (num_collision_geometries() == 0) return;
 
   const ContactResults<T>& contact_results = EvalContactResults(context);
@@ -1634,6 +1635,37 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcAppliedForces(
+    const drake::systems::Context<T>& context,
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
+
+  const internal::PositionKinematicsCache<T>& pc =
+      EvalPositionKinematics(context);
+  const internal::VelocityKinematicsCache<T>& vc =
+      EvalVelocityKinematics(context);
+
+  // Compute forces applied through force elements.
+  internal_tree().CalcForceElementsContribution(context, pc, vc, forces);
+
+  // Externally applied forces.
+  AddJointActuationForces(context, forces);
+  AddAppliedExternalSpatialForces(context, forces);
+
+  // Only discrete models support joint limits.
+  if (is_discrete()) AddJointLimitsPenaltyForces(context, forces);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context)) {
+    forces->mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
     internal::TamsiSolverResults<T>* results) const {
@@ -1661,27 +1693,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   // Forces at the previous time step.
   MultibodyForces<T> forces0(internal_tree());
 
-  const internal::PositionKinematicsCache<T>& pc0 =
-      EvalPositionKinematics(context0);
-  const internal::VelocityKinematicsCache<T>& vc0 =
-      EvalVelocityKinematics(context0);
-
-  // Compute forces applied through force elements.
-  internal_tree().CalcForceElementsContribution(context0, pc0, vc0, &forces0);
-
-  // Externally applied forces.
-  AddJointActuationForces(context0, &forces0);
-  AddAppliedExternalSpatialForces(context0, &forces0);
-
-  AddJointLimitsPenaltyForces(context0, &forces0);
-
-  // If there are applied generalized forces, add them.
-  const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context0)) {
-    forces0.mutable_generalized_forces() +=
-        applied_generalized_force_input.Eval(context0);
-  }
+  CalcAppliedForces(context0, &forces0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
@@ -1808,26 +1820,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   // Generalized accelerations.
   VectorX<T> zero_vdot = VectorX<T>::Zero(nv);
 
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
-  const internal::VelocityKinematicsCache<T>& vc =
-      EvalVelocityKinematics(context);
-
-  // Compute forces applied through force elements. This effectively resets
-  // the forces to zero and adds in contributions due to force elements.
-  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
-
-  // Externally applied forces.
-  AddJointActuationForces(context, &forces);
-  AddAppliedExternalSpatialForces(context, &forces);
-
-  // If there are applied generalized forces, add them.
-  const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context)) {
-    forces.mutable_generalized_forces() +=
-        applied_generalized_force_input.Eval(context);
-  }
+  CalcAppliedForces(context, &forces);
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -2062,6 +2055,16 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
+
+  // Joint reaction forces are a function of accelerations, which in turn depend
+  // on both state and inputs.
+  reaction_forces_port_ =
+      this->DeclareAbstractOutputPort(
+              "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
+              &MultibodyPlant<T>::CalcReactionForces,
+              {this->cache_entry_ticket(
+                  cache_indexes_.generalized_accelerations)})
+          .get_index();
 }
 
 template <typename T>
@@ -2329,6 +2332,13 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
   return this->get_output_port(contact_results_port_);
 }
 
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_reaction_forces_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(reaction_forces_port_);
+}
+
 namespace {
 // A dummy, placeholder type.
 struct SymbolicGeometryValue {};
@@ -2371,6 +2381,100 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     // frame, so we report poses in the world frame.
     poses->set_value(body_index_to_frame_id_.at(body_index),
                      pc.get_X_WB(body.node_index()));
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcReactionForces(
+    const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* F_CJc_Jc_array) const {
+  DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
+
+  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context);
+
+  MultibodyForces<T> applied_forces(*this);
+  CalcAppliedForces(context, &applied_forces);
+  auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
+  auto& tau_applied = applied_forces.mutable_generalized_forces();
+
+  CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+
+  // Compute reaction forces at each mobilizer.
+  std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
+  VectorX<T> tau_id(num_velocities());
+  internal_tree().CalcInverseDynamics(context, vdot, Fapplied_Bo_W_array,
+                                      tau_applied, &A_WB_vector,
+                                      &F_BMo_W_vector, &tau_id);
+  // Since vdot is the result of Fapplied and tau_applied we expect the result
+  // from inverse dynamics to be zero.
+  // TODO(amcastro-tri): find a better estimation for this bound. For instance,
+  // we can make an estimation based on the trace of the mass matrix (Jain 2011,
+  // Eq. 4.21). For now we only ASSERT though with a better estimation we could
+  // promote this to a DEMAND.
+  DRAKE_ASSERT(tau_id.norm() <
+               100 * num_velocities() * std::numeric_limits<double>::epsilon());
+
+  // Map mobilizer reaction forces to joint reaction forces and perform the
+  // necessary frame conversions.
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    const internal::MobilizerIndex mobilizer_index =
+        internal_tree().get_joint_mobilizer(joint_index);
+    const internal::Mobilizer<T>& mobilizer =
+        internal_tree().get_mobilizer(mobilizer_index);
+    const internal::BodyNodeIndex body_node_index =
+        mobilizer.get_topology().body_node;
+
+    // Force on mobilized body B at mobilized frame's origin Mo, expressed in
+    // world frame.
+    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[body_node_index];
+
+    // Frames:
+    const Frame<T>& frame_Jp = joint.frame_on_parent();
+    const Frame<T>& frame_Jc = joint.frame_on_child();
+    const FrameIndex F_index = mobilizer.inboard_frame().index();
+    const FrameIndex M_index = mobilizer.outboard_frame().index();
+    const FrameIndex Jp_index = frame_Jp.index();
+    const FrameIndex Jc_index = frame_Jc.index();
+
+    // In Drake we have either:
+    //  - Jp == F and Jc == M (typical case)
+    //  - Jp == M and Jc == F (mobilizer was inverted)
+    // We verify this:
+    DRAKE_DEMAND((Jp_index == F_index && Jc_index == M_index) ||
+                 (Jp_index == M_index && Jc_index == F_index));
+
+    SpatialForce<T> F_CJc_W;
+    if (Jc_index == M_index) {
+      // Given we now Mo == Jc and B == C.
+      F_CJc_W = F_BMo_W;
+    } else if (joint.frame_on_child().index() ==
+               mobilizer.inboard_frame().index()) {
+      // Given we now Mo == Jc and B == C.
+      const SpatialForce<T>& F_PJp_W = F_BMo_W;
+
+      // Newton's third law allows to find the reaction on the child body as
+      // required.
+      const SpatialForce<T> F_CJp_W = -F_PJp_W;
+
+      // Now we need to shift the application point from Jp to Jc.
+      // First we need to find the position vector p_JpJc_W.
+      const RigidTransform<T> X_WJp = frame_Jp.CalcPoseInWorld(context);
+      const RotationMatrix<T>& R_WJp = X_WJp.rotation();
+      const RigidTransform<T> X_JpJc = frame_Jc.CalcPose(context, frame_Jp);
+      const Vector3<T> p_JpJc_Jp = X_JpJc.translation();
+      const Vector3<T> p_JpJc_W = R_WJp * p_JpJc_Jp;
+
+      // Finally, we shift the spatial force at Jp.
+      F_CJc_W = F_CJp_W.Shift(p_JpJc_W);
+    }
+
+    // Re-express in the joint's child frame Jc.
+    const RigidTransform<T> X_WJc = frame_Jc.CalcPoseInWorld(context);
+    const RotationMatrix<T> R_JcW = X_WJc.rotation().transpose();
+    F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
   }
 }
 
