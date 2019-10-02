@@ -321,6 +321,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_tamsi_test",
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/simple_gripper:simple_gripper_models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//systems/framework",
+    ],
+)
+
 drake_cc_library(
     name = "kuka_iiwa_model_tests",
     testonly = 1,
