@@ -1,0 +1,5 @@
+# TODO(jamiesnape): Remove this file when Director switches to Python 3.x.
+lxml
+matplotlib
+PyYAML
+scipy

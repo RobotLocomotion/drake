@@ -28,7 +28,7 @@ if ! command -v /usr/local/bin/pip2 &>/dev/null; then
   exit 2
 fi
 
-/usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+/usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements-py2.txt"
 
 if ! command -v /usr/local/bin/pip3 &>/dev/null; then
   echo 'ERROR: pip3 is NOT installed. The post-install step for the python formula may have failed.' >&2
