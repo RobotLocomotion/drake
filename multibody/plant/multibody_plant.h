@@ -1591,7 +1591,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// For a point Fp that is fixed to a frame F, calculates Fp's translational
-  /// acceleration bias term `abias_AFp` in frame A with respect to "speeds" 𝑠.
+  /// acceleration "bias" term `abias_AFp = J̇s_v_AFp(q, s) * s` in frame A with
+  /// respect to "speeds" 𝑠.
   /// <pre>
   ///   a_AFp = J𝑠_v_AFp(q)⋅ṡ + abias_AFp(q, v)
   /// </pre>
@@ -1634,6 +1635,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Possibly rename to CalcBiasTranslationalAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
     return internal_tree().CalcBiasForJacobianTranslationalVelocity(
@@ -1814,7 +1816,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// For a point Fp that is fixed to a frame F, calculates Fp's spatial
-  /// acceleration bias term `Abias_AFp` in frame A with respect to "speeds" 𝑠.
+  /// acceleration "bias" term `Abias_AFp = J̇s_V_AFp * s` in frame A with
+  /// respect to "speeds" 𝑠.
   /// <pre>
   ///   A_AFp = J𝑠_V_AFp(q)⋅ṡ + Abias_AFp(q, v)
   /// </pre>
@@ -1855,6 +1858,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Possibly rename to CalcBiasSpatialAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
     return internal_tree().CalcBiasForJacobianSpatialVelocity(
