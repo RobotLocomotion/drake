@@ -516,9 +516,8 @@ drake_cc_googletest(
     name = "multibody_plant_hydroelastic_contact_results_output_test",
     deps = [
         ":plant",
-	"//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
+        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
     ],
 )
-
 
 add_lint_tests()
