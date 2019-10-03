@@ -118,7 +118,8 @@ class HydroelasticContactInfo {
   /// world frame. At each point Q on the contact surface, `traction_A_W` gives
   /// the traction `traction_Aq_W`, where `Aq` is a frame attached to Body A and
   /// shifted to Q.
-  const geometry::SurfaceMeshField<Vector3<T>, T>& traction_A_W() const {
+  const geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>&
+  traction_A_W() const {
     return *traction_A_W_;
   }
 
@@ -130,7 +131,8 @@ class HydroelasticContactInfo {
   /// attached to Frame B). The tangential velocity at Q corresponds to the
   /// components of velocity orthogonal to the normal to the contact surface at
   /// Q.
-  const geometry::SurfaceMeshField<Vector3<T>, T>& vslip_AB_W() const {
+  const geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>& vslip_AB_W()
+      const {
     return *vslip_AB_W_;
   }
 
@@ -138,8 +140,10 @@ class HydroelasticContactInfo {
   // Note that the mesh of the contact surface is defined in the world frame.
   drake::variant<const geometry::ContactSurface<T>*,
                  std::unique_ptr<geometry::ContactSurface<T>>> contact_surface_;
-  std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
-  std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;
+  std::unique_ptr<geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>>
+      traction_A_W_;
+  std::unique_ptr<geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>>
+      vslip_AB_W_;
 };
 
 // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which

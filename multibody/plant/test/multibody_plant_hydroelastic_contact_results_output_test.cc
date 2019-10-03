@@ -8,13 +8,33 @@
 using Eigen::Vector3d;
 
 namespace drake {
-namespace multibody {
-namespace {
 
-class HydroelasticContactOutputTester : public ::testing::Test {
+using geometry::ContactSurface;
+using geometry::MeshField;
+using geometry::SurfaceFace;
+using geometry::SurfaceFaceIndex;
+using geometry::SurfaceVertex;
+using geometry::SurfaceVertexIndex;
+using geometry::SurfaceMesh;
+
+namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+
+  static std::vector<geometry::ContactSurface<double>> ComputeContactSurfaces(
+      const MultibodyPlant<double>& plant,
+      const geometry::QueryObject<double>& query_object) {
+    return plant.hydroelastics_engine_.ComputeContactSurfaces(query_object);
+  }
+};
+
+namespace {
+class HydroelasticContactResultsOutputTester : public ::testing::Test {
  protected:
   void SetUp() {
-    const double radius = 1.0;                         // sphere radius (m).
+    const double radius = 1.0;  // sphere radius (m).
 
     // The vertical location of the sphere. If this value is smaller than the
     // sphere radius, the sphere will intersect the half-space described by
@@ -41,6 +61,16 @@ class HydroelasticContactOutputTester : public ::testing::Test {
     plant_->set_contact_model(ContactModel::kHydroelasticsOnly);
     plant_->Finalize();
 
+    // Sanity check on the availability of the optional source id before using
+    // it.
+    DRAKE_DEMAND(!!plant_->get_source_id());
+
+    builder.Connect(scene_graph.get_query_output_port(),
+                    plant_->get_geometry_query_input_port());
+    builder.Connect(
+        plant_->get_geometry_poses_output_port(),
+        scene_graph.get_source_pose_port(plant_->get_source_id().value()));
+
     diagram_ = builder.Build();
 
     // Create a context for this system:
@@ -55,6 +85,87 @@ class HydroelasticContactOutputTester : public ::testing::Test {
                             X_WB);
   }
 
+  const HydroelasticContactInfo<double>& contact_results() const {
+    // Get the contact results from the plant.
+    const ContactResults<double>& contact_results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            *plant_context_);
+    DRAKE_DEMAND(contact_results.num_hydroelastic_contacts() == 1);
+    return contact_results.hydroelastic_contact_info(0);
+  }
+
+  // Checks to see whether two SurfaceMesh objects are equal (all data match
+  // to bit-wise precision).
+  static bool Equal(const SurfaceMesh<double>& mesh1,
+                    const SurfaceMesh<double>& mesh2) {
+    if (mesh1.num_faces() != mesh2.num_faces()) return false;
+    if (mesh1.num_vertices() != mesh2.num_vertices()) return false;
+
+    // Check face indices.
+    for (SurfaceFaceIndex i(0); i < mesh1.num_faces(); ++i) {
+      const SurfaceFace& face1 = mesh1.element(i);
+      const SurfaceFace& face2 = mesh2.element(i);
+      for (int j = 0; j < 3; ++j)
+        if (face1.vertex(j) != face2.vertex(j)) return false;
+    }
+
+    // Check vertices.
+    for (SurfaceVertexIndex i(0); i < mesh1.num_vertices(); ++i) {
+      if (mesh1.vertex(i).r_MV() != mesh2.vertex(i).r_MV()) return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
+  // Checks to see whether two MeshField objects are equal (all data
+  // match to bit-wise precision).
+  // Note: currently requires the objects to be of type MeshFieldLinear.
+  template <typename T>
+  static bool Equal(const MeshField<T, SurfaceMesh<double>>& field1,
+                    const MeshField<T, SurfaceMesh<double>>& field2) {
+    // If the objects are not of type MeshFieldLinear then the simple checking
+    // of equal values at vertices is insufficient.
+    const geometry::MeshFieldLinear<T, SurfaceMesh<double>>* linear_field1 =
+        dynamic_cast<const geometry::MeshFieldLinear<T, SurfaceMesh<double>>*>(
+            &field1);
+    const geometry::MeshFieldLinear<T, SurfaceMesh<double>>* linear_field2 =
+        dynamic_cast<const geometry::MeshFieldLinear<T, SurfaceMesh<double>>*>(
+            &field2);
+    DRAKE_DEMAND(linear_field1);
+    DRAKE_DEMAND(linear_field2);
+
+    if (field1.mesh().num_faces() != field2.mesh().num_faces()) return false;
+    if (field1.mesh().num_vertices() != field2.mesh().num_vertices())
+      return false;
+
+    for (SurfaceVertexIndex i(0); i < field1.mesh().num_vertices(); ++i) {
+      if (field1.EvaluateAtVertex(i) != field2.EvaluateAtVertex(i))
+        return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
+  // Checks to see whether two ContactSurface objects are equal (all
+  // data match to bit-wise precision).
+  static bool Equal(const ContactSurface<double>& surface1,
+                    const ContactSurface<double>& surface2) {
+    // First check the meshes.
+    if (!Equal(surface1.mesh_W(), surface2.mesh_W())) return false;
+
+    // Now examine the pressure field.
+    if (!Equal<double>(surface1.e_MN(), surface2.e_MN())) return false;
+
+    // Now examine the grad_h field.
+    if (!Equal<Vector3d>(surface1.grad_h_MN_W(), surface2.grad_h_MN_W()))
+      return false;
+
+    // All checks passed.
+    return true;
+  }
+
   MultibodyPlant<double>* plant_{};
   systems::Context<double>* plant_context_{};
 
@@ -63,11 +174,20 @@ class HydroelasticContactOutputTester : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> diagram_context_{};
 };
 
-TEST_F(HydroelasticContactOutputTester, ContactSurface) {
-  // Get the contact results from the plant.
-  const ContactResults<double>& contact_results =
-      plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
-          *plant_context_);
+TEST_F(HydroelasticContactResultsOutputTester, Equivalent) {
+  // Get the query object so that we can compute the contact surfaces.
+  const auto& query_object =
+      plant_->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<double>>(*plant_context_);
+
+  // Compute the contact surface using the hydroelastic engine.
+  std::vector<geometry::ContactSurface<double>> contact_surfaces =
+      MultibodyPlantTester::ComputeContactSurfaces(*plant_, query_object);
+
+  // Check that the two contact surfaces are equivalent.
+  ASSERT_EQ(contact_surfaces.size(), 1);
+  EXPECT_TRUE(
+      Equal(contact_results().contact_surface(), contact_surfaces.front()));
 }
 
 }  // namespace
