@@ -46,7 +46,7 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         repository_ctx.symlink(
-            "/usr/local/lib/python2.7/site-packages/umsgpack.py",
+            "/usr/local/lib/python3.7/site-packages/umsgpack.py",
             "umsgpack.py",
         )
 
