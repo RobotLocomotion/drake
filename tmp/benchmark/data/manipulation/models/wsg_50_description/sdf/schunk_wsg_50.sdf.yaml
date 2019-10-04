@@ -1,0 +1,165 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [-0.008, 0.025, 0.0]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.008, 0.025, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Zeros
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.992, 0.025, 0.0]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.008, 0.025, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Ones
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.092, 0.025, 0.0]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.20800000000000002, 0.025, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Incrementing
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [0.1, 0.2]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.5627963267948966, 0.025, 0.0]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.5787963267948966, 0.025, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Pi/2
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [1.5707963267948966, 1.5707963267948966]
+expression: {expr: make_plant('drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf'),
+  module: __main__}
+type_name: tuple

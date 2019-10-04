@@ -1,0 +1,81 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: thin_box::base_link
+  note: Zeros
+  q:
+    names: []
+    values: []
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: thin_box::base_link
+  note: Ones
+  q:
+    names: []
+    values: []
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: thin_box::base_link
+  note: Incrementing
+  q:
+    names: []
+    values: []
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: thin_box::base_link
+  note: Pi/2
+  q:
+    names: []
+    values: []
+expression: {expr: make_plant('drake/examples/manipulation_station/models/thin_box.sdf'),
+  module: __main__}
+type_name: tuple

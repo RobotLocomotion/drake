@@ -1,0 +1,109 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: CartPole::Cart
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.5]
+    name: CartPole::Pole
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Zeros
+  q:
+    names: [CartSlider, PolePin]
+    values: [0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.0, 0.0, 0.0]
+    name: CartPole::Cart
+  - X_WF:
+      rotation:
+      - [0.5403023058681398, 0.0, -0.8414709848078965]
+      - [0.0, 1.0, 0.0]
+      - [0.8414709848078965, 0.0, 0.5403023058681398]
+      translation: [1.4207354924039484, 0.0, -0.2701511529340699]
+    name: CartPole::Pole
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Ones
+  q:
+    names: [CartSlider, PolePin]
+    values: [1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.1, 0.0, 0.0]
+    name: CartPole::Cart
+  - X_WF:
+      rotation:
+      - [0.9800665778412416, 0.0, -0.19866933079506122]
+      - [0.0, 1.0, 0.0]
+      - [0.19866933079506122, 0.0, 0.9800665778412416]
+      translation: [0.1993346653975306, 0.0, -0.4900332889206208]
+    name: CartPole::Pole
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Incrementing
+  q:
+    names: [CartSlider, PolePin]
+    values: [0.1, 0.2]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.5707963267948966, 0.0, 0.0]
+    name: CartPole::Cart
+  - X_WF:
+      rotation:
+      - [6.123233995736766e-17, 0.0, -1.0]
+      - [0.0, 1.0, 0.0]
+      - [1.0, 0.0, 6.123233995736766e-17]
+      translation: [2.0707963267948966, 0.0, -3.061616997868383e-17]
+    name: CartPole::Pole
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Pi/2
+  q:
+    names: [CartSlider, PolePin]
+    values: [1.5707963267948966, 1.5707963267948966]
+expression: {expr: make_plant('drake/examples/multibody/cart_pole/cart_pole.sdf'),
+  module: __main__}
+type_name: tuple

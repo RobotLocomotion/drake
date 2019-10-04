@@ -23,7 +23,7 @@ drake_py_unittest(
 
 filegroup(
     name = "data",
-    srcs = glob(["data/*.yaml"]),
+    srcs = glob(["data/**/*.yaml"]),
 )
 
 drake_py_test(
