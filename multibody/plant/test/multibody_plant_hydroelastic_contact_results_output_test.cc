@@ -239,7 +239,7 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
   const MeshField<Vector3d, SurfaceMesh<double>>& traction_A_W =
       results.traction_A_W();
 
-  // If Body A is the ball, then the traction field should point to +z.
+  // If Body A is the ball, then the traction field should point along +z.
   // Otherwise, it should point to -z.
   const Vector3d z(0, 0, 1);
   std::vector<geometry::GeometryId> ball_collision_geometries =
