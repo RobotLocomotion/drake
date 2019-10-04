@@ -151,12 +151,6 @@ After following the above install steps, check to ensure you can import
 
 .. note::
 
-    If you are using macOS and the Python 2 bindings, you must ensure that you
-    are using the ``python2`` executable (typically located at
-    ``/usr/local/bin/python2``) to run these scripts.
-
-.. note::
-
     If you are using Gurobi, you must either have it installed in the suggested
     location under ``/opt/...`` mentioned in :ref:`gurobi`, or you must ensure
     that you define the ``${GUROBI_PATH}`` environment variable, or specify
