@@ -36,7 +36,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
   void SetUp() {
     const double radius = 1.0;  // sphere radius (m).
 
-    // The vertical location of the sphere. If this value is smaller than the
+    // The vertical location of the sphere. Since this value is smaller than the
     // sphere radius, the sphere will intersect the half-space described by
     // z <= 0.
     const double z0 = 0.95 * radius;
@@ -45,7 +45,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     const double dissipation = 0.0;                    // s/m.
     const CoulombFriction<double> friction(0.0, 0.0);  // Static/dynamic.
 
-    // Set some reasonable, but arbitrary, parameters: none of these will be
+    // Set some reasonable, but arbitrary, parameters: none of these will
     // affect the test results.
     const double mass = 2.0;                           // kg.
     const double elastic_modulus = 1e7;                // Pascals.
@@ -183,8 +183,8 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> diagram_context_{};
 };
 
-// Checks that the ContactSurface from the output port is equivalent to what
-// we expect.
+// Checks that the ContactSurface from the output port is equivalent to that
+// returned from the HydroelasticEngine.
 TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Get the query object so that we can compute the contact surfaces.
   const auto& query_object =
@@ -202,14 +202,14 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
 }
 
 // Checks that the slip velocity field from the output port is consistent with
-// the velocity that we have set.
+// the ball velocity that we have set.
 TEST_F(HydroelasticContactResultsOutputTester, SlipVelocity) {
   const HydroelasticContactInfo<double>& results = contact_results();
   const MeshField<Vector3d, SurfaceMesh<double>>& vslip_AB_W =
       results.vslip_AB_W();
 
-  // If Body A is the ball, then the slip velocity field should point to +x.
-  // Otherwise, it should point to -x.
+  // If Body A is the ball, then every point in the slip velocity field should
+  // be +x. Otherwise, it should be -x.
   const Vector3d x(1, 0, 0);
   std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(
@@ -240,7 +240,7 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
       results.traction_A_W();
 
   // If Body A is the ball, then the traction field should point along +z.
-  // Otherwise, it should point to -z.
+  // Otherwise, it should point along -z.
   const Vector3d z(0, 0, 1);
   std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
