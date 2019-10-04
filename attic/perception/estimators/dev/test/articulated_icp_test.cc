@@ -1,5 +1,7 @@
 #include "drake/perception/estimators/dev/articulated_icp.h"
 
+#include <thread>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
