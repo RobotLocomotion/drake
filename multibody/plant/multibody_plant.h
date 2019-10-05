@@ -1600,6 +1600,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
   /// Note: `abias_AFp = J̇s_v_AFp(q, s)⋅s`  is quadratic in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// Note: This method is misnamed CalcBiasForJacobianTranslationalVelocity.
+  /// Expect a name change to reflect its acceleration (not velocity) nature.
   ///
   /// This method computes `abias_AFp` for each point Fp in the `p_FP_list`.
   /// The `p_FP_list` is a list of position vectors from Fo (Frame F's origin)
@@ -1635,7 +1637,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
-    // TODO(Mitiguy) Possibly rename to CalcBiasTranslationalAcceleration.
+    // TODO(Mitiguy) Issue #12140: Rename to CalcBiasTranslationalAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
     return internal_tree().CalcBiasForJacobianTranslationalVelocity(
@@ -1825,6 +1827,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
   /// Note: `Abias_AFp = J̇s_V_AFp(q, s)⋅s`  is quadratic in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// Note: This method is misnamed CalcBiasForJacobianSpatialVelocity.
+  /// Expect a name change to reflect its acceleration (not velocity) nature.
   ///
   /// @see CalcJacobianSpatialVelocity() to compute `J𝑠_V_AFp`, point Fp's
   /// spatial velocity Jacobian in frame A with respect to 𝑠.
@@ -1858,7 +1862,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
-    // TODO(Mitiguy) Possibly rename to CalcBiasSpatialAcceleration.
+    // TODO(Mitiguy) Issue #12140: Rename to CalcBiasSpatialAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
     return internal_tree().CalcBiasForJacobianSpatialVelocity(
