@@ -41,6 +41,7 @@ _VERSION_SUPPORT_MATRIX = {
     "ubuntu:18.04": ["3.6", "2.7"],
     "macos:10.13": ["3.7"],
     "macos:10.14": ["3.7"],
+    "macos:10.15": ["3.7"],
 }
 
 def _repository_python_info(repository_ctx):
