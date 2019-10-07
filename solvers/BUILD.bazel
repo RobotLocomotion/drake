@@ -332,6 +332,10 @@ drake_cc_library(
         "Use the new spelling @drake//solvers:mathematical_program instead.",
         "The deprecated spelling will be removed on 2020-01-01.",
     ]),
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
     deps = [
         ":mathematical_program",
         ":solver_interface",
