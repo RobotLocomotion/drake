@@ -860,48 +860,11 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     EXPECT_NO_THROW(plant.Finalize());
   }
 
-  // Case: Correct finalization -- registered as source and correct scene graph
-  // provided -- no error.
-  {
-    MultibodyPlant<double> plant;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_NO_THROW(plant.Finalize(&scene_graph));
-#pragma GCC diagnostic pop
-  }
-
   // Case: Registered as source, correct finalization.
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     EXPECT_NO_THROW(plant.Finalize());
-  }
-
-  // Case: Registered as source, but *wrong* scene graph passed to Finalize() -
-  // error.
-  {
-    MultibodyPlant<double> plant;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    SceneGraph<double> other_graph;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.Finalize(&other_graph), std::logic_error,
-        "Geometry registration.*first call to RegisterAsSourceForSceneGraph.*");
-#pragma GCC diagnostic pop
-  }
-
-  // Case: Not registered as source, but passed SceneGraph in anyways - error.
-  {
-    MultibodyPlant<double> plant;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.Finalize(&scene_graph), std::logic_error,
-        "This MultibodyPlant instance does not have a SceneGraph registered.*"
-        "RegisterAsSourceForSceneGraph.*");
-#pragma GCC diagnostic pop
   }
 }
 
