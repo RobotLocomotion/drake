@@ -282,11 +282,11 @@ class GeometryState {
    @param parent_id    The id of the parent frame.
    @param frame        The frame to register.
    @returns  A newly allocated frame id.
-   @throws std::logic_error  1. If the `source_id` does _not_ map to a
+   @throws std::logic_error  if a) the `source_id` does _not_ map to a
                              registered source,
-                             2. If the `parent_id` does _not_ map to a known
-                             frame or does not belong to the source
-                             3. `frame` has an id that has already been
+                             b) the `parent_id` does _not_ map to a known
+                             frame or does not belong to the source, or
+                             c) `frame` has an id that has already been
                              registered.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
@@ -317,11 +317,11 @@ class GeometryState {
    @param source_id     The identifier for the owner geometry source.
    @param geometry_id   The identifier of the geometry to remove (can be dynamic
                         or anchored).
-   @throws std::logic_error  1. If the `source_id` does _not_ map to a
-                             registered source, or
-                             2. the `geometry_id` does not map to a valid
+   @throws std::logic_error  if a) the `source_id` does _not_ map to a
+                             registered source,
+                             b) the `geometry_id` does not map to a valid
                              geometry, or
-                             3. the `geometry_id` maps to a geometry that does
+                             c) the `geometry_id` maps to a geometry that does
                              not belong to the indicated source.  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
@@ -382,23 +382,24 @@ class GeometryState {
    `frame_id`, if it has been added to the renderer with the given
    `renderer_name` it is removed from that renderer.
    @return The number of geometries affected by the removal.
-   @throws std::logic_error if 1) `source_id` does not map to a registered
-                            source, 2) `frame_id` does not map to a registered
-                            frame, 3) `frame_id` does not belong to
-                            `source_id` (unless `frame_id` is the world frame
-                            id), or 4) the context has already been
-                            allocated.  */
+   @throws std::logic_error if a) `source_id` does not map to a registered
+                            source,
+                            b) `frame_id` does not map to a registered frame,
+                            c) `frame_id` does not belong to `source_id` (unless
+                            `frame_id` is the world frame id), or
+                            d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          FrameId frame_id);
 
   /** Removes the geometry with the given `geometry_id` from the renderer with
    the given `renderer_name`, _if_ it has previously been added.
    @return The number of geometries affected by the removal (0 or 1).
-   @throws std::logic_error if 1) `source_id` does not map to a registered
-                            source, 2) `geometry_id` does not map to a
-                            registered geometry, 3) `geometry_id` does not
-                            belong to `source_id`, or 4) the context has already
-                            been allocated.  */
+   @throws std::logic_error if a) `source_id` does not map to a registered
+                            source,
+                            b) `geometry_id` does not map to a registered
+                            geometry,
+                            c) `geometry_id` does not belong to `source_id`, or
+                            d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
 
