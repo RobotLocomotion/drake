@@ -55,7 +55,9 @@ void BindSymbolicMathOverloads(PyObject* obj) {
       .def("min", &symbolic::min)
       .def("max", &symbolic::max)
       .def("ceil", &symbolic::ceil)
+      .def("__ceil__", &symbolic::ceil)
       .def("floor", &symbolic::floor)
+      .def("__floor__", &symbolic::floor)
       // TODO(eric.cousineau): This is not a NumPy-overridable method using
       // dtype=object. Deprecate and move solely into `pydrake.math`.
       .def("inv", [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
