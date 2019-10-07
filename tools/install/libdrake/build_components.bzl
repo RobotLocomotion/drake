@@ -32,8 +32,6 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/shapes",
     "//attic/perception",
     "//attic/systems/controllers",
-    "//attic/systems/controllers/plan_eval",
-    "//attic/systems/controllers/qp_inverse_dynamics",
     "//attic/systems/rendering",
     "//attic/systems/robotInterfaces",
     "//attic/systems/sensors",
