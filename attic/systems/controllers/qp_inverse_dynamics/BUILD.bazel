@@ -122,7 +122,7 @@ drake_cc_library(
         "//common:essential",
         "//math:gradient",
         "//solvers:gurobi_solver",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
     ],
 )
 

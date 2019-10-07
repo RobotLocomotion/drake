@@ -325,12 +325,13 @@ drake_cc_library(
     ],
 )
 
-# The target "@drake//solvers:mathematical_program_lite" is a legacy way to
-# access the `mathematical_program.h` header and its methods.  In the future,
-# this target will become deprecated in lieu of `:mathematical_program`.
-# TODO(jwnimmer-tri) On 2019-10-01 add a deprecation attribute here.
 drake_cc_library(
     name = "mathematical_program_lite",
+    deprecation = " ".join([
+        "The label @drake//solvers:mathematical_program_lite is deprecated.",
+        "Use the new spelling @drake//solvers:mathematical_program instead.",
+        "The deprecated spelling will be removed on 2020-01-01.",
+    ]),
     deps = [
         ":mathematical_program",
         ":solver_interface",

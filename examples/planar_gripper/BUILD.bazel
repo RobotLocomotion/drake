@@ -42,7 +42,7 @@ drake_cc_library(
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//multibody/plant",
         "//solvers:constraint",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -104,7 +104,7 @@ drake_cc_library(
     deps = [
         ":gripper_brick",
         "//multibody/inverse_kinematics:kinematic_constraint",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
     ],
 )
 
