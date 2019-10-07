@@ -156,14 +156,6 @@ class TestPlant(unittest.TestCase):
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
 
-    def test_deprecated_finalize(self):
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
-        Parser(plant).AddModelFromFile(FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf"))
-        with catch_drake_warnings(expected_count=1):
-            plant.Finalize(scene_graph)
-
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
         MultibodyPlant = MultibodyPlant_[T]

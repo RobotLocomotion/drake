@@ -7,7 +7,6 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
@@ -32,11 +31,6 @@ class ContactResults {
    invalid. */
   void Clear();
 
-  DRAKE_DEPRECATED("2019-10-01", "Use num_point_pair_contacts() instead.")
-  int num_contacts() const {
-    return num_point_pair_contacts();
-  }
-
   /** Returns the number of point pair contacts. */
   int num_point_pair_contacts() const {
     return static_cast<int>(point_pairs_info_.size());
@@ -56,11 +50,6 @@ class ContactResults {
   void AddContactInfo(
       HydroelasticContactInfo<T>&& hydroelastic_contact_info) {
     hydroelastic_contact_info_.push_back(std::move(hydroelastic_contact_info));
-  }
-
-  DRAKE_DEPRECATED("2019-10-01", "Use point_pair_contact_info() instead.")
-  const PointPairContactInfo<T>& contact_info(int i) const {
-    return point_pair_contact_info(i);
   }
 
   /** Retrieves the ith PointPairContactInfo instance. The input index i
