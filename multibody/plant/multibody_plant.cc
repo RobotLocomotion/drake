@@ -322,29 +322,10 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    geometry::SceneGraph<T>* scene_graph) {
-  CheckUserProvidedSceneGraph(scene_graph);
-  return RegisterVisualGeometry(body, X_BG, shape, name);
-}
-
-template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name,
     const Vector4<double>& diffuse_color) {
   return RegisterVisualGeometry(
       body, X_BG, shape, name,
       geometry::MakePhongIllustrationProperties(diffuse_color));
-}
-
-template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name,
-    const Vector4<double>& diffuse_color,
-    SceneGraph<T>* scene_graph) {
-  CheckUserProvidedSceneGraph(scene_graph);
-  return RegisterVisualGeometry(body, X_BG, shape, name, diffuse_color);
 }
 
 template <typename T>
@@ -386,16 +367,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 }
 
 template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name,
-    const geometry::IllustrationProperties& properties,
-    SceneGraph<T>* scene_graph) {
-  CheckUserProvidedSceneGraph(scene_graph);
-  return RegisterVisualGeometry(body, X_BG, shape, name, properties);
-}
-
-template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
   return visual_geometries_[body.index()];
@@ -428,16 +399,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
   collision_geometries_[body.index()].push_back(id);
   return id;
-}
-
-template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction,
-    SceneGraph<T>* scene_graph) {
-  CheckUserProvidedSceneGraph(scene_graph);
-  return RegisterCollisionGeometry(body, X_BG, shape, name, coulomb_friction);
 }
 
 template <typename T>
@@ -592,12 +553,6 @@ void MultibodyPlant<T>::Finalize() {
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
-}
-
-template<typename T>
-void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
-  CheckUserProvidedSceneGraph(scene_graph);
-  Finalize();
 }
 
 template<typename T>
@@ -783,27 +738,6 @@ typename MultibodyPlant<symbolic::Expression>::MemberSceneGraph&
 MultibodyPlant<symbolic::Expression>::member_scene_graph() {
   static never_destroyed<SceneGraphStub> stub_;
   return stub_.access();
-}
-
-template <typename T>
-void MultibodyPlant<T>::CheckUserProvidedSceneGraph(
-    const geometry::SceneGraph<T>* scene_graph) const {
-  if (scene_graph != nullptr) {
-    if (!geometry_source_is_registered()) {
-      throw std::logic_error(
-          "This MultibodyPlant instance does not have a SceneGraph registered. "
-          "Geometry registration calls must be performed after "
-          "RegisterAsSourceForSceneGraph() (which is implicitly called via "
-          "parsing methods when passed a SceneGraph instance).");
-    }
-    if (scene_graph != scene_graph_) {
-      throw std::logic_error(
-          "Geometry registration calls must be performed on the SAME instance "
-          "of SceneGraph used on the first call to "
-          "RegisterAsSourceForSceneGraph() (which is implicitly called via "
-          "parsing methods when passed a SceneGraph instance).");
-    }
-  }
 }
 
 template <typename T>

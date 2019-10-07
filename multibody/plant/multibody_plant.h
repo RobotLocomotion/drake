@@ -2503,17 +2503,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape, const std::string& name,
       const geometry::IllustrationProperties& properties);
 
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const geometry::IllustrationProperties& properties,
-      geometry::SceneGraph<T>* scene_graph);
-
   /// Overload for visual geometry registration; it converts the `diffuse_color`
   /// (RGBA with values in the range [0, 1]) into a
   /// geometry::ConnectDrakeVisualizer()-compatible set of
@@ -2523,33 +2512,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape, const std::string& name,
       const Vector4<double>& diffuse_color);
 
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const Vector4<double>& diffuse_color,
-      geometry::SceneGraph<T>* scene_graph);
-
   /// Overload for visual geometry registration; it relies on the downstream
   /// geometry::IllustrationProperties _consumer_ to provide default parameter
   /// values (see @ref geometry_roles for details).
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name);
-
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -2589,19 +2557,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction);
-
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  /// @throws std::exception if `scene_graph` does not correspond to the
-  /// same instance with which RegisterAsSourceForSceneGraph() was called.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<double>& coulomb_friction,
-      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
@@ -3108,15 +3063,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// finalized.
   void Finalize();
 
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  /// @throws std::logic_error if a different scene_graph instance is provided
-  /// than the one for which this plant is a geometry source.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  void Finalize(geometry::SceneGraph<T>* scene_graph);
-
   /// The time step (or period) used to model `this` plant as a discrete system
   /// with periodic updates. Returns 0 (zero) if the plant is modeled as a
   /// continuous system.
@@ -3390,14 +3336,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // result will be a stub type instead.  (We can get rid of the stub once
   // SceneGraph supports symbolic::Expression.)
   MemberSceneGraph& member_scene_graph();
-
-  // Helper to check when a deprecated user-provided `scene_graph` pointer is
-  // passed in via public API (aside form `RegisterAsSourceForSceneGraph`).
-  // @throws std::logic_error if `scene_graph` is non-null (non-default) and
-  // either no scene graph is registered or `scene_graph` is not the same as
-  // the registered instance.
-  void CheckUserProvidedSceneGraph(
-      const geometry::SceneGraph<T>* scene_graph) const;
 
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;
