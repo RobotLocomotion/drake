@@ -5,13 +5,14 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_status_sender.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -81,7 +82,8 @@ int do_main(int argc, char* argv[]) {
   auto iiwa_command_subscriber = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
           "IIWA_COMMAND", lcm));
-  auto iiwa_command = builder.AddSystem<kuka_iiwa_arm::IiwaCommandReceiver>();
+  auto iiwa_command =
+      builder.AddSystem<manipulation::kuka_iiwa::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
                   iiwa_command->get_input_port());
 
@@ -91,7 +93,8 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(iiwa_command->get_commanded_torque_output_port(),
                   station->GetInputPort("iiwa_feedforward_torque"));
 
-  auto iiwa_status = builder.AddSystem<kuka_iiwa_arm::IiwaStatusSender>();
+  auto iiwa_status =
+      builder.AddSystem<manipulation::kuka_iiwa::IiwaStatusSender>();
   builder.Connect(station->GetOutputPort("iiwa_position_commanded"),
                   iiwa_status->get_position_commanded_input_port());
   builder.Connect(station->GetOutputPort("iiwa_position_measured"),
