@@ -1754,11 +1754,13 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   const VectorX<T>& zero_vdot = zero;
   const VectorX<T>& tau_array = zero;
 
-  // Use zero link forces.
+  // First inverse dynamics computation below will initially use no spatial
+  // forces acting on the links.
   std::vector<SpatialForce<T>> F_BBo_W_array(num_bodies(),
                                              SpatialForce<T>::Zero());
 
-  // Bodies' accelerations, ordered by BodyNodeIndex.
+  // Bodies' accelerations, ordered by BodyNodeIndex, required as an output
+  // argument but otherwise not used by this method.
   std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
 
   // Note: this method is only able to compute contact forces independently of
@@ -1770,17 +1772,17 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   VectorX<T> C_v(nv);
 
   // WARNING: to reduce memory foot-print, we use F_BBo_W_array as an output
-  // array. We'll need these values again, so we reset them to zero immediately
-  // thereafter. Please see the documentation for CalcInverseDynamics() for
-  // details.
+  // array. We'll reset the values afterwards. Please see the documentation for
+  // CalcInverseDynamics() for details.
   internal_tree().CalcInverseDynamics(
       context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
       &F_BBo_W_array, /* Notice this array gets overwritten on output. */
       &C_v);
+
+  // Compute the spatial forces on each body from contact. The forces accumulate
+  // into F_BBo_W_array, so we initialize it to zero first.
   std::fill(F_BBo_W_array.begin(), F_BBo_W_array.end(),
             SpatialForce<T>::Zero());
-
-  // Compute the spatial forces on each body from contact.
   if (contact_model_ == ContactModel::kPointContactOnly) {
     // Compute contact forces on each body by penalty method.
     if (num_collision_geometries() > 0) {
@@ -2058,7 +2060,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* output) {
-        output->SetFromVector(EvalGeneralizedContactForcesContinuous(context));
+        output->SetFromVector(GetVelocitiesFromArray(
+            model_instance_index,
+            EvalGeneralizedContactForcesContinuous(context)));
       };
       instance_generalized_contact_forces_output_ports_[model_instance_index] =
           this->DeclareVectorOutputPort(
