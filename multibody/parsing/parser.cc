@@ -1,7 +1,6 @@
 #include "drake/multibody/parsing/parser.h"
 
-#include <spruce.hh>
-
+#include "drake/common/filesystem.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
@@ -22,7 +21,7 @@ Parser::Parser(
 namespace {
 enum class FileType { kSdf, kUrdf };
 FileType DetermineFileType(const std::string& file_name) {
-  const std::string ext = spruce::path(file_name).extension();
+  const std::string ext = filesystem::path(file_name).extension().string();
   if ((ext == ".urdf") || (ext == ".URDF")) {
     return FileType::kUrdf;
   }
