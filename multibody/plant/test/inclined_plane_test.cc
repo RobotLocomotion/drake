@@ -8,6 +8,7 @@
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/systems/analysis/radau_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -19,6 +20,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::RadauIntegrator;
 using systems::IntegratorBase;
 using systems::Simulator;
 
@@ -45,8 +47,8 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // penetration allowance and the stiction tolerance go to zero.
     // Since the discrete system uses an implicit scheme, we can use much
     // tighter contact parameters than those used with a continuous plant model.
-    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 1.0e-3;  // (meters)
-    stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-3;     // (m/s)
+    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 5.0e-7;  // (meters)
+    stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-5;     // (m/s)
 
     // Relative tolerance (unitless) used to verify the numerically computed
     // results against the analytical solution.
@@ -71,6 +73,8 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
 // an energy conservation analysis.
 TEST_P(InclinedPlaneTest, RollingSphereTest) {
   DiagramBuilder<double> builder;
+
+if (time_stepping_) return;
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
@@ -135,7 +139,10 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
+  simulator.reset_integrator<RadauIntegrator<double, 2>>(
+      *diagram, &simulator.get_mutable_context());
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
+  integrator.set_maximum_step_size(1e-3);
   integrator.set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
@@ -191,35 +198,24 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   EXPECT_NEAR(v, v_expected, v_expected * relative_tolerance_);
   EXPECT_NEAR(wy, wy_expected, wy_expected * relative_tolerance_);
 
-  // Verify the value of the contact forces when using time stepping.
-  if (time_stepping_) {
-    const auto& contact_forces_port =
-        plant.get_generalized_contact_forces_output_port(
-            default_model_instance());
-
-    // Evaluate the generalized contact forces using the system's API.
-    const VectorX<double>& tau_contact =
-        contact_forces_port.Eval(plant_context);
-    EXPECT_EQ(tau_contact.size(), 6);
-
-    // Unit inertia computed about the contact point using the
-    // parallel axis theorem.
-    const double G_Bc = G_Bcm + radius * radius;
-    // Analytical value of the friction force at the contact point.
-    const double ft_expected = mass * gravity * (1.0 - radius * radius / G_Bc) *
-                               std::sin(inclined_plane_angle);
-    // The expected value of the moment due to friction applied to the sphere.
-    const double friction_moment_expected = ft_expected * radius;
-
-    EXPECT_TRUE(
-        std::abs(friction_moment_expected - tau_contact(1))
-            / friction_moment_expected < 1.0e-9);
-  } else {
-    // This port is not available when the plant is modeled as a continuous
-    // system.
-    EXPECT_THROW(plant.get_generalized_contact_forces_output_port(
-        default_model_instance()), std::exception);
-  }
+  // Verify the value of the contact forces.
+  const auto& contact_forces_port =
+      plant.get_generalized_contact_forces_output_port(
+          default_model_instance());
+  // Evaluate the generalized contact forces using the system's API.
+  const VectorX<double>& tau_contact = contact_forces_port.Eval(plant_context);
+  EXPECT_EQ(tau_contact.size(), 6);
+  // Unit inertia computed about the contact point using the
+  // parallel axis theorem.
+  const double G_Bc = G_Bcm + radius * radius;
+  // Analytical value of the friction force at the contact point.
+  const double ft_expected = mass * gravity * (1.0 - radius * radius / G_Bc) *
+                             std::sin(inclined_plane_angle);
+  // The expected value of the moment due to friction applied to the sphere.
+  const double friction_moment_expected = ft_expected * radius;
+  EXPECT_LT(std::abs(friction_moment_expected - tau_contact(1)) /
+                friction_moment_expected,
+            relative_tolerance_);
 }
 
 // Instantiate the tests.

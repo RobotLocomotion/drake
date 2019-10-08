@@ -472,6 +472,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//multibody/benchmarks/inclined_plane",
+        "//systems/analysis:radau_integrator",
         "//systems/analysis:simulator",
     ],
 )

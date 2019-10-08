@@ -1737,6 +1737,87 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerations(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
+    const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const {
+  DRAKE_DEMAND(tau_contact);
+  DRAKE_DEMAND(tau_contact->size() == num_velocities());
+  DRAKE_DEMAND(!is_discrete());
+  const int nv = this->num_velocities();
+
+  // Early exit if there are no contact forces.
+  tau_contact->setZero();
+  if (num_collision_geometries() == 0) return;
+
+  // We will use this vector to solve for zero generalized accelerations and as
+  // the vector of (zero) external applied generalized forces.
+  const VectorX<T> zero = VectorX<T>::Zero(nv);
+  const VectorX<T>& zero_vdot = zero;
+  const VectorX<T>& tau_array = zero;
+
+  // Use zero link forces.
+  std::vector<SpatialForce<T>> F_BBo_W_array(num_bodies(),
+                                             SpatialForce<T>::Zero());
+
+  // Bodies' accelerations, ordered by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
+
+  // Note: this method is only able to compute contact forces independently of
+  // applied forces (i.e., without calling CalcAppliedForces()) because it
+  // approximates stiction with a regularized friction model.
+
+  // With vdot = 0, this computes C(q, v)v (see
+  // MultibodyTree::CalcInverseDynamics()).
+  VectorX<T> C_v(nv);
+
+  // WARNING: to reduce memory foot-print, we use F_BBo_W_array as an output
+  // array. We'll need these values again, so we reset them to zero immediately
+  // thereafter. Please see the documentation for CalcInverseDynamics() for
+  // details.
+  internal_tree().CalcInverseDynamics(
+      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
+      &F_BBo_W_array, /* Notice this array gets overwritten on output. */
+      &C_v);
+  std::fill(F_BBo_W_array.begin(), F_BBo_W_array.end(),
+            SpatialForce<T>::Zero());
+
+  // Compute the spatial forces on each body from contact.
+  if (contact_model_ == ContactModel::kPointContactOnly) {
+    // Compute contact forces on each body by penalty method.
+    if (num_collision_geometries() > 0) {
+      CalcAndAddContactForcesByPenaltyMethod(context, &F_BBo_W_array);
+    }
+  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+    // Compute contact forces using hydroelastics.
+    const std::vector<SpatialForce<T>>& Fhydro_BBo_W =
+        EvalHydroelasticContactForces(context);
+    std::transform(F_BBo_W_array.begin(), F_BBo_W_array.end(),
+                   Fhydro_BBo_W.begin(),
+                   F_BBo_W_array.begin(),
+                   std::plus<SpatialForce<T>>());
+  } else {
+    DRAKE_UNREACHABLE();
+  }
+
+  // WARNING: to reduce memory foot-print, we again use F_BBo_W_array as an
+  // output array, since we don't need its values anymore.
+
+  // With vdot = 0, this computes:
+  //   tau_contact = C(q, v)v - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  internal_tree().CalcInverseDynamics(
+      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
+      &F_BBo_W_array, /* Notice this array gets overwritten on output. */
+      tau_contact);
+
+  // From above, the tau_contact computation above undesirably includes C(q,
+  // v)v. Remove it.
+  (*tau_contact) -= C_v;
+
+  // Now tau_contact represents the negated spatial forces. Fix this and the
+  // computation is complete.
+  (*tau_contact) = -(*tau_contact);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
     const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
   DRAKE_DEMAND(vdot != nullptr);
@@ -1765,33 +1846,21 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   // Please see the documentation for CalcInverseDynamics() for details.
 
   // With vdot = 0, this computes:
-  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  //   tau_non_contact_negated = C(q, v)v - tau_applied - ∑ J_WBᵀ(q) Fapp_BBo_W.
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
-  VectorX<T>& tau_array = forces.mutable_generalized_forces();
-
-  if (contact_model_ == ContactModel::kPointContactOnly) {
-    // Compute contact forces on each body by penalty method.
-    if (num_collision_geometries() > 0) {
-      CalcAndAddContactForcesByPenaltyMethod(context, &F_BBo_W_array);
-    }
-  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-    // Compute contact forces using hydroelastics.
-    const std::vector<SpatialForce<T>>& Fhydro_BBo_W =
-        EvalHydroelasticContactForces(context);
-    std::transform(F_BBo_W_array.begin(), F_BBo_W_array.end(),
-                   Fhydro_BBo_W.begin(),
-                   F_BBo_W_array.begin(),
-                   std::plus<SpatialForce<T>>());
-  } else {
-    DRAKE_UNREACHABLE();
-  }
-
+  VectorX<T>& tau_applied = forces.mutable_generalized_forces();
+  VectorX<T>& tau_non_contact_negated = forces.mutable_generalized_forces();
   internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
+      context, zero_vdot, F_BBo_W_array, tau_applied, &A_WB_array,
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
-      &tau_array);
+      &tau_non_contact_negated);
 
-  *vdot = M.ldlt().solve(-tau_array);
+  // Compute contact forces using an alias for zero_vdot, which is no longer
+  // needed.
+  VectorX<T>& tau_contact = zero_vdot;
+  CalcGeneralizedContactForcesContinuous(context, &tau_contact);
+
+  *vdot = M.ldlt().solve(tau_contact - tau_non_contact_negated);
 }
 
 template <typename T>
@@ -1963,22 +2032,42 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     if (instance_num_velocities == 0) {
       continue;
     }
-    const auto& tamsi_solver_results_cache_entry =
-        this->get_cache_entry(cache_indexes_.tamsi_solver_results);
-    auto calc = [this, model_instance_index](const systems::Context<T>& context,
-                                             systems::BasicVector<T>* result) {
-      const internal::TamsiSolverResults<T>& solver_results =
-          EvalTamsiResults(context);
-      this->CopyGeneralizedContactForcesOut(
-          solver_results, model_instance_index, result);
-    };
-    instance_generalized_contact_forces_output_ports_[model_instance_index] =
-        this->DeclareVectorOutputPort(
-                internal_tree().GetModelInstanceName(model_instance_index) +
-                    "_generalized_contact_forces",
-                BasicVector<T>(instance_num_velocities), calc,
-                {tamsi_solver_results_cache_entry.ticket()})
-            .get_index();
+
+    if (is_discrete()) {
+      const auto& tamsi_solver_results_cache_entry =
+          this->get_cache_entry(cache_indexes_.tamsi_solver_results);
+      auto calc = [this, model_instance_index](
+                      const systems::Context<T>& context,
+                      systems::BasicVector<T>* result) {
+        const internal::TamsiSolverResults<T>& solver_results =
+            EvalTamsiResults(context);
+        this->CopyGeneralizedContactForcesOut(solver_results,
+                                              model_instance_index, result);
+      };
+      instance_generalized_contact_forces_output_ports_[model_instance_index] =
+          this->DeclareVectorOutputPort(
+                  internal_tree().GetModelInstanceName(model_instance_index) +
+                      "_generalized_contact_forces",
+                  BasicVector<T>(instance_num_velocities), calc,
+                  {tamsi_solver_results_cache_entry.ticket()})
+              .get_index();
+    } else {
+      const auto& generalized_contact_forces_continuous_cache_entry =
+          this->get_cache_entry(
+              cache_indexes_.generalized_contact_forces_continuous);
+      auto calc = [this, model_instance_index](
+                      const systems::Context<T>& context,
+                      systems::BasicVector<T>* output) {
+        output->SetFromVector(EvalGeneralizedContactForcesContinuous(context));
+      };
+      instance_generalized_contact_forces_output_ports_[model_instance_index] =
+          this->DeclareVectorOutputPort(
+                  internal_tree().GetModelInstanceName(model_instance_index) +
+                      "_generalized_contact_forces",
+                  BasicVector<T>(instance_num_velocities), calc,
+                  {generalized_contact_forces_continuous_cache_entry.ticket()})
+              .get_index();
+    }
   }
 
   // Contact results output port.
@@ -2145,6 +2234,27 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // parameters.
       {this->all_sources_ticket()});
   cache_indexes_.generalized_accelerations = vdot_cache_entry.cache_index();
+
+  // Cache generalized contact forces.
+  auto& generalized_contact_forces_continuous_cache_entry =
+      this->DeclareCacheEntry(
+          std::string("Generalized contact forces (continuous)."),
+          [this]() {
+            return AbstractValue::Make(VectorX<T>(num_velocities()));
+          },
+          [this](const systems::ContextBase& context_base,
+                 AbstractValue* cache_value) {
+            auto& context = dynamic_cast<const Context<T>&>(context_base);
+            auto& tau_contact = cache_value->get_mutable_value<VectorX<T>>();
+            this->CalcGeneralizedContactForcesContinuous(context, &tau_contact);
+          },
+          // Generalized contact forces depend only upon the kinematic variables
+          // q and v only (with the caveat that it is the regularized friction
+          // model that buys us that independence - see comment in
+          // CalcGeneralizedContactForcesContinuous()).
+          {this->kinematics_ticket()});
+  cache_indexes_.generalized_contact_forces_continuous =
+      generalized_contact_forces_continuous_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -2251,7 +2361,6 @@ const systems::OutputPort<T>&
 MultibodyPlant<T>::get_generalized_contact_forces_output_port(
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(is_discrete());
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);

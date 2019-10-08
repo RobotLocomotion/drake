@@ -2918,13 +2918,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Closes Doxygen section "Continuous state output"
 
   /// Returns a constant reference to the output port of generalized contact
-  /// forces for a specific model instance. This output port is only available
-  /// when modeling the plant as a discrete system with periodic updates, see
-  /// is_discrete().
+  /// forces for a specific model instance.
   ///
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if `this` plant is not modeled as a discrete system
-  /// with periodic updates.
   /// @throws std::exception if called before Finalize() or if the model
   /// instance does not have any generalized velocities.
   /// @throws std::exception if the model instance does not exist.
@@ -3297,6 +3293,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex generalized_accelerations;
+    systems::CacheIndex generalized_contact_forces_continuous;
     systems::CacheIndex hydro_contact_forces;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
@@ -3543,6 +3540,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CopyContinuousStateOut(
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
+
+  // Method to compute generalized contact forces for continuous plants.
+  void CalcGeneralizedContactForcesContinuous(
+    const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const;
+
+  // Eval() version of the method CalcGeneralizedContactForcesContinuous().
+  const VectorX<T>& EvalGeneralizedContactForcesContinuous(
+      const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.generalized_contact_forces_continuous)
+        .template Eval<VectorX<T>>(context);
+  }
 
   // Calc method to output per model instance vector of generalized contact
   // forces.
