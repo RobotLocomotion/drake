@@ -74,8 +74,6 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
 TEST_P(InclinedPlaneTest, RollingSphereTest) {
   DiagramBuilder<double> builder;
 
-if (time_stepping_) return;
-
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
   const double target_accuracy = 1.0e-6;
@@ -142,7 +140,7 @@ if (time_stepping_) return;
   simulator.reset_integrator<RadauIntegrator<double, 2>>(
       *diagram, &simulator.get_mutable_context());
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
-  integrator.set_maximum_step_size(1e-3);
+  integrator.set_maximum_step_size(1e-3);    // Reasonable for this problem.
   integrator.set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();

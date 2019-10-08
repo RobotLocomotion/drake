@@ -1771,9 +1771,9 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   // MultibodyTree::CalcInverseDynamics()).
   VectorX<T> C_v(nv);
 
-  // WARNING: to reduce memory foot-print, we use F_BBo_W_array as an output
-  // array. We'll reset the values afterwards. Please see the documentation for
-  // CalcInverseDynamics() for details.
+  // WARNING: to reduce memory foot-print, we also use F_BBo_W_array as an
+  // output array. We'll reset the values afterwards. Please see the
+  // documentation for CalcInverseDynamics() for details.
   internal_tree().CalcInverseDynamics(
       context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
       &F_BBo_W_array, /* Notice this array gets overwritten on output. */
@@ -1801,7 +1801,7 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   }
 
   // WARNING: to reduce memory foot-print, we again use F_BBo_W_array as an
-  // output array, since we don't need its values anymore.
+  // output array, since we won't need its values afterward.
 
   // With vdot = 0, this computes:
   //   tau_contact = C(q, v)v - ∑ J_WBᵀ(q) Fapp_Bo_W.
@@ -1810,8 +1810,7 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
       &F_BBo_W_array, /* Notice this array gets overwritten on output. */
       tau_contact);
 
-  // From above, the tau_contact computation above undesirably includes C(q,
-  // v)v. Remove it.
+  // Remove C(q, v)v from the tau_contact computation above.
   (*tau_contact) -= C_v;
 
   // Now tau_contact represents the negated spatial forces. Fix this and the
@@ -1847,8 +1846,11 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   // not important in this case since we don't need their values anymore.
   // Please see the documentation for CalcInverseDynamics() for details.
 
-  // With vdot = 0, this computes:
+  // Compute all applied forces, except the contact forces, as a generalized
+  // force. With vdot = 0, this computes:
   //   tau_non_contact_negated = C(q, v)v - tau_applied - ∑ J_WBᵀ(q) Fapp_BBo_W.
+  // In other words (again, neglecting contact forces):
+  //   Mv̇ = -tau_non_contact_negated.
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_applied = forces.mutable_generalized_forces();
   VectorX<T>& tau_non_contact_negated = forces.mutable_generalized_forces();
@@ -1858,7 +1860,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
       &tau_non_contact_negated);
 
   // Compute contact forces using an alias for zero_vdot, which is no longer
-  // needed.
+  // needed, to keep from allocating more memory.
   VectorX<T>& tau_contact = zero_vdot;
   CalcGeneralizedContactForcesContinuous(context, &tau_contact);
 
