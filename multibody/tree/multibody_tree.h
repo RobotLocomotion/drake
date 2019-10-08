@@ -1279,7 +1279,6 @@ class MultibodyTree {
 
   // Corresponding MultibodyPlant method was already deprecated and removed.
   // TODO(Mitiguy) Delete this method as per issue #10155.
-  // DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
