@@ -628,12 +628,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Removes the indicated `role` from any geometry directly registered to the
    frame indicated by `frame_id` (if the geometry has the role).
    @returns The number of geometries affected by the removed role.
-   @throws std::logic_error if 1) `source_id` does not map to a registered
-                            source, 2) `frame_id` does not map to a registered
-                            frame, 3) `frame_id` does not belong to
-                            `source_id` (unless `frame_id` is the world frame
-                            id), or 4) the context has already been
-                            allocated.  */
+   @throws std::logic_error if a) `source_id` does not map to a registered
+                            source,
+                            b) `frame_id` does not map to a registered frame,
+                            c) `frame_id` does not belong to `source_id`
+                            (unless `frame_id` is the world frame id), or
+                            d) the context has already been allocated.  */
   int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
 
   /** systems::Context-modifying variant of
@@ -646,11 +646,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
    @returns One if the geometry had the role removed and zero if the geometry
             did not have the role assigned in the first place.
-   @throws std::logic_error if 1) `source_id` does not map to a registered
-                            source, 2) `geometry_id` does not map to a
-                            registered geometry, 3) `geometry_id` does
-                            not belong to `source_id`, or 4) the context has
-                            already been allocated.  */
+   @throws std::logic_error if a) `source_id` does not map to a registered
+                            source,
+                            b) `geometry_id` does not map to a registered
+                            geometry,
+                            c) `geometry_id` does not belong to `source_id`, or
+                            d) the context has already been allocated.  */
   int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
 
   /** systems::Context-modifying variant of
