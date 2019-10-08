@@ -8,7 +8,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -458,6 +460,28 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
   }
   std::vector<VolumeElement> elements(unit_mesh.tetrahedra());
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
+}
+
+/** Creates a surface mesh for the given `sphere`; the level of tesselation
+ is guided by the `resolution_hint` parameter in the same way as
+ MakeSphereVolumeMesh.
+
+ @param sphere              The sphere for which a surface mesh is created.
+ @param resolution_hint     The positive characteristic edge length for the
+                            sphere (same units of length as `sphere.radius()`).
+                            The coarsest possible mesh (an octohedron) is
+                            guaranteed for any value of `resolution_hint`
+                            greater than or equal to the `sphere`'s diameter.
+ @return The triangulated surface mesh for the given sphere.
+ @tparam T  The Eigen-compatible scalar for representing the mesh vertex
+            positions.
+ */
+template <typename T>
+SurfaceMesh<T> MakeSphereSurfaceMesh(const Sphere& sphere,
+                                     double resolution_hint) {
+  DRAKE_DEMAND(resolution_hint > 0.0);
+  return ConvertVolumeToSurfaceMesh<T>(
+      MakeSphereVolumeMesh<T>(sphere, resolution_hint));
 }
 
 }  // namespace internal

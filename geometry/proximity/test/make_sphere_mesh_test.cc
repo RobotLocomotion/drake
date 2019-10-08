@@ -260,6 +260,18 @@ GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
   EXPECT_EQ(mesh.num_vertices(), 7);
 }
 
+// Smoke test only. Assume correctness of MakeSphereVolumeMesh() and
+// ConvertVolumeToSurfaceMesh(). The edge length larger than sphere diameter
+// produces an octahedron with 8 triangles and 6 vertices.
+GTEST_TEST(MakeSphereSurfaceMesh, GenerateSurface) {
+  const Sphere sphere(1.5);
+  const double edge_length = 3 * sphere.get_radius();
+  SurfaceMesh<double> surface_mesh =
+      MakeSphereSurfaceMesh<double>(sphere, edge_length);
+  EXPECT_EQ(surface_mesh.num_faces(), 8);
+  EXPECT_EQ(surface_mesh.num_vertices(), 6);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
