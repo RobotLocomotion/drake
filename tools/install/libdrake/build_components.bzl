@@ -106,8 +106,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
-    # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
     # //solvers/fbstab/components:dense_data (indirectly)
     # //solvers/fbstab/components:dense_feasibility (indirectly)
     # //solvers/fbstab/components:dense_linear_solver (indirectly)
