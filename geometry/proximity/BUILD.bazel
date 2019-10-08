@@ -259,6 +259,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "volume_to_surface_mesh",
+    srcs = [
+        "volume_to_surface_mesh.cc",
+    ],
     hdrs = [
         "volume_to_surface_mesh.h",
     ],
