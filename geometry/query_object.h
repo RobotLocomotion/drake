@@ -211,7 +211,6 @@ class QueryObject {
    In the near future, this behavior will extend to be configurable and more
    general.
 
-
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;

@@ -267,23 +267,22 @@ class GeometryState {
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Implementation of
-   @ref
-   SceneGraph::RegisterFrame(SourceId,FrameId,const GeometryFrame&)
+   @ref SceneGraph::RegisterFrame(SourceId,FrameId,const GeometryFrame&)
    "SceneGraph::RegisterFrame()" with parent FrameId.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
   /** Implementation of
-   @ref
-   SceneGraph::RegisterGeometry(SourceId,FrameId,std::unique_ptr<GeometryInstance>)
-   "SceneGraph::RegisterGeometry()" with parent FrameId.  */
+   @ref SceneGraph::RegisterGeometry(SourceId,FrameId,
+   std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
+   parent FrameId.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
   /** Implementation of
-   @ref
-   SceneGraph::RegisterGeometry(SourceId,GeometryId,std::unique_ptr<GeometryInstance>)
-   "SceneGraph::RegisterGeometry()" with parent GeometryId.  */
+   @ref SceneGraph::RegisterGeometry(SourceId,GeometryId,
+   std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
+   parent GeometryId.  */
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId parent_id,
       std::unique_ptr<GeometryInstance> geometry);

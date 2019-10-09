@@ -143,7 +143,7 @@ class ProximityEngine {
   //@{
   // NOTE: This maps to Model::ClosestPointsAllToAll().
   /** Implementation of
-   QueryObject::ComputeSignedDistancePairwiseClosestPoints().
+   GeometryState::ComputeSignedDistancePairwiseClosestPoints().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<SignedDistancePair<T>>
@@ -151,7 +151,7 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
 
-  /** Implementation of QueryObject::ComputeSignedDistanceToPoint().
+  /** Implementation of GeometryState::ComputeSignedDistanceToPoint().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<SignedDistanceToPoint<T>>
@@ -173,11 +173,11 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /** Implementation of QueryObject::ComputePointPairPenetration().  */
+  /** Implementation of GeometryState::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
-  /** Implementation of QueryObject::ComputeContactSurfaces().
+  /** Implementation of GeometryState::ComputeContactSurfaces().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
@@ -186,7 +186,7 @@ class ProximityEngine {
 
   //@}
 
-  /** Implementation of QueryObject::FindCollisionCandidates().  */
+  /** Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** @name               Collision filters
