@@ -4,11 +4,11 @@
   <model name='planar_gripper'>
 
     <xacro:property name="base_dim" value=".08" />
-    <xacro:property name="l1_length" value="0.07" />
+    <xacro:property name="l1_length" value="0.085" />
     <xacro:property name="l1_radius" value="0.011" />
     <xacro:property name="l1_mass" value="0.1" />
     <xacro:property name="l1_inertia" value="0.0083" />
-    <xacro:property name="l2_length" value="0.07" />
+    <xacro:property name="l2_length" value="0.0563" />
     <xacro:property name="l2_radius" value="0.011" />
     <xacro:property name="l2_mass" value="0.1" />
     <xacro:property name="l2_inertia" value="0.0083" />

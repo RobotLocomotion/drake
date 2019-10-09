@@ -67,10 +67,10 @@
         </inertia>
     </inertial>
     <visual name='brick_visual_1'>
-      <pose frame=''>0 0 0.023 0 0 0</pose>
+      <pose frame=''>0 0 0.0175 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.025 0.092 0.046</size>
+          <size>0.07 0.07 0.035</size>
         </box>
       </geometry>
       <material>
@@ -78,10 +78,10 @@
       </material>
     </visual>
     <visual name='brick_visual_2'>
-      <pose frame=''>0 0 -0.023 0 0 0</pose>
+      <pose frame=''>0 0 -0.0175 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.025 0.092 0.046</size>
+          <size>0.07 0.07 0.035</size>
         </box>
       </geometry>
       <material>
@@ -92,7 +92,7 @@
       <pose>0 0 0 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.025 0.092 0.092</size>
+          <size>0.07 0.07 0.07</size>
         </box>
       </geometry>
     </collision>

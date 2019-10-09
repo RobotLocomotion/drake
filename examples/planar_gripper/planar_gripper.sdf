@@ -21,7 +21,7 @@
     <link name="finger1_link1">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
         <inertia>
           <ixx>0.0083</ixx>
@@ -33,10 +33,10 @@
         </inertia>
       </inertial>
       <visual name="link1_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.085</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -45,7 +45,7 @@
         </material>
       </visual>
       <visual name="link1_joint_visual">
-        <pose>0 0 -0.07 0 0 0</pose>
+        <pose>0 0 -0.085 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.0132</radius>
@@ -76,9 +76,9 @@
     <link name="finger1_link2">
       <!-- The origin of the Link2 frame is defined to be coincident with
        the origin of the x-z plane in the elbow joint frame. -->
-      <pose>0 0 -0.07 0 0 0</pose>
+      <pose>0 0 -0.085 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <mass>0.1</mass>
         <!-- This inertia is based on a solid cylinder with
                radius=1.0 meters and height=2.0 meters. -->
@@ -94,10 +94,10 @@
         </inertia>
       </inertial>
       <visual name="link2_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0563</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -106,7 +106,7 @@
         </material>
       </visual>
       <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
+        <pose>0 0 -0.0573 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.011</radius>
@@ -117,10 +117,10 @@
         </material>
       </visual>
       <collision name="link2_collision">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0563</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -129,7 +129,7 @@
         </material>
       </collision>
       <collision name="link2_pad_collision">
-        <pose>0 0 -0.086 0 0 0</pose>
+        <pose>0 0 -0.0723 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.015</radius>
@@ -137,7 +137,7 @@
         </geometry>
       </collision>
       <visual name="link2_pad_visual">
-        <pose>0 0 -0.086 0 0 0</pose>
+        <pose>0 0 -0.0723 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.015</radius>
@@ -182,7 +182,7 @@
     <link name="finger2_link1">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
         <inertia>
           <ixx>0.0083</ixx>
@@ -194,10 +194,10 @@
         </inertia>
       </inertial>
       <visual name="link1_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.085</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -206,7 +206,7 @@
         </material>
       </visual>
       <visual name="link1_joint_visual">
-        <pose>0 0 -0.07 0 0 0</pose>
+        <pose>0 0 -0.085 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.0132</radius>
@@ -237,9 +237,9 @@
     <link name="finger2_link2">
       <!-- The origin of the Link2 frame is defined to be coincident with
        the origin of the x-z plane in the elbow joint frame. -->
-      <pose>0 0 -0.07 0 0 0</pose>
+      <pose>0 0 -0.085 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <mass>0.1</mass>
         <!-- This inertia is based on a solid cylinder with
                radius=1.0 meters and height=2.0 meters. -->
@@ -255,10 +255,10 @@
         </inertia>
       </inertial>
       <visual name="link2_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0563</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -267,7 +267,7 @@
         </material>
       </visual>
       <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
+        <pose>0 0 -0.0573 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.011</radius>
@@ -278,10 +278,10 @@
         </material>
       </visual>
       <collision name="link2_collision">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0563</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -290,7 +290,7 @@
         </material>
       </collision>
       <collision name="link2_pad_collision">
-        <pose>0 0 -0.086 0 0 0</pose>
+        <pose>0 0 -0.0723 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.015</radius>
@@ -298,7 +298,7 @@
         </geometry>
       </collision>
       <visual name="link2_pad_visual">
-        <pose>0 0 -0.086 0 0 0</pose>
+        <pose>0 0 -0.0723 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.015</radius>
@@ -343,7 +343,7 @@
     <link name="finger3_link1">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
         <inertia>
           <ixx>0.0083</ixx>
@@ -355,10 +355,10 @@
         </inertia>
       </inertial>
       <visual name="link1_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.085</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -367,7 +367,7 @@
         </material>
       </visual>
       <visual name="link1_joint_visual">
-        <pose>0 0 -0.07 0 0 0</pose>
+        <pose>0 0 -0.085 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.0132</radius>
@@ -398,9 +398,9 @@
     <link name="finger3_link2">
       <!-- The origin of the Link2 frame is defined to be coincident with
        the origin of the x-z plane in the elbow joint frame. -->
-      <pose>0 0 -0.07 0 0 0</pose>
+      <pose>0 0 -0.085 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <mass>0.1</mass>
         <!-- This inertia is based on a solid cylinder with
                radius=1.0 meters and height=2.0 meters. -->
@@ -416,10 +416,10 @@
         </inertia>
       </inertial>
       <visual name="link2_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0563</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -428,7 +428,7 @@
         </material>
       </visual>
       <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
+        <pose>0 0 -0.0573 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.011</radius>
@@ -439,10 +439,10 @@
         </material>
       </visual>
       <collision name="link2_collision">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02815 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0563</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -451,7 +451,7 @@
         </material>
       </collision>
       <collision name="link2_pad_collision">
-        <pose>0 0 -0.086 0 0 0</pose>
+        <pose>0 0 -0.0723 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.015</radius>
@@ -459,7 +459,7 @@
         </geometry>
       </collision>
       <visual name="link2_pad_visual">
-        <pose>0 0 -0.086 0 0 0</pose>
+        <pose>0 0 -0.0723 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.015</radius>
