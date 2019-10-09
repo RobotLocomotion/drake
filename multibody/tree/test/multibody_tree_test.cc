@@ -399,36 +399,59 @@ class KukaIiwaModelTests : public ::testing::Test {
     return p_WE;
   }
 
-  // Computes the geometric Jacobian Jv_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_WPi in the end
-  // effector frame.
-  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
-  // details.
+  // For each point Ei fixed (welded) to an end effector frame E, calculates
+  // Jv_WEi_W, Ei's translational velocity Jacobian in the world frame W.
+  // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
   template <typename T>
-  void CalcPointsOnEndEffectorGeometricJacobian(
+  void CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtkV(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
-      const MatrixX<T>& p_EPi,
-      MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
+      const MatrixX<T>& p_EoEi_E,
+      MatrixX<T>* p_WoEi_W,
+      MatrixX<T>* Jv_WEi_W) const {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
-    model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
+    const Frame<T>& frame_E = linkG_on_T.body_frame();
+    const Frame<T>& frame_W = model_on_T.world_frame();
+    model_on_T.CalcJacobianTranslationalVelocity(context_on_T,
+                                                 JacobianWrtVariable::kV,
+                                                 frame_E,
+                                                 frame_E,
+                                                 p_EoEi_E,
+                                                 frame_W,
+                                                 frame_W,
+                                                 Jv_WEi_W);
+
+    // For each point Ei, calculate Ei's position from Wo (World origin),
+    // expressed in world W.
+    model_on_T.CalcPointsPositions(context_on_T, frame_E, p_EoEi_E,   // From F
+                                                 frame_W, p_WoEi_W);  // to W.
   }
 
-  // Computes the geometric Jacobian Jv_WHp for a set of points Pi moving with
-  // frame H with fixed pose X_GH in the end effector frame G, given their
-  // (fixed) position p_HPi.
-  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
-  // details.
+  // For each point Hi fixed (welded) to frame H, calculates Jv_WHi_W,
+  // Hi's translational velocity Jacobian in W, expressed in W.
+  // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
   template <typename T>
-  void CalcPointsOnFrameHGeometricJacobian(
+  void CalcPointsOnFrameHTranslationalVelocityJacobianWrtkV(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
-      const MatrixX<T>& p_HPi,
-      MatrixX<T>* p_WPi, MatrixX<T>* Jv_WHp) const {
+      const MatrixX<T>& p_HoHi_H,
+      MatrixX<T>* p_WoHi_W,
+      MatrixX<T>* Jv_WHi_W) const {
     const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
-    model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
-        context_on_T, frameH_on_T, p_HPi, p_WPi, Jv_WHp);
+    const Frame<T>& frame_W = model_on_T.world_frame();
+    model_on_T.CalcJacobianTranslationalVelocity(context_on_T,
+                                                 JacobianWrtVariable::kV,
+                                                 frameH_on_T,
+                                                 frameH_on_T,
+                                                 p_HoHi_H,
+                                                 frame_W,
+                                                 frame_W,
+                                                 Jv_WHi_W);
+
+    // Calculate p_WoHi_W (Hi's position from World origin Wo, expressed in W)
+    // from p_HoHi_H (Hi's position from Ho, expressed in H).
+    model_on_T.CalcPointsPositions(context_on_T, frameH_on_T, p_HoHi_H,
+                                                 frame_W, p_WoHi_W);
   }
 
   // Computes the frame geometric Jacobian Jv_WHp for frame Hp which is the
@@ -495,19 +518,17 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToSymbolic) {
   VerifyModelBasics(*dut);
 }
 
-// This test is used to verify the correctness of the method
-// MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
-// The test computes the end effector geometric Jacobian Jv_WE (in the world
-// frame W) using two methods:
-// 1. Calling MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
+// This test helps verify MultibodyTree::CalcJacobianTranslationalVelocity() by
+// calculating Jv_WEo_W (the end effector origin Eo's translational velocity
+// Jacobian with respect to JacobianWrtVariable::kV in the world frame W,
+// expressed in W) using two methods:
+// 1. Calling MultibodyTree::CalcJacobianTranslationalVelocity().
 // 2. Using AutoDiffXd to compute the partial derivative of v_WE(q, v) with
 //    respect to v.
-// By comparing the two results we verify the correctness of the MultibodyTree
-// implementation.
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
-TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
+TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -568,9 +589,22 @@ TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
   Matrix3X<double> Jv_WE(3, tree().num_velocities());
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
-  tree().CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, end_effector_link_->body_frame(),
-      Vector3<double>::Zero(), &p_WE, &Jv_WE);
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+  const Frame<double>& frame_W = tree().world_frame();
+  const Vector3<double> p_EoGo_E = Vector3<double>::Zero();
+  tree().CalcJacobianTranslationalVelocity(*context_,
+                                           JacobianWrtVariable::kV,
+                                           frame_E,
+                                           frame_E,
+                                           p_EoGo_E,
+                                           frame_W,
+                                           frame_W,
+                                           &Jv_WE);
+
+  // Calculate p_WoEo_W (Eo's position from World origin Wo expressed in W)
+  // from p_EoEi_E (Eo's position from Eo expressed in E -- zero vector).
+  tree().CalcPointsPositions(*context_, frame_E, p_EoGo_E,
+                                        frame_W, &p_WE);
 
   // Verify the computed Jacobian matches the one obtained using automatic
   // differentiation.
@@ -619,7 +653,7 @@ TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
 // In addition, this also tests the methods:
 // - MultibodyTree::CalcPointsPositions()
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
-TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocity) {
+TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumVelocities = tree().num_velocities();
@@ -787,7 +821,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   MatrixX<AutoDiffXd> Jv_WHp_autodiff(3 * kNumPoints, kNumPositions);
 
   // Compute J̇_WHp using AutoDiffXd.
-  CalcPointsOnFrameHGeometricJacobian(
+  CalcPointsOnFrameHTranslationalVelocityJacobianWrtkV(
       tree_autodiff(), *context_autodiff_, p_HPi_autodiff,
       &p_WPi_autodiff, &Jv_WHp_autodiff);
 
@@ -856,14 +890,16 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
 }
 
 // Given a set of points Pi attached to the end effector frame G, this test
-// computes the analytic Jacobian Jq_WPi of these points using two methods:
-// 1. Since for the Kuka iiwa arm v = q̇, the analytic Jacobian equals the
-//    geometric Jacobian and we compute it with MultibodyTree's implementation.
-// 2. We compute the analytic Jacobian by direct differentiation with respect to
-//    q using AutoDiffXd.
-// We then verify MultibodyTree's implementation by comparing the results from
-// both methods.
-TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
+// calculates Jq̇_v_WPi (Pi's translational velocity Jacobian with respect to q̇)
+// using two methods:
+// 1. The Kuka iiwa arm uses `q̇ = v`, hence `Jq_p_WoPi = Jq̇_v_WPi = Jv_v_WPi`,
+//    (i.e., the position Jacobian with respect to q is the same as the
+//    translational velocity Jacobian with respect to q̇ which is the same as the
+//    translational Jacobian with respect to v).  So, we compute
+//    `Jq_p_WoPi = Jq̇_v_WPi = Jv_v_WPi` with a MultibodyTree implementation.
+// 2. We compute Jq_p_WoPi using AutoDiffXd to differentiate with respect to q.
+// We ensure these two results are nearly equal (to near machine epsilon).
+TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = 7;
 
@@ -890,7 +926,7 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
 
   // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
   // geometric Jacobian Jv_Wpi.
-  CalcPointsOnEndEffectorGeometricJacobian(
+  CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtkV(
       tree(), *context_, p_EPi, &p_WPi, &Jq_WPi);
 
   // Alternatively, compute the analytic Jacobian by taking the gradient of
@@ -908,7 +944,7 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
   MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
 
-  CalcPointsOnEndEffectorGeometricJacobian(
+  CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtkV(
       tree_autodiff(), *context_autodiff_,
       p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 
@@ -974,7 +1010,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityInWorld) {
+TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityA) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -1127,7 +1163,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
 // yield the following results:
 //  a) p_WP_set = p_BP_set, since in this case B = W and,
 //  b) J_WP is exactly zero, since the world does not move.
-TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
+TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityD) {
   // We choose an arbitrary set of non-zero points in the world body. The actual
   // value does not matter for this test. What matters is that we **always** get
   // a zero Jacobian for the world body.
@@ -1137,17 +1173,27 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   const int npoints = p_WP_set.cols();
 
   // We set the output arrays to garbage so that upon returning from
-  // CalcPointsGeometricJacobianExpressedInWorld() we can verify they were
-  // properly set.
+  // CalcJacobianTranslationalVelocity() we can verify they were properly set.
   Matrix3X<double> p_WP_out = Matrix3X<double>::Constant(3, npoints, M_PI);
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(3 * npoints, nv, M_E);
 
-  // The state stored in the context should not affect the result of this test.
-  // Therefore we do not set it.
+  // For each point P, calculate Jv_v_WP (P's translational velocity Jacobian
+  // in world W, expressed in W).  Herein, frame_F is the same as frame_W.
+  const Frame<double>& frame_F = tree().world_body().body_frame();
+  const Frame<double>& frame_W = tree().world_frame();
+  tree().CalcJacobianTranslationalVelocity(*context_,
+                                           JacobianWrtVariable::kV,
+                                           frame_F,
+                                           frame_F,
+                                           p_WP_set,
+                                           frame_W,
+                                           frame_W,
+                                           &Jv_WP);
 
-  tree().CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, tree().world_body().body_frame(), p_WP_set,
-      &p_WP_out, &Jv_WP);
+  // For each point P, calculate p_WoP_W (P's position from World origin Wo,
+  // expressed in world W).
+  tree().CalcPointsPositions(*context_, frame_F, p_WP_set,
+                                        frame_W, &p_WP_out);
 
   // Since in this case we are querying for the world frame:
   //   a) the output set should match the input set exactly and,
@@ -1159,34 +1205,35 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
 // Verify that even when the input set of points and/or the Jacobian might
 // contain garbage on input, a query for the world body Jacobian will always
 // return a zero Jacobian since the world does not move.
-TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
+TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityB) {
   // We choose an arbitrary non-zero point in the world body. The actual value
   // does not matter for this test. What matters is that we **always** get a
   // zero Jacobian for the world body.
-  const Vector3<double> p_WP(1.0, 1.0, 1.0);
+  const Vector3<double> p_WoWp_W(1.0, 1.0, 1.0);
 
   const int nv = tree().num_velocities();
 
   // We set the output Jacobian to garbage so that upon returning from
   // CalcJacobianSpatialVelocity() we can verify it was properly set to zero.
-  MatrixX<double> Jv_WP = MatrixX<double>::Constant(6, nv, M_E);
+  MatrixX<double> Jv_WWp = MatrixX<double>::Constant(6, nv, M_E);
 
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
-
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianSpatialVelocity(*context_,
                                      JacobianWrtVariable::kV,
-                                     tree().world_body().body_frame(), p_WP,
-                                     frame_W, frame_W,
-                                     &Jv_WP);
+                                     tree().world_body().body_frame(),
+                                     p_WoWp_W,
+                                     frame_W,
+                                     frame_W,
+                                     &Jv_WWp);
 
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
-  EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
+  EXPECT_EQ(Jv_WWp, MatrixX<double>::Zero(6, nv));
 }
 
-TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
+TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();

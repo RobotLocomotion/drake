@@ -1087,62 +1087,6 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
   }
 }
 
-// TODO(Mitiguy) Delete this method as per issue #10155.
-// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-template <typename T>
-void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    EigenPtr<MatrixX<T>> p_WP_list,
-    EigenPtr<MatrixX<T>> Jv_WFp) const {
-  const int num_points = p_FP_list.cols();
-  DRAKE_THROW_UNLESS(p_WP_list != nullptr);
-  DRAKE_THROW_UNLESS(p_WP_list->cols() == num_points);
-
-  // For each point Fi, calculate Fi's position from Wo (World origin),
-  // expressed in world W.
-  const Frame<T>& frame_W = world_frame();
-  CalcPointsPositions(context, frame_F, p_FP_list,      /* From frame F */
-                      frame_W, p_WP_list);          /* To world frame W */
-  CalcJacobianTranslationalVelocity(context,
-                                    JacobianWrtVariable::kV,
-                                    frame_F,
-                                    frame_W,
-                                    *p_WP_list,
-                                    frame_W,
-                                    frame_W,
-                                    Jv_WFp);
-}
-
-// TODO(Mitiguy) Delete this method as per issue #10155.
-// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-template <typename T>
-void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    EigenPtr<MatrixX<T>> p_WP_list,
-    EigenPtr<MatrixX<T>> Jq_WFp) const {
-  const int num_points = p_FP_list.cols();
-  DRAKE_THROW_UNLESS(p_WP_list != nullptr);
-  DRAKE_THROW_UNLESS(p_WP_list->cols() == num_points);
-
-  // For each point Fi, calculate Fi's position from Wo (World origin),
-  // expressed in world W.
-  const Frame<T>& frame_W = world_frame();
-  CalcPointsPositions(context, frame_F, p_FP_list,     /* From frame F */
-                      frame_W, p_WP_list);         /* To world frame W */
-
-  CalcJacobianTranslationalVelocity(context,
-                                    JacobianWrtVariable::kQDot,
-                                    frame_F,
-                                    frame_W,
-                                    *p_WP_list,
-                                    frame_W,
-                                    frame_W,
-                                    Jq_WFp);
-}
 
 template <typename T>
 SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
