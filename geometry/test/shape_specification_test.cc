@@ -301,6 +301,25 @@ GTEST_TEST(BoxTest, Cube) {
   EXPECT_TRUE(CompareMatrices(cube.size(), Eigen::Vector3d::Constant(1.0)));
 }
 
+// Confirms that shape parameters are validated.
+GTEST_TEST(ShapeTest, NumericalValidation) {
+  EXPECT_THROW(Sphere(-0.5), std::logic_error);
+  EXPECT_NO_THROW(Sphere(0)); // Special case for 0 radius.
+
+  EXPECT_THROW(Cylinder(0, 1), std::logic_error);
+  EXPECT_THROW(Cylinder(0.5, -1), std::logic_error);
+
+  EXPECT_THROW(Box(2, 0, 2), std::logic_error);
+  EXPECT_THROW(Box(3, 1, -1), std::logic_error);
+  EXPECT_THROW(Box::MakeCube(0), std::logic_error);
+
+  EXPECT_THROW(Mesh("foo", 0), std::logic_error);
+  EXPECT_NO_THROW(Mesh("foo", -1)); // Special case for negative scale.
+
+  EXPECT_THROW(Convex("bar", 0), std::logic_error);
+  EXPECT_NO_THROW(Convex("foo", -1)); // Special case for negative scale.
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
