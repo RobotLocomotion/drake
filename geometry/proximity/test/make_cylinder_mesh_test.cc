@@ -29,17 +29,76 @@ double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
   return volume;
 }
 
+GTEST_TEST(MakeCylinderVolumeMesh, CoarsestMesh) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  // A `resolution_hint` greater than √2 times the radius of the cylinder
+  // should give the coarsest mesh. We use a scaling factor larger than
+  // √2 = 1.41421356... in the sixth decimal digit. It should give a mesh of
+  // rectangular prism with 24 tetrahedra.
+  const double resolution_hint_above = 1.414214 * radius;
+  auto mesh_coarse = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
+                                                    resolution_hint_above);
+  EXPECT_EQ(24, mesh_coarse.num_elements());
+
+  // A `resolution_hint` slightly below √2 times the radius of the cylinder
+  // should give the next refined mesh.  We use a scaling factor smaller than
+  // √2 = 1.41421356... in the sixth decimal digit. It should give a mesh of
+  // rectangular prism with 8 * 24 = 192 tetrahedra.
+  const double resolution_hint_below = 1.414213 * radius;
+  auto mesh_fine = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
+                                                  resolution_hint_below);
+  EXPECT_EQ(192, mesh_fine.num_elements());
+}
+
+// The test size is increased to "medium" so that debug builds are successful
+// in CI. See BUILD.bazel.
+GTEST_TEST(MakeCylinderVolumeMesh, FinestMesh) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  // The initial mesh of a cylinder with radius 1 and length 2 has 24
+  // tetrahedra. Each refinement level increases the number of tetrahedra by
+  // a factor of 8. A refinement level ℒ that could increase tetrahedra beyond
+  // 100 million is ℒ = 8, which will give 24 * 8⁸ = 402,653,184 tetrahedra.
+  // (However, we will confirm later that the algorithm will limit the number
+  // of tetrahedra within 100 million, so it should give
+  // 24 * 8⁷ = 50,331,648 tetrahedra instead.) We will calculate the
+  // resolution hint that could trigger ℒ = 8.
+  //     Each edge of the mesh on the boundary circle of the top and bottom
+  // caps is a chord of the circle with a central angle θ. The edge length e
+  // is calculated from θ and radius r as:
+  //     e = 2⋅r⋅sin(θ/2)
+  // The central angle is initially π/2, and each level of refinement
+  // decreases it by a factor of 2. For ℒ = 8, we have:
+  //     θ = (π/2)/(2⁸) = π/512
+  // Thus, we have e = 2 sin (π/512) = 0.0122717...
+  //     We use a resolution hint smaller than e in the sixth decimal digit to
+  // request 402,653,184 tetrahedra, but the algorithm should limit the
+  // number of tetrahedra within 100 million. As a result, we should have
+  // 50,331,648 tetrahedra instead.
+  const double resolution_hint_limit = 1.2271e-2;
+  auto mesh_limit = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
+                                                  resolution_hint_limit);
+  EXPECT_EQ(50331648, mesh_limit.num_elements());
+
+  // Confirm that going ten times finer resolution hint does not increase the
+  // number of tetrahedra.
+  const double resolution_hint_finer = 1.2271e-3;
+  auto mesh_same = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
+                                                   resolution_hint_finer);
+  EXPECT_EQ(50331648, mesh_same.num_elements());
+}
+
 // This test verifies that the volume of the tessellated
 // cylinder converges to the exact value as the tessellation is refined.
-GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
+GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
   const double kTolerance = 10.0 * std::numeric_limits<double>::epsilon();
 
   const double height = 2;
   const double radius = 1;
-  const int refinement_level = 0;
-
-  auto mesh0 = MakeCylinderMesh<double>(
-      drake::geometry::Cylinder(radius, height), refinement_level);
+  double resolution_hint = 2.0;  // Hint to coarsest mesh.
+  auto mesh0 =
+      MakeCylinderVolumeMesh<double>(Cylinder(radius, height), resolution_hint);
 
   const double volume0 = CalcTetrahedronMeshVolume(mesh0);
   const double cylinder_volume = height * radius * radius * M_PI;
@@ -56,13 +115,14 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
   EXPECT_NEAR(volume0, expected_volume_0, kTolerance);
 
   for (int level = 1; level < 6; ++level) {
-    auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), level);
+    resolution_hint /= 2.0;
+    auto mesh = MakeCylinderVolumeMesh<double>(
+        drake::geometry::Cylinder(radius, height), resolution_hint);
 
     // Verify the correct size. There are initially 24 tetrahedra that each
     // split into 8 sub tetrahedra.
     const size_t num_tetrahedra = 24 * std::pow(8, level);
-    EXPECT_EQ(mesh.tetrahedra().size(), num_tetrahedra);
+    EXPECT_EQ(mesh.num_elements(), num_tetrahedra);
 
     // Verify that the volume monotonically converges towards the exact volume
     // of the given cylinder.
@@ -130,15 +190,15 @@ int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
 //
 // where k_i is the number of i-simplexes in the complex. For a convex mesh that
 // is homeomorphic to a 3 dimensional ball, χ = 1.
-GTEST_TEST(MakeCylinderMesh, EulerCharacteristic) {
+GTEST_TEST(MakeCylinderVolumeMesh, EulerCharacteristic) {
   const double height = 2;
   const double radius = 1;
 
   const int expected_euler_characteristic = 1;
 
-  for (int level = 0; level < 6; ++level) {
-    auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), level);
+  for (const double resolution_hint : {2., 1., 0.5, 0.25, 0.125, 0.0625}) {
+    auto mesh = MakeCylinderVolumeMesh<double>(
+        drake::geometry::Cylinder(radius, height), resolution_hint);
 
     EXPECT_EQ(ComputeEulerCharacteristic(mesh), expected_euler_characteristic);
   }
