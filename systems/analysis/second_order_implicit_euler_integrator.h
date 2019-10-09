@@ -143,17 +143,17 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const VectorX<T>& dx0, VectorX<T>* xtplus);
   // Jacobian computation
   MatrixX<T>& get_mutable_velocity_jacobian() { return Jv_; }
-  const MatrixX<T>& CalcVelocityJacobian(const T& tf, const VectorX<T>& xtplus);
-  void ComputeForwardDiffVelocityJacobian(const T& t,
-      const VectorX<T>& xt, Context<T>* context, MatrixX<T>* J);
+  const MatrixX<T>& CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus, const VectorX<T>& qt0);
+  void ComputeForwardDiffVelocityJacobian(const T& t, const T& h, 
+      const VectorX<T>& xt, const VectorX<T>& qt0, Context<T>* context, MatrixX<T>* Jv);
 
-  // this is where we just break everything and do things our way. I'm not sure if override is wise
-  virtual bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
+  // this is where we just break everything and do things our way. I no longer think override is even wise
+  bool MaybeFreshenVelocityMatrices(const T& t, const VectorX<T>& xt, const VectorX<T>& qt0, const T& h,
       int trial,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
       compute_and_factor_iteration_matrix,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) override;
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) ;
   // This function evaluates g(y) with y from the context. Context should be at time tf
   void eval_g_with_y_from_context(const VectorX<T>& qt0,
       const T& h, const VectorX<T>& qk, VectorX<T>* result);
