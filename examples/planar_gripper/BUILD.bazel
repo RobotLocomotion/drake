@@ -133,4 +133,6 @@ drake_cc_googletest(
     ],
 )
 
+install_data()
+
 add_lint_tests()
