@@ -256,7 +256,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @pre 1 <= `trial` <= 4.
   /// @post the state in the internal context may or may not be altered on
   ///       return; if altered, it will be set to (t, xt).
-  virtual bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
+  bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
       int trial,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
@@ -311,6 +311,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// iteration can cause the state to overflow, which is how the Jacobian can
   /// become "bad". This is an O(n²) operation, where n is the state dimension.
   bool IsBadJacobian(const MatrixX<T>& J) const;
+  bool IsJacobianFresh() const { return jacobian_is_fresh_; }
 
   // TODO(edrumwri) Document the functions below.
   virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
@@ -335,6 +336,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   /// @copydoc IntegratorBase::DoStep()
   virtual bool DoImplicitIntegratorStep(const T& h) = 0;
+
+  inline void increment_num_iter_factorizations() { ++num_iter_factorizations_; }
+  inline void increment_jacobian_function_evaluations(int count) { num_jacobian_function_evaluations_ += count; }
+  inline void increment_jacobian_evaluations() { ++num_jacobian_evaluations_; }
 
  private:
   bool DoStep(const T& h) final {
