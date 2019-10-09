@@ -77,7 +77,6 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
 
     // Create a context for this system:
     diagram_context_ = diagram_->CreateDefaultContext();
-    diagram_->SetDefaultContext(diagram_context_.get());
     plant_context_ =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
@@ -214,11 +213,10 @@ TEST_F(HydroelasticContactResultsOutputTester, SlipVelocity) {
   std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(
           plant_->GetBodyByName("Ball"));
-  std::sort(ball_collision_geometries.begin(), ball_collision_geometries.end());
-  const bool body_A_is_ball = std::binary_search(
+  const bool body_A_is_ball = (std::find(
       ball_collision_geometries.begin(), ball_collision_geometries.end(),
-      results.contact_surface().id_M());
-  const Vector3d expected_slip = (body_A_is_ball) ? x : -x;
+      results.contact_surface().id_M()) != ball_collision_geometries.end());
+  const Vector3d expected_slip = body_A_is_ball ? x : -x;
 
   // Check that value of the slip velocity field points to +x. Checking just
   // the vertex values is sufficient only when vslip_AB_W() is of type
@@ -244,11 +242,10 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
   const Vector3d z(0, 0, 1);
   std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
-  std::sort(ball_collision_geometries.begin(), ball_collision_geometries.end());
-  const bool body_A_is_ball = std::binary_search(
+  const bool body_A_is_ball = (std::find(
       ball_collision_geometries.begin(), ball_collision_geometries.end(),
-      results.contact_surface().id_M());
-  const Vector3d expected_traction_direction = (body_A_is_ball) ? z : -z;
+      results.contact_surface().id_M()) != ball_collision_geometries.end());
+  const Vector3d expected_traction_direction = body_A_is_ball ? z : -z;
 
   // Check the traction. Checking just the vertex values is sufficient only when
   // traction_A_W() is of type MeshFieldLinear.
