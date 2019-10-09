@@ -102,6 +102,9 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     return contact_results.hydroelastic_contact_info(0);
   }
 
+  // TODO(drum) Move this function to SurfaceMesh where it can be fully
+  // documented and tested as well as synchronized more easily with SurfaceMesh
+  // itself. See issue #12173.
   // Checks to see whether two SurfaceMesh objects are equal (all data match
   // to bit-wise precision).
   static bool Equal(const SurfaceMesh<double>& mesh1,
@@ -126,6 +129,9 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     return true;
   }
 
+  // TODO(drum) Move this function to MeshFieldLinear where it can be fully
+  // documented and tested as well as synchronized more easily with
+  // MeshFieldLinear itself. See issue #12173.
   // Checks to see whether two MeshField objects are equal (all data
   // match to bit-wise precision).
   // Note: currently requires the objects to be of type MeshFieldLinear.
@@ -156,6 +162,9 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     return true;
   }
 
+  // TODO(drum) Move this function to ContactSurface where it can be fully
+  // documented and tested as well as synchronized more easily with
+  // ContactSurface itself. See issue #12173.
   // Checks to see whether two ContactSurface objects are equal (all
   // data match to bit-wise precision).
   static bool Equal(const ContactSurface<double>& surface1,
