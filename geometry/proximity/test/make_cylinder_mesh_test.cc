@@ -31,15 +31,14 @@ double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
 
 // This test verifies that the volume of the tessellated
 // cylinder converges to the exact value as the tessellation is refined.
-GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
+GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
   const double kTolerance = 10.0 * std::numeric_limits<double>::epsilon();
 
   const double height = 2;
   const double radius = 1;
-  const int refinement_level = 0;
-
-  auto mesh0 = MakeCylinderMesh<double>(
-      drake::geometry::Cylinder(radius, height), refinement_level);
+  double resolution_hint = 2.0;  // Hint to coarsest mesh.
+  auto mesh0 = MakeCylinderVolumeMesh<double>(
+      drake::geometry::Cylinder(radius, height), resolution_hint);
 
   const double volume0 = CalcTetrahedronMeshVolume(mesh0);
   const double cylinder_volume = height * radius * radius * M_PI;
@@ -56,8 +55,9 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
   EXPECT_NEAR(volume0, expected_volume_0, kTolerance);
 
   for (int level = 1; level < 6; ++level) {
-    auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), level);
+    resolution_hint /= 2.0;
+    auto mesh = MakeCylinderVolumeMesh<double>(
+        drake::geometry::Cylinder(radius, height), resolution_hint);
 
     // Verify the correct size. There are initially 24 tetrahedra that each
     // split into 8 sub tetrahedra.
@@ -130,15 +130,15 @@ int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
 //
 // where k_i is the number of i-simplexes in the complex. For a convex mesh that
 // is homeomorphic to a 3 dimensional ball, χ = 1.
-GTEST_TEST(MakeCylinderMesh, EulerCharacteristic) {
+GTEST_TEST(MakeCylinderVolumeMesh, EulerCharacteristic) {
   const double height = 2;
   const double radius = 1;
 
   const int expected_euler_characteristic = 1;
 
-  for (int level = 0; level < 6; ++level) {
-    auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), level);
+  for (const double resolution_hint : {2., 1., 0.5, 0.25, 0.125, 0.0625}) {
+    auto mesh = MakeCylinderVolumeMesh<double>(
+        drake::geometry::Cylinder(radius, height), resolution_hint);
 
     EXPECT_EQ(ComputeEulerCharacteristic(mesh), expected_euler_characteristic);
   }
