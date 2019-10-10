@@ -45,14 +45,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0 0 0"/>
+        <sphere radius="0"/>
       </geometry>
       <!--<material name="Black" /> -->
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0 0 0"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
   </link>
@@ -398,12 +398,12 @@
   <link name="j2s7s300_end_effector">
     <visual>
       <geometry>
-        <box size="0 0 0"/>
+        <sphere radius="0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <box size="0 0 0"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
   </link>
