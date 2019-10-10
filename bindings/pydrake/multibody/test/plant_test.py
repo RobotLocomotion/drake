@@ -57,10 +57,12 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import (
     Box,
     GeometryId,
+    Role,
     PenetrationAsPointPair_,
     SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
+    Sphere,
 )
 from pydrake.math import (
     RigidTransform_,
@@ -1176,7 +1178,21 @@ class TestPlant(unittest.TestCase):
                               SignedDistanceToPoint_[T])
         self.assertIsInstance(signed_distance_to_point[1],
                               SignedDistanceToPoint_[T])
+        # Test SceneGraphInspector
         inspector = query_object.inspector()
+
+        self.assertEqual(inspector.num_geometries(), 2)
+        self.assertEqual(inspector.num_geometries(),
+                         len(inspector.GetAllGeometryIds()))
+        for geometry_id in inspector.GetAllGeometryIds():
+            frame_id = inspector.GetFrameId(geometry_id)
+            self.assertEqual(
+                inspector.GetGeometryIdByName(
+                    frame_id, Role.kProximity,
+                    inspector.GetNameByGeometryId(geometry_id)), geometry_id)
+            self.assertIsInstance(inspector.GetShape(geometry_id), Sphere)
+            self.assertIsInstance(inspector.GetPoseInFrame(geometry_id),
+                                  RigidTransform_[float])
 
         def get_body_from_frame_id(frame_id):
             # Get body from frame id, and check inverse method.

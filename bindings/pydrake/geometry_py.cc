@@ -152,15 +152,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &SceneGraphInspector<T>::GetGeometryIdByName, py::arg("frame_id"),
             py::arg("role"), py::arg("name"),
             doc.SceneGraphInspector.GetGeometryIdByName.doc)
-        .def("GetName", &SceneGraphInspector<T>::GetName, py_reference_internal,
-            py::arg("frame_id"),
+        .def("GetNameByFrameId",
+            overload_cast_explicit<const std::string&, FrameId>(
+                &SceneGraphInspector<T>::GetName),
+            py_reference_internal, py::arg("frame_id"),
             doc.SceneGraphInspector.GetName.doc_1args_frame_id)
+        .def("GetNameByGeometryId",
+            overload_cast_explicit<const std::string&, GeometryId>(
+                &SceneGraphInspector<T>::GetName),
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetName.doc_1args_geometry_id)
         .def("GetPoseInFrame", &SceneGraphInspector<T>::GetPoseInFrame,
-            py_reference_internal,
-            py::arg("geometry_id"), doc.SceneGraphInspector.GetPoseInFrame.doc)
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetPoseInFrame.doc)
         .def("GetShape", &SceneGraphInspector<T>::GetShape,
-            py_reference_internal,
-            py::arg("geometry_id"), doc.SceneGraphInspector.GetShape.doc);
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetShape.doc);
   }
 
   //  SceneGraph

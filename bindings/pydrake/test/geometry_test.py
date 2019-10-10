@@ -49,8 +49,7 @@ class TestGeometry(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_frames(), 1)
         self.assertEqual(inspector.num_sources(), 2)
-        self.assertEqual(inspector.num_geometries(),
-                         len(inspector.GetAllGeometryIds()))
+        self.assertEqual(inspector.num_geometries(), 0)
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
