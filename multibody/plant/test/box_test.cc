@@ -86,14 +86,6 @@ class SlidingBoxTest : public ::testing::Test {
       const PointPairContactInfo<double>& point_pair_contact_info =
           contact_results.point_pair_contact_info(0);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // Verify the deprecated methods still work.
-      ASSERT_EQ(contact_results.num_contacts(), 1);
-      ASSERT_EQ(&contact_results.contact_info(0),
-                &contact_results.point_pair_contact_info(0));
-#pragma GCC diagnostic pop
-
       // Verify the bodies referenced by the contact info.
       const Body<double>& ground = the_plant.GetBodyByName("ground");
       const Body<double>& box = the_plant.GetBodyByName("box");

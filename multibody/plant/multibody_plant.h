@@ -1538,90 +1538,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
 
-  /// Given a list of points with fixed position vectors `p_FP` in a frame
-  /// F, (that is, their time derivative `DtF(p_FP)` in frame F is zero),
-  /// this method computes the geometric Jacobian `Jv_WFp` defined by:
+  /// For a point Fp that is fixed to a frame F, calculates Fp's translational
+  /// acceleration "bias" term `abias_AFp = J̇s_v_AFp(q, s) * s` in frame A with
+  /// respect to "speeds" 𝑠.
   /// <pre>
-  ///   v_WP(q, v) = Jv_WFp(q)⋅v
+  ///   a_AFp = J𝑠_v_AFp(q)⋅ṡ + abias_AFp(q, v)
   /// </pre>
-  /// where `v_WP(q, v)` is the translational velocity of point `P` in the
-  /// world frame W and q and v are the vectors of generalized position and
-  /// velocity, respectively.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   The positions `p_FP` of each point in the input set are measured and
-  ///   expressed in this frame F and are constant (fixed) in this frame.
-  /// @param[in] p_FP_list
-  ///   A matrix with the fixed position of a set of points `P` measured and
-  ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FP` for a
-  ///   point `P` measured and expressed in frame F. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WP_list
-  ///   The output positions of each point `P` now measured and expressed in
-  //    the world frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WP` and therefore external storage
-  ///   must be provided.
-  ///   The output `p_WP_list` **must** have the same size as the input set
-  ///   `p_FP_list` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WP_list` **must** be in
-  ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WP` of each point `P` in the input set by: <pre>
-  ///     v_WP(q, v) = Jv_WFp(q)⋅v
-  ///   </pre>
-  ///   so that `v_WP` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `P` in the same order they were given in the
-  ///   input set. Therefore `J_WFp` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WFp` **must**
-  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
-  ///   exception.
-  ///
-  /// @throws std::exception if the output `p_WP_list` is nullptr or does not
-  ///  have the same size as the input array `p_FP_list`.
-  /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WFp` for details.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-  void CalcPointsGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list,
-      EigenPtr<MatrixX<T>> Jv_WFp) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // most applications it is all we need and it is more efficient to compute.
-    // TODO(amcastro-tri): Rework this method as per issue #10155.
-    return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, frame_F, p_FP_list, p_WP_list, Jv_WFp);
-  }
-
-  /// For a point Fp that is regarded as a point of (fixed/welded to) a frame F,
-  /// computes bias term `abias_AFp` associated with `a_AFp` (Fp's translational
-  /// acceleration in a frame A) with respect to "speeds" 𝑠, where 𝑠 is either
+  /// a_AFp is point Fp's translational acceleration in frame A and 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
-  /// That is, point Fp's translational acceleration in frame A can be written
-  /// <pre>
-  ///   a_AFp = Js_v_AFp(q)⋅ṡ + abias_AFp(q, v)
-  /// </pre>
-  /// where `abias_AFp = J̇s_v_AFp(q, s)⋅s`.
+  /// Note: `abias_AFp = J̇s_v_AFp(q, s)⋅s`  is quadratic in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// Note: This method is misnamed CalcBiasForJacobianTranslationalVelocity.
+  /// Expect a name change to reflect its acceleration (not velocity) nature.
   ///
   /// This method computes `abias_AFp` for each point Fp in the `p_FP_list`.
   /// The `p_FP_list` is a list of position vectors from Fo (Frame F's origin)
   /// to each such point Fp, expressed in frame F.
   ///
-  /// @see CalcJacobianTranslationalVelocity() to compute `Js_v_AFp`, point Fp's
+  /// @see CalcJacobianTranslationalVelocity() to compute `J𝑠_v_AFp`, point Fp's
   /// translational velocity Jacobian in frame A with respect to s.
   ///
   /// @param[in] context The state of the multibody system, which includes the
   /// generalized positions q and generalized velocities v.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_AFp` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_AFp` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_F The frame on which point Fp is fixed/welded.
@@ -1645,62 +1585,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Issue #12140: Rename to CalcBiasTranslationalAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
     return internal_tree().CalcBiasForJacobianTranslationalVelocity(
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
-  }
-
-  // TODO(eric.cousineau): Reduce duplicate text between overloads.
-  /// This is a variant to compute the geometric Jacobian `Jv_WFp` for a list of
-  /// points `P` moving with `frame_F`, given that we know the position `p_WP`
-  /// of each point in the list measured and expressed in the world frame W. The
-  /// geometric Jacobian `Jv_WFp` is defined such that: <pre>
-  ///   v_WP(q, v) = Jv_WFp(q)⋅v
-  /// </pre>
-  /// where `v_WP(q, v)` is the translational velocity of point `P` in the
-  /// world frame W and q and v are the vectors of generalized position and
-  /// velocity, respectively. Since the spatial velocity of each
-  /// point `P` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jv_WFp` is a function of the generalized coordinates q only.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   Points `P` in the list instantaneously move with this frame.
-  /// @param[in] p_WP_list
-  ///   A matrix with the fixed position of a list of points `P` measured and
-  ///   expressed in the world frame W.
-  ///   Each column of this matrix contains the position vector `p_WP` for a
-  ///   point `P` measured and expressed in the world frame W. Therefore this
-  ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WP` of each point `P` in the input list by: <pre>
-  ///     `v_WP(q, v) = Jv_WFp(q)⋅v`
-  ///   </pre>
-  ///   so that `v_WP` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `P` in the same order they were given in the
-  ///   input list. Therefore `J_WP` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WP` **must**
-  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
-  ///   exception.
-  ///
-  /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WFp` for details.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-  void CalcPointsGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_WP_list,
-      EigenPtr<MatrixX<T>> Jv_WFp) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // most applications it is all we need and it is more efficient to compute.
-    // TODO(amcastro-tri): Rework this method as per issue #10155.
-    return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, frame_F, p_WP_list, Jv_WFp);
   }
 
   /// Given a list of points with fixed position vectors `p_FP` in a frame
@@ -1824,24 +1713,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                        J_WFp);
   }
 
-  /// For a point Fp that is regarded as a point of (fixed/welded to) a frame F,
-  /// computes the bias term `Abias_AFp` associated with `A_AFp` (Fp's spatial
-  /// acceleration in a frame A) with respect to "speeds" 𝑠, where 𝑠 is either
+  /// For a point Fp that is fixed to a frame F, calculates Fp's spatial
+  /// acceleration "bias" term `Abias_AFp = J̇s_V_AFp * s` in frame A with
+  /// respect to "speeds" 𝑠.
+  /// <pre>
+  ///   A_AFp = J𝑠_V_AFp(q)⋅ṡ + Abias_AFp(q, v)
+  /// </pre>
+  /// A_AFp is point Fp's spatial acceleration in frame A and 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
-  /// That is, point Fp's spatial acceleration in frame A can be written
-  /// <pre>
-  ///   A_AFp = Js_V_AFp(q)⋅ṡ + Abias_AFp(q, v)
-  /// </pre>
-  /// where `Abias_AFp = J̇s_V_AFp(q, s)⋅s`.
+  /// Note: `Abias_AFp = J̇s_V_AFp(q, s)⋅s`  is quadratic in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  /// Note: This method is misnamed CalcBiasForJacobianSpatialVelocity.
+  /// Expect a name change to reflect its acceleration (not velocity) nature.
   ///
-  /// @see CalcJacobianSpatialVelocity() to compute `Js_V_AFp`, point Fp's
-  /// spatial velocity Jacobian in frame A with respect to s.
+  /// @see CalcJacobianSpatialVelocity() to compute `J𝑠_V_AFp`, point Fp's
+  /// spatial velocity Jacobian in frame A with respect to 𝑠.
   ///
   /// @param[in] context The state of the multibody system, which includes the
   /// generalized positions q and generalized velocities v.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_AFp` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_AFp` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_F The frame on which point Fp is fixed/welded.
@@ -1867,26 +1758,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Issue #12140: Rename to CalcBiasSpatialAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
     return internal_tree().CalcBiasForJacobianSpatialVelocity(
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
   }
 
-  /// For each point Bi of (fixed to) a frame B with spatial velocity
-  /// `v_ABi` in a frame A, calculates Bi's spatial velocity Jacobian in A
-  /// with respect to 𝑠, which is defined as
+
+  /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
+  /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      Js_V_ABi = [ ∂(V_ABi)/∂𝑠₁,  ...  ∂(V_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_V_ABi = [ ∂(V_ABi)/∂𝑠₁,  ...  ∂(V_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
-  /// where "speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j
-  /// generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  /// Note: Spatial velocity `V_ABi` is linear in 𝑠₁, ... 𝑠ₙ and can be written
-  /// `V_ABi = Js_V_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
+  /// `V_ABi` is Bi's spatial velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// Note: `V_ABi = J𝑠_V_ABi ⋅ 𝑠`  which is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_V_ABi` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABi` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
@@ -1894,19 +1786,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
   /// position vector is expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
+  /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
+  /// because Bi's velocity in A is defined as the derivative in frame A of
+  /// Bi's position vector from _any_ point fixed on A.
   /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  /// the frame in which the Jacobian `Js_V_ABi` is expressed on output.
-  /// @param[out] Js_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
+  /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
+  /// @param[out] J𝑠_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `Js_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// `J𝑠_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
   /// three rows storing frame B's angular velocity Jacobian in A and rows 4-6
   /// storing point Bi's translational velocity Jacobian in A, i.e.,
   ///   ```
-  ///     Js_wAB_E = Js_V_ABi_E.topRows<3>();
-  ///     Js_vAB1_E = Js_V_ABi_E.bottomRows<3>();
+  ///     J𝑠_wAB_E = J𝑠_V_ABi_E.topRows<3>();
+  ///     J𝑠_vAB1_E = J𝑠_V_ABi_E.bottomRows<3>();
   ///   ```
   /// If p = 2 (two points), a `12 x n` matrix is returned.  Rows 1-3 and 7-9
   /// store exactly identical information (B's angular velocity Jacobian in A).
@@ -1915,7 +1811,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// If p is large and storage efficiency is a concern, calculate frame B's
   /// angular velocity Jacobian using CalcJacobianAngularVelocity() and then use
   /// CalcJacobianTranslationalVelocity().
-  /// @throws std::exception if `Js_V_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @throws std::exception if `J𝑠_V_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -1928,32 +1824,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
        context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E, Jw_ABp_E);
   }
 
-  /// Returns a frame B's angular velocity Jacobian in a frame A with respect
-  /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
-  /// generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
-  /// When a frame B's angular velocity `w_AB` in a frame A is characterized by
-  /// speeds 𝑠, B's angular velocity Jacobian in A with respect to 𝑠 is
+  /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
+  /// with respect to "speeds" 𝑠.
   /// <pre>
-  ///      Js_w_AB = [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_w_AB = [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
-  /// B's angular velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
-  /// `w_AB = Js_w_AB ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
+  /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// Note: `w_AB = J𝑠_w_AB * 𝑠`  which is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_w_AB` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_w_AB` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
   /// @param[in] frame_A The frame A in `w_AB` (B's angular velocity in A).
   /// @param[in] frame_E The frame in which `w_AB` is expressed on input and
-  /// the frame in which the Jacobian `Js_w_AB` is expressed on output.
-  /// @param[out] Js_w_AB_E Frame B's angular velocity Jacobian in frame A with
+  /// the frame in which the Jacobian `J𝑠_w_AB` is expressed on output.
+  /// @param[out] J𝑠_w_AB_E Frame B's angular velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).  The previous definition shows `Js_w_AB_E` is
+  /// pulled from the context).  The previous definition shows `J𝑠_w_AB_E` is
   /// a matrix of size `3 x n`, where n is the number of elements in 𝑠.
-  /// @throws std::exception if `Js_w_AB_E` is nullptr or not of size `3 x n`.
+  /// @throws std::exception if `J𝑠_w_AB_E` is nullptr or not of size `3 x n`.
   void CalcJacobianAngularVelocity(const systems::Context<T>& context,
                                    const JacobianWrtVariable with_respect_to,
                                    const Frame<T>& frame_B,
@@ -1964,20 +1859,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
   }
 
-  /// For each point Bi of (fixed to) a frame B with translational velocity
-  /// `v_ABi` in a frame A, calculates Bi's translational velocity Jacobian in A
-  /// with respect to 𝑠, which is defined as
+  /// For each point Bi of (fixed to) a frame B, calculates J𝑠_v_ABi, Bi's
+  /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
-  /// where "speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j
-  /// generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  /// Note: Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
-  /// `v_ABi = Js_v_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
+  /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// Note: `v_ABi = J𝑠_v_ABi ⋅ 𝑠`  which is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABi` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ABi` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
@@ -1985,14 +1879,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
   /// position vector is expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
+  /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
+  /// because Bi's velocity in A is defined as the derivative in frame A of
+  /// Bi's position vector from _any_ point fixed on A.
   /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  /// the frame in which the Jacobian `Js_v_ABi` is expressed on output.
-  /// @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
+  /// the frame in which the Jacobian `J𝑠_v_ABi` is expressed on output.
+  /// @param[out] J𝑠_v_ABi_E Point Bi's velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `Js_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// `J𝑠_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
-  /// @throws std::exception if `Js_v_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @throws std::exception if `J𝑠_v_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2001,6 +1899,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // some applications it is all we need and it is more efficient to compute.
     internal_tree().CalcJacobianTranslationalVelocity(context, with_respect_to,
         frame_B, frame_B, p_BoBi_B, frame_A, frame_E, Js_v_ABi_E);
   }
@@ -2501,17 +2401,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape, const std::string& name,
       const geometry::IllustrationProperties& properties);
 
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const geometry::IllustrationProperties& properties,
-      geometry::SceneGraph<T>* scene_graph);
-
   /// Overload for visual geometry registration; it converts the `diffuse_color`
   /// (RGBA with values in the range [0, 1]) into a
   /// geometry::ConnectDrakeVisualizer()-compatible set of
@@ -2521,33 +2410,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape, const std::string& name,
       const Vector4<double>& diffuse_color);
 
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const Vector4<double>& diffuse_color,
-      geometry::SceneGraph<T>* scene_graph);
-
   /// Overload for visual geometry registration; it relies on the downstream
   /// geometry::IllustrationProperties _consumer_ to provide default parameter
   /// values (see @ref geometry_roles for details).
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name);
-
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -2587,19 +2455,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction);
-
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  /// @throws std::exception if `scene_graph` does not correspond to the
-  /// same instance with which RegisterAsSourceForSceneGraph() was called.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<double>& coulomb_friction,
-      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
@@ -3106,15 +2961,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// finalized.
   void Finalize();
 
-  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
-  /// argument.
-  /// @throws std::logic_error if a different scene_graph instance is provided
-  /// than the one for which this plant is a geometry source.
-  DRAKE_DEPRECATED("2019-10-01",
-      "Remove the scene_graph argument at the call site; instead of passing a "
-      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
-  void Finalize(geometry::SceneGraph<T>* scene_graph);
-
   /// The time step (or period) used to model `this` plant as a discrete system
   /// with periodic updates. Returns 0 (zero) if the plant is modeled as a
   /// continuous system.
@@ -3407,14 +3253,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // result will be a stub type instead.  (We can get rid of the stub once
   // SceneGraph supports symbolic::Expression.)
   MemberSceneGraph& member_scene_graph();
-
-  // Helper to check when a deprecated user-provided `scene_graph` pointer is
-  // passed in via public API (aside form `RegisterAsSourceForSceneGraph`).
-  // @throws std::logic_error if `scene_graph` is non-null (non-default) and
-  // either no scene graph is registered or `scene_graph` is not the same as
-  // the registered instance.
-  void CheckUserProvidedSceneGraph(
-      const geometry::SceneGraph<T>* scene_graph) const;
 
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;

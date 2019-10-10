@@ -109,7 +109,7 @@ def _determine_macos(repository_ctx):
     macos_release = ".".join(major_minor_versions)
 
     # Match supported macOS release(s).
-    if macos_release in ["10.13", "10.14"]:
+    if macos_release in ["10.13", "10.14", "10.15"]:
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.

@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -48,13 +48,13 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
 
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
-  spruce::path package_path = full_sdf_filename;
-  package_path = package_path.root();
-  package_path = package_path.root();
+  filesystem::path package_path = full_sdf_filename;
+  package_path = package_path.parent_path();
+  package_path = package_path.parent_path();
 
   // Construct the PackageMap.
   PackageMap package_map;
-  package_map.PopulateFromFolder(package_path.getStr());
+  package_map.PopulateFromFolder(package_path.string());
 
   // Read in the SDF file.
   AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
@@ -227,7 +227,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
-  sdf::addURIPath("model://", spruce::path(full_name).root());
+  sdf::addURIPath("model://", filesystem::path(full_name).parent_path());
   MultibodyPlant<double> plant;
 
   // We start with the world and default model instances.

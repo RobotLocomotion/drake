@@ -4,11 +4,11 @@ which may need changes for compatibility.
 
 import numpy as np
 
-_numpy_version = np.lib.NumpyVersion(np.version.version)
+
 _patches = {
     'numpy_formatters': {
         'applied': False,
-        'required': _numpy_version < np.lib.NumpyVersion('1.13.0'),
+        'required': np.lib.NumpyVersion(np.__version__) < '1.13.0',
     },
 }
 
