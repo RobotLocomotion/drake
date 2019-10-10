@@ -57,7 +57,6 @@ from pydrake.systems.primitives import (
     SignalLogger,
     ZeroOrderHold,
     )
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
