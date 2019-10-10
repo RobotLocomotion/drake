@@ -172,7 +172,9 @@ drake_cc_library(
     name = "make_sphere_mesh",
     hdrs = ["make_sphere_mesh.h"],
     deps = [
+        ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -257,6 +259,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "volume_to_surface_mesh",
+    srcs = [
+        "volume_to_surface_mesh.cc",
+    ],
     hdrs = [
         "volume_to_surface_mesh.h",
     ],
