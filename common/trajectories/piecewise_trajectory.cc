@@ -12,6 +12,11 @@ using std::vector;
 namespace drake {
 namespace trajectories {
 
+#if  __cplusplus < 201703L
+template <typename T>
+constexpr double PiecewiseTrajectory<T>::kEpsilonTime;
+#endif
+
 template <typename T>
 PiecewiseTrajectory<T>::PiecewiseTrajectory(std::vector<double> const& breaks)
     : Trajectory<T>(), breaks_(breaks) {

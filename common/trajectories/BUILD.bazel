@@ -53,6 +53,7 @@ drake_cc_library(
         ":piecewise_trajectory",
         "//common:essential",
         "//common:polynomial",
+        "@fmt",
     ],
 )
 
@@ -103,6 +104,7 @@ drake_cc_googletest(
         ":piecewise_polynomial",
         ":random_piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
