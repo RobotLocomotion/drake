@@ -1117,14 +1117,14 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
-  if (contact_model_ == ContactModel::kPointContactOnly) {
-    CalcContactResultsContinuousPointPair(context, contact_results);
-  } else {
-    if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+  switch (contact_model_) {
+    case ContactModel::kPointContactOnly:
+      CalcContactResultsContinuousPointPair(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticsOnly:
       CalcContactResultsContinuousHydroelastic(context, contact_results);
-    } else {
-      DRAKE_UNREACHABLE();
-    }
+      break;
   }
 }
 
@@ -1175,13 +1175,13 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const Body<T>& bodyA = internal_tree().get_body(bodyA_index);
     const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
 
-    // The the poses and spatial velocities of bodies A and B.
+    // The poses and spatial velocities of bodies A and B.
     const RigidTransform<T>& X_WA = bodyA.EvalPoseInWorld(context);
     const RigidTransform<T>& X_WB = bodyB.EvalPoseInWorld(context);
     const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
     const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
 
-    // Pack everything for the calculator needs.
+    // Pack everything the calculator needs.
     typename internal::HydroelasticTractionCalculator<T>::Data data(
         X_WA, X_WB, V_WA, V_WB, &surface);
 
