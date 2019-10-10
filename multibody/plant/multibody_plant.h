@@ -3295,6 +3295,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
     systems::CacheIndex hydro_contact_forces;
+    systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
   };
@@ -3541,6 +3542,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
+  // Method to compute spatial contact forces for continuous plants.
+  void CalcSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Eval() version of the method CalcSpatialContactForcesContinuous().
+  const std::vector<SpatialForce<T>>& EvalSpatialContactForcesContinuous(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(
+        cache_indexes_.spatial_contact_forces_continuous).
+            template Eval<std::vector<SpatialForce<T>>>(context);
+  }
+
   // Method to compute generalized contact forces for continuous plants.
   void CalcGeneralizedContactForcesContinuous(
     const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const;
@@ -3548,9 +3562,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval() version of the method CalcGeneralizedContactForcesContinuous().
   const VectorX<T>& EvalGeneralizedContactForcesContinuous(
       const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.generalized_contact_forces_continuous)
-        .template Eval<VectorX<T>>(context);
+    return this->get_cache_entry(
+        cache_indexes_.generalized_contact_forces_continuous).
+            template Eval<VectorX<T>>(context);
   }
 
   // Calc method to output per model instance vector of generalized contact

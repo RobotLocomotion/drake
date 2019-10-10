@@ -1754,68 +1754,59 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   const VectorX<T>& zero_vdot = zero;
   const VectorX<T>& tau_array = zero;
 
-  // First inverse dynamics computation below will initially use no spatial
-  // forces acting on the links.
-  std::vector<SpatialForce<T>> F_BBo_W_array(num_bodies(),
-                                             SpatialForce<T>::Zero());
-
   // Bodies' accelerations, ordered by BodyNodeIndex, required as an output
   // argument but otherwise not used by this method.
   std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
 
-  // Note: this method is only able to compute contact forces independently of
-  // applied forces (i.e., without calling CalcAppliedForces()) because it
-  // approximates stiction with a regularized friction model.
-
-  // With vdot = 0, this computes C(q, v)v (see
-  // MultibodyTree::CalcInverseDynamics()).
-  VectorX<T> C_v(nv);
-
-  // WARNING: to reduce memory foot-print, we also use F_BBo_W_array as an
-  // output array. We'll reset the values afterwards. Please see the
-  // documentation for CalcInverseDynamics() for details.
-  internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
-      &F_BBo_W_array, /* Notice this array gets overwritten on output. */
-      &C_v);
-
-  // Compute the spatial forces on each body from contact. The forces accumulate
-  // into F_BBo_W_array, so we initialize it to zero first.
-  std::fill(F_BBo_W_array.begin(), F_BBo_W_array.end(),
-            SpatialForce<T>::Zero());
-  if (contact_model_ == ContactModel::kPointContactOnly) {
-    // Compute contact forces on each body by penalty method.
-    if (num_collision_geometries() > 0) {
-      CalcAndAddContactForcesByPenaltyMethod(context, &F_BBo_W_array);
-    }
-  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-    // Compute contact forces using hydroelastics.
-    const std::vector<SpatialForce<T>>& Fhydro_BBo_W =
-        EvalHydroelasticContactForces(context);
-    std::transform(F_BBo_W_array.begin(), F_BBo_W_array.end(),
-                   Fhydro_BBo_W.begin(),
-                   F_BBo_W_array.begin(),
-                   std::plus<SpatialForce<T>>());
-  } else {
-    DRAKE_UNREACHABLE();
-  }
+  // Get the spatial forces.
+  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
+      EvalSpatialContactForcesContinuous(context);
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
 
   // WARNING: to reduce memory foot-print, we again use F_BBo_W_array as an
   // output array, since we won't need its values afterward.
 
   // With vdot = 0, this computes:
-  //   tau_contact = C(q, v)v - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  //   tau_contact = - ∑ J_WBᵀ(q) Fcontact_Bo_W.
   internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
-      &F_BBo_W_array, /* Notice this array gets overwritten on output. */
-      tau_contact);
+      context, zero_vdot, Fcontact_BBo_W_array, tau_array,
+      true /* Do not compute velocity-dependent terms */,
+      &A_WB_array, &F_BMo_W_array, tau_contact);
 
-  // Remove C(q, v)v from the tau_contact computation above.
-  (*tau_contact) -= C_v;
-
-  // Now tau_contact represents the negated spatial forces. Fix this and the
-  // computation is complete.
+  // Per above, tau_contact must be negated to get ∑ J_WBᵀ(q) Fcontact_Bo_W.
   (*tau_contact) = -(*tau_contact);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  DRAKE_DEMAND(F_BBo_W_array);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+
+  // Forces can accumulate into F_BBo_W_array; initialize it to zero first.
+  std::fill(F_BBo_W_array->begin(), F_BBo_W_array->end(),
+            SpatialForce<T>::Zero());
+
+  // Early exit if there are no contact forces.
+  if (num_collision_geometries() == 0) return;
+
+  // Note: this method is only able to compute contact forces independently of
+  // applied forces (i.e., without calling CalcAppliedForces()) because it
+  // approximates stiction with a regularized friction model.
+
+  // Compute the spatial forces on each body from contact.
+  if (contact_model_ == ContactModel::kPointContactOnly) {
+    // Compute contact forces on each body by penalty method.
+    if (num_collision_geometries() > 0) {
+      CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
+    }
+  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+    // Compute contact forces using hydroelastics.
+    *F_BBo_W_array = EvalHydroelasticContactForces(context);
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 template <typename T>
@@ -1846,25 +1837,28 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   // not important in this case since we don't need their values anymore.
   // Please see the documentation for CalcInverseDynamics() for details.
 
-  // Compute all applied forces, except the contact forces, as a generalized
-  // force. With vdot = 0, this computes:
-  //   tau_non_contact_negated = C(q, v)v - tau_applied - ∑ J_WBᵀ(q) Fapp_BBo_W.
-  // In other words (again, neglecting contact forces):
-  //   Mv̇ = -tau_non_contact_negated.
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
-  VectorX<T>& tau_applied = forces.mutable_generalized_forces();
-  VectorX<T>& tau_non_contact_negated = forces.mutable_generalized_forces();
+  // Compute all applied forces.
+  std::vector<SpatialForce<T>>& Fapp_BBo_W_array = forces.mutable_body_forces();
+  std::vector<SpatialForce<T>> Fcontact_BBo_W_array(num_bodies());
+  CalcSpatialContactForcesContinuous(context, &Fcontact_BBo_W_array);
+  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
+    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
+  VectorX<T>& tau_app = forces.mutable_generalized_forces();
+
+  // Aliases for memory foot-print reduction.
+  VectorX<T>& tau = tau_app;
+  std::vector<SpatialForce<T>>& F_BBo_W_array = Fapp_BBo_W_array;
+
+  // Compute all applied forces as a generalized force. With vdot = 0, this
+  // computes:
+  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_BBo_W.
+
   internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_applied, &A_WB_array,
-      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
-      &tau_non_contact_negated);
+      context, zero_vdot, Fapp_BBo_W_array, tau_app, &A_WB_array,
+      &F_BBo_W_array, /* Notice "applied" arrays get overwritten on output. */
+      &tau);
 
-  // Compute contact forces using an alias for zero_vdot, which is no longer
-  // needed, to keep from allocating more memory.
-  VectorX<T>& tau_contact = zero_vdot;
-  CalcGeneralizedContactForcesContinuous(context, &tau_contact);
-
-  *vdot = M.ldlt().solve(tau_contact - tau_non_contact_negated);
+  *vdot = M.ldlt().solve(-tau);
 }
 
 template <typename T>
@@ -2241,7 +2235,30 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->all_sources_ticket()});
   cache_indexes_.generalized_accelerations = vdot_cache_entry.cache_index();
 
-  // Cache generalized contact forces.
+  // Cache spatial continuous contact forces.
+  auto& spatial_contact_forces_continuous_cache_entry =
+      this->DeclareCacheEntry(
+          std::string("Spatial contact forces (continuous)."),
+          [this]() {
+            return AbstractValue::Make(
+                std::vector<SpatialForce<T>>(num_bodies()));
+          },
+          [this](const systems::ContextBase& context_base,
+                 AbstractValue* cache_value) {
+            auto& context = dynamic_cast<const Context<T>&>(context_base);
+            auto& contact_forces =
+                cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
+            this->CalcSpatialContactForcesContinuous(context, &contact_forces);
+          },
+          // Contact forces depend only upon the kinematic variables
+          // q and v only (with the caveat that it is the regularized friction
+          // model that buys us that independence - see comment in
+          // CalcSpatialContactForcesContinuous()).
+          {this->kinematics_ticket()});
+  cache_indexes_.spatial_contact_forces_continuous =
+      spatial_contact_forces_continuous_cache_entry.cache_index();
+
+  // Cache generalized continuous contact forces.
   auto& generalized_contact_forces_continuous_cache_entry =
       this->DeclareCacheEntry(
           std::string("Generalized contact forces (continuous)."),
@@ -2251,14 +2268,12 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
           [this](const systems::ContextBase& context_base,
                  AbstractValue* cache_value) {
             auto& context = dynamic_cast<const Context<T>&>(context_base);
-            auto& tau_contact = cache_value->get_mutable_value<VectorX<T>>();
-            this->CalcGeneralizedContactForcesContinuous(context, &tau_contact);
+            auto& forces = cache_value->get_mutable_value<VectorX<T>>();
+            this->CalcGeneralizedContactForcesContinuous(context, &forces);
           },
-          // Generalized contact forces depend only upon the kinematic variables
-          // q and v only (with the caveat that it is the regularized friction
-          // model that buys us that independence - see comment in
-          // CalcGeneralizedContactForcesContinuous()).
-          {this->kinematics_ticket()});
+          // Generalized contact forces depend upon the spatial contact forces.
+          {this->cache_entry_ticket(
+                          cache_indexes_.spatial_contact_forces_continuous)});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
 }
