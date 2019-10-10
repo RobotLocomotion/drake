@@ -10,6 +10,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -134,12 +135,12 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant);
   auto diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
-  diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 

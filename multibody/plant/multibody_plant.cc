@@ -1048,19 +1048,90 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
-  // Thus far we do not allow mixing hydroelastics with point contact and
-  // therefore we throw an exception.
-  // TODO(amcastro-tri): Update the computation of contact results to report
-  // both point and hydroelastic results.
-  if (contact_model_  != ContactModel::kPointContactOnly) {
-    throw std::runtime_error(
-        "Currently we do not support mixing point contact with hydroelastics. "
-        "You requested the hydroelastic model with a call to "
-        "set_contact_model(). "
-        "Currently contact results are only supported for point contact.");
+  switch (contact_model_) {
+    case ContactModel::kPointContactOnly:
+      CalcContactResultsContinuousPointPair(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticsOnly:
+      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      break;
   }
+}
+
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousHydroelastic(
+        const Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+// TODO(edrumwri) Convert this function to use a cached HydroelasticTractionInfo
+// once that structure can serve to both compute contact wrenches and report
+// contact details.
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalContactSurfaces(context);
+
+  internal::HydroelasticTractionCalculator<T> traction_calculator(
+      friction_model_.stiction_tolerance());
+
+  for (const ContactSurface<T>& surface : all_surfaces) {
+    const GeometryId geometryM_id = surface.id_M();
+    const GeometryId geometryN_id = surface.id_N();
+    const int collision_indexM =
+        geometry_id_to_collision_index_.at(geometryM_id);
+    const int collision_indexN =
+        geometry_id_to_collision_index_.at(geometryN_id);
+    const CoulombFriction<double>& geometryM_friction =
+        default_coulomb_friction_[collision_indexM];
+    const CoulombFriction<double>& geometryN_friction =
+        default_coulomb_friction_[collision_indexN];
+
+    // Compute combined friction coefficient.
+    const CoulombFriction<double> combined_friction =
+        CalcContactFrictionFromSurfaceProperties(geometryM_friction,
+                                                 geometryN_friction);
+    const double dynamic_friction = combined_friction.dynamic_friction();
+
+    // Get the bodies that the two geometries are affixed to. We'll call these
+    // A and B.
+    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
+    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryN_id);
+    const Body<T>& bodyA = internal_tree().get_body(bodyA_index);
+    const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
+
+    // The poses and spatial velocities of bodies A and B.
+    const RigidTransform<T>& X_WA = bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = bodyB.EvalPoseInWorld(context);
+    const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
+    const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
+
+    // Pack everything the calculator needs.
+    typename internal::HydroelasticTractionCalculator<T>::Data data(
+        X_WA, X_WB, V_WA, V_WB, &surface);
+
+    // Combined Hunt & Crossley dissipation.
+    const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
+        geometryM_id, geometryN_id);
+
+    contact_results->AddContactInfo(traction_calculator.ComputeContactInfo(
+       data, dissipation, dynamic_friction));
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1303,12 +1374,8 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   F_BBo_W_array->assign(num_bodies(), SpatialForce<T>::Zero());
   if (num_collision_geometries() == 0) return;
 
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-
-  const std::vector<ContactSurface<T>> all_surfaces =
-      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalContactSurfaces(context);
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
@@ -1329,7 +1396,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const CoulombFriction<double> combined_friction =
         CalcContactFrictionFromSurfaceProperties(geometryM_friction,
                                                  geometryN_friction);
-    const double static_friction = combined_friction.static_friction();
+    const double dynamic_friction = combined_friction.dynamic_friction();
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
@@ -1355,7 +1422,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     // Integrate the hydroelastic traction field over the contact surface.
     SpatialForce<T> F_Ao_W, F_Bo_W;
     traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
+        data, dissipation, dynamic_friction, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array->at(bodyA.node_index()) += F_Ao_W;
@@ -1569,6 +1636,20 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcContactSurfaces(
+    const drake::systems::Context<T>& context,
+    std::vector<ContactSurface<T>>* contact_surfaces) const {
+  DRAKE_DEMAND(contact_surfaces);
+
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+
+  *contact_surfaces =
+      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcAppliedForces(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
@@ -1654,7 +1735,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   const internal::ContactJacobians<T>& contact_jacobians =
       EvalContactJacobians(context0);
 
-  // Get friction coefficient into a single vector. Dynamic friction is ignored
+  // Get friction coefficient into a single vector. Static friction is ignored
   // by the time stepping scheme.
   std::vector<CoulombFriction<double>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(point_pairs0);
@@ -1662,7 +1743,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
                  mu.data(),
                  [](const CoulombFriction<double>& coulomb_friction) {
-                   return coulomb_friction.static_friction();
+                   return coulomb_friction.dynamic_friction();
                  });
 
   // Place all the penetration depths within a single vector as required by
@@ -2021,6 +2102,23 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {this->configuration_ticket()});
   cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
+
+  // Cache entry for hydroelastic contact surfaces.
+  auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
+      std::string("Hydroelastic contact surfaces."),
+      []() {
+        return AbstractValue::Make(
+            std::vector<ContactSurface<T>>());
+      },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_surfaces_cache = cache_value->get_mutable_value<
+            std::vector<ContactSurface<T>>>();
+        this->CalcContactSurfaces(context, &contact_surfaces_cache);
+      },
+      {this->configuration_ticket()});
+  cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
