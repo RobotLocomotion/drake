@@ -39,8 +39,8 @@
                dimensions must be strictly positive so we give it a small
                thickness of 0.1. To offset this and keep the box even with z=0,
                we need to set the box at -0.1/2=-0.05 along the z-axis. Since
-               since the link itself has a pose of position '0 0 -1', the total
-               offset is thus '0 0 0.95'.
+               the link itself has a pose of position '0 0 -1', the total offset
+               is thus '0 0 0.95'.
           -->
           <pose>0 0 0.95 0 0 0</pose>
           <box>
