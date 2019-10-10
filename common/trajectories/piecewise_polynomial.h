@@ -524,7 +524,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * result in `this`. If `this` corresponds to t² and `other` corresponds to
    * t³, `this += other` will correspond to t³ + t².
    * @throws std::runtime_error if every element of `other.get_segment_times()`
-   * is not within PiecewiseFunction::kEpsilonTime from
+   * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
@@ -535,7 +535,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * result in `this`. If `this` corresponds to t² and `other` corresponds to
    * t³, `this -= other` will correspond to t² - t³.
    * @throws std::runtime_error if every element of `other.get_segment_times()`
-   * is not within PiecewiseFunction::kEpsilonTime from
+   * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
   PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
@@ -547,7 +547,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponds to t² and `other` corresponds to t³, `this *= other` will
    * correspond to t⁵.
    * @throws std::runtime_error if every element of `other.get_segment_times()`
-   * is not within PiecewiseFunction::kEpsilonTime from
+   * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
@@ -562,7 +562,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * If `this` corresponds to t² and `other` corresponds to
    * t³, `this + other` will correspond to t³ + t².
    * @throws std::runtime_error if every element of `other.get_segment_times()`
-   * is not within PiecewiseFunction::kEpsilonTime from
+   * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
   const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
@@ -573,7 +573,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * If `this` corresponds to t² and `other` corresponds to
    * t³, `this - other` will correspond to t² - t³.
    * @throws std::runtime_error if every element of `other.get_segment_times()`
-   * is not within PiecewiseFunction::kEpsilonTime from
+   * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
   const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
@@ -584,7 +584,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * coefficient-wise multiplication). If `this` corresponds to t² and `other`
    * corresponds to t³, `this *= other` will correspond to t⁵.
    * @throws std::runtime_error if every element of `other.get_segment_times()`
-   * is not within PiecewiseFunction::kEpsilonTime from
+   * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times()1.
    */
   const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
@@ -659,8 +659,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   // Computes coeffecients for a cubic spline given the value and first
   // derivatives at the end points.
-  // Throws std::runtime_error
-  // if `dt` < Eigen::NumTraits<T>::epsilon()
+  // Throws `std::runtime_error` if `dt < PiecewiseTrajectory::kEpsilonTime`.
   static Eigen::Matrix<T, 4, 1> ComputeCubicSplineCoeffs(double dt, T y0, T y1,
                                                          T yd0, T yd1);
 
@@ -713,4 +712,3 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
 }  // namespace trajectories
 }  // namespace drake
-
