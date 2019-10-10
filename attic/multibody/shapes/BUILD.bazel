@@ -36,8 +36,8 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
+        "//common:filesystem",
         "//common:unused",
-        "@spruce",
         "@tinyobjloader",
     ],
 )
