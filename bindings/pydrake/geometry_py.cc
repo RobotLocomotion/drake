@@ -138,8 +138,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SceneGraphInspector", param, doc.SceneGraphInspector.doc);
     cls  // BR
+        .def("num_sources", &SceneGraphInspector<T>::num_sources,
+            doc.SceneGraphInspector.num_sources.doc)
+        .def("num_frames", &SceneGraphInspector<T>::num_frames,
+            doc.SceneGraphInspector.num_frames.doc)
+        .def("num_geometries", &SceneGraphInspector<T>::num_geometries,
+            doc.SceneGraphInspector.num_geometries.doc)
+        .def("GetAllGeometryIds", &SceneGraphInspector<T>::GetAllGeometryIds,
+            doc.SceneGraphInspector.GetAllGeometryIds.doc)
         .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
-            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
+            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc)
+        .def("GetGeometryIdByName",
+            &SceneGraphInspector<T>::GetGeometryIdByName, py::arg("frame_id"),
+            py::arg("role"), py::arg("name"),
+            doc.SceneGraphInspector.GetGeometryIdByName.doc)
+        //.def("GetName", &SceneGraphInspector<T>::GetName, py::arg("frame_id"),
+        //    doc.SceneGraphInspector.GetName.doc)
+        .def("GetPoseInFrame", &SceneGraphInspector<T>::GetPoseInFrame,
+            py::arg("geometry_id"), doc.SceneGraphInspector.GetPoseInFrame.doc)
+        .def("GetShape", &SceneGraphInspector<T>::GetShape,
+            py::arg("geometry_id"), doc.SceneGraphInspector.GetShape.doc);
   }
 
   //  SceneGraph
@@ -158,6 +176,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc.SceneGraph.get_pose_bundle_output_port.doc)
         .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
             py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
+        .def("model_inspector", &SceneGraph<T>::model_inspector,
+            py_reference_internal, doc.SceneGraph.model_inspector.doc)
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &SceneGraph<T>::RegisterSource),

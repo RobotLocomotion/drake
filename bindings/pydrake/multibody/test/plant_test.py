@@ -1183,6 +1183,8 @@ class TestPlant(unittest.TestCase):
             body = plant.GetBodyFromFrameId(frame_id)
             self.assertEqual(
                 plant.GetBodyFrameIdIfExists(body.index()), frame_id)
+            self.assertEqual(plant.GetBodyFrameIdOrThrow(body.index()),
+                             frame_id)
             return body
 
         bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))
