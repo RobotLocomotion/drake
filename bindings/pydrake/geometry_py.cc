@@ -152,11 +152,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &SceneGraphInspector<T>::GetGeometryIdByName, py::arg("frame_id"),
             py::arg("role"), py::arg("name"),
             doc.SceneGraphInspector.GetGeometryIdByName.doc)
-        //.def("GetName", &SceneGraphInspector<T>::GetName, py::arg("frame_id"),
-        //    doc.SceneGraphInspector.GetName.doc)
+        .def("GetName", &SceneGraphInspector<T>::GetName, py_reference_internal,
+            py::arg("frame_id"),
+            doc.SceneGraphInspector.GetName.doc_1args_frame_id)
         .def("GetPoseInFrame", &SceneGraphInspector<T>::GetPoseInFrame,
+            py_reference_internal,
             py::arg("geometry_id"), doc.SceneGraphInspector.GetPoseInFrame.doc)
         .def("GetShape", &SceneGraphInspector<T>::GetShape,
+            py_reference_internal,
             py::arg("geometry_id"), doc.SceneGraphInspector.GetShape.doc);
   }
 
