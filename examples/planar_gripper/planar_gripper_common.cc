@@ -23,40 +23,55 @@ using Eigen::Vector3d;
 
 template <typename T>
 void WeldGripperFrames(MultibodyPlant<T>* plant) {
-  // The finger base links are all welded a fixed distance from the world
-  // origin, on the Y-Z plane.
-  const double kOriginToBaseDistance = 0.19;
+  // The finger base links are all welded a fixed distance from the gripper
+  // frame's origin (Go), lying on the the gripper frame's Y-Z plane. We denote
+  // The gripper frame's Y and Z axes as Gy and Gz.
+  const double kGripperOriginToBaseDistance = 0.19;
+  const double kFinger1Angle = M_PI / 3.0;
+  const double kFinger2Angle = M_PI;
+  const double kFinger3Angle = -M_PI / 3.0;
 
-  // Before welding, all finger base links sit at the world origin with the
-  // finger pointing along the -Z axis, with all joint angles being zero.
+  // Note: Before welding and with all finger joint angles being zero, all
+  // finger base links sit at the world origin with the finger pointing along
+  // the world -Z axis.
+
+  // We align the planar gripper coordinate frame G with the world frame W.
+  const RigidTransformd X_WG = X_WGripper();
 
   // Weld the first finger. Finger base links are arranged equidistant along the
-  // perimeter of a circle. The first finger is welded 60 degrees from the
-  // +Z-axis. Frames F1, F2, F3 correspond to the base link finger frames.
-  RigidTransformd X_WF1(RollPitchYawd(M_PI / 3, 0, 0), Vector3d::Zero());
-  X_WF1 = X_WF1 * RigidTransformd(Vector3d(0, 0, kOriginToBaseDistance));
+  // perimeter of a circle. The first finger is welded kFinger1Angle radians
+  // from the +Gz-axis. Frames F1, F2, F3 correspond to the base link finger
+  // frames.
+  RigidTransformd X_GF1 =
+      RigidTransformd(Eigen::AngleAxisd(kFinger1Angle, Vector3d::UnitX()),
+                      Vector3d(0, 0, 0)) *
+      RigidTransformd(math::RotationMatrixd(),
+                      Vector3d(0, 0, kGripperOriginToBaseDistance));
   const multibody::Frame<T>& finger1_base_frame =
       plant->GetFrameByName("finger1_base");
-  plant->WeldFrames(plant->world_frame(), finger1_base_frame, X_WF1);
+  plant->WeldFrames(plant->world_frame(), finger1_base_frame, X_WG * X_GF1);
 
-  // Weld the second finger. The second finger is 120 degrees from the first
-  // finger (i.e., the arc from finger 1's base to finger 2's base is 120
-  // degrees).
-  const RigidTransformd X_WF2 =
-      RigidTransformd(RollPitchYawd(2 * M_PI / 3, 0, 0), Vector3d::Zero()) *
-      X_WF1;
+  // Weld the second finger. The second finger is welded kFinger2Angle radians
+  // from the +Gz-axis.
+  RigidTransformd X_GF2 =
+      RigidTransformd(Eigen::AngleAxisd(kFinger2Angle, Vector3d::UnitX()),
+                      Vector3d(0, 0, 0)) *
+      RigidTransformd(math::RotationMatrixd(),
+                      Vector3d(0, 0, kGripperOriginToBaseDistance));
   const multibody::Frame<T>& finger2_base_frame =
       plant->GetFrameByName("finger2_base");
-  plant->WeldFrames(plant->world_frame(), finger2_base_frame, X_WF2);
+  plant->WeldFrames(plant->world_frame(), finger2_base_frame, X_WG * X_GF2);
 
-  // Weld the 3rd finger. The third finger is 120 degrees from the second
-  // finger.
-  const RigidTransformd X_WF3 =
-      RigidTransformd(RollPitchYawd(2 * M_PI / 3, 0, 0), Vector3d::Zero()) *
-      X_WF2;
+  // Weld the 3rd finger. The third finger is welded kFinger3Angle radians from
+  // the +Gz-axis.
+  RigidTransformd X_GF3 =
+      RigidTransformd(Eigen::AngleAxisd(kFinger3Angle, Vector3d::UnitX()),
+                      Vector3d(0, 0, 0)) *
+      RigidTransformd(math::RotationMatrixd(),
+                      Vector3d(0, 0, kGripperOriginToBaseDistance));
   const multibody::Frame<T>& finger3_base_frame =
       plant->GetFrameByName("finger3_base");
-  plant->WeldFrames(plant->world_frame(), finger3_base_frame, X_WF3);
+  plant->WeldFrames(plant->world_frame(), finger3_base_frame, X_WG * X_GF3);
 }
 
 // Explicit instantiations.
@@ -153,7 +168,7 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
   MatrixX<double> brick_joint_keyframes =
       MakeKeyframes(all_keyframes, brick_joint_ordering, headers);
 
-  // Set the brick's initial positions.
+  // Set the brick's initial pose (expressed in the gripper frame G).
   (*brick_initial_pose)(0) = brick_joint_keyframes(0, 0);  // y-translate
   (*brick_initial_pose)(1) = brick_joint_keyframes(0, 1);  // z-translate
   (*brick_initial_pose)(2) = brick_joint_keyframes(0, 2);  // x-revolute
@@ -168,6 +183,10 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
 
   return std::make_pair(finger_joint_keyframes,
                         finger_joint_name_to_col_index_map);
+}
+
+const RigidTransformd X_WGripper() {
+  return math::RigidTransformd::Identity();
 }
 
 }  // namespace planar_gripper

@@ -13,7 +13,7 @@ GTEST_TEST(GripperBrickHelperTest, Test) {
       CompareMatrices(dut.p_L2Fingertip(), Eigen::Vector3d(0, 0, -0.086)));
   EXPECT_EQ(dut.finger_tip_radius(), 0.015);
   EXPECT_TRUE(
-      CompareMatrices(dut.brick_size(), Eigen::Vector3d(0.025, 0.092, 0.092)));
+      CompareMatrices(dut.brick_size(), Eigen::Vector3d(0.05, 0.092, 0.092)));
 
   auto diagram_context = dut.diagram().CreateDefaultContext();
   systems::Context<double>* plant_mutable_context =
