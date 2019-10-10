@@ -240,6 +240,37 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   EXPECT_TRUE(ddt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
 }
 
+// Test various exception cases.  We want to check that these throw rather
+// than crash (or return potentially bad data).
+GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
+  const double less_than_epsilon = 1e-11;
+  Eigen::VectorXd breaks(5);
+  breaks << 0, 1, 2, 3, 4;
+
+  // Spline in 3d.
+  Eigen::MatrixXd knots(3, 5);
+  knots << 1, 1, 1,
+        2, 2, 2,
+        0, 3, 3,
+        -2, 2, 2,
+        1, 1, 1;
+
+  // No throw with monotonic breaks.
+  PiecewisePolynomial<double>::Cubic(breaks, knots, true);
+
+  // Throw when breaks are too close.
+  breaks[1] = less_than_epsilon;
+  EXPECT_THROW(
+      PiecewisePolynomial<double>::Cubic(breaks, knots, true),
+      std::runtime_error);
+
+  // Throw when breaks are not strictly monotonic.
+  breaks[1] = 0;
+  EXPECT_THROW(
+      PiecewisePolynomial<double>::Cubic(breaks, knots, true),
+      std::runtime_error);
+}
+
 GTEST_TEST(testPiecewisePolynomial, AllTests
 ) {
 testIntegralAndDerivative<double>();
