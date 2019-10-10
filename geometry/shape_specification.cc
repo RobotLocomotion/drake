@@ -1,6 +1,6 @@
-#include <fmt/format.h>
-
 #include "drake/geometry/shape_specification.h"
+
+#include <fmt/format.h>
 
 namespace drake {
 namespace geometry {

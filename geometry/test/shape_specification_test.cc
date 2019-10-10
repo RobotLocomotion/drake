@@ -307,7 +307,7 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Sphere(-0.5), std::logic_error, "Sphere radius should be >= 0 \\(was "
       "-0.5\\).");
-  EXPECT_NO_THROW(Sphere(0)); // Special case for 0 radius.
+  EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0, 1), std::logic_error, "Cylinder radius and length should "
@@ -328,11 +328,11 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Mesh("foo", 0), std::logic_error, "Mesh scale cannot be 0.");
-  EXPECT_NO_THROW(Mesh("foo", -1)); // Special case for negative scale.
+  EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Convex("bar", 0), std::logic_error, "Convex scale cannot be 0.");
-  EXPECT_NO_THROW(Convex("foo", -1)); // Special case for negative scale.
+  EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
 }
 
 }  // namespace
