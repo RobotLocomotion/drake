@@ -1,23 +1,18 @@
 # -*- python -*-
 
-load("@drake//tools/install:install.bzl", "install")
-
 licenses(["notice"])  # BSD-3-Clause
 
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "spruce",
+    deprecation = " ".join([
+        "The repository @spruce provided by Drake is deprecated and will be",
+        "removed on 2020-02-01.",
+    ]),
     srcs = ["spruce.cc"],
     hdrs = ["spruce.hh"],
     copts = ["-fvisibility=hidden"],
     includes = ["."],
     linkstatic = 1,
-)
-
-# We do not install the header file (its a private dependency), but we still
-# need to install its license file.
-install(
-    name = "install",
-    docs = ["LICENSE"],
 )
