@@ -506,6 +506,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
             cls_doc.GetBodyByName.doc_2args)
+        .def("GetBodyFrameIdOrThrow", &Class::GetBodyFrameIdOrThrow,
+            py::arg("body_index"), cls_doc.GetBodyFrameIdOrThrow.doc)
         .def("GetBodyIndices", &Class::GetBodyIndices,
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
         .def("GetJointByName",

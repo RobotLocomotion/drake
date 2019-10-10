@@ -45,6 +45,12 @@ class TestGeometry(unittest.TestCase):
                                 mut.render.MakeRenderEngineVtk(
                                     mut.render.RenderEngineVtkParams()))
 
+        # Test SceneGraphInspector API
+        inspector = scene_graph.model_inspector()
+        self.assertEqual(inspector.num_frames(), 1)
+        self.assertEqual(inspector.num_sources(), 2)
+        self.assertEqual(inspector.num_geometries(), 0)
+
     def test_connect_drake_visualizer(self):
         # Test visualization API.
         # Use a mockable so that we can make a smoke test without side
