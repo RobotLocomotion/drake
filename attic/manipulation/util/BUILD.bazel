@@ -31,6 +31,7 @@ drake_cc_library(
         "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//attic/multibody/rigid_body_plant:compliant_contact_model",
+        "//common:filesystem",
         "//common:find_resource",
     ],
 )

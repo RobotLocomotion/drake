@@ -2,8 +2,8 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -45,8 +45,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
 
     tree_ = make_unique<RigidBodyTree<double>>();
 
-    spruce::path spruce_path(file_name);
-    auto extension = spruce_path.extension();
+    string extension = filesystem::path(file_name).extension();
     std::transform(extension.begin(), extension.end(), extension.begin(),
                    ::tolower);
     DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
