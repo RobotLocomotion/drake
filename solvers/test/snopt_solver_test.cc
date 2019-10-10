@@ -6,8 +6,8 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
@@ -139,12 +139,12 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
   // This is to verify we can set the print out file.
   const std::string print_file = temp_directory() + "/snopt.out";
   std::cout << print_file << std::endl;
-  EXPECT_FALSE(spruce::path(print_file).exists());
+  EXPECT_FALSE(filesystem::exists({print_file}));
   prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
   const SnoptSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_TRUE(result.is_success());
-  EXPECT_TRUE(spruce::path(print_file).exists());
+  EXPECT_TRUE(filesystem::exists({print_file}));
 }
 
 GTEST_TEST(SnoptTest, TestSparseCost) {
