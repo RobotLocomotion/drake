@@ -62,7 +62,7 @@ GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
     // Verify the correct size. There are initially 24 tetrahedra that each
     // split into 8 sub tetrahedra.
     const size_t num_tetrahedra = 24 * std::pow(8, level);
-    EXPECT_EQ(mesh.tetrahedra().size(), num_tetrahedra);
+    EXPECT_EQ(mesh.num_elements(), num_tetrahedra);
 
     // Verify that the volume monotonically converges towards the exact volume
     // of the given cylinder.
