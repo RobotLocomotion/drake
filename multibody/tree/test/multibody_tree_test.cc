@@ -403,7 +403,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Jv_WEi_W, Ei's translational velocity Jacobian in the world frame W.
   // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
   template <typename T>
-  void CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtkV(
+  void CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtV(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const MatrixX<T>& p_EoEi_E,
@@ -431,7 +431,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Hi's translational velocity Jacobian in W, expressed in W.
   // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
   template <typename T>
-  void CalcPointsOnFrameHTranslationalVelocityJacobianWrtkV(
+  void CalcPointsOnFrameHTranslationalVelocityJacobianWrtV(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const MatrixX<T>& p_HoHi_H,
@@ -518,10 +518,10 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToSymbolic) {
   VerifyModelBasics(*dut);
 }
 
-// This test helps verify MultibodyTree::CalcJacobianTranslationalVelocity() by
-// calculating Jv_WEo_W (the end effector origin Eo's translational velocity
-// Jacobian with respect to JacobianWrtVariable::kV in the world frame W,
-// expressed in W) using two methods:
+// This test helps verify MultibodyTree::CalcJacobianTranslationalVelocity()
+// with two methods to calculate Jv_WEo_W, which is Eo's (end effector origin's)
+// translational velocity Jacobian with respect to v (generalized velocities)
+// in the world frame W, expressed in W.
 // 1. Calling MultibodyTree::CalcJacobianTranslationalVelocity().
 // 2. Using AutoDiffXd to compute the partial derivative of v_WE(q, v) with
 //    respect to v.
@@ -821,7 +821,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   MatrixX<AutoDiffXd> Jv_WHp_autodiff(3 * kNumPoints, kNumPositions);
 
   // Compute J̇_WHp using AutoDiffXd.
-  CalcPointsOnFrameHTranslationalVelocityJacobianWrtkV(
+  CalcPointsOnFrameHTranslationalVelocityJacobianWrtV(
       tree_autodiff(), *context_autodiff_, p_HPi_autodiff,
       &p_WPi_autodiff, &Jv_WHp_autodiff);
 
@@ -926,7 +926,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
 
   // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
   // geometric Jacobian Jv_Wpi.
-  CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtkV(
+  CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtV(
       tree(), *context_, p_EPi, &p_WPi, &Jq_WPi);
 
   // Alternatively, compute the analytic Jacobian by taking the gradient of
@@ -944,7 +944,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
   MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
 
-  CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtkV(
+  CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtV(
       tree_autodiff(), *context_autodiff_,
       p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 
