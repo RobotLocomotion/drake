@@ -1,3 +1,5 @@
+#include <fmt/format.h>
+
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -16,7 +18,7 @@ Sphere::Sphere(double radius)
     : Shape(ShapeTag<Sphere>()), radius_(radius) {
   if (radius < 0) {
     throw std::logic_error(
-        "Sphere radius should be >= 0 (was " + std::to_string(radius) + ").");
+        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
   }
 }
 
@@ -26,8 +28,8 @@ Cylinder::Cylinder(double radius, double length)
       length_(length) {
   if (radius <= 0 || length <= 0) {
     throw std::logic_error(
-        "Cylinder radius and length should be > 0 (was " +
-        std::to_string(radius) + " and " + std::to_string(length) + ").");
+        fmt::format("Cylinder radius and length should be > 0 (was {} and {}).",
+        radius, length));
   }
 }
 
@@ -69,9 +71,8 @@ Box::Box(double width, double depth, double height)
       size_(width, depth, height) {
   if (width <= 0 || depth <= 0 || height <= 0) {
     throw std::logic_error(
-        "Box width, depth and height should be > 0 (was " +
-        std::to_string(width) + ", " + std::to_string(depth) + ", " +
-        std::to_string(height) + ").");
+        fmt::format("Box width, depth and height should be > 0 (was {}, {} and "
+        "{}).", width, depth, height));
   }
 }
 

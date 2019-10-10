@@ -242,7 +242,7 @@ class Convex final : public Shape {
                                 multiple object-name statements (e.g.,
                                 "o object_name"), or if there are faces defined
                                 outside a single object-name statement.
-    @throws std::logic_error    if scale is zero. Note that a negative scale is
+   @throws std::logic_error     if scale is zero. Note that a negative scale is
                                 considered valid.
    */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
