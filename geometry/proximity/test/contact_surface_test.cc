@@ -35,6 +35,20 @@ class ContactSurfaceTester {
     return *(surface_.grad_h_MN_W_);
   }
 
+  SurfaceMeshFieldLinear<T, T>& mutable_e_MN() const {
+    DRAKE_DEMAND(surface_.e_MN_ != nullptr);
+    return *(surface_.e_MN_);
+  }
+
+  SurfaceMeshFieldLinear<Vector3<T>, T>& mutable_grad_h_MN_W() const {
+    DRAKE_DEMAND(surface_.grad_h_MN_W_ != nullptr);
+    return *(surface_.grad_h_MN_W_);
+  }
+
+  void set_mesh_W(std::unique_ptr<SurfaceMesh<T>> mesh) {
+    *(surface_.mesh_W_) = *mesh;
+  }
+
  private:
   const geometry::ContactSurface<T>& surface_;
 };
@@ -191,6 +205,44 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
   EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
   EXPECT_EQ(original.EvaluateGrad_h_MN_W(f, b), copy.EvaluateGrad_h_MN_W(f, b));
+}
+
+// Tests the equality comparisons.
+GTEST_TEST(ContactSurfaceTest, TestEqual) {
+  // Create contact surface for comparison.
+  const ContactSurface<double> surface = TestContactSurface<double>();
+
+  // Same contact surface.
+  auto surface0 = ContactSurface<double>(surface);
+  EXPECT_TRUE(surface.Equal(surface0));
+
+  // Different mesh.
+  auto surface1 = ContactSurface<double>(surface);
+  ContactSurfaceTester<double> surface_tester1(surface1);
+  auto alt_vertices =
+      std::vector<SurfaceVertex<double>>(surface1.mesh_W().vertices());
+  alt_vertices.at(0) = SurfaceVertex<double>({2., 2., 2.});
+  auto alt_faces = std::vector<SurfaceFace>(surface1.mesh_W().faces());
+  auto alt_mesh = std::make_unique<SurfaceMesh<double>>(std::move(alt_faces),
+      std::move(alt_vertices));
+  surface_tester1.set_mesh_W(std::move(alt_mesh));
+  EXPECT_FALSE(surface.Equal(surface1));
+
+  // Different pressure field.
+  auto surface2 = ContactSurface<double>(surface);
+  ContactSurfaceTester<double> surface_tester2(surface2);
+  std::vector<double>& values2 =
+      surface_tester2.mutable_e_MN().mutable_values();
+  values2[0] += 2.;
+  EXPECT_FALSE(surface.Equal(surface2));
+
+  // Different grad h field.
+  auto surface3 = ContactSurface<double>(surface);
+  ContactSurfaceTester<double> surface_tester3(surface3);
+  std::vector<Vector3<double>>& values3 =
+      surface_tester3.mutable_grad_h_MN_W().mutable_values();
+  values3[0][0] += 2.;
+  EXPECT_FALSE(surface.Equal(surface3));
 }
 
 // Tests the constructor of ContactSurface that when id_M is greater than

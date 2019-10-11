@@ -148,6 +148,23 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   const std::vector<FieldValue>& values() const { return values_; }
   std::vector<FieldValue>& mutable_values() { return values_; }
 
+  /** Checks to see whether the given MeshFieldLinear object is equal (all data
+   match to bit-wise precision).
+   @param field The field for comparison.
+   @returns `true` if the given field is equal.
+   */
+  bool Equal(const MeshField<FieldValue, MeshType>& field) const {
+    if (!this->mesh().Equal(field.mesh())) return false;
+
+    for (SurfaceVertexIndex i(0); i < this->mesh().num_vertices(); ++i) {
+      if (this->EvaluateAtVertex(i) != field.EvaluateAtVertex(i))
+        return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
