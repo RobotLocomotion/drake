@@ -423,7 +423,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     // For each point Ei, calculate Ei's position from Wo (World origin),
     // expressed in world W.
-    model_on_T.CalcPointsPositions(context_on_T, frame_E, p_EoEi_E,   // From F
+    model_on_T.CalcPointsPositions(context_on_T, frame_E, p_EoEi_E,   // From E
                                                  frame_W, p_WoEi_W);  // to W.
   }
 
@@ -602,7 +602,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
                                            &Jv_WE);
 
   // Calculate p_WoEo_W (Eo's position from World origin Wo expressed in W)
-  // from p_EoEi_E (Eo's position from Eo expressed in E -- zero vector).
+  // from p_EoGo_E (Go's position from Eo expressed in E -- zero vector).
   tree().CalcPointsPositions(*context_, frame_E, p_EoGo_E,
                                         frame_W, &p_WE);
 
@@ -1178,21 +1178,20 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityD) {
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(3 * npoints, nv, M_E);
 
   // For each point P, calculate Jv_v_WP (P's translational velocity Jacobian
-  // in world W, expressed in W).  Herein, frame_F is the same as frame_W.
-  const Frame<double>& frame_F = tree().world_body().body_frame();
+  // in world W, expressed in W).  Note: This test case is somewhat degenerate.
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianTranslationalVelocity(*context_,
                                            JacobianWrtVariable::kV,
-                                           frame_F,
-                                           frame_F,
+                                           frame_W,
+                                           frame_W,
                                            p_WP_set,
                                            frame_W,
                                            frame_W,
                                            &Jv_WP);
 
   // For each point P, calculate p_WoP_W (P's position from World origin Wo,
-  // expressed in world W).
-  tree().CalcPointsPositions(*context_, frame_F, p_WP_set,
+  // expressed in world W).  Note: This test case is somewhat degenerate.
+  tree().CalcPointsPositions(*context_, frame_W, p_WP_set,
                                         frame_W, &p_WP_out);
 
   // Since in this case we are querying for the world frame:
