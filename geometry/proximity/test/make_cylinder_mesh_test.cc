@@ -29,6 +29,19 @@ double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
   return volume;
 }
 
+GTEST_TEST(MakeCylinderVolumeMesh, CoarsestMesh) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  // A `resolution_hint` greater than √2 times the radius of the cylinder
+  // should give the coarsest mesh. We use a scaling factor larger than
+  // √2 = 1.41421356... in the sixth decimal digit. It should give a mesh of
+  // rectangular prism with 24 tetrahedra.
+  const double resolution_hint = 1.414214 * radius;
+  auto mesh =
+      MakeCylinderVolumeMesh<double>(Cylinder(radius, length), resolution_hint);
+  EXPECT_EQ(24, mesh.num_elements());
+}
+
 // This test verifies that the volume of the tessellated
 // cylinder converges to the exact value as the tessellation is refined.
 GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
@@ -37,8 +50,8 @@ GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
   const double height = 2;
   const double radius = 1;
   double resolution_hint = 2.0;  // Hint to coarsest mesh.
-  auto mesh0 = MakeCylinderVolumeMesh<double>(
-      drake::geometry::Cylinder(radius, height), resolution_hint);
+  auto mesh0 =
+      MakeCylinderVolumeMesh<double>(Cylinder(radius, height), resolution_hint);
 
   const double volume0 = CalcTetrahedronMeshVolume(mesh0);
   const double cylinder_volume = height * radius * radius * M_PI;

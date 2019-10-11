@@ -410,6 +410,10 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 /// However, cutting `resolution_hint` in half will likely increase the
 /// number of tetrahedra.
 ///
+/// Ultimately, successively smaller values of `resolution_hint` will no
+/// longer change the output mesh. This algorithm will not produce more than
+/// 1024 vertices on the boundary circle of each of the top and bottom caps.
+///
 /// This method implements a variant of the generator described in
 /// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
 /// but the main ideas used from the paper are:
@@ -434,7 +438,7 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 ///    approximate.
 /// @param[in] resolution_hint
 ///    The positive characteristic edge length for the mesh. The coarsest
-///    possible mesh (a rectangular prism) is guaranteed for any vaule of
+///    possible mesh (a rectangular prism) is guaranteed for any value of
 ///    `resolution_hint` greater than √2 times the radius of the cylinder.
 ///
 /// @throws std::exception if refinement_level is negative.
@@ -485,10 +489,14 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
   DRAKE_DEMAND(resolution_hint > 0.0);
   // Make sure the arcsin doesn't blow up.
   const double e = std::min(resolution_hint, 2.0 * r);
-  const int refinement_level = std::max(
+  const int L = std::max(
       0, static_cast<int>(
              std::ceil(std::log2(M_PI / std::asin(e / (2.0 * r)))) - 2));
 
+  // Note: With refinement L = 8, we'd get 2^(L+2) = 1024 vertices on the
+  // boundary circle of each cap, satisfying the promise that we won't
+  // produce unlimited tetrahedra.
+  const int refinement_level = std::min(8, L);
   // If the original mesh contains N tetrahedra, the resulting mesh with
   // refinement_level = L will contain N·8ᴸ tetrahedra.
   for (int level = 1; level <= refinement_level; ++level) {
