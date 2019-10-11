@@ -13,12 +13,12 @@ config_setting(
     values = {"cpu": "k8"},
 )
 
-# Only Ubuntu needs an installation rule; on macOS, we are using dReal from
+# Only Ubuntu needs an installation rule; on macOS, we are using IBEX from
 # homebrew, so Drake's installation script doesn't need to do anything extra.
 install(
     name = "install",
     deps = select({
-        ":linux": ["@dreal//:install"],
+        ":linux": ["@ibex//:install"],
         "@//conditions:default": [],
     }),
 )

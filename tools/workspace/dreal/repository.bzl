@@ -16,11 +16,7 @@ load(
     "@drake//tools/workspace:pkg_config.bzl",
     "setup_pkg_config_repository",
 )
-load(
-    ":versions.bzl",
-    "DREAL_VERSION",
-    "IBEX_VERSION",
-)
+load(":version.bzl", "DREAL_VERSION")
 
 def _rename_so(repo_ctx, directory, old_name):
     # Rename directory/old_name to be -ldrake_foo instead of -lfoo.
@@ -55,11 +51,6 @@ def _impl(repo_ctx):
     # Avoid using upstream library names for our custom build.
     _rename_so(
         repo_ctx,
-        "opt/libibex/{}/lib".format(IBEX_VERSION),
-        "libibex.so",
-    )
-    _rename_so(
-        repo_ctx,
         "opt/dreal/{}/lib".format(DREAL_VERSION),
         "libdreal.so",
     )
@@ -85,13 +76,7 @@ dreal_repository = repository_rule(
         # in the pkg_config_repository rule.
         "pkg_config_paths": attr.string_list(
             default = [
-                # TODO(soonho-tri): Remove the following two lines.
-                "/usr/local/opt/clp/lib/pkgconfig",
-                "/usr/local/opt/coinutils/lib/pkgconfig",
-                "/usr/local/opt/clp@1.17/lib/pkgconfig",
                 "/usr/local/opt/dreal/lib/pkgconfig",
-                "/usr/local/opt/ibex@{}/share/pkgconfig".format(IBEX_VERSION),
-                "/usr/local/opt/nlopt/lib/pkgconfig",
             ],
         ),
         # On macOS we are using dReal from homebrew, so Drake's installation
@@ -110,13 +95,11 @@ dreal_repository = repository_rule(
         "filenames": attr.string_list(
             default = [
                 "d/dreal/dreal_{}_amd64.deb".format(DREAL_VERSION),
-                "libi/libibex-dev/libibex-dev_{}.20190612163212.gitfd0888707728e183c860793f225fd4e5e2ce9d91~16.04_amd64.deb".format(IBEX_VERSION),  # noqa
             ],
         ),
         "sha256s": attr.string_list(
             default = [
                 "000b99ad5a86c46eda98d12622688555350d94b24a16941bb0e45c8d2c613952",  # noqa
-                "b996e587c9731b90be3d0f31f8e0b5db364a6b7847a8e2207361d753c985cfed",  # noqa
             ],
         ),
         "build_file": attr.label(
@@ -127,5 +110,5 @@ dreal_repository = repository_rule(
 )
 
 """Provides a library target for @dreal//:dreal.  On macOS, uses homebrew; on
-Ubuntu, downloads *.deb files and unpacks them into the workspace.
+Ubuntu, downloads a *.deb file and unpacks it into the workspace.
 """

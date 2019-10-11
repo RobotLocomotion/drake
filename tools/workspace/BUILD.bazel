@@ -82,6 +82,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": ["//tools/workspace/dreal:install"],
     "//tools:no_dreal": [],
 }) + select({
+    "//conditions:default": ["//tools/workspace/ibex:install"],
+    "//tools:no_dreal": [],
+}) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
     "//conditions:default": [],
 }) + select({
