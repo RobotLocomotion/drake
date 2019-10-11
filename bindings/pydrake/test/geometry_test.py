@@ -159,6 +159,18 @@ class TestGeometry(unittest.TestCase):
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
 
+    def test_shapes(self):
+        sphere = mut.Sphere(radius=1.0)
+        self.assertEqual(sphere.get_radius(), 1.0)
+        cylinder = mut.Cylinder(radius=1.0, length=2.0)
+        self.assertEqual(cylinder.get_radius(), 1.0)
+        self.assertEqual(cylinder.get_length(), 2.0)
+        box = mut.Box(width=1.0, depth=2.0, height=3.0)
+        self.assertEqual(box.width(), 1.0)
+        self.assertEqual(box.depth(), 2.0)
+        self.assertEqual(box.height(), 3.0)
+        numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.render.RenderEngineVtkParams()

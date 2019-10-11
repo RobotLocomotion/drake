@@ -410,13 +410,20 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
-        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc);
+        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
+        .def("get_radius", &Sphere::get_radius, doc.Sphere.get_radius.doc);
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
-            doc.Cylinder.ctor.doc);
+            doc.Cylinder.ctor.doc)
+        .def("get_radius", &Cylinder::get_radius, doc.Cylinder.get_radius.doc)
+        .def("get_length", &Cylinder::get_length, doc.Cylinder.get_length.doc);
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),
-            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc);
+            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc)
+        .def("width", &Box::width, doc.Box.width.doc)
+        .def("depth", &Box::depth, doc.Box.depth.doc)
+        .def("height", &Box::height, doc.Box.height.doc)
+        .def("size", &Box::size, py_reference_internal, doc.Box.size.doc);
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc);
     py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)
