@@ -412,7 +412,7 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 ///
 /// Ultimately, successively smaller values of `resolution_hint` will no
 /// longer change the output mesh. This algorithm will not produce more than
-/// 1024 vertices on the boundary circle of each of the top and bottom caps.
+/// 100 million tetrahedra.
 ///
 /// This method implements a variant of the generator described in
 /// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
@@ -493,10 +493,18 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
       0, static_cast<int>(
              std::ceil(std::log2(M_PI / std::asin(e / (2.0 * r)))) - 2));
 
-  // Note: With refinement L = 8, we'd get 2^(L+2) = 1024 vertices on the
-  // boundary circle of each cap, satisfying the promise that we won't
-  // produce unlimited tetrahedra.
-  const int refinement_level = std::min(8, L);
+  // Limit refinement_level to 100 million tetrahedra. Each refinement level
+  // increases the number of tetrahedra by a factor of 8. Let N₀ be the
+  // number of initial tetrahedra. The number of tetrahedra N with refinement
+  // level ℒ would be:
+  //   N = N₀ * 8ᴸ
+  //   ℒ = log₈(N/N₀)
+  // We can limit N to 100 million by:
+  //   ℒ ≤ log₈(1e8/N₀) = log₂(1e8/N₀)/3
+  const int refinement_level = std::min(
+      L,
+      static_cast<int>(std::floor(std::log2(1.e8 / mesh.num_elements()) / 3.)));
+
   // If the original mesh contains N tetrahedra, the resulting mesh with
   // refinement_level = L will contain N·8ᴸ tetrahedra.
   for (int level = 1; level <= refinement_level; ++level) {
