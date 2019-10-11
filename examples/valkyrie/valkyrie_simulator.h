@@ -8,6 +8,7 @@
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
@@ -34,7 +35,8 @@ namespace drake {
 namespace examples {
 namespace valkyrie {
 
-class ValkyrieSimulationDiagram : public systems::Diagram<double> {
+class DRAKE_DEPRECATED("2020-02-01", "The valkyrie example is being removed.")
+ValkyrieSimulationDiagram : public systems::Diagram<double> {
  public:
   ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm_arg, double dt) {
     systems::DiagramBuilder<double> builder;

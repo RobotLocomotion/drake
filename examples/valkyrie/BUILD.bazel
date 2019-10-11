@@ -15,6 +15,7 @@ drake_cc_library(
     name = "valkyrie_constants",
     srcs = ["valkyrie_constants.cc"],
     hdrs = ["valkyrie_constants.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//common:essential",
     ],
@@ -24,6 +25,7 @@ drake_cc_library(
     name = "robot_state_decoder",
     srcs = ["robot_state_decoder.cc"],
     hdrs = ["robot_state_decoder.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/multibody:rigid_body_tree",
@@ -37,6 +39,7 @@ drake_cc_library(
     name = "actuator_effort_to_rigid_body_plant_input_converter",
     srcs = ["actuator_effort_to_rigid_body_plant_input_converter.cc"],
     hdrs = ["actuator_effort_to_rigid_body_plant_input_converter.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//systems/framework",
@@ -47,6 +50,7 @@ drake_cc_library(
     name = "robot_command_to_desired_effort_converter",
     srcs = ["robot_command_to_desired_effort_converter.cc"],
     hdrs = ["robot_command_to_desired_effort_converter.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//systems/framework",
@@ -60,6 +64,7 @@ drake_cc_binary(
         "valkyrie_pd_ff_controller.cc",
         "valkyrie_pd_ff_controller.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     data = [":models"],
     deps = [
         ":robot_state_decoder",
@@ -83,6 +88,7 @@ drake_cc_library(
     name = "robot_state_encoder",
     srcs = ["robot_state_encoder.cc"],
     hdrs = ["robot_state_encoder.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/multibody/rigid_body_plant",
@@ -120,6 +126,7 @@ drake_cc_library(
 drake_cc_binary(
     name = "valkyrie_simulation",
     srcs = ["valkyrie_simulation.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     data = [":models"],
     deps = [":valkyrie_simulator"],
 )
@@ -128,6 +135,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "robot_state_encoder_decoder_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [":models"],
     deps = [
         ":robot_state_decoder",
@@ -147,6 +155,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "robot_command_to_desired_effort_converter_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [":models"],
     deps = [
         ":robot_command_to_desired_effort_converter",
@@ -161,12 +170,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "valkyrie_simulation_test",
     srcs = ["test/valkyrie_simulation_test.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     data = [":models"],
     deps = [":valkyrie_simulator"],
 )
 
 drake_cc_googletest(
     name = "valkyrie_ik_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [":models"],
     # Non-deterministic IPOPT-related failures on macOS, see #10276.
     flaky = 1,

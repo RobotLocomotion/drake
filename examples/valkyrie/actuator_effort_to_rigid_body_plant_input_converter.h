@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_actuator.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -10,7 +11,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
+class DRAKE_DEPRECATED("2020-02-01", "The valkyrie example is being removed.")
+ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
  public:
   ActuatorEffortToRigidBodyPlantInputConverter(
       const std::vector<const RigidBodyActuator*>& ordered_actuators);
