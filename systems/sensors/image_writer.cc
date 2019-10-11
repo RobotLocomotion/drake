@@ -7,13 +7,14 @@
 #include <utility>
 #include <vector>
 
-#include <spruce.hh>
 #include <vtkImageData.h>
 #include <vtkNew.h>
 #include <vtkPNGWriter.h>
 #include <vtkSmartPointer.h>
 #include <vtkTIFFWriter.h>
 #include "fmt/ostream.h"
+
+#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace systems {
@@ -107,9 +108,9 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
   }
 
   // Confirms the implied directory is valid.
-  spruce::path test_dir{
-      DirectoryFromFormat(file_name_format, port_name, kPixelType)};
-  FolderState folder_state = ValidateDirectory(test_dir.getStr());
+  const std::string test_dir =
+      DirectoryFromFormat(file_name_format, port_name, kPixelType);
+  FolderState folder_state = ValidateDirectory(test_dir);
   if (folder_state != FolderState::kValid) {
     const char* const reason = [folder_state]() {
       switch (folder_state) {
@@ -127,7 +128,7 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
     throw std::logic_error(
         fmt::format("ImageWriter: The format string `{}` implied the invalid "
                     "directory: '{}'; {}",
-                    file_name_format, test_dir.getStr(), reason));
+                    file_name_format, test_dir, reason));
   }
 
   // Confirms file has appropriate extension.
@@ -185,9 +186,19 @@ std::string ImageWriter::MakeFileName(const std::string& format,
 std::string ImageWriter::DirectoryFromFormat(const std::string& format,
                                              const std::string& port_name,
                                              PixelType pixel_type) const {
-  // Extract the directory.
+  // Extract the directory.  Note that in any error messages to the user, we'll
+  // report using the argument name from the public method.
+  if (format.empty()) {
+    throw std::logic_error(
+        "ImageWriter: The file_name_format cannot be empty");
+  }
+  if (format.back() == '/') {
+    throw std::logic_error(fmt::format(
+        "ImageWriter: The file_name_format '{}' cannot end with a '/'",
+        format));
+  }
   size_t index = format.rfind('/');
-  std::string dir_format = format.substr(0, index + 1);
+  std::string dir_format = format.substr(0, index);
   // NOTE: [bcdelmosu] are all the characters in: double, msec, and usec.
   // Technically, this will also key on '{time_mouse}', but if someone is
   // putting that in their file path, they deserve whatever they get.
@@ -203,10 +214,10 @@ std::string ImageWriter::DirectoryFromFormat(const std::string& format,
 
 ImageWriter::FolderState ImageWriter::ValidateDirectory(
     const std::string& file_path_str) {
-  spruce::path file_path(file_path_str);
-  if (file_path.exists()) {
-    if (file_path.isDir()) {
-      if (access(file_path.getStr().c_str(), W_OK) == 0) {
+  filesystem::path file_path(file_path_str);
+  if (filesystem::exists(file_path)) {
+    if (filesystem::is_directory(file_path)) {
+      if (::access(file_path.string().c_str(), W_OK) == 0) {
         return FolderState::kValid;
       } else {
         return FolderState::kUnwritable;
