@@ -79,9 +79,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({
-    "//conditions:default": ["//tools/workspace/dreal:install"],
-    "//tools:no_dreal": [],
-}) + select({
     "//conditions:default": ["//tools/workspace/ibex:install"],
     "//tools:no_dreal": [],
 }) + select({

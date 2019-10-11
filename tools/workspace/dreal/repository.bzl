@@ -1,31 +1,17 @@
 # -*- mode: python -*-
 
 load(
-    "@drake//tools/workspace:deb.bzl",
-    "setup_new_deb_archive",
-)
-load(
-    "@drake//tools/workspace:execute.bzl",
-    "execute_or_fail",
-)
-load(
     "@drake//tools/workspace:os.bzl",
     "determine_os",
+)
+load(
+    "@drake//tools/workspace:github.bzl",
+    "setup_github_repository",
 )
 load(
     "@drake//tools/workspace:pkg_config.bzl",
     "setup_pkg_config_repository",
 )
-load(":version.bzl", "DREAL_VERSION")
-
-def _rename_so(repo_ctx, directory, old_name):
-    # Rename directory/old_name to be -ldrake_foo instead of -lfoo.
-    old_name[:3] == "lib" or fail("Bad library name " + old_name)
-    execute_or_fail(repo_ctx, [
-        "mv",
-        directory + "/lib" + old_name[3:],
-        directory + "/libdrake_" + old_name[3:],
-    ])
 
 def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
@@ -40,33 +26,13 @@ def _impl(repo_ctx):
                 result.error,
             ))
         return
-    result = setup_new_deb_archive(repo_ctx)
+    result = setup_github_repository(repo_ctx)
     if result.error != None:
         fail("Unable to complete setup for @{} repository: {}".format(
             # (forced line break)
             repo_ctx.name,
             result.error,
         ))
-
-    # Avoid using upstream library names for our custom build.
-    _rename_so(
-        repo_ctx,
-        "opt/dreal/{}/lib".format(DREAL_VERSION),
-        "libdreal.so",
-    )
-    execute_or_fail(repo_ctx, [
-        "chmod",
-        "a+w",
-        "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
-    ])
-
-    # Our BUILD file declares this dependency with the revised spelling.
-    execute_or_fail(repo_ctx, [
-        "patchelf",
-        "--remove-needed",
-        "libibex.so",
-        "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
-    ])
 
 dreal_repository = repository_rule(
     # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
@@ -85,30 +51,30 @@ dreal_repository = repository_rule(
             default = "filegroup(name = \"install\")  # Nothing.",
         ),
         # All of the below attributes are only used for Ubuntu.  They are
-        # documented in the new_deb_archive rule.
-        "mirrors": attr.string_list(
-            default = [
-                "https://drake-apt.csail.mit.edu/xenial/pool/main",
-                "https://s3.amazonaws.com/drake-apt/xenial/pool/main",
-            ],
+        # documented in the setup_github_archive rule.
+        "repository": attr.string(
+            default = "dreal/dreal4",
         ),
-        "filenames": attr.string_list(
-            default = [
-                "d/dreal/dreal_{}_amd64.deb".format(DREAL_VERSION),
-            ],
+        "commit": attr.string(
+            default = "4.19.10.2",
         ),
-        "sha256s": attr.string_list(
-            default = [
-                "000b99ad5a86c46eda98d12622688555350d94b24a16941bb0e45c8d2c613952",  # noqa
-            ],
+        "sha256": attr.string(
+            default = "0488b4da501bace1fc2e2418ce7f8b1d28b6bd798923c2619756a5e905cd83a5",  # noqa
         ),
         "build_file": attr.label(
-            default = "@drake//tools/workspace/dreal:package-ubuntu.BUILD.bazel",  # noqa
+            default = None,
+        ),
+        "extra_strip_prefix": attr.string(
+            default = "",
+        ),
+        "mirrors": attr.string_list_dict(
+            mandatory = True,
+            allow_empty = False,
         ),
     },
     implementation = _impl,
 )
 
 """Provides a library target for @dreal//:dreal.  On macOS, uses homebrew; on
-Ubuntu, downloads a *.deb file and unpacks it into the workspace.
+Ubuntu, compiles from source.
 """

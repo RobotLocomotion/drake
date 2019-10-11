@@ -16,6 +16,7 @@ def github_archive(
         commit = None,
         sha256 = "0" * 64,
         build_file = None,
+        extra_strip_prefix = "",
         local_repository_override = None,
         mirrors = None,
         **kwargs):
@@ -56,6 +57,7 @@ def github_archive(
         fail("Missing mirrors=; see mirrors.bzl")
 
     if local_repository_override != None:
+        # XXX Handle extra_strip_prefix
         if build_file == None:
             native.local_repository(
                 name = name,
@@ -78,6 +80,7 @@ def github_archive(
         commit = commit,
         sha256 = sha256,
         build_file = build_file,
+        extra_strip_prefix = extra_strip_prefix,
         mirrors = mirrors,
         **kwargs
     )
@@ -107,6 +110,9 @@ _github_archive_real = repository_rule(
         ),
         "build_file": attr.label(
             default = None,
+        ),
+        "extra_strip_prefix": attr.string(
+            default = "",
         ),
         "mirrors": attr.string_list_dict(
             mandatory = True,
@@ -146,6 +152,7 @@ def setup_github_repository(repository_ctx):
         commit = repository_ctx.attr.commit,
         mirrors = repository_ctx.attr.mirrors,
         sha256 = repository_ctx.attr.sha256,
+        extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
     )
 
     # Optionally apply source patches, using Bazel's utility helper.  Here we
@@ -174,7 +181,8 @@ def github_download_and_extract(
         commit,
         mirrors,
         output = "",
-        sha256 = "0" * 64):
+        sha256 = "0" * 64,
+        extra_strip_prefix = ""):
     """Download an archive of the provided GitHub repository and commit to the
     output path and extract it.
 
@@ -197,7 +205,7 @@ def github_download_and_extract(
         urls,
         output = output,
         sha256 = _sha256(sha256),
-        stripPrefix = _strip_prefix(repository, commit),
+        stripPrefix = _strip_prefix(repository, commit, extra_strip_prefix),
     )
 
     # Create a summary file for for Drake maintainers.
@@ -223,7 +231,7 @@ def _sha256(sha256):
 
     return sha256
 
-def _strip_prefix(repository, commit):
+def _strip_prefix(repository, commit, extra_strip_prefix):
     """Compute the strip prefix for a downloaded archive of the provided
     GitHub repository and commit.
 
@@ -244,7 +252,10 @@ def _strip_prefix(repository, commit):
     else:
         strip_commit = commit
 
-    return project + "-" + strip_commit.replace("/", "-")
+    result = project + "-" + strip_commit.replace("/", "-")
+    if extra_strip_prefix:
+        result += "/" + extra_strip_prefix
+    return result
 
 def _urls(repository, commit, mirrors):
     """Compute the urls from which an archive of the provided GitHub
