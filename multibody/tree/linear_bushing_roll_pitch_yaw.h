@@ -15,35 +15,46 @@ template <typename T> class Body;
 
 /// This %ForceElement models a massless bushing that connects a frame Aʙ of a
 /// body A to a frame Bᴀ of a body B.  The bushing can apply both a torque and
-/// force, due to spring (stiffness) and damping (dissipation) properties.
+/// force due to stiffness and dissipation (spring/damper) properties.
 ///
-/// The bushing's stiffness torque stiffness depends on roll-pitch-yaw angles
-/// q₀, q₁, q₂ and its torque damping depends on q̇₀, q̇₁, q̇₂.  The angles
-/// q₀, q₁, q₂ are calculated from the orientation between frames Aʙ and Bᴀ and
-/// have the range `-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`.
+/// The bushing's torque depends on roll-pitch-yaw angles q₀, q₁, q₂ and their
+/// time derivatives q̇₀, q̇₁, q̇₂.  The roll-pitch-yaw angles q₀, q₁, q₂ are
+/// calculated from the orientation between frames Aʙ and Bᴀ and have the range
+/// `-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`.
 ///
-/// The bushing's force stiffness is linear in displacements x, y, z and
-/// its force damping is linear in ẋ, ẏ, ż.  The displacements x, y, z
-/// are defined so the position vector from Aʙₒ (frame Aʙ's origin) to Bᴀₒ
-/// (frame Bᴀ's origin) expressed in frame Aʙ is `[x, y, z]`.
+/// The bushing's force depends on displacements x, y, z and their time
+/// derivatives ẋ, ẏ, ż.  The displacements x, y, z are defined so the position
+/// vector from Aʙₒ (frame Aʙ's origin) to Bᴀₒ (frame Bᴀ's origin) expressed
+/// in frame Aʙ is `[x, y, z]`.
 ///
-/// The set of forces on body A from the bushing is equivalent to a torque τ
-/// on frame Aʙ and a force f applied to point a Acₒ of A, as
+/// The set of forces on body B from the bushing is equivalent to a torque τ
+/// on frame Bᴀ and a force f applied to a point Bc of B, as
 /// <pre>
-/// f = (kx x + bx ẋ) Aʙx  +  (ky y + by ẏ) Aʙy + (kz z + bz ż) Aʙz
-/// τ = (k₀q₀ + b₀q̇₀) Bᴀx  +  (k₁q₁ + b₁q̇₁) Iy  + (k₂q₂ + b₂q̇₂) Aʙz
+/// f = Fx Aʙx + Fy Aʙy + Fz Aʙz
+/// τ = Tx Bᴀx + Ty Aʙy + Tz Aʙz
+/// </pre>
+/// where Aʙx, Aʙy, Aʙz are orthogonal unit vectors fixed in frame Aʙ,
+/// and Bᴀx, Bᴀy, Bᴀz are orthogonal unit vectors fixed in frame Bᴀ.
+/// The set of forces on body A from the bushing is equivalent to a torque -τ on
+/// frame Aʙ and a force -f applied to a point Ac of A.  Point Ac of A and point
+/// Bc of B are coincident and located halfway between origin points Aʙₒ and Bᴀₒ.
+///
+/// The bushing torque τ and force f are modeled as having a potential energy 𝖀
+/// and a dissipation function 𝕱 of <pre>
+/// `𝖀 = 1/2 (kx x² + ky y² + kz z²) + 1/2 (k₀q₀² + k₁q₁² + k₂q₂²)`
+/// `𝕱 = 1/2 (bx ẋ² + by ẏ² + bz ż²) + 1/2 (b₀q̇₀² + b₁q̇₁² + b₂q̇₂²)`
+/// </pre>
+/// By equating the generalized forces associated with 𝖀 and 𝕱 with the
+/// generalized forces produced by f and τ, one can show <pre>
+/// Fx = (kx x + bx ẋ)
+/// Fy = (ky y + by ẏ)
+/// Fz = (kz z + bz ż)
+/// Tx = (k₀q₀ + b₀q̇₀)
+/// Ty = (k₁q₁ + b₁q̇₁)
+/// Tz = (k₂q₂ + b₂q̇₂)
 /// </pre>
 /// where kx, ky, kz and bx, by, bz are force stiffness and damping constants,
 /// k₀, k₁, k₂ and b₀, b₁, b₂, are torque stiffness and damping constants,
-/// Aʙx, Aʙy, Aʙz are orthogonal unit vectors fixed in frame Aʙ,
-/// Bᴀx, Bᴀy, Bᴀz are orthogonal unit vectors fixed in frame Bᴀ, and
-/// Iy = -sin(q₂)*Aʙx + cos(q₂)*Aʙy.  Note: The previous expression for τ is
-/// expressed in a non-orthogonal basis related to a Space-fixed XYZ (intrinsic)
-/// RollPitchYaw sequence with angles `[roll = q₀, pitch = q₁, yaw = q₂]`.
-///
-/// Using action/reaction (or applying Newtons 2ⁿᵈ law to the massless bushing),
-/// the set of forces on body B from the bushing is equivalent to a torque -τ
-/// on frame Bᴀ and a force -f applied to the point of B coincident with Aʙₒ.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
