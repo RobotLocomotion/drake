@@ -363,6 +363,33 @@ class SurfaceMesh {
   // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
+  // TODO(#12173): Consider NaN==NaN to be true in equality tests.
+  /** Checks to see whether the given SurfaceMesh object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   @param mesh The mesh for comparison.
+   @returns `true` if the given mesh is equal.
+   */
+  bool Equal(const SurfaceMesh<T>& mesh) const {
+    if (this->num_faces() != mesh.num_faces()) return false;
+    if (this->num_vertices() != mesh.num_vertices()) return false;
+
+    // Check face indices.
+    for (SurfaceFaceIndex i(0); i < this->num_faces(); ++i) {
+      const SurfaceFace& face1 = this->element(i);
+      const SurfaceFace& face2 = mesh.element(i);
+      for (int j = 0; j < 3; ++j)
+        if (face1.vertex(j) != face2.vertex(j)) return false;
+    }
+
+    // Check vertices.
+    for (SurfaceVertexIndex i(0); i < this->num_vertices(); ++i) {
+      if (this->vertex(i).r_MV() != mesh.vertex(i).r_MV()) return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
  private:
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
