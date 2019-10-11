@@ -1582,69 +1582,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
-  /// Given a list of points with fixed position vectors `p_FP` in a frame
-  /// F, (that is, their time derivative `DtF(p_FP)` in frame F is zero),
-  /// this method computes the analytical Jacobian `Jq_WFp(q)`.
-  /// The analytical Jacobian `Jq_WFp(q)` is defined by: <pre>
-  ///   Jq_WFp(q) = d(p_WFp(q))/dq
-  /// </pre>
-  /// where `p_WFp(q)` is the position of point P, which moves with frame F, in
-  /// the world frame W.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   The positions `p_FP` of each point in the input set are measured and
-  ///   expressed in this frame F and are constant (fixed) in this frame.
-  /// @param[in] p_FP_list
-  ///   A matrix with the fixed position of a set of points `P` measured and
-  ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FP` for a
-  ///   point `P` measured and expressed in frame F. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WP_list
-  ///   The output positions of each point `P` now measured and expressed in
-  //    the world frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WP` and therefore external storage
-  ///   must be provided.
-  ///   The output `p_WP_list` **must** have the same size as the input set
-  ///   `p_FP_list` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WP_list` **must** be in
-  ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jq_WFp
-  ///   The analytical Jacobian `Jq_WFp(q)`, function of the generalized
-  ///   positions q only.
-  ///   We stack the positions of each point P in the world frame W into a
-  ///   column vector p_WFp = [p_WFp1; p_WFp2; ...] of size 3⋅np, with np
-  ///   the number of points in p_FP_list. Then the analytical Jacobian is
-  ///   defined as: <pre>
-  ///     Jq_WFp(q) = ∇(p_WFp(q))
-  ///   </pre>
-  ///   with `∇(⋅)` the gradient operator with respect to the generalized
-  ///   positions q. Therefore `Jq_WFp` is a matrix of size `3⋅np x nq`, with
-  ///   `nq` the number of generalized positions. On input, matrix `Jq_WFp`
-  ///   **must** have size `3⋅np x nq` or this method throws a
-  ///   std::runtime_error exception.
-  ///
-  /// @throws std::exception if the output `p_WP_list` is nullptr or does not
-  /// have the same size as the input array `p_FP_list`.
-  /// @throws std::exception if `Jq_WFp` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jq_WFp` for details.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-  void CalcPointsAnalyticalJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list,
-      EigenPtr<MatrixX<T>> Jq_WFp) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // most applications it is all we need and it is more efficient to compute.
-    // TODO(amcastro-tri): Rework this method as per issue #10155.
-    internal_tree().CalcPointsAnalyticalJacobianExpressedInWorld(
-        context, frame_F, p_FP_list, p_WP_list, Jq_WFp);
-  }
-
   /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
   /// a new origin `P`, this method computes the geometric Jacobian `Jv_WFp`
   /// for frame `Fp`. The new origin `P` is specified by the position vector
@@ -1881,6 +1818,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// @throws std::exception if `J𝑠_v_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @note When 𝑠 = q̇, `Jq̇_v_ABi = Jq_p_AoBi`.  In other words, point Bi's
+  /// velocity Jacobian in frame A with respect to q̇ is equal to point Bi's
+  /// position Jacobian from Ao (A's origin) in frame A with respect to q. <pre>
+  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
+  /// </pre>
+  /// Note: Each partial derivative of p_AoBi is taken in frame A.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
