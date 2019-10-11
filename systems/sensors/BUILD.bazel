@@ -222,8 +222,8 @@ drake_cc_library(
     deps = [
         ":image",
         "//common:essential",
+        "//common:filesystem",
         "//systems/framework",
-        "@spruce",
         "@vtk//:vtkCommonDataModel",
         "@vtk//:vtkIOImage",
     ],
@@ -280,9 +280,9 @@ drake_cc_googletest(
     tags = vtk_test_tags(),
     deps = [
         ":image_writer",
+        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities",
-        "@spruce",
         "@vtk//:vtkIOImage",
     ],
 )

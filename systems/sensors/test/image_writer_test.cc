@@ -7,7 +7,6 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 #include <vtkImageData.h>
 #include <vtkImageExport.h>
 #include <vtkNew.h>
@@ -16,6 +15,7 @@
 #include <vtkTIFFReader.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/event_collection.h"
@@ -31,11 +31,10 @@ class ImageWriterTester {
 
   explicit ImageWriterTester(const ImageWriter& writer) : writer_(writer) {}
 
-  spruce::path DirectoryFromFormat(const std::string& format,
-                                   const std::string& port_name,
-                                   PixelType pixel_type) const {
-    return spruce::path(
-        writer_.DirectoryFromFormat(format, port_name, pixel_type));
+  std::string DirectoryFromFormat(const std::string& format,
+                                  const std::string& port_name,
+                                  PixelType pixel_type) const {
+    return writer_.DirectoryFromFormat(format, port_name, pixel_type);
   }
 
   static bool IsDirectoryValid(const std::string& file_path) {
@@ -146,12 +145,11 @@ class ImageWriterTest : public ::testing::Test {
 
   static void TearDownTestCase() {
     for (const auto& file_name : files_) {
-      spruce::path file_path(file_name);
-      if (file_path.exists()) {
+      if (filesystem::exists({file_name})) {
         // We'll consider a failure to delete a temporary file as a test
         // failure.
-        unlink(file_path.getStr().c_str());
-        EXPECT_FALSE(file_path.exists())
+        unlink(file_name.c_str());
+        EXPECT_FALSE(filesystem::exists({file_name}))
             << "Failed to delete temporary test file: " << file_name;
       }
     }
@@ -165,14 +163,14 @@ class ImageWriterTest : public ::testing::Test {
   // examined at tear down for deletion. When it comes to writing images, all
   // names should come from here.
   static std::string temp_name() {
-    spruce::path temp_path;
+    filesystem::path temp_path;
     do {
-      temp_path.setStr(temp_dir());
+      temp_path = temp_dir();
       temp_path.append("image_writer_test_" + std::to_string(++img_count_) +
                        ".png");
-    } while (temp_path.exists());
-    files_.insert(temp_path.getStr());
-    return temp_path.getStr();
+    } while (filesystem::exists(temp_path));
+    files_.insert(temp_path.string());
+    return temp_path.string();
   }
 
   // Arbitrary files that are generated can be added to the set of files that
@@ -185,8 +183,8 @@ class ImageWriterTest : public ::testing::Test {
   template <PixelType kPixelType>
   static ::testing::AssertionResult ReadImage(const std::string& image_name,
                                               Image<kPixelType>* image) {
-    spruce::path image_path(image_name);
-    if (image_path.exists()) {
+    filesystem::path image_path(image_name);
+    if (filesystem::exists(image_path)) {
       vtkSmartPointer<vtkImageReader2> reader;
       switch (kPixelType) {
         case PixelType::kRgba8U:
@@ -257,12 +255,12 @@ class ImageWriterTest : public ::testing::Test {
     const double period = 1 / 10.0;  // 10 Hz.
     const double start_time = 0.25;
     const std::string port_name = "port";
-    spruce::path path(temp_dir());
+    filesystem::path path(temp_dir());
     path.append("{image_type}_{time_usec}");
 
     Image<kPixelType> image = test_image<kPixelType>();
     const auto& port = writer.DeclareImageInputPort<kPixelType>(
-        port_name, path.getStr(), period, start_time);
+        port_name, path.string(), period, start_time);
     auto events = writer.AllocateCompositeEventCollection();
     auto context = writer.AllocateContext();
     context->FixInputPort(port.get_index(),
@@ -273,12 +271,12 @@ class ImageWriterTest : public ::testing::Test {
     const std::string expected_name = tester.MakeFileName(
         tester.port_format(port.get_index()), kPixelType, context->get_time(),
         port_name, tester.port_count(port.get_index()));
-    spruce::path expected_file(expected_name);
-    EXPECT_FALSE(expected_file.exists());
+    filesystem::path expected_file(expected_name);
+    EXPECT_FALSE(filesystem::exists(expected_file));
     writer.Publish(*context, events->get_publish_events());
-    EXPECT_TRUE(expected_file.exists());
+    EXPECT_TRUE(filesystem::exists(expected_file));
     EXPECT_EQ(1, tester.port_count(port.get_index()));
-    add_file_for_cleanup(expected_file.getStr());
+    add_file_for_cleanup(expected_file.string());
 
     EXPECT_TRUE(MatchesFileOnDisk(expected_name, image));
   }
@@ -321,29 +319,31 @@ TEST_F(ImageWriterTest, DirectoryFromFormat) {
   ImageWriter writer;
   ImageWriterTester tester{writer};
 
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tester.DirectoryFromFormat("", "port_name", PixelType::kRgba8U),
+      std::logic_error,
+      ".*empty.*");
   EXPECT_EQ("",
-            tester.DirectoryFromFormat("/root", "port_name", PixelType::kRgba8U)
-                .getStr());
+            tester.DirectoryFromFormat("/root", "port_name",
+                                       PixelType::kRgba8U));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tester.DirectoryFromFormat("/root/", "port_name", PixelType::kRgba8U),
+      std::logic_error,
+      ".*cannot end with a '/'");
   EXPECT_EQ(
       "/root",
-      tester.DirectoryFromFormat("/root/", "port_name", PixelType::kRgba8U)
-          .getStr());
-  EXPECT_EQ(
-      "/root",
-      tester.DirectoryFromFormat("/root/file", "port_name", PixelType::kRgba8U)
-          .getStr());
+      tester.DirectoryFromFormat("/root/file", "port_name",
+                                 PixelType::kRgba8U));
   // Don't use all three image types; the FileNameFormatting test already
   // tests those permutations. We just want to make sure it's engaged here.
   EXPECT_EQ("/root/color",
             tester
                 .DirectoryFromFormat("/root/{image_type}/file", "port_name",
-                                     PixelType::kRgba8U)
-                .getStr());
+                                     PixelType::kRgba8U));
   EXPECT_EQ("/root/my_port",
             tester
                 .DirectoryFromFormat("/root/{port_name}/file", "my_port",
-                                     PixelType::kRgba8U)
-                .getStr());
+                                     PixelType::kRgba8U));
 
   // Test against invalid formatting arguments.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -371,23 +371,19 @@ TEST_F(ImageWriterTest, DirectoryFromFormat) {
   EXPECT_EQ("/root/time_double",
             tester
                 .DirectoryFromFormat("/root/time_double/file", "my_port",
-                                     PixelType::kRgba8U)
-                .getStr());
+                                     PixelType::kRgba8U));
   EXPECT_EQ("/root/time_usec",
             tester
                 .DirectoryFromFormat("/root/time_usec/file", "my_port",
-                                     PixelType::kRgba8U)
-                .getStr());
+                                     PixelType::kRgba8U));
   EXPECT_EQ("/root/time_msec",
             tester
                 .DirectoryFromFormat("/root/time_msec/file", "my_port",
-                                     PixelType::kRgba8U)
-                .getStr());
+                                     PixelType::kRgba8U));
   EXPECT_EQ("/root/count",
             tester
                 .DirectoryFromFormat("/root/count/file", "my_port",
-                                     PixelType::kRgba8U)
-                .getStr());
+                                     PixelType::kRgba8U));
 }
 
 // Tests the logic for formatting images.
@@ -487,10 +483,10 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
 
   // Now test a port with the same name -- can only happen if one port has
   // been successfully declared.
-  spruce::path path(temp_dir());
+  filesystem::path path(temp_dir());
   path.append("file_{count:3}");
   const auto& port = writer.DeclareImageInputPort<PixelType::kRgba8U>(
-      "port", path.getStr(), 0.1, 0);
+      "port", path.string(), 0.1, 0);
   EXPECT_EQ(0, port.get_index());
   {
     auto events = writer.AllocateCompositeEventCollection();
@@ -499,10 +495,10 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
     EXPECT_TRUE(events->HasEvents());
   }
 
-  spruce::path path2(temp_dir());
+  filesystem::path path2(temp_dir());
   path2.append("alt_file_{count:3}");
   DRAKE_EXPECT_THROWS_MESSAGE(writer.DeclareImageInputPort<PixelType::kRgba8U>(
-                                  "port", path2.getStr(), 0.1, 0),
+                                  "port", path2.string(), 0.1, 0),
                               std::logic_error,
                               "System .* already has an input port named .*");
 }
@@ -515,12 +511,12 @@ void TestPixelExtension(const std::string& folder, ImageWriter* writer,
 
   ImageWriterTester tester(*writer);
 
-  spruce::path format(folder);
+  filesystem::path format(folder);
   format.append("file");
   const auto& port = writer->DeclareImageInputPort<kPixelType>(
-      "port" + to_string(++(*count)), format.getStr(), 1, 1);
+      "port" + to_string(++(*count)), format.string(), 1, 1);
   const std::string& final_format = tester.port_format(port.get_index());
-  EXPECT_NE(format.getStr(), final_format);
+  EXPECT_NE(format.string(), final_format);
   const std::string& ext = tester.extension(kPixelType);
   EXPECT_EQ(ext, final_format.substr(final_format.size() - ext.size()));
 }
@@ -542,23 +538,23 @@ TEST_F(ImageWriterTest, FileExtension) {
   ImageWriterTester tester(writer);
   // Case: Format string with correct extension remains unchanged.
   {
-    spruce::path format(temp_dir());
+    filesystem::path format(temp_dir());
     format.append("file.png");
     const auto& port = writer.DeclareImageInputPort<PixelType::kRgba8U>(
-        "port" + to_string(++count), format.getStr(), 1, 1);
+        "port" + to_string(++count), format.string(), 1, 1);
     const std::string& final_format = tester.port_format(port.get_index());
-    EXPECT_EQ(format.getStr(), final_format);
+    EXPECT_EQ(format.string(), final_format);
   }
 
   // Case: wrong extension gets correct extension appended.
   {
-    spruce::path format(temp_dir());
+    filesystem::path format(temp_dir());
     format.append("file.txt");
     const auto& port = writer.DeclareImageInputPort<PixelType::kRgba8U>(
-        "port" + to_string(++count), format.getStr(), 1, 1);
+        "port" + to_string(++count), format.string(), 1, 1);
     const std::string& final_format = tester.port_format(port.get_index());
     const std::string& ext = tester.extension(PixelType::kRgba8U);
-    EXPECT_EQ(format.getStr() + ext, final_format);
+    EXPECT_EQ(format.string() + ext, final_format);
   }
 }
 
@@ -580,11 +576,11 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
   const double start_time = 0.25;
   const std::string port_name{"single_color_port"};
   const PixelType pixel_type = PixelType::kRgba8U;
-  spruce::path path(temp_dir());
+  filesystem::path path(temp_dir());
   path.append("single_port_{time_usec}");
 
   const auto& port = writer.DeclareImageInputPort<PixelType::kRgba8U>(
-      port_name, path.getStr(), period, start_time);
+      port_name, path.string(), period, start_time);
 
   // Count gets properly initialized to zero (no images written from this port).
   EXPECT_EQ(0, tester.port_count(port.get_index()));
@@ -628,12 +624,12 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
       const std::string expected_name = tester.MakeFileName(
           tester.port_format(port.get_index()), pixel_type, context->get_time(),
           port_name, tester.port_count(port.get_index()));
-      spruce::path expected_file(expected_name);
-      EXPECT_FALSE(expected_file.exists());
+      filesystem::path expected_file(expected_name);
+      EXPECT_FALSE(filesystem::exists(expected_file));
       writer.Publish(*context, events->get_publish_events());
-      EXPECT_TRUE(expected_file.exists());
+      EXPECT_TRUE(filesystem::exists(expected_file));
       EXPECT_EQ(1, tester.port_count(port.get_index()));
-      add_file_for_cleanup(expected_file.getStr());
+      add_file_for_cleanup(expected_file.string());
     }
 
     // Confirm period is correct.
