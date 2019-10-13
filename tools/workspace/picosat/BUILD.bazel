@@ -1,0 +1,21 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install_files",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install_files(
+    name = "install",
+    dest = "share/doc/picosat",
+    files = [
+        "@picosat//:LICENSE",
+    ],
+    allowed_externals = [
+        "@picosat//:LICENSE",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+add_lint_tests()

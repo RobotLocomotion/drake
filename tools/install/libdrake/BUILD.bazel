@@ -93,11 +93,11 @@ install(
     allowed_externals = ["//:LICENSE.TXT"],
 )
 
-# Depend on dReal's shared library iff dReal is enabled.
+# Depend on a shared library used by dReal iff dReal is enabled.
 cc_library(
     name = "dreal_deps",
     deps = select({
-        "//conditions:default": ["@dreal"],
+        "//conditions:default": ["@ibex"],
         "//tools:no_dreal": [],
     }),
 )

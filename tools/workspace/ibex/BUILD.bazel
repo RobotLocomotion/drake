@@ -1,0 +1,26 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+)
+
+# Only Ubuntu needs an installation rule; on macOS, we are using IBEX from
+# homebrew, so Drake's installation script doesn't need to do anything extra.
+install(
+    name = "install",
+    deps = select({
+        ":linux": ["@ibex//:install"],
+        "@//conditions:default": [],
+    }),
+)
+
+add_lint_tests()
