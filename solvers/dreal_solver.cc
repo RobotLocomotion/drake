@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include <dreal/dreal.h>
+#include "dreal/api/api.h"
 
 #include "drake/solvers/mathematical_program.h"
 
