@@ -1738,7 +1738,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerations(
 
 template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
-    const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const {
+    const Context<T>& context, VectorX<T>* tau_contact) const {
   DRAKE_DEMAND(tau_contact);
   DRAKE_DEMAND(tau_contact->size() == num_velocities());
   DRAKE_DEMAND(!is_discrete());
@@ -1748,8 +1748,8 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   tau_contact->setZero();
   if (num_collision_geometries() == 0) return;
 
-  // We will use this vector to solve for zero generalized accelerations and as
-  // the vector of (zero) external applied generalized forces.
+  // We will alias this zero vector to serve both as zero-valued generalized
+  // accelerations and zero-valued externally applied generalized forces.
   const VectorX<T> zero = VectorX<T>::Zero(nv);
   const VectorX<T>& zero_vdot = zero;
   const VectorX<T>& tau_array = zero;
@@ -1759,10 +1759,10 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
       EvalSpatialContactForcesContinuous(context);
 
   // Bodies' accelerations and inboard mobilizer reaction forces, respectively,
-  // ordered by BodyNodeIndex and required as output arguments but otherwise not
-  // used by this method.
+  // ordered by BodyNodeIndex and required as output arguments for
+  // CalcInverseDynamics() below but otherwise not used by this method.
   std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(internal_tree().num_bodies());
 
   // With vdot = 0, this computes:
   //   tau_contact = - ∑ J_WBᵀ(q) Fcontact_Bo_W.
@@ -1781,6 +1781,7 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
       std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   DRAKE_DEMAND(F_BBo_W_array);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(!is_discrete());
 
   // Forces can accumulate into F_BBo_W_array; initialize it to zero first.
   std::fill(F_BBo_W_array->begin(), F_BBo_W_array->end(),
@@ -2053,8 +2054,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               cache_indexes_.generalized_contact_forces_continuous);
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
-                      systems::BasicVector<T>* output) {
-        output->SetFromVector(GetVelocitiesFromArray(
+                      systems::BasicVector<T>* result) {
+        result->SetFromVector(GetVelocitiesFromArray(
             model_instance_index,
             EvalGeneralizedContactForcesContinuous(context)));
       };

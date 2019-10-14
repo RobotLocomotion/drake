@@ -42,29 +42,21 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // The period (in seconds) of the periodic updates for the discrete plant
     // model or zero when the plant is modeled as a continuous system.
     time_step_ = time_stepping_ ? 1.0e-3 : 0.0;
-
-    // Contact parameters. Results converge to the analytical solution as the
-    // penetration allowance and the stiction tolerance go to zero.
-    // Since the discrete system uses an implicit scheme, we can use much
-    // tighter contact parameters than those used with a continuous plant model.
-    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 5.0e-7;  // (meters)
-    stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-5;     // (m/s)
-
-    // Relative tolerance (unitless) used to verify the numerically computed
-    // results against the analytical solution.
-    // Notice we can use a much tighter tolerance with the time-stepping
-    // approach given that both the penetration allowance and the stiction
-    // tolerance values are much smaller than those used for the continuous
-    // model of the plant.
-    relative_tolerance_ = time_stepping_ ? 5.5e-4 : 5.5e-3;
   }
 
  protected:
   bool time_stepping_;
   double time_step_{0};  // in seconds.
-  double penetration_allowance_{1.0e-3};  // in meters.
-  double stiction_tolerance_{1.0e-3};  // in meters per second.
-  double relative_tolerance_{1.0e-3};  // dimensionless.
+
+  // Contact parameters. Results converge to the analytical solution as the
+  // penetration allowance and the stiction tolerance go to zero.
+  double penetration_allowance_{1.0e-7};  // (meters)
+  double stiction_tolerance_{1.0e-5};     // (m/s)
+
+  // Relative tolerance (unitless) used to verify the numerically computed
+  // results against the analytical solution. This is about the tightest
+  // tolerance we can use such that all tests pass.
+  double relative_tolerance_{5.5e-4};  // dimensionless.
 };
 
 // This test creates a multibody model of a uniform-density sphere B rolling
@@ -79,7 +71,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double target_accuracy = 1.0e-6;
 
   // Length of the simulation, in seconds.
-  const double simulation_time = 1.0;
+  const double simulation_time = 1;
 
   // Plant's parameters.
   const double radius = 0.05;   // Rolling sphere radius, [m]
@@ -137,8 +129,13 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
+
+  // We want an implicit integrator for this test since the computational
+  // stiffness is high. 3rd order Radau is about 4x as fast as implicit
+  // Euler.
   simulator.reset_integrator<RadauIntegrator<double, 2>>(
       *diagram, &simulator.get_mutable_context());
+
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   integrator.set_maximum_step_size(1e-3);    // Reasonable for this problem.
   integrator.set_target_accuracy(target_accuracy);
