@@ -89,25 +89,23 @@ template<typename T> class BodyNode;
 ///     inboard frame F, as a function of the mobilizer's generalized positions.
 ///     This pose is computed by CalcAcrossMobilizerTransform().
 /// - H_FM(q):
-///     the geometric Jacobian matrix describing the relationship between
-///     generalized velocities `v  ∈ ℝⁿᵛ` and the spatial velocity `V_FM  ∈ M⁶`.
-///     This Jacobian can be thought of as the application:
-///     `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where M⁶ is the vector space
-///     of "motion vectors" (be aware that while M⁶ is introduced in
-///     [Featherstone 2008, Ch. 2] spatial velocities in Drake are not Plücker
-///     vectors as in Featherstone's book). A %Mobilizer implements this
-///     operator in the method CalcAcrossMobilizerSpatialVelocity().
+///     The Jacobian with respect to generalized velocities `v ∈ ℝⁿᵛ` is a
+///     function of generalized positions p.  Frame M's spatial velocity in F
+///     can be written `V_FM(q, v) = H_FM(q) * v`, where `V_FM ∈ M⁶` and M⁶ is
+///     the vector space of "motion vectors" (be aware that M⁶ is introduced in
+///     [Featherstone 2008, Ch. 2], but Drake's spatial velocities are not the
+///     Plücker vectors defined in Featherstone's book). A %Mobilizer implements
+///     this operator in the method CalcAcrossMobilizerSpatialVelocity().
 /// - H_FMᵀ(q):
-///     The transpose of the geometric Jacobian `H_FM(q)` describing the
-///     relationship between the spatial force `F_Mo_F ∈ F⁶` and the generalized
-///     forces `tau ∈ ℝⁿᵛ`, where F⁶ is the vector space of "force vectors"
-///     (be aware that while F⁶ is introduced in [Featherstone 2008, Ch. 2]
-///     spatial forces in Drake are not Plücker vectors as in Featherstone's
-///     book.) This mathematical object can be thought of as the application:
-///     `F_Mo_F ∈ F⁶ → ℝⁿᵛ: tau = H_FMᵀ(q) * F_Mo_F`, where `Mo` is M's origin
-///     (see @ref multibody_frames_and_bodies for the monogram notation in use.)
-///     A %Mobilizer implements this operator in the method
-///     ProjectSpatialForce().
+///     The transpose of the Jacobian `H_FM(q)` interrelates the spatial force
+///     `F_Mo_F ∈ F⁶` and the generalized forces `tau ∈ ℝⁿᵛ`, where F⁶ is the
+///     vector space of "force vectors" (be aware that F⁶ is introduced in
+///     [Featherstone 2008, Ch. 2], but Drake's spatial forces are not the
+///     Plücker vectors defined in Featherstone's book).  H_FMᵀ allows the
+///     generalized forces `tau` to be written in terms of the spatial forces
+///     `F_Mo_F` (see @ref multibody_frames_and_bodies for monogram notation) as
+///     `tau = H_FMᵀ * F_Mo_F`, where `Mo` is frame M's origin.  A %Mobilizer
+///     implements this operator in the method ProjectSpatialForce().
 /// - Hdot_FM(q, v):
 ///     The time derivative of the Jacobian matrix involved in the computation
 ///     of the spatial acceleration `A_FM(q, v, v̇)` between the F and M frames
@@ -146,49 +144,41 @@ template<typename T> class BodyNode;
 ///
 /// %Mobilizer is an abstract base class defining the minimum functionality that
 /// derived %Mobilizer objects must implement in order to fully define the
-/// kinematic relationship between the two frames they connect. Geometric and
-/// analytical Jacobian matrices in the context of differential kinematics are
-/// described in [Sciavicco 2000].
+/// kinematic relationship between the two frames they connect.
 ///
-/// <h4>Relation between the analytical and geometric Jacobians</h4>
+/// <h4>Relation between Hinge matrix and Jacobians</h4>
 ///
-/// The time derivative of the across-mobilizer transform `X_FM` is intimately
-/// related to the across-mobilizer spatial velocity `V_FM`. This relationship
-/// immediately implies a relationship between the analytical Jacobian
-/// `dX_FM/dq` and the geometric Jacobian matrix `H_FM`.
-/// The linear component of the spatial velocity `V_FM` relates to the time
-/// derivative of `X_FM` by: <pre>
-///   v_FM = V_FM.translational() = dp_FM/dt = Xdot_FM.translational()
-/// </pre>
-/// where `p_FM = X_FM.translational()` and `Xdot_FM = dX_FM/dt`. The time
-/// derivative of `p_FM` can be rewritten as: <pre>
-///   dp_FM/dt = dp_FM/dq * N(q) * v = Hv_FM * v
-/// </pre>
-/// where `Hv_FM` denotes the last three rows in `H_FM` related with the
-/// translational component of the Jacobian matrix
-/// Therefore: <pre>
-///   Hv_FM = dp_FM/dq(q) * N(q)
-/// </pre>
+/// There is a relationship between the across-mobilizer spatial velocity `V_FM`
+/// and the time derivative of the across-mobilizer transform `X_FM` and a
+/// similar relationship between the rigid transform Jacobian Jq_X_VM (partial
+/// derivatives of rigid transform X_FM with respect to generalized positions q)
+/// and the Drake hinge matrix `H_FM` (partial derivatives of across-mobilizer q̇
+/// with respect to generalized velocities v).
 ///
-/// Similarly, for the rotational component: <pre>
-///  dR_FM/dt = Xdot_FM.rotation() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
+/// The translational velocity v_FM component of the spatial velocity `V_FM` is
+/// defined as the time derivative of the position vector p_FM in `X_FM`. <pre>
+///   v_FM = dp_FM/dt = ∂p_FM/∂q * q̇ = ∂p_FM/∂q * N(q) * v = Hv_FM * v
 /// </pre>
-/// where `[w_FM]` is the cross product matrix of the across-mobilizer angular
-/// velocity `w_FM`, `R_FM` is the orientation of M in F, and `Hw_FM`
-/// corresponds to the first three rows in `H_FM` related to the angular
-/// component of the geometric Jacobian matrix.
-/// The time derivative of the orientation `R_FM` can be expressed in terms of
-/// the analytic Jacobian of `R_FM` as: <pre>
-///   dR_FM/dt = dR_FM/dq * N(q) * v
+/// where `Hv_FM = ∂p_FM/∂q * N(q)` is the last three rows in `H_FM`.
+///
+/// The angular velocity w_FM component of the spatial velocity `V_FM` can be
+/// related to the time derivative of the rotation matrix R_FM in `X_FM`. This
+/// complicated relationship can be written in terms of the skew symmetric
+/// angular velocity matrix [w_FM] as <pre>
+///  [w_FM] = d(R_FM)/dt * (R_FM)ᵀ
 /// </pre>
-/// These last two equations show that the angular components of the Jacobian
-/// matrix `Hw_FM` are directly related to the gradients of the rotation
-/// matrix `R_FM`. This relationhip is: <pre>
-///   [Hwi_FM(q)] * R_FM(q) = dR_FM/dqi(q) * N(q)
+/// The ordinary time-derivative of the rotation matrix R_FM is <pre>
+///   dR_FM/dt = ∂R/∂q * q̇ = ∂R/∂q * N(q) * v
 /// </pre>
-/// corresponding to the i-th generalized position `qi` where `Hwi_FM(q)` is the
-/// i-th column of `Hw_FM(q)` and `dR_FM/dqi(q)` is the partial derivative of
-/// `R_FM` with respect to the i-th generalized coordinate for this mobilizer.
+/// Combining the previous two equations leads to <pre>
+///  [w_FM] = ∂R/∂q * N(q) * v * (R_FM)ᵀ = Hw_FM * v
+/// </pre>
+/// Post-multiplying both sides of the previous equation by R_FM gives <pre>
+///  [w_FM] * R_FM = ∂R/∂q * N(q) * v
+/// </pre>
+/// `Hw_FM` is the first three rows in `H_FM`, defined by context as <pre>
+///  Hw_FM * R_FM = ∂R/∂q * N(q)
+/// </pre>
 ///
 /// <h4>Active forces and power</h4>
 ///
@@ -436,12 +426,12 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const = 0;
 
-  /// Projects the spatial force `F_Mo` on `this` mobilizer's outboard frame
-  /// M onto the sub-space of motions spanned by the geometric Jacobian
-  /// `H_FM(q)` to obtain the generalized forces `tau` (i.e. the active
-  /// components of `F_Mo`).
+  /// Forms the dot product of H_FMᵀ (the transpose of frame M's across-joint
+  /// spatial velocity Jacobian with respect to generalized velocities v) with
+  /// `F_Mo` (the spatial force on Mo, frame M's origin) to obtain the
+  /// generalized forces `tau` (i.e. the "active" components of `F_Mo`).
   /// @see CalcAcrossMobilizerSpatialVelocity() and this class' documentation
-  /// for the definition of the geometric Jacobian `H_FM(q)`.
+  /// for the definition of the Jacobian `H_FM`.
   ///
   /// This method can be thought of as the application of the transpose operator
   /// `H_FMᵀ(q)` to the input spatial force `F_Mo_F`, i.e. the output of this

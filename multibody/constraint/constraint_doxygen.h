@@ -230,8 +230,6 @@ coordinates and generalized velocities (see @ref quasi_coordinates). This yields
 the requisite form:<pre>
 ġₚ = ∂gₚ/∂q⋅N(q)⋅v
 </pre>
-In robotics literature, `∂gₚ/∂q⋅N(q)` is known as a *geometric Jacobian* while
-`∂gₚ/∂q` is known as an *analytical Jacobian*
 @ref Sciavicco2000 "[Sciavicco 2000]". The latter can be cumbersome to derive
 and less efficient to work with.
 

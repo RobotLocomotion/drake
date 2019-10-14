@@ -223,7 +223,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // TODO(amcastro-tri):
     // With H_FM(qm) already in the cache (computed by
     // Mobilizer::UpdatePositionKinematicsCache()) update the cache
-    // entries for H_PB_W, the Jacobian for the SpatialVelocity jump between
+    // entries for Hv_PB_W, the Jacobian for the SpatialVelocity jump between
     // body B and its parent body P expressed in the world frame W.
   }
 
@@ -236,11 +236,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] H_PB_W
+  /// @param[in] Hv_PB_W
   ///   The across-node Jacobian matrix that relates to the spatial velocity
   ///   `V_PB_W` of this node's body B in its parent node body P, expressed in
   ///   the world frame W, with this node's generalized velocities
-  ///   (or mobilities) `v_B` by `V_PB_W = H_PB_W⋅v_B`.
+  ///   (or mobilities) `v_B` by `V_PB_W = Hv_PB_W * v_B`.
   /// @param[out] vc
   ///   A pointer to a valid, non nullptr, velocity kinematics cache.
   /// @pre The position kinematics cache `pc` was already updated to be in sync
@@ -254,14 +254,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcVelocityKinematicsCache_BaseToTip(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
+      const Eigen::Ref<const MatrixUpTo6<T>>& Hv_PB_W,
       VelocityKinematicsCache<T>* vc) const {
     // This method must not be called for the "world" body node.
     DRAKE_ASSERT(topology_.body != world_index());
 
     DRAKE_ASSERT(vc != nullptr);
-    DRAKE_DEMAND(H_PB_W.rows() == 6);
-    DRAKE_DEMAND(H_PB_W.cols() == get_num_mobilizer_velocities());
+    DRAKE_DEMAND(Hv_PB_W.rows() == 6);
+    DRAKE_DEMAND(Hv_PB_W.cols() == get_num_mobilizer_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -327,10 +327,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Side note to developers: in operator form for rigid bodies this would be
     //   V_PB_W = R_WF * phiT_MB_F * V_FM
     //          = R_WF * phiT_MB_F * H_FM * vm
-    //          = H_PB_W * vm
-    // where H_PB_W = R_WF * phiT_MB_F * H_FM.
+    //          = Hv_PB_W * vm
+    // where Hv_PB_W = R_WF * phiT_MB_F * H_FM.
     SpatialVelocity<T>& V_PB_W = get_mutable_V_PB_W(vc);
-    V_PB_W.get_coeffs() = H_PB_W * vm;
+    V_PB_W.get_coeffs() = Hv_PB_W * vm;
 
     // =========================================================================
     // Computation of V_WPb in Eq. (1). See summary at the top of this method.
@@ -487,12 +487,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Orientation (rotation) of frame F with respect to the world frame W.
     // TODO(amcastro-tri): consider caching X_WF since it is also used to
-    // compute H_PB_W.
+    // compute Hv_PB_W.
     const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     // TODO(amcastro-tri): consider caching this since it is also used to
-    // compute H_PB_W.
+    // compute Hv_PB_W.
     const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
     const Vector3<T>& p_MB_M = X_MB.translation();
     const Vector3<T> p_MB_F = R_FM * p_MB_M;
@@ -786,33 +786,33 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
-  /// Computes the geometric Jacobian `H_PB_W` which relates to the spatial
-  /// velocity of a body B in its parent body P by `V_PB_W = H_PB_W(q)⋅v_B`,
-  /// where v_B denotes the generalized velocities associated with body B's
-  /// node. `H_PB_W ∈ ℝ⁶ˣⁿᵐ` where `nm` is the number of mobilities associated
-  /// with body B's node. `H_PB_W(q)` is a function of the model's generalized
-  /// positions q only.
+  /// Calculates Hv_PB_W, the Jacobian with respect to generalized velocities v
+  /// that allows a body B's spatial velocity in its parent body P to be written
+  /// as `V_PB_W = Hv_PB_W(q) ⋅ v_B`, where `v_B` denotes the generalized
+  /// velocities associated with body B's node. `Hv_PB_W` has size `6 x nm` with
+  /// `nm` the number of mobilities associated with body B's node.
+  /// `Hv_PB_W(q)` is a function of the model's generalized positions q only.
   ///
   /// @param[in] context
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[out] H_PB_W
-  ///   The geometric Jacobian which relates the velocity `V_PB_W` of this
-  ///   node's body B in its parent body P, expressed in W, by
-  ///   `V_PB_W = H_PB_W⋅v_B`.
+  /// @param[out] Hv_PB_W
+  ///   Body B's spatial velocity Jacobian in its parent body P with respect to
+  ///   generalized velocities v_B, which allows B's spatial velocity in P
+  ///   expressed in world W to be written `V_PB_W = Hv_PB_W ⋅ v_B`.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      EigenPtr<MatrixX<T>> H_PB_W) const {
+      EigenPtr<MatrixX<T>> Hv_PB_W) const {
     // Checks on the input arguments.
     DRAKE_DEMAND(topology_.body != world_index());
-    DRAKE_DEMAND(H_PB_W != nullptr);
-    DRAKE_DEMAND(H_PB_W->rows() == 6);
-    DRAKE_DEMAND(H_PB_W->cols() == get_num_mobilizer_velocities());
+    DRAKE_DEMAND(Hv_PB_W != nullptr);
+    DRAKE_DEMAND(Hv_PB_W->rows() == 6);
+    DRAKE_DEMAND(Hv_PB_W->cols() == get_num_mobilizer_velocities());
 
     // Inboard frame F of this node's mobilizer.
     const Frame<T>& frame_F = inboard_frame();
@@ -847,21 +847,21 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       v(imob) = 0.0;
       // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
       //         = R_WF * V_FM.Shift(p_MoBo_F)
-      H_PB_W->col(imob) = (R_WF * Himob_FM.Shift(p_MB_F)).get_coeffs();
+      Hv_PB_W->col(imob) = (R_WF * Himob_FM.Shift(p_MB_F)).get_coeffs();
     }
   }
 
-  /// Helper method to retrieve a Jacobian matrix for `this` node from an array
-  /// storing the columns of a set of Jacobian matrices for each node.
-  /// This method is used by MultibodyTree implementations to retrieve per-node
-  /// Jacobian matrices from a `std::vector` that would usually live in the
-  /// cache.
+  /// Helper method to retrieve a Jacobian matrix with respect to generalized
+  /// velocities v for `this` node from an array storing the columns of a set of
+  /// Jacobian matrices for each node.  This method is used by MultibodyTree
+  /// implementations to retrieve per-node Jacobian matrices from a
+  /// `std::vector` that would usually live in the cache.
   /// @param[in] H_array
   ///   This array stores a Jacobian matrix `H` for each node in the tree. Each
   ///   matrix has size `6 x nm` with `nm` the number of mobilities of the node.
   ///   `H_array` stores the columns of these matrices and therefore it consists
   ///   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
-  ///   of generalized velocities in the model.
+  ///   of generalized velocities v in the model.
   ///   `H_array` must be of size MultibodyTree::num_velocities().
   /// @retval H
   ///   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
@@ -872,9 +872,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
-    // The first column of this node's Jacobian matrix H_PB_W:
+    // The first column of this node's Jacobian matrix Hv_PB_W:
     const Vector6<T>& H_col0 = H_array[start_index_in_v];
-    // Create an Eigen map to the full H_PB_W for this node:
+    // Create an Eigen map to the full Hv_PB_W for this node:
     return Eigen::Map<const MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
@@ -883,9 +883,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       std::vector<Vector6<T>>* H_array) const {
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
-    // The first column of this node's Jacobian matrix H_PB_W:
+    // The first column of this node's Jacobian matrix Hv_PB_W:
     Vector6<T>& H_col0 = (*H_array)[start_index_in_v];
-    // Create an Eigen map to the full H_PB_W for this node:
+    // Create an Eigen map to the full Hv_PB_W for this node:
     return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
@@ -897,11 +897,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] H_PB_W
+  /// @param[in] Hv_PB_W
   ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
   ///   of this node's body B in its parent node body P, expressed in the world
   ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
-  ///   by `V_PB_W = H_PB_W⋅v_B`.
+  ///   by `V_PB_W = Hv_PB_W * v_B`.
   /// @param[out] abc
   ///   A pointer to a valid, non nullptr, articulated body cache.
   ///
@@ -915,7 +915,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcArticulatedBodyInertiaCache_TipToBase(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
+      const Eigen::Ref<const MatrixUpTo6<T>>& Hv_PB_W,
       ArticulatedBodyInertiaCache<T>* abc) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abc != nullptr);
@@ -958,14 +958,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // From P_B_W, we can obtain Pplus_PB_W by projecting the articulated body
     // inertia for this node across its mobilizer.
-    //   Pplus_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ)
+    //   Pplus_PB_W = (I - P_B_W Hv_PB_W (Hv_PB_Wᵀ P_B_W Hv_PB_W)⁻¹ Hv_PB_Wᵀ)
     //                  P_B_W                                               (2)
-    // where H_PB_W is the hinge mapping matrix.
+    // where Hv_PB_W is the hinge mapping matrix.
     //
     // A few quantities are required in the second pass. We write them out
     // explicitly so we can cache them and simplify the expression for P_PB_W.
-    //   D_B = H_PB_Wᵀ P_B_W H_PB_W                                         (3)
-    //   g_PB_W = P_B_W H_PB_W D_B⁻¹                                        (4)
+    //   D_B = Hv_PB_Wᵀ P_B_W Hv_PB_W                                       (3)
+    //   g_PB_W = P_B_W Hv_PB_W D_B⁻¹                                       (4)
     // where D_B is the articulated body hinge inertia and g_PB_W is the
     // Kalman gain.
     //
@@ -976,19 +976,19 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // articulated body inertia.
     //
     // In order to reduce the number of computations, we can save the common
-    // factor HTxP = H_PB_Wᵀ P_B_W. We then can write:
-    //   D_B = HTxP H_PB_W                                                  (5)
+    // factor HTxP = Hv_PB_Wᵀ P_B_W. We then can write:
+    //   D_B = HTxP Hv_PB_W                                                  (5)
     // and for g,
-    //   g_PB_Wᵀ = (D_B⁻¹)ᵀ H_PB_Wᵀ P_B_Wᵀ
-    //           = (D_Bᵀ)⁻¹ H_PB_Wᵀ P_B_W
+    //   g_PB_Wᵀ = (D_B⁻¹)ᵀ Hv_PB_Wᵀ P_B_Wᵀ
+    //           = (D_Bᵀ)⁻¹ Hv_PB_Wᵀ P_B_W
     //           = D_B⁻¹ HTxP                                               (6)
     // where we used the fact that both D and P are symmetric. Notice in the
     // last expression for g_PB_Wᵀ we are reusing the common factor HTxP.
     //
     // Given the articulated body hinge inertia and Kalman gain, we can simplify
     // the equation in (2).
-    //   Pplus_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W
-    //              = P_B_W - g_PB_W H_PB_Wᵀ P_B_W
+    //   Pplus_PB_W = (I - g_PB_W Hv_PB_Wᵀ) P_B_W
+    //              = P_B_W - g_PB_W Hv_PB_Wᵀ P_B_W
     //              = P_B_W - g_PB_W * HTxP                                 (7)
 
     // Body for this node.
@@ -1024,15 +1024,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       P_B_W += Pplus_BCb_W;
     }
 
-    // Get the number of mobilizer velocities (number of columns of H_PB_W).
+    // Get the number of mobilizer velocities (number of columns of Hv_PB_W).
     const int nv = get_num_mobilizer_velocities();
 
     // Compute common term HTxP.
-    const MatrixUpTo6<T> HTxP = H_PB_W.transpose() * P_B_W;
+    const MatrixUpTo6<T> HTxP = Hv_PB_W.transpose() * P_B_W;
 
     // Compute the articulated body hinge inertia, D_B, using (5).
     MatrixUpTo6<T> D_B(nv, nv);
-    D_B.template triangularView<Eigen::Lower>() = HTxP * H_PB_W;
+    D_B.template triangularView<Eigen::Lower>() = HTxP * Hv_PB_W;
 
     // Compute the LDLT factorization of D_B as ldlt_D_B.
     // TODO(bobbyluig): Test performance against inverse().
