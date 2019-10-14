@@ -71,14 +71,17 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
-    "net_sf_jchart2d",
+    "cds",
+    "dreal",
     "find_protobuf_cmake",
+    "net_sf_jchart2d",
     "optitrack_driver",
+    "picosat",
 ]] + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({
-    "//conditions:default": ["//tools/workspace/dreal:install"],
+    "//conditions:default": ["//tools/workspace/ibex:install"],
     "//tools:no_dreal": [],
 }) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],

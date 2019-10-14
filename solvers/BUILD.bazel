@@ -705,7 +705,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//common:essential",
-            "@dreal",
+            "@dreal//dreal/api",
         ],
         "//tools:no_dreal": [
             ":mathematical_program",
