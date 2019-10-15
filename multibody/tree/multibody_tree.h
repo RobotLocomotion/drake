@@ -1315,8 +1315,8 @@ class MultibodyTree {
   /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
   /// j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
   /// For each point Bi of (fixed to) a frame B whose translational velocity
-  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's velocity Jacobian
-  /// in A with respect to 𝑠 is defined as
+  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's translational
+  /// velocity Jacobian in A with respect to 𝑠 is defined as
   /// <pre>
   ///      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>

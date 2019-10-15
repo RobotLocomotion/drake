@@ -1679,7 +1679,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
   }
 
-
   /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -1708,7 +1707,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
   /// @param[out] J𝑠_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// `J𝑠_V_ABi_E` is a `6*p x n` matrix, where p is the number of points Bi and
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
