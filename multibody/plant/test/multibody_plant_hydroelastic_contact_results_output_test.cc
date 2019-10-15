@@ -125,8 +125,7 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);
   EXPECT_TRUE(
-      ContactSurface<double>::Equal(contact_results().contact_surface(),
-      contact_surfaces.front()));
+      contact_results().contact_surface().Equal(contact_surfaces.front()));
 }
 
 // Checks that the slip velocity field from the output port is consistent with
