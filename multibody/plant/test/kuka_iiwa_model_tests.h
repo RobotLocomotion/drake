@@ -38,10 +38,10 @@ class KukaIiwaModelTests : public ::testing::Test {
         "drake/manipulation/models/iiwa_description/sdf/"
         "iiwa14_no_collision.sdf");
 
-    // Create a model of a Kuka arm. Notice we do not weld the robot's base
-    // to the world and therefore the model is free floating in space. This
-    // makes for a more interesting setup to test the computation of
-    // analytical Jacobians.
+    // Create a model of a Kuka arm. Notice we do not weld the robot's base to
+    // the world and therefore the model is free floating in space. This makes
+    // for a more interesting setup to test the computation of Jacobians with
+    // respect to q̇ (time-derivative of generalized positions).
     plant_ = std::make_unique<MultibodyPlant<double>>();
     Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
@@ -60,7 +60,8 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   // If unit_quaternion = false then the quaternion for the free floating base
   // is not normalized. This configuration is useful to verify the computation
-  // of analytical Jacobians even if the state stores a non-unit quaternion.
+  // of Jacobians with respect to q̇ (time-derivative of generalized positions),
+  // even if the state stores a non-unit quaternion.
   void SetArbitraryConfiguration(bool unit_quaternion = true) {
     // Get an arbitrary set of angles and velocities for each joint.
     const VectorX<double> x0 = GetArbitraryJointConfiguration();
