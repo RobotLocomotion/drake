@@ -442,6 +442,9 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
             ie.get_num_step_shrinkages_from_substep_failures());
   EXPECT_EQ(radau1.get_num_steps_taken(), ie.get_num_steps_taken());
   EXPECT_EQ(radau1.get_num_substep_failures(), ie.get_num_substep_failures());
+
+  // Verify that we've had at least one step shrinkage.
+  EXPECT_GT(radau1.get_num_step_shrinkages_from_substep_failures(), 0);
 }
 
 // Test both 1-stage (1st order) and 2-stage (3rd order) Radau integrators.
