@@ -363,8 +363,9 @@ class SurfaceMesh {
   // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
-  /** Checks to see whether the given SurfaceMesh object is equal (all data
-   match to bit-wise precision).
+  /** Checks to see whether the given SurfaceMesh object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   TODO(#12173): Consider NaN==NaN to be true in equality tests.
    @param mesh The mesh for comparison.
    @returns `true` if the given mesh is equal.
    */

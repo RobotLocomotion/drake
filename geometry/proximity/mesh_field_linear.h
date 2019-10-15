@@ -148,8 +148,9 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   const std::vector<FieldValue>& values() const { return values_; }
   std::vector<FieldValue>& mutable_values() { return values_; }
 
-  /** Checks to see whether the given MeshFieldLinear object is equal (all data
-   match to bit-wise precision).
+  /** Checks to see whether the given MeshFieldLinear object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   TODO(#12173): Consider NaN==NaN to be true in equality tests.
    @param field The field for comparison.
    @returns `true` if the given field is equal.
    */
