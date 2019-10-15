@@ -365,12 +365,9 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
           Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
             context=context, frame_B=base_frame,
             p_BoFo_B=[0, 0, 0])
-#pragma GCC diagnostic pop
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
         nq = plant.num_positions()

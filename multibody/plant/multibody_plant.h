@@ -1611,12 +1611,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   </pre>
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
-  DRAKE_DEPRECATED("2020-02-01", "Use CalcJacobianSpatialVelocity().")
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> J_WFp) const {
+    // DRAKE_DEPRECATED("2020-02-01", "Use CalcJacobianSpatialVelocity().")
     // TODO(Mitiguy) Issue #10155, deprecate method when removed from Python.
     const Frame<T>& frame_W = world_frame();
     return CalcJacobianSpatialVelocity(context,
