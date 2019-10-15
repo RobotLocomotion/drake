@@ -58,7 +58,7 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-high-sierra-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
 
 Alternatively, to schedule a build of an open pull request or arbitrary commit

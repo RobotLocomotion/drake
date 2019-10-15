@@ -5,7 +5,6 @@ tap 'bazelbuild/tap'
 tap 'homebrew/cask-fonts' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
 tap 'robotlocomotion/director'
 
-brew 'bash-completion'
 brew 'bazelbuild/tap/bazel'
 brew 'diffstat'
 brew 'doxygen'

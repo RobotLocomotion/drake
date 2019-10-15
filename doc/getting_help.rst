@@ -41,7 +41,7 @@ Helpful Information
 When reporting an issue, please consider providing the following information
 (*examples in italics*):
 
-*   Operating system (*Ubuntu 16.04 / 18.04, macOS 10.14*)
+*   Operating system (*Ubuntu 16.04 / 18.04, macOS Catalina*)
 *   Language (C++, :ref:`Python <python-bindings>`)
 
     -   C++ compiler (*GCC 7.4.0, Clang 6.0.0*)
