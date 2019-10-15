@@ -248,6 +248,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         .def("CalcFrameGeometricJacobianExpressedInWorld",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
@@ -259,6 +261,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("frame_B"),
             py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
             cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc)
+#pragma GCC diagnostic pop
         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
         // overload that (a) services MBP directly and (b) uses body
         // association that is less awkward than implicit BodyNodeIndex.
