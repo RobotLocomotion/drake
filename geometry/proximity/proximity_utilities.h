@@ -120,7 +120,7 @@ class EncodedData {
   void set_anchored() { data_ &= ~kIsDynamicMask; }
 
   /** Writes the encoded data into the collision object's user data.  */
-  void write_to(fcl::CollisionObject<double>* object) {
+  void write_to(fcl::CollisionObject<double>* object) const {
     object->setUserData(reinterpret_cast<void*>(data_));
   }
 

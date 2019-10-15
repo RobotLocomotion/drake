@@ -17,6 +17,7 @@
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/utilities.h"
 
 static_assert(std::is_same<tinyobj::real_t, double>::value,
@@ -38,110 +39,6 @@ using std::unique_ptr;
 using std::unordered_map;
 
 namespace {
-
-// Struct for use in SingleCollisionCallback(). Contains the collision request
-// and accumulates results in a drake::multibody::collision::PointPair vector.
-struct CollisionData {
-  explicit CollisionData(const CollisionFilterLegacy* collision_filter_in)
-      : collision_filter(*collision_filter_in) {}
-  // Collision filter used to exclude filtered pairs.
-  const CollisionFilterLegacy& collision_filter;
-
-  // Collision request
-  fcl::CollisionRequestd request;
-
-  // Vector of distance results
-  std::vector<PenetrationAsPointPair<double>>* contacts{};
-};
-
-// Callback function for FCL's collide() function for retrieving a *single*
-// contact.
-bool SingleCollisionCallback(CollisionObjectd* fcl_object_A_ptr,
-                             CollisionObjectd* fcl_object_B_ptr,
-                             void* callback_data) {
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We insure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
-
-  auto& collision_data = *static_cast<CollisionData*>(callback_data);
-
-  // Extract the collision filter keys from the fcl collision objects. These
-  // keys will also be used to map the fcl collision object back to the Drake
-  // GeometryId for colliding geometries.
-  EncodedData encoding_A(fcl_object_A);
-  EncodedData encoding_B(fcl_object_B);
-
-  const bool can_collide = collision_data.collision_filter.CanCollideWith(
-      encoding_A.encoding(), encoding_B.encoding());
-
-  // NOTE: Here and below, false is returned regardless of whether collision
-  // is detected or not because true tells the broadphase manager to terminate.
-  // Since we want *all* collisions, we return false.
-  if (!can_collide) return false;
-
-  // Unpack the callback data
-  const fcl::CollisionRequestd& request = collision_data.request;
-
-  // This callback only works for a single contact, this confirms a request
-  // hasn't been made for more contacts.
-  DRAKE_ASSERT(request.num_max_contacts == 1);
-  fcl::CollisionResultd result;
-
-  // Perform nearphase collision detection
-  fcl::collide(&fcl_object_A, &fcl_object_B, request, result);
-
-  if (!result.isCollision()) return false;
-
-  // Process the contact points
-  // NOTE: This assumes that the request is configured to use a single
-  // contact.
-  const fcl::Contactd& contact = result.getContact(0);
-
-  // Signed distance is negative when penetration depth is positive.
-  const double depth = contact.penetration_depth;
-
-  // TODO(SeanCurtis-TRI): Remove this test when FCL issue 375 is fixed.
-  // FCL returns osculation as contact but doesn't guarantee a non-zero
-  // normal. Drake isn't really in a position to define that normal from the
-  // geometry or contact results so, if the geometry is sufficiently close
-  // to osculation, we consider the geometries to be non-penetrating.
-  if (depth <= std::numeric_limits<double>::epsilon()) return false;
-
-  // By convention, Drake requires the contact normal to point out of B
-  // and into A. FCL uses the opposite convention.
-  Vector3d drake_normal = -contact.normal;
-
-  // FCL returns a single contact point centered between the two
-  // penetrating surfaces. PenetrationAsPointPair expects
-  // two, one on the surface of body A (Ac) and one on the surface of body
-  // B (Bc). Choose points along the line defined by the contact point and
-  // normal, equidistant to the contact point. Recall that signed_distance
-  // is strictly non-positive, so signed_distance * drake_normal points
-  // out of A and into B.
-  Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
-  Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
-
-  PenetrationAsPointPair<double> penetration;
-  penetration.depth = depth;
-  penetration.id_A = encoding_A.id();
-  penetration.id_B = encoding_B.id();
-  penetration.p_WCa = p_WAc;
-  penetration.p_WCb = p_WBc;
-  penetration.nhat_BA_W = drake_normal;
-  // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-  // surfaces and then flip the normal.
-  if (penetration.id_B < penetration.id_A) {
-    std::swap(penetration.id_A, penetration.id_B);
-    std::swap(penetration.p_WCa, penetration.p_WCb);
-    penetration.nhat_BA_W = -penetration.nhat_BA_W;
-  }
-  collision_data.contacts->emplace_back(std::move(penetration));
-
-  return false;
-}
 
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
@@ -590,21 +487,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const {
     std::vector<PenetrationAsPointPair<double>> contacts;
-    // CollisionData stores references to the provided data structures.
-    CollisionData collision_data{&collision_filter_};
-    collision_data.contacts = &contacts;
-    collision_data.request.num_max_contacts = 1;
-    collision_data.request.enable_contact = true;
-    // NOTE: As of 5/1/2018 the GJK implementation of Libccd appears to be
-    // superior to FCL's "independent" implementation. Furthermore, libccd
-    // appears to behave badly if its gjk tolerance is much tighter than
-    // 2e-12. Until this changes, we explicitly specify these parameters rather
-    // than relying on FCL's defaults.
-    collision_data.request.gjk_tolerance = 2e-12;
-    collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    penetration_as_point_pair::CallbackData data{&collision_filter_, &contacts};
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&collision_data, SingleCollisionCallback);
+    dynamic_tree_.collide(&data, penetration_as_point_pair::Callback);
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
@@ -613,7 +499,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     dynamic_tree_.collide(
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
-        &collision_data, SingleCollisionCallback);
+        &data, penetration_as_point_pair::Callback);
     return contacts;
   }
 
