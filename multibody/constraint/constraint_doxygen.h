@@ -230,8 +230,6 @@ coordinates and generalized velocities (see @ref quasi_coordinates). This yields
 the requisite form:<pre>
 ġₚ = ∂gₚ/∂q⋅N(q)⋅v
 </pre>
-@ref Sciavicco2000 "[Sciavicco 2000]". The latter can be cumbersome to derive
-and less efficient to work with.
 
 Fortunately, adding new constraints defined in the form `gₚ(t,q)` does not
 require considering this distinction using the operator paradigm (see, e.g.,
