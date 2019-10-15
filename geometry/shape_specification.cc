@@ -28,8 +28,9 @@ Cylinder::Cylinder(double radius, double length)
       length_(length) {
   if (radius <= 0 || length <= 0) {
     throw std::logic_error(
-        fmt::format("Cylinder radius and length should be > 0 (was {} and {}).",
-        radius, length));
+        fmt::format("Cylinder radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
   }
 }
 
@@ -71,8 +72,9 @@ Box::Box(double width, double depth, double height)
       size_(width, depth, height) {
   if (width <= 0 || depth <= 0 || height <= 0) {
     throw std::logic_error(
-        fmt::format("Box width, depth and height should be > 0 (was {}, {} and "
-        "{}).", width, depth, height));
+        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
+                    "{}, and {}, respectively).",
+                    width, depth, height));
   }
 }
 
@@ -82,15 +84,15 @@ Box Box::MakeCube(double edge_size) {
 
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
-  if (scale == 0) {
-    throw std::logic_error("Mesh scale cannot be 0.");
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
 }
 
 Convex::Convex(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
-  if (scale == 0) {
-    throw std::logic_error("Convex scale cannot be 0.");
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
 }
 

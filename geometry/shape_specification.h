@@ -211,8 +211,10 @@ class Mesh final : public Shape {
 
   /** Constructs a mesh specification from the mesh file located at the given
    _absolute_ file path. Optionally uniformly scaled by the given scale factor.
-   @throws std::logic_error if scale is zero. Note that a negative scale is
-   considered valid. */
+   @throws std::logic_error if |scale| < 1e-8. Note that a negative scale is
+   considered valid. We want to preclude scales near zero but recognise that
+   scale is a convenience tool for "tweaking" models. 8 orders of magnitude
+   should be plenty without considering revisiting the model itself. */
   explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
@@ -242,9 +244,12 @@ class Convex final : public Shape {
                                 multiple object-name statements (e.g.,
                                 "o object_name"), or if there are faces defined
                                 outside a single object-name statement.
-   @throws std::logic_error     if scale is zero. Note that a negative scale is
-                                considered valid.
-   */
+   @throws std::logic_error     if |scale| < 1e-8. Note that a negative scale is
+                                considered valid. We want to preclude scales
+                                near zero but recognise that scale is a
+                                convenience tool for "tweaking" models. 8 orders
+                                of magnitude should be plenty without
+                                considering revisiting the model itself. */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }

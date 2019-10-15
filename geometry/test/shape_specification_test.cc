@@ -305,33 +305,32 @@ GTEST_TEST(BoxTest, Cube) {
 // Confirms that shape parameters are validated.
 GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Sphere(-0.5), std::logic_error, "Sphere radius should be >= 0 \\(was "
-      "-0.5\\).");
+      Sphere(-0.5), std::logic_error, "Sphere radius should be >= 0.+");
   EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0, 1), std::logic_error, "Cylinder radius and length should "
-      "be > 0 \\(was 0.0 and 1.0\\).");
+      "both be > 0.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0.5, -1), std::logic_error, "Cylinder radius and length should "
-      "be > 0 \\(was 0.5 and -1.0\\).");
+      "both be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Box(2, 0, 2), std::logic_error, "Box width, depth and height should "
-      "be > 0 \\(was 2.0, 0.0 and 2.0\\).");
+      Box(2, 0, 2), std::logic_error, "Box width, depth, and height should "
+      "all be > 0.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Box(3, 1, -1), std::logic_error, "Box width, depth and height should "
-      "be > 0 \\(was 3.0, 1.0 and -1.0\\).");
+      Box(3, 1, -1), std::logic_error, "Box width, depth, and height should "
+      "all be > 0.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Box::MakeCube(0), std::logic_error, "Box width, depth and height should "
-      "be > 0 \\(was 0.0, 0.0 and 0.0\\).");
+      Box::MakeCube(0), std::logic_error, "Box width, depth, and height should "
+      "all be > 0.+");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Mesh("foo", 0), std::logic_error, "Mesh scale cannot be 0.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9), std::logic_error,
+                              "Mesh .scale. cannot be < 1e-8.");
   EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Convex("bar", 0), std::logic_error, "Convex scale cannot be 0.");
+  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0), std::logic_error,
+                              "Convex .scale. cannot be < 1e-8.");
   EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
 }
 
