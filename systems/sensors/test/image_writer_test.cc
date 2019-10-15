@@ -454,7 +454,12 @@ TEST_F(ImageWriterTest, ValidateDirectory) {
       ImageWriterTester::DirectoryIsMissing("this/path/does/not_exist"));
 
   // Case: No write permissions (assuming that this isn't run as root).
-  EXPECT_TRUE(ImageWriterTester::DirectoryIsUnwritable("/usr"));
+  filesystem::path path(temp_dir());
+  path.append("unwritable");
+  filesystem::create_directory(path);
+  filesystem::permissions(path, filesystem::perms::owner_write,
+                          filesystem::perm_options::remove);
+  EXPECT_TRUE(ImageWriterTester::DirectoryIsUnwritable(path));
 
   // Case: the path is to a file.
   const std::string file_name = temp_name();
