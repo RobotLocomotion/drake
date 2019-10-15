@@ -1798,8 +1798,10 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
   // Compute the spatial forces on each body from contact.
   switch (contact_model_) {
     case ContactModel::kPointContactOnly:
-      if (num_collision_geometries() > 0)
-        CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
+      // Note: consider caching the results from the following method (in which
+      // case we would also want to introduce the Eval... naming convention for
+      // the method).
+      CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
       break;
 
     case ContactModel::kHydroelasticsOnly:
