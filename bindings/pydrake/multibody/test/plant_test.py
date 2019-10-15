@@ -370,6 +370,7 @@ class TestPlant(unittest.TestCase):
                 context=context, frame_B=base_frame,
                 p_BoFo_B=[0, 0, 0])
             self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+            
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [
