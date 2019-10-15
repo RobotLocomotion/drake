@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
@@ -325,6 +326,125 @@ GTEST_TEST(RadauIntegratorTest, LinearTest) {
           CopyToVector()[0],
       scaled_linear.Evaluate(updated_t_final),
       10 * std::numeric_limits<double>::epsilon());
+}
+
+// Integrate the modified mass-spring-damping system, which exhibits a
+// discontinuity in the velocity derivative at spring position x = 0, and
+// compares the results at the final state between implicit Euler and Radau-1.
+GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
+  std::unique_ptr<Context<double>> context_;
+
+  // The mass of the particle connected by the spring and damper to the world.
+  const double mass = 2.0;
+
+  // The magnitude of the constant force pushing the particle toward -inf.
+  const double constant_force_mag = 10;
+
+  // Spring constant for a semi-stiff spring. Corresponds to a frequency of
+  // 35.588 cycles per second without damping, assuming that mass = 2 (using
+  // formula f = sqrt(k/mass)/(2*pi), where k is the spring constant, and f is
+  // the frequency in cycles per second).
+  const double semistiff_spring_k = 1e5;
+
+  // Construct the discontinuous mass-spring-damper system, using critical
+  // damping.
+  implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>
+      spring_damper(semistiff_spring_k, std::sqrt(semistiff_spring_k / mass),
+                    mass, constant_force_mag);
+
+  // Create two contexts, one for each integrator.
+  auto context_radau1 = spring_damper.CreateDefaultContext();
+  auto context_ie = spring_damper.CreateDefaultContext();
+
+  // Construct the two integrators.
+  const int num_stages = 1;    // Yields implicit Euler.
+  RadauIntegrator<double, num_stages> radau1(spring_damper,
+                                             context_radau1.get());
+  ImplicitEulerIntegrator<double> ie(spring_damper, context_ie.get());
+
+  // Set maximum step sizes that are reasonable for this system.
+  radau1.set_maximum_step_size(1e-2);
+  ie.set_maximum_step_size(1e-2);
+
+  // Set the same target accuracy for both integrators.
+  radau1.set_target_accuracy(1e-5);
+  ie.set_target_accuracy(1e-5);
+
+  // Make both integrators re-use Jacobians and iteration matrices, when
+  // possible.
+  radau1.set_reuse(true);
+  ie.set_reuse(true);
+
+  // Setting the minimum step size speeds the unit test without (in this case)
+  // affecting solution accuracy.
+  radau1.set_requested_minimum_step_size(1e-8);
+  ie.set_requested_minimum_step_size(1e-8);
+
+  // Set initial position.
+  const double initial_position = 1e-8;
+  spring_damper.set_position(context_radau1.get(), initial_position);
+  spring_damper.set_position(context_ie.get(), initial_position);
+
+  // Set the initial velocity.
+  const double initial_velocity = 0;
+  spring_damper.set_velocity(context_radau1.get(), initial_velocity);
+  spring_damper.set_velocity(context_ie.get(), initial_velocity);
+
+  // Initialize both integrators.
+  radau1.Initialize();
+  ie.Initialize();
+
+  // Integrate for 1 second.
+  const double t_final = 1.0;
+  radau1.IntegrateWithMultipleStepsToTime(t_final);
+  ie.IntegrateWithMultipleStepsToTime(t_final);
+
+  // NOTE: A preliminary investigation indicates that these are not bitwise
+  // identical due to different ordering of arithmetic operations.
+
+  // Verify the final position and accuracy are identical to machine precision.
+  const double tol = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(context_radau1->get_continuous_state().get_vector().GetAtIndex(0),
+              context_ie->get_continuous_state().get_vector().GetAtIndex(0),
+              tol);
+  EXPECT_NEAR(context_radau1->get_continuous_state().get_vector().GetAtIndex(1),
+              context_ie->get_continuous_state().get_vector().GetAtIndex(1),
+              tol);
+
+  // NOTE: The preliminary investigation cited above indicates that the
+  // different order of arithmetic operations is responsible for a slight
+  // discrepancy in number of derivative evaluations and Newton-Raphson
+  // iterations, so we don't verify that these stats are identical.
+
+  // Verify that the remaining statistics are identical.
+  EXPECT_EQ(radau1.get_largest_step_size_taken(),
+            ie.get_largest_step_size_taken());
+  EXPECT_EQ(radau1.get_num_derivative_evaluations_for_jacobian(),
+            ie.get_num_derivative_evaluations_for_jacobian());
+  EXPECT_EQ(radau1.get_num_error_estimator_derivative_evaluations(),
+            ie.get_num_error_estimator_derivative_evaluations());
+  EXPECT_EQ(
+      radau1.get_num_error_estimator_derivative_evaluations_for_jacobian(),
+      ie.get_num_error_estimator_derivative_evaluations_for_jacobian());
+  EXPECT_EQ(radau1.get_num_error_estimator_iteration_matrix_factorizations(),
+            ie.get_num_error_estimator_iteration_matrix_factorizations());
+  EXPECT_EQ(radau1.get_num_error_estimator_jacobian_evaluations(),
+            ie.get_num_error_estimator_jacobian_evaluations());
+  EXPECT_EQ(radau1.get_num_error_estimator_newton_raphson_iterations(),
+            ie.get_num_error_estimator_newton_raphson_iterations());
+  EXPECT_EQ(radau1.get_num_iteration_matrix_factorizations(),
+            ie.get_num_iteration_matrix_factorizations());
+  EXPECT_EQ(radau1.get_num_jacobian_evaluations(),
+            ie.get_num_jacobian_evaluations());
+  EXPECT_EQ(radau1.get_num_step_shrinkages_from_error_control(),
+            ie.get_num_step_shrinkages_from_error_control());
+  EXPECT_EQ(radau1.get_num_step_shrinkages_from_substep_failures(),
+            ie.get_num_step_shrinkages_from_substep_failures());
+  EXPECT_EQ(radau1.get_num_steps_taken(), ie.get_num_steps_taken());
+  EXPECT_EQ(radau1.get_num_substep_failures(), ie.get_num_substep_failures());
+
+  // Verify that we've had at least one step shrinkage.
+  EXPECT_GT(radau1.get_num_step_shrinkages_from_substep_failures(), 0);
 }
 
 // Test both 1-stage (1st order) and 2-stage (3rd order) Radau integrators.
