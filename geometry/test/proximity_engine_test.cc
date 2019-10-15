@@ -2814,9 +2814,34 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
   }
 }
 
+// TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
+//  testing in proximity engine. They should only test the following:
+//  Successful evaluation between two dynamic shapes and between a dynamic
+//  and anchored shape. Those simple tests confirm ProximityEngine handles its
+//  responsibilty correctly; it calls the appropriate broadphase methods on FCL.
+//  Unit tests on ProximityEngine for the FCL-based query methods should *not*
+//  be concerned with the correctness of the results' values -- that lies in the
+//  responsibility of the callback and underlying geometric algorithms. They
+//  were originally created here because FCL wasn't completely trusted. So,
+//  create a set of tests that can be evaluated on each of the FCL-based queries
+//  that performs those two tests.
+
+// TODO(SeanCurtis-TRI): Remove these geometric tests from here and put them
+//  in their own test. We're keeping them, ultimately, so that we can use these
+//  tests for our own implementation of shape-shape point-intersection
+//  algorithms. In the short-term, these tests should be expressed directly
+//  in terms of the penetration_as_point_pair::Callback and moved to that set
+//  of tests.
+
 // Robust Box-Primitive tests. Tests collision of the box with other primitives
 // in a uniform framework. These tests parallel tests located in fcl.
-
+//
+// All of the tests below here are using the callback to exercise the black box.
+// They exist because of FCL; FCL's unit tests were sporadic at best and these
+// tests revealed errors/properties of FCL that weren't otherwise apparent.
+// Ultimately, these tests don't belong here. But they can be re-used when we
+// replace FCL with Drake's own implementations.
+//
 // This performs a very specific test. It collides a rotated box with a
 // surface that is tangent to the z = 0 plane. The box is a cube with unit size.
 // The goal is to transform the box such that:
