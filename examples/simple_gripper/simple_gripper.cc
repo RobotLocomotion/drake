@@ -17,6 +17,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/second_order_implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -62,8 +63,9 @@ DEFINE_double(grip_width, 0.095,
 // Integration parameters:
 DEFINE_string(integration_scheme, "implicit_euler",
               "Integration scheme to be used. Available options are: "
-              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
-              "'implicit_euler'");
+              "'radau1', 'implicit_euler' (ec), 'second_order_implicit_euler', 'semi_explicit_euler',"
+              "'runge_kutta2', 'runge_kutta3' (ec), 'bogacki_shampine3' (ec), 'radau'");
+
 DEFINE_double(max_time_step, 1.0e-3,
               "Maximum time step used for the integrators. [s]. "
               "If negative, a value based on parameter penetration_allowance "
@@ -354,6 +356,12 @@ int do_main() {
     integrator =
         simulator.reset_integrator<RungeKutta3Integrator<double>>(
             *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "second_order_implicit_euler") {
+    integrator =
+        simulator.reset_integrator<systems::SecondOrderImplicitEulerIntegrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+    integrator->set_target_accuracy(FLAGS_accuracy);
+    integrator->set_fixed_step_mode(true);
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
         simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
@@ -366,6 +374,8 @@ int do_main() {
   integrator->set_maximum_step_size(max_time_step);
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(FLAGS_accuracy);
+  
+  integrator->set_fixed_step_mode(true);
 
   // The error controlled integrators might need to take very small time steps
   // to compute a solution to the desired accuracy. Therefore, to visualize

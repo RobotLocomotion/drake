@@ -23,6 +23,11 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/second_order_implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
@@ -52,6 +57,17 @@ DEFINE_bool(add_gravity, false,
 DEFINE_double(target_realtime_rate, 1,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
+// Integration parameters:
+DEFINE_string(integration_scheme, "implicit_euler",
+              "Integration scheme to be used. Available options are: "
+              "'radau1', 'implicit_euler' (ec), 'second_order_implicit_euler', 'semi_explicit_euler',"
+              "'runge_kutta2', 'runge_kutta3' (ec), 'bogacki_shampine3' (ec), 'radau'");
+
+DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
+              "size integrators with error control.");
+DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
+    "discrete system with periodic updates of period 'max_time_step'."
+    "If 'false', the plant is modeled as a continuous system.");
 
 void DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
@@ -62,9 +78,11 @@ void DoMain() {
   geometry::SceneGraph<double>& scene_graph =
       *builder.AddSystem<geometry::SceneGraph>();
   scene_graph.set_name("scene_graph");
-
+  double max_time_step = 0;
+  if (FLAGS_time_stepping)
+    max_time_step = FLAGS_max_time_step;
   MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step);
+      *builder.AddSystem<MultibodyPlant>(max_time_step);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string hand_model_path;
   if (FLAGS_use_right_hand)
@@ -187,6 +205,42 @@ void DoMain() {
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+
+    systems::IntegratorBase<double>* integrator{nullptr};
+
+  if (FLAGS_integration_scheme == "implicit_euler") {
+    integrator =
+        simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "runge_kutta2") {
+    integrator =
+        simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+            *diagram, FLAGS_max_time_step, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "runge_kutta3") {
+    integrator =
+        simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "second_order_implicit_euler") {
+    integrator =
+        simulator.reset_integrator<systems::SecondOrderImplicitEulerIntegrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+    integrator->set_target_accuracy(FLAGS_accuracy);
+    integrator->set_fixed_step_mode(true);
+  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
+    integrator =
+        simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
+            *diagram, FLAGS_max_time_step, &simulator.get_mutable_context());
+  } else {
+    throw std::runtime_error(
+        "Integration scheme '" + FLAGS_integration_scheme +
+            "' not supported for this example.");
+  }
+  integrator->set_maximum_step_size(FLAGS_max_time_step);
+  if (!integrator->get_fixed_step_mode())
+    integrator->set_target_accuracy(FLAGS_accuracy);
+  
+  integrator->set_fixed_step_mode(true);
+
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
@@ -198,6 +252,26 @@ void DoMain() {
       VectorX<double>::Zero(plant.num_actuators()));
 
   simulator.AdvanceTo(FLAGS_simulation_time);
+
+  if (FLAGS_time_stepping) {
+    fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
+    fmt::print("Number of time steps taken = {:d}\n",
+               simulator.get_num_steps_taken());
+  } else {
+    fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
+    fmt::print("Number of time steps taken = {:d}\n",
+               integrator->get_num_steps_taken());
+    if (!integrator->get_fixed_step_mode()) {
+      fmt::print("Initial time step taken = {:10.6g} s\n",
+                 integrator->get_actual_initial_step_size_taken());
+      fmt::print("Largest time step taken = {:10.6g} s\n",
+                 integrator->get_largest_step_size_taken());
+      fmt::print("Smallest adapted step size = {:10.6g} s\n",
+                 integrator->get_smallest_adapted_step_size_taken());
+      fmt::print("Number of steps shrunk due to error control = {:d}\n",
+                 integrator->get_num_step_shrinkages_from_error_control());
+    }
+  }
 }
 
 }  // namespace

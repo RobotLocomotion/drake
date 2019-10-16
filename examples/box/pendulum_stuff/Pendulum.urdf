@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<robot name="Pendulum"
+    xmlns="https://drake.mit.edu"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://drake.mit.edu ../../doc/drakeURDF.xsd">
+  <material name="green">
+    <color rgba=".3 .6 .4 1"/>
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1"/>
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+  <link drake_ignore="true" name="world">
+    <inertial>
+      <!-- drc-viewer needs this to have inertia to parse properly. Remove it when that bug is fixed. -->
+      <origin xyz="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <link name="base">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 .015"/>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .015"/>
+      <geometry>
+        <sphere radius=".015"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+  <joint drake_ignore="true" name="base_weld" type="fixed">
+    <parent link="world"/>
+    <child link="base"/>
+    <origin xyz="0 0 1"/>
+  </joint>
+  <link name="arm">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -.5"/>
+      <mass value="0.5"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -.375"/>
+      <geometry>
+        <cylinder length=".75" radius=".01"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -.375"/>
+      <geometry>
+        <cylinder length=".75" radius=".01"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="theta" type="continuous">
+    <parent link="base"/>
+    <child link="arm"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+  <link name="arm_com">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -0.5"/>
+      <mass value="0.5"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5"/>
+      <geometry>
+        <sphere radius=".025"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -.5"/>
+      <geometry>
+        <sphere radius=".025"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="arm_weld" type="fixed">
+    <parent link="arm"/>
+    <child link="arm_com"/>
+  </joint>
+  <transmission name="elbow_trans" type="SimpleTransmission">
+    <actuator name="tau"/>
+    <joint name="theta"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="base">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  <gazebo reference="arm">
+    <material>Gazebo/Red</material>
+  </gazebo>
+  <gazebo reference="arm_com">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+  <gazebo>
+    <plugin filename="libgazebo_ros_pub_robot_state.so" name="gazebo_ros_pub_robot_controller">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <topicName>true_robot_state</topicName>
+    </plugin>
+  </gazebo>
+</robot>
