@@ -397,6 +397,11 @@ class GeometryState {
     return geometry_engine_->FindCollisionCandidates();
   }
 
+  /** Implementation of QueryObject::HasCollisions().  */
+  bool HasCollisions() const {
+    return geometry_engine_->HasCollisions();
+  }
+
   //@}
 
   /** @name               Proximity filters

@@ -92,6 +92,15 @@ std::vector<SortedPair<GeometryId>> QueryObject<T>::FindCollisionCandidates()
 }
 
 template <typename T>
+bool QueryObject<T>::HasCollisions() const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.HasCollisions();
+}
+
+template <typename T>
 std::vector<ContactSurface<T>>
 QueryObject<T>::ComputeContactSurfaces() const {
   ThrowIfNotCallable();
