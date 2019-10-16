@@ -17,16 +17,17 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "fmt": {
+      "Version": "6.0",
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "ignition-math4": {
-      "Version": "4.0.0",
-      "Hints": ["@prefix@/lib/cmake/ignition-math4"],
+    "ignition-math6": {
+      "Version": "6.4",
+      "Hints": ["@prefix@/lib/cmake/ignition-math6"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "lcm": {
-      "Version": "1.3.95",
+      "Version": "1.4",
       "Hints": ["@prefix@/lib/cmake/lcm"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
@@ -35,7 +36,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "Protobuf": {
-      "Version": "2.6.1",
+      "Version": "2.6",
       "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {
@@ -43,7 +44,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "spdlog": {
-      "Version": "0.16.3",
+      "Version": "1.3",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
@@ -69,7 +70,7 @@
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Eigen3:Eigen",
         "fmt:fmt-header-only",
-        "ignition-math4:ignition-math4",
+        "ignition-math6:ignition-math6",
         "lcm:lcm",
         "optitrack:optitrack-lcmtypes-cpp",
         "protobuf:libprotobuf",
