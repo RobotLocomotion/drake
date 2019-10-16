@@ -215,8 +215,6 @@ class QueryObject {
             contact surfaces.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
-  //@}
-
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair
    that is *absent* from the results is either a) culled by collision filters or
@@ -225,6 +223,12 @@ class QueryObject {
 
    @returns A vector populated with collision pair candidates. */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
+
+  /** Reports true if there are _any_ collisions between unfiltered pairs in the
+   world.  */
+  bool HasCollisions() const;
+
+  //@}
 
   //---------------------------------------------------------------------------
   // TODO(DamrongGuoy): Write a better documentation for Signed Distance
