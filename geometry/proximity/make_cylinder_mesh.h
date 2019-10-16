@@ -448,31 +448,49 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 template <typename T>
 VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
                                      double resolution_hint) {
-  const double h = cylinder.get_length();
-  const double r = cylinder.get_radius();
+  const double length = cylinder.get_length();
+  const double radius = cylinder.get_radius();
   std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> pair =
-      MakeCylinderMeshLevel0<T>(h, r);
+      MakeCylinderMeshLevel0<T>(length, radius);
   VolumeMesh<T>& mesh = pair.first;
   std::vector<CylinderVertexType>& vertex_type = pair.second;
 
   /*
-    The volume mesh is formed by successively refining a rectangular prism. At
-    the boundary circle of the top and bottom caps, we go from 4 edges, to
-    8 edges, to 16 edges, etc., doubling at each level of refinement. These
-    edges are simply chords across fixed-length arcs of the circle. Based on
-    that we can easily compute the length of the chord and bound it by
-    resolution_hint.
+    Calculate the refinement level `L` to satisfy the resolution hint, which
+    bounds the length `e` of mesh edges on the boundary circle of the top
+    and bottom caps.
+        The volume mesh is formed by successively refining a rectangular
+    prism.  At the boundary circle of the top and bottom caps, we go from 4
+    edges, to 8 edges, to 16 edges, etc., doubling at each level of
+    refinement. These edges are simply chords across fixed-length arcs of the
+    circle. Based on that we can easily compute the length `e` of the chord
+    and bound it by resolution_hint.
+        We can calculate `e` from the radius r of the cylinder and the central
+    angle θ supported by the chord in this picture:
 
-              /|
-           r / |
-            /  |
-           <θ  | e
-            \  |
-           r \ |
-              \|
+                    x x x x x
+                 x      | \    x
+               x        |   \    x
+             x          |     \    x
+           x            |       \    x
+          x    radius r |       e \   x
+         x              |           \  x
+        x               |             \ x
+        x               | θ             \
+        x               +---------------x
+        x                   radius r    x
+        x                               x
+         x                             x
+          x                           x
+           x                         x
+             x                     x
+               x                 x
+                 x             x
+                    x x x x x
 
-     The length of e = 2⋅r⋅sin(θ/2). Solving for θ we get: θ = 2⋅sin⁻¹(e/2⋅r).
-     We can relate θ with the refinement level ℒ.
+    The chord length e = 2⋅r⋅sin(θ/2). Solving for θ we get: θ = 2⋅sin⁻¹(e/2⋅r).
+
+    We can relate θ with the refinement level L.
 
        θ = 2π / 4⋅2ᴸ
          = π / 2⋅2ᴸ
@@ -482,25 +500,29 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
 
        π / 2ᴸ⁺¹ = 2⋅sin⁻¹(e/2⋅r)
        2ᴸ⁺¹ = π / 2⋅sin⁻¹(e/2⋅r)
-       ℒ + 1 = log₂(π / 2⋅sin⁻¹(e/2⋅r))
-       ℒ = log₂(π / 2⋅sin⁻¹(e/2⋅r)) - 1
-       ℒ = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
+       L + 1 = log₂(π / 2⋅sin⁻¹(e/2⋅r))
+       L = log₂(π / 2⋅sin⁻¹(e/2⋅r)) - 1
+       L = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
    */
   DRAKE_DEMAND(resolution_hint > 0.0);
   // Make sure the arcsin doesn't blow up.
-  const double e = std::min(resolution_hint, 2.0 * r);
+  const double e = std::min(resolution_hint, 2.0 * radius);
   const int L = std::max(
       0, static_cast<int>(
-             std::ceil(std::log2(M_PI / std::asin(e / (2.0 * r)))) - 2));
+             std::ceil(std::log2(M_PI / std::asin(e / (2.0 * radius)))) - 2));
+
+  // TODO(DamrongGuoy): Reconsider the limit of 100 million tetrahedra.
+  //  Should it be smaller like 1 million? It will depend on how the system
+  //  perform in practice.
 
   // Limit refinement_level to 100 million tetrahedra. Each refinement level
   // increases the number of tetrahedra by a factor of 8. Let N₀ be the
   // number of initial tetrahedra. The number of tetrahedra N with refinement
-  // level ℒ would be:
+  // level L would be:
   //   N = N₀ * 8ᴸ
-  //   ℒ = log₈(N/N₀)
+  //   L = log₈(N/N₀)
   // We can limit N to 100 million by:
-  //   ℒ ≤ log₈(1e8/N₀) = log₂(1e8/N₀)/3
+  //   L ≤ log₈(1e8/N₀) = log₂(1e8/N₀)/3
   const int refinement_level = std::min(
       L,
       static_cast<int>(std::floor(std::log2(1.e8 / mesh.num_elements()) / 3.)));
@@ -508,7 +530,7 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
   // If the original mesh contains N tetrahedra, the resulting mesh with
   // refinement_level = L will contain N·8ᴸ tetrahedra.
   for (int level = 1; level <= refinement_level; ++level) {
-    auto split_pair = RefineCylinderMesh<T>(mesh, vertex_type, r);
+    auto split_pair = RefineCylinderMesh<T>(mesh, vertex_type, radius);
     mesh = split_pair.first;
     vertex_type = split_pair.second;
     DRAKE_DEMAND(mesh.vertices().size() == vertex_type.size());

@@ -78,7 +78,7 @@ GTEST_TEST(MakeCylinderVolumeMesh, FinestMesh) {
   // 50,331,648 tetrahedra instead.
   const double resolution_hint_limit = 1.2271e-2;
   auto mesh_limit = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
-                                                  resolution_hint_limit);
+                                                   resolution_hint_limit);
   EXPECT_EQ(50331648, mesh_limit.num_elements());
 
   // Confirm that going ten times finer resolution hint does not increase the
