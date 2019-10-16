@@ -19,6 +19,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 
+//#define FULL_NEWTON
 namespace drake {
 namespace systems {
 
@@ -201,6 +202,11 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     // Reset yt' to yt.
     yt_prime(i) = yt(i);
   }
+  /*SPDLOG_DEBUG(drake::log(), "Jacobian");
+  for (int i = 0; i < ny; ++i)
+  {
+    SPDLOG_DEBUG(drake::log(), (Jv->row(i)));
+  }*/
 }
 
 
@@ -231,7 +237,20 @@ const MatrixX<T>& SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   //// Get the system.
   //const System<T>& system = this->get_system();
   // forward diff the Jacobian
-  ComputeForwardDiffVelocityJacobian(t, h, x, qt0, &*context, &Jv_);
+  switch (this->get_jacobian_computation_scheme())
+  {
+    case SecondOrderImplicitEulerIntegrator<T>::JacobianComputationScheme::kForwardDifference:
+      ComputeForwardDiffVelocityJacobian(t, h, x, qt0, &*context, &Jv_);
+      break;
+    case SecondOrderImplicitEulerIntegrator<T>::JacobianComputationScheme::kCentralDifference:
+      throw std::runtime_error("Central difference not supported yet!");
+      break;
+    case SecondOrderImplicitEulerIntegrator<T>::JacobianComputationScheme::kAutomatic:
+      throw std::runtime_error("AutoDiff'd Jacobian not supported yet!");
+      break;
+    default:
+        throw new std::logic_error("Invalid Jacobian computation scheme!");
+  }
   // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
   /*[this, context, &system, &t, &x]() {
     switch (jacobian_scheme_) {
@@ -383,9 +402,11 @@ void SecondOrderImplicitEulerIntegrator<T>::eval_g_with_y_from_context(
 //       exit.
 template <class T>
 bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
-    const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus) {
+    const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
   using std::abs;
 
+  // Verify the trial number is valid.
+  DRAKE_ASSERT(trial >= 1 && trial <= 4);
   SPDLOG_DEBUG(drake::log(), "StepImplicitEuler(h={}) t={}", h, t0);
 
   const System<T>& system = this->get_system();
@@ -433,7 +454,11 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   T last_dx_norm = std::numeric_limits<double>::infinity();
   // Full Newton: Calculate Jacobian and iteration matrices (and factorizations), as needed,
     // around (tf, xtplus).
-  if (!this->MaybeFreshenVelocityMatrices(tf, *xtplus, qt0, h, 3,
+#ifdef FULL_NEWTON
+  if (trial < 3)
+    trial = 3;
+#endif
+  if (!this->MaybeFreshenVelocityMatrices(tf, *xtplus, qt0, h, trial,
       ComputeAndFactorImplicitEulerIterationMatrix, &iteration_matrix_)) {
     return false;
   }
@@ -449,9 +474,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     // iteration matrix.
     // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dy = iteration_matrix_.Solve(-residual);
-    DRAKE_ASSERT(dy.allFinite());
-    if (!dy.allFinite())
-      return false;
+    //DRAKE_ASSERT(dy.allFinite());
+    //if (!dy.allFinite())
+    //  return false;
     if (i > 0 && this->IsUpdateZero(ytplus, dy))
       return true;
       // ytplus is from *xtplus
@@ -478,8 +503,8 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     if (i >= 1) {
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
-                   i, theta, eta);
+      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {}, dx {}, last dx {}, theta: {}, eta: {}",
+                   i, dx_norm, last_dx_norm, theta, eta);
 
       // Look for divergence.
       if (theta > 1) {
@@ -503,12 +528,13 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     last_dx_norm = dx_norm;
     residual = velocity_residual_R();
 
+#ifdef FULL_NEWTON
     // update the Jacobian for full newton
     if (!this->MaybeFreshenVelocityMatrices(tf, *xtplus, qt0, h, 3,
         ComputeAndFactorImplicitEulerIterationMatrix, &iteration_matrix_)) {
       return false;
     }
-
+#endif
   }
 
   SPDLOG_DEBUG(drake::log(), "SOIE convergence failed");
@@ -518,10 +544,10 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   if (!this->get_reuse())
     return false;
 
-  // Try StepAbstract again, first resetting xtplus to xt0. That method will
+  // Try StepImplicitEuler again, first resetting xtplus to xt0. That method will
   // freshen Jacobians and iteration matrix factorizations as necessary.
   *xtplus = xt0;
-  return false;
+  return StepImplicitEuler(t0, h, xt0, xtplus, trial + 1);
 }
 
 // Steps forward by a single step of `h` using the implicit trapezoid

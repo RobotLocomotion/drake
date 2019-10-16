@@ -1851,6 +1851,7 @@ template <class T>
 T IntegratorBase<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   using std::max;
+  using std::isnan;
   const Context<T>& context = get_context();
   const System<T>& system = get_system();
 

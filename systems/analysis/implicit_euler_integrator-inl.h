@@ -381,8 +381,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     DRAKE_LOGGER_DEBUG("Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
-  }
-
+  };
   // The error estimation process uses the implicit trapezoid method, which
   // is defined as:
   // x(t0+h) = x(t0) + h/2 (f(t0, x(t0) + f(t0+h, x(t0+h))
