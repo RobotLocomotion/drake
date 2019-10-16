@@ -12,6 +12,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
@@ -587,6 +588,24 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
+  bool CollisionsExist() const {
+    // All these quantities are aliased in the callback data.
+    collisions_exist::CallbackData data{&collision_filter_};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, collisions_exist::Callback);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, collisions_exist::Callback);
+    return data.exist;
+  }
+
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const {
     std::vector<PenetrationAsPointPair<double>> contacts;
@@ -986,6 +1005,11 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double threshold) const {
   return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
+}
+
+template <typename T>
+bool ProximityEngine<T>::CollisionsExist() const {
+  return impl_->CollisionsExist();
 }
 
 template <typename T>

@@ -381,6 +381,11 @@ class GeometryState {
    See @ref collision_queries "Collision Queries" for more details.  */
   //@{
 
+  /** Implementation of QueryObject::CollisionsExist().  */
+  bool CollisionsExist() const {
+    return geometry_engine_->CollisionsExist();
+  }
+
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const {

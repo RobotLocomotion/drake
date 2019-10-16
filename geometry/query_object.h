@@ -150,6 +150,11 @@ class QueryObject {
    geometry is penetrating.     */
   //@{
 
+  /** Reports true if there are _any_ collisions between unfiltered pairs in the
+   world.
+   @returns A boolean of whether any collisions exist. */
+  bool CollisionsExist() const;
+
   /** Computes the penetrations across all pairs of geometries in the world
    with the penetrations characterized by pairs of points (see
    PenetrationAsPointPair), providing some measure of the penetration "depth" of

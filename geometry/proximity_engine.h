@@ -167,6 +167,10 @@ class ProximityEngine {
   See @ref collision_queries "Collision Queries" for more details.  */
 
   //@{
+
+  /** Implementation of GeometryState::CollisionsExist().  */
+  bool CollisionsExist() const;
+
   // NOTE: This maps to Model::ComputeMaximumDepthCollisionPoints().
   // The definition that touching is not penetrating is due to an FCL issue
   // described in https://github.com/flexible-collision-library/fcl/issues/375
