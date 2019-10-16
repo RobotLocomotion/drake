@@ -1,0 +1,251 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+
+drake_cc_library(
+    name = "box_plant",
+    srcs = ["box_plant.cc"],
+    hdrs = ["box_plant.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//systems/framework:vector_system",
+    ],
+)
+
+drake_cc_library(
+    name = "spring_plant",
+    srcs = ["spring_plant.cc"],
+    hdrs = ["spring_plant.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "box_geometry",
+    srcs = ["box_geometry.cc"],
+    hdrs = ["box_geometry.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":box_plant",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "two_boxes_plant",
+    srcs = ["two_boxes_plant.cc"],
+    hdrs = ["two_boxes_plant.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":box_plant",
+        ":spring_plant",
+        ":box_geometry",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:adder",
+        "//systems/primitives:gain",
+        "//systems/primitives:multiplexer",
+    ],
+)
+
+
+drake_cc_binary(
+    name = "passive_simulation",
+    srcs = ["passive_simulation.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":box_geometry",
+        ":box_plant",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:bogacki_shampine3_integrator",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:second_order_implicit_euler_integrator",
+        "//systems/analysis:radau_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:semi_explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:signal_logger",
+        "//systems/primitives:sine",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "integrator_benchmark",
+    srcs = ["integrator_benchmark.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":box_geometry",
+        ":box_plant",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:bogacki_shampine3_integrator",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:radau_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:semi_explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:signal_logger",
+        "//systems/primitives:sine",
+        "@gflags",
+    ],
+)
+
+
+drake_cc_binary(
+    name = "two_boxes_sim",
+    srcs = ["two_boxes_sim.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":box_geometry",
+        ":two_boxes_plant",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:sine",
+        "//systems/primitives:signal_logger",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "trajectory_optimization_simulation",
+    srcs = ["trajectory_optimization_simulation.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":box_geometry",
+        ":two_boxes_plant",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:sine",
+        "//systems/trajectory_optimization:direct_collocation",
+        "//solvers:solve",
+        "//systems/controllers:pid_controlled_system",
+        "//systems/primitives:trajectory_source",
+        "//systems/primitives:signal_logger",
+        "@gflags",
+    ],
+)
+
+#    drake_cc_binary(
+#        name = "energy_shaping_simulation",
+#        srcs = ["energy_shaping_simulation.cc"],
+#        add_test_rule = 1,
+#        data = [":models"],
+#        test_rule_args = ["--target_realtime_rate=0.0"],
+#        deps = [
+#            ":box_geometry",
+#            ":box_plant",
+#            "//geometry:geometry_visualization",
+#            "//systems/analysis:simulator",
+#            "//systems/framework:diagram",
+#            "//systems/framework:leaf_system",
+#            "@gflags",
+#        ],
+#    )
+
+#    drake_cc_binary(
+#        name = "lqr_simulation",
+#        srcs = ["lqr_simulation.cc"],
+#        add_test_rule = 1,
+#        data = [":models"],
+#        test_rule_args = ["--target_realtime_rate=0.0"],
+#        deps = [
+#            ":box_geometry",
+#            ":box_plant",
+#            "//common:is_approx_equal_abstol",
+#            "//geometry:geometry_visualization",
+#            "//systems/analysis:simulator",
+#            "//systems/controllers:linear_quadratic_regulator",
+#            "//systems/framework:diagram",
+#            "//systems/framework:leaf_system",
+#            "@gflags",
+#        ],
+#    )
+
+#    drake_cc_binary(
+#        name = "trajectory_optimization_simulation",
+#        srcs = ["trajectory_optimization_simulation.cc"],
+#        add_test_rule = 1,
+#        data = [":models"],
+#        test_rule_args = ["--target_realtime_rate=0.0"],
+#        # Non-deterministic IPOPT-related failures on macOS, see #10276.
+#        test_rule_flaky = 1,
+#        deps = [
+#            ":box_geometry",
+#            ":box_plant",
+#            "//common:is_approx_equal_abstol",
+#            "//geometry:geometry_visualization",
+#            "//solvers:solve",
+#            "//systems/analysis:simulator",
+#            "//systems/controllers:pid_controlled_system",
+#            "//systems/framework:diagram",
+#            "//systems/primitives:trajectory_source",
+#            "//systems/trajectory_optimization:direct_collocation",
+#            "@gflags",
+#        ],
+#    )
+
+#    drake_cc_binary(
+#        name = "print_symbolic_dynamics",
+#        srcs = ["print_symbolic_dynamics.cc"],
+#        add_test_rule = 1,
+#        data = [":models"],
+#        deps = [
+#            ":box_plant",
+#            "//common:symbolic",
+#            "//multibody/parsing",
+#            "//multibody/plant",
+#        ],
+#    )
+
+#    drake_cc_binary(
+#        name = "box_parameters_derivatives",
+#        srcs = ["box_parameters_derivatives.cc"],
+#        add_test_rule = 1,
+#        deps = [
+#            ":box_plant",
+#        ],
+#    )
+
+
+
+install_data()
+
+add_lint_tests()

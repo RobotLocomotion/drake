@@ -4,6 +4,8 @@
 
 #include "drake/common/unused.h"
 
+#undef DRAKE_SPDLOG_DEBUG
+#define DRAKE_SPDLOG_DEBUG(logger,...) 
 namespace drake {
 namespace systems {
 
