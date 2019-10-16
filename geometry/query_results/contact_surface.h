@@ -236,9 +236,9 @@ class ContactSurface {
     return *grad_h_MN_W_;
   }
 
+  // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given ContactSurface object is equal via deep
    exact comparison. NaNs are treated as not equal as per the IEEE standard.
-   TODO(#12173): Consider NaN==NaN to be true in equality tests.
    Note: currently requires the fields of the objects to be of type
    MeshFieldLinear, otherwise the current simple checking of equal values at
    vertices is insufficient.
