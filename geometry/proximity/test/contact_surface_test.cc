@@ -45,8 +45,9 @@ class ContactSurfaceTester {
     return *(surface_.grad_h_MN_W_);
   }
 
-  void set_mesh_W(std::unique_ptr<SurfaceMesh<T>> mesh) {
-    *(surface_.mesh_W_) = *mesh;
+  SurfaceMesh<T>& mutable_mesh_W() const {
+    DRAKE_DEMAND(surface_.mesh_W_ != nullptr);
+    return *(surface_.mesh_W_);
   }
 
  private:
@@ -218,30 +219,19 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
 
   // Different mesh.
   auto surface1 = ContactSurface<double>(surface);
-  ContactSurfaceTester<double> surface_tester1(surface1);
-  auto alt_vertices =
-      std::vector<SurfaceVertex<double>>(surface1.mesh_W().vertices());
-  alt_vertices.at(0) = SurfaceVertex<double>({2., 2., 2.});
-  auto alt_faces = std::vector<SurfaceFace>(surface1.mesh_W().faces());
-  auto alt_mesh = std::make_unique<SurfaceMesh<double>>(std::move(alt_faces),
-      std::move(alt_vertices));
-  surface_tester1.set_mesh_W(std::move(alt_mesh));
+  ContactSurfaceTester<double>(surface1).mutable_mesh_W().ReverseFaceWinding();
   EXPECT_FALSE(surface.Equal(surface1));
 
   // Different pressure field.
   auto surface2 = ContactSurface<double>(surface);
-  ContactSurfaceTester<double> surface_tester2(surface2);
-  std::vector<double>& values2 =
-      surface_tester2.mutable_e_MN().mutable_values();
-  values2[0] += 2.;
+  ContactSurfaceTester<double>(surface2).mutable_e_MN().mutable_values()[0] +=
+      2.0;
   EXPECT_FALSE(surface.Equal(surface2));
 
   // Different grad h field.
   auto surface3 = ContactSurface<double>(surface);
-  ContactSurfaceTester<double> surface_tester3(surface3);
-  std::vector<Vector3<double>>& values3 =
-      surface_tester3.mutable_grad_h_MN_W().mutable_values();
-  values3[0][0] += 2.;
+  ContactSurfaceTester<double>(surface3).mutable_grad_h_MN_W()
+      .mutable_values()[0][0] += 2.;
   EXPECT_FALSE(surface.Equal(surface3));
 }
 

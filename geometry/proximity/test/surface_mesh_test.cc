@@ -389,12 +389,8 @@ GTEST_TEST(SurfaceMeshTest, TestEqual) {
   const auto empty_mesh = GenerateEmptyMesh();
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
-  auto alt_vertices =
-      std::vector<SurfaceVertex<double>>(triangle_mesh->vertices());
-  auto alt_faces = std::vector<SurfaceFace>(triangle_mesh->faces());
-  const auto alt_triangle_mesh =
-      SurfaceMesh<double>(std::move(alt_faces), std::move(alt_vertices));
-  EXPECT_TRUE(triangle_mesh->Equal(alt_triangle_mesh));
+  SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
+  EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
   EXPECT_FALSE(empty_mesh->Equal(*zero_area_mesh));
   EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
   EXPECT_FALSE(triangle_mesh->Equal(*empty_mesh));

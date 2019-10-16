@@ -91,10 +91,8 @@ GTEST_TEST(MeshFieldLinearTest, TestEqual) {
   EXPECT_TRUE(mesh_field->Equal(*field0));
 
   // Different mesh.
-  auto alt_vertices = std::vector<SurfaceVertex<double>>(mesh->vertices());
-  alt_vertices.at(0) = SurfaceVertex<double>({2., 2., 2.});
-  auto alt_faces = std::vector<SurfaceFace>(mesh->faces());
-  auto alt_mesh = SurfaceMesh<double>(move(alt_faces), move(alt_vertices));
+  SurfaceMesh<double> alt_mesh = *mesh;
+  alt_mesh.ReverseFaceWinding();
   auto field1 = mesh_field->CloneAndSetMesh(&alt_mesh);
   EXPECT_FALSE(mesh_field->Equal(*field1));
 
