@@ -54,7 +54,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
 
     // Get the force from Spring 1 and Spring 2.
     const T f1 = -k(0) * stretch0 - v(0) * b(0);
-    const T f2 = -k(1) * stretch1 - v(1) * b(1);
+    const T f2 = -k(1) * stretch1 - (v(1) - v(0)) * b(1);
 
     // Return the force on each body. Spring 1 acts only Body 1. Spring 2
     // acts on Body 1 and Body 2.
@@ -165,8 +165,8 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     // The position of the second body should be offset exactly from the first.
     state->get_mutable_generalized_position().SetAtIndex(1, x1_final + offset);
 
-    // Velocity of the second body should be zero.
-    state->get_mutable_generalized_velocity().SetAtIndex(1, 0);
+    // Velocity of the second body should be equal to the first
+    state->get_mutable_generalized_velocity().SetAtIndex(1, v1_final);
   }
 };
 

@@ -1777,6 +1777,7 @@ template <class T>
 T IntegratorBase<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   using std::max;
+  using std::isnan;
   const Context<T>& context = get_context();
   const System<T>& system = get_system();
 
@@ -1825,7 +1826,12 @@ T IntegratorBase<T>::CalcStateChangeNorm(
       template lpNorm<Eigen::Infinity>();
   SPDLOG_DEBUG(drake::log(), "dq norm: {}, dv norm: {}, dz norm: {}",
                q_nrm, v_nrm, z_nrm);
-
+  if(isnan(q_nrm))
+    return q_nrm;
+  else if(isnan(v_nrm))
+    return v_nrm;
+  else if(isnan(z_nrm))
+    return z_nrm;
   // TODO(edrumwri): Record the worst offender (which of the norms resulted
   // in the largest value).
   // Infinity norm of the concatenation of multiple vectors is equal to the

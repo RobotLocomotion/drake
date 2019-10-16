@@ -362,8 +362,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     SPDLOG_DEBUG(drake::log(), "Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
-  }
-
+  };
   // The error estimation process uses the implicit trapezoid method, which
   // is defined as:
   // x(t0+h) = x(t0) + h/2 (f(t0, x(t0) + f(t0+h, x(t0+h))
@@ -380,7 +379,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 
   // Attempt to compute the implicit trapezoid solution.
   *xtplus_itr = *xtplus_ie;
-  if (StepImplicitTrapezoid(t0, h, xt0, dx0, xtplus_itr)) {
+  if (this->get_fixed_step_mode() || StepImplicitTrapezoid(t0, h, xt0, dx0, xtplus_itr)) {
     // Reset the state to that computed by implicit Euler.
     // TODO(edrumwri): Explore using the implicit trapezoid method solution
     //                 instead as *the* solution, rather than the implicit
