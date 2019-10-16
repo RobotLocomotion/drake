@@ -138,7 +138,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       VectorX<T>* xtplus, int trial = 1);
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus);
+      VectorX<T>* xtplus, int trial = 1);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
       const VectorX<T>& dx0, VectorX<T>* xtplus);
   // Jacobian computation
@@ -153,7 +153,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
       compute_and_factor_iteration_matrix,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) ;
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   // This function evaluates g(y) with y from the context. Context should be at time tf
   void eval_g_with_y_from_context(const VectorX<T>& qt0,
       const T& h, const VectorX<T>& qk, VectorX<T>* result);

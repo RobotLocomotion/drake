@@ -281,7 +281,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
     // Reset the tolerance, if necessary, by backing off slightly from the
     // tightest tolerance (machine epsilon).
-    if (eps <= 0)
+    // Compare using !(eps > 0) so that eps is not NaN.
+    if (!(eps > 0))
       eps = 10 * std::numeric_limits<double>::epsilon();
 
     for (int i = 0; i < xc.size(); ++i) {
@@ -509,6 +510,11 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
     // Reset xt' to xt.
     xt_prime(i) = xt(i);
   }
+  SPDLOG_DEBUG(drake::log(), "Jacobian");
+  for (int i = 0; i < n; ++i)
+  {
+    SPDLOG_DEBUG(drake::log(), (J->row(i)));
+  }
 }
 
 // Computes the Jacobian of the ordinary differential equations around time
@@ -589,6 +595,11 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
     // Reset xt' to xt.
     xt_prime(i) = xt(i);
+  }
+  SPDLOG_DEBUG(drake::log(), "Jacobian");
+  for (int i = 0; i < n; ++i)
+  {
+    SPDLOG_DEBUG(drake::log(), (J->row(i)));
   }
 }
 
