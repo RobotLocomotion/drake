@@ -50,6 +50,10 @@
     "stx": {
       "Hints": ["@prefix@/lib/cmake/stx"],
       "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "TinyXML2": {
+      "Version": "2.2",
+      "X-CMake-Find-Args": ["MODULE"]
     }
   },
   "Default-Components": [":drake"],
@@ -59,7 +63,6 @@
       "Location": "@prefix@/lib/libdrake.so",
       "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-ltinyxml2"],
       "Requires": [
         ":drake-lcmtypes-cpp",
         ":drake-marker",
@@ -73,6 +76,7 @@
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "stx:stx",
+        "tinyxml2:tinyxml2",
         "yaml-cpp"
       ]
     },
@@ -99,6 +103,6 @@
   },
   "X-CMake-Variables-Init": {
     "_Boost_IMPORTED_TARGETS": 1,
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
   }
 }
