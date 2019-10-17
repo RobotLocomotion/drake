@@ -24,6 +24,7 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
     MultibodyForces_,
     RevoluteJoint_,
+    RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
@@ -142,6 +143,11 @@ class TestPlant(unittest.TestCase):
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
+        body_mass = body.default_mass()
+        body_com = body.default_com()
+        body_default_unit_inertia = body.default_unit_inertia()
+        body_default_spatial_inertial = body.default_spatial_inertia()
+
         new_model_instance = plant.AddModelInstance("new_model_instance")
         body = plant.AddRigidBody(name="new_body_2",
                                   M_BBo_B=spatial_inertia,
