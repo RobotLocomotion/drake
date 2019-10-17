@@ -495,6 +495,10 @@ class TestCustom(unittest.TestCase):
         self.assertIsNot(subcontext, None)
         self.assertIs(
             diagram.GetSubsystemContext(system, context), subcontext)
+        subcontext2 = system.GetMyMutableContextFromRoot(context)
+        self.assertIsNot(subcontext2, None)
+        self.assertIs(subcontext2, subcontext)
+        self.assertIs(system.GetMyContextFromRoot(context), subcontext2)
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.

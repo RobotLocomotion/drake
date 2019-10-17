@@ -2290,9 +2290,46 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
   EXPECT_EQ(num_notifications(ctx2), notifications_2 + 1);
 }
 
-// Test diagram. Top level diagram (big_diagram) has 3 components:
-// diagram0, int2, diagram1, where diagram0 has int0 and int1, and
-// diagram1 has int3.
+/* Test diagram. Top level diagram (big_diagram) has 4 components:
+a constant vector source, diagram0, int2, and diagram1. diagram0 has int0
+and int1, and diagram1 has int3. Here's a picture:
+
++---------------------- big_diagram ----------------------+
+|                                                         |
+|                                   +---- diagram0 ----+  |
+|                                   |                  |  |
+|                                   |   +-----------+  |  |
+|                                   |   |           |  |  |
+|                            +------|--->   int0    +------->
+|                            |      |   |           |  |  |
+|                            |      |   +-----------+  |  |
+|                            |      |                  |  |
+|                            |      |   +-----------+  |  |
+|                            |      |   |           |  |  |
+|                            +------|--->   int1    +------->
+|                            |      |   |           |  |  |
+|                            |      |   +-----------+  |  |
+|    +------------------+    |      |                  |  |
+|    |                  |    |      +------------------+  |
+|    |  ConstantVector  +--->|                            |
+|    |                  |    |          +-----------+     |
+|    +------------------+    |          |           |     |
+|                            +---------->   int2    +------->
+|                            |          |           |     |
+|                            |          +-----------+     |
+|                            |                            |
+|                            |      +---- diagram1 ----+  |
+|                            |      |                  |  |
+|                            |      |   +-----------+  |  |
+|                            |      |   |           |  |  |
+|                            +------|--->   int3    +------->
+|                                   |   |           |  |  |
+|                                   |   +-----------+  |  |
+|                                   |                  |  |
+|                                   +------------------+  |
+|                                                         |
++---------------------------------------------------------+
+*/
 class NestedDiagramContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -2370,8 +2407,8 @@ class NestedDiagramContextTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> big_output_;
 };
 
-// Sets the continuous state of all the integrators through
-// GetMutableSubsystemContext(), and check that they are correctly set.
+// Check functioning and error checking of each method for extracting
+// subcontexts.
 TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
   big_diagram_->CalcOutput(*big_context_, big_output_.get());
 
@@ -2410,6 +2447,38 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
   EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
+
+  // Starting with the root context, the subsystems should be able to find
+  // their own contexts.
+  // Integrator 1 is a child of a child.
+  EXPECT_EQ(integrator1_->GetMyContextFromRoot(*big_context_)
+                .get_continuous_state_vector()[0],
+            2);
+  // Integrator 2 is a direct child.
+  EXPECT_EQ(integrator2_->GetMyContextFromRoot(*big_context_)
+                .get_continuous_state_vector()[0],
+            3);
+  // Extract a sub-diagram context.
+  Context<double>& diagram0_context =
+      diagram0_->GetMyMutableContextFromRoot(&*big_context_);
+  // This should fail because this context is not a root context.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      integrator1_->GetMyContextFromRoot(diagram0_context), std::logic_error,
+      ".*context must be a root context.*");
+
+  // Should fail because integrator3 is not in diagram0.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram0_->GetSubsystemContext(*integrator3_, diagram0_context),
+      std::logic_error,
+      ".*Integrator.*int3.*not contained in.*Diagram.*diagram0.*");
+
+  // Modify through the sub-Diagram context, then read back from root.
+  Context<double>& integrator1_context =
+      diagram0_->GetMutableSubsystemContext(*integrator1_, &diagram0_context);
+  integrator1_context.get_mutable_continuous_state_vector()[0] = 17.;
+  EXPECT_EQ(integrator1_->GetMyContextFromRoot(*big_context_)
+                .get_continuous_state_vector()[0],
+            17.);
 }
 
 // Sets the continuous state of all the integrators through
