@@ -88,6 +88,8 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.Initialize.doc)
         .def("AdvanceTo", &Simulator<T>::AdvanceTo, py::arg("boundary_time"),
             doc.Simulator.AdvanceTo.doc)
+        .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
+            doc.Simulator.AdvancePendingEvents.doc)
         .def("StepTo",
             WrapDeprecated(
                 doc.Simulator.StepTo.doc_deprecated, &Simulator<T>::AdvanceTo),
