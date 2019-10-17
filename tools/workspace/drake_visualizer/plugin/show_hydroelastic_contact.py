@@ -172,13 +172,6 @@ class ColorMap:
     def _do_get_color(self, norm_value):
         raise NotImplementedError("Subclasses need to implement this")
 
-    def update_range(self, min_val, max_val):
-        print("Update range to: {} - {}".format(min_val, max_val))
-        if self.data_range[0] > min_val:
-            self.data_range[0] = min_val
-        if self.data_range[1] < max_val:
-            self.data_range[1] = max_val
-
     def _normalize(self, data, (min_val, max_val)):
         """Returns an affine mapped version of the data based on the data range
          provided"""
@@ -212,13 +205,15 @@ class FlameMap(ColorMap):
 
 
 class IntensityMap(ColorMap):
-    def _do_get_color(selfself, norm_data):
+    def _do_get_color(self, norm_data):
+        # TODO(drum) Make the color configurable.
         return np.array((0.0, 1.0, 0.0), dtype=np.float) * norm_data
 
 
 class TwoToneMap(ColorMap):
     def __init__(self):
         ColorMap.__init__(self)
+        # TODO(drum) Make the two colors configurable.
         self.min_color = np.array((240, 1, 1.0))
         self.max_color = np.array((320.0, 1, 1.0))
         self.delta = self.max_color - self.min_color
@@ -229,9 +224,7 @@ class TwoToneMap(ColorMap):
 
     def hsvToRgb(self, hsv):
         '''Convert hue, saturation and lightness to r, g, b values.
-        Hue in [0, 360], s in [0, 1], l in [0, 1].
-        If dtype is int, then values are in the range [0, 255]
-        otherwise in the range [0,1]'''
+        Hue in [0, 360], s in [0, 1], l in [0, 1].'''
         h, s, v = hsv
         r = g = b = 0.0
         c = s * v
@@ -415,6 +408,7 @@ class HydroelasticContactVisualizer(object):
                         d.addPolygon([va - offset, vb - offset, vc - offset],
                                      color=[color_a, color_b, color_c])
 
+                # TODO(drum) Consider drawing shared edges just once.
                 if self.show_contact_surface:
                     d.addLine(p1=va, p2=vb, radius=0,
                               color=[inv_color_a, inv_color_b])
