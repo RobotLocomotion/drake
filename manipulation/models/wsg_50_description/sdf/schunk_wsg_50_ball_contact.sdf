@@ -21,7 +21,7 @@
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='visual'>
+      <visual name='body_visual'>
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
@@ -45,7 +45,7 @@
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <collision name='collision'>
+      <collision name='body_collision'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
         <pose>0 0 0 0 -0 0</pose>
@@ -120,7 +120,7 @@
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='visual'>
+      <visual name='left_finger_visual'>
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
@@ -146,7 +146,7 @@
       </visual>
       <!-- A sequence of spaced spheres the *width* of the finger from the tip
       towards the base. -->
-      <collision name='collision'>
+      <collision name='left_finger_collision_0'>
         <pose>0 -0.0209 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -154,7 +154,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='left_finger_collision_1'>
         <pose>0 -0.0049 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -162,7 +162,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='left_finger_collision_2'>
         <pose>0 0.0112 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -170,7 +170,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='left_finger_collision_3'>
         <pose>0 0.0271 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -180,7 +180,7 @@
       </collision>
       <!-- Two more spheres that form a triangle with the tip-most sphere
            above. -->
-      <collision name='collision'>
+      <collision name='left_finger_collision_4'>
         <pose>0.0040 0.0375 0.0060 0 0 0</pose>
         <geometry>
           <sphere>
@@ -188,7 +188,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='left_finger_collision_5'>
         <pose>0.0040 0.0375 -0.0060 0 0 0</pose>
         <geometry>
           <sphere>
@@ -213,7 +213,7 @@
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='visual'>
+      <visual name='right_finger_visual'>
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
@@ -239,7 +239,7 @@
       </visual>
       <!-- A sequence of spaced spheres the *width* of the finger from the tip
       towards the base. -->
-      <collision name='collision'>
+      <collision name='right_finger_collision_0'>
         <pose>0 -0.0209 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -247,7 +247,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='right_finger_collision_1'>
         <pose>0 -0.0049 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -255,7 +255,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='right_finger_collision_2'>
         <pose>0 0.0112 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -263,7 +263,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='right_finger_collision_3'>
         <pose>0 0.0271 0 0 0 0</pose>
         <geometry>
           <sphere>
@@ -273,7 +273,7 @@
       </collision>
       <!-- Two more spheres that form a triangle with the tip-most sphere
            above. -->
-      <collision name='collision'>
+      <collision name='right_finger_collision_4'>
         <pose>-0.004 0.0375 0.0060 0 0 0</pose>
         <geometry>
           <sphere>
@@ -281,7 +281,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision'>
+      <collision name='right_finger_collision_5'>
         <pose>-0.004 0.0375 -0.0060 0 0 0</pose>
         <geometry>
           <sphere>
