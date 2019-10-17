@@ -10,6 +10,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -23,6 +24,7 @@ using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using std::unique_ptr;
 
 // TODO(SeanCurtis-TRI): Unit test HalfSpace's signed_distance() and
 //  point_is_outside() methods.
@@ -333,7 +335,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
 // +X
 //
 template<typename T>
-std::unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
+unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
   const int face_data[3] = {0, 1, 2};
   std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
   const Vector3<T> vertex_data[3] = {
@@ -366,7 +368,7 @@ std::unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
 //      -Z
 //
 template<typename T>
-std::unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
+unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
   const int element_data[2][4] = {
       {0, 1, 2, 3},
       {0, 2, 1, 4}};
@@ -390,7 +392,7 @@ std::unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
 }
 
 template<typename T>
-std::unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
+unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
     const VolumeMesh<T>* volume_mesh) {
   // TODO(SeanCurtis-TRI): All the zeros and ones prevent meaningful recognition
   // of valid interpolation. I.e., interpolating values at v0, v1, v2
@@ -609,7 +611,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
 //    t2(0,-1.5,0) will do. See the above picture.
 //
 GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
-  std::unique_ptr<VolumeMesh<double>> volume_M;
+  unique_ptr<VolumeMesh<double>> volume_M;
   {
     const int element_data[4] = {0, 1, 2, 3};
     std::vector<VolumeElement> elements{VolumeElement(element_data)};
@@ -628,7 +630,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
     volume_M = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                     std::move(vertices));
   }
-  std::unique_ptr<SurfaceMesh<double>> surface_N;
+  unique_ptr<SurfaceMesh<double>> surface_N;
   {
     const int face_data[3] = {0, 1, 2};
     std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
@@ -677,18 +679,22 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   auto rigid_N = TrivialSurfaceMesh<double>();
   const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
 
-  std::unique_ptr<SurfaceMesh<double>> surface;
-  std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
-  std::unique_ptr<SurfaceMeshFieldLinear<Vector3d, double>> grad_h_field;
+  unique_ptr<SurfaceMesh<double>> surface;
+  unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
+  unique_ptr<SurfaceMeshFieldLinear<Vector3d, double>> grad_h_field;
   mesh_intersection::SampleVolumeFieldOnSurface(
       *volume_field_M, *rigid_N, X_MN,
       &surface, &e_field, &grad_h_field);
 
   const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_EQ(1, surface->num_faces());
+  EXPECT_EQ(3, surface->num_faces());
   // TODO(DamrongGuoy): More comprehensive checks.
   const double area = surface->area(SurfaceFaceIndex(0));
-  const double expect_area = (1. / 2.) * 0.5 * 0.5;
+  // The geometries M and N intersect in a right triangle ABC with edge
+  // lengths 0.5, 0.5, 0.5√2 with area 1/8. Then, ABC is subdivided into three
+  // smaller triangles of equal area, so each of the triangle in the contact
+  // surface has area (1/8)/3.
+  const double expect_area = 1. / 24.;
   EXPECT_NEAR(expect_area, area, kEps);
   const SurfaceFaceIndex face0(0);
   const SurfaceMesh<double>::Barycentric centroid(1. / 3., 1. / 3., 1. / 3.);
@@ -717,7 +723,7 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
 //                -Z
 //
 template<typename T>
-std::unique_ptr<VolumeMesh<T>> OctahedronVolume() {
+unique_ptr<VolumeMesh<T>> OctahedronVolume() {
   const int element_data[8][4] = {
       // The top four tetrahedrons share the top vertex v5.
       {0, 1, 2, 5}, {0, 2, 3, 5}, {0, 3, 4, 5}, {0, 4, 1, 5},
@@ -747,7 +753,7 @@ std::unique_ptr<VolumeMesh<T>> OctahedronVolume() {
 }
 
 template<typename T>
-std::unique_ptr<VolumeMeshFieldLinear<T, T>> OctahedronPressureField(
+unique_ptr<VolumeMeshFieldLinear<T, T>> OctahedronPressureField(
     VolumeMesh<T>* volume_mesh) {
   // The field is 0 on the boundary and linearly increasing to 1 at the
   // center of the octahedron.
@@ -772,7 +778,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> OctahedronPressureField(
 //           +X
 //
 template<typename T>
-std::unique_ptr<SurfaceMesh<T>> PyramidSurface() {
+unique_ptr<SurfaceMesh<T>> PyramidSurface() {
   const int face_data[8][3] = {
       // The top four faces share the apex vertex v5.
       {1, 2, 5},
@@ -955,7 +961,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
             id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_SR_W->mesh_W().num_faces());
+    EXPECT_EQ(12, contact_SR_W->mesh_W().num_faces());
 
     const Vector3d p_MQ = Vector3d::Zero();
     SurfaceFaceIndex face_Q;
@@ -998,7 +1004,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
             id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_SR_W->mesh_W().num_faces());
+    EXPECT_EQ(12, contact_SR_W->mesh_W().num_faces());
 
     const Vector3d p_MQ{0, -0.5,
                         0};  // The center vertex of the pyramid "bottom".
@@ -1012,6 +1018,26 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     const Vector3d expect_grad_h_W = X_WS * Vector3d::UnitY();
     EXPECT_NEAR((expect_grad_h_W - grad_h_W).norm(), 0., kEps);
   }
+}
+
+// The ultimate proper spelling of mesh intersection allows for mixed scalar
+// types (double-valued meshes with autodiff-valued poses). The calling code
+// needs to assume this is possible, so we've added a specific overload with
+// this spelling. It supports compilation but throws a runtime exception.
+// This confirms the exception.
+GTEST_TEST(MeshIntersectionTest, DoubleAutoDiffMixed) {
+  unique_ptr<VolumeMesh<double>> soft_mesh = OctahedronVolume<double>();
+  unique_ptr<VolumeMeshFieldLinear<double, double>> soft_field =
+      OctahedronPressureField<double>(soft_mesh.get());
+  unique_ptr<SurfaceMesh<double>> rigid_mesh = PyramidSurface<double>();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ComputeContactSurfaceFromSoftVolumeRigidSurface(
+          GeometryId::get_new_id(), *soft_field, RigidTransform<AutoDiffXd>(),
+          GeometryId::get_new_id(), *rigid_mesh, RigidTransform<AutoDiffXd>()),
+      std::logic_error,
+      "AutoDiff-valued ContactSurface calculation between meshes is not"
+      "currently supported");
 }
 
 }  // namespace

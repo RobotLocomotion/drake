@@ -60,14 +60,4 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_unittest(
-    name = "attic_forwarding_test",
-    deps = [
-        "//bindings/pydrake/attic/multibody",
-        "//bindings/pydrake/attic/solvers",
-        "//bindings/pydrake/multibody",
-        "//bindings/pydrake/solvers",
-    ],
-)
-
 add_lint_tests_pydrake()

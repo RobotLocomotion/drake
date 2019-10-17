@@ -131,24 +131,26 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
-      const std::function<VectorX<T>()>& g,
-      const std::function<void(const MatrixX<T>&, const T&,
-          typename ImplicitIntegrator<T>::IterationMatrix*)>&
-          compute_and_factor_iteration_matrix,
-      VectorX<T>* xtplus, int trial = 1);
+                    const std::function<VectorX<T>()>& g,
+                    const std::function<
+                        void(const MatrixX<T>&, const T&,
+                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
+                        compute_and_factor_iteration_matrix,
+                    const VectorX<T>& xtplus_guess,
+                    typename ImplicitIntegrator<T>::IterationMatrix*,
+                    VectorX<T>* xtplus, int trial = 1);
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, VectorX<T>* xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&, Context<T>*);
-  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&, Context<T>*);
-  MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
-                                     const Context<T>& context);
+      const VectorX<T>& dx0, const VectorX<T>& xtplus_ie, VectorX<T>* xtplus);
 
-  // The last computed iteration matrix and factorization, used for both the
-  // integrator and the error estimator.
-  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_;
+  // The last computed iteration matrix and factorization for implicit Euler.
+  typename ImplicitIntegrator<T>::IterationMatrix ie_iteration_matrix_;
+
+  // The last computed iteration matrix and factorization for implicit
+  // trapezoid.
+  typename ImplicitIntegrator<T>::IterationMatrix itr_iteration_matrix_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

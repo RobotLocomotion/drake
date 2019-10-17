@@ -23,6 +23,11 @@ instead.
 For using Python bindings, see :ref:`Binary Installation for Python
 <python-bindings-binary>`.
 
+Drake binary releases incorporate a pre-compiled version of
+`SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`_ as part of the
+`Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`_.
+Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
+
 Using older (2015) releases
 ===========================
 

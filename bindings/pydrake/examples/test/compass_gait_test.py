@@ -47,7 +47,7 @@ class TestCompassGait(unittest.TestCase):
         context.SetAccuracy(1e-8)
 
         # Zero the input
-        context.FixInputPort(compass_gait.get_input_port(0).get_index(), [0.0])
+        compass_gait.get_input_port(0).FixValue(context, 0.0)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()

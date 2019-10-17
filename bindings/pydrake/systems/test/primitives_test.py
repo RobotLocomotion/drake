@@ -25,10 +25,8 @@ from pydrake.systems.primitives import (
     ControllabilityMatrix,
     Demultiplexer, Demultiplexer_,
     DiscreteTimeDelay, DiscreteTimeDelay_,
-    ExponentialRandomSource,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
-    GaussianRandomSource,
     Gain, Gain_,
     Integrator, Integrator_,
     IsControllable,
@@ -45,7 +43,6 @@ from pydrake.systems.primitives import (
     SignalLogger, SignalLogger_,
     Sine, Sine_,
     SymbolicVectorSystem, SymbolicVectorSystem_,
-    UniformRandomSource,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
@@ -183,6 +180,8 @@ class TestGeneral(unittest.TestCase):
         self.assertFalse(IsObservable(system))
 
         system = AffineSystem(A, B, f0, C, D, y0, .1)
+        self.assertEqual(system.get_input_port(0), system.get_input_port())
+        self.assertEqual(system.get_output_port(0), system.get_output_port())
         context = system.CreateDefaultContext()
         self.assertEqual(system.get_input_port(0).size(), 1)
         self.assertEqual(context.get_discrete_state_vector().size(), 2)
@@ -195,7 +194,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.y0(), y0)
         self.assertEqual(system.time_period(), .1)
 
-        context.FixInputPort(0, BasicVector([0]))
+        system.get_input_port(0).FixValue(context, 0)
         linearized = Linearize(system, context)
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
@@ -208,7 +207,7 @@ class TestGeneral(unittest.TestCase):
         model_value = BasicVector([1., 2, 3])
         system = PassThrough(model_value.size())
         context = system.CreateDefaultContext()
-        context.FixInputPort(0, model_value)
+        system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
         input_eval = system.EvalVectorInput(context, 0)
         compare_value(self, input_eval, model_value)
@@ -220,7 +219,7 @@ class TestGeneral(unittest.TestCase):
         model_value = AbstractValue.Make("Hello world")
         system = PassThrough(model_value)
         context = system.CreateDefaultContext()
-        context.FixInputPort(0, model_value)
+        system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
         input_eval = system.EvalAbstractInput(context, 0)
         compare_value(self, input_eval, model_value)
@@ -251,7 +250,7 @@ class TestGeneral(unittest.TestCase):
             output = system.AllocateOutput()
 
             def mytest(input, expected):
-                context.FixInputPort(0, BasicVector(input))
+                system.get_input_port(0).FixValue(context, input)
                 system.CalcOutput(context, output)
                 self.assertTrue(np.allclose(output.get_vector_data(
                     0).CopyToVector(), expected))
@@ -265,7 +264,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
 
         def mytest(input, expected):
-            context.FixInputPort(0, BasicVector(input))
+            system.get_input_port(0).FixValue(context, input)
             system.CalcOutput(context, output)
             self.assertTrue(np.allclose(output.get_vector_data(
                 0).CopyToVector(), expected))
@@ -336,7 +335,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
 
         def mytest(input, expected):
-            context.FixInputPort(0, BasicVector(input))
+            system.get_input_port(0).FixValue(context, input)
             system.CalcOutput(context, output)
             self.assertTrue(np.allclose(output.get_vector_data(
                 0).CopyToVector(), expected))
@@ -352,7 +351,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(demux.num_output_ports(), 4)
 
         input_vec = np.array([1., 2., 3., 4.])
-        context.FixInputPort(0, BasicVector(input_vec))
+        demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
         demux.CalcOutput(context, output)
 
@@ -367,7 +366,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 2)
 
-        context.FixInputPort(0, BasicVector(input_vec))
+        demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
         demux.CalcOutput(context, output)
 
@@ -385,7 +384,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), num_output_ports)
 
-        context.FixInputPort(0, BasicVector(input_vec))
+        demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
         demux.CalcOutput(context, output)
 
@@ -417,7 +416,7 @@ class TestGeneral(unittest.TestCase):
             num_ports = len(case['data'])
             self.assertEqual(context.num_input_ports(), num_ports)
             for j, vec in enumerate(case['data']):
-                context.FixInputPort(j, BasicVector(vec))
+                mux.get_input_port(j).FixValue(context, vec)
             mux.CalcOutput(context, output)
             self.assertTrue(
                 np.allclose(output.get_vector_data(0).get_value(),
@@ -436,14 +435,6 @@ class TestGeneral(unittest.TestCase):
         # Note: There are no random inputs to add to the empty diagram, but it
         # confirms the API works.
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
-
-    def test_random_sources_deprecated(self):
-        with catch_drake_warnings(expected_count=1):
-            UniformRandomSource(num_outputs=2, sampling_interval_sec=0.01)
-        with catch_drake_warnings(expected_count=1):
-            GaussianRandomSource(num_outputs=3, sampling_interval_sec=0.01)
-        with catch_drake_warnings(expected_count=1):
-            ExponentialRandomSource(num_outputs=4, sampling_interval_sec=0.1)
 
     def test_ctor_api(self):
         """Tests construction of systems for systems whose executions semantics

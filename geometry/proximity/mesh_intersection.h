@@ -18,6 +18,8 @@
 
 namespace drake {
 namespace geometry {
+
+// TODO(sean-curtis) Move this to a more common namespace.
 namespace mesh_intersection {
 
 #ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
@@ -50,6 +52,8 @@ namespace mesh_intersection {
 template <typename T>
 class HalfSpace {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
+
   /** Constructs a HalfSpace in frame F.
    @param nhat_F
        A unit-length vector perpendicular to the half space's planar boundary
@@ -77,16 +81,22 @@ class HalfSpace {
    frame F). The point is strictly inside, on the boundary, or outside based on
    the return value being negative, zero, or positive, respectively.
    */
-  T signed_distance(const Vector3<T>& p_FQ) const {
+  T CalcSignedDistance(const Vector3<T>& p_FQ) const {
     return nhat_F_.dot(p_FQ) - displacement_;
   }
 
   /** Reports true if the point Q (measured and expressed in frame F),
    strictly lies outside this half space.
    */
-  bool point_is_outside(const Vector3<T>& p_FQ) const {
-    return signed_distance(p_FQ) > 0;
+  bool PointIsOutside(const Vector3<T>& p_FQ) const {
+    return CalcSignedDistance(p_FQ) > 0;
   }
+
+  /** Gets the normal expressed in frame F. */
+  const Vector3<T> nhat_F() const { return nhat_F_; }
+
+  /** Gets the displacement constant. */
+  const T& displacement() const { return displacement_; }
 
  private:
   Vector3<T> nhat_F_;
@@ -115,8 +125,8 @@ template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
                             const Vector3<T>& p_FB,
                             const HalfSpace<T>& H_F) {
-  const T a = H_F.signed_distance(p_FA);
-  const T b = H_F.signed_distance(p_FB);
+  const T a = H_F.CalcSignedDistance(p_FA);
+  const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
   // outside). Outside has a strictly positive distance, inside is non-positive.
   // We confirm that their product is non-positive and that at least one of the
@@ -133,7 +143,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
   //  if it turns out we need to perform this test at other sites.
   // Verify that the intersection point is on the plane of the half space.
   using std::abs;
-  DRAKE_DEMAND(abs(H_F.signed_distance(intersection)) < kEps);
+  DRAKE_DEMAND(abs(H_F.CalcSignedDistance(intersection)) < kEps);
   return intersection;
   // Justification.
   // 1. We set up the weights wa and wb such that wa + wb = 1, which
@@ -204,8 +214,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = polygon_vertices_F[i];
     const Vector3<T>& previous = polygon_vertices_F[(i - 1 + size) % size];
-    const bool current_contained = !H_F.point_is_outside(current);
-    const bool previous_contained = !H_F.point_is_outside(previous);
+    const bool current_contained = !H_F.PointIsOutside(current);
+    const bool previous_contained = !H_F.PointIsOutside(previous);
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where
@@ -423,20 +433,13 @@ void AddPolygonToMeshData(
 
   const int num_original_vertices = static_cast<int>(vertices_F->size());
 
-  // If the polygon is a triangle, simply add it.
-  if (polygon_size == 3) {
-    int vertex_index[3];
-    for (int i = 0; i < 3; ++i) {
-      vertices_F->emplace_back(polygon_vertices_F[i]);
-      vertex_index[i] = i + num_original_vertices;
-    }
-    faces->emplace_back(vertex_index);
-    return;
-  }
-
   // Triangulate the polygon by creating a fan around the polygon's centroid.
   // This is important because it gives us a smoothly changing tesselation as
-  // the polygon itself smoothly changes.
+  // the polygon itself smoothly changes. Even if the polygon is already a
+  // triangle, we still add its centroid because the triangular polygon can
+  // smoothly change to a quadrilateral polygon. Therefore, an intersection
+  // triangle will contribute 3 triangles to the ContactSurface and smoothly
+  // change to 4 triangles from an intersection quadrilateral.
   Vector3<T> centroid = Vector3<T>::Zero();
   for (int i = 0; i < polygon_size; ++i) {
     vertices_F->emplace_back(polygon_vertices_F[i]);
@@ -639,6 +642,17 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS,
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
     const math::RigidTransform<T>& X_WR) {
+  // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
+  //  there are three types of scalars: the pose scalar, the mesh field *value*
+  //  scalar, and the mesh vertex-position scalar. However, short term, it is
+  //  probably unnecessary to distinguish all three here. If we assume that this
+  //  function is *only* called to find the contact surface between two declared
+  //  geometries, then the volume mesh values and vertex positions will always
+  //  be in double. However, even dividing between pose and mesh scalars has
+  //  *huge* downstream implications on how the meshes and mesh fields are
+  //  defined. We're deferring this work by simply disallowing invocation of
+  //  this method on AutoDiffXd (see below). It compiles, but throws.
+
   // Compute the transformation from the rigid frame to the soft frame.
   const math::RigidTransform<T> X_SR = X_WS.inverse() * X_WR;
 
@@ -664,6 +678,17 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
       id_S, id_R, std::move(surface_SR), std::move(e_SR),
       std::move(grad_h_SR));
 }
+
+// NOTE: This is a short-term hack to allow ProximityEngine to compile when
+// invoking this method. There are currently a host of issues preventing us from
+// doing contact surface computation with AutoDiffXd. This curtails those
+// issues for now by short-circuiting the functionality. (See the note on the
+// templated version of this function.)
+std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurfaceFromSoftVolumeRigidSurface(
+    const GeometryId, const VolumeMeshField<double, double>&,
+    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
+    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&);
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
 

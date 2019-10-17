@@ -51,8 +51,7 @@ def main():
     cart_pole_context = diagram.GetMutableSubsystemContext(
         cart_pole, diagram_context)
 
-    cart_pole_context.FixInputPort(
-        cart_pole.get_actuation_input_port().get_index(), [0])
+    cart_pole.get_actuation_input_port().FixValue(cart_pole_context, 0)
 
     cart_slider = cart_pole.GetJointByName("CartSlider")
     pole_pin = cart_pole.GetJointByName("PolePin")

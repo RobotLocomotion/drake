@@ -4,9 +4,11 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
+    MathematicalProgramResult,
     SolverOptions,
     SolverType,
-    SolverId
+    SolverId,
+    SolverInterface
     )
 
 from functools import partial
@@ -17,6 +19,7 @@ import numpy as np
 
 import pydrake
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
@@ -597,3 +600,48 @@ class TestMathematicalProgram(unittest.TestCase):
         infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
                                                  tol=1e-4)
         self.assertEquals(len(infeasible), 0)
+
+    def test_add_indeterminates_and_decision_variables(self):
+        prog = mp.MathematicalProgram()
+        x0 = sym.Variable("x0")
+        x1 = sym.Variable("x1")
+        a0 = sym.Variable("a0")
+        a1 = sym.Variable("a1")
+        prog.AddIndeterminates(np.array([x0, x1]))
+        prog.AddDecisionVariables(np.array([a0, a1]))
+        numpy_compare.assert_equal(prog.decision_variables()[0], a0)
+        numpy_compare.assert_equal(prog.decision_variables()[1], a1)
+        numpy_compare.assert_equal(prog.indeterminates()[0], x0)
+        numpy_compare.assert_equal(prog.indeterminate(1), x1)
+
+
+class DummySolverInterface(SolverInterface):
+    def __init__(self):
+        SolverInterface.__init__(self)
+
+    def available(self):
+        return True
+
+    def solver_id(self):
+        return SolverId("dummy")
+
+    def Solve(self, prog, initial_guess, solver_options, result):
+        raise Exception("Dummy solver cannot solve")
+
+    def AreProgramAttributesSatisfied(self, prog):
+        return True
+
+
+class TestSolverInterface(unittest.TestCase):
+    def test_dummy_solver_interface(self):
+        solver = DummySolverInterface()
+        self.assertTrue(solver.available())
+        self.assertEqual(solver.solver_id().name(), "dummy")
+        self.assertIsInstance(solver, SolverInterface)
+        prog = mp.MathematicalProgram()
+        result = mp.MathematicalProgramResult()
+        with self.assertRaises(Exception) as context:
+            solver.Solve(prog, None, None, result)
+        self.assertTrue("Dummy solver cannot solve" in str(context.exception))
+        self.assertIsInstance(result, mp.MathematicalProgramResult)
+        self.assertTrue(solver.AreProgramAttributesSatisfied(prog))

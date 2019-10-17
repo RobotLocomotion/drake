@@ -18,7 +18,8 @@
 // that is using py::self (example: `def(py::self + py::self)`).
 // Here, we suppress the warning using `#pragma diagnostic`.
 #if (__APPLE__) && (__clang__) && (__clang_major__ >= 10) && \
-    (__clang_minor__ >= 0) && (__clang_patchlevel__ >= 1)
+    !((__clang_major__ == 10) && (__clang_minor__ == 0) &&   \
+        (__clang_patchlevel__ == 0))
 #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
@@ -343,7 +344,9 @@ PYBIND11_MODULE(symbolic, m) {
       .def("min", &symbolic::min, doc.min.doc)
       .def("max", &symbolic::max, doc.max.doc)
       .def("ceil", &symbolic::ceil, doc.ceil.doc)
-      .def("floor", &symbolic::floor, doc.floor.doc);
+      .def("__ceil__", &symbolic::ceil, doc.ceil.doc)
+      .def("floor", &symbolic::floor, doc.floor.doc)
+      .def("__floor__", &symbolic::floor, doc.floor.doc);
   DefCopyAndDeepCopy(&expr_cls);
 
   // TODO(eric.cousineau): These should actually exist on the class, and should

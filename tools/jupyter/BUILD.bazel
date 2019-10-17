@@ -34,6 +34,12 @@ drake_jupyter_py_binary(
     deps = [":example_library"],
 )
 
+drake_py_unittest(
+    name = "jupyter_notebook_test",
+    # N.B. This is purely for checking for platform support.
+    deps = [":failing_notebook"],
+)
+
 # Add example failing notebook.
 drake_jupyter_py_binary(
     name = "failing_notebook",

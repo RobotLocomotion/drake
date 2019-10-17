@@ -65,7 +65,9 @@ void BindAutoDiffMathOverloads(PyObject* obj) {
       .def("max",
           [](const AutoDiffXd& x, const AutoDiffXd& y) { return max(x, y); })
       .def("ceil", [](const AutoDiffXd& x) { return ceil(x); })
+      .def("__ceil__", [](const AutoDiffXd& x) { return ceil(x); })
       .def("floor", [](const AutoDiffXd& x) { return floor(x); })
+      .def("__floor__", [](const AutoDiffXd& x) { return floor(x); })
       // TODO(eric.cousineau): This is not a NumPy-overridable method using
       // dtype=object. Deprecate and move solely into `pydrake.math`.
       .def("inv", [](const MatrixX<AutoDiffXd>& X) -> MatrixX<AutoDiffXd> {

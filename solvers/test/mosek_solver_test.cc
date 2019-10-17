@@ -1,8 +1,8 @@
 #include "drake/solvers/mosek_solver.h"
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
@@ -207,20 +207,20 @@ GTEST_TEST(MosekTest, TestLogFile) {
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
   const std::string log_file = temp_directory() + "/mosek.log";
-  EXPECT_FALSE(spruce::path(log_file).exists());
+  EXPECT_FALSE(filesystem::exists({log_file}));
   MosekSolver solver;
   MathematicalProgramResult result;
   solver.Solve(prog, {}, {}, &result);
   // By default, no logging file.
-  EXPECT_FALSE(spruce::path(log_file).exists());
+  EXPECT_FALSE(filesystem::exists({log_file}));
   // Output the logging to the console
   solver.set_stream_logging(true, "");
   solver.Solve(prog, {}, {}, &result);
-  EXPECT_FALSE(spruce::path(log_file).exists());
+  EXPECT_FALSE(filesystem::exists({log_file}));
   // Output the logging to the file.
   solver.set_stream_logging(true, log_file);
   solver.Solve(prog, {}, {}, &result);
-  EXPECT_TRUE(spruce::path(log_file).exists());
+  EXPECT_TRUE(filesystem::exists({log_file}));
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {

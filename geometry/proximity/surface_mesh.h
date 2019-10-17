@@ -171,6 +171,12 @@ class SurfaceMesh {
     return faces_[e];
   }
 
+  /** Returns the faces. */
+  const std::vector<SurfaceFace>& faces() const { return faces_; }
+
+  /** Returns the vertices. */
+  const std::vector<SurfaceVertex<T>>& vertices() const { return vertices_; }
+
   /**
    Returns the vertex identified by a given index.
    @param v  The index of the vertex.
@@ -201,10 +207,12 @@ class SurfaceMesh {
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<SurfaceVertex<T>>&& vertices)
-      : faces_(std::move(faces)), vertices_(std::move(vertices)),
-        area_(faces_.size()) {  // Pre-allocate here, not yet calculated.
+      : faces_(std::move(faces)),
+        vertices_(std::move(vertices)),
+        area_(faces_.size()),  // Pre-allocate here, not yet calculated.
+        face_normals_(faces_.size()) {  // Pre-allocate, not yet calculated.
     SetReferringTriangles();
-    CalcAreasAndCentroid();
+    CalcAreasNormalsAndCentroid();
   }
 
   /** Transforms the vertices of this mesh from its initial frame M to the new
@@ -214,6 +222,10 @@ class SurfaceMesh {
     for (auto& v : vertices_) {
       v.TransformInPlace(X_NM);
     }
+    for (auto& n : face_normals_) {
+      n = X_NM.rotation() * n;
+    }
+    p_MSc_ = X_NM * p_MSc_;
   }
 
   /** Reverses the ordering of all the faces' indices -- see
@@ -222,6 +234,9 @@ class SurfaceMesh {
   void ReverseFaceWinding() {
     for (auto& f : faces_) {
       f.ReverseWinding();
+    }
+    for (auto& n : face_normals_) {
+      n = -n;
     }
   }
 
@@ -236,6 +251,16 @@ class SurfaceMesh {
   /** Returns the total area of all the faces of this surface mesh.
    */
   const T& total_area() const { return total_area_; }
+
+  /** Returns the unit face normal vector of a triangle. It respects the
+   right-handed normal rule. A near-zero-area triangle may get an unreliable
+   normal vector. A zero-area triangle will get a zero vector.
+   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
+   */
+  const Vector3<T>& face_normal(SurfaceFaceIndex f) const {
+    DRAKE_DEMAND(0 <= f && f < num_faces());
+    return face_normals_[f];
+  }
 
   /** Returns the area-weighted geometric centroid of this surface mesh. The
    returned value is the position vector p_MSc from M's origin to the
@@ -339,9 +364,9 @@ class SurfaceMesh {
   //
 
  private:
-  // Calculates the areas of each triangle, the total area, and the centorid of
-  // the surface.
-  void CalcAreasAndCentroid();
+  // Calculates the areas and face normals of each triangle, the total area,
+  // and the centroid of the surface.
+  void CalcAreasNormalsAndCentroid();
 
   // Determines the triangular faces that refer to each vertex.
   void SetReferringTriangles() {
@@ -368,13 +393,16 @@ class SurfaceMesh {
   std::vector<T> area_;
   T total_area_{};
 
+  // Face normal vector of the triangles.
+  std::vector<Vector3<T>> face_normals_;
+
   // Area-weighted geometric centroid Sc of the surface mesh as an offset vector
   // from the origin of Frame M to point Sc, expressed in Frame M.
   Vector3<T> p_MSc_;
 };
 
 template <class T>
-void SurfaceMesh<T>::CalcAreasAndCentroid() {
+void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   total_area_ = 0;
   p_MSc_.setZero();
 
@@ -387,9 +415,17 @@ void SurfaceMesh<T>::CalcAreasAndCentroid() {
     const auto r_UW_M = r_MC - r_MA;
 
     const auto cross = r_UV_M.cross(r_UW_M);
-    const T face_area = T(0.5) * cross.norm();
+    const T norm = cross.norm();
+    const T face_area = T(0.5) * norm;
     area_[f] = face_area;
     total_area_ += face_area;
+
+    // TODO(DamrongGuoy): Provide a mechanism for users to set the face
+    //  normals of skinny triangles since this calculation is not reliable.
+    //  For example, the code that creates ContactSurface by
+    //  triangle-tetrahedron intersection can set more reliable normal vectors
+    //  for the skinny intersecting triangles.  Related to issue# 12110.
+    face_normals_[f] = (norm != T(0.0))? cross / norm : cross;
 
     // Accumulate area-weighted surface centroid; must be divided by 3X the
     // total area afterwards.

@@ -64,7 +64,7 @@ drake_cc_library(
     deps = [
         ":kinematic_constraint",
         "//multibody/plant",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
     ],
 )
 

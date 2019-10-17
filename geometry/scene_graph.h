@@ -251,8 +251,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
    provided.  */
   //@{
 
-  /** Registers a new source to the geometry system. The caller must save the
-   returned SourceId; it is the token by which all other operations on the
+  /** Registers a new, named source to the geometry system. The caller must save
+   the returned SourceId; it is the token by which all other operations on the
    geometry world are conducted.
 
    This source id can be used to register arbitrary _anchored_ geometry. But if
@@ -340,10 +340,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    allocated.
 
    @param source_id     The id for the source registering the frame.
-   @param frame         The definition of the frame to add.
+   @param frame         The frame to register.
    @returns A unique identifier for the added frame.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source.  */
+   @throws std::logic_error  if a) the `source_id` does _not_ map to a
+                             registered source, or
+                             b) `frame` has an id that has already been
+                             registered.  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame F for this source. This hangs frame F on another
@@ -359,9 +361,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param frame        The frame to register.
    @returns A unique identifier for the added frame.
    @throws std::logic_error  if a) the `source_id` does _not_ map to a
-                             registered source, or
-                             b) If the `parent_id` does _not_ map to a known
-                             frame or does not belong to the source.  */
+                             registered source,
+                             b) the `parent_id` does _not_ map to a known
+                             frame or does not belong to the source, or
+                             c) `frame` has an id that has already been
+                             registered.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
@@ -456,10 +460,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
    allocated.
 
    @param source_id   The identifier for the owner geometry source.
-   @param geometry_id The identifier of the geometry to remove.
-   @throws std::logic_error if a) the `source_id` is not a registered source, or
-                            b) the `geometry_id` doesn't belong to the source.
-   */
+   @param geometry_id The identifier of the geometry to remove (can be dynamic
+                      or anchored).
+   @throws std::logic_error  if a) the `source_id` does _not_ map to a
+                             registered source,
+                             b) the `geometry_id` does not map to a valid
+                             geometry, or
+                             c) the `geometry_id` maps to a geometry that does
+                             not belong to the indicated source.  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
   /** systems::Context-modifying variant of RemoveGeometry(). Rather than
@@ -628,12 +636,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Removes the indicated `role` from any geometry directly registered to the
    frame indicated by `frame_id` (if the geometry has the role).
    @returns The number of geometries affected by the removed role.
-   @throws std::logic_error if 1) `source_id` does not map to a registered
-                            source, 2) `frame_id` does not map to a registered
-                            frame, 3) `frame_id` does not belong to
-                            `source_id` (unless `frame_id` is the world frame
-                            id), or 4) the context has already been
-                            allocated.  */
+   @throws std::logic_error if a) `source_id` does not map to a registered
+                            source,
+                            b) `frame_id` does not map to a registered frame,
+                            c) `frame_id` does not belong to `source_id`
+                            (unless `frame_id` is the world frame id), or
+                            d) the context has already been allocated.  */
   int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
 
   /** systems::Context-modifying variant of
@@ -646,11 +654,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
    @returns One if the geometry had the role removed and zero if the geometry
             did not have the role assigned in the first place.
-   @throws std::logic_error if 1) `source_id` does not map to a registered
-                            source, 2) `geometry_id` does not map to a
-                            registered geometry, 3) `geometry_id` does
-                            not belong to `source_id`, or 4) the context has
-                            already been allocated.  */
+   @throws std::logic_error if a) `source_id` does not map to a registered
+                            source,
+                            b) `geometry_id` does not map to a registered
+                            geometry,
+                            c) `geometry_id` does not belong to `source_id`, or
+                            d) the context has already been allocated.  */
   int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
 
   /** systems::Context-modifying variant of

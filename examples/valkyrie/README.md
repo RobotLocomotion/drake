@@ -1,39 +1,10 @@
-# Valkyrie
+This directory contains models for Valkyrie.
 
-This experimental directory does not adhere to the development practices that
-apply elsewhere in Drake. In particular, for PRs that affect only this
-directory, one feature review is sufficient; platform review is not required.
+The code in this examples/valkyrie folder is deprecated and will be removed
+from Drake on 2020-02-01.
 
-If build or test targets in this directory break, and the PR author or oncall
-buildcop cannot trivially resolve them, a GitHub issue will be assigned to
-the Valkyrie team. If the issue is not resolved within 24 hours, the author
-or buildcop may disable the offending targets.
-
-To compile this example
-  $ cd drake
-  $ bazel build //tools:drake_visualizer //examples/valkyrie/...
-
-To run the visualizer:
-  $ cd drake
-  $ bazel-bin/tools/drake_visualizer &
-
-To run the pd + feedforward controller:
-  $ cd drake
-  $ bazel-bin/examples/valkyrie/valkyrie_pd_ff_controller &
-
-To run the simulation:
-  $ cd drake
-  $ bazel-bin/examples/valkyrie/valkyrie_simulation &
-
-The visualizer needs to be started before the simulator.
-The controller and simulator are not synchronized in any way, and they both
-try to run as fast as possible.
-For a bit more repeatability, start the controller first.
-
-The controlled simulation eventually fails when the robot falls down, because
-the simple controller does not account for sliding feet.
-
-# Historical note
+Historical note
+---------------
 
 Prior to 2016, Drake was built around a substantial base of MATLAB software.
 Most of that was removed from the head of git master during 2017.
@@ -42,3 +13,8 @@ To view or use the original MATLAB implementation of Valkyrie you may use this
 tag:
 
 https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Valkyrie
+
+To view or use the final C++ implementation of Valkyrie based on RigidBodyTree
+(removed as of 2019), you may use this commit:
+
+https://github.com/RobotLocomotion/drake/tree/v0.11.0/examples/valkyrie

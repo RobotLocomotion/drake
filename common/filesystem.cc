@@ -1,44 +1,21 @@
-#include "drake/common/filesystem.h"
+// Normally we would #include drake/common/filesystem.h prior to this header
+// ("include yourself first"), but we can't do that given the way the ghc
+// library implements separate compilation.  So, we have to NOLINT it below.
 
-#include <sys/stat.h>
-#include <unistd.h>
+// Keep this sequence in sync with drake/common/filesystem.h.
+#if __has_include(<filesystem>) && !defined(__APPLE__)
 
-#include <stdexcept>
+// No compilation required for std::filesystem.
 
-#include "fmt/format.h"
+#else
 
-namespace drake {
-namespace internal {
+// Compile ghc::filesystem into object code.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#define GHC_FILESYSTEM_IMPLEMENTATION
+#include "ghc/filesystem.hpp"  // NOLINT(build/include)
+#undef GHC_FILESYSTEM_IMPLEMENTATION
+#pragma GCC diagnostic pop
 
-bool IsFile(const std::string& filesystem_path) {
-  struct stat attributes{};
-  int error = stat(filesystem_path.c_str(), &attributes);
-  if (error) { return false; }
-  return S_ISREG(attributes.st_mode);
-}
-
-bool IsDir(const std::string& filesystem_path) {
-  struct stat attributes{};
-  int error = stat(filesystem_path.c_str(), &attributes);
-  if (error) { return false; }
-  return S_ISDIR(attributes.st_mode);
-}
-
-std::string Readlink(const std::string& pathname) {
-  std::string result;
-  result.resize(4096);
-  ssize_t length = ::readlink(pathname.c_str(), &result.front(), result.size());
-  if (length < 0) {
-    throw std::runtime_error(fmt::format(
-        "Could not open {}", pathname));
-  }
-  if (length >= static_cast<ssize_t>(result.size())) {
-    throw std::runtime_error(
-        fmt::format("Could not readlink {} (too long)", pathname));
-  }
-  result.resize(length);
-  return result;
-}
-
-}  // namespace internal
-}  // namespace drake
+#endif

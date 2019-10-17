@@ -4,8 +4,8 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 
 using std::string;
@@ -28,8 +28,7 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPath_Relative) {
   ASSERT_NO_THROW(full_path = GetFullPath(relative_path));
   ASSERT_TRUE(!full_path.empty());
   EXPECT_EQ(full_path[0], '/');
-  spruce::path spruce_full_path(full_path);
-  EXPECT_TRUE(spruce_full_path.exists());
+  EXPECT_TRUE(filesystem::exists({full_path}));
 
   // Absolute path unchanged.
   string full_path_idempotent;

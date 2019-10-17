@@ -1,12 +1,12 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-tap 'dreal/dreal'
+tap 'dreal-deps/ibex'
 tap 'robotlocomotion/director'
 
 brew 'boost'
 brew 'cmake'
-brew 'dreal/dreal/dreal'
+brew 'dreal-deps/ibex/ibex@2.7.4'  # N.B. Matches drake/tools/workspace/ibex/version.bzl.
 brew 'gcc'
 brew 'gflags'
 brew 'glew'
@@ -21,6 +21,7 @@ brew 'protobuf'
 brew 'python'
 brew 'python@2'
 brew 'scipy'
+brew 'suite-sparse'
 brew 'tinyxml'
 brew 'tinyxml2'
 brew 'robotlocomotion/director/vtk@8.2'

@@ -12,10 +12,11 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
-#include "drake/geometry/proximity/distance_to_point.h"
+#include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
-#include "drake/geometry/proximity/distance_to_shape.h"
-#include "drake/geometry/proximity/find_collision_candidates.h"
+#include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/find_collision_candidates_callback.h"
+#include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/utilities.h"
 
 static_assert(std::is_same<tinyobj::real_t, double>::value,
@@ -545,7 +546,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
     data.request.distance_tolerance = distance_tolerance_;
 
+    // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.distance(&data, shape_distance::Callback<T>);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
     dynamic_tree_.distance(
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
@@ -571,8 +578,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     point_distance::CallbackData<T> data{
         &query_point, threshold, p_WQ, &X_WGs, &distances};
 
-    anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
+    // Perform query of point vs dynamic objects.
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
+
+    // Perform query of point vs anchored objects.
+    anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
 
     return distances;
   }
@@ -593,14 +603,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     collision_data.request.gjk_tolerance = 2e-12;
     collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
 
+    // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&collision_data, SingleCollisionCallback);
 
-    // NOTE: The interface to DynamicAABBTreeCollisionManager::collide
-    // requires the input collision manager pointer to be *non* const.
-    // As of 02/06/2018, it appears the only opportunity for modification
-    // of the AABB tree (and its contents) occurs in the callback provided.
-    // See the definition of SingleCollisionCallback above to see that no
-    // modification takes place.
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
     dynamic_tree_.collide(
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
@@ -612,12 +621,39 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SortedPair<GeometryId>> pairs;
     // All these quantities are aliased in the callback data.
     find_collision_candidates::CallbackData data{&collision_filter_, &pairs};
+
+    // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, find_collision_candidates::Callback);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
     dynamic_tree_.collide(
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
         &data, find_collision_candidates::Callback);
     return pairs;
+  }
+
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    std::vector<ContactSurface<T>> surfaces;
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &surfaces};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, hydroelastic::Callback<T>);
+    return surfaces;
   }
 
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
@@ -959,10 +995,9 @@ ProximityEngine<T>::ComputePointPairPenetration() const {
 }
 
 template <typename T>
-std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces()
-    const {
-  throw std::runtime_error("ComputeContactSurfaces() is not implemented yet.");
-  // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
+std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+  return impl_->ComputeContactSurfaces(X_WGs);
 }
 
 template <typename T>

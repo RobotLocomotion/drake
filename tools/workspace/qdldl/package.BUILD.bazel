@@ -22,10 +22,14 @@ cmake_configure_file(
     out = "include/qdldl_types.h",
     defines = [
         "QDLDL_BOOL_TYPE=unsigned char",
-        # Keep this sync'd with the 'DLONG' defined in //tools/workspace/osqp.
-        "QDLDL_INT_TYPE=long long",
-        # Keep this sync'd with the lack of 'DFLOAT' in //tools/workspace/osqp.
+        # Keep the `int` type sync'd with the @osqp and @scs build.
+        # See drake/tools/workspace/qdldl/README.md.
+        "QDLDL_INT_TYPE=int",
+        # Keep the `double` type sync'd with the @osqp and @scs build.
+        # See drake/tools/workspace/qdldl/README.md.
         "QDLDL_FLOAT_TYPE=double",
+        # Match this to QDLDL_INT_TYPE above.
+        "QDLDL_INT_TYPE_MAX=INT_MAX",
     ],
     visibility = ["//visibility:private"],
 )
@@ -41,6 +45,7 @@ cc_library(
     ],
     copts = [
         "-fvisibility=hidden",
+        "-Werror=incompatible-pointer-types",
     ],
     includes = [
         "include",

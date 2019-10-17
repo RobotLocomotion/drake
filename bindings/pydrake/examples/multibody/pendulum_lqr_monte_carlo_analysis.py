@@ -79,13 +79,12 @@ def main():
     linearize_context = pendulum.CreateDefaultContext()
     linearize_context.SetContinuousState(
         np.array([upright_theta, 0.]))
-    actuation_port_index = pendulum.get_actuation_input_port().get_index()
-    linearize_context.FixInputPort(
-        actuation_port_index, np.zeros(1))
+    actuation_port = pendulum.get_actuation_input_port()
+    actuation_port.FixValue(linearize_context, 0)
     controller = builder.AddSystem(
         LinearQuadraticRegulator(
             pendulum, linearize_context, Q, R,
-            np.zeros(0), actuation_port_index))
+            np.zeros(0), actuation_port.get_index()))
 
     # Apply the torque limit.
     torque_limit = args.torque_limit

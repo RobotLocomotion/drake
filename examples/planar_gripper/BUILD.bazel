@@ -42,7 +42,7 @@ drake_cc_library(
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//multibody/plant",
         "//solvers:constraint",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -85,8 +85,10 @@ drake_cc_binary(
         "//common:text_logging_gflags",
         "//common/trajectories:piecewise_polynomial",
         "//geometry:geometry_visualization",
+        "//lcm:drake_lcm",
         "//multibody/parsing",
         "//multibody/plant",
+        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
@@ -104,7 +106,7 @@ drake_cc_library(
     deps = [
         ":gripper_brick",
         "//multibody/inverse_kinematics:kinematic_constraint",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -132,5 +134,7 @@ drake_cc_googletest(
         "//solvers:solve",
     ],
 )
+
+install_data()
 
 add_lint_tests()

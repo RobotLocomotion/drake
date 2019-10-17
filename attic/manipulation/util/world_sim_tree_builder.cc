@@ -4,8 +4,7 @@
 #include <map>
 #include <utility>
 
-#include <spruce.hh>
-
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -106,10 +105,8 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
   auto it = model_map_.find(model_name);
   DRAKE_THROW_UNLESS(it != model_map_.end());
 
-  spruce::path p(it->second);
-
   // Converts the file extension to be lower case.
-  auto extension = p.extension();
+  string extension = filesystem::path(it->second).extension();
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  ::tolower);
 

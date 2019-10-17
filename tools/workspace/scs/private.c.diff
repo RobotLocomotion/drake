@@ -1,0 +1,20 @@
+--- linsys/direct/private.c.orig	2019-07-08 15:10:47.000000000 -0400
++++ linsys/direct/private.c		2019-09-12 10:30:51.329827125 -0400
+@@ -176,7 +176,7 @@
+   scs_int *Lnz = (scs_int *)scs_malloc(n * sizeof(scs_int));
+   scs_int *iwork= (scs_int *)scs_malloc(3 * n * sizeof(scs_int));
+   scs_float *D, *fwork;
+-  scs_int *bwork;
++  QDLDL_bool *bwork;
+   (*L)->p = (scs_int *)scs_malloc((1 + n) * sizeof(scs_int));
+   (*L)->nzmax = QDLDL_etree(n, A->p, A->i, iwork, Lnz, etree);
+   if ((*L)->nzmax < 0) {
+@@ -192,7 +192,7 @@
+   (*L)->i = (scs_int *)scs_malloc((*L)->nzmax * sizeof(scs_int));
+   *Dinv = (scs_float *)scs_malloc(n * sizeof(scs_float));
+   D = (scs_float *)scs_malloc(n * sizeof(scs_float));
+-  bwork = (scs_int *)scs_malloc(n * sizeof(scs_int));
++  bwork = (QDLDL_bool *)scs_malloc(n * sizeof(QDLDL_bool));
+   fwork = (scs_float *)scs_malloc(n * sizeof(scs_float));
+ 
+ #if EXTRA_VERBOSE > 0
