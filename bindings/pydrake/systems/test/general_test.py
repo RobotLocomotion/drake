@@ -15,7 +15,7 @@ from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     IntegratorBase, IntegratorBase_,
     RungeKutta2Integrator, RungeKutta3Integrator,
-    Simulator, Simulator_,
+    SimulatorStatus, Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
     AbstractValue,

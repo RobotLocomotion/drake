@@ -18,6 +18,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/simulator_status.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/witness_function.h"
@@ -260,7 +261,7 @@ class Simulator {
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
   /// @see AdvanceTo(), AdvancePendingEvents()
-  void Initialize();
+  SimulatorStatus Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
@@ -283,7 +284,7 @@ class Simulator {
   /// @pre The internal Context satisfies all System constraints or will after
   ///      pending Context updates are performed.
   /// @see Initialize(), AdvancePendingEvents()
-  void AdvanceTo(const T &boundary_time);
+  SimulatorStatus AdvanceTo(const T& boundary_time);
 
   /// (Advanced) Handles discrete and abstract state update events that are
   /// pending from the previous AdvanceTo() call, without advancing time.
@@ -300,8 +301,91 @@ class Simulator {
   /// `current_time=simulator.get_context().get_time())`. If there are no
   /// pending events, nothing happens.
   /// @see AdvanceTo(), Initialize()
-  void AdvancePendingEvents() {
-    AdvanceTo(get_context().get_time());
+  SimulatorStatus AdvancePendingEvents() {
+    return AdvanceTo(get_context().get_time());
+  }
+
+  /// Provides a monitoring function that will be invoked at the end of
+  /// every step. This can be used to capture the trajectory, to terminate
+  /// the simulation, or to detect error conditions. The monitor() function
+  /// is invoked by the Simulator with a root-level Context whose value is a
+  /// point along the simulated trajectory. The monitor can be any functor and
+  /// should capture any System references it needs to operate correctly.
+  ///
+  /// A monitor() function behaves the same as would a per-step Publish event
+  /// handler included in the top-level System or Diagram being simulated.
+  /// As for Publish(), the monitor is called at the end of every step taken
+  /// internally by AdvanceTo(), and also at the end of Initialize() and
+  /// AdvancePendingEvents(). It receives the top-level (root) Context, from
+  /// which any sub-Context can be obtained using
+  /// `subsystem.GetMyContextFromRoot()`, provided the necessary subsystem
+  /// reference has been captured for use in the monitor.
+  ///
+  /// #### Examples
+  /// Output time and continuous states whenever the trajectory is advanced:
+  /// @code
+  /// simulator.set_monitor([](const Context<T>& root_context) {
+  ///   std::cout << root_context.get_time() << " "
+  ///             << root_context.get_continuous_state_vector()
+  ///             << std::endl;
+  ///   return EventStatus::Succeeded();
+  /// });
+  /// @endcode
+  ///
+  /// Terminate early but successfully on a condition in a subsystem of the
+  /// System diagram being simulated:
+  /// @code
+  /// simulator.set_monitor([&my_subsystem](const Context<T>& root_context) {
+  ///   const Context<T>& subcontext =
+  ///       my_subsystem.GetMyContextFromRoot(root_context);
+  ///   if (my_subsystem.GoalReached(subcontext)) {
+  ///     return EventStatus::ReachedTermination(my_subsystem,
+  ///         "Simulation achieved the desired goal.");
+  ///   }
+  ///   return EventStatus::Succeeded();
+  /// });
+  /// @endcode
+  /// In the above case, the Simulator's AdvanceTo() method will return early
+  /// when the subsystem reports that it has reached it's goal. The returned
+  /// status will indicate the termination reason, and a human-readable
+  /// termination message containing the message provided by the monitor can be
+  /// obtained with status.FormatMessage().
+  ///
+  /// Fail due to plant center of mass falling below a threshold:
+  /// @code
+  /// simulator.set_monitor([&plant](const Context<T>& root_context) {
+  ///   const Context<T>& plant_context =
+  ///       plant.GetMyContextFromRoot(root_context);
+  ///   const Vector3<T> com = plant.CalcCenterOfMassPosition(plant_context);
+  ///   if (com[2] < 0.1) {  // Check z height of com.
+  ///     return EventStatus::Failed(plant, "System fell over.");
+  ///   }
+  ///   return EventStatus::Succeeded();
+  /// });
+  /// @endcode
+  /// In the above case the Simulator's AdvanceTo() method will throw an
+  /// std::runtime_error containing a human-readable message including
+  /// the text provided in the monitor.
+  ///
+  /// @note monitor() is called every time the trajectory is advanced by a step,
+  /// which can mean it is called many times during a single AdvanceTo() call.
+  ///
+  /// @note The presence of a monitor has no effect on the step sizes taken,
+  /// so a termination or error condition will be discovered only when first
+  /// observed after a step is complete; it will not be further localized. Use
+  /// witness-triggered events instead if you need precise isolation.
+  void set_monitor(std::function<EventStatus(const Context<T>&)> monitor) {
+    monitor_ = monitor;
+  }
+
+  /// Removes the monitoring function if there is one.
+  /// @see set_monitor()
+  void clear_monitor() { monitor_ = nullptr; }
+
+  /// Obtains a reference to the monitoring function, which may be empty.
+  /// @see set_monitor()
+  const std::function<EventStatus(const Context<T>&)>& get_monitor() const {
+    return monitor_;
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -559,6 +643,30 @@ class Simulator {
 
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
+  // Invoke the monitor() if there is one. If it wants termination we'll
+  // update the Simulator status accordingly. If it reports failure,
+  // currently we just throw.
+  // TODO(sherm1) Add an option where the Simulator returns failed status
+  // rather than throwing.
+  void CallMonitorAndMaybeThrow(SimulatorStatus* status) {
+    DRAKE_DEMAND(status);
+    if (!get_monitor()) return;
+    const EventStatus monitor_status = get_monitor()(*context_);
+    if (monitor_status.severity() == EventStatus::kReachedTermination) {
+      status->SetReachedTermination(ExtractDoubleOrThrow(context_->get_time()),
+                                    monitor_status.system(),
+                                    monitor_status.message());
+      return;
+    }
+    if (monitor_status.severity() == EventStatus::kFailed) {
+      status->SetEventHandlerFailed(ExtractDoubleOrThrow(context_->get_time()),
+                                    monitor_status.system(),
+                                    monitor_status.message());
+      throw std::runtime_error(status->FormatMessage());
+    }
+    // For any other condition, leave the status unchanged.
+  }
+
   TimeOrWitnessTriggered IntegrateContinuousState(
       const T& next_publish_dt,
       const T& next_update_dt,
@@ -690,6 +798,9 @@ class Simulator {
   // Mapping of witness functions to pre-allocated events.
   std::unordered_map<const WitnessFunction<T>*, std::unique_ptr<Event<T>>>
       witness_function_events_;
+
+  // Optional monitor() method to capture trajectory, terminate, or fail.
+  std::function<EventStatus(const Context<T>&)> monitor_;
 };
 
 template <typename T>
@@ -790,9 +901,16 @@ T GetPreviousNormalizedValue(const T& value) {
 #endif
 
 template <typename T>
-void Simulator<T>::Initialize() {
+SimulatorStatus Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
+  if (!context_)
+    throw std::logic_error("Initialize(): Context has not been set.");
+
+  const T current_time = context_->get_time();
+
+  // Assumes success.
+  SimulatorStatus status(ExtractDoubleOrThrow(current_time));
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -820,7 +938,6 @@ void Simulator<T>::Initialize() {
 
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
-  const T current_time = context_->get_time();
   const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
       current_time);
   context_->SetTime(slightly_before_current_time);
@@ -859,8 +976,12 @@ void Simulator<T>::Initialize() {
     ++num_publishes_;
   }
 
+  CallMonitorAndMaybeThrow(&status);
+
   // Initialize runtime variables.
   initialization_done_ = true;
+
+  return status;
 }
 
 // Processes UnrestrictedUpdateEvent events.
@@ -907,10 +1028,17 @@ void Simulator<T>::HandlePublish(
 }
 
 template <typename T>
-void Simulator<T>::AdvanceTo(const T& boundary_time) {
-  if (!initialization_done_) Initialize();
+SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
+  if (!initialization_done_) {
+    const SimulatorStatus initialize_status = Initialize();
+    if (!initialize_status.succeeded())
+      return initialize_status;
+  }
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
+
+  // Assume success.
+  SimulatorStatus status(ExtractDoubleOrThrow(boundary_time));
 
   // Integrate until desired interval has completed.
   auto merged_events = system_.AllocateCompositeEventCollection();
@@ -998,6 +1126,10 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
       ++num_publishes_;
     }
 
+    CallMonitorAndMaybeThrow(&status);
+    if (!status.succeeded())
+      break;  // Done.
+
     // Break out of the loop after timed and witnessed events are merged in
     // to the event collection and after any publishes.
     if (context_->get_time() >= boundary_time)
@@ -1006,6 +1138,8 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
+
+  return status;
 }
 
 template <class T>
