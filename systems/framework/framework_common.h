@@ -107,6 +107,7 @@ enum class OutputPortSelection { kNoOutput = -1, kUseFirstOutputIfItExists =
 #ifndef DRAKE_DOXYGEN_CXX
 class ContextBase;
 class InputPortBase;
+class SystemBase;
 
 namespace internal {
 
@@ -239,6 +240,10 @@ class SystemParentServiceInterface {
   // GetSystemPathname() on the parent subsystem. (See SystemMessageInterface
   // above.)
   virtual std::string GetParentPathname() const = 0;
+
+  // Returns the root Diagram at the top of this Diagram tree. Will return
+  // `this` if we are already at the root.
+  virtual const SystemBase& GetRootSystemBase() const = 0;
 
  protected:
   SystemParentServiceInterface() = default;
