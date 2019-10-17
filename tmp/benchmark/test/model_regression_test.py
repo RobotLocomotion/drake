@@ -47,12 +47,9 @@ def regenerate():
         raise RuntimeError("Run from project root directory only")
     for check in list_checks():
         print(f"Generate: {check.sdf_file}")
-        try:
-            new = create_benchmark(check.expr)
-            os.makedirs(dirname(check.yaml_file), exist_ok=True)
-            new.save_yaml(check.yaml_file)
-        except RuntimeError:
-            print("D'oh!")
+        new = create_benchmark(check.expr)
+        os.makedirs(dirname(check.yaml_file), exist_ok=True)
+        new.save_yaml(check.yaml_file)
 
 
 class TestModelRegression(unittest.TestCase):
