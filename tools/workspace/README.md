@@ -188,7 +188,8 @@ stable release on a monthly basis.
 * Otherwise, pin Drake to use the most recent commit of the upstream mainline
 branch. Drake maintainers will automatically upgrade to a more recent mainline
 commit on a monthly basis.
-* For any exceptions to this rule, consult Drake's build system maintainers.
+* If the pin policy is unsatisfactory for the case of some specific external,
+consult Drake's build system maintainers for advice.
 
 For Git, the mainline branch is typically `master`, whereas for Mercurial it is
 `default`.
