@@ -98,7 +98,6 @@ drake_pybind_library(
         ":framework_py",
         ":module_py",
     ],
-    py_srcs = ["_primitives_extra.py"],
 )
 
 drake_pybind_library(
@@ -107,6 +106,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
@@ -482,6 +482,7 @@ drake_py_unittest(
     deps = [
         ":sensors_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

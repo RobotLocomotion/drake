@@ -33,7 +33,7 @@ drake_cc_library(
         "//attic/systems/controllers:control_util",
         "//math:geometric_transform",
         "//solvers:gurobi_solver",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
         "//systems/framework:leaf_system",
     ],
 )

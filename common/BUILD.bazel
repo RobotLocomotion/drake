@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
+        ":filesystem",
         ":find_resource",
         ":find_runfiles",
         ":hash",
@@ -301,11 +302,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "filesystem",
+    srcs = ["filesystem.cc"],
+    hdrs = ["filesystem.h"],
+    copts = [
+        # The drake::filesystem support is intended ONLY for use within Drake's
+        # *.cc files -- it is not a public dependency of Drake.
+        "-fvisibility=hidden",
+    ],
+    deps = [
+        "@ghc_filesystem",
+    ],
+)
+
+drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
     deps = [
         ":essential",
+        ":filesystem",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
@@ -331,6 +347,7 @@ drake_cc_library(
     deps = [
         ":drake_marker_shared_library",
         ":essential",
+        ":filesystem",
         ":find_runfiles",
     ],
 )
@@ -345,8 +362,8 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
     deps = [
         ":essential",
+        ":filesystem",
         ":find_resource",
-        "@spruce",
     ],
 )
 
@@ -426,7 +443,7 @@ drake_cc_library(
     hdrs = ["temp_directory.h"],
     deps = [
         ":essential",
-        "@spruce",
+        ":filesystem",
     ],
 )
 
@@ -839,6 +856,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "filesystem_test",
+    deps = [
+        ":filesystem",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "find_resource_test",
     data = [
         "test/find_resource_test_data.txt",
@@ -894,6 +919,15 @@ drake_py_unittest(
     name = "find_runfiles_subprocess_test",
     data = [
         ":find_runfiles_test",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_runfiles_stub_test",
+    srcs = [
+        "find_runfiles.h",
+        "find_runfiles_stub.cc",
+        "test/find_runfiles_stub_test.cc",
     ],
 )
 
@@ -1183,9 +1217,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "temp_directory_test",
+    # Run each test case in a different process, to avoid environment variable
+    # changes from one accidentally polluting the others.
+    shard_count = 3,
     deps = [
+        ":filesystem",
         ":temp_directory",
-        "@spruce",
     ],
 )
 
@@ -1235,6 +1272,7 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+        "//common:sorted_pair",
         "//common/test_utilities:expect_throws_message",
     ],
 )

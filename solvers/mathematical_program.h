@@ -2374,6 +2374,14 @@ class MathematicalProgram {
   }
 
   /**
+   * Overwrite the stored solver options inside MathematicalProgram with the
+   * provided solver options.
+   */
+  void SetSolverOptions(const SolverOptions& solver_options) {
+    solver_options_ = solver_options;
+  }
+
+  /**
    * Returns the solver options stored inside MathematicalProgram.
    */
   const SolverOptions& solver_options() const { return solver_options_; }

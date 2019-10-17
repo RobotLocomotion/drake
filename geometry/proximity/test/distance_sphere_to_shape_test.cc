@@ -10,7 +10,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/proximity/distance_to_shape.h"
+#include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/autodiff_gradient.h"
@@ -20,9 +20,9 @@
 // primitive tests.
 
 /** @file
- This tests only the code in distance_to_shape.h that supports (sphere-shape)
- signed distance queries. Ultimately, we'll have unit tests for all
- shapeA-shapeB primitive functions.  */
+ This tests only the code in distance_to_shape_callback.h that supports
+ (sphere-shape) signed distance queries. Ultimately, we'll have unit tests for
+ all shapeA-shapeB primitive functions.  */
 
 namespace drake {
 namespace geometry {

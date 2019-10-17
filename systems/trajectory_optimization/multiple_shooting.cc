@@ -16,9 +16,13 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
-using trajectories::PiecewisePolynomial;
-using symbolic::Expression;
 using internal::SequentialExpressionManager;
+using symbolic::Expression;
+using symbolic::Formula;
+using symbolic::MakeVectorContinuousVariable;
+using symbolic::Substitution;
+using symbolic::Variable;
+using trajectories::PiecewisePolynomial;
 
 // For readability of long lines, these single-letter variables names are
 // sometimes used:
@@ -33,6 +37,13 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                        false /* timesteps_are_decision_variables */,
                        fixed_timestep, fixed_timestep) {}
 
+MultipleShooting::MultipleShooting(
+    const solvers::VectorXDecisionVariable& input,
+    const solvers::VectorXDecisionVariable& state, int num_time_samples,
+    double fixed_timestep)
+    : MultipleShooting(input, state, num_time_samples, nullopt, fixed_timestep,
+                       fixed_timestep) {}
+
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
                                    double minimum_timestep,
@@ -41,32 +52,56 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                        true /* timesteps_are_decision_variables */,
                        minimum_timestep, maximum_timestep) {}
 
+MultipleShooting::MultipleShooting(
+    const solvers::VectorXDecisionVariable& input,
+    const solvers::VectorXDecisionVariable& state,
+    const solvers::DecisionVariable& time, int num_time_samples,
+    double minimum_timestep, double maximum_timestep)
+    : MultipleShooting(input, state, num_time_samples, time, minimum_timestep,
+                       maximum_timestep) {}
+
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
                                    bool timesteps_are_decision_variables,
                                    double minimum_timestep,
                                    double maximum_timestep)
+    : MultipleShooting(
+          MakeVectorContinuousVariable(num_inputs, "u"),
+          MakeVectorContinuousVariable(num_states, "x"), num_time_samples,
+          timesteps_are_decision_variables
+              ? optional<solvers::DecisionVariable>{solvers::DecisionVariable{
+                    "t"}}
+              : nullopt,
+          minimum_timestep, maximum_timestep) {}
+
+MultipleShooting::MultipleShooting(
+    const solvers::VectorXDecisionVariable& input,
+    const solvers::VectorXDecisionVariable& state, int num_time_samples,
+    const optional<solvers::DecisionVariable>& time_var,
+    double minimum_timestep, double maximum_timestep)
     : MathematicalProgram(),
-      num_inputs_(num_inputs),
-      num_states_(num_states),
+      num_inputs_(input.size()),
+      num_states_(state.size()),
       N_(num_time_samples),
-      timesteps_are_decision_variables_(timesteps_are_decision_variables),
+      timesteps_are_decision_variables_(time_var),
       fixed_timestep_(minimum_timestep),
       x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
       u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
+      placeholder_x_vars_(state),
+      placeholder_u_vars_(input),
       sequential_expression_manager_(N_) {
-  placeholder_x_vars_ =
-      sequential_expression_manager_.RegisterSequentialExpressions(
-          Eigen::Map<solvers::MatrixXDecisionVariable>(x_vars_.data(),
-                                                       num_states_, N_)
-              .cast<symbolic::Expression>(),
-          "x");
-  placeholder_u_vars_ =
-      sequential_expression_manager_.RegisterSequentialExpressions(
-          Eigen::Map<solvers::MatrixXDecisionVariable>(u_vars_.data(),
-                                                       num_inputs_, N_)
-              .cast<symbolic::Expression>(),
-          "u");
+  sequential_expression_manager_.RegisterSequentialExpressions(
+      state,
+      Eigen::Map<solvers::MatrixXDecisionVariable>(x_vars_.data(), num_states_,
+                                                   N_)
+          .cast<Expression>(),
+      "x");
+  sequential_expression_manager_.RegisterSequentialExpressions(
+      input,
+      Eigen::Map<solvers::MatrixXDecisionVariable>(u_vars_.data(), num_inputs_,
+                                                   N_)
+          .cast<Expression>(),
+      "u");
   DRAKE_DEMAND(num_time_samples > 1);
   DRAKE_DEMAND(num_states_ > 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
@@ -83,9 +118,9 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
     for (int i = 1; i < N_; ++i) {
       t_expressions(i) = t_expressions(i - 1) + h_vars_(i - 1);
     }
-    placeholder_t_var_(0) =
-        sequential_expression_manager_.RegisterSequentialExpressions(
-            t_expressions, "t")(0);
+    placeholder_t_var_(0) = *time_var;
+    sequential_expression_manager_.RegisterSequentialExpressions(
+        placeholder_t_var_, t_expressions, "t");
   } else {
     h_vars_ = solvers::VectorXDecisionVariable(0);
     DRAKE_DEMAND(fixed_timestep_ > 0);
@@ -100,8 +135,7 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
 solvers::VectorXDecisionVariable MultipleShooting::NewSequentialVariable(
     int rows, const std::string& name) {
   return sequential_expression_manager_.RegisterSequentialExpressions(
-      NewContinuousVariables(rows, N_, name).cast<symbolic::Expression>(),
-      name);
+      NewContinuousVariables(rows, N_, name).cast<Expression>(), name);
 }
 
 solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariableAtIndex(
@@ -284,7 +318,8 @@ Eigen::MatrixXd MultipleShooting::GetStateSamples(
 Eigen::MatrixXd MultipleShooting::GetSequentialVariableSamples(
     const solvers::MathematicalProgramResult& result,
     const std::string& name) const {
-  int num_sequential_variables = sequential_expression_manager_.num_rows(name);
+  const int num_sequential_variables =
+      sequential_expression_manager_.num_rows(name);
   Eigen::MatrixXd sequential_variables(num_sequential_variables, N_);
   for (int i = 0; i < N_; i++) {
     sequential_variables.col(i) =
@@ -293,22 +328,21 @@ Eigen::MatrixXd MultipleShooting::GetSequentialVariableSamples(
   return sequential_variables;
 }
 
-symbolic::Substitution
-MultipleShooting::ConstructPlaceholderVariableSubstitution(
+Substitution MultipleShooting::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {
   return sequential_expression_manager_
       .ConstructPlaceholderVariableSubstitution(interval_index);
 }
 
-symbolic::Expression MultipleShooting::SubstitutePlaceholderVariables(
-    const symbolic::Expression& e, int interval_index) const {
+Expression MultipleShooting::SubstitutePlaceholderVariables(
+    const Expression& e, int interval_index) const {
   return e.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
 const solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariable(
     const std::string& name) const {
-  int rows = sequential_expression_manager_.num_rows(name);
-  VectorX<symbolic::Expression> sequential_variable(rows * N_);
+  const int rows = sequential_expression_manager_.num_rows(name);
+  VectorX<Expression> sequential_variable(rows * N_);
   for (int i = 0; i < N_; i++) {
     sequential_variable.segment(i * rows, rows) =
         sequential_expression_manager_.GetSequentialExpressionsByName(name, i);
@@ -316,8 +350,8 @@ const solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariable(
   return symbolic::GetVariableVector(sequential_variable);
 }
 
-symbolic::Formula MultipleShooting::SubstitutePlaceholderVariables(
-    const symbolic::Formula& f, int interval_index) const {
+Formula MultipleShooting::SubstitutePlaceholderVariables(
+    const Formula& f, int interval_index) const {
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 

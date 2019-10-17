@@ -103,7 +103,7 @@ class TestLifetime(unittest.TestCase):
         context = system.CreateDefaultContext()
         info = Info()
         vector = DeleteListenerVector(info.record_deletion)
-        context.FixInputPort(0, vector)
+        system.get_input_port(0).FixValue(context, vector)
         del context
         # Same as above applications, using `py::keep_alive`.
         self.assertFalse(info.deleted)

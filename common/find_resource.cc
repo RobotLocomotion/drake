@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"
@@ -124,11 +125,11 @@ Result CheckAndMakeResult(
   DRAKE_DEMAND(!root_description.empty());
   DRAKE_DEMAND(!root.empty());
   DRAKE_DEMAND(!resource_path.empty());
-  DRAKE_DEMAND(internal::IsDir(root));
+  DRAKE_DEMAND(filesystem::is_directory({root}));
   DRAKE_DEMAND(IsRelativePath(resource_path));
 
   // Check for the sentinel.
-  if (!internal::IsFile(root + "/" + kSentinelRelpath)) {
+  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
@@ -138,7 +139,7 @@ Result CheckAndMakeResult(
 
   // Check for the resource_path.
   const string abspath = root + '/' + resource_path;
-  if (!internal::IsFile(abspath)) {
+  if (!filesystem::is_regular_file({abspath})) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
@@ -168,7 +169,7 @@ optional<string> MaybeFindResourceInAttic(const string& resource_path) {
        }) {
     if (StartsWith(substr, directory)) {
       const auto rlocation_or_error =
-          internal::FindRunfile(prefix + string("attic/") + substr);
+          FindRunfile(prefix + string("attic/") + substr);
       if (rlocation_or_error.error.empty()) {
         return rlocation_or_error.abspath;
       }
@@ -189,19 +190,19 @@ optional<string> MaybeGetEnvironmentResourceRoot() {
     return nullopt;
   }
   const std::string root{env_value};
-  if (!internal::IsDir(root)) {
+  if (!filesystem::is_directory({root})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not exist.",
         env_name, env_value);
     return nullopt;
   }
-  if (!internal::IsDir(root + "/drake")) {
+  if (!filesystem::is_directory({root + "/drake"})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain a 'drake' "
         "subdirectory.", env_name, env_value);
     return nullopt;
   }
-  if (!internal::IsFile(root + "/" + kSentinelRelpath)) {
+  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain the "
         "expected sentinel file '{}'.", env_name, env_value, kSentinelRelpath);
@@ -219,7 +220,7 @@ optional<string> MaybeGetInstallResourceRoot() {
   optional<string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
   if (libdrake_dir) {
     const string root = *libdrake_dir + "/../share";
-    if (internal::IsDir(root)) {
+    if (filesystem::is_directory({root})) {
       return root;
     } else {
       log()->debug("FindResource ignoring CMake install candidate '{}' "
@@ -268,8 +269,8 @@ Result FindResource(const string& resource_path) {
   }
 
   // (2) Check the Runfiles.
-  if (internal::HasRunfiles()) {
-    auto rlocation_or_error = internal::FindRunfile(resource_path);
+  if (HasRunfiles()) {
+    auto rlocation_or_error = FindRunfile(resource_path);
     if (rlocation_or_error.error.empty()) {
       return Result::make_success(
           resource_path, rlocation_or_error.abspath);

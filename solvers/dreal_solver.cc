@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "dreal/api/api.h"
+
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -144,7 +146,9 @@ DrealSolver::IntervalBox DrealConverter::Convert(const dreal::Box& box) const {
     if (it == dreal_to_drake_variable_map_.end()) {
       throw runtime_error("Not able to construct an interval box.");
     } else {
-      interval_box.emplace(it->second, box[dreal_var]);
+      const auto& itv{box[dreal_var]};
+      interval_box.emplace(it->second,
+                           DrealSolver::Interval{itv.lb(), itv.ub()});
     }
   }
   return interval_box;

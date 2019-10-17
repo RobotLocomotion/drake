@@ -214,7 +214,9 @@ class SceneGraphInspector {
   }
 
   /** Reports the name of the frame with the given `id`.
-   @throws std::logic_error if `id` does not map to a registered frame.  */
+   @throws std::logic_error if `id` does not map to a registered frame.
+   @pydrake_mkdoc_identifier{1args_frame_id}
+   */
   const std::string& GetName(FrameId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_frame_name(id);
@@ -300,7 +302,9 @@ class SceneGraphInspector {
 
   /** Reports the stored, canonical name of the geometry with the given `id`
    (see  @ref canonicalized_geometry_names "GeometryInstance" for details).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::logic_error if `id` does not map to a registered geometry.
+   @pydrake_mkdoc_identifier{1args_geometry_id}
+   */
   const std::string& GetName(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetName(id);

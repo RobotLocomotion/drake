@@ -138,8 +138,36 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SceneGraphInspector", param, doc.SceneGraphInspector.doc);
     cls  // BR
+        .def("num_sources", &SceneGraphInspector<T>::num_sources,
+            doc.SceneGraphInspector.num_sources.doc)
+        .def("num_frames", &SceneGraphInspector<T>::num_frames,
+            doc.SceneGraphInspector.num_frames.doc)
+        .def("num_geometries", &SceneGraphInspector<T>::num_geometries,
+            doc.SceneGraphInspector.num_geometries.doc)
+        .def("GetAllGeometryIds", &SceneGraphInspector<T>::GetAllGeometryIds,
+            doc.SceneGraphInspector.GetAllGeometryIds.doc)
         .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
-            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
+            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc)
+        .def("GetGeometryIdByName",
+            &SceneGraphInspector<T>::GetGeometryIdByName, py::arg("frame_id"),
+            py::arg("role"), py::arg("name"),
+            doc.SceneGraphInspector.GetGeometryIdByName.doc)
+        .def("GetNameByFrameId",
+            overload_cast_explicit<const std::string&, FrameId>(
+                &SceneGraphInspector<T>::GetName),
+            py_reference_internal, py::arg("frame_id"),
+            doc.SceneGraphInspector.GetName.doc_1args_frame_id)
+        .def("GetNameByGeometryId",
+            overload_cast_explicit<const std::string&, GeometryId>(
+                &SceneGraphInspector<T>::GetName),
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetName.doc_1args_geometry_id)
+        .def("GetPoseInFrame", &SceneGraphInspector<T>::GetPoseInFrame,
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetPoseInFrame.doc)
+        .def("GetShape", &SceneGraphInspector<T>::GetShape,
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetShape.doc);
   }
 
   //  SceneGraph
@@ -158,6 +186,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc.SceneGraph.get_pose_bundle_output_port.doc)
         .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
             py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
+        .def("model_inspector", &SceneGraph<T>::model_inspector,
+            py_reference_internal, doc.SceneGraph.model_inspector.doc)
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &SceneGraph<T>::RegisterSource),
@@ -380,13 +410,20 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
-        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc);
+        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
+        .def("get_radius", &Sphere::get_radius, doc.Sphere.get_radius.doc);
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
-            doc.Cylinder.ctor.doc);
+            doc.Cylinder.ctor.doc)
+        .def("get_radius", &Cylinder::get_radius, doc.Cylinder.get_radius.doc)
+        .def("get_length", &Cylinder::get_length, doc.Cylinder.get_length.doc);
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),
-            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc);
+            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc)
+        .def("width", &Box::width, doc.Box.width.doc)
+        .def("depth", &Box::depth, doc.Box.depth.doc)
+        .def("height", &Box::height, doc.Box.height.doc)
+        .def("size", &Box::size, py_reference_internal, doc.Box.size.doc);
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc);
     py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)

@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/constraint.h"
@@ -23,7 +23,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using examples::kuka_iiwa_arm::get_iiwa_max_joint_velocities;
+using manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
 using multibody::MultibodyPlant;
 using multibody::FixedOffsetFrame;
 using solvers::LinearConstraint;

@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import FrameId
 from pydrake.geometry.render import CameraProperties, DepthCameraProperties
 from pydrake.math import (
@@ -195,6 +196,7 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(info.center_y(), center_y)
             self.assertTrue(
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
+            assert_pickle(self, info, mut.CameraInfo.intrinsic_matrix)
 
     def _check_input(self, value):
         self.assertIsInstance(value, InputPort)
@@ -226,7 +228,7 @@ class TestSensors(unittest.TestCase):
             port = dut.GetInputPort(name)
             self._check_input(port)
             image = mut.Image[pixel_type](width=1, height=1)
-            context.FixInputPort(port.get_index(), AbstractValue.Make(image))
+            port.FixValue(context, image)
         output = dut.AllocateOutput()
         dut.CalcOutput(context, output)
         # N.B. This Value[] is a C++ LCM object. See

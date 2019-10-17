@@ -112,7 +112,7 @@ def main():
 
     # Add the model from the file and finalize the plant.
     parser.AddModelFromFile(filename)
-    plant.Finalize(scene_graph)
+    plant.Finalize()
 
     # Add sliders to set positions of the joints.
     sliders = builder.AddSystem(JointSliders(robot=plant))

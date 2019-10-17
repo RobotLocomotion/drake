@@ -10,6 +10,7 @@
  *
  */
 #include <memory>
+#include <thread>
 
 #include <gflags/gflags.h>
 

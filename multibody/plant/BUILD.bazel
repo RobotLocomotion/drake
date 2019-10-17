@@ -22,17 +22,17 @@ drake_cc_package_library(
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
         ":hydroelastic_traction",
-        ":implicit_stribeck_solver",
-        ":implicit_stribeck_solver_results",
         ":multibody_plant_core",
         ":point_pair_contact_info",
+        ":tamsi_solver",
+        ":tamsi_solver_results",
     ],
 )
 
 drake_cc_library(
-    name = "implicit_stribeck_solver",
-    srcs = ["implicit_stribeck_solver.cc"],
-    hdrs = ["implicit_stribeck_solver.h"],
+    name = "tamsi_solver",
+    srcs = ["tamsi_solver.cc"],
+    hdrs = ["tamsi_solver.h"],
     deps = [
         "//common:default_scalars",
         "//common:extract_double",
@@ -53,14 +53,16 @@ drake_cc_library(
         ":contact_results",
         ":coulomb_friction",
         ":externally_applied_spatial_force",
-        ":implicit_stribeck_solver",
-        ":implicit_stribeck_solver_results",
+        ":hydroelastic_traction",
+        ":tamsi_solver",
+        ":tamsi_solver_results",
         "//common:default_scalars",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:orthonormal_basis",
+        "//multibody/hydroelastics:hydroelastic_engine",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
         "//systems/framework:diagram_builder",
@@ -112,12 +114,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "implicit_stribeck_solver_results",
+    name = "tamsi_solver_results",
     srcs = [
-        "implicit_stribeck_solver_results.cc",
+        "tamsi_solver_results.cc",
     ],
     hdrs = [
-        "implicit_stribeck_solver_results.h",
+        "tamsi_solver_results.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -133,6 +135,7 @@ drake_cc_library(
         "contact_results.h",
     ],
     deps = [
+        ":hydroelastic_contact_info",
         ":point_pair_contact_info",
         "//common:default_scalars",
     ],
@@ -155,8 +158,9 @@ drake_cc_library(
     deps = [
         ":contact_results",
         ":plant",
-        "//lcmtypes:contact_info_for_viz",
+        "//geometry:geometry_ids",
         "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
     ],
@@ -195,9 +199,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "implicit_stribeck_solver_test_util",
+    name = "tamsi_solver_test_util",
     testonly = 1,
-    hdrs = ["test/implicit_stribeck_solver_test_util.h"],
+    hdrs = ["test/tamsi_solver_test_util.h"],
     visibility = ["//visibility:private"],
     deps = [
         "//math:gradient",
@@ -228,10 +232,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "implicit_stribeck_solver_test",
+    name = "tamsi_solver_test",
     deps = [
-        ":implicit_stribeck_solver",
-        ":implicit_stribeck_solver_test_util",
+        ":tamsi_solver",
+        ":tamsi_solver_test_util",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -317,6 +321,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_tamsi_test",
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/simple_gripper:simple_gripper_models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//systems/framework",
+    ],
+)
+
 drake_cc_library(
     name = "kuka_iiwa_model_tests",
     testonly = 1,
@@ -336,6 +355,16 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_hydroelastic_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_jacobians_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
@@ -350,6 +379,20 @@ drake_cc_googletest(
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_reaction_forces_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:geometry_visualization",
+        "//math:geometric_transform",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
     ],
 )
 
@@ -385,6 +428,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+        "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
     ],
 )
@@ -394,7 +438,9 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
+        "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/inclined_plane",
     ],
 )
 
@@ -426,6 +472,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//multibody/benchmarks/inclined_plane",
+        "//systems/analysis:radau_integrator",
         "//systems/analysis:simulator",
     ],
 )
@@ -463,6 +510,14 @@ drake_cc_googletest(
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_hydroelastic_contact_results_output_test",
+    deps = [
+        ":plant",
+        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
     ],
 )
 

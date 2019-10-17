@@ -173,17 +173,6 @@ drake_pybind_library(
     ],
 )
 
-PY_LIBRARIES_ATTIC_ALIASES = [
-    ":ik_py",
-]
-
-drake_py_library_aliases(
-    actual_subdir = "bindings/pydrake/attic/solvers",
-    add_deprecation_warning = 1,
-    deprecation_removal_date = "2019-10-01",
-    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ipopt_py",
@@ -195,7 +184,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":snopt_py",
 ]
 
-PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
+PY_LIBRARIES = [
     ":module_py",
 ]
 
@@ -246,7 +235,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "nlopt_solver_test",
     args = select({
-        "//tools:no_nlopt": ["TestIpoptSolver.unavailable"],
+        "//tools:no_nlopt": ["TestNloptSolver.unavailable"],
         "//conditions:default": [],
     }),
     deps = [
@@ -267,7 +256,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "scs_solver_test",
     args = select({
-        "//tools:no_scs": ["TestOsqpSolver.unavailable"],
+        "//tools:no_scs": ["TestScsSolver.unavailable"],
         "//conditions:default": [],
     }),
     deps = [

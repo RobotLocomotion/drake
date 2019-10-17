@@ -6,7 +6,9 @@ from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 import copy
 import math
@@ -138,8 +140,12 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I_np)
         check_equality(RigidTransform(R=R_I), X_I_np)
         check_equality(RigidTransform(p=p_I), X_I_np)
-        check_equality(RigidTransform(matrix=X_I_np), X_I_np)
-        check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
+        check_equality(RigidTransform(pose=p_I), X_I_np)
+        check_equality(RigidTransform(pose=X_I_np), X_I_np)
+        check_equality(RigidTransform(pose=X_I_np[:3]), X_I_np)
+        with catch_drake_warnings(expected_count=2):
+            check_equality(RigidTransform(matrix=X_I_np), X_I_np)
+            check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.
@@ -179,6 +185,8 @@ class TestMath(unittest.TestCase):
         p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
+        # Test pickling.
+        assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
 
     @numpy_compare.check_all_types
     def test_isometry_implicit(self, T):
@@ -251,14 +259,16 @@ class TestMath(unittest.TestCase):
         v_A = [20., -10., 30]
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B), v_A)
         # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
-        v_B_list = np.array([v_B, v_B]).T
-        v_A_list = np.array([v_A, v_A]).T
-        numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B_list), v_A_list)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
+        # Test pickling.
+        assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
 
     @numpy_compare.check_all_types
     def test_roll_pitch_yaw(self, T):
@@ -304,6 +314,8 @@ class TestMath(unittest.TestCase):
                 rpyDt=[0, 0, 0], alpha_AD_A=[0, 0, 0]), [0., 0., 0.])
         numpy_compare.assert_float_equal(rpy.CalcRpyDDtFromAngularAccelInChild(
             rpyDt=[0, 0, 0], alpha_AD_D=[0, 0, 0]), [0., 0., 0.])
+        # Test pickling.
+        assert_pickle(self, rpy, RollPitchYaw.vector, T=T)
 
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])

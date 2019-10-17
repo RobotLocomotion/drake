@@ -24,6 +24,7 @@ from pydrake.test.autodiffutils_test_util import (
     autodiff_vector3_pass_through,
 )
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 # Use convenience abbreviation.
 AD = AutoDiffXd
@@ -69,6 +70,8 @@ class TestAutoDiffXd(unittest.TestCase):
         # Ensure we can copy.
         numpy_compare.assert_equal(copy.copy(a), a)
         numpy_compare.assert_equal(copy.deepcopy(a), a)
+        # Ensure that we can pickle.
+        assert_pickle(self, a, lambda x: x)
 
     def test_array_api(self):
         a = AD(1, [1., 0])
@@ -188,10 +191,14 @@ class TestAutoDiffXd(unittest.TestCase):
         C = np.dot(A, B)
         numpy_compare.assert_equal(C, [[AD(4, [4., 2])]])
 
-        # `matmul` not supported for `dtype=object` (#11332). `np.dot` should
-        # be used instead.
-        with self.assertRaises(TypeError):
+        # Before NumPy 1.17, `matmul` was not supported for `dtype=object`
+        # (#11332), and `np.dot` should be used instead.
+        if np.lib.NumpyVersion(np.__version__) < "1.17.0":
+            with self.assertRaises(TypeError):
+                C2 = np.matmul(A, B)
+        else:
             C2 = np.matmul(A, B)
+            numpy_compare.assert_equal(C2, C)
 
         # Type mixing
         Bf = np.array([[2., 2]]).T

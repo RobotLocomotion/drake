@@ -14,24 +14,30 @@ drake_cc_package_library(
     name = "proximity",
     deps = [
         ":collision_filter_legacy",
-        ":distance_to_point",
+        ":distance_to_point_callback",
         ":distance_to_point_with_gradient",
-        ":distance_to_shape",
-        ":find_collision_candidates",
+        ":distance_to_shape_callback",
+        ":find_collision_candidates_callback",
+        ":hydroelastic_callback",
         ":make_box_mesh",
-        ":make_unit_sphere_mesh",
+        ":make_cylinder_mesh",
+        ":make_sphere_mesh",
         ":mesh_field",
+        ":mesh_half_space_intersection",
         ":mesh_intersection",
+        ":obj_to_surface_mesh",
         ":proximity_utilities",
+        ":sorted_triplet",
         ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
     ],
 )
 
 drake_cc_library(
-    name = "find_collision_candidates",
-    srcs = ["find_collision_candidates.cc"],
-    hdrs = ["find_collision_candidates.h"],
+    name = "find_collision_candidates_callback",
+    srcs = ["find_collision_candidates_callback.cc"],
+    hdrs = ["find_collision_candidates_callback.h"],
     deps = [
         ":collision_filter_legacy",
         ":proximity_utilities",
@@ -52,8 +58,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "distance_to_point",
-    hdrs = ["distance_to_point.h"],
+    name = "distance_to_point_callback",
+    hdrs = ["distance_to_point_callback.h"],
     deps = [
         ":proximity_utilities",
         "//common:essential",
@@ -69,7 +75,7 @@ drake_cc_library(
     srcs = ["distance_to_point_with_gradient.cc"],
     hdrs = ["distance_to_point_with_gradient.h"],
     deps = [
-        ":distance_to_point",
+        ":distance_to_point_callback",
         ":proximity_utilities",
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point_with_gradient",
@@ -79,13 +85,34 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "distance_to_shape",
-    hdrs = ["distance_to_shape.h"],
+    name = "distance_to_shape_callback",
+    hdrs = ["distance_to_shape_callback.h"],
     deps = [
         ":collision_filter_legacy",
-        ":distance_to_point",
+        ":distance_to_point_callback",
         ":proximity_utilities",
         "//geometry/query_results:signed_distance_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_callback",
+    hdrs = [
+        "hydroelastic_callback.h",
+    ],
+    deps = [
+        ":collision_filter_legacy",
+        ":make_box_mesh",
+        ":make_sphere_mesh",
+        ":mesh_intersection",
+        ":proximity_utilities",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common:hash",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+        "@fcl",
+        "@fmt",
     ],
 )
 
@@ -106,12 +133,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mesh_half_space_intersection",
+    hdrs = [
+        "mesh_half_space_intersection.h",
+    ],
+    deps = [
+        ":mesh_intersection",
+        ":surface_mesh",
+        "//common",
+    ],
+)
+
+drake_cc_library(
     name = "proximity_utilities",
     srcs = ["proximity_utilities.cc"],
     hdrs = ["proximity_utilities.h"],
     deps = [
         "//geometry:geometry_ids",
         "//geometry:geometry_index",
+        "//geometry:shape_specification",
         "@fcl",
         "@fmt",
     ],
@@ -121,17 +161,32 @@ drake_cc_library(
     name = "make_box_mesh",
     hdrs = ["make_box_mesh.h"],
     deps = [
+        ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//geometry:shape_specification",
     ],
 )
 
 drake_cc_library(
-    name = "make_unit_sphere_mesh",
-    hdrs = ["make_unit_sphere_mesh.h"],
+    name = "make_sphere_mesh",
+    hdrs = ["make_sphere_mesh.h"],
+    deps = [
+        ":surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_cylinder_mesh",
+    hdrs = ["make_cylinder_mesh.h"],
     deps = [
         ":volume_mesh",
         "//common:essential",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -146,6 +201,28 @@ drake_cc_library(
         "//geometry/proximity:volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "obj_to_surface_mesh",
+    srcs = ["obj_to_surface_mesh.cc"],
+    hdrs = ["obj_to_surface_mesh.h"],
+    deps = [
+        ":surface_mesh",
+        "//common:essential",
+        "@fmt",
+        "@tinyobjloader",
+    ],
+)
+
+drake_cc_library(
+    name = "sorted_triplet",
+    srcs = ["sorted_triplet.cc"],
+    hdrs = ["sorted_triplet.h"],
+    deps = [
+        "//common:essential",
+        "//common:is_less_than_comparable",
     ],
 )
 
@@ -180,10 +257,26 @@ drake_cc_library(
     ],
 )
 
-drake_cc_googletest(
-    name = "find_collision_candidates_test",
+drake_cc_library(
+    name = "volume_to_surface_mesh",
+    srcs = [
+        "volume_to_surface_mesh.cc",
+    ],
+    hdrs = [
+        "volume_to_surface_mesh.h",
+    ],
     deps = [
-        ":find_collision_candidates",
+        "//common",
+        "//geometry/proximity:sorted_triplet",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_collision_candidates_callback_test",
+    deps = [
+        ":find_collision_candidates_callback",
     ],
 )
 
@@ -197,9 +290,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "distance_to_point_test",
+    name = "distance_to_point_callback_test",
     deps = [
-        ":distance_to_point",
+        ":distance_to_point_callback",
         "//common/test_utilities",
         "//geometry:utilities",
         "//math",
@@ -217,12 +310,21 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "distance_sphere_to_shape_test",
     deps = [
-        ":distance_to_shape",
+        ":distance_to_shape_callback",
         "//common/test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",
         "//geometry:utilities",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastic_callback_test",
+    deps = [
+        ":hydroelastic_callback",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -258,6 +360,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mesh_half_space_intersection_test",
+    deps = [
+        ":mesh_half_space_intersection",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_box_mesh_test",
     deps = [
         ":make_box_mesh",
@@ -266,9 +375,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "make_unit_sphere_mesh_test",
+    name = "make_sphere_mesh_test",
     deps = [
-        ":make_unit_sphere_mesh",
+        ":make_sphere_mesh",
+        "//common:sorted_pair",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_cylinder_mesh_test",
+    deps = [
+        ":make_cylinder_mesh",
+        ":sorted_triplet",
     ],
 )
 
@@ -276,13 +395,41 @@ drake_cc_googletest(
     name = "mesh_intersection_test",
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:mesh_intersection",
+    ],
+)
+
+drake_cc_googletest(
+    name = "obj_to_surface_mesh_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":obj_to_surface_mesh",
+        "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest(
     name = "proximity_utilities_test",
     deps = [":proximity_utilities"],
+)
+
+drake_cc_googletest(
+    name = "sorted_triplet_test",
+    deps = [
+        ":sorted_triplet",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_to_surface_mesh_test",
+    deps = [
+        ":make_box_mesh",
+        ":volume_to_surface_mesh",
+    ],
 )
 
 add_lint_tests()

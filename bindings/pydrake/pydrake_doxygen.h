@@ -242,33 +242,42 @@ the pydrake binding's signature is consistent with the docstring argument
 count.
 - If two or more docstrings are the same, only one new symbol is introduced.
 - To suppress a Doxygen comment from mkdoc, add the custom Doxygen command
-\c \@exclude_from_pydrake_mkdoc{Explanation} to the API comment text.
+@c \@exclude_from_pydrake_mkdoc{Explanation} to the API comment text.
 This is useful to help dismiss unbound overloads, so that mkdoc's choice of
 `_something` name suffix is simpler for the remaining overloads, especially if
 you see the symbol `.doc_was_unable_to_choose_unambiguous_names` in the
 generated documentation.
+- To manually specify the `.doc_foobar` identifier name, add the line
+@c \@pydrake_mkdoc_identifier{foobar} to the Doxygen comment.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior
 
-`py::keep_alive` is used heavily throughout this code. For more
-information, please see [the pybind11 documentation](
+`py::keep_alive<Nurse, Patient>()` is used heavily throughout this code. Please
+first review [the pybind11 documentation](
 http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive).
 
-Terse notes are added to method bindings to indicate the patient
-(object being kept alive by nurse) and the nurse (object keeping patient
-alive). To expand on them:
-- "Keep alive, ownership" implies that one argument is owned directly by
-one of the other arguments (`self` is included in those arguments, for
-`py::init<>` and class methods).
-- "Keep alive, reference" implies a reference that is lifetime-sensitive
-(something that is not necessarily owned by the other arguments).
-- "Keep alive, transitive" implies a transfer of ownership of owned
-objects from one container to another (e.g. transferring all `System`s
-from `DiagramBuilder` to `Diagram` when calling
-`DiagramBuilder.Build()`).
+`py::keep_alive` decorations should be added after all `py::arg`s are
+specified. Terse comments should be added above these decorations to indicate
+the relationship between the Nurse and the Patient and decode the meaning of
+the Nurse and Patient integers by spelling out either the `py::arg` name (for
+named arguments), `return` for index 0, or `self` (not `this`) for index 1 when
+dealing with methods / members. The primary relationships:
+- "Keep alive, ownership" implies that a Patient owns the Nurse (or vice
+versa).
+- "Keep alive, reference" implies a Patient that is referred to by the Nurse.
+If there is an indirect / transitive relationship (storing a reference to
+an argument's member or a transfer of ownership, as with
+`DiagramBuilder.Build()`), append `(tr.)` to the relationship.
+
+Some example comments:
+
+```
+// Keep alive, reference: `self` keeps `context` alive.
+// Keep alive, ownership (tr.): `return` keeps `self` alive.
+```
 
 @anchor PydrakeOverloads
 ## Function Overloads

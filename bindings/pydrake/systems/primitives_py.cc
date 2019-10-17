@@ -83,8 +83,25 @@ PYBIND11_MODULE(primitives, m) {
         .def("y0",
             overload_cast_explicit<const VectorXd&>(&AffineSystem<T>::y0),
             doc.AffineSystem.y0.doc)
+        // Wrap a few methods from the TimeVaryingAffineSystem parent class.
+        // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
+        // wrapped.
+        .def("get_input_port", &TimeVaryingAffineSystem<T>::get_input_port,
+            py_reference_internal,
+            doc.TimeVaryingAffineSystem.get_input_port.doc)
+        .def("get_output_port", &TimeVaryingAffineSystem<T>::get_output_port,
+            py_reference_internal,
+            doc.TimeVaryingAffineSystem.get_output_port.doc)
         .def("time_period", &AffineSystem<T>::time_period,
-            doc.TimeVaryingAffineSystem.time_period.doc);
+            doc.TimeVaryingAffineSystem.time_period.doc)
+        // Need to specifically redeclare the System to have both overloads
+        // available.
+        .def("get_input_port", &System<T>::get_input_port,
+            py_reference_internal, py::arg("port_index"),
+            pydrake_doc.drake.systems.System.get_input_port.doc)
+        .def("get_output_port", &System<T>::get_output_port,
+            py_reference_internal, py::arg("port_index"),
+            pydrake_doc.drake.systems.System.get_output_port.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
@@ -214,7 +231,18 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("input") = Vector0<Variable>{},
             py::arg("dynamics") = Vector0<Expression>{},
             py::arg("output") = Vector0<Expression>{},
-            py::arg("time_period") = 0.0, doc.SymbolicVectorSystem.ctor.doc);
+            py::arg("time_period") = 0.0,
+            doc.SymbolicVectorSystem.ctor.doc_6args)
+        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
+                 VectorX<Variable>, VectorX<Expression>, VectorX<Expression>,
+                 double>(),
+            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+            py::arg("input") = Vector0<Variable>{},
+            py::arg("parameter") = Vector0<Variable>{},
+            py::arg("dynamics") = Vector0<Expression>{},
+            py::arg("output") = Vector0<Expression>{},
+            py::arg("time_period") = 0.0,
+            doc.SymbolicVectorSystem.ctor.doc_7args);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
@@ -294,8 +322,6 @@ PYBIND11_MODULE(primitives, m) {
       py_reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

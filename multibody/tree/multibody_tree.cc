@@ -76,13 +76,8 @@ MultibodyTree<T>::MultibodyTree() {
       AddModelInstance("DefaultModelInstance");
   DRAKE_DEMAND(default_instance == default_model_instance());
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(sammy-tri) Move the custom handling logic for adding a
-  // UniformGravityFieldElement here once we remove the deprecated overload.
   const ForceElement<T>& new_field =
       AddForceElement<UniformGravityFieldElement>();
-#pragma GCC diagnostic pop
   DRAKE_DEMAND(num_force_elements() == 1);
   DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
 }
@@ -242,11 +237,18 @@ void MultibodyTree<T>::Finalize() {
   // implementation will therefore change the tree topology. Since topology
   // changes are NOT allowed after Finalize(), joint implementations MUST be
   // assembled BEFORE the tree's topology is finalized.
+  joint_to_mobilizer_.resize(num_joints());
   for (auto& joint : owned_joints_) {
     std::vector<Mobilizer<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+    // Below we assume a single mobilizer per joint, the sane thing to do.
+    // TODO(amcastro-tri): clean up the JointImplementationBuilder so that this
+    // assumption (one mobilizer per joint) is set in stone once and for all.
+    DRAKE_DEMAND(mobilizers.size() == 1);
     for (Mobilizer<T>* mobilizer : mobilizers) {
       mobilizer->set_model_instance(joint->model_instance());
+      // Record the joint to mobilizer map.
+      joint_to_mobilizer_[joint->index()] = mobilizer->index();
     }
   }
   // It is VERY important to add quaternions if needed only AFTER joints had a
@@ -1092,62 +1094,6 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
   }
 }
 
-// TODO(Mitiguy) Delete this method as per issue #10155.
-// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-template <typename T>
-void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    EigenPtr<MatrixX<T>> p_WP_list,
-    EigenPtr<MatrixX<T>> Jv_WFp) const {
-  const int num_points = p_FP_list.cols();
-  DRAKE_THROW_UNLESS(p_WP_list != nullptr);
-  DRAKE_THROW_UNLESS(p_WP_list->cols() == num_points);
-
-  // For each point Fi, calculate Fi's position from Wo (World origin),
-  // expressed in world W.
-  const Frame<T>& frame_W = world_frame();
-  CalcPointsPositions(context, frame_F, p_FP_list,      /* From frame F */
-                      frame_W, p_WP_list);          /* To world frame W */
-  CalcJacobianTranslationalVelocity(context,
-                                    JacobianWrtVariable::kV,
-                                    frame_F,
-                                    frame_W,
-                                    *p_WP_list,
-                                    frame_W,
-                                    frame_W,
-                                    Jv_WFp);
-}
-
-// TODO(Mitiguy) Delete this method as per issue #10155.
-// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-template <typename T>
-void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    EigenPtr<MatrixX<T>> p_WP_list,
-    EigenPtr<MatrixX<T>> Jq_WFp) const {
-  const int num_points = p_FP_list.cols();
-  DRAKE_THROW_UNLESS(p_WP_list != nullptr);
-  DRAKE_THROW_UNLESS(p_WP_list->cols() == num_points);
-
-  // For each point Fi, calculate Fi's position from Wo (World origin),
-  // expressed in world W.
-  const Frame<T>& frame_W = world_frame();
-  CalcPointsPositions(context, frame_F, p_FP_list,     /* From frame F */
-                      frame_W, p_WP_list);         /* To world frame W */
-
-  CalcJacobianTranslationalVelocity(context,
-                                    JacobianWrtVariable::kQDot,
-                                    frame_F,
-                                    frame_W,
-                                    *p_WP_list,
-                                    frame_W,
-                                    frame_W,
-                                    Jq_WFp);
-}
 
 template <typename T>
 SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
@@ -1234,25 +1180,6 @@ VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
   }
 
   return Abias_WFp_array;
-}
-
-// TODO(Mitiguy) Delete this method as per issue #10155.
-// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-template <typename T>
-void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_WP_list,
-    EigenPtr<MatrixX<T>> Jv_WFp) const {
-  const Frame<T>& frame_W = world_frame();
-  CalcJacobianTranslationalVelocity(context,
-                                    JacobianWrtVariable::kV,
-                                    frame_F,
-                                    frame_W,
-                                    p_WP_list,
-                                    frame_W,
-                                    frame_W,
-                                    Jv_WFp);
 }
 
 template <typename T>

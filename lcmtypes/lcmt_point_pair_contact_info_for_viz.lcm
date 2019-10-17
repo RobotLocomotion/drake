@@ -1,0 +1,17 @@
+package drake;
+
+struct lcmt_point_pair_contact_info_for_viz {
+  // TODO(edrumwri) Consider removing this data which is already present in the
+  // structure in which this message is stored (lcmt_contact_results_for_viz).
+  // In microseconds
+  int64_t timestamp;
+
+  // Names of the colliding bodies
+  string body1_name;
+  string body2_name;
+
+  // These are all expressed in the world frame.
+  double contact_point[3];
+  double contact_force[3];
+  double normal[3];
+}

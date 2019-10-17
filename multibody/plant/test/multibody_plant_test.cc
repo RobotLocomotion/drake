@@ -320,6 +320,39 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
 }
 
+GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
+  const double discrete_update_period = 1.0e-3;
+  MultibodyPlant<double> plant(discrete_update_period);
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 0);
+  EXPECT_EQ(plant.num_positions(), 0);
+  // Compute discrete update.
+  auto context = plant.CreateDefaultContext();
+  auto& discrete_state_vector = context->get_discrete_state_vector();
+  EXPECT_EQ(discrete_state_vector.size(), 0);
+  auto new_discrete_state = plant.AllocateDiscreteVariables();
+  const systems::VectorBase<double>& new_discrete_state_vector =
+      new_discrete_state->get_vector();
+  EXPECT_EQ(new_discrete_state_vector.size(), 0);
+  EXPECT_NO_THROW(
+      plant.CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
+}
+
+GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
+  MultibodyPlant<double> plant;
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 0);
+  EXPECT_EQ(plant.num_positions(), 0);
+  // Compute continuous derivatives.
+  auto context = plant.CreateDefaultContext();
+  auto& continuous_state_vector = context->get_continuous_state_vector();
+  EXPECT_EQ(continuous_state_vector.size(), 0);
+  auto new_derivatives = plant.AllocateTimeDerivatives();
+  EXPECT_EQ(new_derivatives->size(), 0);
+  EXPECT_NO_THROW(
+      plant.CalcTimeDerivatives(*context, new_derivatives.get()));
+}
+
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
   // Create a MultibodyPlant consisting of two model instances, one actuated
   // and the other unactuated.
@@ -375,14 +408,8 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// TODO(sammy-tri) Remove this test when the deprecated overload is removed.
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
   MultibodyPlant<double> plant;
-
-  // Expect adding a default UniformFieldElementTest to pass.
-  EXPECT_NO_THROW(plant.AddForceElement<UniformGravityFieldElement>());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddForceElement<UniformGravityFieldElement>(
@@ -390,7 +417,6 @@ GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
       std::runtime_error,
       "This model already contains a gravity field element.*");
 }
-#pragma GCC diagnostic pop
 
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
@@ -478,6 +504,10 @@ class AcrobotPlantTests : public ::testing::Test {
     // Set the state:
     shoulder_->set_angle(plant_context_, theta1);
     elbow_->set_angle(plant_context_, theta2);
+
+    // Set arbitrary non-zero velocities to test they do not affect the results.
+    shoulder_->set_angular_rate(plant_context_, 10.0);
+    elbow_->set_angular_rate(plant_context_, 10.0);
 
     // Calculate the generalized forces due to gravity.
     const VectorX<double> tau_g =
@@ -830,48 +860,11 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     EXPECT_NO_THROW(plant.Finalize());
   }
 
-  // Case: Correct finalization -- registered as source and correct scene graph
-  // provided -- no error.
-  {
-    MultibodyPlant<double> plant;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_NO_THROW(plant.Finalize(&scene_graph));
-#pragma GCC diagnostic pop
-  }
-
   // Case: Registered as source, correct finalization.
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     EXPECT_NO_THROW(plant.Finalize());
-  }
-
-  // Case: Registered as source, but *wrong* scene graph passed to Finalize() -
-  // error.
-  {
-    MultibodyPlant<double> plant;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    SceneGraph<double> other_graph;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.Finalize(&other_graph), std::logic_error,
-        "Geometry registration.*first call to RegisterAsSourceForSceneGraph.*");
-#pragma GCC diagnostic pop
-  }
-
-  // Case: Not registered as source, but passed SceneGraph in anyways - error.
-  {
-    MultibodyPlant<double> plant;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.Finalize(&scene_graph), std::logic_error,
-        "This MultibodyPlant instance does not have a SceneGraph registered.*"
-        "RegisterAsSourceForSceneGraph.*");
-#pragma GCC diagnostic pop
   }
 }
 
@@ -1151,6 +1144,19 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper, &lower));
 }
 
+// Utility to verify that the only port of MultibodyPlant that is a feedthrough
+// is the port for joint reaction forces.
+bool OnlyJointReactionForcesFeedthrough(const MultibodyPlant<double>& plant) {
+  const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
+  bool only_reaction_forces_feedthrough = true;
+  for (auto inout_pair : feedthroughs) {
+    if (inout_pair.second !=
+        plant.get_reaction_forces_output_port().get_index())
+      only_reaction_forces_feedthrough = false;
+  }
+  return only_reaction_forces_feedthrough;
+}
+
 // Verifies the process of collision geometry registration with a
 // SceneGraph.
 // We build a model with two spheres and a ground plane. The ground plane is
@@ -1191,9 +1197,9 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // We are done defining the model.
   plant.Finalize();
 
-  // There is no direct feedthrough of any kind, even with the new ports
+  // Only joint reaction forces feedthrough, even with the new ports
   // related to SceneGraph interaction.
-  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(OnlyJointReactionForcesFeedthrough(plant));
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
@@ -2037,9 +2043,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
                            plant_->GetFrameByName("iiwa_link_0"));
     plant_->Finalize();
 
-    // There is no direct feedthrough of any kind, for either continuous or
+    // Only joint reaction forces feedthrough, for either continuous or
     // discrete plants.
-    EXPECT_FALSE(plant_->HasAnyDirectFeedthrough());
+    EXPECT_TRUE(OnlyJointReactionForcesFeedthrough(*plant_));
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);

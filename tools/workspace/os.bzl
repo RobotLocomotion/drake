@@ -109,7 +109,7 @@ def _determine_macos(repository_ctx):
     macos_release = ".".join(major_minor_versions)
 
     # Match supported macOS release(s).
-    if macos_release in ["10.13", "10.14"]:
+    if macos_release in ["10.14", "10.15"]:
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.
@@ -130,7 +130,7 @@ def determine_os(repository_ctx):
         - error: str iff any error occurred, else None
         - distribution: str either "ubuntu" or "macos" if no error
         - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "10.14" iff on a supported macOS, else None
+        - macos_release: str like "10.15" iff on a supported macOS, else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "16.04" iff on a supported ubuntu, else None
     """
@@ -154,7 +154,7 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 16.04" or "macOS 10.14"
+    - Exact release, via e.g., "Ubuntu 16.04" or "macOS 10.15"
     - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """
@@ -214,3 +214,30 @@ os_specific_alias_repository = repository_rule(
     },
     implementation = _os_specific_alias_impl,
 )
+
+def _os_impl(repo_ctx):
+    os_result = determine_os(repo_ctx)
+    repo_ctx.file("BUILD.bazel", "")
+
+    if os_result.error:
+        fail(os_result.error)
+
+    constants = """
+DISTRIBUTION = {distribution}
+UBUNTU_RELEASE = {ubuntu_release}
+MACOS_RELEASE = {macos_release}
+    """.format(
+        distribution = repr(os_result.distribution),
+        ubuntu_release = repr(os_result.ubuntu_release),
+        macos_release = repr(os_result.macos_release),
+    )
+    repo_ctx.file("os.bzl", constants)
+
+os_repository = repository_rule(
+    implementation = _os_impl,
+)
+
+"""
+Provides the fields `DISTRIBUTION`, `UBUNTU_RELEASE` and `MACOS_RELEASE` from
+`determine_os`.
+"""

@@ -582,6 +582,17 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
                                                      &poses));
   }
 
+  // Case: Calculating pose bundle with an input pose bundle the wrong size.
+  {
+    SceneGraph<double> scene_graph;
+    PoseBundle<double> poses(1);
+    EXPECT_EQ(poses.get_num_poses(), 1);
+    auto context = scene_graph.AllocateContext();
+    EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
+                                                     &poses));
+    EXPECT_EQ(poses.get_num_poses(), 0);
+  }
+
   // Case: Registered source but no frames or geometry --> empty pose vector.
   {
     SceneGraph<double> scene_graph;

@@ -96,6 +96,14 @@ def run(gh, args, metadata):
             # TODO(jwnimmer-tri) Implement for real.
             old_commit = data["commit"]
             new_commit = None
+        elif key == "pypi":
+            # TODO(jwnimmer-tri) Implement for real.
+            print("{} version {} needs manual inspection".format(
+                data["name"], data["version"]))
+            continue
+        elif key == "manual":
+            print("{} needs manual inspection".format(data["name"]))
+            continue
         else:
             raise RuntimeError("Bad key " + key)
         if old_commit == new_commit:

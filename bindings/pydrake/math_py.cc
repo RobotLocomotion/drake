@@ -70,14 +70,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_p)
         .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_pose)
-        // Since Python doesn't suffer from ambiguities that C++ is, we can
-        // bind the Matrix4 constructor.
-        .def(py::init([](const Matrix4<T>& matrix) {
-          return Class::FromMatrix4(matrix);
-        }),
-            py::arg("matrix"), "Python-specific alias for ``FromMatrix4``.")
-        .def_static("FromMatrix4", &Class::FromMatrix4, py::arg("matrix"),
-            cls_doc.FromMatrix4.doc)
+        .def(py::init<const MatrixX<T>&>(), py::arg("pose"),
+            cls_doc.ctor.doc_1args_constEigenMatrixBase);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    constexpr char deprecated_matrix_ctor_doc[] =
+        "Please use ``RigidTransfrom(pose=...)`` constructor. This will be "
+        "removed on or around 2019-11-15.";
+    cls  // BR
+        .def(py_init_deprecated(deprecated_matrix_ctor_doc,
+                 [](const Matrix4<T>& matrix) {
+                   return Class::FromMatrix4(matrix);
+                 }),
+            py::arg("matrix"), deprecated_matrix_ctor_doc)
+        .def_static("FromMatrix4",
+            WrapDeprecated(deprecated_matrix_ctor_doc, &Class::FromMatrix4),
+            py::arg("matrix"), deprecated_matrix_ctor_doc);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)
@@ -128,6 +138,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc_rigid_transform_linear_matrix_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
             doc_rigid_transform_linear_matrix_deprecation);
+    DefPickle(&cls, [](const Class& self) { return self.GetAsMatrix34(); },
+        [](const Eigen::Matrix<T, 3, 4>& matrix) { return Class(matrix); });
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
@@ -192,6 +204,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
             cls_doc.ToQuaternion.doc_0args);
+    DefPickle(&cls, [](const Class& self) { return self.matrix(); },
+        [](const Matrix3<T>& matrix) { return Class(matrix); });
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
@@ -245,6 +259,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::CalcRpyDDtFromAngularAccelInChild, py::arg("rpyDt"),
             py::arg("alpha_AD_D"),
             cls_doc.CalcRpyDDtFromAngularAccelInChild.doc);
+    DefPickle(&cls, [](const Class& self) { return self.vector(); },
+        [](const Vector3<T>& rpy) { return Class(rpy); });
     DefCopyAndDeepCopy(&cls);
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }

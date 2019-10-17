@@ -7,7 +7,7 @@ Drake approximates real-world physical contact phenomena with a combination
 of geometric techniques and response models. Here we discuss the
 parameterization and idiosyncracies of a particular contact response model,
 based on point contact, non-penetration imposed with a penalty force, and a
-Stribeck friction model approximating Coulomb stiction and sliding friction
+continuous model of friction approximating Coulomb stiction and sliding friction
 effects.
 This document gives an overview of the state of the implementation of
 contact in Drake (as of Q2 2019) with particular emphasis on how to account for
@@ -204,7 +204,7 @@ Next topic: @ref contact_engineering
 
  @note When modeling the multibody system as discrete (refer to
  the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
- section), only the static coefficient of friction is used while the kinetic
+ section), only the dynamic coefficient of friction is used while the static
  coefficient of friction is ignored.
 
  @anchor time_advancement_strategy
@@ -228,10 +228,14 @@ Next topic: @ref contact_engineering
  `time_step`. This can essentially be seen as a time-stepping strategy with a
  fixed `time_step`. The value of `time_step` is provided at construction of the
  @ref drake::multibody::MultibodyPlant "MultibodyPlant". In Drake we use a
- custom semi-implicit Euler scheme for multibody systems using the Stribeck
- approximation of Coulomb friction. Details for this solver are provided in the
- documentation for @ref drake::multibody::ImplicitStribeckSolver
- "ImplicitStribeckSolver".
+ custom semi-implicit Euler scheme, TAMSI, for multibody systems with
+ regularized friction. Details for this solver are provided in the documentation
+ for @ref drake::multibody::TamsiSolver "TamsiSolver" and in
+ [Castro et al., 2019].
+
+ [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman,
+   M.A., 2019. A Transition-Aware Method for the Simulation of Compliant Contact
+   with Regularized Friction. arXiv:1909.05700 [cs.RO].
 
  @note For better numerical stability, the discrete model assumes
  both static and kinetic coefficients of friction to be equal, the kinetic
@@ -304,7 +308,8 @@ Next topic: @ref contact_engineering
  Next topic: @ref stribeck_approximation
  */
 
-/** @defgroup stribeck_approximation Stribeck Approximation of Coulomb Friction
+/** @defgroup stribeck_approximation Continuous Approximation of Coulomb
+ Friction
  @ingroup drake_contacts
 
  Static friction (or stiction) arises due to surface characteristics at the
@@ -387,7 +392,7 @@ Next topic: @ref contact_engineering
  Rather than modeling _perfect_ stiction, it makes use of an _allowable_ amount
  of relative motion to approximate stiction.  When we refer to
  "relative motion", we refer specifically to the relative translational speed of
- two points `Ac` and `Bc` defined to instantly be located at contact point 
+ two points `Ac` and `Bc` defined to instantly be located at contact point
  `Co` and moving with bodies A and B, respectively.
 
  The function, as illustrated in Figure 3, is a function of the unitless
@@ -408,9 +413,8 @@ Next topic: @ref contact_engineering
  very stiff in the stiction region, which requires either small step sizes
  with an explicit integrator, or use of a more-stable implicit integrator.
 
- @note When modeling the multibody system as discrete (refer to
- the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
- section), only the static coefficient of friction is used while the kinetic
- coefficient of friction is ignored. For better numerical stability, the
- discrete model uses `μₖ = μₛ`.
+ @note When modeling the multibody system as discrete (refer to the @ref
+ time_advancement_strategy "Choice of Time Advancement Strategy" section), we
+ regularize Coulomb friction and only use the static coefficient of friction μₛ
+ for better numerical stability.
 */
