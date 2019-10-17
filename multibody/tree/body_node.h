@@ -788,7 +788,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   /// Calculates Hv_PB_W, the Jacobian with respect to generalized velocities v
   /// that allows a body B's spatial velocity in its parent body P to be written
-  /// as `V_PB_W = Hv_PB_W(q) ⋅ v_B`, where `v_B` denotes the generalized
+  /// as `V_PB_W = Hv_PB_W(q) * v_B`, where `v_B` denotes the generalized
   /// velocities associated with body B's node. `Hv_PB_W` has size `6 x nm` with
   /// `nm` the number of mobilities associated with body B's node.
   /// `Hv_PB_W(q)` is a function of the model's generalized positions q only.
@@ -800,7 +800,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[out] Hv_PB_W
   ///   Body B's spatial velocity Jacobian in its parent body P with respect to
   ///   generalized velocities v_B, which allows B's spatial velocity in P
-  ///   expressed in world W to be written `V_PB_W = Hv_PB_W ⋅ v_B`.
+  ///   expressed in world W to be written `V_PB_W = Hv_PB_W * v_B`.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().

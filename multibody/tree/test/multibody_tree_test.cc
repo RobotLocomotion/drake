@@ -933,9 +933,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
   CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtV(
       tree(), *context_, p_EPi, &p_WPi, &Jq_WPi);
 
-  // Alternatively, compute the Jacobian with respect to q̇ (time-derivative of
-  // generalized positions) by taking the gradient of the positions p_WPi(q)
-  // with respect to generalized positions q. We do that with the steps below.
+  // Alternatively, compute the Jacobian with respect to q̇ by forming the
+  // gradient of the positions p_WPi(q) with respect to generalized positions q.
+  // We do that with the steps below.
 
   // Initialize q to have values qvalue and so that it is the independent
   // variable of the problem.

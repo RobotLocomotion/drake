@@ -146,11 +146,11 @@ template<typename T> class BodyNode;
 /// derived %Mobilizer objects must implement in order to fully define the
 /// kinematic relationship between the two frames they connect.
 ///
-/// <h4>Relation between Hinge matrix and Jacobians</h4>
+/// <h4>Relation between hinge matrix and Jacobians</h4>
 ///
-/// There is a relationship between the across-mobilizer spatial velocity `V_FM`
-/// and the time derivative of the across-mobilizer transform `X_FM` and a
-/// similar relationship between the rigid transform Jacobian Jq_X_VM (partial
+/// The relationship between the across-mobilizer spatial velocity `V_FM` and
+/// the time derivative of the across-mobilizer transform `X_FM` is similar to
+/// the relationship between the rigid transform Jacobian Jq_X_VM (partial
 /// derivatives of rigid transform X_FM with respect to generalized positions q)
 /// and the Drake hinge matrix `H_FM` (partial derivatives of across-mobilizer q̇
 /// with respect to generalized velocities v).
