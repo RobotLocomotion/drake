@@ -112,6 +112,7 @@ class _ContactConfigDialog(QtGui.QDialog):
         self.setLayout(layout)
 
 
+# TODO(SeanCurtis): This would be better extracted out of *this* plugin
 def get_sub_menu_or_make(menu, menu_name):
     for a in menu.actions():
         if a.text == menu_name:

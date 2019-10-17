@@ -163,11 +163,13 @@ class ColorMap:
         norm_data = self._normalize(value, range)
         return self._do_get_color(norm_data)
 
-    def get_inverted_color(self, value, range=None):
-        if range is None:
-            range = self.data_range
-        norm_data = self._normalize(value, range)
-        return self._do_get_color(1 - norm_data)
+    # Gets a color that will always contrast with those produced by the color
+    # map.
+    def get_contrasting_color(self):
+        return _do_get_contrasting_color()
+
+    def _do_get_contrasting_color(self):
+        raise NotImplementedError("Subclasses need to implement this")
 
     def _do_get_color(self, norm_value):
         raise NotImplementedError("Subclasses need to implement this")
@@ -203,20 +205,33 @@ class FlameMap(ColorMap):
             color[2] = np.clip(1.0 - (norm_data - 0.25) * 4.0, 0.0, 1.0)
         return color
 
+    def _do_get_contrasting_color:
+        # Mint green.
+        return [0.6, 1.0, 0.6]
+
 
 class IntensityMap(ColorMap):
     def _do_get_color(self, norm_data):
         # TODO(drum) Make the color configurable.
         return np.array((0.0, 1.0, 0.0), dtype=np.float) * norm_data
 
+    # TODO(drum): Make this vary when the color is configurable.
+    def _do_get_contrasting_color:
+        return [1.0, 0.0, 0.0]
+
 
 class TwoToneMap(ColorMap):
     def __init__(self):
         ColorMap.__init__(self)
-        # TODO(drum) Make the two colors configurable.
+        # TODO(drum) Make the two colors configurable. Currently they lie
+        # between hot pink and blue.
         self.min_color = np.array((240, 1, 1.0))
         self.max_color = np.array((320.0, 1, 1.0))
         self.delta = self.max_color - self.min_color
+
+    # TODO(drum): Make this vary when the color is configurable.
+    def _do_get_contrasting_color:
+        return [0.0, 0.0, 1.0]
 
     def _do_get_color(self, norm_data):
         hsv = self.min_color + self.delta * norm_data
@@ -256,6 +271,7 @@ class TwoToneMap(ColorMap):
         return r, g, b
 
 
+# TODO(SeanCurtis): This would be better extracted out of *this* plugin
 def get_sub_menu_or_make(menu, menu_name):
     for a in menu.actions():
         if a.text == menu_name:
@@ -366,6 +382,11 @@ class HydroelasticContactVisualizer(object):
         # enabled.
         # Iterate over all triangles.
         for surface in msg.hydroelastic_contacts:
+            # Avoid warnings to console in the (unexpected but allowable) case
+            # that the contact surface is empty.
+            if len(surface.triangles) == 0:
+                continue
+
             for tri in surface.triangles:
                 va = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
                 vb = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
@@ -382,6 +403,10 @@ class HydroelasticContactVisualizer(object):
                 inv_color_c = color_map.get_inverted_color(tri.pressure_C)
 
                 if self.show_pressure:
+                    # TODO(drum) Use a better method for this; the current
+                    # approach is susceptible to z-fighting under certain
+                    # zoom levels.
+
                     # Compute a normal to the triangle. We need this normal
                     # because the visualized pressure surface can be coplanar
                     # with parts of the visualized geometry, in which case a
