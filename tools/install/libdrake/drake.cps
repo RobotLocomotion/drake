@@ -21,6 +21,14 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "GFlags": {
+      "Version": "2.1",
+      "X-CMake-Find-Args": [
+          "MODULE",
+          "COMPONENTS",
+          "shared"
+      ]
+    },
     "ignition-math6": {
       "Version": "6.4",
       "Hints": ["@prefix@/lib/cmake/ignition-math6"],
@@ -84,8 +92,11 @@
     "drake-common-text-logging-gflags": {
       "Type": "interface",
       "Includes": ["@prefix@/include"],
-      "Link-Flags": ["-lgflags"],
-      "Requires": [":drake"]
+      "Compile-Features": ["c++14"],
+      "Requires": [
+          ":drake",
+          "gflags:gflags_shared"
+      ]
     },
     "drake-lcmtypes-cpp": {
       "Type": "interface",
@@ -103,7 +114,6 @@
     }
   },
   "X-CMake-Variables-Init": {
-    "_Boost_IMPORTED_TARGETS": 1,
     "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
   }
 }

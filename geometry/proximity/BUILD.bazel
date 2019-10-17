@@ -385,6 +385,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "make_cylinder_mesh_test",
+    # This test includes generating the finest mesh allowed for a particular
+    # cylinder. The test size is increased to "medium" so that debug builds
+    # are successful in CI.
+    size = "medium",
     deps = [
         ":make_cylinder_mesh",
         ":sorted_triplet",

@@ -73,7 +73,12 @@ def _impl(repository_ctx):
     ]
     root_path = repository_ctx.path("")
 
-    repository_ctx.download_and_extract(urls, root_path, sha256 = sha256)
+    repository_ctx.download_and_extract(
+        urls,
+        output = root_path,
+        sha256 = sha256,
+        type = "tar.gz",
+    )
 
     file_content = """# -*- python -*-
 
