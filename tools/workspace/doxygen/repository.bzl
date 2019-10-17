@@ -42,6 +42,7 @@ def _impl(repo_ctx):
     repo_ctx.download_and_extract(
         url = url,
         sha256 = sha256,
+        type = "tar.gz",
     )
 
 doxygen_repository = repository_rule(
