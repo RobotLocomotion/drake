@@ -1,0 +1,164 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_dummy_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_dummy_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_link
+  note: Zeros
+  q:
+    names: [brick_translate_y_joint, brick_translate_z_joint, brick_revolute_x_joint]
+    values: [0.0, 0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 1.0, 0.0]
+    name: brick::brick_dummy_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 1.0, 1.0]
+    name: brick::brick_dummy_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.5403023058681398, -0.8414709848078965]
+      - [0.0, 0.8414709848078965, 0.5403023058681398]
+      translation: [0.0, 1.0, 1.0]
+    name: brick::brick_link
+  note: Ones
+  q:
+    names: [brick_translate_y_joint, brick_translate_z_joint, brick_revolute_x_joint]
+    values: [1.0, 1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.1, 0.0]
+    name: brick::brick_dummy_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.1, 0.2]
+    name: brick::brick_dummy_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.955336489125606, -0.2955202066613396]
+      - [0.0, 0.2955202066613396, 0.955336489125606]
+      translation: [0.0, 0.1, 0.2]
+    name: brick::brick_link
+  note: Incrementing
+  q:
+    names: [brick_translate_y_joint, brick_translate_z_joint, brick_revolute_x_joint]
+    values: [0.1, 0.2, 0.30000000000000004]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: brick::brick_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 1.5707963267948966, 0.0]
+    name: brick::brick_dummy_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 1.5707963267948966, 1.5707963267948966]
+    name: brick::brick_dummy_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 6.123233995736766e-17, -1.0]
+      - [0.0, 1.0, 6.123233995736766e-17]
+      translation: [0.0, 1.5707963267948966, 1.5707963267948966]
+    name: brick::brick_link
+  note: Pi/2
+  q:
+    names: [brick_translate_y_joint, brick_translate_z_joint, brick_revolute_x_joint]
+    values: [1.5707963267948966, 1.5707963267948966, 1.5707963267948966]
+expression: {expr: make_plant('drake/examples/planar_gripper/planar_brick.sdf'), module: __main__}
+type_name: tuple

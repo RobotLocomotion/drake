@@ -1,0 +1,310 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.07]
+    name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.07]
+    name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.07]
+    name: planar_gripper::finger3_link2
+  note: Zeros
+  q:
+    names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
+      finger2_MidJoint, finger3_MidJoint]
+    values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.5403023058681398, -0.8414709848078965]
+      - [0.0, 0.8414709848078965, 0.5403023058681398]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -0.4161468365471423, -0.9092974268256818]
+      - [0.0, 0.9092974268256818, -0.4161468365471423]
+      translation: [0.0, 0.05890296893655276, -0.037821161410769785]
+    name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.5403023058681398, -0.8414709848078965]
+      - [0.0, 0.8414709848078965, 0.5403023058681398]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -0.4161468365471423, -0.9092974268256818]
+      - [0.0, 0.9092974268256818, -0.4161468365471423]
+      translation: [0.0, 0.05890296893655276, -0.037821161410769785]
+    name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.5403023058681398, -0.8414709848078965]
+      - [0.0, 0.8414709848078965, 0.5403023058681398]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -0.4161468365471423, -0.9092974268256818]
+      - [0.0, 0.9092974268256818, -0.4161468365471423]
+      translation: [0.0, 0.05890296893655276, -0.037821161410769785]
+    name: planar_gripper::finger3_link2
+  note: Ones
+  q:
+    names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
+      finger2_MidJoint, finger3_MidJoint]
+    values: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.9950041652780258, -0.09983341664682815]
+      - [0.0, 0.09983341664682815, 0.9950041652780258]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.8775825618903729, -0.47942553860420306]
+      - [0.0, 0.47942553860420306, 0.8775825618903729]
+      translation: [0.0, 0.0069883391652779715, -0.06965029156946181]
+    name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.9800665778412416, -0.19866933079506122]
+      - [0.0, 0.19866933079506122, 0.9800665778412416]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.7648421872844885, -0.644217687237691]
+      - [0.0, 0.644217687237691, 0.7648421872844885]
+      translation: [0.0, 0.013906853155654287, -0.06860466044888693]
+    name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.955336489125606, -0.2955202066613396]
+      - [0.0, 0.2955202066613396, 0.955336489125606]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.6216099682706644, -0.7833269096274834]
+      - [0.0, 0.7833269096274834, 0.6216099682706644]
+      translation: [0.0, 0.020686414466293775, -0.06687355423879242]
+    name: planar_gripper::finger3_link2
+  note: Incrementing
+  q:
+    names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
+      finger2_MidJoint, finger3_MidJoint]
+    values: [0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 6.123233995736766e-17, -1.0]
+      - [0.0, 1.0, 6.123233995736766e-17]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger1_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -1.0, -1.2246467991473532e-16]
+      - [0.0, 1.2246467991473532e-16, -1.0]
+      translation: [0.0, 0.07, -4.286263797015737e-18]
+    name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 6.123233995736766e-17, -1.0]
+      - [0.0, 1.0, 6.123233995736766e-17]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger2_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -1.0, -1.2246467991473532e-16]
+      - [0.0, 1.2246467991473532e-16, -1.0]
+      translation: [0.0, 0.07, -4.286263797015737e-18]
+    name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_base
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 6.123233995736766e-17, -1.0]
+      - [0.0, 1.0, 6.123233995736766e-17]
+      translation: [0.0, 0.0, 0.0]
+    name: planar_gripper::finger3_link1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -1.0, -1.2246467991473532e-16]
+      - [0.0, 1.2246467991473532e-16, -1.0]
+      translation: [0.0, 0.07, -4.286263797015737e-18]
+    name: planar_gripper::finger3_link2
+  note: Pi/2
+  q:
+    names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
+      finger2_MidJoint, finger3_MidJoint]
+    values: [1.5707963267948966, 1.5707963267948966, 1.5707963267948966, 1.5707963267948966,
+      1.5707963267948966, 1.5707963267948966]
+expression: {expr: make_plant('drake/examples/planar_gripper/planar_gripper.sdf'),
+  module: __main__}
+type_name: tuple
