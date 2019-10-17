@@ -1826,6 +1826,11 @@ T IntegratorBase<T>::CalcStateChangeNorm(
   SPDLOG_DEBUG(drake::log(), "dq norm: {}, dv norm: {}, dz norm: {}",
                q_nrm, v_nrm, z_nrm);
 
+  // Return NaN if one of the values is NaN (whether std::max does this is
+  // dependent upon ordering!)
+  if (isnan(q_nrm) || isnan(v_nrm) || isnan(z_nrm))
+    return std::numeric_limits<T>::quiet_NaN();
+
   // TODO(edrumwri): Record the worst offender (which of the norms resulted
   // in the largest value).
   // Infinity norm of the concatenation of multiple vectors is equal to the
