@@ -114,7 +114,6 @@
     }
   },
   "X-CMake-Variables-Init": {
-    "_Boost_IMPORTED_TARGETS": 1,
     "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
   }
 }
