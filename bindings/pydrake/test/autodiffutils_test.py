@@ -191,10 +191,14 @@ class TestAutoDiffXd(unittest.TestCase):
         C = np.dot(A, B)
         numpy_compare.assert_equal(C, [[AD(4, [4., 2])]])
 
-        # `matmul` not supported for `dtype=object` (#11332). `np.dot` should
-        # be used instead.
-        with self.assertRaises(TypeError):
+        # Before NumPy 1.17, `matmul` was not supported for `dtype=object`
+        # (#11332), and `np.dot` should be used instead.
+        if np.lib.NumpyVersion(np.__version__) < "1.17.0":
+            with self.assertRaises(TypeError):
+                C2 = np.matmul(A, B)
+        else:
             C2 = np.matmul(A, B)
+            numpy_compare.assert_equal(C2, C)
 
         # Type mixing
         Bf = np.array([[2., 2]]).T

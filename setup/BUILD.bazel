@@ -14,6 +14,7 @@ exports_files([
     "ubuntu/binary_distribution/packages-xenial.txt",
     "mac/source_distribution/requirements.txt",
     "mac/source_distribution/Brewfile",
+    "mac/binary_distribution/requirements-py2.txt",
     "mac/binary_distribution/requirements.txt",
     "mac/binary_distribution/Brewfile",
 ])
@@ -25,6 +26,7 @@ install_files(
         "//tools/cc_toolchain:apple": [
             "mac/binary_distribution/Brewfile",
             "mac/binary_distribution/install_prereqs.sh",
+            "mac/binary_distribution/requirements-py2.txt",
             "mac/binary_distribution/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [

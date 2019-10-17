@@ -98,7 +98,6 @@ drake_pybind_library(
         ":framework_py",
         ":module_py",
     ],
-    py_srcs = ["_primitives_extra.py"],
 )
 
 drake_pybind_library(

@@ -322,8 +322,6 @@ PYBIND11_MODULE(primitives, m) {
       py_reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

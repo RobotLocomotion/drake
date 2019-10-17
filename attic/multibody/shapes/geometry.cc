@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 
-#include <spruce.hh>
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 
 using std::ifstream;
@@ -274,27 +275,27 @@ bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
 }
 
 string Mesh::FindFileWithObjExtension() const {
-  spruce::path spath(resolved_filename_);
-  string ext = spath.extension();
+  drake::filesystem::path result(resolved_filename_);
+  string ext = result.extension();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
   if (ext.compare(".obj") == 0) {
     // Checks if the file with the obj extension exists.
-    if (!spath.exists()) {
+    if (!drake::filesystem::exists(result)) {
       throw std::runtime_error(
-          "Unable to open file \"" + spath.getStr() + "\".");
+          "Unable to open file \"" + result.string() + "\".");
     }
   } else {
     // Tries changing the extension to obj.
-    spath.setExtension(".obj");
-    if (!spath.exists()) {
+    result.replace_extension(".obj");
+    if (!drake::filesystem::exists(result)) {
       throw std::runtime_error(
           "Unable to resolve an obj file from the filename \""
-              + spath.getStr() + "\" provided.");
+              + result.string() + "\" provided.");
     }
   }
 
-  return spath.getStr();
+  return result.string();
 }
 
 void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,

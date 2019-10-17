@@ -472,6 +472,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//multibody/benchmarks/inclined_plane",
+        "//systems/analysis:radau_integrator",
         "//systems/analysis:simulator",
     ],
 )
@@ -509,6 +510,14 @@ drake_cc_googletest(
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_hydroelastic_contact_results_output_test",
+    deps = [
+        ":plant",
+        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
     ],
 )
 

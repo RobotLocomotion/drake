@@ -17,16 +17,17 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "fmt": {
+      "Version": "6.0",
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "ignition-math4": {
-      "Version": "4.0.0",
-      "Hints": ["@prefix@/lib/cmake/ignition-math4"],
+    "ignition-math6": {
+      "Version": "6.4",
+      "Hints": ["@prefix@/lib/cmake/ignition-math6"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "lcm": {
-      "Version": "1.3.95",
+      "Version": "1.4",
       "Hints": ["@prefix@/lib/cmake/lcm"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
@@ -35,7 +36,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "Protobuf": {
-      "Version": "2.6.1",
+      "Version": "2.6",
       "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {
@@ -43,13 +44,17 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "spdlog": {
-      "Version": "0.16.3",
+      "Version": "1.3",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "stx": {
       "Hints": ["@prefix@/lib/cmake/stx"],
       "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "TinyXML2": {
+      "Version": "2.2",
+      "X-CMake-Find-Args": ["MODULE"]
     }
   },
   "Default-Components": [":drake"],
@@ -59,20 +64,20 @@
       "Location": "@prefix@/lib/libdrake.so",
       "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-ltinyxml2"],
       "Requires": [
         ":drake-lcmtypes-cpp",
         ":drake-marker",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Eigen3:Eigen",
         "fmt:fmt-header-only",
-        "ignition-math4:ignition-math4",
+        "ignition-math6:ignition-math6",
         "lcm:lcm",
         "optitrack:optitrack-lcmtypes-cpp",
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "stx:stx",
+        "tinyxml2:tinyxml2",
         "yaml-cpp"
       ]
     },
@@ -99,6 +104,6 @@
   },
   "X-CMake-Variables-Init": {
     "_Boost_IMPORTED_TARGETS": 1,
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
   }
 }

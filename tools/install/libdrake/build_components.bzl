@@ -32,8 +32,6 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/shapes",
     "//attic/perception",
     "//attic/systems/controllers",
-    "//attic/systems/controllers/plan_eval",
-    "//attic/systems/controllers/qp_inverse_dynamics",
     "//attic/systems/rendering",
     "//attic/systems/robotInterfaces",
     "//attic/systems/sensors",
@@ -58,6 +56,7 @@ LIBDRAKE_COMPONENTS = [
     "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
+    "//examples/planar_gripper:gripper_brick",  # unpackaged
     "//examples/quadrotor:quadrotor_geometry",  # unpackaged
     "//examples/quadrotor:quadrotor_plant",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel",  # unpackaged
@@ -82,6 +81,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
+    "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
     "//multibody/optimization",
@@ -93,6 +93,9 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/triangle_quadrature",
     "//perception",
     "//solvers",
+    "//solvers/fbstab:fbstab_algorithm",  # unpackaged
+    "//solvers/fbstab:fbstab_dense",  # unpackaged
+    "//solvers/fbstab:fbstab_mpc",  # unpackaged
     "//systems/analysis",
     "//systems/controllers",
     "//systems/estimators",
@@ -104,6 +107,14 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
-    # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
+    # //solvers/fbstab/components:dense_data (indirectly)
+    # //solvers/fbstab/components:dense_feasibility (indirectly)
+    # //solvers/fbstab/components:dense_linear_solver (indirectly)
+    # //solvers/fbstab/components:dense_residual (indirectly)
+    # //solvers/fbstab/components:dense_variable (indirectly)
+    # //solvers/fbstab/components:mpc_data (indirectly)
+    # //solvers/fbstab/components:mpc_feasibility (indirectly)
+    # //solvers/fbstab/components:mpc_residual (indirectly)
+    # //solvers/fbstab/components:mpc_variable (indirectly)
+    # //solvers/fbstab/components:riccati_linear_solver (indirectly)
 ]

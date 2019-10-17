@@ -1,0 +1,71 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace/ibex:version.bzl",
+    "IBEX_VERSION",
+)
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+_IBEX_BASE = "opt/libibex/{}/".format(IBEX_VERSION)
+
+_IBEX_HDRS_GLOB = glob([_IBEX_BASE + "include/ibex/**"]) or fail("Missing ibex hdrs")  # noqa
+
+# IBEX has the following dependencies in addition to those declared in deps:
+#   Clp: EPL-1
+#   CoinUtils: EPL-1
+#   bzip2: bzip2-1.0.6
+
+cc_library(
+    name = "ibex",
+    srcs = [_IBEX_BASE + "lib/libdrake_ibex.so"],
+    hdrs = [_IBEX_BASE + "include/ibex.h"] + _IBEX_HDRS_GLOB,
+    # The includes= here are transcribed from the contents of the *.pc file.
+    includes = [
+        _IBEX_BASE + "include",
+        _IBEX_BASE + "include/ibex",
+        _IBEX_BASE + "include/ibex/3rd",
+    ],
+    licenses = [
+        "notice",  # bzip2-1.0.6
+        "reciprocal",  # EPL-1
+        "restricted",  # LGPL-3.0
+    ],
+    # The linkopts= here are transcribed from the contents of the *.pc file.
+    linkopts = [
+        "-lClp",
+        "-lCoinUtils",
+        "-lbz2",
+        "-lm",
+    ],
+    # The deps= here are transcribed from the contents of the *.pc file.
+    deps = [
+        "@blas",
+        "@lapack",
+        "@zlib",
+    ],
+)
+
+install(
+    name = "install",
+    data_strip_prefix = [_IBEX_BASE],
+    # The *.pc files don't have the correct ${prefix} anymore, so its probably
+    # best to omit them.  (Nothing else in Drake installs *.pc files, either.)
+    # The binaries won't work either, given our renamed libraries.
+    data = glob(
+        include = [
+            _IBEX_BASE + "**",
+        ],
+        exclude = [
+            "**/bin/**",
+            "**/*.pc",
+        ],
+    ),
+    data_dest = "",
+)

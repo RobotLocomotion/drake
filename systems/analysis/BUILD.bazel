@@ -124,7 +124,7 @@ drake_cc_library(
         "//common:essential",
         "//math:autodiff",
         "//math:gradient",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/framework",
     ],

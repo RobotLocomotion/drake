@@ -325,12 +325,17 @@ drake_cc_library(
     ],
 )
 
-# The target "@drake//solvers:mathematical_program_lite" is a legacy way to
-# access the `mathematical_program.h` header and its methods.  In the future,
-# this target will become deprecated in lieu of `:mathematical_program`.
-# TODO(jwnimmer-tri) On 2019-10-01 add a deprecation attribute here.
 drake_cc_library(
     name = "mathematical_program_lite",
+    deprecation = " ".join([
+        "The label @drake//solvers:mathematical_program_lite is deprecated.",
+        "Use the new spelling @drake//solvers:mathematical_program instead.",
+        "The deprecated spelling will be removed on 2020-01-01.",
+    ]),
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
     deps = [
         ":mathematical_program",
         ":solver_interface",
@@ -700,7 +705,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//common:essential",
-            "@dreal",
+            "@dreal//dreal/api",
         ],
         "//tools:no_dreal": [
             ":mathematical_program",
@@ -1148,9 +1153,9 @@ drake_cc_googletest(
     deps = [
         ":csdp_test_examples",
         ":sdpa_free_format",
+        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
-        "@spruce",
     ],
 )
 
@@ -1342,8 +1347,8 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        "//common:filesystem",
         "//common:temp_directory",
-        "@spruce",
     ],
 )
 
@@ -1539,10 +1544,10 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
+        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-        "@spruce",
     ],
 )
 

@@ -75,31 +75,29 @@ integration. All other configurations are provided on a best-effort basis.
 
 Drake requires a compiler running in C++14 mode or greater.
 
-+----------------------------------+-------+-------+---------------------+-------------------+---------+
-| Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python  |
-+==================================+=======+=======+=====================+===================+=========+
-+----------------------------------+-------+-------+---------------------+-------------------+---------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.29  | 3.5   | | Clang 6.0         | OpenJDK 8         | [2.7]   |
-|                                  |       |       | | GCC 5.4           |                   |         |
-+----------------------------------+       +-------+---------------------+-------------------+---------+
-| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11        | | 2.7   |
-|                                  |       |       | | GCC 7.4           |                   | | [3.6] |
-+----------------------------------+       +-------+---------------------+-------------------+---------+
-| macOS High Sierra (10.13)        |       | 3.15  | | Apple LLVM 10.0.0 | | AdoptOpenJDK 13 | [3.7]   |
-|                                  |       |       | | (Xcode 10.1)      | | (HotSpot JVM)   |         |
-+----------------------------------+       |       +---------------------+                   |         |
-| macOS Mojave (10.14)             |       |       | | Apple LLVM 11.0.0 |                   |         |
-|                                  |       |       | | (Xcode 11.0)      |                   |         |
-+----------------------------------+-------+-------+---------------------+-------------------+---------+
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
+| Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python          |
++==================================+=======+=======+=====================+===================+=================+
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
+| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.29  | 3.5   | | Clang 6.0         | OpenJDK 8         | 2.7             |
+|                                  |       |       | | GCC 5.4 (default) |                   |                 |
++----------------------------------+       +-------+---------------------+-------------------+-----------------+
+| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11        | | 2.7           |
+|                                  |       |       | | GCC 7.4 (default) |                   | | 3.6 (default) |
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
+| macOS Mojave (10.14)             | 1.0   | 3.15  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 13 | 3.7             |
+|                                  |       |       | | (Xcode 11.1)      | | (HotSpot JVM)   |                 |
++----------------------------------+       |       |                     |                   |                 |
+| macOS Catalina (10.15)           |       |       |                     |                   |                 |
+|                                  |       |       |                     |                   |                 |
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
 
-CPython is the only Python implementation supported; default versions are
-indicated in square brackets. On Ubuntu, amd64 (i.e., x86_64) is the only
-supported architecture.
+CPython is the only Python implementation supported. On Ubuntu, amd64
+(i.e., x86_64) is the only supported architecture.
 
-Please review the following issues for current support roadmaps:
+Please review the following issue for the current support roadmap:
 
 -   `#10606 <https://github.com/RobotLocomotion/drake/issues/10606>`_
--   `#11692 <https://github.com/RobotLocomotion/drake/issues/11692>`_
 
 .. _configuration-management-non-determinism:
 
@@ -129,7 +127,7 @@ Binary Packages
 ---------------
 
 The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial, GCC 7.4
-on Ubuntu Bionic, and Apple LLVM 10.0.1 on macOS Mojave.
+on Ubuntu Bionic, and Apple LLVM 11.0.0 on macOS Mojave.
 
 The links for these packages are listed in :ref:`binary-installation`.
 

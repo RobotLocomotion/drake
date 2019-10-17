@@ -20,7 +20,7 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import SceneGraph
+from pydrake.geometry import Box, SceneGraph
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
@@ -33,7 +33,8 @@ from pydrake.systems.meshcat_visualizer import (
 )
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.math import RigidTransform
-from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.plant import CoulombFriction, MultibodyPlant
+from pydrake.multibody.tree import SpatialInertia, UnitInertia
 
 import pydrake.perception as mut
 
@@ -113,6 +114,46 @@ class TestMeshcat(unittest.TestCase):
                                      np.zeros(kuka_actuation_port.size()))
 
         simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.AdvanceTo(.1)
+
+    def test_procedural_geometry(self):
+        """
+        This test ensures we can draw procedurally added primitive
+        geometry that is added to the world model instance (which has
+        a slightly different naming scheme than geometry with a
+        non-default / non-world model instance).
+        """
+        builder = DiagramBuilder()
+        mbp, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        world_body = mbp.world_body()
+        box_shape = Box(1., 2., 3.)
+        # This rigid body will be added to the world model instance since
+        # the model instance is not specified.
+        box_body = mbp.AddRigidBody("box", SpatialInertia(
+            mass=1.0, p_PScm_E=np.array([0., 0., 0.]),
+            G_SP_E=UnitInertia(1.0, 1.0, 1.0)))
+        mbp.WeldFrames(world_body.body_frame(), box_body.body_frame(),
+                       RigidTransform())
+        mbp.RegisterVisualGeometry(
+            box_body, RigidTransform.Identity(), box_shape, "ground_vis",
+            np.array([0.5, 0.5, 0.5, 1.]))
+        mbp.RegisterCollisionGeometry(
+            box_body, RigidTransform.Identity(), box_shape, "ground_col",
+            CoulombFriction(0.9, 0.8))
+        mbp.Finalize()
+
+        frames_to_draw = {"world": {"box"}}
+        visualizer = builder.AddSystem(MeshcatVisualizer(
+            scene_graph,
+            zmq_url=ZMQ_URL,
+            open_browser=False,
+            frames_to_draw=frames_to_draw))
+        builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                        visualizer.get_input_port(0))
+
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
         simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(.1)
 

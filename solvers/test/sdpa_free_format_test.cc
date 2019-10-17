@@ -5,8 +5,8 @@
 #include <utility>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/test/csdp_test_examples.h"
@@ -713,7 +713,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   const std::string file_name = temp_directory() + "/sdpa";
   std::cout << file_name << "\n";
   EXPECT_TRUE(GenerateSDPA(prog, file_name));
-  EXPECT_TRUE(spruce::path(file_name + ".dat-s").exists());
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
 
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());

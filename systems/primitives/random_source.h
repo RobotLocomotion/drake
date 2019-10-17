@@ -65,7 +65,7 @@ namespace systems {
 /// @see @ref stochastic_systems
 ///
 /// @ingroup primitive_systems
-class RandomSource : public LeafSystem<double> {
+class RandomSource final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
 
@@ -118,45 +118,6 @@ class RandomSource : public LeafSystem<double> {
 /// @see @ref stochastic_systems
 int AddRandomInputs(double sampling_interval_sec,
                     DiagramBuilder<double>* builder);
-
-namespace internal {
-// TODO(jwnimmer-tri) Once this class disappears, update RandomSource to be
-// declared final.
-/// (Deprecated.) A RandomSource with a compile-time RandomDistribution.
-template <RandomDistribution distribution>
-class RandomSourceWithDistribution final : public RandomSource {
- public:
-  RandomSourceWithDistribution(int num_outputs, double sampling_interval_sec)
-      : RandomSource(distribution, num_outputs, sampling_interval_sec) {}
-};
-}  // namespace internal
-
-/// (Deprecated.) Generates uniformly distributed random numbers in the
-/// interval [0.0, 1.0).
-/// @see RandomSource
-using UniformRandomSource
-    DRAKE_DEPRECATED("2019-10-01",
-        "Use primitives::RandomSource(kUniform, ...) instead of "
-        "primitives::UniformRandomSource.")
-    = internal::RandomSourceWithDistribution<RandomDistribution::kUniform>;
-
-/// (Deprecated.) Generates normally distributed random numbers with mean zero
-/// and unit covariance.
-/// @see RandomSource
-using GaussianRandomSource
-    DRAKE_DEPRECATED("2019-10-01",
-        "Use primitives::RandomSource(kGaussian, ...) instead of "
-        "primitives::GaussianRandomSource.")
-    = internal::RandomSourceWithDistribution<RandomDistribution::kGaussian>;
-
-/// (Deprecated.) Generates exponentially distributed random numbers with mean,
-/// standard deviation, and scale parameter (aka 1/λ) set to one.
-/// @see RandomSource
-using ExponentialRandomSource
-    DRAKE_DEPRECATED("2019-10-01",
-        "Use primitives::RandomSource(kExponential, ...) instead of "
-        "primitives::ExponentialRandomSource.")
-    = internal::RandomSourceWithDistribution<RandomDistribution::kExponential>;
 
 }  // namespace systems
 }  // namespace drake

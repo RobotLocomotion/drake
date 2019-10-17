@@ -228,6 +228,14 @@ class ContactSurface {
     return *mesh_W_;
   }
 
+  /** Returns a reference to the scalar field eₘₙ. */
+  const MeshField<T, SurfaceMesh<T>>& e_MN() const { return *e_MN_; }
+
+  /** Returns a reference to the vector field ∇hₘₙ. */
+  const MeshField<Vector3<T>, SurfaceMesh<T>>& grad_h_MN_W() const {
+    return *grad_h_MN_W_;
+  }
+
  private:
   // Swaps M and N (modifying the data in place to reflect the change).
   void SwapMAndN() {

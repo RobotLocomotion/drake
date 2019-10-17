@@ -57,10 +57,12 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import (
     Box,
     GeometryId,
+    Role,
     PenetrationAsPointPair_,
     SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
+    Sphere,
 )
 from pydrake.math import (
     RigidTransform_,
@@ -155,14 +157,6 @@ class TestPlant(unittest.TestCase):
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
-
-    def test_deprecated_finalize(self):
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
-        Parser(plant).AddModelFromFile(FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf"))
-        with catch_drake_warnings(expected_count=1):
-            plant.Finalize(scene_graph)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
@@ -371,10 +365,11 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
-            context=context, frame_B=base_frame,
-            p_BoFo_B=[0, 0, 0])
-        self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+        with catch_drake_warnings(expected_count=1):
+            Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
+                context=context, frame_B=base_frame,
+                p_BoFo_B=[0, 0, 0])
+            self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
         nq = plant.num_positions()
         nv = plant.num_velocities()
@@ -1184,13 +1179,29 @@ class TestPlant(unittest.TestCase):
                               SignedDistanceToPoint_[T])
         self.assertIsInstance(signed_distance_to_point[1],
                               SignedDistanceToPoint_[T])
+        # Test SceneGraphInspector
         inspector = query_object.inspector()
+
+        self.assertEqual(inspector.num_geometries(), 2)
+        self.assertEqual(inspector.num_geometries(),
+                         len(inspector.GetAllGeometryIds()))
+        for geometry_id in inspector.GetAllGeometryIds():
+            frame_id = inspector.GetFrameId(geometry_id)
+            self.assertEqual(
+                inspector.GetGeometryIdByName(
+                    frame_id, Role.kProximity,
+                    inspector.GetNameByGeometryId(geometry_id)), geometry_id)
+            self.assertIsInstance(inspector.GetShape(geometry_id), Sphere)
+            self.assertIsInstance(inspector.GetPoseInFrame(geometry_id),
+                                  RigidTransform_[float])
 
         def get_body_from_frame_id(frame_id):
             # Get body from frame id, and check inverse method.
             body = plant.GetBodyFromFrameId(frame_id)
             self.assertEqual(
                 plant.GetBodyFrameIdIfExists(body.index()), frame_id)
+            self.assertEqual(plant.GetBodyFrameIdOrThrow(body.index()),
+                             frame_id)
             return body
 
         bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))
