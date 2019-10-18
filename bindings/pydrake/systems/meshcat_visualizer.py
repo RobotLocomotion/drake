@@ -243,6 +243,8 @@ class MeshcatVisualizer(LeafSystem):
         self.draw_period = draw_period
 
         # Pose bundle (from SceneGraph) input port.
+        # TODO(tehbelinda): Rename the `lcm_visualization` port to match
+        # SceneGraph once its output port has been updated. See #12214.
         self.DeclareAbstractInputPort("lcm_visualization",
                                       AbstractValue.Make(PoseBundle(0)))
 
