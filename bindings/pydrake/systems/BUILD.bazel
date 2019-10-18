@@ -274,6 +274,31 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "planar_scenegraph_visualizer_py",
+    srcs = ["planar_scenegraph_visualizer.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        ":pyplot_visualizer_py",
+        ":rendering_py",
+        "//bindings/pydrake:lcm_py",
+    ],
+)
+
+drake_py_library(
+    name = "pyplot_visualizer_py",
+    srcs = ["pyplot_visualizer.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        ":primitives_py",
+        "//bindings/pydrake:trajectories_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -291,6 +316,8 @@ PY_LIBRARIES = [
     ":scalar_conversion_py",
     ":module_py",
     ":perception_py",
+    ":planar_scenegraph_visualizer_py",
+    ":pyplot_visualizer_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -451,6 +478,31 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "planar_scenegraph_visualizer_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":planar_scenegraph_visualizer_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
+    name = "pyplot_visualizer_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        ":pyplot_visualizer_py",
     ],
 )
 
