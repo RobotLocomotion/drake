@@ -67,9 +67,22 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "run_planar_scenegraph_visualizer",
+    srcs = ["run_planar_scenegraph_visualizer.py"],
+    data = ["//examples/pendulum:models"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/systems",
+    ],
+)
+
 PY_LIBRARIES = [
     ":cart_pole_passive_simulation",
     ":pendulum_lqr_monte_carlo_analysis",
+    ":run_planar_scenegraph_visualizer",
 ]
 
 # Package roll-up (for Bazel dependencies).
