@@ -6,13 +6,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -27,7 +28,8 @@
 namespace drake {
 namespace geometry {
 
-using Eigen::Isometry3d;
+using internal::DummyRenderEngine;
+using math::RigidTransformd;
 using systems::Context;
 using systems::rendering::PoseBundle;
 using systems::System;
@@ -47,9 +49,8 @@ class QueryObjectTester {
   template <typename T>
   static void set_query_object(QueryObject<T>* q_object,
                                const SceneGraph<T>* scene_graph,
-                               const GeometryContext<T>* context) {
-    q_object->context_ = context;
-    q_object->scene_graph_ = scene_graph;
+                               const Context<T>* context) {
+    q_object->set(context, scene_graph);
   }
 };
 
@@ -59,15 +60,8 @@ class SceneGraphTester {
   SceneGraphTester() = delete;
 
   template <typename T>
-  static bool HasDirectFeedthrough(const SceneGraph<T>& scene_graph,
-                                   int input_port, int output_port) {
-    return scene_graph.DoHasDirectFeedthrough(input_port, output_port)
-        .value_or(true);
-  }
-
-  template <typename T>
   static void FullPoseUpdate(const SceneGraph<T>& scene_graph,
-                             const GeometryContext<T>& context) {
+                             const Context<T>& context) {
     scene_graph.FullPoseUpdate(context);
   }
 
@@ -96,7 +90,7 @@ namespace {
 // Convenience function for making a geometry instance.
 std::unique_ptr<GeometryInstance> make_sphere_instance(
     double radius = 1.0) {
-  return make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+  return make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                        make_unique<Sphere>(radius), "sphere");
 }
 
@@ -115,16 +109,14 @@ class SceneGraphTest : public ::testing::Test {
     // TODO(SeanCurtis-TRI): This will probably have to be moved into an
     // explicit call so it can be run *after* topology has been set.
     context_ = scene_graph_.AllocateContext();
-    geom_context_ = dynamic_cast<GeometryContext<double>*>(context_.get());
-    ASSERT_NE(geom_context_, nullptr);
     QueryObjectTester::set_query_object(&query_object_, &scene_graph_,
-                                        geom_context_);
+                                        context_.get());
   }
 
   const QueryObject<double>& query_object() const {
     // The `AllocateContext()` method must have been called *prior* to this
     // method.
-    if (!geom_context_)
+    if (!context_)
       throw std::runtime_error("Must call AllocateContext() first.");
     return query_object_;
   }
@@ -132,8 +124,6 @@ class SceneGraphTest : public ::testing::Test {
   SceneGraph<double> scene_graph_;
   // Ownership of context.
   unique_ptr<Context<double>> context_;
-  // Direct access to a pre-cast, geometry-context-typed version of context_.
-  GeometryContext<double>* geom_context_{nullptr};
 
  private:
   // Keep this private so tests must access it through the getter so we can
@@ -144,15 +134,12 @@ class SceneGraphTest : public ::testing::Test {
 // Test sources.
 
 // Tests registration using a default source name. Confirms that the source
-// registered and that a name is available.
+// registered.
 TEST_F(SceneGraphTest, RegisterSourceDefaultName) {
   SourceId id = scene_graph_.RegisterSource();
   EXPECT_TRUE(id.is_valid());
-  EXPECT_NO_THROW(scene_graph_.model_inspector().GetSourceName(id));
-  AllocateContext();
-  EXPECT_THROW(scene_graph_.model_inspector().GetSourceName(id),
-               std::logic_error);
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(id));
+  EXPECT_TRUE(scene_graph_.model_inspector().SourceIsRegistered(id));
 }
 
 // Tests registration using a specified source name. Confirms that the source
@@ -161,18 +148,26 @@ TEST_F(SceneGraphTest, RegisterSourceSpecifiedName) {
   std::string name = "some_unique_name";
   SourceId id = scene_graph_.RegisterSource(name);
   EXPECT_TRUE(id.is_valid());
-  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(id), name);
-  AllocateContext();
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(id));
+  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(id), name);
 }
 
-// Tests that sources cannot be registered after context allocation.
-TEST_F(SceneGraphTest, PoseContextSourceRegistration) {
+// Tests that sources can be registered after context allocation; it should be
+// considered registered by the scene graph, but *not* the previously
+// allocated context.. It also implicitly tests that the model inspector is
+// available _after_ allocation.
+TEST_F(SceneGraphTest, RegisterSourcePostContext) {
   AllocateContext();
+  const std::string new_source_name = "register_source_post_context";
+  SourceId new_source = scene_graph_.RegisterSource(new_source_name);
+  EXPECT_TRUE(scene_graph_.SourceIsRegistered(new_source));
+  // Contained in scene graph.
+  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(new_source),
+            new_source_name);
+  // Not found in allocated context.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterSource(), std::logic_error,
-      "The call to RegisterSource is invalid; a context has already been "
-      "allocated.");
+      query_object().inspector().GetSourceName(new_source),
+      std::logic_error, "Querying source name for an invalid source id.*");
 }
 
 // Tests ability to report if a source is registered or not.
@@ -204,71 +199,69 @@ TEST_F(SceneGraphTest, AcquireInputPortsAfterAllocation) {
   EXPECT_NO_THROW(scene_graph_.get_source_pose_port(id));
 }
 
-// Test topology changes (registration, removal, clearing, etc.)
-
-// Tests that topology operations (registration, removal, clearing, etc.) after
-// allocation is not allowed -- and an exception with an intelligible message is
-// thrown. The underlying handling of the *values* of the parameters is handled
-// in the GeometryState unit tests. SceneGraph merely confirms the context
-// hasn't been allocated.
+// Tests that topology operations after allocation _are_ allowed. This compares
+// the GeometryState instances of the original context and the new context.
+// This doesn't check the details of each of the registered members -- just that
+// it was registered. It relies on the GeometryState tests to confirm that the
+// details are correct.
 TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   SourceId id = scene_graph_.RegisterSource();
+  FrameId old_frame_id =
+      scene_graph_.RegisterFrame(id, GeometryFrame("old_frame"));
+  // This geometry will be removed after allocation.
+  GeometryId old_geometry_id = scene_graph_.RegisterGeometry(id, old_frame_id,
+      make_sphere_instance());
+
   AllocateContext();
 
-  // Attach frame to world.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterFrame(
-          id, GeometryFrame("frame", Isometry3<double>::Identity())),
-      std::logic_error,
-      "The call to RegisterFrame is invalid; a context has already been "
-      "allocated.");
+  FrameId parent_frame_id =
+      scene_graph_.RegisterFrame(id, GeometryFrame("frame"));
+  FrameId child_frame_id =
+      scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("frame"));
+  GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
+      id, parent_frame_id, make_sphere_instance());
+  GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
+      id, parent_geometry_id, make_sphere_instance());
+  GeometryId anchored_id =
+      scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance());
+  scene_graph_.RemoveGeometry(id, old_geometry_id);
 
-  // Attach frame to another frame.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterFrame(
-          id, FrameId::get_new_id(),
-          GeometryFrame("frame", Isometry3<double>::Identity())),
-      std::logic_error,
-      "The call to RegisterFrame is invalid; a context has already been "
-      "allocated.");
+  const SceneGraphInspector<double>& model_inspector =
+      scene_graph_.model_inspector();
+  const SceneGraphInspector<double>& context_inspector =
+      query_object().inspector();
 
-  // Attach geometry to frame.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterGeometry(id, FrameId::get_new_id(),
-                                    make_sphere_instance()),
-      std::logic_error,
-      "The call to RegisterGeometry is invalid; a context has already been "
-      "allocated.");
+  // Now test registration (non-registration) in the new (old) state,
+  // respectively.
+  EXPECT_TRUE(model_inspector.BelongsToSource(parent_frame_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(child_frame_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(parent_geometry_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(child_geometry_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(anchored_id, id));
+  // Removed geometry from SceneGraph; "invalid" id throws.
+  EXPECT_THROW(model_inspector.BelongsToSource(old_geometry_id, id),
+               std::logic_error);
 
-  // Attach geometry to another geometry.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterGeometry(id, GeometryId::get_new_id(),
-                                    make_sphere_instance()),
-      std::logic_error,
-      "The call to RegisterGeometry is invalid; a context has already been "
-      "allocated.");
-
-  // Attach anchored geometry to world.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance()),
-      std::logic_error,
-      "The call to RegisterAnchoredGeometry is invalid; a context has already "
-      "been allocated.");
+  EXPECT_THROW(context_inspector.BelongsToSource(parent_frame_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(child_frame_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(parent_geometry_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(child_geometry_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(anchored_id, id),
+               std::logic_error);
+  EXPECT_TRUE(context_inspector.BelongsToSource(old_geometry_id, id));
 }
 
 // Confirms that the direct feedthrough logic is correct -- there is total
 // direct feedthrough.
 TEST_F(SceneGraphTest, DirectFeedThrough) {
-  SourceId id = scene_graph_.RegisterSource();
-  std::vector<int> input_ports{
-      scene_graph_.get_source_pose_port(id).get_index()};
-  for (int input_port_id : input_ports) {
-    EXPECT_TRUE(SceneGraphTester::HasDirectFeedthrough(
-        scene_graph_, input_port_id,
-        scene_graph_.get_query_output_port().get_index()));
-  }
-  // TODO(SeanCurtis-TRI): Update when the pose bundle output is added; it has
-  // direct feedthrough as well.
+  scene_graph_.RegisterSource();
+  EXPECT_EQ(scene_graph_.GetDirectFeedthroughs().size(),
+            scene_graph_.num_input_ports() *
+                scene_graph_.num_output_ports());
 }
 
 // Test the functionality that accumulates the values from the input ports.
@@ -278,7 +271,7 @@ TEST_F(SceneGraphTest, DirectFeedThrough) {
 TEST_F(SceneGraphTest, FullPoseUpdateEmpty) {
   AllocateContext();
   EXPECT_NO_THROW(
-      SceneGraphTester::FullPoseUpdate(scene_graph_, *geom_context_));
+      SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
 // Test case where there are only anchored geometries -- same as the empty case;
@@ -288,11 +281,11 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
   scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
   AllocateContext();
   EXPECT_NO_THROW(
-      SceneGraphTester::FullPoseUpdate(scene_graph_, *geom_context_));
+      SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
-// Tests transmogrification of SceneGraph in the case where a Context has
-// *not* been allocated yet. Registration should still be possible.
+// Tests operations on a transmogrified SceneGraph. Whether a context has been
+// allocated or not, subsequent operations should be allowed.
 TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
   SourceId s_id = scene_graph_.RegisterSource();
   // This should allow additional geometry registration.
@@ -303,14 +296,13 @@ TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
   EXPECT_NO_THROW(
       scene_graph_ad.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 
-  // After allocation, registration should *not* be valid.
+  // After allocation, registration should _still_ be valid.
   AllocateContext();
   system_ad = scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad2 =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_THROW(
-      scene_graph_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()),
-      std::logic_error);
+  EXPECT_NO_THROW(
+      scene_graph_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 }
 
 // Tests that the ports are correctly mapped.
@@ -321,8 +313,8 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
       scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_EQ(scene_graph_ad.get_num_input_ports(),
-            scene_graph_.get_num_input_ports());
+  EXPECT_EQ(scene_graph_ad.num_input_ports(),
+            scene_graph_.num_input_ports());
   EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
             scene_graph_.get_source_pose_port(s_id).get_index());
   std::unique_ptr<systems::Context<AutoDiffXd>> context_ad =
@@ -342,35 +334,31 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
   std::unique_ptr<Context<AutoDiffXd>> context_ad =
       scene_graph_ad.AllocateContext();
-  context_ad->SetTimeStateAndParametersFrom(*geom_context_);
-  GeometryContext<AutoDiffXd>* geo_context_ad =
-      dynamic_cast<GeometryContext<AutoDiffXd>*>(context_ad.get());
-  ASSERT_NE(geo_context_ad, nullptr);
+  context_ad->SetTimeStateAndParametersFrom(*context_);
+  // Pull out GeometryState from context by exploiting knowledge that it is
+  // zero-indexed.
+  const GeometryState<AutoDiffXd>& geo_state_ad =
+      context_ad->get_state().get_abstract_state<GeometryState<AutoDiffXd>>(0);
   // If the anchored geometry were not ported over, this would throw an
   // exception.
-  EXPECT_TRUE(geo_context_ad->get_geometry_state().BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_context_ad->get_geometry_state().BelongsToSource(
-                   GeometryId::get_new_id(), s_id),
+  EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
+  EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
                std::logic_error);
 }
 
-// Tests that exercising the collision filtering logic *after* allocation leads
-// to an exception being thrown.
+// Tests that exercising the collision filtering logic *after* allocation is
+// allowed.
 TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
+  SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
+  FrameId frame_id =
+      scene_graph_.RegisterFrame(source_id, GeometryFrame("dummy"));
   AllocateContext();
 
-  GeometrySet geometry_set1{FrameId::get_new_id()};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.ExcludeCollisionsWithin(geometry_set1), std::logic_error,
-      "The call to ExcludeCollisionsWithin is invalid; a context has already "
-      "been allocated.");
+  GeometrySet geometry_set{frame_id};
+  EXPECT_NO_THROW(scene_graph_.ExcludeCollisionsWithin(geometry_set));
 
-  GeometrySet geometry_set2{FrameId::get_new_id()};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.ExcludeCollisionsBetween(geometry_set1, geometry_set2),
-      std::logic_error,
-      "The call to ExcludeCollisionsBetween is invalid; a context has already "
-      "been allocated.");
+  EXPECT_NO_THROW(
+      scene_graph_.ExcludeCollisionsBetween(geometry_set, geometry_set));
 }
 
 // Tests the model inspector. Exercises a token piece of functionality. The
@@ -382,24 +370,22 @@ TEST_F(SceneGraphTest, ModelInspector) {
   SourceId source_id = scene_graph_.RegisterSource();
   ASSERT_TRUE(scene_graph_.SourceIsRegistered(source_id));
 
-  FrameId frame_1 = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame{"f1", Isometry3d::Identity()});
-  FrameId frame_2 = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame{"f2", Isometry3d::Identity()});
+  FrameId frame_1 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f1"});
+  FrameId frame_2 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f2"});
 
   // Note: all these geometries have the same *name* -- but because they are
   // affixed to different nodes, that should be alright.
   GeometryId anchored_id = scene_graph_.RegisterAnchoredGeometry(
       source_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(1.0), "sphere"));
   GeometryId sphere_1 = scene_graph_.RegisterGeometry(
       source_id, frame_1,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(1.0), "sphere"));
   GeometryId sphere_2 = scene_graph_.RegisterGeometry(
       source_id, frame_2,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(1.0), "sphere"));
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
@@ -413,6 +399,49 @@ TEST_F(SceneGraphTest, ModelInspector) {
             anchored_id);
 }
 
+// SceneGraph provides a thin wrapper on the GeometryState renderer
+// configuration/introspection code. These tests are just smoke tests that the
+// functions work. It relies on GeometryState to properly unit test the
+// full behavior.
+TEST_F(SceneGraphTest, RendererSmokeTest) {
+  const std::string kRendererName = "bob";
+
+  EXPECT_EQ(scene_graph_.RendererCount(), 0);
+  EXPECT_EQ(scene_graph_.RegisteredRendererNames().size(), 0u);
+  EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+
+  EXPECT_NO_THROW(scene_graph_.AddRenderer(kRendererName,
+                                           make_unique<DummyRenderEngine>()));
+
+  EXPECT_EQ(scene_graph_.RendererCount(), 1);
+  EXPECT_EQ(scene_graph_.RegisteredRendererNames()[0], kRendererName);
+  EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+}
+
+// SceneGraph provides a thin wrapper on the GeometryState role manipulation
+// code. These tests are just smoke tests that the functions work. It relies on
+// GeometryState to properly unit test the full behavior.
+TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
+  SourceId s_id = scene_graph_.RegisterSource("test");
+  FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "sphere");
+  instance->set_illustration_properties(IllustrationProperties());
+  instance->set_proximity_properties(ProximityProperties());
+  instance->set_perception_properties(PerceptionProperties());
+
+  GeometryId g_id = scene_graph_.RegisterGeometry(s_id, f_id, move(instance));
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  EXPECT_NE(inspector.GetProximityProperties(g_id), nullptr);
+  EXPECT_NE(inspector.GetIllustrationProperties(g_id), nullptr);
+  EXPECT_NE(inspector.GetPerceptionProperties(g_id), nullptr);
+
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kPerception), 1);
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kProximity), 1);
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
+}
+
 // Dummy system to serve as geometry source.
 class GeometrySourceSystem : public systems::LeafSystem<double> {
  public:
@@ -420,16 +449,12 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
       : systems::LeafSystem<double>(), scene_graph_(scene_graph) {
     // Register with SceneGraph.
     source_id_ = scene_graph->RegisterSource();
-    FrameId f_id = scene_graph->RegisterFrame(
-        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+    FrameId f_id =
+        scene_graph->RegisterFrame(source_id_, GeometryFrame("frame"));
     frame_ids_.push_back(f_id);
 
     // Set up output port now that the frame is registered.
-    std::vector<FrameId> all_ids{f_id};
-    all_ids.insert(all_ids.end(), extra_frame_ids_.begin(),
-                   extra_frame_ids_.end());
     this->DeclareAbstractOutputPort(
-        FramePoseVector<double>(source_id_, all_ids),
         &GeometrySourceSystem::CalcFramePoseOutput);
   }
   SourceId get_source_id() const { return source_id_; }
@@ -440,28 +465,23 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // Method used to bring frame ids and poses out of sync. Adds a frame that
   // will *not* automatically get a pose.
   void add_extra_frame(bool add_to_output = true) {
-    FrameId frame_id = scene_graph_->RegisterFrame(
-        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+    FrameId frame_id =
+        scene_graph_->RegisterFrame(source_id_, GeometryFrame("frame"));
     if (add_to_output) extra_frame_ids_.push_back(frame_id);
   }
   // Method used to bring frame ids and poses out of sync. Adds a pose in
   // addition to all of the default poses.
-  void add_extra_pose() { extra_poses_.push_back(Isometry3<double>()); }
+  void add_extra_pose() { extra_poses_.push_back(RigidTransformd()); }
 
  private:
   // Populate with the pose data.
   void CalcFramePoseOutput(const Context<double>& context,
                            FramePoseVector<double>* poses) const {
-    const int frame_count =
-        static_cast<int>(frame_ids_.size() + extra_frame_ids_.size());
-    DRAKE_DEMAND(poses->size() == frame_count);
-    DRAKE_DEMAND(poses->source_id() == source_id_);
-
     poses->clear();
 
     const int base_count = static_cast<int>(frame_ids_.size());
     for (int i = 0; i < base_count; ++i) {
-      poses->set_value(frame_ids_[i], Isometry3<double>::Identity());
+      poses->set_value(frame_ids_[i], RigidTransformd::Identity());
     }
 
     const int extra_count = static_cast<int>(extra_frame_ids_.size());
@@ -474,7 +494,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   SourceId source_id_;
   std::vector<FrameId> frame_ids_;
   std::vector<FrameId> extra_frame_ids_;
-  std::vector<Isometry3<double>> extra_poses_;
+  std::vector<RigidTransformd> extra_poses_;
 };
 
 // Simple test case; system registers frames and provides correct connections.
@@ -492,10 +512,10 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
 
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
-  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
+  const auto& sg_context =
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   EXPECT_NO_THROW(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context));
+      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context));
 }
 
 // Adversarial test case: Missing pose port connection.
@@ -509,10 +529,10 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
   auto diagram = builder.Build();
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
-  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
+  const auto& sg_context =
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context),
+      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
       "the input port.");
@@ -529,10 +549,10 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
   auto diagram = builder.Build();
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
-  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
+  const auto& sg_context =
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context),
+      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
       "the input port.");
@@ -543,10 +563,6 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   SceneGraph<AutoDiffXd> scene_graph;
   scene_graph.RegisterSource("dummy_source");
   auto context = scene_graph.AllocateContext();
-  GeometryContext<AutoDiffXd>* geometry_context =
-      dynamic_cast<GeometryContext<AutoDiffXd>*>(context.get());
-
-  ASSERT_NE(geometry_context, nullptr);
 
   QueryObject<AutoDiffXd> handle =
       QueryObjectTester::MakeNullQueryObject<AutoDiffXd>();
@@ -564,6 +580,17 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     auto context = scene_graph.AllocateContext();
     EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
                                                      &poses));
+  }
+
+  // Case: Calculating pose bundle with an input pose bundle the wrong size.
+  {
+    SceneGraph<double> scene_graph;
+    PoseBundle<double> poses(1);
+    EXPECT_EQ(poses.get_num_poses(), 1);
+    auto context = scene_graph.AllocateContext();
+    EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
+                                                     &poses));
+    EXPECT_EQ(poses.get_num_poses(), 0);
   }
 
   // Case: Registered source but no frames or geometry --> empty pose vector.
@@ -584,7 +611,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     SourceId s_id = scene_graph.RegisterSource("dummy");
     scene_graph.RegisterGeometry(
         s_id, scene_graph.world_frame_id(),
-        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+        make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     EXPECT_EQ(0, poses.get_num_poses());
@@ -592,8 +619,6 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
                                                      &poses));
   }
-
-  const Isometry3<double> kIdentity = Isometry3<double>::Identity();
 
   // Case: Registered source with anchored geometry and frame but no dynamic
   // geometry --> empty pose vector; only frames with dynamic geometry with an
@@ -603,18 +628,17 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     SourceId s_id = scene_graph.RegisterSource("dummy");
     scene_graph.RegisterGeometry(
         s_id, scene_graph.world_frame_id(),
-        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+        make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
-    FrameId f_id =
-        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+    FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     // The frame has no illustration geometry, so it is not part of the pose
     // bundle.
     EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
-    FramePoseVector<double> pose_vector(s_id, {f_id});
-    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
-                          Value<FramePoseVector<double>>(pose_vector));
+    const FramePoseVector<double> pose_vector{{
+        f_id, RigidTransformd::Identity()}};
+    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
@@ -626,22 +650,21 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     SourceId s_id = scene_graph.RegisterSource("dummy");
     scene_graph.RegisterGeometry(
         s_id, scene_graph.world_frame_id(),
-        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+        make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
-    FrameId f_id =
-        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+    FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
     scene_graph.RegisterGeometry(
         s_id, f_id,
-        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+        make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     // The dynamic geometry has no illustration role, so it doesn't lead the
     // frame to be included in the bundle.
     EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
-    FramePoseVector<double> pose_vector(s_id, {f_id});
-    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
-                          Value<FramePoseVector<double>>(pose_vector));
+    const FramePoseVector<double> pose_vector{{
+        f_id, RigidTransformd::Identity()}};
+    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
                                                      &poses));
   }
@@ -654,8 +677,8 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   // Initializes the scene graph and context.
   SceneGraph<double> scene_graph;
   SourceId source_id = scene_graph.RegisterSource("source");
-  FrameId frame_id = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame", Isometry3d::Identity()));
+  FrameId frame_id =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame"));
   auto context = scene_graph.AllocateContext();
 
   // Confirms the state. NOTE: All subsequent actions modify `context` in place.
@@ -696,12 +719,12 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
   // Simple scene with three frames, each with a sphere which, by default
   // collide.
   SourceId source_id = scene_graph.RegisterSource("source");
-  FrameId f_id1 = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame_1", Isometry3d::Identity()));
-  FrameId f_id2 = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame_2", Isometry3d::Identity()));
-  FrameId f_id3 = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame_3", Isometry3d::Identity()));
+  FrameId f_id1 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_1"));
+  FrameId f_id2 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_2"));
+  FrameId f_id3 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_3"));
   GeometryId g_id1 =
       scene_graph.RegisterGeometry(source_id, f_id1, make_sphere_instance());
   scene_graph.AssignRole(source_id, g_id1, ProximityProperties());
@@ -747,6 +770,34 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
 
   // TODO(SeanCurtis-TRI): When post-allocation model modification is allowed,
   // confirm that the model didn't change.
+}
+
+// A limited test -- the majority of this functionality is encoded in and tested
+// via GeometryState. This is just a regression test to make sure SceneGraph's
+// invocation of that function doesn't become corrupt.
+GTEST_TEST(SceneGraphRenderTest, AddRenderer) {
+  SceneGraph<double> scene_graph;
+
+  EXPECT_NO_THROW(scene_graph.AddRenderer("unique",
+                                          make_unique<DummyRenderEngine>()));
+
+  // Non-unique renderer name.
+  // NOTE: The error message is tested in geometry_state_test.cc.
+  EXPECT_THROW(
+      scene_graph.AddRenderer("unique", make_unique<DummyRenderEngine>()),
+      std::logic_error);
+
+  // Adding a renderer _after_ geometry registration. We rely on geometry state
+  // tests to confirm that the right thing happens; this just confirms that it's
+  // not an error in the SceneGraph API.
+  SourceId s_id = scene_graph.RegisterSource("dummy");
+  scene_graph.RegisterGeometry(
+      s_id, scene_graph.world_frame_id(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
+                                    make_unique<Sphere>(1.0), "sphere"));
+
+  EXPECT_NO_THROW(
+      scene_graph.AddRenderer("different", make_unique<DummyRenderEngine>()));
 }
 
 }  // namespace

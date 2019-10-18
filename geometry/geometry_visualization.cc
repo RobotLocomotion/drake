@@ -24,6 +24,11 @@ namespace geometry {
 
 namespace {
 
+using Eigen::Quaterniond;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using math::RigidTransformd;
+
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
  public:
@@ -33,8 +38,8 @@ class ShapeToLcm : public ShapeReifier {
   ~ShapeToLcm() override = default;
 
   lcmt_viewer_geometry_data Convert(const Shape& shape,
-                                    const Isometry3<double>& X_PG,
-                                    const Eigen::Vector4d& in_color) {
+                                    const RigidTransformd& X_PG,
+                                    const Vector4d& in_color) {
     X_PG_ = X_PG;
     // NOTE: Reify *may* change X_PG_ based on the shape. For example, the
     // half-space requires an additional offset to shift the box representing
@@ -47,7 +52,7 @@ class ShapeToLcm : public ShapeReifier {
     Eigen::Map<Eigen::Vector3f> position(geometry_data_.position);
     position = X_PG_.translation().cast<float>();
     // LCM quaternion must be w, x, y, z.
-    Eigen::Quaternion<double> q(X_PG_.linear());
+    Quaterniond q(X_PG_.rotation().ToQuaternion());
     geometry_data_.quaternion[0] = q.w();
     geometry_data_.quaternion[1] = q.x();
     geometry_data_.quaternion[2] = q.y();
@@ -88,9 +93,8 @@ class ShapeToLcm : public ShapeReifier {
     // The final pose of the box is the half-space's pose pre-multiplied by
     // an offset sufficient to move the box down so it's top face lies on the
     // z = 0 plane.
-    Isometry3<double> box_xform = Isometry3<double>::Identity();
     // Shift it down so that the origin lies on the top surface.
-    box_xform.translation() << 0, 0, -thickness / 2;
+    RigidTransformd box_xform{Vector3d{0, 0, -thickness / 2}};
     X_PG_ = X_PG_ * box_xform;
   }
 
@@ -125,12 +129,12 @@ class ShapeToLcm : public ShapeReifier {
  private:
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
-  Eigen::Isometry3d X_PG_;
+  RigidTransformd X_PG_;
 };
 
 lcmt_viewer_geometry_data MakeGeometryData(const Shape& shape,
-                                           const Isometry3<double>& X_PG,
-                                           const Eigen::Vector4d& in_color) {
+                                           const RigidTransformd& X_PG,
+                                           const Vector4d& in_color) {
   ShapeToLcm converter;
   return converter.Convert(shape, X_PG, in_color);
 }
@@ -140,37 +144,55 @@ lcmt_viewer_geometry_data MakeGeometryData(const Shape& shape,
 namespace internal {
 
 lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
-    const GeometryState<double>& state) {
+    const GeometryState<double>& state, Role role) {
   using internal::InternalFrame;
   using internal::InternalGeometry;
 
   lcmt_viewer_load_robot message{};
   // Populate the message.
 
-  // Collect the dynamic frames that actually have illustration geometry. These
-  // (plus possibly the world frame) are the frames that will be broadcast in
-  // the message.
+  // Collect the dynamic frames that actually have geometries of the specified
+  // role. These (plus possibly the world frame) are the frames that will be
+  // broadcast in the message.
   std::vector<std::pair<FrameId, int>> dynamic_frames;
   for (const auto& pair : state.frames_) {
     const FrameId frame_id = pair.first;
     // We'll handle the world frame special.
     if (frame_id == InternalFrame::world_frame_id()) continue;
-    const int count =
-        state.NumGeometriesWithRole(frame_id, Role::kIllustration);
+    const int count = state.NumGeometriesWithRole(frame_id, role);
     if (count > 0) {
       dynamic_frames.push_back({frame_id, count});
     }
   }
-  // Add the world frame if it has geometries with illustration role.
-  const int anchored_count = state.NumGeometriesWithRole(
-      InternalFrame::world_frame_id(), Role::kIllustration);
+  // Add the world frame if it has geometries with the specified role.
+  const int anchored_count =
+      state.NumGeometriesWithRole(InternalFrame::world_frame_id(), role);
   const int frame_count = static_cast<int>(dynamic_frames.size()) +
       (anchored_count > 0 ? 1 : 0);
 
   message.num_links = frame_count;
   message.link.resize(frame_count);
 
-  const Eigen::Vector4d default_color({0.9, 0.9, 0.9, 1.0});
+  const Vector4d default_color({0.9, 0.9, 0.9, 1.0});
+
+  auto get_properties = [](const InternalGeometry& geometry,
+                           Role role_for_visualization) {
+    const GeometryProperties* props = nullptr;
+    switch (role_for_visualization) {
+      case Role::kProximity:
+        props = geometry.proximity_properties();
+        break;
+      case Role::kIllustration:
+        props = geometry.illustration_properties();
+        break;
+      case Role::kPerception:
+        props = geometry.perception_properties();
+        break;
+      default:
+        break;
+    }
+    return props;
+  };
 
   int link_index = 0;
   // Load anchored geometry into the world frame.
@@ -184,10 +206,10 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
         state.frames_.at(InternalFrame::world_frame_id());
     for (const GeometryId id : world_frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(id);
-      const IllustrationProperties* props = geometry.illustration_properties();
+      const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {
         const Shape& shape = geometry.shape();
-        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+        const Vector4d& color = props->GetPropertyOrDefault(
             "phong", "diffuse", default_color);
         message.link[0].geom[geom_index] = MakeGeometryData(
             shape, geometry.X_FG(), color);
@@ -214,10 +236,10 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     int geom_index = 0;
     for (GeometryId geom_id : frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(geom_id);
-      const IllustrationProperties* props = geometry.illustration_properties();
+      const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {
         const Shape& shape = geometry.shape();
-        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+        const Vector4d& color = props->GetPropertyOrDefault(
             "phong", "diffuse", default_color);
         message.link[link_index].geom[geom_index] =
             MakeGeometryData(shape, geometry.X_FG(), color);
@@ -237,10 +259,10 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
 // has been added to the Context it won't be loaded here. A runtime
 // geometry change will likely require a geometry-changed event.
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
-                         lcm::DrakeLcmInterface* lcm) {
+                         lcm::DrakeLcmInterface* lcm, Role role) {
   lcmt_viewer_load_robot message =
       internal::GeometryVisualizationImpl::BuildLoadMessage(
-          *scene_graph.initial_state_);
+          *scene_graph.initial_state_, role);
   // Send a load message.
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
@@ -249,7 +271,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& pose_bundle_output_port,
-    lcm::DrakeLcmInterface* lcm_optional) {
+    lcm::DrakeLcmInterface* lcm_optional, Role role) {
   using systems::lcm::LcmPublisherSystem;
   using systems::lcm::Serializer;
   using systems::rendering::PoseBundleToDrawMessage;
@@ -271,10 +293,11 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
   // documentation), along with the converter and publisher we just added.
   // Builder will transfer ownership of all of these objects to the Diagram it
   // eventually builds.
-  publisher->AddInitializationMessage([&scene_graph](
-      const systems::Context<double>&, lcm::DrakeLcmInterface* lcm) {
-    DispatchLoadMessage(scene_graph, lcm);
-  });
+  publisher->AddInitializationMessage(
+      [&scene_graph, role](const systems::Context<double>&,
+                           lcm::DrakeLcmInterface* lcm) {
+        DispatchLoadMessage(scene_graph, lcm, role);
+      });
 
   // Note that this will fail if scene_graph is not actually in builder.
   builder->Connect(pose_bundle_output_port, converter->get_input_port(0));
@@ -285,16 +308,11 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
 
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
-    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm) {
+    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm,
+    Role role) {
   return ConnectDrakeVisualizer(builder, scene_graph,
-                                scene_graph.get_pose_bundle_output_port(), lcm);
-}
-
-IllustrationProperties MakeDrakeVisualizerProperties(
-    const Vector4<double>& diffuse) {
-  IllustrationProperties props;
-  props.AddProperty("phong", "diffuse", diffuse);
-  return props;
+                                scene_graph.get_pose_bundle_output_port(), lcm,
+                                role);
 }
 
 }  // namespace geometry

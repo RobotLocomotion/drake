@@ -58,10 +58,11 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
 
   // Initialization should happen only once per Context.
   DRAKE_DEMAND(
-      !detail::SystemBaseContextBaseAttorney::is_context_base_initialized(
+      !internal::SystemBaseContextBaseAttorney::is_context_base_initialized(
           context));
 
-  detail::SystemBaseContextBaseAttorney::set_system_name(&context, get_name());
+  internal::SystemBaseContextBaseAttorney::set_system_name(
+      &context, get_name());
 
   // Add the independent-source trackers and wire them up appropriately. That
   // includes input ports since their dependencies are external.
@@ -91,12 +92,12 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
   // an exported output port in the parent Diagram. The associated cache entries
   // were just created above. Any intra-system prerequisites are set up now.
   for (const auto& oport : output_ports_) {
-    detail::SystemBaseContextBaseAttorney::AddOutputPort(
+    internal::SystemBaseContextBaseAttorney::AddOutputPort(
         &context, oport->get_index(), oport->ticket(),
         oport->GetPrerequisite());
   }
 
-  detail::SystemBaseContextBaseAttorney::mark_context_base_initialized(
+  internal::SystemBaseContextBaseAttorney::mark_context_base_initialized(
       &context);
 }
 
@@ -130,27 +131,27 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
   // the "all discrete variables" tracker xd to those.
   make_trackers(
       xd_ticket(), discrete_state_tickets_,
-      &detail::SystemBaseContextBaseAttorney::AddDiscreteStateTicket);
+      &internal::SystemBaseContextBaseAttorney::AddDiscreteStateTicket);
 
   // Allocate trackers for each abstract state variable xaᵢ, and subscribe
   // the "all abstract variables" tracker xa to those.
   make_trackers(
       xa_ticket(), abstract_state_tickets_,
-      &detail::SystemBaseContextBaseAttorney::AddAbstractStateTicket);
+      &internal::SystemBaseContextBaseAttorney::AddAbstractStateTicket);
 
   // Allocate trackers for each numeric parameter pnᵢ and each abstract
   // parameter paᵢ, and subscribe the pn and pa trackers to them.
   make_trackers(
       pn_ticket(), numeric_parameter_tickets_,
-      &detail::SystemBaseContextBaseAttorney::AddNumericParameterTicket);
+      &internal::SystemBaseContextBaseAttorney::AddNumericParameterTicket);
   make_trackers(
       pa_ticket(), abstract_parameter_tickets_,
-      &detail::SystemBaseContextBaseAttorney::AddAbstractParameterTicket);
+      &internal::SystemBaseContextBaseAttorney::AddAbstractParameterTicket);
 
   // Allocate trackers for each input port uᵢ, and subscribe the "all input
   // ports" tracker u to them. Doesn't use TrackerInfo so can't use the lambda.
   for (const auto& iport : input_ports_) {
-    detail::SystemBaseContextBaseAttorney::AddInputPort(
+    internal::SystemBaseContextBaseAttorney::AddInputPort(
         &context, iport->get_index(), iport->ticket(),
         MakeFixInputPortTypeChecker(iport->get_index()));
   }
@@ -164,7 +165,7 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
 const AbstractValue* SystemBase::EvalAbstractInputImpl(
     const char* func, const ContextBase& context,
     InputPortIndex port_index) const {
-  if (port_index >= get_num_input_ports())
+  if (port_index >= num_input_ports())
     ThrowInputPortIndexOutOfRange(func, port_index);
 
   const FixedInputPortValue* const free_port_value =
@@ -180,7 +181,7 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
   // This is not the root System, and the port isn't fixed, so ask our parent to
   // evaluate it.
   return get_parent_service()->EvalConnectedSubsystemInputPort(
-      *detail::SystemBaseContextBaseAttorney::get_parent_base(context),
+      *internal::SystemBaseContextBaseAttorney::get_parent_base(context),
       get_input_port_base(port_index));
 }
 
@@ -197,7 +198,7 @@ void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
   throw std::out_of_range(fmt::format(
       "{}: there is no input port with index {} because there "
       "are only {} input ports in system {}.",
-      FmtFunc(func),  port, get_num_input_ports(), GetSystemPathname()));
+      FmtFunc(func),  port, num_input_ports(), GetSystemPathname()));
 }
 
 void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
@@ -206,7 +207,7 @@ void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
       "{}: there is no output port with index {} because there "
       "are only {} output ports in system {}.",
       FmtFunc(func), port,
-      get_num_output_ports(), GetSystemPathname()));
+      num_output_ports(), GetSystemPathname()));
 }
 
 void SystemBase::ThrowNotAVectorInputPort(const char* func,

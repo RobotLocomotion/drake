@@ -1,0 +1,171 @@
+digraph {
+rankdir=TB;
+
+// Declare all of our nodes and their visual shape.  Each statement here is the
+// same rank (i.e., one row on the visual layout).
+node[shape="folder",style="bold"];
+{ rank=same; diag_xcdot; diag_ke; diag_pc; diag_pnc; diag_pe; }
+diag_all_sources;
+diag_kinematics;
+diag_configuration;
+{ rank=same; diag_x; diag_p; diag_a; diag_t; diag_u; super_diag_u_i; }
+{ rank=same; diag_xc; diag_xd; diag_xa; diag_pn; diag_pa; }
+{ rank=same; diag_q; diag_v; diag_z; diag_y; diag_u_i; diag_u_fixed; }
+node[shape="rect",style="rounded"];
+{ rank=same; leaf_xcdot; leaf_ke; leaf_pc; leaf_pnc; leaf_pe; }
+leaf_all_sources;
+leaf_kinematics;
+leaf_configuration;
+{ rank=same; leaf_x; leaf_p; leaf_a; leaf_t; leaf_u; }
+{ rank=same; leaf_xc; leaf_xd; leaf_xa; leaf_pn; leaf_pa; }
+{ rank=same; leaf_q; leaf_v; leaf_z; leaf_xd_i_all; leaf_xa_i_all;
+    leaf_pn_i_all; leaf_pa_i_all; leaf_y; leaf_u_i; leaf_u_fixed; }
+
+// Tweak the top-to-bottom order, beyond what's implied by the underlying
+// graph rankings.
+// - Stack diag atop leaf, don't intermingle their rows.
+{ rank=same; leaf_xcdot; leaf_xcdot_invis[style=invis,label=""]; }
+diag_u_i -> leaf_xcdot_invis[style=invis];
+// - Stack ..._all_sources atop ..._kinematics, not as a sibling.
+{ rank=same; diag_kinematics; dkinvis[style=invis,label=""]; }
+{ rank=same; leaf_kinematics; lkinvis[style=invis,label=""]; }
+diag_all_sources -> dkinvis[style=invis];
+leaf_all_sources -> lkinvis[style=invis];
+
+// Tweak the left-to-right order, beyond the default edge-routing heuristics.
+leaf_all_sources[ordering="in"]; diag_all_sources[ordering="in"];
+leaf_x[ordering="out"]; diag_x[ordering="out"];
+leaf_p[ordering="out"]; diag_p[ordering="out"];
+leaf_xc[ordering="out"]; diag_xc[ordering="out"];
+leaf_z -> leaf_xd_i_all[style=invis];
+
+// This list exactly mirrors the "Predefined dependency tickets" table.
+// We omit some nodes for conciseness.
+// (omitted) leaf_nothing
+leaf_t[label="time (t)"];
+leaf_a[label="accuracy (a)"];
+leaf_q[label="q"];
+leaf_v[label="v"];
+leaf_z[label="z"];
+leaf_xc[label="xc"];
+leaf_xd[label="xd"]; leaf_xd_i_all[label="xd_i"];
+leaf_xa[label="xa"]; leaf_xa_i_all[label="xa_i"];
+leaf_x[label="state (x)"];
+leaf_pn[label="pn"]; leaf_pn_i_all[label="pn_i"];
+leaf_pa[label="pa"]; leaf_pa_i_all[label="pa_i"];
+leaf_p[label="parameters (p)"];
+leaf_u[label="input (u)"];
+leaf_all_sources[label="all_sources"];
+leaf_configuration[label="configuration"];
+leaf_kinematics[label="kinematics"];
+leaf_xcdot[label="xcdot"];
+leaf_pe[label="pe"];
+leaf_ke[label="ke"];
+leaf_pc[label="pc"];
+leaf_pnc[label="pnc"];
+// (omitted) leaf_pn_i
+// (omitted) leaf_pa_i
+// (omitted) leaf_xd_i
+// (omitted) leaf_xa_i
+leaf_u_i[label="u_i"];
+leaf_y[label="y_j",style=dotted];
+leaf_u_fixed[label="fixed"];
+// (omitted) leaf_c_i
+leaf_xc -> { leaf_q leaf_v leaf_z };
+leaf_xd -> leaf_xd_i_all[color="black:white:black"];
+leaf_xa -> leaf_xa_i_all[color="black:white:black"];
+leaf_x -> { leaf_xc leaf_xd leaf_xa };
+leaf_pn-> leaf_pn_i_all[color="black:white:black"];
+leaf_pa -> leaf_pa_i_all[color="black:white:black"];
+leaf_p -> { leaf_pn leaf_pa };
+leaf_u -> leaf_u_i[color="black:white:black"];
+leaf_all_sources -> { leaf_x, leaf_p, leaf_a, leaf_t, leaf_u };
+leaf_configuration -> { leaf_q, leaf_p, leaf_a };
+  leaf_configuration -> leaf_z[style="dashed"];  // Footnote 3.
+  leaf_configuration -> leaf_xd[style="dashed"];  // Footnote 3.
+  leaf_configuration -> leaf_xa[style="dashed"];  // Footnote 3.
+leaf_kinematics -> { leaf_configuration, leaf_v };
+leaf_xcdot-> leaf_all_sources;
+leaf_pe -> leaf_all_sources;
+leaf_ke -> leaf_all_sources;
+leaf_pc -> leaf_all_sources;
+leaf_pnc -> leaf_all_sources;
+leaf_y -> leaf_u_i[color="green",dir=back,minlen=2];  // Footnote 4.
+leaf_u_i -> leaf_u_fixed[color="green",minlen=2];     // Footnote 4.
+leaf_u_i -> diag_u_i[color="green",minlen=2];         // Footnote 4.
+
+// This list repeats the above stanza but with "leaf_" renamed to "diag_",
+// and with the "footnote 2" edges removed.
+// (omitted) leaf_nothing
+diag_t[label="time (t)"];
+diag_a[label="accuracy (a)"];
+diag_q[label="q"];
+diag_v[label="v"];
+diag_z[label="z"];
+diag_xc[label="xc"];
+diag_xd[label="xd"];
+diag_xa[label="xa"];
+diag_x[label="state (x)"];
+diag_pn[label="pn"];
+diag_pa[label="pa"];
+diag_p[label="parameters (p)"];
+diag_u[label="input (u)"];
+diag_all_sources[label="all_sources"];
+diag_configuration[label="configuration"];
+diag_kinematics[label="kinematics"];
+diag_xcdot[label="xcdot"];
+diag_pe[label="pe"];
+diag_ke[label="ke"];
+diag_pc[label="pc"];
+diag_pnc[label="pnc"];
+diag_u_i[label="u_i"];
+diag_y[label="y_j",style=dotted];
+diag_u_fixed[label="fixed"];
+// (omitted) diag_c_i
+diag_xc -> { diag_q diag_v diag_z };
+diag_x -> { diag_xc diag_xd diag_xa };
+diag_p -> { diag_pn diag_pa };
+diag_u -> diag_u_i[color="black:white:black"];
+diag_all_sources -> { diag_x, diag_p, diag_a, diag_t, diag_u };
+diag_configuration -> { diag_q, diag_p, diag_a };
+  diag_configuration -> diag_xd[style="dashed"];  // Footnote 3.
+  diag_configuration -> diag_xa[style="dashed"];  // Footnote 3.
+diag_kinematics -> { diag_configuration, diag_v };
+diag_xcdot -> diag_all_sources[style="dashed"];   // Footnote 5.
+diag_pe -> diag_all_sources[style="dashed"];      // Footnote 5.
+diag_ke -> diag_all_sources[style="dashed"];      // Footnote 5.
+diag_pc -> diag_all_sources[style="dashed"];      // Footnote 5.
+diag_pnc -> diag_all_sources[style="dashed"];     // Footnote 5.
+diag_y -> diag_u_i[color="green",dir=back,minlen=2];  // Footnote 4.
+diag_u_i -> diag_u_fixed[color="green",minlen=2];     // Footnote 4.
+diag_u_i -> super_diag_u_i[color="green",minlen=2];         // Footnote 4.
+super_diag_u_i[shape=plaintext,label="... parent diagram u_i ..."];
+
+// This list exactly mirrors the "Diagram-specific implementation" table, for
+// the "Subscribes to" column.
+diag_q -> leaf_q[color="blue"];
+diag_v -> leaf_v[color="blue"];
+diag_z -> leaf_z[color="blue"];
+diag_xd -> leaf_xd[color="blue"];
+diag_xa -> leaf_xa[color="blue"];
+diag_pn -> leaf_pn[color="blue"];
+diag_pa -> leaf_pa[color="blue"];
+diag_xcdot -> leaf_xcdot[color="blue"];
+diag_pe -> leaf_pe[color="blue"];
+diag_ke -> leaf_ke[color="blue"];
+diag_pc -> leaf_pc[color="blue"];
+diag_pnc -> leaf_pnc[color="blue"];
+
+// This list exactly mirrors the "Diagram-specific implementation" table, for
+// the "Notifications send" column.
+diag_t -> leaf_t[dir="back",color="red",style="dotted"];
+diag_a -> leaf_a[dir="back",color="red",style="dotted"];
+diag_q -> leaf_q[dir="back",color="red",style="dotted"];
+diag_v -> leaf_v[dir="back",color="red",style="dotted"];
+diag_z -> leaf_z[dir="back",color="red",style="dotted"];
+diag_xd -> leaf_xd[dir="back",color="red",style="dotted"];
+diag_xa -> leaf_xa[dir="back",color="red",style="dotted"];
+diag_pn -> leaf_pn[dir="back",color="red",style="dotted"];
+diag_pa -> leaf_pa[dir="back",color="red",style="dotted"];
+
+}  // diagraph

@@ -3,32 +3,34 @@
 
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
-using std::fabs;
-
 namespace drake {
 namespace pydrake {
 namespace {
 
-// TODO(eric.cousineau): There is validation from Python to C++, but no
-// validation in the other direction. Consider intercepting this.
+using std::abs;
 
-// TODO(eric.cousineau): Add operator overloads.
-
-// TODO(eric.cousineau): Disable tolerance checks for the symbolic case.
+// TODO(eric.cousineau): Remove checks (see #8960).
 
 // N.B. This could potentially interfere with another library's bindings of
-// Eigen types. If/when this happens, this should be addressed for both these
-// and AutoDiff types.
+// Eigen types. If/when this happens, this should be addressed for both double
+// and AutoDiff types, most likely using `py::module_local()`.
 
 // N.B. Use a loose tolerance, so that we don't have to be super strict with
 // C++.
 const double kCheckTolerance = 1e-5;
+constexpr char kCastDoc[] = "Cast to desired scalar type.";
+
+using symbolic::Expression;
 
 template <typename T>
 void CheckRotMat(const Matrix3<T>& R) {
@@ -38,14 +40,14 @@ void CheckRotMat(const Matrix3<T>& R) {
   if (identity_error >= kCheckTolerance) {
     throw std::logic_error("Rotation matrix is not orthonormal");
   }
-  const T det_error = fabs(R.determinant() - 1);
+  const T det_error = abs(R.determinant() - 1);
   if (det_error >= kCheckTolerance) {
     throw std::logic_error("Rotation matrix violates right-hand rule");
   }
 }
 
 template <typename T>
-void CheckIsometry(const Isometry3<T>& X) {
+void CheckSe3(const Isometry3<T>& X) {
   CheckRotMat<T>(X.linear());
   Eigen::Matrix<T, 1, 4> bottom_expected;
   bottom_expected << 0, 0, 0, 1;
@@ -58,7 +60,7 @@ void CheckIsometry(const Isometry3<T>& X) {
 
 template <typename T>
 void CheckQuaternion(const Eigen::Quaternion<T>& q) {
-  const T norm_error = fabs(q.coeffs().norm() - 1);
+  const T norm_error = abs(q.coeffs().norm() - 1);
   if (norm_error >= kCheckTolerance) {
     throw std::logic_error("Quaternion is not normalized");
   }
@@ -66,33 +68,46 @@ void CheckQuaternion(const Eigen::Quaternion<T>& q) {
 
 template <typename T>
 void CheckAngleAxis(const Eigen::AngleAxis<T>& value) {
-  const T norm_error = fabs(value.axis().norm() - 1);
+  const T norm_error = abs(value.axis().norm() - 1);
   if (norm_error >= kCheckTolerance) {
     throw std::logic_error("Axis is not normalized");
   }
 }
 
+// N.B. The following overloads are meant to disable symbolic checks, which are
+// not easily achievable for non-numeric values. These can be removed once the
+// checks are removed in their entirety (#8960).
+
+void CheckRotMat(const Matrix3<Expression>&) {}
+
+void CheckSe3(const Isometry3<Expression>&) {}
+
+void CheckQuaternion(const Eigen::Quaternion<Expression>&) {}
+
+void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
+
 }  // namespace
 
-PYBIND11_MODULE(eigen_geometry, m) {
-  m.doc() = "Bindings for Eigen geometric types.";
-
-  using T = double;
-
+template <typename T>
+void DoScalarDependentDefinitions(py::module m, T) {
   // Do not return references to matrices (e.g. `Eigen::Ref<>`) so that we have
   // tighter control over validation.
+
+  py::tuple param = GetPyParam<T>();
 
   // Isometry3d.
   // @note `linear` implies rotation, and `affine` implies translation.
   {
     using Class = Isometry3<T>;
-    py::class_<Class> py_class(m, "Isometry3");
-    py_class  // BR
+    auto cls = DefineTemplateClassWithDefault<Class>(m, "Isometry3", param,
+        "Provides bindings of Eigen::Isometry3<> that only admit SE(3) "
+        "(no reflections).");
+    cls  // BR
         .def(py::init([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(py::init([](const Matrix4<T>& matrix) {
           Class out(matrix);
-          CheckIsometry(out);
+          CheckSe3(out);
           return out;
         }),
             py::arg("matrix"))
@@ -115,7 +130,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
         }),
             py::arg("quaternion"), py::arg("translation"))
         .def(py::init([](const Class& other) {
-          CheckIsometry(other);
+          CheckSe3(other);
           return other;
         }),
             py::arg("other"))
@@ -124,7 +139,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
         .def("set_matrix",
             [](Class* self, const Matrix4<T>& matrix) {
               Class update(matrix);
-              CheckIsometry(update);
+              CheckSe3(update);
               *self = update;
             })
         .def("translation",
@@ -153,22 +168,24 @@ PYBIND11_MODULE(eigen_geometry, m) {
             [](py::object self) { return py::str(self.attr("matrix")()); })
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other"))
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other"))
+            py::arg("other"), "RigidTransform multiplication")
         .def("multiply",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
-            py::arg("position"))
-        .def("__matmul__",
-            [](const Class& self, const Vector3<T>& position) {
+            py::arg("position"), "Position vector multiplication")
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& position) {
               return self * position;
             },
-            py::arg("position"))
+            py::arg("position"), "Position vector list multiplication")
         .def("inverse", [](const Class* self) { return self->inverse(); });
+    DefPickle(&cls, [](const Class& self) { return self.matrix(); },
+        [](const Matrix4<T>& matrix) { return Class(matrix); });
+    cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
+    DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, kCastDoc);
   }
 
   // Quaternion.
@@ -177,11 +194,10 @@ PYBIND11_MODULE(eigen_geometry, m) {
   // TODO(eric.cousineau): Should this not be restricted to a unit quaternion?
   {
     using Class = Eigen::Quaternion<T>;
-    py::class_<Class> py_class(m, "Quaternion");
-    py_class.attr("__doc__") =
-        "Provides a unit quaternion binding of Eigen::Quaternion<>.";
-    py::object py_class_obj = py_class;
-    py_class  // BR
+    auto cls = DefineTemplateClassWithDefault<Class>(m, "Quaternion", param,
+        "Provides a unit quaternion binding of Eigen::Quaternion<>.");
+    py::object py_class_obj = cls;
+    cls  // BR
         .def(py::init([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(py::init([](const Vector4<T>& wxyz) {
@@ -211,7 +227,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
         .def("x", [](const Class* self) { return self->x(); })
         .def("y", [](const Class* self) { return self->y(); })
         .def("z", [](const Class* self) { return self->z(); })
-        .def("xyz", [](const Class* self) { return self->vec(); })
+        .def("xyz", [](const Class* self) { return Vector3<T>(self->vec()); })
         .def("wxyz",
             [](Class* self) {
               Vector4<T> wxyz;
@@ -249,30 +265,53 @@ PYBIND11_MODULE(eigen_geometry, m) {
                       self->y(), self->z());
             })
         .def("multiply",
-            [](const Class& self, const Class& other) { return self * other; })
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; })
+            [](const Class& self, const Class& other) { return self * other; },
+            "Quaternion multiplication");
+    constexpr char doc_deprecated_position[] =
+        "Please use multiply(vector=...) instead. This will be "
+        "removed on or around 2019-11-15";
+    auto multiply_vector = [](const Class& self, const Vector3<T>& vector) {
+      return self * vector;
+    };
+    auto multiply_vector_list = [](const Class& self,
+                                    const Matrix3X<T>& vector) {
+      Matrix3X<T> out(vector.rows(), vector.cols());
+      for (int i = 0; i < vector.cols(); ++i) {
+        out.col(i) = self * vector.col(i);
+      }
+      return out;
+    };
+    cls  // BR
+        .def("multiply", multiply_vector, py::arg("vector"),
+            "Multiplication by a vector expressed in a frame")
+        .def("multiply", multiply_vector_list, py::arg("vector"),
+            "Multiplication by a list of vectors expressed in the same frame")
         .def("multiply",
-            [](const Class& self, const Vector3<T>& position) {
-              return self * position;
-            },
-            py::arg("position"))
-        .def("__matmul__",
-            [](const Class& self, const Vector3<T>& position) {
-              return self * position;
-            },
-            py::arg("position"))
+            WrapDeprecated(doc_deprecated_position, multiply_vector),
+            py::arg("position"), doc_deprecated_position)
+        .def("multiply",
+            WrapDeprecated(doc_deprecated_position, multiply_vector_list),
+            py::arg("position"), doc_deprecated_position)
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
+    cls.attr("__matmul__") = cls.attr("multiply");
+    DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, kCastDoc);
+    DefPickle(&cls,
+        // Leverage Python API so we can easily use `wxyz` form.
+        [](py::object self) { return self.attr("wxyz")(); },
+        [py_class_obj](py::object wxyz) -> Class {
+          return py_class_obj(wxyz).cast<Class>();
+        });
   }
 
   // Angle-axis.
   {
     using Class = Eigen::AngleAxis<T>;
-    py::class_<Class> py_class(m, "AngleAxis");
-    py_class.attr("__doc__") = "Bindings for Eigen::AngleAxis<>.";
-    py::object py_class_obj = py_class;
-    py_class  // BR
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "AngleAxis", param, "Bindings for Eigen::AngleAxis<>.");
+    py::object py_class_obj = cls;
+    cls  // BR
         .def(py::init([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(py::init([](const T& angle, const Vector3<T>& axis) {
@@ -321,7 +360,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
               Class update(rotation);
               CheckAngleAxis(update);
               *self = update;
-            })
+            },
+            py::arg("rotation"))
         .def("quaternion",
             [](const Class* self) { return Eigen::Quaternion<T>(*self); })
         .def("set_quaternion",
@@ -330,7 +370,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
               Class update(q);
               CheckAngleAxis(update);
               *self = update;
-            })
+            },
+            py::arg("q"))
         .def("__str__",
             [py_class_obj](const Class* self) {
               return py::str("{}(angle={}, axis={})")
@@ -338,11 +379,30 @@ PYBIND11_MODULE(eigen_geometry, m) {
                       self->axis());
             })
         .def("multiply",
-            [](const Class& self, const Class& other) { return self * other; })
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; })
+            [](const Class& self, const Class& other) { return self * other; },
+            py::arg("other"))
         .def("inverse", [](const Class* self) { return self->inverse(); });
+    cls.attr("__matmul__") = cls.attr("multiply");
+    DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, kCastDoc);
+    DefPickle(&cls,
+        [](const Class& self) {
+          return py::make_tuple(self.angle(), self.axis());
+        },
+        [](py::tuple t) {
+          DRAKE_THROW_UNLESS(t.size() == 2);
+          return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
+        });
   }
+}
+
+PYBIND11_MODULE(eigen_geometry, m) {
+  m.doc() = "Bindings for Eigen geometric types.";
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake

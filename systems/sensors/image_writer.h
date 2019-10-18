@@ -207,10 +207,11 @@ class ImageWriter : public LeafSystem<double> {
 
   // Given the file format string (and port-specific configuration values),
   // extracts, tests, and returns the output folder information.
+  // The return value will not contain a trailing slash.
   // The tests are in support of the statement that the directory path cannot
   // depend on time.
   // Examples:
-  //  "a/b/c/" --> "a/b/c/"
+  //  "a/b/c/" --> thrown exception.
   //  "a/b/c" --> "a/b"
   //  "a/{time_usec}/c" --> thrown exception.
   //  "a/{port_name}/c" --> "a/my_port"  (assuming port_name = "my_port").
@@ -244,7 +245,7 @@ class ImageWriter : public LeafSystem<double> {
   };
 
   // For each input port, this stores the corresponding image data. It is an
-  // invariant that port_info_.size() == get_num_input_ports().
+  // invariant that port_info_.size() == num_input_ports().
   std::vector<ImagePortInfo> port_info_;
 
   std::unordered_map<PixelType, std::string> labels_;

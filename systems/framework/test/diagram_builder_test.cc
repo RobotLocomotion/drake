@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -36,10 +38,11 @@ template <typename T>
 class ConstAndEcho final : public LeafSystem<T> {
  public:
   ConstAndEcho() : LeafSystem<T>(SystemTypeTag<systems::ConstAndEcho>{}) {
-    this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareVectorOutputPort(BasicVector<T>(1), &ConstAndEcho::CalcEcho);
-    this->DeclareVectorOutputPort(BasicVector<T>(1),
-                                  &ConstAndEcho::CalcConstant);
+    this->DeclareInputPort("input", kVectorValued, 1);
+    this->DeclareVectorOutputPort(
+        "echo", BasicVector<T>(1), &ConstAndEcho::CalcEcho);
+    this->DeclareVectorOutputPort(
+        "constant", BasicVector<T>(1), &ConstAndEcho::CalcConstant);
   }
 
   // Scalar-converting copy constructor.
@@ -73,14 +76,24 @@ class ConstAndEcho final : public LeafSystem<T> {
 GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
   auto adder = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
-  const std::string name{"adder"};
-  adder->set_name(name);
+  auto pass = builder.AddSystem<PassThrough>(1 /* size */);
+  adder->set_name("adder");
+  pass->set_name("pass");
   // Connect the output port to the input port.
-  builder.Connect(adder->get_output_port(), adder->get_input_port(0));
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
-                             "Algebraic loop detected in DiagramBuilder:\n"
-                             "\\s+" + name + ":Out\\(0\\).*\n."
-                             "\\s*" + name + ":In\\(0\\)");
+  builder.Connect(adder->get_output_port(), pass->get_input_port());
+  builder.Connect(pass->get_output_port(), adder->get_input_port(0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Build(), std::runtime_error,
+      fmt::format(
+          "Reported algebraic loop detected in DiagramBuilder:\n"
+          "  InputPort.0. .u0. of {adder} is direct-feedthrough to\n"
+          "  OutputPort.0. .sum. of {adder} is connected to\n"
+          "  InputPort.0. .u0. of {pass} is direct-feedthrough to\n"
+          "  OutputPort.0. .y0. of {pass} is connected to\n"
+          "  InputPort.0. .u0. of {adder}\n"
+          ".*conservatively reported.*",
+          fmt::arg("adder", "System ::adder .Adder<double>."),
+          fmt::arg("pass", "System ::pass .PassThrough<double>.")));
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
@@ -134,10 +147,15 @@ GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   const std::string name{"echo"};
   echo->set_name(name);
   builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
-                             "Algebraic loop detected in DiagramBuilder:\n"
-                             "\\s+" + name + ":Out\\(0\\).*\n."
-                             "\\s*" + name + ":In\\(0\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Build(), std::runtime_error,
+      fmt::format(
+          "Reported algebraic loop detected in DiagramBuilder:\n"
+          "  InputPort.0. .input. of {sys} is direct-feedthrough to\n"
+          "  OutputPort.0. .echo. of {sys} is connected to\n"
+          "  InputPort.0. .input. of {sys}\n"
+          ".*conservatively reported.*",
+          fmt::arg("sys", "System ::echo .ConstAndEcho<double>.")));
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
@@ -283,6 +301,52 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       "Mismatched value types while connecting "
       "output port y0 of System char_system \\(type char\\) to "
       "input port u0 of System int_system \\(type int\\)");
+}
+
+// Test that port connections can be polymorphic, especially for types that are
+// both copyable and cloneable.  {ExponentialPlus,}PiecewisePolynomial are both
+// copyable (to themselves) and cloneable (to a common base class, Trajectory).
+// To connect them in a diagram, we must specify we want to use the subtyping.
+GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
+  using Trajectoryd = trajectories::Trajectory<double>;
+  using PiecewisePolynomiald = trajectories::PiecewisePolynomial<double>;
+  using ExponentialPlusPiecewisePolynomiald =
+      trajectories::ExponentialPlusPiecewisePolynomial<double>;
+
+  DiagramBuilder<double> builder;
+  auto sys1 = builder.AddSystem<PassThrough<double>>(
+      Value<Trajectoryd>(PiecewisePolynomiald{}));
+  auto sys2 = builder.AddSystem<PassThrough<double>>(
+      Value<Trajectoryd>(ExponentialPlusPiecewisePolynomiald{}));
+  EXPECT_NO_THROW(builder.Connect(*sys1, *sys2));
+  builder.ExportInput(sys1->get_input_port());
+  builder.ExportOutput(sys2->get_output_port());
+  auto diagram = builder.Build();
+
+  // We can feed PiecewisePolynomial through the Diagram.
+  {
+    auto context = diagram->CreateDefaultContext();
+    const PiecewisePolynomiald input(Vector1d(22.0));
+    diagram->get_input_port(0).FixValue(
+        context.get(), Value<Trajectoryd>(input));
+    const auto& output =
+        dynamic_cast<const PiecewisePolynomiald&>(
+            diagram->get_output_port(0).Eval<Trajectoryd>(*context));
+    EXPECT_EQ(output.value(0.0)(0), 22.0);
+  }
+
+  // We can feed ExponentialPlusPiecewisePolynomial through the Diagram.
+  {
+    auto context = diagram->CreateDefaultContext();
+    const ExponentialPlusPiecewisePolynomiald input(
+        PiecewisePolynomiald(Vector1d(22.0)));
+    diagram->get_input_port(0).FixValue(
+        context.get(), Value<Trajectoryd>(input));
+    const auto& output =
+        dynamic_cast<const ExponentialPlusPiecewisePolynomiald&>(
+            diagram->get_output_port(0).Eval<Trajectoryd>(*context));
+    EXPECT_EQ(output.value(0.0)(0), 22.0);
+  }
 }
 
 // Helper class that has one input port, and no output ports.
@@ -493,6 +557,47 @@ GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {
         adder1->get_output_port()), 0 /* exported output port id */);
   EXPECT_EQ(builder.ExportOutput(
         adder2->get_output_port()), 1 /* exported output port id */);
+}
+
+class DtorTraceSystem final : public LeafSystem<double> {
+ public:
+  explicit DtorTraceSystem(int nonce) : nonce_(nonce) {}
+  ~DtorTraceSystem() { destroyed_nonces().push_back(nonce_); }
+
+  static std::vector<int>& destroyed_nonces() {
+    static never_destroyed<std::vector<int>> nonces;
+    return nonces.access();
+  }
+
+ private:
+  int nonce_{};
+};
+
+// Tests the destruction order of DiagramBuilder.
+GTEST_TEST(DiagramBuilderTest, DtorOrder_Builder) {
+  auto& nonces = DtorTraceSystem::destroyed_nonces();
+
+  nonces.clear();
+  auto dut = std::make_unique<DiagramBuilder<double>>();
+  dut->AddSystem<DtorTraceSystem>(1);
+  dut->AddSystem<DtorTraceSystem>(2);
+  EXPECT_EQ(nonces.size(), 0);
+  dut.reset();
+  EXPECT_EQ(nonces, (std::vector<int>{2, 1}));
+}
+
+// Tests the destruction order of Diagram.
+GTEST_TEST(DiagramBuilderTest, DtorOrder_Built) {
+  auto& nonces = DtorTraceSystem::destroyed_nonces();
+
+  nonces.clear();
+  auto builder = std::make_unique<DiagramBuilder<double>>();
+  builder->AddSystem<DtorTraceSystem>(-1);
+  builder->AddSystem<DtorTraceSystem>(-2);
+  auto dut = builder->Build();
+  EXPECT_EQ(nonces.size(), 0);
+  dut.reset();
+  EXPECT_EQ(nonces, (std::vector<int>{-2, -1}));
 }
 
 }  // namespace

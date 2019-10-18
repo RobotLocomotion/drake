@@ -5,6 +5,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
@@ -120,15 +121,22 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   const systems::InputPort<T>& rigid_body_plant_state_input_port()
       const;
 
+  /** Given a render label, reports the index of the RigidBody to which this
+   label was assigned. The RenderLabel::kDontCare label maps to the index of the
+   world body. The other reserved labels return a negative value.
+
+   @throws std::logic_error If the label doesn't otherwise specify a body.  */
+  int BodyForLabel(geometry::render::RenderLabel label) const;
+
+  /** Reports the frame id for the given body. */
+  geometry::FrameId FrameIdFromBody(const RigidBody<T>& body) const {
+    return body_ids_[body.get_body_index()];
+  }
+
  private:
   // Registers `this` system's tree's bodies and geometries to the given
   // geometry system.
   void RegisterTree(geometry::SceneGraph<T>* scene_graph);
-
-  // This is nothing _but_ direct-feedthrough.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return true;
-  }
 
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,
@@ -143,6 +151,10 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   // Port handles
   int geometry_pose_port_{-1};
   int plant_state_port_{-1};
+
+  // Maps from a generated render label to the index of the rigid body assigned
+  // that label.
+  std::unordered_map<geometry::render::RenderLabel, int> label_to_index_;
 
   // Registered frames. In this incarnation, body i's frame_id is stored in
   // element i. This is because *all* frames are currently being registered

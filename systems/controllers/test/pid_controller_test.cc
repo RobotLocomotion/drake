@@ -51,6 +51,15 @@ class PidControllerTest : public ::testing::Test {
   Vector3d error_rate_signal_{1.3, 0.9, 3.14};
 };
 
+TEST_F(PidControllerTest, PortNames) {
+  EXPECT_EQ(controller_.GetInputPort("estimated_state").get_index(),
+            controller_.get_input_port_estimated_state().get_index());
+  EXPECT_EQ(controller_.GetInputPort("desired_state").get_index(),
+            controller_.get_input_port_desired_state().get_index());
+  EXPECT_EQ(controller_.GetOutputPort("control").get_index(),
+            controller_.get_output_port_control().get_index());
+}
+
 // Tests getter methods for controller constants.
 TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(kp_, controller_.get_Kp_vector());
@@ -112,7 +121,7 @@ TEST_F(PidControllerTest, CalcOutput) {
 
   // Evaluates the output.
   controller_.CalcOutput(*context_, output_.get());
-  ASSERT_EQ(1, output_->get_num_ports());
+  ASSERT_EQ(1, output_->num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
   EXPECT_EQ((kp_.array() * error_signal_.array() +

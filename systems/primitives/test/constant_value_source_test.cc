@@ -31,7 +31,7 @@ class ConstantValueSourceTest : public ::testing::Test {
 };
 
 TEST_F(ConstantValueSourceTest, Output) {
-  ASSERT_EQ(source_->get_num_input_ports(), context_->get_num_input_ports());
+  ASSERT_EQ(source_->num_input_ports(), context_->num_input_ports());
 
   // Check Eval() method.
   auto& cached_value = source_->get_output_port(0).Eval<std::string>(*context_);
@@ -40,7 +40,7 @@ TEST_F(ConstantValueSourceTest, Output) {
 
 // Tests that ConstantValueSource allocates no state variables in the context_.
 TEST_F(ConstantValueSourceTest, ConstantValueSourceIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state().size());
+  EXPECT_EQ(0, context_->num_continuous_states());
 }
 
 // Tests conversion to different scalar types.

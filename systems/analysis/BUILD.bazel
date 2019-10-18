@@ -14,14 +14,17 @@ drake_cc_package_library(
     name = "analysis",
     deps = [
         ":antiderivative_function",
+        ":bogacki_shampine3_integrator",
         ":dense_output",
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
         ":implicit_euler_integrator",
+        ":implicit_integrator",
         ":initial_value_problem",
         ":integrator_base",
         ":lyapunov",
         ":monte_carlo",
+        ":radau_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
@@ -31,6 +34,15 @@ drake_cc_package_library(
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":stepwise_dense_output",
+    ],
+)
+
+drake_cc_library(
+    name = "bogacki_shampine3_integrator",
+    srcs = ["bogacki_shampine3_integrator.cc"],
+    hdrs = ["bogacki_shampine3_integrator.h"],
+    deps = [
+        ":integrator_base",
     ],
 )
 
@@ -146,8 +158,34 @@ drake_cc_library(
         "implicit_euler_integrator-inl.h",
     ],
     deps = [
+        ":implicit_integrator",
+        ":runge_kutta2_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_integrator",
+    srcs = ["implicit_integrator.cc"],
+    hdrs = [
+        "implicit_integrator.h",
+    ],
+    deps = [
         ":integrator_base",
         "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "radau_integrator",
+    srcs = ["radau_integrator.cc"],
+    hdrs = [
+        "radau_integrator.h",
+    ],
+    deps = [
+        ":bogacki_shampine3_integrator",
+        ":implicit_integrator",
+        ":runge_kutta2_integrator",
     ],
 )
 
@@ -269,6 +307,7 @@ drake_cc_googletest(
         ":implicit_euler_integrator",
         ":runge_kutta3_integrator",
         ":simulator",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
         "//systems/analysis/test_utilities",
         "//systems/primitives",
@@ -277,11 +316,25 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulator_denorm_test",
-    # Valgrind doesn't support the floating point register
+    # Valgrind core does not support the floating point register
     # instructions that this test uses.
-    tags = ["no_memcheck"],
+    tags = ["no_valgrind_tools"],
     deps = [
         ":simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bogacki_shampine3_integrator_test",
+    # If necessary, increase test timeout to 'moderate' when run with Valgrind
+    # and/or disable in debug mode.
+    deps = [
+        ":bogacki_shampine3_integrator",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
     ],
 )
 
@@ -305,6 +358,29 @@ drake_cc_googletest(
     ],
     deps = [
         ":implicit_euler_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis/test_utilities",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "implicit_integrator_test",
+    deps = [
+        ":implicit_integrator",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "radau_integrator_test",
+    # Note: if memcheck takes too long with Valgrind, disable
+    # memcheck (per Drake issue #9621).
+    timeout = "moderate",
+    shard_count = 2,
+    deps = [
+        ":implicit_euler_integrator",
+        ":radau_integrator",
         "//systems/analysis/test_utilities",
         "//systems/plants/spring_mass_system",
     ],
@@ -341,6 +417,8 @@ drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
     # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",

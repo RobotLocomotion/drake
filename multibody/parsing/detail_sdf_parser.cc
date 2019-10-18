@@ -9,6 +9,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -21,14 +22,15 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -83,10 +85,10 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   // together with <inertial><pose/></inertial>. It'd seem then the frame B
   // in X_BI could be another frame. We rely on Inertial::Pose() to ALWAYS
   // give us X_BI. Verify this.
-  const Isometry3d X_BBi = ToIsometry3(Inertial_BBcm_Bi.Pose());
+  const RigidTransformd X_BBi = ToRigidTransform(Inertial_BBcm_Bi.Pose());
 
   // B and Bi are not necessarily aligned.
-  const math::RotationMatrix<double> R_BBi(X_BBi.linear());
+  const RotationMatrixd R_BBi = X_BBi.rotation();
 
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
@@ -139,15 +141,15 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   // supported by sdformat.
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
-    // Pose of the joint frame J in the frame of the child link C.
+    // RotationMatrix of the joint frame J in the frame of the child link C.
     ThrowIfPoseFrameSpecified(joint_spec.Element());
-    const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
-    // Get the pose of the child link C in the model frame M.
-    const Isometry3d X_MC =
-        ToIsometry3(model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
-    const Isometry3d X_MJ = X_MC * X_CJ;
+    const RotationMatrixd R_CJ = ToRigidTransform(joint_spec.Pose()).rotation();
+    // Get the RotationMatrix of the child link C in the model frame M.
+    const RotationMatrixd R_MC = ToRigidTransform(
+        model_spec.LinkByName(joint_spec.ChildLinkName())->Pose()).rotation();
+    const RotationMatrixd R_MJ = R_MC * R_CJ;
     // axis_J actually contains axis_M, expressed in the model frame M.
-    axis_J = X_MJ.linear().transpose() * axis_J;
+    axis_J = R_MJ.transpose() * axis_J;
   }
   return axis_J;
 }
@@ -194,16 +196,17 @@ void AddJointActuatorFromSpecification(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  double max_effort = axis->Effort();
+  // The effort_limit should always be non-negative. Negative effort will be
+  // treated as infinity as specified by the sdf standard.
+  const double effort_limit = axis->Effort() < 0
+                                  ? std::numeric_limits<double>::infinity()
+                                  : axis->Effort();
 
-  // The SDF specification defines this max_effort = -1 when no limit is
-  // provided (a non-zero value). In Drake we interpret a value of exactly zero
+  // In Drake we interpret a value of exactly zero
   // as a way to specify un-actuated joints. Thus, the user would say
   // <effort>0</effort> for un-actuated joints.
-  if (max_effort != 0) {
-    // TODO(amcastro-tri): For positive max_effort values, store it and use it
-    // to limit input actuation.
-    plant->AddJointActuator(joint_spec.Name(), joint);
+  if (effort_limit != 0) {
+    plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
   }
 }
 
@@ -263,7 +266,7 @@ void AddJointFromSpecification(
     const sdf::Model& model_spec, const sdf::Joint& joint_spec,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
   // Pose of the model frame M in the world frame W.
-  const Isometry3d X_WM = ToIsometry3(model_spec.Pose());
+  const RigidTransformd X_WM = ToRigidTransform(model_spec.Pose());
 
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
@@ -275,19 +278,19 @@ void AddJointFromSpecification(
   // TODO(eric.cousineau): Verify sdformat supports frame specifications
   // correctly.
   ThrowIfPoseFrameSpecified(joint_spec.Element());
-  const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
+  const RigidTransformd X_CJ = ToRigidTransform(joint_spec.Pose());
 
   // Get the pose of the child link C in the model frame M.
   // TODO(eric.cousineau): Figure out how to use link poses when they are NOT
   // connected to a joint.
-  const Isometry3d X_MC =
-      ToIsometry3(model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
+  const RigidTransformd X_MC = ToRigidTransform(
+      model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
 
   // Pose of the joint frame J in the model frame M.
-  const Isometry3d X_MJ = X_MC * X_CJ;
+  const RigidTransformd X_MJ = X_MC * X_CJ;
 
   // Pose of the frame J in the parent body frame P.
-  optional<Isometry3d> X_PJ;
+  optional<RigidTransformd> X_PJ;
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
@@ -295,14 +298,14 @@ void AddJointFromSpecification(
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     // Get the pose of the parent link P in the model frame M.
-    const Isometry3d X_MP =
-        ToIsometry3(model_spec.LinkByName(joint_spec.ParentLinkName())->Pose());
+    const RigidTransformd X_MP = ToRigidTransform(
+        model_spec.LinkByName(joint_spec.ParentLinkName())->Pose());
     X_PJ = X_MP.inverse() * X_MJ;
   }
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
   // P directly. We indicate that by passing a nullopt.
-  if (X_PJ.value().isApprox(Isometry3d::Identity())) X_PJ = nullopt;
+  if (X_PJ.value().IsExactlyIdentity()) X_PJ = nullopt;
 
   // These will only be populated for prismatic and revolute joints.
   double lower_limit = 0;
@@ -315,7 +318,7 @@ void AddJointFromSpecification(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ,
-          Isometry3d::Identity() /* X_JpJc */);
+          RigidTransformd::Identity() /* X_JpJc */);
       break;
     }
     case sdf::JointType::PRISMATIC: {
@@ -389,7 +392,6 @@ void AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -448,15 +450,15 @@ void AddLinksFromSpecification(
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         ThrowIfPoseFrameSpecified(sdf_collision.Element());
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
-          const Isometry3d X_LG =
-              MakeGeometryPoseFromSdfCollision(sdf_collision);
+          const RigidTransformd X_LG(
+              MakeGeometryPoseFromSdfCollision(sdf_collision));
           std::unique_ptr<geometry::Shape> shape =
               MakeShapeFromSdfGeometry(sdf_geometry);
           const CoulombFriction<double> coulomb_friction =
               MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,
                                            sdf_collision.Name(),
-                                           coulomb_friction, scene_graph);
+                                           coulomb_friction);
         }
       }
     }
@@ -498,8 +500,8 @@ void AddFramesFromSpecification(
         pose_frame = &GetFrameOrWorldByName(
             *plant, pose_frame_name, model_instance);
       }
-      const Isometry3d X_PF =
-          ToIsometry3(pose_element->Get<ignition::math::Pose3d>());
+      const RigidTransformd X_PF =
+          ToRigidTransform(pose_element->Get<ignition::math::Pose3d>());
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           name, *pose_frame, X_PF));
       frame_element = frame_element->GetNextElement("frame");
@@ -513,7 +515,6 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -524,7 +525,7 @@ ModelInstanceIndex AddModelFromSpecification(
   // frame is not the world. At present, we assume the parent frame is the
   // world.
   ThrowIfPoseFrameSpecified(model.Element());
-  const Isometry3d X_WM = ToIsometry3(model.Pose());
+  const RigidTransformd X_WM = ToRigidTransform(model.Pose());
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
   // N.B. We mangle this name to dis-incentivize users from wanting to use
@@ -542,7 +543,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
-      model_instance, model, plant, scene_graph, package_map, root_dir);
+      model_instance, model, plant, package_map, root_dir);
 
   // Add all the joints
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
@@ -594,7 +595,7 @@ ModelInstanceIndex AddModelFromSdfFile(
       model_name_in.empty() ? model.Name() : model_name_in;
 
   return AddModelFromSpecification(
-      model, model_name, plant, scene_graph, package_map, root_dir);
+      model, model_name, plant, package_map, root_dir);
 }
 
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
@@ -640,7 +641,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       // Get the model.
       const sdf::Model& model = *root.ModelByIndex(i);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, scene_graph, package_map, root_dir));
+            model, model.Name(), plant, package_map, root_dir));
     }
   } else {
     // Load the world and all the models in the world.
@@ -651,13 +652,13 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, scene_graph, package_map, root_dir));
+            model, model.Name(), plant, package_map, root_dir));
     }
   }
 
   return model_instances;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

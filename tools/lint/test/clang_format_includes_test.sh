@@ -1,8 +1,13 @@
+#!/bin/bash
+
 # A basic _acceptance_ test for clang-format-includes.
 # More specific _unit_ testing is in formatter_test.py.
 # This test should only be run via Bazel, never directly on the command line.
 
 set -ex
+
+# Fail if not run under Bazel.
+[[ -n "${TEST_TMPDIR}" ]]
 
 # Dump some debugging output.
 find .

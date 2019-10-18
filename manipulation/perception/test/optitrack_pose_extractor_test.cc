@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/system.h"
@@ -23,18 +24,19 @@ constexpr double kTolerance = 1e-6;
 class OptitrackPoseTest : public ::testing::Test {
  public:
   void Initialize(int object_id = 0,
-                  const Isometry3<double>& world_X_optitrack =
-                      Isometry3<double>::Identity()) {
+                  const math::RigidTransform<double>& world_X_optitrack =
+                        math::RigidTransform<double>::Identity()) {
     dut_ = std::make_unique<OptitrackPoseExtractor>(
-        object_id, world_X_optitrack, 0.01 /* optitrack_lcm_status_period */);
+        object_id, world_X_optitrack.GetAsIsometry3(),
+        0.01 /* optitrack_lcm_status_period */);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput();
 
-    EXPECT_EQ(dut_->get_num_input_ports(), 1);
-    EXPECT_EQ(dut_->get_num_output_ports(), 1);
+    EXPECT_EQ(dut_->num_input_ports(), 1);
+    EXPECT_EQ(dut_->num_output_ports(), 1);
   }
 
-  Isometry3<double> UpdateStateCalcOutput(
+  math::RigidTransform<double> UpdateStateCalcOutput(
       const optitrack::optitrack_frame_t& input_frame) {
     std::unique_ptr<AbstractValue> input(
         new Value<optitrack::optitrack_frame_t>());
@@ -45,7 +47,8 @@ class OptitrackPoseTest : public ::testing::Test {
     dut_->CalcOutput(*context_, output_.get());
     auto output_value = output_->get_data(0);
 
-    return output_value->get_value<Isometry3<double>>();
+    const Isometry3<double> iso = output_value->get_value<Isometry3<double>>();
+    return math::RigidTransform<double>(iso);
   }
 
  private:
@@ -101,28 +104,25 @@ TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
 
 TEST_F(OptitrackPoseTest, PoseComparisonTest) {
   const int object_id = 0;
-  Isometry3<double> X_WO;
-  X_WO.translation() << 1, 2, 3;
-  X_WO.linear() =
-      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitX()).matrix();
-  X_WO.makeAffine();
+  const math::RigidTransform<double> X_WO(
+      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitX()),
+      Vector3<double>(1, 2, 3) );
   Initialize(object_id, X_WO);
   optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
 
   // An arbitrarily chosen test pose is assigned to the default_body.
-  Isometry3<double> X_OB_expected;
-  X_OB_expected.translation() << 0.01, -5.0, 10.10;
-  X_OB_expected.linear() =
+  const math::RigidTransform<double> X_OB_expected(
       Eigen::AngleAxisd(0.75 * M_PI, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()).matrix();
-  X_OB_expected.makeAffine();
+      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()),
+      Vector3<double>(0.01, -5.0, 10.10));
 
   default_body.xyz[0] = X_OB_expected.translation()[0];
   default_body.xyz[1] = X_OB_expected.translation()[1];
   default_body.xyz[2] = X_OB_expected.translation()[2];
 
-  Eigen::Quaterniond test_pose_quaternion(X_OB_expected.linear());
+  const Eigen::Quaterniond test_pose_quaternion =
+      X_OB_expected.rotation().ToQuaternion();
   default_body.quat[0] = test_pose_quaternion.x();
   default_body.quat[1] = test_pose_quaternion.y();
   default_body.quat[2] = test_pose_quaternion.z();
@@ -134,16 +134,16 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
   // Non-systems tests.
 
   // - `ExtractPose`.
-  Isometry3<double> X_OB_direct =
+  const Isometry3<double> X_OB_direct =
       ExtractOptitrackPose(*FindOptitrackBody(test_frame, object_id));
   EXPECT_TRUE(CompareMatrices(
-      X_OB_direct.matrix(), X_OB_expected.matrix(),
+      X_OB_direct.matrix(), X_OB_expected.GetAsMatrix4(),
       kTolerance, MatrixCompareType::absolute));
 
   // - `ExtractOptitrackPoses`.
   using Map = std::map<int, Isometry3<double>>;
   const Map all_poses = ExtractOptitrackPoses(test_frame);
-  const Map all_poses_expected = {{0, X_OB_expected}};
+  const Map all_poses_expected = {{0, X_OB_expected.GetAsIsometry3()}};
   EXPECT_EQ(all_poses.size(), all_poses_expected.size());
   for (auto& pair : all_poses) {
     Isometry3<double> X_OBi = pair.second;
@@ -157,14 +157,12 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
   EXPECT_FALSE(FindOptitrackBody(test_frame, 999).has_value());
 
   // Systems test.
-  const Isometry3<double> X_WB_expected = X_WO * X_OB_expected;
-  Isometry3<double> X_WB;
+  const math::RigidTransform<double> X_WB_expected = X_WO * X_OB_expected;
+  math::RigidTransform<double> X_WB;
   EXPECT_NO_THROW(X_WB = UpdateStateCalcOutput(test_frame));
 
   // Compare.
-  EXPECT_TRUE(CompareMatrices(
-      X_WB.matrix(), X_WB_expected.matrix(),
-      kTolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(X_WB.IsNearlyEqualTo(X_WB_expected, kTolerance));
 }
 
 TEST_F(OptitrackPoseTest, FindObject) {

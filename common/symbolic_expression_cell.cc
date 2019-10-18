@@ -196,13 +196,15 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
 }
 }  // anonymous namespace
 
-ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly)
-    : kind_{k}, is_polynomial_{is_poly} {}
+ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly,
+                               const bool is_expanded)
+    : kind_{k}, is_polynomial_{is_poly}, is_expanded_{is_expanded} {}
 
 UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
                                          const Expression& e,
-                                         const bool is_poly)
-    : ExpressionCell{k, is_poly}, e_{e} {}
+                                         const bool is_poly,
+                                         const bool is_expanded)
+    : ExpressionCell{k, is_poly, is_expanded}, e_{e} {}
 
 void UnaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -236,8 +238,9 @@ double UnaryExpressionCell::Evaluate(const Environment& env) const {
 BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
                                            const Expression& e1,
                                            const Expression& e2,
-                                           const bool is_poly)
-    : ExpressionCell{k, is_poly}, e1_{e1}, e2_{e2} {}
+                                           const bool is_poly,
+                                           const bool is_expanded)
+    : ExpressionCell{k, is_poly, is_expanded}, e1_{e1}, e2_{e2} {}
 
 void BinaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -280,7 +283,7 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, true}, var_{v} {
+    : ExpressionCell{ExpressionKind::Var, true, true}, var_{v} {
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic expressions.
   DRAKE_DEMAND(!var_.is_dummy());
@@ -349,7 +352,7 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
-    : ExpressionCell{ExpressionKind::Constant, true}, v_{v} {
+    : ExpressionCell{ExpressionKind::Constant, true, true}, v_{v} {
   DRAKE_ASSERT(!std::isnan(v));
 }
 
@@ -392,7 +395,8 @@ Expression ExpressionConstant::Differentiate(const Variable&) const {
 
 ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
 
-ExpressionNaN::ExpressionNaN() : ExpressionCell{ExpressionKind::NaN, false} {}
+ExpressionNaN::ExpressionNaN()
+    : ExpressionCell{ExpressionKind::NaN, false, false} {}
 
 void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
 
@@ -435,7 +439,7 @@ ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 ExpressionAdd::ExpressionAdd(const double constant,
                              const map<Expression, double>& expr_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
-                     determine_polynomial(expr_to_coeff_map)},
+                     determine_polynomial(expr_to_coeff_map), false},
       constant_(constant),
       expr_to_coeff_map_(expr_to_coeff_map) {
   DRAKE_ASSERT(!expr_to_coeff_map_.empty());
@@ -526,9 +530,12 @@ Expression ExpressionAdd::Expand() const {
   // =  c0 + c1 * e_1.Expand() + ... + c_n * e_n.Expand()
   ExpressionAddFactory fac{constant_, {}};
   for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
-    fac.AddExpression(ExpandMultiplication(p.first.Expand(), p.second));
+    const Expression& e_i{p.first};
+    const double c_i{p.second};
+    fac.AddExpression(
+        ExpandMultiplication(e_i.is_expanded() ? e_i : e_i.Expand(), c_i));
   }
-  return fac.GetExpression();
+  return fac.GetExpression().set_expanded();
 }
 
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
@@ -651,8 +658,7 @@ Expression ExpressionAddFactory::GetExpression() const {
     const auto it(expr_to_coeff_map_.cbegin());
     return it->first * it->second;
   }
-  return Expression{
-      make_shared<const ExpressionAdd>(constant_, expr_to_coeff_map_)};
+  return Expression{make_shared<ExpressionAdd>(constant_, expr_to_coeff_map_)};
 }
 
 void ExpressionAddFactory::AddConstant(const double constant) {
@@ -692,7 +698,7 @@ ExpressionMul::ExpressionMul(
     const double constant,
     const map<Expression, Expression>& base_to_exponent_map)
     : ExpressionCell{ExpressionKind::Mul,
-                     determine_polynomial(base_to_exponent_map)},
+                     determine_polynomial(base_to_exponent_map), false},
       constant_(constant),
       base_to_exponent_map_(base_to_exponent_map) {
   DRAKE_ASSERT(!base_to_exponent_map_.empty());
@@ -789,13 +795,18 @@ double ExpressionMul::Evaluate(const Environment& env) const {
 Expression ExpressionMul::Expand() const {
   //   (c * ∏ᵢ pow(bᵢ, eᵢ)).Expand()
   // = c * ExpandMultiplication(∏ ExpandPow(bᵢ.Expand(), eᵢ.Expand()))
-  return accumulate(
-      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
-      Expression{constant_},
-      [](const Expression& init, const pair<const Expression, Expression>& p) {
-        return ExpandMultiplication(
-            init, ExpandPow(p.first.Expand(), p.second.Expand()));
-      });
+  return accumulate(base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
+                    Expression{constant_},
+                    [](const Expression& init,
+                       const pair<const Expression, Expression>& p) {
+                      const Expression& b_i{p.first};
+                      const Expression& e_i{p.second};
+                      return ExpandMultiplication(
+                          init,
+                          ExpandPow(b_i.is_expanded() ? b_i : b_i.Expand(),
+                                    e_i.is_expanded() ? e_i : e_i.Expand()));
+                    })
+      .set_expanded();
 }
 
 Expression ExpressionMul::Substitute(const Substitution& s) const {
@@ -839,20 +850,26 @@ Expression ExpressionMul::Differentiate(const Variable& x) const {
   //                      ...          +
   //       expr * (∂/∂x fₙ^gₙ) / fₙ^gₙ]
   // = c * expr * (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ)
-  //
   // where expr = (f₁^g₁ * f₂^g₂ * ... * fₙn^gₙ).
+  //
+  // We distribute (c * expr) into the summation. This possibly cancels the
+  // division, "/ fᵢ^gᵢ", and results in a simpler formula.
+  //
+  // = ∑ᵢ (c * (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ * expr)
+
   // This factory will form the expression that we will return.
-  ExpressionMulFactory mul_fac{constant_, base_to_exponent_map_};
-  // This factory will form (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ).
   ExpressionAddFactory add_fac;
   for (const pair<const Expression, Expression>& term : base_to_exponent_map_) {
     const Expression& base{term.first};
     const Expression& exponent{term.second};
-    add_fac.AddExpression(DifferentiatePow(base, exponent, x) *
-                          pow(base, -exponent));
+    // This factory will form (c * (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ * expr).
+    ExpressionMulFactory mul_fac{constant_, base_to_exponent_map_};
+    mul_fac.AddExpression(DifferentiatePow(base, exponent, x));
+    mul_fac.AddExpression(pow(base, -exponent));
+
+    add_fac.AddExpression(mul_fac.GetExpression());
   }
-  mul_fac.AddExpression(add_fac.GetExpression());
-  return mul_fac.GetExpression();
+  return add_fac.GetExpression();
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
@@ -952,7 +969,7 @@ Expression ExpressionMulFactory::GetExpression() const {
     return pow(it->first, it->second);
   }
   return Expression{
-      make_shared<const ExpressionMul>(constant_, base_to_exponent_map_)};
+      make_shared<ExpressionMul>(constant_, base_to_exponent_map_)};
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
@@ -1005,7 +1022,7 @@ void ExpressionMulFactory::AddMap(
 
 ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Div, e1, e2,
-                           e1.is_polynomial() && is_constant(e2)} {}
+                           e1.is_polynomial() && is_constant(e2), false} {}
 
 Polynomiald ExpressionDiv::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
@@ -1156,14 +1173,18 @@ class DivExpandVisitor {
 }  // namespace
 
 Expression ExpressionDiv::Expand() const {
-  const Expression e1{get_first_argument().Expand()};
-  const Expression e2{get_second_argument().Expand()};
+  const Expression& first{get_first_argument()};
+  const Expression& second{get_second_argument()};
+  const Expression e1{first.is_expanded() ? first : first.Expand()};
+  const Expression e2{second.is_expanded() ? second : second.Expand()};
   if (is_constant(e2)) {
     // Simplifies the 'division by a constant' case, using DivExpandVisitor
     // defined above.
-    return DivExpandVisitor{}.Simplify(e1, get_constant_value(e2));
+    return DivExpandVisitor{}
+        .Simplify(e1, get_constant_value(e2))
+        .set_expanded();
   } else {
-    return e1 / e2;
+    return (e1 / e2).set_expanded();
   }
 }
 
@@ -1195,7 +1216,7 @@ double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
 }
 
 ExpressionLog::ExpressionLog(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Log, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Log, e, false, e.is_expanded()} {}
 
 void ExpressionLog::check_domain(const double v) {
   if (!(v >= 0)) {
@@ -1211,7 +1232,8 @@ Polynomiald ExpressionLog::ToPolynomial() const {
 }
 
 Expression ExpressionLog::Expand() const {
-  return log(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return log(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionLog::Substitute(const Substitution& s) const {
@@ -1234,14 +1256,15 @@ double ExpressionLog::DoEvaluate(const double v) const {
 }
 
 ExpressionAbs::ExpressionAbs(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Abs, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Abs, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionAbs::ToPolynomial() const {
   throw runtime_error("Abs expression is not polynomial-convertible.");
 }
 
 Expression ExpressionAbs::Expand() const {
-  return abs(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return abs(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionAbs::Substitute(const Substitution& s) const {
@@ -1265,14 +1288,15 @@ ostream& ExpressionAbs::Display(ostream& os) const {
 double ExpressionAbs::DoEvaluate(const double v) const { return std::fabs(v); }
 
 ExpressionExp::ExpressionExp(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Exp, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Exp, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionExp::ToPolynomial() const {
   throw runtime_error("Exp expression is not polynomial-convertible.");
 }
 
 Expression ExpressionExp::Expand() const {
-  return exp(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return exp(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
@@ -1292,7 +1316,7 @@ ostream& ExpressionExp::Display(ostream& os) const {
 double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
 
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Sqrt, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Sqrt, e, false, e.is_expanded()} {}
 
 void ExpressionSqrt::check_domain(const double v) {
   if (!(v >= 0)) {
@@ -1308,7 +1332,8 @@ Polynomiald ExpressionSqrt::ToPolynomial() const {
 }
 
 Expression ExpressionSqrt::Expand() const {
-  return sqrt(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return sqrt(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
@@ -1332,7 +1357,7 @@ double ExpressionSqrt::DoEvaluate(const double v) const {
 
 ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Pow, e1, e2,
-                           determine_polynomial(e1, e2)} {}
+                           determine_polynomial(e1, e2), false} {}
 
 void ExpressionPow::check_domain(const double v1, const double v2) {
   if (std::isfinite(v1) && (v1 < 0.0) && std::isfinite(v2) && !is_integer(v2)) {
@@ -1353,8 +1378,11 @@ Polynomiald ExpressionPow::ToPolynomial() const {
 }
 
 Expression ExpressionPow::Expand() const {
-  return ExpandPow(get_first_argument().Expand(),
-                   get_second_argument().Expand());
+  const Expression& e1{get_first_argument()};
+  const Expression& e2{get_second_argument()};
+  return ExpandPow(e1.is_expanded() ? e1 : e1.Expand(),
+                   e2.is_expanded() ? e2 : e2.Expand())
+      .set_expanded();
 }
 
 Expression ExpressionPow::Substitute(const Substitution& s) const {
@@ -1377,14 +1405,15 @@ double ExpressionPow::DoEvaluate(const double v1, const double v2) const {
 }
 
 ExpressionSin::ExpressionSin(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Sin, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Sin, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionSin::ToPolynomial() const {
   throw runtime_error("Sin expression is not polynomial-convertible.");
 }
 
 Expression ExpressionSin::Expand() const {
-  return sin(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return sin(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionSin::Substitute(const Substitution& s) const {
@@ -1404,14 +1433,15 @@ ostream& ExpressionSin::Display(ostream& os) const {
 double ExpressionSin::DoEvaluate(const double v) const { return std::sin(v); }
 
 ExpressionCos::ExpressionCos(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Cos, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Cos, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionCos::ToPolynomial() const {
   throw runtime_error("Cos expression is not polynomial-convertible.");
 }
 
 Expression ExpressionCos::Expand() const {
-  return cos(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return cos(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionCos::Substitute(const Substitution& s) const {
@@ -1431,14 +1461,15 @@ ostream& ExpressionCos::Display(ostream& os) const {
 double ExpressionCos::DoEvaluate(const double v) const { return std::cos(v); }
 
 ExpressionTan::ExpressionTan(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Tan, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Tan, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionTan::ToPolynomial() const {
   throw runtime_error("Tan expression is not polynomial-convertible.");
 }
 
 Expression ExpressionTan::Expand() const {
-  return tan(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return tan(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionTan::Substitute(const Substitution& s) const {
@@ -1458,7 +1489,7 @@ ostream& ExpressionTan::Display(ostream& os) const {
 double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
 
 ExpressionAsin::ExpressionAsin(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Asin, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Asin, e, false, e.is_expanded()} {}
 
 void ExpressionAsin::check_domain(const double v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
@@ -1474,7 +1505,8 @@ Polynomiald ExpressionAsin::ToPolynomial() const {
 }
 
 Expression ExpressionAsin::Expand() const {
-  return asin(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return asin(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionAsin::Substitute(const Substitution& s) const {
@@ -1497,7 +1529,7 @@ double ExpressionAsin::DoEvaluate(const double v) const {
 }
 
 ExpressionAcos::ExpressionAcos(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Acos, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Acos, e, false, e.is_expanded()} {}
 
 void ExpressionAcos::check_domain(const double v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
@@ -1513,7 +1545,8 @@ Polynomiald ExpressionAcos::ToPolynomial() const {
 }
 
 Expression ExpressionAcos::Expand() const {
-  return acos(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return acos(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionAcos::Substitute(const Substitution& s) const {
@@ -1536,14 +1569,15 @@ double ExpressionAcos::DoEvaluate(const double v) const {
 }
 
 ExpressionAtan::ExpressionAtan(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Atan, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Atan, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionAtan::ToPolynomial() const {
   throw runtime_error("Atan expression is not polynomial-convertible.");
 }
 
 Expression ExpressionAtan::Expand() const {
-  return atan(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return atan(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionAtan::Substitute(const Substitution& s) const {
@@ -1563,14 +1597,18 @@ ostream& ExpressionAtan::Display(ostream& os) const {
 double ExpressionAtan::DoEvaluate(const double v) const { return std::atan(v); }
 
 ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2, false} {}
+    : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2, false,
+                           e1.is_expanded() && e2.is_expanded()} {}
 
 Polynomiald ExpressionAtan2::ToPolynomial() const {
   throw runtime_error("Atan2 expression is not polynomial-convertible.");
 }
 
 Expression ExpressionAtan2::Expand() const {
-  return atan2(get_first_argument().Expand(), get_second_argument().Expand());
+  const Expression& e1{get_first_argument()};
+  const Expression& e2{get_second_argument()};
+  return atan2(e1.is_expanded() ? e1 : e1.Expand(),
+               e2.is_expanded() ? e2 : e2.Expand());
 }
 
 Expression ExpressionAtan2::Substitute(const Substitution& s) const {
@@ -1596,14 +1634,15 @@ double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
 }
 
 ExpressionSinh::ExpressionSinh(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Sinh, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Sinh, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionSinh::ToPolynomial() const {
   throw runtime_error("Sinh expression is not polynomial-convertible.");
 }
 
 Expression ExpressionSinh::Expand() const {
-  return sinh(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return sinh(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionSinh::Substitute(const Substitution& s) const {
@@ -1623,14 +1662,15 @@ ostream& ExpressionSinh::Display(ostream& os) const {
 double ExpressionSinh::DoEvaluate(const double v) const { return std::sinh(v); }
 
 ExpressionCosh::ExpressionCosh(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Cosh, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Cosh, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionCosh::ToPolynomial() const {
   throw runtime_error("Cosh expression is not polynomial-convertible.");
 }
 
 Expression ExpressionCosh::Expand() const {
-  return cosh(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return cosh(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionCosh::Substitute(const Substitution& s) const {
@@ -1650,14 +1690,15 @@ ostream& ExpressionCosh::Display(ostream& os) const {
 double ExpressionCosh::DoEvaluate(const double v) const { return std::cosh(v); }
 
 ExpressionTanh::ExpressionTanh(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Tanh, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Tanh, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionTanh::ToPolynomial() const {
   throw runtime_error("Tanh expression is not polynomial-convertible.");
 }
 
 Expression ExpressionTanh::Expand() const {
-  return tanh(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return tanh(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionTanh::Substitute(const Substitution& s) const {
@@ -1677,14 +1718,18 @@ ostream& ExpressionTanh::Display(ostream& os) const {
 double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
 
 ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Min, e1, e2, false} {}
+    : BinaryExpressionCell{ExpressionKind::Min, e1, e2, false,
+                           e1.is_expanded() && e2.is_expanded()} {}
 
 Polynomiald ExpressionMin::ToPolynomial() const {
   throw runtime_error("Min expression is not polynomial-convertible.");
 }
 
 Expression ExpressionMin::Expand() const {
-  return min(get_first_argument().Expand(), get_second_argument().Expand());
+  const Expression& e1{get_first_argument()};
+  const Expression& e2{get_second_argument()};
+  return min(e1.is_expanded() ? e1 : e1.Expand(),
+             e2.is_expanded() ? e2 : e2.Expand());
 }
 
 Expression ExpressionMin::Substitute(const Substitution& s) const {
@@ -1712,14 +1757,18 @@ double ExpressionMin::DoEvaluate(const double v1, const double v2) const {
 }
 
 ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Max, e1, e2, false} {}
+    : BinaryExpressionCell{ExpressionKind::Max, e1, e2, false,
+                           e1.is_expanded() && e2.is_expanded()} {}
 
 Polynomiald ExpressionMax::ToPolynomial() const {
   throw runtime_error("Max expression is not polynomial-convertible.");
 }
 
 Expression ExpressionMax::Expand() const {
-  return max(get_first_argument().Expand(), get_second_argument().Expand());
+  const Expression& e1{get_first_argument()};
+  const Expression& e2{get_second_argument()};
+  return max(e1.is_expanded() ? e1 : e1.Expand(),
+             e2.is_expanded() ? e2 : e2.Expand());
 }
 
 Expression ExpressionMax::Substitute(const Substitution& s) const {
@@ -1747,14 +1796,15 @@ double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
 }
 
 ExpressionCeiling::ExpressionCeiling(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Ceil, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Ceil, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionCeiling::ToPolynomial() const {
   throw runtime_error("Ceil expression is not polynomial-convertible.");
 }
 
 Expression ExpressionCeiling::Expand() const {
-  return ceil(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return ceil(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionCeiling::Substitute(const Substitution& s) const {
@@ -1780,14 +1830,15 @@ double ExpressionCeiling::DoEvaluate(const double v) const {
 }
 
 ExpressionFloor::ExpressionFloor(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Floor, e, false} {}
+    : UnaryExpressionCell{ExpressionKind::Floor, e, false, e.is_expanded()} {}
 
 Polynomiald ExpressionFloor::ToPolynomial() const {
   throw runtime_error("Floor expression is not polynomial-convertible.");
 }
 
 Expression ExpressionFloor::Expand() const {
-  return floor(get_argument().Expand());
+  const Expression& arg{get_argument()};
+  return floor(arg.is_expanded() ? arg : arg.Expand());
 }
 
 Expression ExpressionFloor::Substitute(const Substitution& s) const {
@@ -1817,7 +1868,7 @@ double ExpressionFloor::DoEvaluate(const double v) const {
 ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
                                            const Expression& e_then,
                                            const Expression& e_else)
-    : ExpressionCell{ExpressionKind::IfThenElse, false},
+    : ExpressionCell{ExpressionKind::IfThenElse, false, false},
       f_cond_{f_cond},
       e_then_{e_then},
       e_else_{e_else} {}
@@ -1906,7 +1957,11 @@ ostream& ExpressionIfThenElse::Display(ostream& os) const {
 // --------------------
 ExpressionUninterpretedFunction::ExpressionUninterpretedFunction(
     string name, vector<Expression> arguments)
-    : ExpressionCell{ExpressionKind::UninterpretedFunction, false},
+    : ExpressionCell{ExpressionKind::UninterpretedFunction, false,
+                     all_of(arguments.begin(), arguments.end(),
+                            [](const Expression& arg) {
+                              return arg.is_expanded();
+                            })},
       name_{std::move(name)},
       arguments_{std::move(arguments)} {}
 
@@ -1968,7 +2023,7 @@ Expression ExpressionUninterpretedFunction::Expand() const {
   vector<Expression> new_arguments;
   new_arguments.reserve(arguments_.size());
   for (const Expression& arg : arguments_) {
-    new_arguments.push_back(arg.Expand());
+    new_arguments.push_back(arg.is_expanded() ? arg : arg.Expand());
   }
   return uninterpreted_function(name_, std::move(new_arguments));
 }
@@ -2090,261 +2145,387 @@ bool is_uninterpreted_function(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::UninterpretedFunction;
 }
 
-shared_ptr<const ExpressionConstant> to_constant(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
+shared_ptr<ExpressionConstant> to_constant(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
   DRAKE_ASSERT(is_constant(*expr_ptr));
-  return static_pointer_cast<const ExpressionConstant>(expr_ptr);
+  return static_pointer_cast<ExpressionConstant>(expr_ptr);
 }
+
 shared_ptr<const ExpressionConstant> to_constant(const Expression& e) {
   return to_constant(e.ptr_);
 }
 
-shared_ptr<const ExpressionVar> to_variable(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_variable(*expr_ptr));
-  return static_pointer_cast<const ExpressionVar>(expr_ptr);
+shared_ptr<ExpressionConstant> to_constant(Expression* const e) {
+  return to_constant(e->ptr_);
 }
+
+shared_ptr<ExpressionVar> to_variable(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_variable(*expr_ptr));
+  return static_pointer_cast<ExpressionVar>(expr_ptr);
+}
+
 shared_ptr<const ExpressionVar> to_variable(const Expression& e) {
   return to_variable(e.ptr_);
 }
 
-shared_ptr<const UnaryExpressionCell> to_unary(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
+shared_ptr<ExpressionVar> to_variable(Expression* const e) {
+  return to_variable(e->ptr_);
+}
+
+shared_ptr<UnaryExpressionCell> to_unary(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
   DRAKE_ASSERT(is_log(*expr_ptr) || is_abs(*expr_ptr) || is_exp(*expr_ptr) ||
                is_sqrt(*expr_ptr) || is_sin(*expr_ptr) || is_cos(*expr_ptr) ||
                is_tan(*expr_ptr) || is_asin(*expr_ptr) || is_acos(*expr_ptr) ||
                is_atan(*expr_ptr) || is_sinh(*expr_ptr) || is_cosh(*expr_ptr) ||
                is_tanh(*expr_ptr) || is_ceil(*expr_ptr) || is_floor(*expr_ptr));
-  return static_pointer_cast<const UnaryExpressionCell>(expr_ptr);
+  return static_pointer_cast<UnaryExpressionCell>(expr_ptr);
 }
+
 shared_ptr<const UnaryExpressionCell> to_unary(const Expression& e) {
   return to_unary(e.ptr_);
 }
 
-shared_ptr<const BinaryExpressionCell> to_binary(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
+shared_ptr<UnaryExpressionCell> to_unary(Expression* const e) {
+  return to_unary(e->ptr_);
+}
+
+shared_ptr<BinaryExpressionCell> to_binary(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
   DRAKE_ASSERT(is_division(*expr_ptr) || is_pow(*expr_ptr) ||
                is_atan2(*expr_ptr) || is_min(*expr_ptr) || is_max(*expr_ptr));
-  return static_pointer_cast<const BinaryExpressionCell>(expr_ptr);
+  return static_pointer_cast<BinaryExpressionCell>(expr_ptr);
 }
+
 shared_ptr<const BinaryExpressionCell> to_binary(const Expression& e) {
   return to_binary(e.ptr_);
 }
 
-shared_ptr<const ExpressionAdd> to_addition(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_addition(*expr_ptr));
-  return static_pointer_cast<const ExpressionAdd>(expr_ptr);
+shared_ptr<BinaryExpressionCell> to_binary(Expression* const e) {
+  return to_binary(e->ptr_);
 }
+
+shared_ptr<ExpressionAdd> to_addition(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_addition(*expr_ptr));
+  return static_pointer_cast<ExpressionAdd>(expr_ptr);
+}
+
 shared_ptr<const ExpressionAdd> to_addition(const Expression& e) {
   return to_addition(e.ptr_);
 }
 
-shared_ptr<const ExpressionMul> to_multiplication(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_multiplication(*expr_ptr));
-  return static_pointer_cast<const ExpressionMul>(expr_ptr);
+shared_ptr<ExpressionAdd> to_addition(Expression* const e) {
+  return to_addition(e->ptr_);
 }
+
+shared_ptr<ExpressionMul> to_multiplication(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_multiplication(*expr_ptr));
+  return static_pointer_cast<ExpressionMul>(expr_ptr);
+}
+
 shared_ptr<const ExpressionMul> to_multiplication(const Expression& e) {
   return to_multiplication(e.ptr_);
 }
 
-shared_ptr<const ExpressionDiv> to_division(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_division(*expr_ptr));
-  return static_pointer_cast<const ExpressionDiv>(expr_ptr);
+shared_ptr<ExpressionMul> to_multiplication(Expression* const e) {
+  return to_multiplication(e->ptr_);
 }
+
+shared_ptr<ExpressionDiv> to_division(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_division(*expr_ptr));
+  return static_pointer_cast<ExpressionDiv>(expr_ptr);
+}
+
 shared_ptr<const ExpressionDiv> to_division(const Expression& e) {
   return to_division(e.ptr_);
 }
 
-shared_ptr<const ExpressionLog> to_log(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_log(*expr_ptr));
-  return static_pointer_cast<const ExpressionLog>(expr_ptr);
+shared_ptr<ExpressionDiv> to_division(Expression* const e) {
+  return to_division(e->ptr_);
 }
+
+shared_ptr<ExpressionLog> to_log(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_log(*expr_ptr));
+  return static_pointer_cast<ExpressionLog>(expr_ptr);
+}
+
 shared_ptr<const ExpressionLog> to_log(const Expression& e) {
   return to_log(e.ptr_);
 }
 
-shared_ptr<const ExpressionAbs> to_abs(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_abs(*expr_ptr));
-  return static_pointer_cast<const ExpressionAbs>(expr_ptr);
+shared_ptr<ExpressionLog> to_log(Expression* const e) {
+  return to_log(e->ptr_);
 }
+
+shared_ptr<ExpressionAbs> to_abs(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_abs(*expr_ptr));
+  return static_pointer_cast<ExpressionAbs>(expr_ptr);
+}
+
 shared_ptr<const ExpressionAbs> to_abs(const Expression& e) {
   return to_abs(e.ptr_);
 }
 
-shared_ptr<const ExpressionExp> to_exp(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_exp(*expr_ptr));
-  return static_pointer_cast<const ExpressionExp>(expr_ptr);
+shared_ptr<ExpressionAbs> to_abs(Expression* const e) {
+  return to_abs(e->ptr_);
 }
+
+shared_ptr<ExpressionExp> to_exp(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_exp(*expr_ptr));
+  return static_pointer_cast<ExpressionExp>(expr_ptr);
+}
+
 shared_ptr<const ExpressionExp> to_exp(const Expression& e) {
   return to_exp(e.ptr_);
 }
 
-shared_ptr<const ExpressionSqrt> to_sqrt(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_sqrt(*expr_ptr));
-  return static_pointer_cast<const ExpressionSqrt>(expr_ptr);
+shared_ptr<ExpressionExp> to_exp(Expression* const e) {
+  return to_exp(e->ptr_);
 }
+
+shared_ptr<ExpressionSqrt> to_sqrt(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_sqrt(*expr_ptr));
+  return static_pointer_cast<ExpressionSqrt>(expr_ptr);
+}
+
 shared_ptr<const ExpressionSqrt> to_sqrt(const Expression& e) {
   return to_sqrt(e.ptr_);
 }
-shared_ptr<const ExpressionPow> to_pow(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_pow(*expr_ptr));
-  return static_pointer_cast<const ExpressionPow>(expr_ptr);
+
+shared_ptr<ExpressionSqrt> to_sqrt(Expression* const e) {
+  return to_sqrt(e->ptr_);
 }
+
+shared_ptr<ExpressionPow> to_pow(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_pow(*expr_ptr));
+  return static_pointer_cast<ExpressionPow>(expr_ptr);
+}
+
 shared_ptr<const ExpressionPow> to_pow(const Expression& e) {
   return to_pow(e.ptr_);
 }
 
-shared_ptr<const ExpressionSin> to_sin(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_sin(*expr_ptr));
-  return static_pointer_cast<const ExpressionSin>(expr_ptr);
+shared_ptr<ExpressionPow> to_pow(Expression* const e) {
+  return to_pow(e->ptr_);
 }
+
+shared_ptr<ExpressionSin> to_sin(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_sin(*expr_ptr));
+  return static_pointer_cast<ExpressionSin>(expr_ptr);
+}
+
 shared_ptr<const ExpressionSin> to_sin(const Expression& e) {
   return to_sin(e.ptr_);
 }
 
-shared_ptr<const ExpressionCos> to_cos(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_cos(*expr_ptr));
-  return static_pointer_cast<const ExpressionCos>(expr_ptr);
+shared_ptr<ExpressionSin> to_sin(Expression* const e) {
+  return to_sin(e->ptr_);
 }
+
+shared_ptr<ExpressionCos> to_cos(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_cos(*expr_ptr));
+  return static_pointer_cast<ExpressionCos>(expr_ptr);
+}
+
 shared_ptr<const ExpressionCos> to_cos(const Expression& e) {
   return to_cos(e.ptr_);
 }
 
-shared_ptr<const ExpressionTan> to_tan(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_tan(*expr_ptr));
-  return static_pointer_cast<const ExpressionTan>(expr_ptr);
+shared_ptr<ExpressionCos> to_cos(Expression* const e) {
+  return to_cos(e->ptr_);
 }
+
+shared_ptr<ExpressionTan> to_tan(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_tan(*expr_ptr));
+  return static_pointer_cast<ExpressionTan>(expr_ptr);
+}
+
 shared_ptr<const ExpressionTan> to_tan(const Expression& e) {
   return to_tan(e.ptr_);
 }
 
-shared_ptr<const ExpressionAsin> to_asin(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_asin(*expr_ptr));
-  return static_pointer_cast<const ExpressionAsin>(expr_ptr);
+shared_ptr<ExpressionTan> to_tan(Expression* const e) {
+  return to_tan(e->ptr_);
 }
+
+shared_ptr<ExpressionAsin> to_asin(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_asin(*expr_ptr));
+  return static_pointer_cast<ExpressionAsin>(expr_ptr);
+}
+
 shared_ptr<const ExpressionAsin> to_asin(const Expression& e) {
   return to_asin(e.ptr_);
 }
 
-shared_ptr<const ExpressionAcos> to_acos(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_acos(*expr_ptr));
-  return static_pointer_cast<const ExpressionAcos>(expr_ptr);
+shared_ptr<ExpressionAsin> to_asin(Expression* const e) {
+  return to_asin(e->ptr_);
 }
+
+shared_ptr<ExpressionAcos> to_acos(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_acos(*expr_ptr));
+  return static_pointer_cast<ExpressionAcos>(expr_ptr);
+}
+
 shared_ptr<const ExpressionAcos> to_acos(const Expression& e) {
   return to_acos(e.ptr_);
 }
 
-shared_ptr<const ExpressionAtan> to_atan(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_atan(*expr_ptr));
-  return static_pointer_cast<const ExpressionAtan>(expr_ptr);
+shared_ptr<ExpressionAcos> to_acos(Expression* const e) {
+  return to_acos(e->ptr_);
 }
+
+shared_ptr<ExpressionAtan> to_atan(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_atan(*expr_ptr));
+  return static_pointer_cast<ExpressionAtan>(expr_ptr);
+}
+
 shared_ptr<const ExpressionAtan> to_atan(const Expression& e) {
   return to_atan(e.ptr_);
 }
 
-shared_ptr<const ExpressionAtan2> to_atan2(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_atan2(*expr_ptr));
-  return static_pointer_cast<const ExpressionAtan2>(expr_ptr);
+shared_ptr<ExpressionAtan> to_atan(Expression* const e) {
+  return to_atan(e->ptr_);
 }
+
+shared_ptr<ExpressionAtan2> to_atan2(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_atan2(*expr_ptr));
+  return static_pointer_cast<ExpressionAtan2>(expr_ptr);
+}
+
 shared_ptr<const ExpressionAtan2> to_atan2(const Expression& e) {
   return to_atan2(e.ptr_);
 }
 
-shared_ptr<const ExpressionSinh> to_sinh(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_sinh(*expr_ptr));
-  return static_pointer_cast<const ExpressionSinh>(expr_ptr);
+shared_ptr<ExpressionAtan2> to_atan2(Expression* const e) {
+  return to_atan2(e->ptr_);
 }
+
+shared_ptr<ExpressionSinh> to_sinh(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_sinh(*expr_ptr));
+  return static_pointer_cast<ExpressionSinh>(expr_ptr);
+}
+
 shared_ptr<const ExpressionSinh> to_sinh(const Expression& e) {
   return to_sinh(e.ptr_);
 }
 
-shared_ptr<const ExpressionCosh> to_cosh(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_cosh(*expr_ptr));
-  return static_pointer_cast<const ExpressionCosh>(expr_ptr);
+shared_ptr<ExpressionSinh> to_sinh(Expression* const e) {
+  return to_sinh(e->ptr_);
 }
+
+shared_ptr<ExpressionCosh> to_cosh(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_cosh(*expr_ptr));
+  return static_pointer_cast<ExpressionCosh>(expr_ptr);
+}
+
 shared_ptr<const ExpressionCosh> to_cosh(const Expression& e) {
   return to_cosh(e.ptr_);
 }
 
-shared_ptr<const ExpressionTanh> to_tanh(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_tanh(*expr_ptr));
-  return static_pointer_cast<const ExpressionTanh>(expr_ptr);
+shared_ptr<ExpressionCosh> to_cosh(Expression* const e) {
+  return to_cosh(e->ptr_);
 }
+
+shared_ptr<ExpressionTanh> to_tanh(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_tanh(*expr_ptr));
+  return static_pointer_cast<ExpressionTanh>(expr_ptr);
+}
+
 shared_ptr<const ExpressionTanh> to_tanh(const Expression& e) {
   return to_tanh(e.ptr_);
 }
 
-shared_ptr<const ExpressionMin> to_min(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_min(*expr_ptr));
-  return static_pointer_cast<const ExpressionMin>(expr_ptr);
+shared_ptr<ExpressionTanh> to_tanh(Expression* const e) {
+  return to_tanh(e->ptr_);
 }
+
+shared_ptr<ExpressionMin> to_min(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_min(*expr_ptr));
+  return static_pointer_cast<ExpressionMin>(expr_ptr);
+}
+
 shared_ptr<const ExpressionMin> to_min(const Expression& e) {
   return to_min(e.ptr_);
 }
 
-shared_ptr<const ExpressionMax> to_max(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_max(*expr_ptr));
-  return static_pointer_cast<const ExpressionMax>(expr_ptr);
+shared_ptr<ExpressionMin> to_min(Expression* const e) {
+  return to_min(e->ptr_);
 }
+
+shared_ptr<ExpressionMax> to_max(const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_max(*expr_ptr));
+  return static_pointer_cast<ExpressionMax>(expr_ptr);
+}
+
 shared_ptr<const ExpressionMax> to_max(const Expression& e) {
   return to_max(e.ptr_);
 }
 
-shared_ptr<const ExpressionCeiling> to_ceil(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_ceil(*expr_ptr));
-  return static_pointer_cast<const ExpressionCeiling>(expr_ptr);
+shared_ptr<ExpressionMax> to_max(Expression* const e) {
+  return to_max(e->ptr_);
 }
+
+shared_ptr<ExpressionCeiling> to_ceil(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_ceil(*expr_ptr));
+  return static_pointer_cast<ExpressionCeiling>(expr_ptr);
+}
+
 shared_ptr<const ExpressionCeiling> to_ceil(const Expression& e) {
   return to_ceil(e.ptr_);
 }
 
-shared_ptr<const ExpressionFloor> to_floor(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_floor(*expr_ptr));
-  return static_pointer_cast<const ExpressionFloor>(expr_ptr);
+shared_ptr<ExpressionCeiling> to_ceil(Expression* const e) {
+  return to_ceil(e->ptr_);
 }
+
+shared_ptr<ExpressionFloor> to_floor(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_floor(*expr_ptr));
+  return static_pointer_cast<ExpressionFloor>(expr_ptr);
+}
+
 shared_ptr<const ExpressionFloor> to_floor(const Expression& e) {
   return to_floor(e.ptr_);
 }
 
-shared_ptr<const ExpressionIfThenElse> to_if_then_else(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_if_then_else(*expr_ptr));
-  return static_pointer_cast<const ExpressionIfThenElse>(expr_ptr);
+shared_ptr<ExpressionFloor> to_floor(Expression* const e) {
+  return to_floor(e->ptr_);
 }
+
+shared_ptr<ExpressionIfThenElse> to_if_then_else(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_if_then_else(*expr_ptr));
+  return static_pointer_cast<ExpressionIfThenElse>(expr_ptr);
+}
+
 shared_ptr<const ExpressionIfThenElse> to_if_then_else(const Expression& e) {
   return to_if_then_else(e.ptr_);
 }
 
-shared_ptr<const ExpressionUninterpretedFunction> to_uninterpreted_function(
-    const shared_ptr<const ExpressionCell>& expr_ptr) {
-  DRAKE_ASSERT(is_uninterpreted_function(*expr_ptr));
-  return static_pointer_cast<const ExpressionUninterpretedFunction>(expr_ptr);
+shared_ptr<ExpressionIfThenElse> to_if_then_else(Expression* const e) {
+  return to_if_then_else(e->ptr_);
 }
+
+shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_uninterpreted_function(*expr_ptr));
+  return static_pointer_cast<ExpressionUninterpretedFunction>(expr_ptr);
+}
+
 shared_ptr<const ExpressionUninterpretedFunction> to_uninterpreted_function(
     const Expression& e) {
   return to_uninterpreted_function(e.ptr_);
+}
+
+shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
+    Expression* const e) {
+  return to_uninterpreted_function(e->ptr_);
 }
 
 }  // namespace symbolic

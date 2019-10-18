@@ -36,7 +36,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPositionToGeometryPose)
 
-  /***
+  /**
    * The %MultibodyPositionToGeometryPose holds an internal, non-owned
    * reference to the MultibodyPlant object so you must ensure that @p plant
    * has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
@@ -60,8 +60,6 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
   }
 
  private:
-  optional<bool> DoHasDirectFeedthrough(int, int) const final { return true; }
-
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 
   const multibody::MultibodyPlant<T>& plant_;

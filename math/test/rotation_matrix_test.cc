@@ -43,7 +43,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
          7, 8, -10;
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>{m}, std::logic_error,
-        "Error: Rotation matrix is not orthonormal.*");
+        "Error: Rotation matrix is not orthonormal[\\s\\S]*");
 
     // Barely non-orthogonal matrix should throw an exception.
     m << 1, 9000*kEpsilon, 9000*kEpsilon,
@@ -51,7 +51,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
          0, -sin_theta, cos_theta;
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>{m}, std::logic_error,
-        "Error: Rotation matrix is not orthonormal.*");
+        "Error: Rotation matrix is not orthonormal[\\s\\S]*");
 
     // Orthogonal matrix with determinant = -1 should throw an exception.
     m << 1, 0, 0,
@@ -129,10 +129,10 @@ GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
   // Non-orthogonal matrix should throw an exception (at least in debug builds).
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz),
-      std::logic_error, "Error: Rotation matrix is not orthonormal.*");
+      std::logic_error, "Error: Rotation matrix is not orthonormal[\\s\\S]*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz),
-      std::logic_error, "Error: Rotation matrix is not orthonormal.*");
+      std::logic_error, "Error: Rotation matrix is not orthonormal[\\s\\S]*");
 
   // Non-right handed matrix with determinant < 0 should throw an exception.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -202,6 +202,28 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   } else {
     EXPECT_NO_THROW(R.set(m));
   }
+}
+
+// Test getting rows or columns from a RotationMatrix.
+GTEST_TEST(RotationMatrix, GetRowsOrColumnsFromRotationmatrix) {
+  const double q = 1.2345;  // Angle in radians.
+  RotationMatrix<double> R_AB = RotationMatrix<double>::MakeZRotation(q);
+  const Vector3d Ax_B = R_AB.row(0);
+  const Vector3d Ay_B = R_AB.row(1);
+  const Vector3d Az_B = R_AB.row(2);
+  const Vector3d Bx_A = R_AB.col(0);
+  const Vector3d By_A = R_AB.col(1);
+  const Vector3d Bz_A = R_AB.col(2);
+
+  constexpr double tolerance = 32 * kEpsilon;
+  const double cos_q = std::cos(q);
+  const double sin_q = std::sin(q);
+  EXPECT_TRUE(CompareMatrices(Ax_B, Vector3d(cos_q, -sin_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(Ay_B, Vector3d(sin_q, cos_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(Az_B, Vector3d(0, 0, 1), tolerance));
+  EXPECT_TRUE(CompareMatrices(Bx_A, Vector3d(cos_q, sin_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(By_A, Vector3d(-sin_q, cos_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(Bz_A, Vector3d(0, 0, 1), tolerance));
 }
 
 // Test setting a RotationMatrix to an identity matrix.
@@ -741,6 +763,88 @@ GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
   CheckProjectionWithAxis(M, axis, -2 * M_PI, 4 * M_PI);
 }
 
+// Tests RotationMatrix R_AB multiplied by a 3 x n matrix whose columns are
+// arbitrary vectors, expressed in B.  The result is tested to be a 3 x n matrix
+// whose columns are those same vectors but expressed in A.
+GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
+  // Create a somewhat arbitrary RotationMatrix.
+  const double r(0.5), p(0.4), y(0.3);
+  const RollPitchYaw<double> rpy(r, p, y);
+  const RotationMatrix<double> R_AB(rpy);
+
+  // Multiply the RigidTransform R_AB by three vectors to test operator* for a
+  // 3 x n matrix, where n = 3 is known before compilation.
+  Eigen::Matrix3d v_B;
+  const Vector3d v1_B(-12, -9, 7);   v_B.col(0) = v1_B;
+  const Vector3d v2_B(-11, -8, 10);  v_B.col(1) = v2_B;
+  const Vector3d v3_B(-10, -7, 12);  v_B.col(2) = v3_B;
+  const auto v_A = R_AB * v_B;
+
+  // Ensure the compiler's declared type for v_A has the proper number of
+  // rows and columns before compilation.  Then verify the results.
+  EXPECT_EQ(decltype(v_A)::RowsAtCompileTime, 3);
+  EXPECT_EQ(decltype(v_A)::ColsAtCompileTime, 3);
+
+  // Ensure the results for v_A match those from Eigen's matrix multiply.
+  // Note: Validating v_A is important because its results are reused below.
+  EXPECT_TRUE(CompareMatrices(v_A.col(0), R_AB.matrix() * v1_B, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(v_A.col(1), R_AB.matrix() * v2_B, kEpsilon));
+
+  // Multiply the RotationMatrix R_AB by n = 2 vectors to test operator* for a
+  // 3 x n matrix, where n is not known before compilation.
+  const int number_of_vectors = 2;
+  Eigen::Matrix3Xd w_B(3, number_of_vectors);
+  w_B.col(0) = v1_B;
+  w_B.col(1) = v2_B;
+  const auto w_A = R_AB * w_B;
+
+  // Ensure the compiler's declared type for w_A has the proper number of
+  // rows before compilation (dictated by the return type of operator*) and
+  // has the proper number of columns at run time.
+  EXPECT_EQ(decltype(w_A)::RowsAtCompileTime, 3);
+  EXPECT_EQ(w_A.cols(), number_of_vectors);
+  for (int i = 0; i < number_of_vectors; ++i) {
+    const Vector3d wi_A = w_A.col(i);
+    const Vector3d wi_A_expected = v_A.col(i);  // Previous result.
+    EXPECT_TRUE(CompareMatrices(wi_A, wi_A_expected, kEpsilon));
+  }
+
+  // Test RotationMatrix operator* can multiply an Eigen expression, namely the
+  // Eigen expression arising from a 3x1 matrix multiplied by a 1x4 matrix.
+  const Eigen::MatrixXd s_A = R_AB * (Eigen::Vector3d(1, 2, 3) *
+      Eigen::RowVector4d(1, 2, 3, 4));
+  EXPECT_EQ(s_A.rows(), 3);
+  EXPECT_EQ(s_A.cols(), 4);
+  Eigen::Matrix<double, 3, 4> m34_expected;
+  m34_expected << 1, 2, 3, 4,
+                  2, 4, 6, 8,
+                  3, 6, 9, 12;
+  EXPECT_TRUE(CompareMatrices(s_A, R_AB.matrix() * m34_expected, kEpsilon));
+
+  // Test RotationMatrix operator* can multiply a different looking Eigen
+  // expression that produces the same result.
+  const auto z_A_expected = R_AB *
+      (Eigen::MatrixXd(3, 4) << Eigen::Vector3d(1, 2, 3),
+          Eigen::Vector3d(2, 4, 6),
+          Eigen::Vector3d(3, 6, 9),
+          Eigen::Vector3d(4, 8, 12)).finished();
+  EXPECT_EQ(decltype(z_A_expected)::RowsAtCompileTime, 3);
+  EXPECT_EQ(z_A_expected.cols(), 4);
+  EXPECT_TRUE(CompareMatrices(s_A, z_A_expected, kEpsilon));
+
+  // Test that operator* disallows weirdly-sized matrix multiplication.
+  if (kDrakeAssertIsArmed) {
+    Eigen::MatrixXd m_7x8(7, 8);
+    m_7x8 = Eigen::MatrixXd::Identity(7, 8);
+    Eigen::MatrixXd bad_matrix_multiply;
+    EXPECT_THROW(bad_matrix_multiply = R_AB * m_7x8, std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        bad_matrix_multiply = R_AB * m_7x8, std::logic_error,
+        "Error: Inner dimension for matrix multiplication is not 3.");
+  }
+}
+
+
 class RotationMatrixConversionTests : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -781,8 +885,8 @@ class RotationMatrixConversionTests : public ::testing::Test {
   std::vector<Eigen::Quaterniond> quaternion_test_cases_;
 };
 
-TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
-  constexpr double tolerance = 40 * kEpsilon;
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternion) {
+  constexpr double tol = 40 * kEpsilon;
   for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
     // Step 1: Convert the quaternion qi to a 3x3 matrix mi.
     // Step 2: Construct a RotationMatrix Ri from the 3x3 matrix.
@@ -790,8 +894,52 @@ TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
     // Step 4: Ensure qi and q_expected represent the same orientation.
     const Matrix3d mi = qi.toRotationMatrix();
     const RotationMatrix<double> Ri(mi);
-    const Eigen::Quaterniond q_expected = Ri.ToQuaternion();
-    EXPECT_TRUE(AreQuaternionsEqualForOrientation(qi, q_expected, tolerance));
+    const Eigen::Quaterniond q_actual = Ri.ToQuaternion();
+    ASSERT_TRUE(AreQuaternionsEqualForOrientation(qi, q_actual, tol));
+  }
+}
+
+// Repeat the prior test case with T = Expression without using Variables.
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionSymbolic) {
+  using symbolic::Expression;
+  constexpr double tol = 40 * kEpsilon;
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    const Matrix3<Expression> mi = qi.toRotationMatrix();
+    const RotationMatrix<Expression> Ri(mi);
+    const Eigen::Quaternion<Expression> q_actual_expr = Ri.ToQuaternion();
+    const Eigen::Quaterniond q_actual_double(q_actual_expr.coeffs().unaryExpr(
+        [](const Expression& x) { return ExtractDoubleOrThrow(x); }));
+    ASSERT_TRUE(AreQuaternionsEqualForOrientation(qi, q_actual_double, tol));
+  }
+}
+
+// Repeat the prior test case with T = Expression and using Variables.
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionVariable) {
+  using symbolic::Environment;
+  using symbolic::Expression;
+  using symbolic::Variable;
+  constexpr double tol = 40 * kEpsilon;
+
+  // Perform a fully-symbolic ToQuaternion, where R is only Variables.
+  const Matrix3<Variable> m_var =
+      symbolic::MakeMatrixContinuousVariable<3, 3>("m");
+  const RotationMatrix<Expression> R_expr(m_var);
+  const Eigen::Quaternion<Expression> q_expr = R_expr.ToQuaternion();
+
+  // Evaluate the Quaterionion<Expression> for each Ri.
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    // Prepare the variable substitions.
+    const Matrix3d mi = qi.toRotationMatrix();
+    Environment env;
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        env.insert(m_var(row, col), mi(row, col));
+      }
+    }
+    // Evaluate and compare.
+    const Eigen::Quaterniond q_actual_double(q_expr.coeffs().unaryExpr(
+        [&env](const Expression& x) { return x.Evaluate(env); }));
+    ASSERT_TRUE(AreQuaternionsEqualForOrientation(qi, q_actual_double, tol));
   }
 }
 
@@ -802,7 +950,7 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
     const Matrix3d m_expected = qi.toRotationMatrix();
     const RotationMatrix<double> R_expected(m_expected);
     const RotationMatrix<double> R(qi);
-    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
+    ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
   }
 
   if (kDrakeAssertIsArmed) {
@@ -824,7 +972,7 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     // Compare R with the RotationMatrix constructor that uses Eigen::AngleAxis.
     const Eigen::AngleAxisd angle_axis(qi);
     const RotationMatrix<double> R_expected(angle_axis);
-    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
+    ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
 
     // Check that inverting this operation (calculating the AngleAxis from
     // rotation matrix R_expected) corresponds to the same orientation.
@@ -834,10 +982,10 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     Eigen::AngleAxis<double> inverse_angle_axis;
     inverse_angle_axis.fromRotationMatrix(R_expected.matrix());
     const RotationMatrix<double> R_test(inverse_angle_axis);
-    EXPECT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
+    ASSERT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
     // Ensure the angle returned via Eigen's AngleAxis is between 0 and PI.
     const double angle = inverse_angle_axis.angle();
-    EXPECT_TRUE(0 <= angle && angle <= M_PI);
+    ASSERT_TRUE(0 <= angle && angle <= M_PI);
   }
 
   if (kDrakeAssertIsArmed) {

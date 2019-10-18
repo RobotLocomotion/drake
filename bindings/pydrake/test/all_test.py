@@ -4,6 +4,8 @@ import sys
 import unittest
 import warnings
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+
 
 class TestAll(unittest.TestCase):
     # N.B. Synchronize code snippests with `doc/python_bindings.rst`.
@@ -20,10 +22,14 @@ class TestAll(unittest.TestCase):
             # avoid issues on different machines, but still catch meaningful
             # warnings.
             warnings.simplefilter("always", Warning)
+            warnings.filterwarnings(
+                "ignore", message="Matplotlib is building the font cache",
+                category=UserWarning)
             import pydrake.all
             if w:
                 sys.stderr.write("Encountered import warnings:\n{}\n".format(
                     "\n".join(map(str, w)) + "\n"))
+            self.assertEqual(len(w), 0)
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
@@ -85,11 +91,9 @@ class TestAll(unittest.TestCase):
             "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
-            # automotive
-            "SimpleCar",
             # common
             # - __init__
-            "AddResourceSearchPath",
+            "RandomDistribution",
             # - compatibility
             "maybe_patch_numpy_formatters",
             # - containers
@@ -108,11 +112,6 @@ class TestAll(unittest.TestCase):
             # symbolic
             "Variable",
             "Expression",
-            # maliput
-            # - api
-            "RoadGeometry",
-            # - dragway
-            "create_dragway",
             # manipulation
             # - planner
             "DoDifferentialInverseKinematics",
@@ -170,6 +169,9 @@ class TestAll(unittest.TestCase):
             "TemplateSystem",
             # - sensors
             "Image",
+            # visualization
+            # - plotting
+            "plot_sublevelset_quadratic",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.

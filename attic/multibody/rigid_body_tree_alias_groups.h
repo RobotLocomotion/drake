@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 /**
@@ -42,18 +43,6 @@ class RigidBodyTreeAliasGroups {
    */
   explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>* tree)
       : tree_(*tree) {}
-
-  /**
-   * Parses body groups and joint groups from a config file.
-   *
-   * @param config Path to text-format AliasGroups file.
-   *
-   * @throws std::logic_error if body_namei or joint_namei cannot be found in
-   * the RigidBodyTree provided at construction time.
-   * @throws std::runtime_error if joint names or body names cannot be parsed
-   * correctly.
-   */
-  void LoadFromFile(const std::string& path);
 
   /**
    * Creates a body group named @p group_name whose elements have names from

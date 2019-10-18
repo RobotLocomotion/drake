@@ -6,87 +6,88 @@ import warnings
 
 import numpy as np
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp
+from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
     AddDirectCollocationConstraint, DirectCollocation,
     DirectCollocationConstraint, DirectTranscription,
+    TimeStep,
 )
 
 
 class TestTrajectoryOptimization(unittest.TestCase):
-    def _do_test_direct_collocation(self, use_deprecated_solve):
+    def test_direct_collocation(self):
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
 
-        dircol = DirectCollocation(plant, context, num_time_samples=21,
-                                   minimum_timestep=0.2, maximum_timestep=0.5)
+        dircol = DirectCollocation(
+            plant, context, num_time_samples=21, minimum_timestep=0.2,
+            maximum_timestep=0.5,
+            input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+            assume_non_continuous_states_are_fixed=False)
 
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,
         # not the implementation.
         t = dircol.time()
-        dt = dircol.timestep(0)
+        dt = dircol.timestep(index=0)
         x = dircol.state()
-        x2 = dircol.state(2)
+        x2 = dircol.state(index=2)
         x0 = dircol.initial_state()
         xf = dircol.final_state()
         u = dircol.input()
-        u2 = dircol.input(2)
+        u2 = dircol.input(index=2)
+        v = dircol.NewSequentialVariable(rows=1, name="test")
+        v2 = dircol.GetSequentialVariableAtIndex(name="test", index=2)
 
         dircol.AddRunningCost(x.dot(x))
         dircol.AddConstraintToAllKnotPoints(u[0] == 0)
-        dircol.AddTimeIntervalBounds(0.3, 0.4)
+        dircol.AddTimeIntervalBounds(lower_bound=0.3, upper_bound=0.4)
         dircol.AddEqualTimeIntervalsConstraints()
-        dircol.AddDurationBounds(.3*21, 0.4*21)
+        dircol.AddDurationBounds(lower_bound=.3*21, upper_bound=0.4*21)
         dircol.AddFinalCost(2*x.dot(x))
 
         initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
                                                       np.zeros((1, 2)))
         initial_x = PiecewisePolynomial()
-        dircol.SetInitialTrajectory(initial_u, initial_x)
+        dircol.SetInitialTrajectory(traj_init_u=initial_u,
+                                    traj_init_x=initial_x)
 
-        global input_was_called
-        input_was_called = False
-        global state_was_called
-        state_was_called = False
+        was_called = dict(
+            input=False,
+            state=False,
+            complete=False
+        )
 
         def input_callback(t, u):
-            global input_was_called
-            input_was_called = True
+            was_called["input"] = True
 
         def state_callback(t, x):
-            global state_was_called
-            state_was_called = True
+            was_called["state"] = True
 
-        dircol.AddInputTrajectoryCallback(input_callback)
-        dircol.AddStateTrajectoryCallback(state_callback)
+        def complete_callback(t, x, u, v):
+            was_called["complete"] = True
 
-        if use_deprecated_solve:
-            with catch_drake_warnings(expected_count=1):
-                dircol.Solve()
-                result = None
-        else:
-            result = mp.Solve(dircol)
-        self.assertTrue(input_was_called)
-        self.assertTrue(state_was_called)
+        dircol.AddInputTrajectoryCallback(callback=input_callback)
+        dircol.AddStateTrajectoryCallback(callback=state_callback)
+        dircol.AddCompleteTrajectoryCallback(callback=complete_callback,
+                                             names=["test"])
 
-        if use_deprecated_solve:
-            with catch_drake_warnings(expected_count=5):
-                times = dircol.GetSampleTimes()
-                inputs = dircol.GetInputSamples()
-                states = dircol.GetStateSamples()
-                input_traj = dircol.ReconstructInputTrajectory()
-                state_traj = dircol.ReconstructStateTrajectory()
-        else:
-            times = dircol.GetSampleTimes(result)
-            inputs = dircol.GetInputSamples(result)
-            states = dircol.GetStateSamples(result)
-            input_traj = dircol.ReconstructInputTrajectory(result)
-            state_traj = dircol.ReconstructStateTrajectory(result)
+        result = mp.Solve(dircol)
+        self.assertTrue(was_called["input"])
+        self.assertTrue(was_called["state"])
+        self.assertTrue(was_called["complete"])
+
+        times = dircol.GetSampleTimes(result=result)
+        inputs = dircol.GetInputSamples(result=result)
+        states = dircol.GetStateSamples(result=result)
+        variables = dircol.GetSequentialVariableSamples(result=result,
+                                                        name="test")
+        input_traj = dircol.ReconstructInputTrajectory(result=result)
+        state_traj = dircol.ReconstructStateTrajectory(result=result)
 
         constraint = DirectCollocationConstraint(plant, context)
         AddDirectCollocationConstraint(constraint, dircol.timestep(0),
@@ -94,13 +95,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                        dircol.input(0), dircol.input(1),
                                        dircol)
 
-    def test_direct_collocation(self):
-        self._do_test_direct_collocation(use_deprecated_solve=False)
-
-    def test_direct_collocation_deprecated(self):
-        self._do_test_direct_collocation(use_deprecated_solve=True)
-
-    def _do_test_direct_transcription(self, use_deprecated_solve):
+    def test_direct_transcription(self):
         # Integrator.
         plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.], time_period=0.1)
         context = plant.CreateDefaultContext()
@@ -128,24 +123,17 @@ class TestTrajectoryOptimization(unittest.TestCase):
         initial_x = PiecewisePolynomial()
         dirtran.SetInitialTrajectory(initial_u, initial_x)
 
-        if use_deprecated_solve:
-            with catch_drake_warnings(expected_count=6):
-                dirtran.Solve()
-                times = dirtran.GetSampleTimes()
-                inputs = dirtran.GetInputSamples()
-                states = dirtran.GetStateSamples()
-                input_traj = dirtran.ReconstructInputTrajectory()
-                state_traj = dirtran.ReconstructStateTrajectory()
-        else:
-            result = mp.Solve(dirtran)
-            times = dirtran.GetSampleTimes(result)
-            inputs = dirtran.GetInputSamples(result)
-            states = dirtran.GetStateSamples(result)
-            input_traj = dirtran.ReconstructInputTrajectory(result)
-            state_traj = dirtran.ReconstructStateTrajectory(result)
+        result = mp.Solve(dirtran)
+        times = dirtran.GetSampleTimes(result)
+        inputs = dirtran.GetInputSamples(result)
+        states = dirtran.GetStateSamples(result)
+        input_traj = dirtran.ReconstructInputTrajectory(result)
+        state_traj = dirtran.ReconstructStateTrajectory(result)
 
-    def test_direct_transcription(self):
-        self._do_test_direct_transcription(use_deprecated_solve=False)
-
-    def test_direct_transcription_deprecated(self):
-        self._do_test_direct_transcription(use_deprecated_solve=True)
+    def test_direct_transcription_continuous_time(self):
+        # Test that the continuous-time constructor is also spelled correctly.
+        plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.])
+        context = plant.CreateDefaultContext()
+        dirtran = DirectTranscription(plant, context, num_time_samples=3,
+                                      fixed_timestep=TimeStep(0.1))
+        self.assertEqual(len(dirtran.linear_equality_constraints()), 3)

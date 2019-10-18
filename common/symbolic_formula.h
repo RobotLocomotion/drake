@@ -337,8 +337,8 @@ Formula isfinite(const Expression& e);
  *
  * @throws std::runtime_error if @p m is not symmetric.
  *
- * @note This method checks if @p m is symmetric by calling `math::IsSymmetric`
- * function which can be costly. If you want to avoid it, please consider using
+ * @note This method checks if @p m is symmetric, which can be costly. If you
+ * want to avoid it, please consider using
  * `positive_semidefinite(m.triangularView<Eigen::Lower>())` or
  * `positive_semidefinite(m.triangularView<Eigen::Upper>())` instead of
  * `positive_semidefinite(m)`.
@@ -492,7 +492,7 @@ const Formula& get_quantified_formula(const Formula& f);
 const MatrixX<Expression>& get_matrix_in_positive_semidefinite(
     const Formula& f);
 
-namespace detail {
+namespace internal {
 /// Provides a return type of relational operations (=, ≠, ≤, <, ≥, >) between
 /// `Eigen::Array`s.
 ///
@@ -530,7 +530,7 @@ inline Formula logic_and(const Formula& f1, const Formula& f2) {
 inline Formula logic_or(const Formula& f1, const Formula& f2) {
   return f1 || f2;
 }
-}  // namespace detail
+}  // namespace internal
 
 /// Returns an Eigen array of symbolic formulas where each element includes
 /// element-wise symbolic-equality of two arrays @p m1 and @p m2.
@@ -559,7 +559,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() ==
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
+    typename internal::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator==(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -632,7 +632,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() <=
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
+    typename internal::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -685,7 +685,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() <
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
+    typename internal::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -736,7 +736,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >=
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
+    typename internal::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -795,7 +795,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() >
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
+    typename internal::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -853,7 +853,7 @@ typename std::enable_if<
         std::is_same<decltype(typename DerivedA::Scalar() !=
                               typename DerivedB::Scalar()),
                      Formula>::value,
-    typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
+    typename internal::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator!=(const DerivedA& a1, const DerivedB& a2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
@@ -949,7 +949,7 @@ typename std::enable_if<
 operator==(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::equal_to<void>()).redux(detail::logic_and);
+  return m1.binaryExpr(m2, std::equal_to<void>()).redux(internal::logic_and);
 }
 
 /// Returns a symbolic formula representing the condition whether @p m1 and @p
@@ -982,7 +982,7 @@ typename std::enable_if<
 operator!=(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(detail::logic_or);
+  return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(internal::logic_or);
 }
 
 /// Returns a symbolic formula representing element-wise comparison between two
@@ -1010,7 +1010,7 @@ typename std::enable_if<
 operator<(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::less<void>()).redux(detail::logic_and);
+  return m1.binaryExpr(m2, std::less<void>()).redux(internal::logic_and);
 }
 
 /// Returns a symbolic formula representing element-wise comparison between two
@@ -1038,7 +1038,7 @@ typename std::enable_if<
 operator<=(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::less_equal<void>()).redux(detail::logic_and);
+  return m1.binaryExpr(m2, std::less_equal<void>()).redux(internal::logic_and);
 }
 
 /// Returns a symbolic formula representing element-wise comparison between two
@@ -1066,7 +1066,7 @@ typename std::enable_if<
 operator>(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::greater<void>()).redux(detail::logic_and);
+  return m1.binaryExpr(m2, std::greater<void>()).redux(internal::logic_and);
 }
 
 /// Returns a symbolic formula representing element-wise comparison between two
@@ -1094,7 +1094,8 @@ typename std::enable_if<
 operator>=(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::greater_equal<void>()).redux(detail::logic_and);
+  return m1.binaryExpr(m2, std::greater_equal<void>()).redux(
+      internal::logic_and);
 }
 
 }  // namespace symbolic

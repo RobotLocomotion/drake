@@ -50,7 +50,10 @@ class LimitMallocTest : public ::testing::TestWithParam<int> {
   }
 };
 
-// Use the same fixture for death tests, but with a different name.
+// Use the same fixture for death tests, but with a different name.  Note that
+// Drake's styleguide forbids death tests, but our only choice here is to use
+// death tests because our implementation must use abort() because exceptions
+// cannot propagate through malloc() because it is a C ABI.
 using LimitMallocDeathTest = LimitMallocTest;
 
 TEST_P(LimitMallocTest, UnlimitedTest) {

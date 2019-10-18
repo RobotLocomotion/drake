@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
@@ -184,18 +185,31 @@ class InverseKinematics {
   // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
-   * smaller than a positive threshold. We consider the distance between pairs
+   * smaller than `minimum_distance`. We consider the distance between pairs
    * of
    * 1. Anchored (static) object and a dynamic object.
    * 2. A dynamic object and another dynamic object, if one is not the parent
    * link of the other.
-   * @see MinimumDistanceConstraint for more details on the constraint
+   * @param minimum_distance The minimum allowed value, dₘᵢₙ, of the signed
+   * distance between any candidate pair of geometries.
+   * @param influence_distance_offset The difference (in meters) between the
+   * influence distance, d_influence, and the minimum distance, dₘᵢₙ. This value
+   * must be finite and strictly positive, as it is used to scale the signed
+   * distances between pairs of geometries. Smaller values may improve
+   * performance, as fewer pairs of geometries need to be considered in each
+   * constraint evaluation. @default 1 meter
+   * @see MinimumDistanceConstraint for more details on the %constraint
    * formulation.
-   * @throws invalid_argument if the plant does not register its geometry
-   * with a SceneGraph.
+   * @pre The MultibodyPlant passed to the constructor of `this` has registered
+   * its geometry with a SceneGraph.
+   * @pre 0 < `influence_distance_offset` < ∞
    */
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
-      double minimal_distance);
+      double minimum_distance, double influence_distance_offset = 1);
+
+  solvers::Binding<solvers::Constraint> AddDistanceConstraint(
+      const SortedPair<geometry::GeometryId>& geometry_pair,
+      double distance_lower, double distance_upper);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
@@ -207,9 +221,13 @@ class InverseKinematics {
   /** Getter for the optimization program constructed by InverseKinematics. */
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
- private:
+  /** Getter for the plant context. */
+  const systems::Context<double>& context() const { return *context_; }
+
+  /** Getter for the mutable plant context. */
   systems::Context<double>* get_mutable_context() { return context_; }
 
+ private:
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const MultibodyPlant<double>& plant_;
   std::unique_ptr<systems::Context<double>> const owned_context_;

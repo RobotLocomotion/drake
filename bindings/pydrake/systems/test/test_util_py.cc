@@ -2,8 +2,8 @@
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -99,7 +99,7 @@ PYBIND11_MODULE(test_util, m) {
       .def("x", &MoveOnlyType::x)
       .def("set_x", &MoveOnlyType::set_x);
   // Define `Value` instantiation.
-  pysystems::AddValueInstantiation<MoveOnlyType>(m);
+  AddValueInstantiation<MoveOnlyType>(m);
 
   // A 2-dimensional subclass of BasicVector.
   py::class_<MyVector2<T>, BasicVector<T>>(m, "MyVector2")

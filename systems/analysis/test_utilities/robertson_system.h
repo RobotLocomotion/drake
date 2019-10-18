@@ -43,6 +43,15 @@ class RobertsonSystem : public LeafSystem<T> {
     deriv->get_mutable_vector().SetAtIndex(2, y3_prime);
   }
 
+  /// Sets the initial conditions for the Robertson system.
+  void SetDefaultState(
+      const Context<T>& context, State<T>* state) const override {
+    auto& xc = state->get_mutable_continuous_state().get_mutable_vector();
+    xc.SetAtIndex(0, 1);
+    xc.SetAtIndex(1, 0);
+    xc.SetAtIndex(2, 0);
+  }
+
   /// Gets the end time for integration.
   T get_end_time() const { return 1e11; }
 

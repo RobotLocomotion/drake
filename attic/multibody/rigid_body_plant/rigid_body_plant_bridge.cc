@@ -9,7 +9,6 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 
@@ -24,12 +23,15 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using geometry::MakeDrakeVisualizerProperties;
+using geometry::MakePhongIllustrationProperties;
 using geometry::Mesh;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
+using math::RigidTransform;
 
 namespace {
 
@@ -97,9 +99,7 @@ RigidBodyPlantBridge<T>::RigidBodyPlantBridge(const RigidBodyTree<T>* tree,
   // second body id.
   std::vector<FrameId> dynamic_frames(body_ids_.begin() + 1, body_ids_.end());
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-          FramePoseVector<T>(source_id_, dynamic_frames),
-          &RigidBodyPlantBridge::CalcFramePoseOutput)
-      .get_index();
+          &RigidBodyPlantBridge::CalcFramePoseOutput).get_index();
 }
 
 template <typename T>
@@ -112,6 +112,17 @@ template <typename T>
 const InputPort<T>&
 RigidBodyPlantBridge<T>::rigid_body_plant_state_input_port() const {
   return this->get_input_port(plant_state_port_);
+}
+
+template <typename T>
+int RigidBodyPlantBridge<T>::BodyForLabel(RenderLabel label) const {
+  if (label <= RenderLabel::kMaxUnreserved) {
+    return label_to_index_.at(label);
+  } else if (label == RenderLabel::kDontCare) {
+    return 0;  // world index.
+  } else {
+    return -1;
+  }
 }
 
 template <typename T>
@@ -139,13 +150,21 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
     // Default to the world body configuration.
     FrameId body_id = scene_graph->world_frame_id();
     if (body.get_body_index() != tree_->world().get_body_index()) {
-      // All other bodies register a frame and (possibly) get a unique label.
+      // All other bodies register a frame.
       body_id = scene_graph->RegisterFrame(
           source_id_,
-          GeometryFrame(body.get_name(), Isometry3<double>::Identity(),
-                        body.get_model_instance_id()));
+          GeometryFrame(body.get_name(), body.get_model_instance_id()));
     }
     body_ids_.push_back(body_id);
+
+    // By default, the render label value is the body index value.
+    RenderLabel label(static_cast<int>(body.get_body_index()));
+    if (body.get_visual_elements().size() > 0) {
+      // We'll have the render label map to the body index.
+      // NOTE: This is only valid if the RBT is the only source of geometry.
+      // But given that the RBT is on the way out, why not?
+      label_to_index_[label] = body.get_body_index();
+    }
 
     // TODO(SeanCurtis-TRI): Detect if equivalent shapes are used for visual
     // and collision and then simply assign it additional roles. This is an
@@ -163,7 +182,13 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         // Illustration properties -- simply pass the diffuse along.
         const Vector4<double>& diffuse = visual_element.getMaterial();
         scene_graph->AssignRole(source_id_, id,
-                                MakeDrakeVisualizerProperties(diffuse));
+                                MakePhongIllustrationProperties(diffuse));
+
+        // Perception properties -- diffuse color and per-body label.
+        PerceptionProperties perception;
+        perception.AddProperty("phong", "diffuse", diffuse);
+        perception.AddProperty("label", "id", label);
+        scene_graph->AssignRole(source_id_, id, perception);
       }
     }
     int collision_count = 0;
@@ -189,9 +214,6 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
 template <typename T>
 void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
     const MyContext& context, FramePoseVector<T>* poses) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(poses->size() == static_cast<int>(body_ids_.size() - 1));
-
   const BasicVector<T>& input_vector = *this->EvalVectorInput(context, 0);
   // Obtains the generalized positions from vector_base.
   const VectorX<T> q = input_vector.CopyToVector().head(
@@ -210,8 +232,8 @@ void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
   // When we start skipping welded frames, or frames without geometry, this
   // mapping won't be so trivial.
   for (size_t i = 1; i < tree_->get_bodies().size(); ++i) {
-    poses->set_value(body_ids_[i],
-                     tree_->relativeTransform(cache, world_body, i));
+    poses->set_value(body_ids_[i], RigidTransform<T>(tree_->relativeTransform(
+                                       cache, world_body, i)));
   }
 }
 

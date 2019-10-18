@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/hermitian_dense_output.h"
@@ -214,7 +215,8 @@ class IntegratorBase {
     return (!supports_error_estimation() || fixed_step_mode_);
   }
 
-  /** Request that the integrator attempt to achieve a particular accuracy for
+  /**
+   * Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
    * chosen for you. This may be ignored for fixed-step integration since
    * accuracy control requires variable step sizes. You should call
@@ -232,6 +234,14 @@ class IntegratorBase {
    * results. By convention it is supplied as `10^-digits`, meaning that an
    * accuracy of 1e-3 provides about three significant digits. For more
    * information, see [Sherman 2011].
+   *
+   * Implicit integrators additionally use the accuracy setting for determining
+   * when the underlying Newton-Raphson root finding process has converged. For
+   * those integrators, the accuracy setting also limits the allowable iteration
+   * error in the Newton-Raphson process. Looser accuracy in that process
+   * certainly implies greater error in the ODE solution and might impact the
+   * stability of the solution negatively as well.
+   *
    * - M. Sherman, et al. Procedia IUTAM 2:241-261 (2011), Section 3.3.
    *   http://dx.doi.org/10.1016/j.piutam.2011.04.023
    * @throws std::logic_error if integrator does not support error
@@ -560,9 +570,11 @@ class IntegratorBase {
    *                          of publish_time, update_time, or boundary_time is
    *                          in the past.
    * @return The reason for the integration step ending.
+   * @post The time in the context will be no greater than
+   *       `min(publish_time, update_time, boundary_time)`.
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
-   *          `Simulator::StepTo()`. In other circumstances, users will
+   *          `Simulator::AdvanceTo()`. In other circumstances, users will
    *          typically call
    *          `IntegratorBase::IntegrateWithMultipleStepsToTime()`.
    *
@@ -590,7 +602,7 @@ class IntegratorBase {
   /// discontinuous, mid-interval updates. This method will step the integrator
   /// multiple times, as necessary, to attain requested error tolerances and
   /// to ensure the integrator converges.
-  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  /// @warning Users should simulate systems using `Simulator::AdvanceTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
   /// @param t_final The current or future time to integrate to.
@@ -631,20 +643,20 @@ class IntegratorBase {
   /// semantics of this function, error controlled integration is not supported
   /// (though error estimates will be computed for integrators that support that
   /// feature), which is a minimal requirement for "consistency".
-  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  /// @warning Users should simulate systems using `Simulator::AdvanceTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
   /// @param t_target The current or future time to integrate to.
   /// @throws std::logic_error If the integrator has not been initialized or
   ///                          `t_target` is in the past or the integrator
   ///                          is not operating in fixed step mode.
-  /// @throws std::runtime_error If the integrator was unable to take a single
-  ///         fixed step to realize `t_target`.
   /// @sa IntegrateNoFurtherThanTime(), which is designed to be operated by
   ///     Simulator and accounts for publishing and state reinitialization.
   /// @sa IntegrateWithMultipleStepsToTime(), which is also designed to be
   ///     operated *outside of* Simulator, but will take as many integration
   ///     steps as necessary until time has been stepped forward to `t_target`.
+  /// @returns `true` if the integrator was able to take a single fixed step to
+  ///          `t_target`.
   ///
   /// This method at a glance:
   ///
@@ -652,7 +664,7 @@ class IntegratorBase {
   /// - Fixed step integration (no step size reductions for error control or
   ///   integrator convergence)
   /// - Takes only a single step forward.
-  void IntegrateWithSingleFixedStepToTime(const T& t_target) {
+  bool IntegrateWithSingleFixedStepToTime(const T& t_target) {
     using std::max;
     using std::abs;
 
@@ -664,10 +676,9 @@ class IntegratorBase {
     if (!this->get_fixed_step_mode())
       throw std::logic_error("IntegrateWithSingleFixedStepToTime() requires "
                              "fixed stepping.");
-    if (!Step(dt)) {
-      throw std::runtime_error("Integrator was unable to take a single fixed "
-                               "step of the requested size.");
-    }
+
+    if (!Step(dt))
+      return false;
 
     UpdateStepStatistics(dt);
 
@@ -675,9 +686,11 @@ class IntegratorBase {
     // that time be non-negative.
     DRAKE_DEMAND(context_->get_time() >= 0);
     const double tol = 10 * std::numeric_limits<double>::epsilon() *
-        ExtractDoubleOrThrow(max(t_target, context_->get_time()));
+        ExtractDoubleOrThrow(max(1.0, max(t_target, context_->get_time())));
     DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
-    context_->set_time(t_target);
+    context_->SetTime(t_target);
+
+    return true;
   }
 
   /**
@@ -767,6 +780,15 @@ class IntegratorBase {
    * or ResetStatistics() call.
    */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
+
+  /** Manually increments the statistic for the number of ODE evaluations.
+   * @warning Implementations should generally avoid calling this method;
+   *          evaluating the ODEs using EvalTimeDerivatives() updates this
+   *          statistic automatically and intelligently (by leveraging the
+   *          caching system to avoid incrementing the count when cached
+   *          evaluations are used).
+   */
+  void add_derivative_evaluations(double evals) { num_ode_evals_ += evals; }
 
   /**
    * @}
@@ -897,25 +919,28 @@ class IntegratorBase {
   bool is_initialized() const { return initialization_done_; }
 
   /**
-   * Derived classes must override this function to return the order of
-   * the integrator's error estimate, meaning the asymptotic error of the error
-   * estimate. The error estimator approximates the true error e(.) between the
-   * actual state (obtained via a perhaps hypothetical closed form solution to
-   * the initial value problem) and the state computed by the integrator. e(.)
-   * is approximated by a Taylor Series expansion in the neighborhood around t:
+   * Derived classes must override this function to return the order of the
+   * asymptotic term in the integrator's error estimate. An error estimator
+   * approximates the truncation error in an integrator's solution. That
+   * truncation error e(.) is approximated by a Taylor Series expansion in the
+   * neighborhood around t:
    * @verbatim
    * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + ...
-   * @endverbatim
-   * The equation above can also be written as:
-   * @verbatim
-   * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
+   *        ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
    * @endverbatim
    * where we have replaced the "..." with the asymptotic error of all terms
-   * truncated from the series. An error estimator that exhibits O(h³)
-   * truncation error, as above, is known as a third order error estimator.
-   * Asymptotic analysis implies that a third order error estimator increases
-   * the accuracy of its estimate by a factor of eight when h is scaled by
-   * one half, for h sufficiently small.
+   * truncated from the series.
+   *
+   * Implementions should return the order of the asymptotic term in the Taylor
+   * Series expansion around the expression for the error. For an integrator
+   * that propagates a second-order solution and provides an estimate of the
+   * error using an embedded first-order method, this method should return "2",
+   * as can be seen in the derivation below, using y* as the true solution:
+   * @verbatim
+   * y̅ = y* + O(h³)   [second order solution]
+   * ŷ = y* + O(h²)   [embedded first-order method]
+   * e = (y̅ - ŷ) = O(h²)
+   * @endverbatim
    *
    * If the integrator does not provide an error estimate, the derived class
    * implementation should return 0.
@@ -1205,8 +1230,7 @@ class IntegratorBase {
    * system.EvalTimeDerivatives() directly.
    */
   const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
-    ++num_ode_evals_;
-    return get_system().EvalTimeDerivatives(context);
+    return EvalTimeDerivatives(get_system(), context);  // See below.
   }
 
   /**
@@ -1219,8 +1243,15 @@ class IntegratorBase {
   template <typename U>
   const ContinuousState<U>& EvalTimeDerivatives(const System<U>& system,
                                                 const Context<U>& context) {
-    ++num_ode_evals_;
-    return system.EvalTimeDerivatives(context);
+    const CacheEntry& entry = system.get_time_derivatives_cache_entry();
+    const CacheEntryValue& value = entry.get_cache_entry_value(context);
+    const int64_t serial_number_before = value.serial_number();
+    const ContinuousState<U>& derivs =
+        system.EvalTimeDerivatives(context);
+    if (value.serial_number() != serial_number_before) {
+      ++num_ode_evals_;  // Wasn't already cached.
+    }
+    return derivs;
   }
 
   /**
@@ -1706,7 +1737,8 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
         err_norm, step_size_to_attempt, &at_minimum_step_size);
-    SPDLOG_DEBUG(drake::log(), "Next step size: {}", next_step_size);
+    SPDLOG_DEBUG(drake::log(), "Succeeded? {}, Next step size: {}",
+        step_succeeded, next_step_size);
 
     if (step_succeeded) {
       // Only update the next step size (retain the previous one) if the
@@ -1729,7 +1761,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       step_size_to_attempt = next_step_size;
 
       // Reset the time, state, and time derivative at t0.
-      get_mutable_context()->set_time(current_time);
+      get_mutable_context()->SetTime(current_time);
       xc.SetFromVector(xc0_save_);
       if (get_dense_output()) {
         // Take dense output one step back to undo
@@ -1940,12 +1972,12 @@ typename IntegratorBase<T>::StepResult
   // and boundary times, may both conceptually be deemed events, the distinction
   // is made for a reason. If both an update and a boundary time occur
   // simultaneously, the following behavior should result:
-  // (1) kReachedUpdateTime is returned, (2) Simulator::StepTo() performs the
+  // (1) kReachedUpdateTime is returned, (2) Simulator::AdvanceTo() performs the
   // necessary update, (3) IntegrateNoFurtherThanTime() is called with
   // boundary_time equal to the current time in the context and returns
   // kReachedBoundaryTime, and (4) the simulation terminates. This sequence of
   // operations will ensure that the simulation state is valid if
-  // Simulator::StepTo() is called again to advance time further.
+  // Simulator::AdvanceTo() is called again to advance time further.
 
   // We now analyze the following simultaneous cases with respect to Simulator:
   //
@@ -1960,18 +1992,18 @@ typename IntegratorBase<T>::StepResult
   // { publish, boundary time, max step }
   // kReachedPublishTime will be returned, a publish will be performed followed
   // by another call to this function, which should return kReachedBoundaryTime
-  // (followed in rapid succession by StepTo(.) return).
+  // (followed in rapid succession by AdvanceTo(.) return).
   //
   // { publish, boundary time, max step }
   // kReachedPublishTime will be returned, a publish will be performed followed
   // by another call to this function, which should return kReachedBoundaryTime
-  // (followed in rapid succession by StepTo(.) return).
+  // (followed in rapid succession by AdvanceTo(.) return).
   //
   // { publish, update, boundary time, maximum step size }
   // kUpdateTimeReached will be returned, an update followed by a publish
   // will then be performed followed by another call to this function, which
   // should return kReachedBoundaryTime (followed in rapid succession by
-  // StepTo(.) return).
+  // AdvanceTo(.) return).
 
   // By default, the target time is that of the the next discrete update event.
   StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
@@ -1995,7 +2027,7 @@ typename IntegratorBase<T>::StepResult
   // integration step size.
   if (get_context().get_continuous_state().size() == 0) {
     Context<T>* context = get_mutable_context();
-    context->set_time(target_time);
+    context->SetTime(target_time);
     return candidate_result;
   }
 
@@ -2046,7 +2078,7 @@ typename IntegratorBase<T>::StepResult
   if (full_step || context_->get_time() >= target_time) {
     // Correct any rounding error that may have caused the time to overrun
     // the target time.
-    context_->set_time(target_time);
+    context_->SetTime(target_time);
 
     // If the integrator took the entire maximum step size we allowed above,
     // we report to the caller that a step constraint was hit, which may

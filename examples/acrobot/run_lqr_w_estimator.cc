@@ -4,7 +4,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/examples/acrobot/gen/acrobot_state.h"
 #include "drake/lcm/drake_lcm.h"
@@ -66,7 +66,8 @@ int do_main() {
     x0.set_theta2(0.0);
     x0.set_theta1dot(0.0);
     x0.set_theta2dot(0.0);
-    observer_context->FixInputPort(0, Vector1d::Constant(0.0));
+    observer_acrobot->GetInputPort("elbow_torque")
+        .FixValue(observer_context.get(), 0.0);
   }
   // Make a linearization here for the exercise below.  Need to do it before I
   // std::move the pointers.
@@ -133,27 +134,33 @@ int do_main() {
 
   // Simulate.
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
-  simulator.get_mutable_integrator()->set_maximum_step_size(0.01);
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+  simulator.get_mutable_integrator().set_maximum_step_size(0.01);
+  simulator.get_mutable_integrator().set_fixed_step_mode(true);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
-  // Plot the results (launch call_matlab_client to see the plots).
-  using common::CallMatlab;
-  CallMatlab("figure", 1);
-  CallMatlab("plot", x_logger->sample_times(),
-             (x_logger->data().row(0).array() - M_PI).matrix(),
-             x_logger->sample_times(), x_logger->data().row(1));
-  CallMatlab("legend", "theta1 - PI", "theta2");
-  CallMatlab("axis", "tight");
+  // Plot the results (launch call_python_client to see the plots).
+  using common::CallPython;
+  using common::ToPythonTuple;
+  CallPython("figure", 1);
+  CallPython("clf");
+  CallPython("plot", x_logger->sample_times(),
+             (x_logger->data().row(0).array() - M_PI)
+                 .matrix().transpose());
+  CallPython("plot", x_logger->sample_times(),
+             x_logger->data().row(1).transpose());
+  CallPython("legend", ToPythonTuple("theta1 - PI", "theta2"));
+  CallPython("axis", "tight");
 
-  CallMatlab("figure", 2);
-  CallMatlab("plot", x_logger->sample_times(),
+  CallPython("figure", 2);
+  CallPython("clf");
+  CallPython("plot", x_logger->sample_times(),
              (x_logger->data().array() - xhat_logger->data().array())
                  .matrix().transpose());
-  CallMatlab("ylabel", "error");
-  CallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
-  CallMatlab("axis", "tight");
+  CallPython("ylabel", "error");
+  CallPython("legend", ToPythonTuple("theta1", "theta2", "theta1dot",
+                                     "theta2dot"));
+  CallPython("axis", "tight");
 
   return 0;
 }

@@ -41,7 +41,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
 
   systems::Simulator<double> simulator(rw);
   auto& context = simulator.get_mutable_context();
-  context.set_accuracy(1e-8);
+  context.SetAccuracy(1e-8);
 
   RimlessWheelContinuousState<double>& state =
       rw.get_mutable_continuous_state(&context);
@@ -61,33 +61,33 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   const double step_length = 2 * params.length() * sin(alpha);
 
   // A point on that limit cycle just before a forward step:
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha / 2.0);
   toe = 0.0;
   double_support = false;
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.0);
   // Should have taken one step forward.
   EXPECT_NEAR(toe, step_length, 1e-8);
   // Should still have the same energy (dissipation energy lost = potential
-  // energy gained).
-  EXPECT_NEAR(rw.CalcTotalEnergy(context), steady_state_energy, 1e-6);
+  // energy gained). The error tolerance below seems to work well.
+  EXPECT_NEAR(rw.CalcTotalEnergy(context), steady_state_energy, 1e-5);
 
   // Lose at least this much energy (chosen as an arbitrary small positive
   // number).
   const double threshold = 0.01;
 
   // Walking too fast should lose energy through impact.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha / 2.0);
   toe = 0.0;
   double_support = false;
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
   state.set_thetadot(state.thetadot() + 0.2);
   double initial_energy = rw.CalcTotalEnergy(context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.0);
   // Should have taken one step forward.
@@ -96,14 +96,14 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   EXPECT_LT(rw.CalcTotalEnergy(context), initial_energy - threshold);
 
   // Walking too slow should gain energy through impact.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha / 2.0);
   toe = 0.0;
   double_support = false;
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
   state.set_thetadot(state.thetadot() - 0.2);
   initial_energy = rw.CalcTotalEnergy(context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.);
   // Should have taken one step forward.
@@ -112,14 +112,14 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   EXPECT_GT(rw.CalcTotalEnergy(context), initial_energy + threshold);
 
   // Rolling uphill should always lose energy.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   // Leaning uphill.
   state.set_theta(params.slope() - alpha / 2.0);
   state.set_thetadot(-4.);
   toe = 0.0;
   double_support = false;
   initial_energy = rw.CalcTotalEnergy(context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_GT(state.theta(), 0.);
   // Should have taken one step backward.
@@ -135,7 +135,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
 
   systems::Simulator<double> simulator(rw);
   auto& context = simulator.get_mutable_context();
-  context.set_accuracy(1e-8);
+  context.SetAccuracy(1e-8);
 
   RimlessWheelContinuousState<double>& state =
       rw.get_mutable_continuous_state(&context);
@@ -151,23 +151,23 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   const double angle_above_touchdown = 1e-5;
 
   // Front foot down.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha - angle_above_touchdown);
   state.set_thetadot(0.0);
   toe = 0.0;
   double_support = false;
-  simulator.StepTo(0.2);
+  simulator.AdvanceTo(0.2);
   EXPECT_TRUE(double_support);
   EXPECT_NEAR(std::abs(state.theta() - params.slope()), alpha, 1e-8);
   EXPECT_EQ(state.thetadot(), 0.0);
 
   // Back foot down.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() - alpha + angle_above_touchdown);
   state.set_thetadot(0.0);
   toe = 0.0;
   double_support = false;
-  simulator.StepTo(0.2);
+  simulator.AdvanceTo(0.2);
   EXPECT_TRUE(double_support);
   EXPECT_NEAR(std::abs(state.theta() - params.slope()), alpha, 1e-8);
   EXPECT_EQ(state.thetadot(), 0.0);

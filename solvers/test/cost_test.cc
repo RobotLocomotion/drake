@@ -31,7 +31,7 @@ using Eigen::Ref;
 using drake::Vector1d;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
-using drake::solvers::detail::is_convertible_workaround;
+using drake::solvers::internal::is_convertible_workaround;
 using drake::solvers::test::GenericTrivialCost2;
 
 namespace drake {
@@ -201,9 +201,9 @@ template <typename C, typename BoundType, typename... Args>
 void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
   // Ensure that a constraint constructed in a particular fashion yields
   // equivalent results to its shim, and the related cost.
-  const auto inf = std::numeric_limits<double>::infinity();
-  auto lb = -BoundType(-inf);
-  auto ub = BoundType(inf);
+  const double inf = std::numeric_limits<double>::infinity();
+  BoundType lb = -BoundType(-inf);
+  BoundType ub = BoundType(inf);
   C constraint(std::forward<Args>(args)..., lb, ub);
   typename related_cost<C>::type cost(std::forward<Args>(args)...);
   VectorXd y_expected, y;

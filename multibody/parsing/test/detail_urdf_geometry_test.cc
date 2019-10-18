@@ -14,12 +14,13 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+using math::RigidTransformd;
 using geometry::GeometryInstance;
 
 class UrdfGeometryTests : public testing::Test {
@@ -62,8 +63,8 @@ class UrdfGeometryTests : public testing::Test {
            visual_node;
            visual_node = visual_node->NextSiblingElement("visual")) {
         geometry::GeometryInstance geometry_instance =
-            detail::ParseVisual(body_name, package_map_, root_dir_,
-                                visual_node, &materials_);
+            internal::ParseVisual(body_name, package_map_, root_dir_,
+                                  visual_node, &materials_);
         visual_instances_.push_back(geometry_instance);
       }
 
@@ -73,8 +74,8 @@ class UrdfGeometryTests : public testing::Test {
            collision_node = collision_node->NextSiblingElement("collision")) {
         CoulombFriction<double> friction;
         geometry::GeometryInstance geometry_instance =
-            detail::ParseCollision(body_name, package_map_, root_dir_,
-                                   collision_node, &friction);
+            internal::ParseCollision(body_name, package_map_, root_dir_,
+                                     collision_node, &friction);
         collision_instances_.push_back(geometry_instance);
       }
     }
@@ -118,7 +119,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
 
   EXPECT_TRUE(CompareMatrices(
-      visual.pose().matrix(), Eigen::Isometry3d::Identity().matrix()));
+      visual.pose().GetAsMatrix34(), RigidTransformd().GetAsMatrix34()));
 
   const geometry::Box* box =
       dynamic_cast<const geometry::Box*>(&visual.shape());
@@ -146,10 +147,9 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   ASSERT_EQ(visual_instances_.size(), 2);
   const auto& visual = visual_instances_.front();
 
-  Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
-  expected_pose.translation() = Eigen::Vector3d(0, 0, 0.3);
+  const RigidTransformd expected_pose(Eigen::Vector3d(0, 0, 0.3));
   EXPECT_TRUE(CompareMatrices(
-      visual.pose().matrix(), expected_pose.matrix()));
+      visual.pose().GetAsMatrix34(), expected_pose.GetAsMatrix34()));
 
   const geometry::Cylinder* cylinder =
       dynamic_cast<const geometry::Cylinder*>(&visual.shape());
@@ -235,25 +235,50 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   ASSERT_TRUE(node);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      detail::ParseMaterial(node, &materials_), std::runtime_error,
+      internal::ParseMaterial(node, &materials_), std::runtime_error,
       "Expected material element, got robot");
 
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      detail::ParseVisual("fake_name", package_map_, root_dir_, material_node,
-                          &materials_), std::runtime_error,
+      internal::ParseVisual("fake_name", package_map_, root_dir_, material_node,
+                            &materials_), std::runtime_error,
       "In link fake_name expected visual element, got material");
 
   CoulombFriction<double> friction;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      detail::ParseCollision("fake_name", package_map_, root_dir_,
-                             material_node, &friction), std::runtime_error,
+      internal::ParseCollision("fake_name", package_map_, root_dir_,
+                               material_node, &friction), std::runtime_error,
       "In link fake_name expected collision element, got material");
 }
 
+TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
+  const std::string resource_dir{
+      "drake/multibody/parsing/test/urdf_parser_test/"};
+  const std::string convex_and_nonconvex_test =
+      FindResourceOrThrow(resource_dir + "convex_and_nonconvex_test.urdf");
+
+  EXPECT_NO_THROW(ParseUrdfGeometry(convex_and_nonconvex_test));
+
+  ASSERT_EQ(collision_instances_.size(), 2);
+
+  {
+    const auto& instance = collision_instances_[0];
+    const geometry::Convex* convex =
+        dynamic_cast<const geometry::Convex*>(&instance.shape());
+    ASSERT_TRUE(convex);
+  }
+
+  {
+    const auto& instance = collision_instances_[1];
+    const geometry::Mesh* mesh =
+        dynamic_cast<const geometry::Mesh*>(&instance.shape());
+    ASSERT_TRUE(mesh);
+  }
+}
+
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

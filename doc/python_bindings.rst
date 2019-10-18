@@ -4,17 +4,26 @@
 Using Drake from Python
 ***********************
 
-A limited subset of the Drake C++ functionality is available from Python. The
-Drake Python bindings are generated using `pybind11
+A substantial subset of the Drake C++ functionality is available from Python.
+The Drake Python bindings are generated using `pybind11
 <https://github.com/pybind/pybind11>`_, which means that every function or
 class which is exposed to C++ has been explicitly enumerated in one of the
 source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
+.. warning::
+   Drake is incompatible with the Python environment supplied by Anaconda.
+   Please uninstall Anaconda or remove the Anaconda ``bin`` directory from the
+   ``PATH`` before building or using the Drake Python bindings.
+
 .. _python-bindings-binary:
 
 Installation
 ============
+
+Before attempting installation, please review the
+:ref:`supported configurations <supported-configurations>` to know what
+versions of Python are supported for your platform.
 
 Binary Installation for Python
 ------------------------------
@@ -38,11 +47,11 @@ Ensure that you have the system dependencies:
     /opt/drake/share/drake/setup/install_prereqs
 
 Next, ensure that your ``PYTHONPATH`` is properly configured. For example, for
-the Python 2 bindings on all supported platforms:
+the Python 3 bindings on Bionic:
 
 .. code-block:: shell
 
-    export PYTHONPATH=/opt/drake/lib/python2.7/site-packages:${PYTHONPATH}
+    export PYTHONPATH=/opt/drake/lib/python3.6/site-packages:${PYTHONPATH}
 
 See :ref:`below <using-python-bindings>` for usage instructions. If using
 macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
@@ -55,7 +64,7 @@ incorporate its install tree into a ``virtualenv``
 `FHS <https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard>`_-like
 environment.
 
-An example for ``python2``, where you should replace ``<venv_path>`` and
+An example for ``python3``, where you should replace ``<venv_path>`` and
 ``<platform>``:
 
 .. code-block:: shell
@@ -68,7 +77,7 @@ An example for ``python2``, where you should replace ``<venv_path>`` and
     <venv_path>/share/drake/setup/install_prereqs
 
     # Setup a virtualenv over the drake install.
-    python2 -m virtualenv -p python2 <venv_path> --system-site-packages
+    python3 -m virtualenv -p python3 <venv_path> --system-site-packages
 
 .. note::
 
@@ -81,7 +90,7 @@ An example for ``python2``, where you should replace ``<venv_path>`` and
 To check if this worked, follow the instructions as
 :ref:`shown below <using-python-bindings>`, but either:
 
-*   Use ``<venv_path>/bin/python`` instead of ``python``, or
+*   Use ``<venv_path>/bin/python`` instead of ``python3``, or
 *   Source ``<venv_path>/bin/activate`` in your current shell session.
 
 Building the Python Bindings
@@ -103,7 +112,8 @@ Please note the additional CMake options which affect the Python bindings:
 *   ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
 *   ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
 *   ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
-*   ``-DWITH_PYTHON_VERSION={[2], 3}`` - Build with a specific version of Python.
+*   ``-DWITH_PYTHON_VERSION={2, 3}`` - Build with a specific version of
+    Python. Default is 3 on all platforms except Xenial.
 
 ``{...}`` means a list of options, and the option surrounded by ``[...]`` is
 the default option. An example of building ``pydrake`` with both Gurobi and
@@ -115,12 +125,12 @@ MOSEK, without building tests:
 
 You will also need to have your ``PYTHONPATH`` configured correctly.
 
-As an example, continuing from the code snippets from above:
+As an example, continuing from the code snippets from above for Bionic:
 
 .. code-block:: shell
 
     cd drake-build
-    export PYTHONPATH=${PWD}/install/lib/python2.7/site-packages:${PYTHONPATH}
+    export PYTHONPATH=${PWD}/install/lib/python3.6/site-packages:${PYTHONPATH}
 
 .. _using-python-bindings:
 
@@ -131,30 +141,13 @@ Check Installation
 ------------------
 
 After following the above install steps, check to ensure you can import
-``pydrake``:
+``pydrake``. As an example for Python 3:
 
 .. code-block:: shell
 
-    python -c 'import pydrake; print(pydrake.__file__)'
+    python3 -c 'import pydrake; print(pydrake.__file__)'
 
 .. _using-python-mac-os-path:
-
-.. note::
-
-    If you are using macOS, you must ensure that you are using the ``python2``
-    executable to run these scripts. As an example for Homebrew:
-
-    .. code-block:: shell
-
-        export PATH=/usr/local/opt/python/libexec/bin:${PATH}
-
-    If you would like to use ``jupyter``, then be sure to install it via
-    ``pip2 install jupyter`` (*not* ``brew install jupyter``) to ensure that it
-    uses the correct ``PYTHONPATH``.
-
-    ..
-        Developers: Ensure this is synchronized with the steps in
-        ``install_prereqs_user_environment.sh``.
 
 .. note::
 
@@ -336,19 +329,16 @@ trace. As an example:
         insert_awesome_code_here()
 
     if __name__ == "__main__":
-        # main()  # This is what you would have, but the following is useful:
+        # main()  # Normal invocation; commented out, because we will trace it.
 
-        # These are temporary, for debugging, so meh for programming style.
+        # The following (a) imports minimum dependencies, (b) ensures that
+        # output is immediately flushed (e.g. for segfaults), and (c) traces
+        # execution of your function, but filtering out any Python code outside
+        # of the system prefix.
         import sys, trace
-
-        # If there are segfaults, it's a good idea to always use stderr as it
-        # always prints to the screen, so you should get as much output as
-        # possible.
         sys.stdout = sys.stderr
-
-        # Now trace execution:
         tracer = trace.Trace(trace=1, count=0, ignoredirs=["/usr", sys.prefix])
-        tracer.run('main()')
+        tracer.runfunc(main)
 
 .. note::
 

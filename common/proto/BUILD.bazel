@@ -25,37 +25,27 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proto",
     deps = [
-        ":call_matlab",
         ":call_python",
-        ":matlab_rpc",
         ":protobuf",
+        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
     ],
 )
 
 drake_cc_proto_library(
-    name = "matlab_rpc",
+    name = "python_remote_message_proto",
     srcs = [
-        "matlab_rpc.proto",
+        "python_remote_message.proto",
     ],
+    visibility = ["//visibility:private"],
 )
 
 drake_py_proto_library(
-    name = "matlab_rpc_py",
+    name = "python_remote_message_proto_py",
     srcs = [
-        "matlab_rpc.proto",
+        "python_remote_message.proto",
     ],
-)
-
-drake_cc_library(
-    name = "call_matlab",
-    srcs = ["call_matlab.cc"],
-    hdrs = ["call_matlab.h"],
-    deps = [
-        ":matlab_rpc",
-        ":rpc_pipe_temp_directory",
-        "//common:essential",
-    ],
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_library(
@@ -72,9 +62,10 @@ drake_cc_library(
     srcs = ["call_python.cc"],
     hdrs = ["call_python.h"],
     deps = [
-        ":call_matlab",
+        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
         "//common:copyable_unique_ptr",
+        "//common:essential",
     ],
 )
 
@@ -83,7 +74,7 @@ drake_py_library(
     srcs = ["call_python_client.py"],
     imports = ["."],
     deps = [
-        ":matlab_rpc_py",
+        ":python_remote_message_proto_py",
     ],
 )
 
@@ -126,7 +117,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
-        "@spruce",
+        "//common:filesystem",
     ],
 )
 
@@ -139,13 +130,6 @@ install(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "call_matlab_test",
-    deps = [
-        ":call_matlab",
-    ],
-)
 
 drake_cc_googletest(
     name = "call_python_server_test",
@@ -168,6 +152,8 @@ drake_py_unittest(
     flaky = 1,
     # We wish to access neighboring files.
     isolate = 0,
+    # Fails when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(

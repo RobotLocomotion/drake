@@ -17,7 +17,6 @@ drake_py_binary(
 drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
-    imports = ["."],
     deps = [":sphinx_build"],
 )
 
@@ -30,13 +29,20 @@ drake_py_binary(
     ]) + [
         "conf.py",
         "images/favicon.ico",
+        "images/jenkins_bot_reviewable_comment.png",
         "images/logo_w_text.jpg",
+        "images/mathematical_program.svg",
+        "images/systems.svg",
         "images/doxygen_instructions/visual_studio_build_targets.png",
         "sample_vimrc",
     ],
-    # Some (currently disabled) Sphinx extensions try to reach out to the
-    # network; we should fail-fast if someone tries to turn them on.
-    tags = ["block-network"],
+    tags = [
+        # Some (currently disabled) Sphinx extensions try to reach out to the
+        # network; we should fail-fast if someone tries to turn them on.
+        "block-network",
+        # Test exceeds timeout when run under Valgrind tools.
+        "no_valgrind_tools",
+    ],
     test_rule_args = [
         "--out_dir=<test>",
     ],

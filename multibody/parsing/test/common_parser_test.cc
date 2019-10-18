@@ -17,7 +17,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using geometry::GeometryId;
@@ -39,7 +39,7 @@ class MultibodyPlantLinkTests :
   void LoadMultibodyPlantAndSceneGraph() {
     auto load_model = GetParam();
     load_model(base_name_, &plant_, &scene_graph_);
-    plant_.Finalize(&scene_graph_);
+    plant_.Finalize();
   }
 
  protected:
@@ -155,6 +155,6 @@ INSTANTIATE_TEST_CASE_P(UrdfMultibodyPlantLinkTests,
                         ::testing::Values(test::LoadFromUrdf));
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

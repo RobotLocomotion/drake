@@ -1,0 +1,85 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+
+licenses(["notice"])  # EPL-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "darwin",
+    values = {"cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "csdp",
+    srcs = [
+        "lib/Fnorm.c",
+        "lib/add_mat.c",
+        "lib/addscaledmat.c",
+        "lib/allocmat.c",
+        "lib/calc_dobj.c",
+        "lib/calc_pobj.c",
+        "lib/chol.c",
+        "lib/copy_mat.c",
+        "lib/easysdp.c",
+        "lib/freeprob.c",
+        "lib/initparams.c",
+        "lib/initsoln.c",
+        "lib/linesearch.c",
+        "lib/make_i.c",
+        "lib/makefill.c",
+        "lib/mat_mult.c",
+        "lib/mat_multsp.c",
+        "lib/matvec.c",
+        "lib/norms.c",
+        "lib/op_a.c",
+        "lib/op_at.c",
+        "lib/op_o.c",
+        "lib/packed.c",
+        "lib/psd_feas.c",
+        "lib/qreig.c",
+        "lib/readprob.c",
+        "lib/readsol.c",
+        "lib/sdp.c",
+        "lib/solvesys.c",
+        "lib/sortentries.c",
+        "lib/sym_mat.c",
+        "lib/trace_prod.c",
+        "lib/tweakgap.c",
+        "lib/user_exit.c",
+        "lib/writeprob.c",
+        "lib/writesol.c",
+        "lib/zero_mat.c",
+    ],
+    hdrs = [
+        "include/blockmat.h",
+        "include/declarations.h",
+        "include/index.h",
+        "include/parameters.h",
+    ],
+    copts = [
+        "-Wno-unknown-pragmas",
+        "-Wno-unused-variable",
+    ],
+    includes = ["include"],
+    linkstatic = 1,
+    deps = [
+        "@blas",
+        "@lapack",
+    ],
+)
+
+# We do not install the header file (its a private dependency), but we still
+# need to install its license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

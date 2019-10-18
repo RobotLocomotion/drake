@@ -9,6 +9,8 @@
 namespace drake {
 namespace solvers {
 namespace test {
+const double kInf = std::numeric_limits<double>::infinity();
+
 std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems() {
   return {EllipsoidsSeparationProblem::kProblem0,
           EllipsoidsSeparationProblem::kProblem1,
@@ -175,8 +177,8 @@ TestQPasSOCP::TestQPasSOCP() {
       Q_ = Eigen::Matrix2d::Identity();
       c_ = Eigen::Vector2d::Ones();
       A_ = Eigen::RowVector2d(0, 0);
-      b_lb_ = Vector1<double>(-std::numeric_limits<double>::infinity());
-      b_ub_ = Vector1<double>(std::numeric_limits<double>::infinity());
+      b_lb_ = Vector1<double>(-kInf);
+      b_ub_ = Vector1<double>(kInf);
       break;
     case QPasSOCPProblem::kProblem1:
       // Constrained QP
@@ -274,11 +276,9 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
   prog_.AddBoundingBoxConstraint(
       end_pos2_, end_pos2_,
       {x_.segment<1>(num_nodes - 1), y_.segment<1>(num_nodes - 1)});
-  prog_.AddBoundingBoxConstraint(
-      Eigen::VectorXd::Zero(num_nodes - 1),
-      Eigen::VectorXd::Constant(num_nodes - 1,
-                                std::numeric_limits<double>::infinity()),
-      t_);
+  prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(num_nodes - 1),
+                                 Eigen::VectorXd::Constant(num_nodes - 1, kInf),
+                                 t_);
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
@@ -348,6 +348,128 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
     EXPECT_TRUE(CompareMatrices(
         weight_i + left_spring_force + right_spring_force,
         Eigen::Vector2d::Zero(), tol, MatrixCompareType::absolute));
+  }
+}
+
+MaximizeGeometricMeanTrivialProblem1::MaximizeGeometricMeanTrivialProblem1()
+    : prog_{new MathematicalProgram()},
+      x_{prog_->NewContinuousVariables<1>()(0)} {
+  prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
+  Eigen::Vector2d A(2, 3);
+  Eigen::Vector2d b(3, 2);
+  prog_->AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x_));
+}
+
+void MaximizeGeometricMeanTrivialProblem1::CheckSolution(
+    const MathematicalProgramResult& result, double tol) {
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x_), 10, tol);
+  EXPECT_NEAR(result.get_optimal_cost(), -std::sqrt(23 * 32), tol);
+}
+
+MaximizeGeometricMeanTrivialProblem2::MaximizeGeometricMeanTrivialProblem2()
+    : prog_{new MathematicalProgram()},
+      x_{prog_->NewContinuousVariables<1>()(0)} {
+  prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
+  const Eigen::Vector3d A(2, 3, 4);
+  const Eigen::Vector3d b(3, 2, 5);
+  prog_->AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x_));
+}
+
+void MaximizeGeometricMeanTrivialProblem2::CheckSolution(
+    const MathematicalProgramResult& result, double tol) {
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x_), 10, tol);
+  EXPECT_NEAR(result.get_optimal_cost(), -std::pow(23 * 32 * 45, 1.0 / 4), tol);
+}
+
+SmallestEllipsoidCoveringProblem::SmallestEllipsoidCoveringProblem(
+    const Eigen::Ref<const Eigen::MatrixXd>& p)
+    : prog_{new MathematicalProgram()},
+      a_{prog_->NewContinuousVariables(p.rows())},
+      p_{p} {
+  prog_->AddMaximizeGeometricMeanCost(a_);
+  const Eigen::MatrixXd p_dot_p = (p_.array() * p_.array()).matrix();
+  const int num_points = p.cols();
+  prog_->AddLinearConstraint(p_dot_p.transpose(),
+                             Eigen::VectorXd::Constant(num_points, -kInf),
+                             Eigen::VectorXd::Ones(num_points), a_);
+}
+
+void SmallestEllipsoidCoveringProblem::CheckSolution(
+    const MathematicalProgramResult& result, double tol) const {
+  const auto a_sol = result.GetSolution(a_);
+  // p_dot_a_dot_p(i) is pᵢᵀ diag(a) * pᵢ
+  const Eigen::RowVectorXd p_dot_a_dot_p =
+      a_sol.transpose() * (p_.array() * p_.array()).matrix();
+  // All points are within the ellipsoid.
+  EXPECT_TRUE((p_dot_a_dot_p.array() <= 1 + tol).all());
+  // At least one point is on the boundary of the ellipsoid.
+  const int num_points = p_.cols();
+  EXPECT_TRUE(
+      ((p_dot_a_dot_p.transpose().array() - Eigen::ArrayXd::Ones(num_points))
+           .abs() <= Eigen::ArrayXd::Constant(num_points, tol))
+          .any());
+
+  const double cost_expected = -std::pow(
+      a_sol.prod(), 1.0 / std::pow(2, (std::ceil(std::log2(a_sol.rows())))));
+  EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+
+  CheckSolutionExtra(result, tol);
+}
+
+// Cover the 4 points (1, 1), (1, -1), (-1, 1) and (-1, -1).
+SmallestEllipsoidCoveringProblem1::SmallestEllipsoidCoveringProblem1()
+    : SmallestEllipsoidCoveringProblem(
+          (Eigen::Matrix<double, 2, 4>() << 1, 1, -1, -1, 1, -1, 1, -1)
+              .finished()) {}
+
+void SmallestEllipsoidCoveringProblem1::CheckSolutionExtra(
+    const MathematicalProgramResult& result, double tol) const {
+  ASSERT_TRUE(result.is_success());
+  // The smallest ellipsoid is a = (0.5, 0.5);
+  const Eigen::Vector2d a_expected(0.5, 0.5);
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(a()), a_expected, tol));
+  EXPECT_NEAR(result.get_optimal_cost(), -0.5, tol);
+}
+
+void SolveAndCheckSmallestEllipsoidCoveringProblems(
+    const SolverInterface& solver, double tol) {
+  SmallestEllipsoidCoveringProblem1 prob1;
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prob1.prog(), {}, {}, &result);
+    prob1.CheckSolution(result, tol);
+  }
+
+  // Now try 3D points;
+  Eigen::Matrix<double, 3, 4> points_3d;
+  // arbitrary points.
+  // clang-format off
+  points_3d << 0.1, 0.2, -1.2, 0.5,
+              -0.3, 0.1, -2.5, 0.8,
+              1.2, 0.3, 1.5, 3.2;
+  // clang-format on
+  SmallestEllipsoidCoveringProblem prob_3d(points_3d);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prob_3d.prog(), {}, {}, &result);
+    prob_3d.CheckSolution(result, tol);
+  }
+
+  // Now try arbitrary 4d points.
+  Eigen::Matrix<double, 4, 6> points_4d;
+  // clang-format off
+  points_4d << 1, 2, 3, 4, 5, 6,
+              0.1, 1.4, 3.2, -2.3, 0.7, -0.3,
+              -0.2, -3.1, 0.4, 1.5, 1.8, 1.9,
+              -1, -2, -3, -4, -5, -6;
+  // clang-format on
+  SmallestEllipsoidCoveringProblem prob_4d(points_4d);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prob_4d.prog(), {}, {}, &result);
+    prob_4d.CheckSolution(result, tol);
   }
 }
 }  // namespace test

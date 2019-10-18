@@ -82,6 +82,10 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
                    const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
+  bool is_floating() const override { return true; }
+
+  bool has_quaternion_dofs() const override { return false; }
+
   /// Retrieves from `context` the three space x-y-z angles θ₁, θ₂, θ₃ which
   /// describe the state for `this` mobilizer as documented in this class's
   /// documentation.
@@ -177,7 +181,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the space x-y-z angles
   /// θ₁, θ₂, θ₃ stored in `context`.
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame

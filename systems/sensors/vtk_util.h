@@ -9,6 +9,7 @@
 #include <vtkTransform.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace systems {
@@ -35,6 +36,10 @@ vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size);
 /// @param transform The transform to convert into a `vtkTransform`.
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
     const Eigen::Isometry3d& transform);
+
+/// Converts the provided `transform` to a vtkTransform.
+vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
+    const math::RigidTransformd& transform);
 
 /// Makes vtkPointerArray from one or multiple pointer(s) for VTK objects
 /// wrapped by vtkNew.

@@ -212,6 +212,22 @@ After you identify one, create a rollback by clicking "Revert" in the
 GitHub UI. Use the :ref:`template message <revert_template>` to communicate
 with the author, and proceed as specified in that message.
 
+Restarting Mac Nightly Builds
+******************************
+Occasionally there will be flaky tests or timeouts in the Mac nightly builds.
+While it is tempting to restart these builds to clear the errors, Mac resources
+are limited and restarting the long-running nightly builds may tie up resources
+needed for continuous builds. In addition, too many simultaneous Mac builds
+will increase the chances of timeouts and other flakes. Build cops should use
+their best judgement, keeping in mind the following guidelines:
+
+* If the nightly job is mirrored by a continuous job, don't re-run.
+* If the test passed last build, don't re-run.
+* If it is a linter only timeout, don't re-run.
+* If there are many timeouts, you may consider re-running.
+* If the timed-out test failed last build (not just timed out), you may consider re-running.
+
+
 Broken CI Script
 ****************
 Sometimes people merge changes to the Drake CI scripts that result in spurious
@@ -229,7 +245,7 @@ Infrastructure Flake
 The machinery of the CI system itself sometimes fails for reasons unrelated to
 any code change. The most common infrastructure flakes include:
 
-* Unable to obtain a MATLAB license.
+* Unable to obtain a Gurobi license.
 * Broken connection to a Mac build agent.
 
 Infrastructure flakes will be red in Jenkins. If you believe you are looking at
@@ -258,3 +274,10 @@ Attempt to figure out what infrastructure collapsed. If it's under our control,
 alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
 @jamiesnape. If it's under a vendor's control, spread the news and simply wait
 it out.
+
+Drake External Examples
+***********************
+Details of failures in the `drake-external-examples <https://github.com/RobotLocomotion/drake-external-examples/>`_
+repository, which may be denoted by red "build failing" icons at the top of the build
+dashboard on Jenkins, should be posted to the `#buildcop <https://drakedevelopers.slack.com/messages/buildcop/details/>`_
+channel on Slack, ensuring that @jamiesnape is mentioned in the message.

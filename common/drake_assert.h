@@ -47,9 +47,6 @@
 /// failure with a message showing at least the condition text, function name,
 /// file, and line.
 #define DRAKE_DEMAND(condition)
-/// (Deprecated.)  Aborts the program (via ::abort) with a message showing at
-/// least the function name, file, and line.
-#define DRAKE_ABORT()
 /// Silences a "no return value" compiler warning by calling a function that
 /// always raises an exception or aborts (i.e., a function marked noreturn).
 /// Only use this macro at a point where (1) a point in the code is truly
@@ -62,9 +59,6 @@
 /// to silence false positive warnings.  When in doubt, throw an exception
 /// manually instead of using this macro.
 #define DRAKE_UNREACHABLE()
-/// (Deprecated.)  Aborts the program (via ::abort) with a message showing at
-/// least the given message (macro argument), function name, file, and line.
-#define DRAKE_ABORT_MSG(message)
 #else  //  DRAKE_DOXYGEN_CXX
 
 // Users should NOT set these; only this header should set them.
@@ -87,23 +81,15 @@
 #endif
 
 namespace drake {
-namespace detail {
+namespace internal {
 // Abort the program with an error message.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
-__attribute__((noreturn))
-__attribute__((deprecated(
-    "\nDRAKE DEPRECATED: DRAKE_ABORT() and DRAKE_ABORT_MSG() are deprecated; "
-    "use 'throw' instead; this macro will be removed on 2019-06-01.")))
-inline void DeprecatedAbort(
-    const char* condition, const char* func, const char* file, int line) {
-  Abort(condition, func, file, line);
-}
 // Report an assertion failure; will either Abort(...) or throw.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void AssertionFailed(
     const char* condition, const char* func, const char* file, int line);
-}  // namespace detail
+}  // namespace internal
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
 // assertions, in case they are not intrinsically convertible.  See
@@ -120,11 +106,8 @@ struct ConditionTraits {
 }  // namespace assert
 }  // namespace drake
 
-#define DRAKE_ABORT()                                                   \
-  ::drake::detail::DeprecatedAbort(nullptr, __func__, __FILE__, __LINE__)
-
 #define DRAKE_UNREACHABLE()                                             \
-  ::drake::detail::Abort(                                               \
+  ::drake::internal::Abort(                                             \
       "Unreachable code was reached?!", __func__, __FILE__, __LINE__)
 
 #define DRAKE_DEMAND(condition)                                              \
@@ -133,13 +116,10 @@ struct ConditionTraits {
         typename std::remove_cv<decltype(condition)>::type> Trait;           \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     if (!Trait::Evaluate(condition)) {                                       \
-      ::drake::detail::AssertionFailed(                                      \
+      ::drake::internal::AssertionFailed(                                    \
            #condition, __func__, __FILE__, __LINE__);                        \
     }                                                                        \
   } while (0)
-
-#define DRAKE_ABORT_MSG(msg)                                    \
-  ::drake::detail::DeprecatedAbort(msg, __func__, __FILE__, __LINE__)
 
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.

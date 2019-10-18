@@ -35,11 +35,14 @@ class WeldJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
+  static const char kTypeName[];
+
   /// Constructor for a %WeldJoint between a `parent_frame_P` and a
   /// `child_frame_C` so that their relative pose `X_PC` is fixed as if they
   /// were "welded" together.
   WeldJoint(const std::string& name, const Frame<T>& parent_frame_P,
-            const Frame<T>& child_frame_C, const Isometry3<double>& X_PC)
+            const Frame<T>& child_frame_C,
+            const math::RigidTransform<double>& X_PC)
       : Joint<T>(name, parent_frame_P, child_frame_C,
                  VectorX<double>() /* no pos lower limits */,
                  VectorX<double>() /* no pos upper limits */,
@@ -49,8 +52,13 @@ class WeldJoint final : public Joint<T> {
                  VectorX<double>() /* no acc upper limits */),
         X_PC_(X_PC) {}
 
+  const std::string& type_name() const override {
+    static const never_destroyed<std::string> name{kTypeName};
+    return name.access();
+  }
+
   /// Returns the pose X_PC of frame C in P.
-  const Isometry3<double>& X_PC() const {
+  const math::RigidTransform<double>& X_PC() const {
     return X_PC_;
   }
 
@@ -137,11 +145,13 @@ class WeldJoint final : public Joint<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
   // The pose of frame C in P.
-  const Isometry3<double> X_PC_;
+  const math::RigidTransform<double> X_PC_;
 };
+
+template <typename T> const char WeldJoint<T>::kTypeName[] = "weld";
 
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::WeldJoint)

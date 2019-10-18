@@ -63,8 +63,8 @@ void PidControlledSystem<T>::Initialize(
 
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem(std::move(plant));
-  DRAKE_ASSERT(plant_->get_num_input_ports() >= 1);
-  DRAKE_ASSERT(plant_->get_num_output_ports() >= 1);
+  DRAKE_ASSERT(plant_->num_input_ports() >= 1);
+  DRAKE_ASSERT(plant_->num_output_ports() >= 1);
   // state_output_port_index_ will be checked by the get_output_port call below.
 
   auto input_ports =
@@ -75,7 +75,7 @@ void PidControlledSystem<T>::Initialize(
   builder.ExportInput(input_ports.control_input_port);
   builder.ExportInput(input_ports.state_input_port);
 
-  for (int i=0; i < plant_->get_num_output_ports(); i++) {
+  for (int i=0; i < plant_->num_output_ports(); i++) {
     builder.ExportOutput(plant_->get_output_port(i));
   }
   builder.BuildInto(this);

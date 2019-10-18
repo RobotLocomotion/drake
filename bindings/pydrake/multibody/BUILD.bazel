@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
@@ -17,6 +16,7 @@ load(
     "@drake//tools/skylark:alias.bzl",
     "drake_py_library_aliases",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -42,7 +42,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        ":multibody_tree_py",
+        ":plant_py",
     ],
 )
 
@@ -50,19 +50,28 @@ drake_pybind_library(
     name = "math_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:type_pack",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
-    py_deps = [":module_py"],
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/common:cpp_template_py",
+    ],
 )
 
 drake_pybind_library(
     name = "tree_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
+        "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
     ],
     cc_srcs = ["tree_py.cc"],
@@ -79,11 +88,14 @@ drake_pybind_library(
     name = "plant_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
+        "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["plant_py.cc"],
     package_info = PACKAGE_INFO,
@@ -92,22 +104,7 @@ drake_pybind_library(
         ":module_py",
         ":tree_py",
         "//bindings/pydrake:geometry_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "multibody_tree_py",
-    cc_deps = [
-        "//bindings/pydrake/common:deprecation_pybind",
-    ],
-    cc_srcs = ["multibody_tree_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":math_py",
-        ":module_py",
-        ":parsing_py",
-        ":plant_py",
-        ":tree_py",
+        "//bindings/pydrake/common:cpp_template_py",
     ],
 )
 
@@ -125,45 +122,28 @@ drake_pybind_library(
     name = "inverse_kinematics_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
     ],
     cc_srcs = ["inverse_kinematics_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        ":multibody_tree_py",
+        ":plant_py",
         "//bindings/pydrake/solvers:mathematicalprogram_py",
     ],
-)
-
-PY_LIBRARIES_ATTIC_ALIASES = [
-    ":collision_py",
-    ":joints_py",
-    ":parsers_py",
-    ":rigid_body_plant_py",
-    ":rigid_body_py",
-    ":rigid_body_tree_py",
-    ":shapes_py",
-]
-
-drake_py_library_aliases(
-    actual_subdir = "bindings/pydrake/attic/multibody",
-    add_deprecation_warning = 1,
-    deprecation_removal_date = "2019-05-01",
-    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
     ":inverse_kinematics_py",
     ":math_py",
-    ":multibody_tree_py",
     ":parsing_py",
     ":plant_py",
     ":tree_py",
 ]
 
-PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
+PY_LIBRARIES = [
     ":module_py",
 ]
 
@@ -201,8 +181,9 @@ drake_py_unittest(
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
-        ":multibody_tree_py",
         ":parsing_py",
+        ":plant_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -214,19 +195,26 @@ drake_py_unittest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/free_body:models",
     ],
     deps = [
         ":benchmarks_py",
-        ":multibody_tree_py",
+        ":parsing_py",
         ":plant_py",
         ":tree_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:scalar_conversion_py",
     ],
 )
 
 drake_py_unittest(
     name = "math_test",
-    deps = [":math_py"],
+    deps = [
+        ":math_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(
@@ -237,11 +225,9 @@ drake_py_unittest(
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
+        ":parsing_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()

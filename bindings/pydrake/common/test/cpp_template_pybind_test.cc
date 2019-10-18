@@ -5,6 +5,7 @@
 // `cpp_template_pybind.h`.
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -31,7 +32,7 @@ struct SimpleTemplate {
 };
 
 template <typename... Ts>
-py::object BindSimpleTemplate(py::module m) {
+auto BindSimpleTemplate(py::module m) {
   using Class = SimpleTemplate<Ts...>;
   py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
   py_class  // BR
@@ -49,8 +50,9 @@ void CheckValue(const string& expr, const T& expected) {
 GTEST_TEST(CppTemplateTest, TemplateClass) {
   py::module m("__main__");
 
-  m.attr("DefaultInst") = BindSimpleTemplate<int>(m);
-  BindSimpleTemplate<int, double>(m);
+  auto cls_1 = BindSimpleTemplate<int>(m);
+  m.attr("DefaultInst") = cls_1;
+  auto cls_2 = BindSimpleTemplate<int, double>(m);
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
@@ -70,6 +72,14 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   DRAKE_EXPECT_THROWS_MESSAGE(py::eval("simple_func('incorrect value')"),
       std::runtime_error,
       R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate\[int\]\)[^\0]*)");  // NOLINT
+
+  // Add dummy constructors to check __call__ pseudo-deduction.
+  cls_1.def(py::init([](int) { return SimpleTemplate<int>(); }));
+  cls_2.def(py::init([](double) { return SimpleTemplate<int, double>(); }));
+  // int - infer first (cls_1).
+  CheckValue("SimpleTemplate(0).GetNames()", expected_1);
+  // double - infer second (cls_2).
+  CheckValue("SimpleTemplate(0.).GetNames()", expected_2);
 }
 
 template <typename... Ts>
@@ -90,6 +100,28 @@ GTEST_TEST(CppTemplateTest, TemplateFunction) {
   SynchronizeGlobalsForPython3(m);
   CheckValue("SimpleFunction[int]()", expected_1);
   CheckValue("SimpleFunction[int, float]()", expected_2);
+}
+
+std::string Callee(int) {
+  return "int";
+}
+std::string Callee(double) {
+  return "double";
+}
+
+GTEST_TEST(CppTemplateTest, Call) {
+  py::module m("__main__");
+
+  AddTemplateFunction(
+      m, "Callee", py::overload_cast<int>(&Callee), GetPyParam<int>());
+  AddTemplateFunction(
+      m, "Callee", py::overload_cast<double>(&Callee), GetPyParam<double>());
+
+  const std::string expected_1 = "int";
+  const std::string expected_2 = "double";
+  SynchronizeGlobalsForPython3(m);
+  CheckValue("Callee(0)", expected_1);
+  CheckValue("Callee(0.)", expected_2);
 }
 
 struct SimpleType {

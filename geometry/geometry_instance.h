@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -87,8 +88,19 @@ class GeometryInstance {
    @param name   The name of the geometry (must satisfy the name requirements).
    @throws std::logic_error if the canonicalized version of `name` is empty.
    */
+  DRAKE_DEPRECATED("2019-11-01",
+      "Please use the RigidTransform-based constructor.")
   GeometryInstance(const Isometry3<double>& X_PG, std::unique_ptr<Shape> shape,
                    const std::string& name);
+
+  /** Constructs a geometry instance specification.
+   @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
+   @param shape  The underlying shape for this geometry instance.
+   @param name   The name of the geometry (must satisfy the name requirements).
+   @throws std::logic_error if the canonicalized version of `name` is empty.
+   */
+  GeometryInstance(const math::RigidTransform<double>& X_PG,
+      std::unique_ptr<Shape> shape, const std::string& name);
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %GeometryInstance will contain a unique id value. The id
@@ -97,8 +109,11 @@ class GeometryInstance {
    representation as well.  */
   GeometryId id() const { return id_; }
 
-  const Isometry3<double>& pose() const { return X_PG_; }
-  void set_pose(const Isometry3<double>& X_PG) { X_PG_ = X_PG; }
+  /** Returns the instance geometry's pose in its parent frame.  */
+  const math::RigidTransformd& pose() const { return X_PG_; }
+
+  /** Sets the pose of this instance in its parent's frame.  */
+  void set_pose(const math::RigidTransformd& X_PG) { X_PG_ = X_PG; }
 
   const Shape& shape() const {
     DRAKE_DEMAND(shape_ != nullptr);
@@ -118,7 +133,12 @@ class GeometryInstance {
 
   /** Sets the illustration properties for the given instance.  */
   void set_illustration_properties(IllustrationProperties properties) {
-    illustration_props_ = std::move(properties);
+    illustration_properties_ = std::move(properties);
+  }
+
+  /** Sets the perception properties for the given instance.  */
+  void set_perception_properties(PerceptionProperties properties) {
+    perception_properties_ = std::move(properties);
   }
 
   /** Returns a pointer to the geometry's mutable proximity properties (if they
@@ -138,14 +158,28 @@ class GeometryInstance {
   /** Returns a pointer to the geometry's mutable illustration properties (if
    they are defined). Nullptr otherwise.  */
   IllustrationProperties* mutable_illustration_properties() {
-    if (illustration_props_) return &*illustration_props_;
+    if (illustration_properties_) return &*illustration_properties_;
     return nullptr;
   }
 
   /** Returns a pointer to the geometry's const illustration properties (if
    they are defined). Nullptr otherwise.  */
   const IllustrationProperties* illustration_properties() const {
-    if (illustration_props_) return &*illustration_props_;
+    if (illustration_properties_) return &*illustration_properties_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's mutable perception properties (if
+   they are defined). Nullptr otherwise.  */
+  PerceptionProperties* mutable_perception_properties() {
+    if (perception_properties_) return &*perception_properties_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's const perception properties (if
+   they are defined). Nullptr otherwise.  */
+  const PerceptionProperties* perception_properties() const {
+    if (perception_properties_) return &*perception_properties_;
     return nullptr;
   }
 
@@ -156,7 +190,7 @@ class GeometryInstance {
   GeometryId id_{};
 
   // The pose of the geometry relative to the parent frame it hangs on.
-  Isometry3<double> X_PG_;
+  math::RigidTransform<double> X_PG_;
 
   // The shape associated with this instance.
   copyable_unique_ptr<Shape> shape_;
@@ -165,8 +199,9 @@ class GeometryInstance {
   std::string name_;
 
   // Optional properties.
-  optional<ProximityProperties> proximity_properties_{nullopt};
-  optional<IllustrationProperties> illustration_props_{nullopt};
+  optional<ProximityProperties> proximity_properties_{};
+  optional<IllustrationProperties> illustration_properties_{};
+  optional<PerceptionProperties> perception_properties_{};
 };
 
 }  // namespace geometry

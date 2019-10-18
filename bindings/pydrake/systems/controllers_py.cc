@@ -8,13 +8,12 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/dynamic_programming.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
-#include "drake/systems/controllers/rbt_inverse_dynamics.h"
-#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
+#include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/controllers/pid_controller.h"
 
 namespace drake {
 namespace pydrake {
@@ -25,6 +24,7 @@ PYBIND11_MODULE(controllers, m) {
   using drake::multibody::MultibodyPlant;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
+  using drake::systems::System;
   constexpr auto& doc = pydrake_doc.drake.systems.controllers;
 
   py::module::import("pydrake.math");
@@ -74,13 +74,15 @@ PYBIND11_MODULE(controllers, m) {
           doc.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
       .export_values();
 
+  // TODO(eric.cousineau): Expose multiple inheritance from
+  // StateFeedbackControllerInterface once #9243 is resolved.
   py::class_<InverseDynamicsController<double>, Diagram<double>>(
       m, "InverseDynamicsController", doc.InverseDynamicsController.doc)
       .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
                const VectorX<double>&, const VectorX<double>&, bool>(),
           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("has_reference_acceleration"),
-          // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
+          // Keep alive, reference: `self` keeps `robot` alive.
           py::keep_alive<1, 2>(), doc.InverseDynamicsController.ctor.doc)
       .def("set_integral_value",
           &InverseDynamicsController<double>::set_integral_value,
@@ -102,6 +104,86 @@ PYBIND11_MODULE(controllers, m) {
           &InverseDynamicsController<double>::get_output_port_control,
           py_reference_internal,
           doc.InverseDynamicsController.get_output_port_control.doc);
+
+  py::class_<PidControlledSystem<double>, Diagram<double>>(
+      m, "PidControlledSystem", doc.PidControlledSystem.doc)
+      .def(py::init<std::unique_ptr<System<double>>, double, double, double,
+               int>(),
+          py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("state_output_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_5args_double_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const VectorX<double>&,
+               const VectorX<double>&, const VectorX<double>&, int>(),
+          py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("state_output_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_5args_vector_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
+               double, double, double, int>(),
+          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
+          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_6args_double_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
+               const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&, int>(),
+          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
+          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_6args_vector_gains)
+      .def("get_control_input_port",
+          &PidControlledSystem<double>::get_control_input_port,
+          py_reference_internal,
+          doc.PidControlledSystem.get_control_input_port.doc)
+      .def("get_state_input_port",
+          &PidControlledSystem<double>::get_state_input_port,
+          py_reference_internal,
+          doc.PidControlledSystem.get_state_input_port.doc)
+      .def("get_state_output_port",
+          &PidControlledSystem<double>::get_state_output_port,
+          py_reference_internal,
+          doc.PidControlledSystem.get_state_output_port.doc);
+
+  // TODO(eric.cousineau): Expose multiple inheritance from
+  // StateFeedbackControllerInterface once #9243 is resolved.
+  py::class_<PidController<double>, LeafSystem<double>>(
+      m, "PidController", doc.PidController.doc)
+      .def(py::init<const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&>(),
+          py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          doc.PidController.ctor.doc_3args)
+      .def(py::init<const MatrixX<double>&, const VectorX<double>&,
+               const VectorX<double>&, const VectorX<double>&>(),
+          py::arg("state_projection"), py::arg("kp"), py::arg("ki"),
+          py::arg("kd"), doc.PidController.ctor.doc_4args)
+      .def(py::init<const MatrixX<double>&, const MatrixX<double>&,
+               const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&>(),
+          py::arg("state_projection"), py::arg("output_projection"),
+          py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          doc.PidController.ctor.doc_5args)
+      .def("get_Kp_vector", &PidController<double>::get_Kp_vector,
+          doc.PidController.get_Kp_vector.doc)
+      .def("get_Ki_vector", &PidController<double>::get_Ki_vector,
+          doc.PidController.get_Ki_vector.doc)
+      .def("get_Kd_vector", &PidController<double>::get_Kd_vector,
+          doc.PidController.get_Kd_vector.doc)
+      .def("get_input_port_estimated_state",
+          &PidController<double>::get_input_port_estimated_state,
+          py_reference_internal,
+          doc.PidController.get_input_port_estimated_state.doc)
+      .def("get_input_port_desired_state",
+          &PidController<double>::get_input_port_desired_state,
+          py_reference_internal,
+          doc.PidController.get_input_port_desired_state.doc)
+      .def("get_output_port_control",
+          &PidController<double>::get_output_port_control,
+          py_reference_internal, doc.PidController.get_output_port_control.doc);
 
   m.def("FittedValueIteration", WrapCallbacks(&FittedValueIteration),
       doc.FittedValueIteration.doc);
@@ -153,8 +235,6 @@ PYBIND11_MODULE(controllers, m) {
       py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
       py::arg("input_port_index") = 0, doc.LinearQuadraticRegulator.doc_6args);
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

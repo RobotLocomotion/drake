@@ -2,18 +2,9 @@
 
 load("@drake//tools/install:install.bzl", "install")
 
-licenses([
-    "notice",  # MIT
-    "restricted",  # LGPL-2.1+
-])
+licenses(["notice"])  # MIT
 
 package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-    visibility = ["//visibility:private"],
-)
 
 config_setting(
     name = "linux",
@@ -21,60 +12,49 @@ config_setting(
     visibility = ["//visibility:private"],
 )
 
-SCS_HDRS = glob(["include/*.h"]) + ["linsys/amatrix.h"]
-
-# TODO(jamiesnape): Use system AMD and LDL instead of outdated versions in
-# linsys/direct/external. These are licensed under the LGPL so only build a
-# shared library for :scsdir.
-
-cc_binary(
-    name = "libdrake_scsdir.so",
-    srcs = SCS_HDRS + glob([
-        "linsys/*.c",
-        "linsys/common.h",
-        "linsys/direct/**/*.c",
-        "linsys/direct/**/*.h",
+cc_library(
+    name = "scsdir",
+    srcs = glob([
         "src/*.c",
+    ]) + [
+        "linsys/amatrix.h",
+        "linsys/common.c",
+        "linsys/common.h",
+        "linsys/direct/private.c",
+        "linsys/direct/private.h",
+    ],
+    hdrs = glob([
+        "include/*.h",
     ]),
-    defines = ["USE_LAPACK=1"],
+    defines = [
+        "USE_LAPACK=1",
+        # Keep the default primitive size of `double` and `int`.  Don't define
+        # 'SFLOAT' nor 'DLONG' unless @qdldl and @osqp are also changed to use
+        # those primitive sizes.
+    ],
     includes = [
         "include",
         "linsys",
     ],
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+        "-Werror=incompatible-pointer-types",
+    ],
+    linkstatic = 1,
     linkopts = select({
-        ":darwin": ["-framework Accelerate"],
-        ":linux": [
-            "-lrt",
-            "-Wl,-soname,libdrake_scsdir.so",
-        ],
+        ":linux": ["-lrt"],
         "@//conditions:default": [],
     }),
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-    deps = select({
-        ":linux": [
-            "@blas",
-            "@lapack",
-        ],
-        "@//conditions:default": [],
-    }),
-)
-
-cc_library(
-    name = "scsdir",
-    srcs = [":libdrake_scsdir.so"],
-    hdrs = SCS_HDRS,
-    defines = ["USE_LAPACK=1"],
-    includes = ["include"],
+    deps = [
+        "@blas",
+        "@lapack",
+        "@qdldl",
+        "@suitesparse//:amd",
+    ],
 )
 
 install(
     name = "install",
-    targets = [":libdrake_scsdir.so"],
-    docs = [
-        "LICENSE.txt",
-        "linsys/direct/external/AMD_README.txt",
-        "linsys/direct/external/LDL_README.txt",
-    ],
-    doc_strip_prefix = ["linsys/direct/external"],
+    docs = ["LICENSE.txt"],
 )

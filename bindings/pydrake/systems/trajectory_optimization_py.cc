@@ -4,6 +4,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -12,14 +13,6 @@
 
 namespace drake {
 namespace pydrake {
-
-namespace {
-constexpr const char* const kSolveDeprecationString =
-    "MathematicalProgram methods that assume the solution is stored inside "
-    "the program are deprecated; for details and porting advice, see "
-    "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-    "will be removed on 2019-06-01.";
-}  // namespace
 
 PYBIND11_MODULE(trajectory_optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -36,7 +29,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::class_<MultipleShooting, solvers::MathematicalProgram>(
       m, "MultipleShooting", doc.MultipleShooting.doc)
       .def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
-      .def("timestep", &MultipleShooting::timestep,
+      .def("timestep", &MultipleShooting::timestep, py::arg("index"),
           doc.MultipleShooting.timestep.doc)
       .def("fixed_timestep", &MultipleShooting::fixed_timestep,
           doc.MultipleShooting.fixed_timestep.doc)
@@ -51,7 +44,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("state",
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.state(index); },
-          doc.MultipleShooting.state.doc_1args)
+          py::arg("index"), doc.MultipleShooting.state.doc_1args)
       .def("initial_state",
           [](const MultipleShooting& self) -> VectorXDecisionVariable {
             return self.initial_state();
@@ -70,129 +63,126 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("input",
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.input(index); },
-          doc.MultipleShooting.input.doc_1args)
+          py::arg("index"), doc.MultipleShooting.input.doc_1args)
+      .def("NewSequentialVariable",
+          [](MultipleShooting& self, int rows,
+              const std::string& name) -> VectorXDecisionVariable {
+            return self.NewSequentialVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MultipleShooting.NewSequentialVariable.doc)
+      .def("GetSequentialVariableAtIndex",
+          [](const MultipleShooting& self, const std::string& name,
+              int index) -> VectorXDecisionVariable {
+            return self.GetSequentialVariableAtIndex(name, index);
+          },
+          py::arg("name"), py::arg("index"),
+          doc.MultipleShooting.GetSequentialVariableAtIndex.doc)
       .def("AddRunningCost",
           [](MultipleShooting& prog, const symbolic::Expression& g) {
             prog.AddRunningCost(g);
           },
-          doc.MultipleShooting.AddRunningCost.doc_1args_g)
+          py::arg("g"), doc.MultipleShooting.AddRunningCost.doc_1args_g)
       .def("AddRunningCost",
           [](MultipleShooting& prog,
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
             prog.AddRunningCost(g);
           },
+          py::arg("g"),
           doc.MultipleShooting.AddRunningCost.doc_1args_constEigenMatrixBase)
       .def("AddConstraintToAllKnotPoints",
-          &MultipleShooting::AddConstraintToAllKnotPoints,
+          &MultipleShooting::AddConstraintToAllKnotPoints, py::arg("f"),
           doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
       .def("AddTimeIntervalBounds", &MultipleShooting::AddTimeIntervalBounds,
+          py::arg("lower_bound"), py::arg("upper_bound"),
           doc.MultipleShooting.AddTimeIntervalBounds.doc)
       .def("AddEqualTimeIntervalsConstraints",
           &MultipleShooting::AddEqualTimeIntervalsConstraints,
           doc.MultipleShooting.AddEqualTimeIntervalsConstraints.doc)
       .def("AddDurationBounds", &MultipleShooting::AddDurationBounds,
+          py::arg("lower_bound"), py::arg("upper_bound"),
           doc.MultipleShooting.AddDurationBounds.doc)
       .def("AddFinalCost",
           py::overload_cast<const symbolic::Expression&>(
               &MultipleShooting::AddFinalCost),
-          doc.MultipleShooting.AddFinalCost.doc_1args_e)
+          py::arg("e"), doc.MultipleShooting.AddFinalCost.doc_1args_e)
       .def("AddFinalCost",
           py::overload_cast<
               const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
               &MultipleShooting::AddFinalCost),
-          doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
+          py::arg("matrix"), doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
       .def("AddInputTrajectoryCallback",
-          &MultipleShooting::AddInputTrajectoryCallback,
+          &MultipleShooting::AddInputTrajectoryCallback, py::arg("callback"),
           doc.MultipleShooting.AddInputTrajectoryCallback.doc)
       .def("AddStateTrajectoryCallback",
-          &MultipleShooting::AddStateTrajectoryCallback,
+          &MultipleShooting::AddStateTrajectoryCallback, py::arg("callback"),
           doc.MultipleShooting.AddStateTrajectoryCallback.doc)
+      .def("AddCompleteTrajectoryCallback",
+          &MultipleShooting::AddCompleteTrajectoryCallback, py::arg("callback"),
+          py::arg("names"),
+          doc.MultipleShooting.AddCompleteTrajectoryCallback.doc)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
+          py::arg("traj_init_u"), py::arg("traj_init_x"),
           doc.MultipleShooting.SetInitialTrajectory.doc)
-      .def("GetSampleTimes",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetSampleTimes();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetSampleTimes.doc)
       .def("GetSampleTimes",
           overload_cast_explicit<Eigen::VectorXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetSampleTimes),
-          doc.MultipleShooting.GetSampleTimes.doc)
-      .def("GetInputSamples",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetInputSamples();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetInputSamples.doc)
+          py::arg("result"),
+          doc.MultipleShooting.GetSampleTimes.doc_1args_h_var_values)
       .def("GetInputSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetInputSamples),
-          doc.MultipleShooting.GetInputSamples.doc)
-      .def("GetStateSamples",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetStateSamples();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetStateSamples.doc)
+          py::arg("result"), doc.MultipleShooting.GetInputSamples.doc)
       .def("GetStateSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetStateSamples),
-          doc.MultipleShooting.GetStateSamples.doc)
-      .def("ReconstructInputTrajectory",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.ReconstructInputTrajectory();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.ReconstructInputTrajectory.doc)
+          py::arg("result"), doc.MultipleShooting.GetStateSamples.doc)
+      .def("GetSequentialVariableSamples",
+          overload_cast_explicit<Eigen::MatrixXd,
+              const solvers::MathematicalProgramResult&, const std::string&>(
+              &MultipleShooting::GetSequentialVariableSamples),
+          py::arg("result"), py::arg("name"),
+          doc.MultipleShooting.GetSequentialVariableSamples.doc)
       .def("ReconstructInputTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::ReconstructInputTrajectory),
+          py::arg("result"),
           doc.MultipleShooting.ReconstructInputTrajectory.doc)
-      .def("ReconstructStateTrajectory",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.ReconstructStateTrajectory();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.ReconstructStateTrajectory.doc)
       .def("ReconstructStateTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::ReconstructStateTrajectory),
+          py::arg("result"),
           doc.MultipleShooting.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocation, MultipleShooting>(
       m, "DirectCollocation", doc.DirectCollocation.doc)
       .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int, double, double>(),
+               const systems::Context<double>&, int, double, double,
+               variant<systems::InputPortSelection, systems::InputPortIndex>,
+               bool>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
           py::arg("minimum_timestep"), py::arg("maximum_timestep"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          py::arg("assume_non_continuous_states_are_fixed") = false,
           doc.DirectCollocation.ctor.doc);
 
   py::class_<DirectCollocationConstraint, solvers::Constraint,
       std::shared_ptr<DirectCollocationConstraint>>(
       m, "DirectCollocationConstraint", doc.DirectCollocationConstraint.doc)
       .def(py::init<const systems::System<double>&,
-               const systems::Context<double>&>(),
+               const systems::Context<double>&,
+               variant<systems::InputPortSelection, systems::InputPortIndex>,
+               bool>(),
+          py::arg("system"), py::arg("context"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          py::arg("assume_non_continuous_states_are_fixed") = false,
           doc.DirectCollocationConstraint.ctor.doc);
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
@@ -200,19 +190,28 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       py::arg("next_state"), py::arg("input"), py::arg("next_input"),
       py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
 
+  // TimeStep
+  py::class_<TimeStep>(m, "TimeStep", doc.TimeStep.doc)
+      .def(py::init<double>(), py::arg("value"))
+      .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
+
   py::class_<DirectTranscription, MultipleShooting>(
       m, "DirectTranscription", doc.DirectTranscription.doc)
       .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int>(),
+               const systems::Context<double>&, int,
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor
-              .doc_3args_system_context_num_time_samples)
-      .def(py::init<const systems::LinearSystem<double>*,
-               const systems::Context<double>&, int>(),
-          py::arg("linear_system"), py::arg("context"),
-          py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor
-              .doc_3args_linear_system_context_num_time_samples);
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          doc.DirectTranscription.ctor.doc_4args)
+      .def(py::init<const systems::System<double>*,
+               const systems::Context<double>&, int, TimeStep,
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
+          py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+          py::arg("fixed_timestep"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          doc.DirectTranscription.ctor.doc_5args);
 }
 
 }  // namespace pydrake

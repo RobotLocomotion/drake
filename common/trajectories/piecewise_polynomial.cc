@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <memory>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -370,7 +372,7 @@ Eigen::Index PiecewisePolynomial<T>::cols() const {
 //  `breaks` and `knots` have different length,
 //  `knots` have inconsistent dimensions,
 //  any `knots` have either 0 rows or 0 cols,
-//  `breaks` is not strictly increasing,
+//  `breaks` is not strictly increasing by at least kEpsilonTime per break,
 //  `breaks` has length smaller than `min_length`.
 template <typename T>
 void PiecewisePolynomial<T>::
@@ -398,8 +400,13 @@ void PiecewisePolynomial<T>::
     }
   }
   for (size_t i = 0; i < times.size() - 1; i++) {
+    if (times[i + 1] <= times[i]) {
+      throw std::runtime_error("Times must be in increasing order.");
+    }
     if (times[i + 1] - times[i] < PiecewiseTrajectory<T>::kEpsilonTime) {
-      throw std::runtime_error("times must be in increasing order.");
+      throw std::runtime_error(
+          fmt::format("Times must be at least {} apart.",
+                      PiecewiseTrajectory<T>::kEpsilonTime));
     }
   }
 }
@@ -962,4 +969,3 @@ template class PiecewisePolynomial<double>;
 
 }  // namespace trajectories
 }  // namespace drake
-

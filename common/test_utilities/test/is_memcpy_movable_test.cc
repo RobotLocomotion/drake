@@ -32,7 +32,7 @@ class MemcpyMovable {
   };
 
  private:
-  const unique_ptr<string> name_;
+  unique_ptr<string> name_;
 };
 
 // An example class that is not memcpy-movable.

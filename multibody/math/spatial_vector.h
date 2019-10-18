@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -222,7 +223,7 @@ class SpatialVector {
   /// </pre>
   /// @returns V_F The same spatial vector re-expressed in frame F.
   friend SpatialQuantity operator*(
-      const Matrix3<T>& R_FE, const SpatialQuantity& V_E) {
+      const math::RotationMatrix<T>& R_FE, const SpatialQuantity& V_E) {
     return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 

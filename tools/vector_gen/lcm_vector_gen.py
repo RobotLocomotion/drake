@@ -218,7 +218,7 @@ def generate_set_to_named_variables(hh, caller_context, fields):
 
 
 DO_CLONE = """
-  %(camel)s<T>* DoClone() const final {
+  DRAKE_NODISCARD %(camel)s<T>* DoClone() const final {
     return new %(camel)s;
   }
 """
@@ -253,8 +253,7 @@ ACCESSOR_FIELD_METHODS = """
   }
   /// Fluent setter that matches %(field)s().
   /// Returns a copy of `this` with %(field)s set to a new value.
-  DRAKE_VECTOR_GEN_NODISCARD
-  %(camel)s<T>
+  DRAKE_NODISCARD %(camel)s<T>
   with_%(field)s(const T& %(field)s) const {
     %(camel)s<T> result(*this);
     result.set_%(field)s(%(field)s);
@@ -283,6 +282,32 @@ def generate_accessors(hh, caller_context, fields):
             put(hh, ACCESSOR_FIELD_DOC_RANGE % context, 1)
         put(hh, ACCESSOR_FIELD_METHODS % context, 1)
     put(hh, ACCESSOR_END % caller_context, 2)
+
+
+SERIALIZE_BEGIN = """
+  /// Visit each field of this named vector, passing them (in order) to the
+  /// given Archive.  The archive can read and/or write to the vector values.
+  /// One common use of Serialize is the //common/yaml tools.
+  template <typename Archive>
+  void Serialize(Archive* a) {
+"""
+SERIALIZE_FIELD = """
+    T& %(field)s_ref = this->GetAtIndex(K::%(kname)s);
+    a->Visit(drake::MakeNameValue("%(field)s", &%(field)s_ref));
+"""
+SERIALIZE_END = """
+  }
+"""
+
+
+def generate_serialize(hh, caller_context, fields):
+    put(hh, SERIALIZE_BEGIN % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
+        put(hh, SERIALIZE_FIELD % context, 1)
+    put(hh, SERIALIZE_END % caller_context, 2)
 
 
 GET_COORDINATE_NAMES = """
@@ -384,17 +409,12 @@ VECTOR_HH_PREAMBLE = """
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/dummy_value.h"
+#include "drake/common/name_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
-
-// TODO(jwnimmer-tri) Elevate this to drake/common.
-#if __has_cpp_attribute(nodiscard)
-#define DRAKE_VECTOR_GEN_NODISCARD [[nodiscard]]  // NOLINT(whitespace/braces)
-#else
-#define DRAKE_VECTOR_GEN_NODISCARD
-#endif
 
 %(opening_namespace)s
 """
@@ -423,8 +443,6 @@ VECTOR_CLASS_END = """
 
 VECTOR_HH_POSTAMBLE = """
 %(closing_namespace)s
-
-#undef DRAKE_VECTOR_GEN_NODISCARD
 """
 
 VECTOR_CC_PREAMBLE = """
@@ -438,137 +456,6 @@ VECTOR_CC_PREAMBLE = """
 VECTOR_CC_POSTAMBLE = """
 %(closing_namespace)s
 """
-
-TRANSLATOR_HH_PREAMBLE = """
-#pragma once
-
-%(generated_code_warning)s
-
-#include <memory>
-#include <vector>
-
-#include "%(cxx_include_path)s/%(snake)s.h"
-#include "%(lcm_package)s/lcmt_%(snake)s_t.hpp"
-#include "drake/common/drake_deprecated.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-
-%(opening_namespace)s
-"""
-
-TRANSLATOR_CLASS_DECL = """
-/**
- * Translates between LCM message objects and VectorBase objects for the
- * %(camel)s type.
- */
-class
-    DRAKE_DEPRECATED("2019-05-01",
-        "The LcmAndVectorBaseTranslator and its related code "
-        "are scheduled to be removed, with no replacement.")
-    %(camel)sTranslator final
-    : public drake::systems::lcm::LcmAndVectorBaseTranslator {
- public:
-  %(camel)sTranslator()
-      : LcmAndVectorBaseTranslator(%(indices)s::kNumCoordinates) {}
-  std::unique_ptr<drake::systems::BasicVector<double>> AllocateOutputVector()
-      const final;
-  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
-      drake::systems::VectorBase<double>* vector_base) const final;
-  void Serialize(double time,
-      const drake::systems::VectorBase<double>& vector_base,
-      std::vector<uint8_t>* lcm_message_bytes) const final;
-};
-"""
-
-TRANSLATOR_HH_POSTAMBLE = """
-%(closing_namespace)s
-"""
-
-TRANSLATOR_CC_PREAMBLE = """
-#include "%(cxx_include_path)s/%(snake)s_translator.h"
-
-%(generated_code_warning)s
-
-#include <stdexcept>
-
-#include "drake/common/drake_assert.h"
-
-%(opening_namespace)s
-"""
-
-TRANSLATOR_CC_POSTAMBLE = """
-%(closing_namespace)s
-"""
-
-ALLOCATE_OUTPUT_VECTOR = """
-std::unique_ptr<drake::systems::BasicVector<double>>
-%(camel)sTranslator::AllocateOutputVector() const {
-  return std::make_unique<%(camel)s<double>>();
-}
-"""
-
-
-def generate_allocate_output_vector(cc, caller_context, fields):
-    context = dict(caller_context)
-    put(cc, ALLOCATE_OUTPUT_VECTOR % context, 2)
-
-
-DESERIALIZE_BEGIN = """
-void %(camel)sTranslator::Serialize(
-    double time, const drake::systems::VectorBase<double>& vector_base,
-    std::vector<uint8_t>* lcm_message_bytes) const {
-  const auto* const vector =
-      dynamic_cast<const %(camel)s<double>*>(&vector_base);
-  DRAKE_DEMAND(vector != nullptr);
-  %(lcm_package)s::lcmt_%(snake)s_t message;
-  message.timestamp = static_cast<int64_t>(time * 1000);
-"""
-DESERIALIZE_FIELD = """
-  message.%(field)s = vector->%(field)s();
-"""
-DESERIALIZE_END = """
-  const int lcm_message_length = message.getEncodedSize();
-  lcm_message_bytes->resize(lcm_message_length);
-  message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
-}
-"""
-
-
-def generate_deserialize(cc, caller_context, fields):
-    context = dict(caller_context)
-    put(cc, DESERIALIZE_BEGIN % context, 1)
-    for field in fields:
-        context.update(field=field['name'])
-        put(cc, DESERIALIZE_FIELD % context, 1)
-    put(cc, DESERIALIZE_END % context, 2)
-
-
-SERIALIZE_BEGIN = """
-void %(camel)sTranslator::Deserialize(
-    const void* lcm_message_bytes, int lcm_message_length,
-    drake::systems::VectorBase<double>* vector_base) const {
-  DRAKE_DEMAND(vector_base != nullptr);
-  auto* const my_vector = dynamic_cast<%(camel)s<double>*>(vector_base);
-  DRAKE_DEMAND(my_vector != nullptr);
-
-  %(lcm_package)s::lcmt_%(snake)s_t message;
-  int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
-  if (status < 0) {
-    throw std::runtime_error("Failed to decode LCM message %(snake)s.");
-  }
-"""
-SERIALIZE_FIELD = """  my_vector->set_%(field)s(message.%(field)s);"""
-SERIALIZE_END = """
-}
-"""
-
-
-def generate_serialize(cc, caller_context, fields):
-    context = dict(caller_context)
-    put(cc, SERIALIZE_BEGIN % context, 1)
-    for field in fields:
-        context.update(field=field['name'])
-        put(cc, SERIALIZE_FIELD % context, 1)
-    put(cc, SERIALIZE_END % context, 2)
 
 
 LCMTYPE_PREAMBLE = """
@@ -591,8 +478,6 @@ def generate_code(
         include_prefix=None,
         vector_hh_filename=None,
         vector_cc_filename=None,
-        translator_hh_filename=None,
-        translator_cc_filename=None,
         lcm_filename=None):
 
     cxx_include_path = os.path.dirname(named_vector_filename) + "/gen"
@@ -672,6 +557,7 @@ def generate_code(
             generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)
+            generate_serialize(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
             generate_is_valid(hh, context, fields)
             generate_get_element_bounds(hh, context, fields)
@@ -686,22 +572,6 @@ def generate_code(
             put(cc, '', 1)
             generate_indices_names_accessor_impl(cc, context, fields)
             put(cc, VECTOR_CC_POSTAMBLE % context, 1)
-
-    if translator_hh_filename:
-        with open(translator_hh_filename, 'w') as hh:
-            cxx_names.append(hh.name)
-            put(hh, TRANSLATOR_HH_PREAMBLE % context, 2)
-            put(hh, TRANSLATOR_CLASS_DECL % context, 2)
-            put(hh, TRANSLATOR_HH_POSTAMBLE % context, 1)
-
-    if translator_cc_filename:
-        with open(translator_cc_filename, 'w') as cc:
-            cxx_names.append(cc.name)
-            put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
-            generate_allocate_output_vector(cc, context, fields)
-            generate_deserialize(cc, context, fields)
-            generate_serialize(cc, context, fields)
-            put(cc, TRANSLATOR_CC_POSTAMBLE % context, 1)
 
     if lcm_filename:
         with open(lcm_filename, 'w') as lcm:
@@ -732,8 +602,6 @@ def generate_all_code(args):
         basename_to_kind = {
             snake + ".h": "vector_hh_filename",
             snake + ".cc": "vector_cc_filename",
-            snake + "_translator.h": "translator_hh_filename",
-            snake + "_translator.cc": "translator_cc_filename",
             "lcmt_" + snake + "_t.lcm": "lcm_filename",
         }
         kwargs_for_generate = dict([

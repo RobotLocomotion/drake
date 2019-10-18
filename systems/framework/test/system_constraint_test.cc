@@ -84,7 +84,7 @@ GTEST_TEST(SystemConstraintBoundsTest, BadSizes) {
 GTEST_TEST(SystemConstraintTest, Basic) {
   ContextConstraintCalc<double> calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+    *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   ContextConstraintCalc<double> calc2 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
@@ -106,14 +106,14 @@ GTEST_TEST(SystemConstraintTest, Basic) {
   SystemConstraint<double> equality_constraint(
       &system, calc, SystemConstraintBounds::Equality(1),
       "equality constraint");
-  context->get_mutable_continuous_state_vector().SetAtIndex(1, 5.0);
+  context->get_mutable_continuous_state_vector()[1] = 5.0;
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 5.0);
   EXPECT_TRUE(CompareMatrices(equality_constraint.lower_bound(), Vector1d(0)));
   EXPECT_TRUE(CompareMatrices(equality_constraint.upper_bound(), Vector1d(0)));
   EXPECT_FALSE(equality_constraint.CheckSatisfied(*context, tol));
 
-  context->get_mutable_continuous_state_vector().SetAtIndex(1, 0.0);
+  context->get_mutable_continuous_state_vector()[1] = 0.0;
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 0.0);
   EXPECT_TRUE(equality_constraint.CheckSatisfied(*context, tol));
@@ -129,14 +129,14 @@ GTEST_TEST(SystemConstraintTest, Basic) {
                               Eigen::Vector2d::Ones()));
   EXPECT_TRUE(CompareMatrices(inequality_constraint.upper_bound(),
                               Eigen::Vector2d(4, 6)));
-  context->get_mutable_continuous_state_vector().SetAtIndex(0, 3.0);
-  context->get_mutable_continuous_state_vector().SetAtIndex(1, 5.0);
+  context->get_mutable_continuous_state_vector()[0] = 3.0;
+  context->get_mutable_continuous_state_vector()[1] = 5.0;
   inequality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 3.0);
   EXPECT_EQ(value[1], 5.0);
   EXPECT_TRUE(inequality_constraint.CheckSatisfied(*context, tol));
 
-  context->get_mutable_continuous_state_vector().SetAtIndex(1, -0.5);
+  context->get_mutable_continuous_state_vector()[1] = -0.5;
   inequality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[1], -0.5);
   EXPECT_FALSE(inequality_constraint.CheckSatisfied(*context, tol));
@@ -174,7 +174,7 @@ ExternalSystemConstraint ZeroStateDerivativeConstraint(
   // We don't handle discrete state yet, because to do so efficiently we'd
   // need a method like System::EvalDiscreteVariableUpdates, but only the Calc
   // flavor of that method currently exists.
-  DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
+  DRAKE_DEMAND(dummy_context->num_discrete_state_groups() == 0);
   const int n_xc = dummy_context->get_continuous_state_vector().size();
   return ExternalSystemConstraint::MakeForAllScalars(
       "xc_dot = 0 and xd_{n+1} = 0",
@@ -196,7 +196,7 @@ ExternalSystemConstraint ZeroVelocityConstraint(
   auto dummy_context = shape.AllocateContext();
 
   // We can't handle discrete state yet, because of #9171.
-  DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
+  DRAKE_DEMAND(dummy_context->num_discrete_state_groups() == 0);
   const int num_v = dummy_context->get_continuous_state().num_v();
   return ExternalSystemConstraint::MakeForAllScalars(
       "zero velocity", SystemConstraintBounds::Equality(num_v),

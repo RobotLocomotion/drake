@@ -23,14 +23,6 @@ class IiwaStatusReceiverTest : public testing::Test {
             dut_.get_input_port().get_index(),
             Value<lcmt_iiwa_status>{})) {}
 
-  // Some sugar to consolidate the deprecation suppression.
-  const systems::OutputPort<double>& state_port() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return dut_.get_state_output_port();
-#pragma GCC diagnostic pop
-  }
-
   void Copy(const Eigen::VectorXd& from, std::vector<double>* to) {
     *to = {from.data(), from.data() + from.size()};
   }
@@ -45,15 +37,14 @@ class IiwaStatusReceiverTest : public testing::Test {
 
 TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
   // Confirm that output is zero for uninitialized lcm input.
-  const int num_output_ports = dut_.get_num_output_ports();
-  EXPECT_EQ(num_output_ports, 7);
+  const int num_output_ports = dut_.num_output_ports();
+  EXPECT_EQ(num_output_ports, 6);
   for (int i = 0; i < num_output_ports; ++i) {
     const systems::LeafSystem<double>& leaf = dut_;
     const auto& port = leaf.get_output_port(i);
-    const int size = (&port == &state_port()) ? (2 * N) : N;
     EXPECT_TRUE(CompareMatrices(
         port.Eval(context_),
-        VectorXd::Zero(size)));
+        VectorXd::Zero(N)));
   }
 
   // Populate the status message with distinct values.
@@ -94,12 +85,6 @@ TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
   EXPECT_TRUE(CompareMatrices(
       dut_.get_torque_external_output_port().Eval(context_),
       torque_external));
-  EXPECT_TRUE(CompareMatrices(
-      state_port().Eval(context_).head(N),
-      position_measured));
-  EXPECT_TRUE(CompareMatrices(
-      state_port().Eval(context_).tail(N),
-      velocity_estimated));
 }
 
 }  // namespace

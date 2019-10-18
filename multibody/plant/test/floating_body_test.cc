@@ -37,8 +37,9 @@ using internal::MultibodyTreeTester;
 
 GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
-  // The numerical tolerance accepted for these tests.
+  // The integrator's desired local accuracy, chosen to pass the tests under
+  // the global error tolerance defined below.
+  const double kAccuracy = 1.0e-7;
   const double kTolerance = 1.0e-5;
   const double kMaxDt = 0.1;
   const double kEndTime = 10.0;
@@ -137,7 +138,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       mobilizer.get_position(context), Vector3d::Zero(),
       kEpsilon, MatrixCompareType::relative));
 
-  EXPECT_EQ(context.get_continuous_state().size(), 13);
+  EXPECT_EQ(context.num_continuous_states(), 13);
 
   // Retrieve the angular velocity from the context, which ultimately was set by
   // FreeRotatingBodyPlant::SetDefaultState().
@@ -163,7 +164,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
 
   // Simulate:
-  simulator.StepTo(kEndTime);
+  simulator.AdvanceTo(kEndTime);
 
   // Get solution:
   const math::RigidTransformd X_WB =
@@ -219,32 +220,30 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const Vector4d q_WB_vec4(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z());
 
   // After numerical integration, and with no projection, the quaternion
-  // representing the body's orientation is no longer unit length, however close
-  // to it by kNormalizationTolerance.
-  const double kNormalizationTolerance = 5e-9;
-  EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kNormalizationTolerance);
+  // representing the body's orientation is no longer unit length.
+  // Test whether the quaternion is within kTolerance of a unit quaternion.
+  EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kTolerance);
 
   // Since the quaternion must live in the unit sphere (in 4D), we must have
   // q.dot(Dt_q) = 0:
   EXPECT_TRUE(std::abs(q_WB_vec4.dot(DtW_quat)) < 10 * kEpsilon);
 
   // The time derivative of the quaternion component can only be expected to be
-  // accurate within kNormalizationTolerance due to the loss of normalization in
-  // the quaternion.
+  // accurate within kTolerance due to the loss of normalization in the
+  // quaternion.
   EXPECT_TRUE(CompareMatrices(DtW_quat, quatDt_WB_exact,
-                              kNormalizationTolerance,
-                              MatrixCompareType::relative));
+      kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(DtW_p_WBcm, v_WB, kEpsilon,
-                              MatrixCompareType::relative));
+      MatrixCompareType::relative));
 
   // Verify MultibodyTree::MapQDotToVelocity() does indeed map back to the
   // original generalized velocities.
   // Since the quaternion orientation in this test is the result of a numerical
   // integration that introduces truncation errors, we can only expect this
-  // result to be within kNormalizationTolerance accurate.
+  // result to be within kTolerance accurate.
   VectorX<double> v_back(model.num_velocities());
   model.MapQDotToVelocity(context, qdot_from_v, &v_back);
-  EXPECT_TRUE(CompareMatrices(v_back, v, kNormalizationTolerance,
+  EXPECT_TRUE(CompareMatrices(v_back, v, kTolerance,
                               MatrixCompareType::relative));
 
   // TODO(amcastro-tri): Verify angular momentum is conserved.
@@ -289,7 +288,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   const math::RigidTransformd X_WB(q_WB, p_WB);
   EXPECT_NO_THROW(
       model.SetFreeBodyPoseOrThrow(
-          free_body_plant.body(), X_WB.GetAsIsometry3(), context.get()));
+          free_body_plant.body(), X_WB, context.get()));
 
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);

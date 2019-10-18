@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace systems {
-namespace detail {
+namespace internal {
 
 /// Checks some BasicVector invariants on @p basic_vector.
 ///
@@ -67,6 +67,6 @@ void CheckVectorValueInvariants(const AbstractValue* abstract_value) {
   }
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace systems
 }  // namespace drake

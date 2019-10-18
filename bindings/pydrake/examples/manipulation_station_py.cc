@@ -42,9 +42,10 @@ PYBIND11_MODULE(manipulation_station, m) {
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
           doc.ManipulationStation.ctor.doc)
-      .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
+      .def("SetupManipulationClassStation",
+          &ManipulationStation<T>::SetupManipulationClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupDefaultStation.doc)
+          doc.ManipulationStation.SetupManipulationClassStation.doc)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("X_WCameraBody") = nullopt,
@@ -60,8 +61,8 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("RegisterWsgControllerModel",
           &ManipulationStation<T>::RegisterWsgControllerModel,
           doc.ManipulationStation.RegisterWsgControllerModel.doc)
-      .def("Finalize", &ManipulationStation<T>::Finalize,
-          doc.ManipulationStation.Finalize.doc)
+      .def("Finalize", py::overload_cast<>(&ManipulationStation<T>::Finalize),
+          doc.ManipulationStation.Finalize.doc_0args)
       .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
           py_reference_internal,
           doc.ManipulationStation.get_multibody_plant.doc)

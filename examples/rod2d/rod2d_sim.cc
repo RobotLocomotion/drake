@@ -136,13 +136,13 @@ int main(int argc, char* argv[]) {
     simulator.reset_integrator<RungeKutta3Integrator<double>>(*diagram,
                                                               &mut_context);
   }
-  simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
-  simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
+  simulator.get_mutable_integrator().set_target_accuracy(FLAGS_accuracy);
+  simulator.get_mutable_integrator().set_maximum_step_size(FLAGS_dt);
 
   // Start simulating.
   simulator.set_target_realtime_rate(1.0);
   while (simulator.get_context().get_time() < FLAGS_sim_duration) {
     const double t = simulator.get_context().get_time();
-    simulator.StepTo(std::min(t + 1, FLAGS_sim_duration));
+    simulator.AdvanceTo(std::min(t + 1, FLAGS_sim_duration));
   }
 }

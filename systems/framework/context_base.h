@@ -19,10 +19,10 @@ namespace drake {
 namespace systems {
 
 #ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
+namespace internal {
 // This provides SystemBase limited "friend" access to ContextBase.
 class SystemBaseContextBaseAttorney;
-}  // namespace detail
+}  // namespace internal
 #endif
 
 /** Provides non-templatized Context functionality shared by the templatized
@@ -90,6 +90,31 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::SetAllEntriesOutOfDate);
   }
 
+  /** (Advanced) Freezes the cache at its current contents, preventing any
+  further cache updates. When frozen, accessing an out-of-date cache entry
+  causes an exception to be throw. This is applied recursively to this
+  %Context and all its subcontexts, but _not_ to its parent or siblings so
+  it is most useful when called on the root %Context. If the cache was already
+  frozen this method does nothing but waste a little time. */
+  void FreezeCache() const {
+    PropagateCachingChange(*this, &Cache::freeze_cache);
+  }
+
+  /** (Advanced) Unfreezes the cache if it was previously frozen. This is
+  applied recursively to this %Context and all its subcontexts, but _not_
+  to its parent or siblings. If the cache was not frozen, this does nothing
+  but waste a little time. */
+  void UnfreezeCache() const {
+    PropagateCachingChange(*this, &Cache::unfreeze_cache);
+  }
+
+  /** (Advanced) Reports whether this %Context's cache is currently frozen.
+  This checks only locally; it is possible that parent, child, or sibling
+  subcontext caches are in a different state than this one. */
+  bool is_cache_frozen() const final {
+    return get_cache().is_cache_frozen();
+  }
+
   /** Returns the local name of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemName() for details.
@@ -147,25 +172,25 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Returns the number of input ports in this context. */
-  int get_num_input_ports() const {
+  int num_input_ports() const {
     DRAKE_ASSERT(input_port_tickets_.size() == input_port_values_.size());
     return static_cast<int>(input_port_tickets_.size());
   }
 
   /** Returns the number of output ports represented in this context. */
-  int get_num_output_ports() const {
+  int num_output_ports() const {
     return static_cast<int>(output_port_tickets_.size());
   }
 
   /** Returns the dependency ticket associated with a particular input port. */
   DependencyTicket input_port_ticket(InputPortIndex port_num) {
-    DRAKE_DEMAND(port_num < get_num_input_ports());
+    DRAKE_DEMAND(port_num < num_input_ports());
     return input_port_tickets_[port_num];
   }
 
   /** Returns the dependency ticket associated with a particular output port. */
   DependencyTicket output_port_ticket(OutputPortIndex port_num) {
-    DRAKE_DEMAND(port_num < get_num_output_ports());
+    DRAKE_DEMAND(port_num < num_output_ports());
     return output_port_tickets_[port_num];
   }
 
@@ -209,7 +234,7 @@ class ContextBase : public internal::ContextMessageInterface {
   fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
   const FixedInputPortValue* MaybeGetFixedInputPortValue(int index) const {
-    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    DRAKE_DEMAND(0 <= index && index < num_input_ports());
     return input_port_values_[index].get();
   }
 
@@ -217,7 +242,7 @@ class ContextBase : public internal::ContextMessageInterface {
   is fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue* MaybeGetMutableFixedInputPortValue(int index) {
-    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    DRAKE_DEMAND(0 <= index && index < num_input_ports());
     return input_port_values_[index].get_mutable();
   }
 
@@ -433,7 +458,14 @@ class ContextBase : public internal::ContextMessageInterface {
   // protected function on its children.
   static std::unique_ptr<ContextBase> CloneWithoutPointers(
       const ContextBase& source) {
-    return source.DoCloneWithoutPointers();
+    std::unique_ptr<ContextBase> result = source.DoCloneWithoutPointers();
+
+    // Verify that the most-derived Context didn't forget to override
+    // DoCloneWithoutPointers().
+    ContextBase& clone = *result;
+    DRAKE_THROW_UNLESS(typeid(source) == typeid(clone));
+
+    return result;
   }
 
   /** (Internal use only) Given a new context `clone` containing an
@@ -509,7 +541,7 @@ class ContextBase : public internal::ContextMessageInterface {
   up base class pointers. To do that, implement a protected copy constructor
   that inherits from the base class copy constructor (which doesn't repair the
   pointers), then implement DoCloneWithoutPointers() as
-  `return unique_ptr<ContextBase>(new DerivedType(*this));`. */
+  `return std::unique_ptr<ContextBase>(new DerivedType(*this));`. */
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
   /** DiagramContext must implement this to invoke BuildTrackerPointerMap() on
@@ -549,7 +581,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
  private:
-  friend class detail::SystemBaseContextBaseAttorney;
+  friend class internal::SystemBaseContextBaseAttorney;
 
   // Returns the parent Context or `nullptr` if this is the root Context.
   const ContextBase* get_parent_base() const { return parent_; }
@@ -629,7 +661,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
 #ifndef DRAKE_DOXYGEN_CXX
 class SystemBase;
-namespace detail {
+namespace internal {
 
 // This is an attorney-client pattern class providing SystemBase with access to
 // certain specific ContextBase private methods, and nothing else.
@@ -703,7 +735,7 @@ class SystemBaseContextBaseAttorney {
   }
 };
 
-}  // namespace detail
+}  // namespace internal
 #endif
 
 }  // namespace systems

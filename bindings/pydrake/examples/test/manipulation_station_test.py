@@ -4,7 +4,8 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.examples.manipulation_station import (
-    CreateDefaultYcbObjectList,
+    CreateClutterClearingYcbObjectList,
+    CreateManipulationClassYcbObjectList,
     IiwaCollisionModel,
     ManipulationStation,
     ManipulationStationHardwareInterface
@@ -19,7 +20,7 @@ class TestManipulationStation(unittest.TestCase):
     def test_manipulation_station(self):
         # Just check the spelling.
         station = ManipulationStation(time_step=0.001)
-        station.SetupDefaultStation()
+        station.SetupManipulationClassStation()
         station.SetWsgGains(0.1, 0.1)
         station.SetIiwaPositionGains(np.ones(7))
         station.SetIiwaVelocityGains(np.ones(7))
@@ -64,7 +65,7 @@ class TestManipulationStation(unittest.TestCase):
         X_WI = RigidTransform.Identity()
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0", iiwa),
-                         X_WI.GetAsIsometry3())
+                         X_WI)
 
         wsg_model_file = FindResourceOrThrow(
             "drake/manipulation/models/wsg_50_description/sdf/"
@@ -74,7 +75,7 @@ class TestManipulationStation(unittest.TestCase):
         plant.WeldFrames(
             plant.GetFrameByName("iiwa_link_7", iiwa),
             plant.GetFrameByName("body", wsg),
-            X_7G.GetAsIsometry3())
+            X_7G)
 
         # Register models for the controller.
         station.RegisterIiwaControllerModel(
@@ -100,7 +101,7 @@ class TestManipulationStation(unittest.TestCase):
         num_station_bodies = (
             station.get_multibody_plant().num_model_instances())
 
-        ycb_objects = CreateDefaultYcbObjectList()
+        ycb_objects = CreateClutterClearingYcbObjectList()
         for model_file, X_WObject in ycb_objects:
             station.AddManipulandFromFile(model_file, X_WObject)
 
@@ -138,5 +139,8 @@ class TestManipulationStation(unittest.TestCase):
         self.assertEqual(len(station.get_camera_names()), 2)
 
     def test_ycb_object_creation(self):
-        ycb_objects = CreateDefaultYcbObjectList()
+        ycb_objects = CreateClutterClearingYcbObjectList()
         self.assertEqual(len(ycb_objects), 6)
+
+        ycb_objects = CreateManipulationClassYcbObjectList()
+        self.assertEqual(len(ycb_objects), 5)

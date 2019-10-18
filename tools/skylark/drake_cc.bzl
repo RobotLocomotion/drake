@@ -2,9 +2,6 @@
 
 load("@cc//:compiler.bzl", "COMPILER_ID")
 
-# Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
-# matlab/cmake/flags.cmake.
-
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
 CXX_FLAGS = [
@@ -15,6 +12,7 @@ CXX_FLAGS = [
     "-Werror=old-style-cast",
     "-Werror=overloaded-virtual",
     "-Werror=shadow",
+    "-Werror=unused-result",
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
@@ -475,22 +473,6 @@ def drake_cc_binary(
         testonly = testonly,
         **kwargs
     )
-    if linkshared == 1:
-        # On Linux, we need to disable "new" dtags in the linker so that we use
-        # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
-        # checked *before* LD_LIBRARY_PATH, which is important to avoid using
-        # the MATLAB versions of certain libraries (protobuf).  macOS doesn't
-        # understand this flag, so it is conditional on Linux only.  Note that
-        # the string we use for rpath here doesn't actually matter; it will be
-        # replaced during installation later.
-        linkopts = select({
-            "//tools/cc_toolchain:apple": linkopts,
-            "//conditions:default": linkopts + [
-                "-Wl,--disable-new-dtags",
-                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu",
-                "-Wl,-soname," + name,
-            ],
-        })
 
     native.cc_binary(
         name = name,
@@ -542,11 +524,12 @@ def drake_cc_test(
         name,
         size = None,
         srcs = [],
+        args = [],
+        tags = [],
         deps = [],
         copts = [],
         gcc_copts = [],
         clang_copts = [],
-        disable_in_compilation_mode_dbg = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -554,10 +537,6 @@ def drake_cc_test(
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     Unconditionally forces testonly=1.
-
-    If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
-    in debug-mode builds, so the test will trivially pass. This option should
-    be used only rarely, and the reason should always be documented.
     """
     if size == None:
         size = "small"
@@ -572,17 +551,12 @@ def drake_cc_test(
         copts = new_copts,
         **kwargs
     )
-    if disable_in_compilation_mode_dbg:
-        # Remove the test declarations from the test in debug mode.
-        # TODO(david-german-tri): Actually suppress the test rule.
-        new_srcs = select({
-            "//tools/cc_toolchain:debug": [],
-            "//conditions:default": new_srcs,
-        })
     native.cc_test(
         name = name,
         size = size,
         srcs = new_srcs,
+        args = args,
+        tags = tags,
         deps = new_deps,
         copts = new_copts,
         **kwargs
@@ -602,7 +576,10 @@ def drake_cc_test(
 
 def drake_cc_googletest(
         name,
+        args = [],
+        tags = [],
         deps = [],
+        disable_in_compilation_mode_dbg = False,
         use_default_main = True,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.
@@ -612,9 +589,9 @@ def drake_cc_googletest(
     By default, sets use_default_main=True to use a default main() function.
     Otherwise, it will depend on @gtest//:without_main.
 
-    If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
-    in debug-mode builds, so the test will trivially pass. This option should
-    be used only rarely, and the reason should always be documented.
+    If disable_in_compilation_mode_dbg is True, then in debug-mode builds all
+    test cases will be suppressed, so the test will trivially pass. This option
+    should be used only rarely, and the reason should always be documented.
     """
     if use_default_main:
         deps = deps + [
@@ -622,8 +599,30 @@ def drake_cc_googletest(
         ]
     else:
         deps = deps + ["@gtest//:without_main"]
+    new_args = args
+    new_tags = tags
+    if disable_in_compilation_mode_dbg:
+        # If we're in debug compilation mode, then skip all test cases so that
+        # the test will trivially pass.
+        new_args = args + select({
+            "//tools/cc_toolchain:debug": ["--gtest_filter=-*"],
+            "//conditions:default": [],
+        })
+
+        # Skip this test when run under various dynamic tools that use
+        # debug-like compiler flags.
+        new_tags = new_tags + [
+            "no_asan",
+            "no_kcov",
+            "no_lsan",
+            "no_memcheck",
+            "no_tsan",
+            "no_ubsan",
+        ]
     drake_cc_test(
         name = name,
+        args = new_args,
+        tags = new_tags,
         deps = deps,
         **kwargs
     )

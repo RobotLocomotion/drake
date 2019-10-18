@@ -166,7 +166,7 @@ class RigidBody : public Body<T> {
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_pose_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
-  const Isometry3<T>& get_pose_in_world(
+  const math::RigidTransform<T>& get_pose_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
     return pc.get_X_WB(this->node_index());
   }
@@ -175,9 +175,9 @@ class RigidBody : public Body<T> {
   /// body's frame.
   /// @param[in] pc position kinematics cache.
   /// @retval R_WB rotation matrix relating rigid body B in world frame W.
-  const Matrix3<T> get_body_orientation_in_world(
+  const math::RotationMatrix<T> get_rotation_matrix_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
-    return get_pose_in_world(pc).linear();
+    return get_pose_in_world(pc).rotation();
   }
 
   /// (Advanced) Extract the position vector from world origin to this body's

@@ -176,8 +176,7 @@ class PendulumTests : public ::testing::Test {
     // In this case the frame is created explicitly from the body frame of
     // upper_link.
     shoulder_outboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(
-            upper_link_->body_frame(), X_USo_.GetAsIsometry3());
+        &model_->AddFrame<FixedOffsetFrame>(upper_link_->body_frame(), X_USo_);
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -207,7 +206,7 @@ class PendulumTests : public ::testing::Test {
     // MultibodyTree::AddJoint() method do that for us:
     elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *upper_link_, X_UEi_.GetAsIsometry3(), /* Pose of Ei in U. */
+        *upper_link_, X_UEi_, /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
     elbow_inboard_frame_ = &elbow_joint_->frame_on_parent();
@@ -221,7 +220,7 @@ class PendulumTests : public ::testing::Test {
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
-    model_->AddForceElement<UniformGravityFieldElement>(
+    model_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 
@@ -276,7 +275,7 @@ class PendulumTests : public ::testing::Test {
   // this method initializes the poses of each link in the position kinematics
   // cache.
   void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_.GetAsIsometry3();
+    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
   }
 
   // Add elements to this model_ and then transfer the whole thing to
@@ -431,7 +430,7 @@ TEST_F(PendulumTests, Finalize) {
   SpatialInertia<double> M_Bo_B;
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(
-      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_.GetAsIsometry3()),
+      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
       std::logic_error);
   EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
       *shoulder_inboard_frame_, *shoulder_outboard_frame_,
@@ -695,7 +694,7 @@ class PendulumKinematicTests : public PendulumTests {
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
     tree().CalcInverseDynamics(
-        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        *context_, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
     // The result from inverse dynamics must be tau = -tau_g(q).
     EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
@@ -704,7 +703,7 @@ class PendulumKinematicTests : public PendulumTests {
     // Fapplied_Bo_W_array will get overwritten through the output argument).
     tau_applied.setZero();  // This will now get overwritten.
     tree().CalcInverseDynamics(
-        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        *context_, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
     // The result from inverse dynamics must be tau = -tau_g(q).
     EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
@@ -802,7 +801,7 @@ class PendulumKinematicTests : public PendulumTests {
     VectorXd tau(tree().num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
     vector<SpatialForce<double>> F_BMo_W_array(tree().num_bodies());
-    tree().CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
+    tree().CalcInverseDynamics(*context_, vdot, {}, VectorXd(),
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
     // ======================================================================
@@ -888,10 +887,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       RigidTransformd X_EiEo(RotationMatrixd::MakeZRotation(elbow_angle));
 
       // Verify the values in the position kinematics cache.
-      EXPECT_TRUE(pc.get_X_FM(shoulder_node).matrix().isApprox(
-          X_SiSo.GetAsMatrix4()));
-      EXPECT_TRUE(pc.get_X_FM(elbow_node).matrix().isApprox(
-          X_EiEo.GetAsMatrix4()));
+      EXPECT_TRUE(
+          pc.get_X_FM(shoulder_node).IsNearlyEqualTo(X_SiSo, kTolerance));
+      EXPECT_TRUE(pc.get_X_FM(elbow_node).IsNearlyEqualTo(X_EiEo, kTolerance));
 
       // Verify that both, const and mutable versions point to the same address.
       EXPECT_EQ(&pc.get_X_FM(shoulder_node),
@@ -1342,23 +1340,25 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   EXPECT_TRUE(CompareMatrices(
       p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
 
-  const RigidTransformd X_UL(tree().CalcRelativeTransform(
-      *context_, upper_link_->body_frame(), lower_link_->body_frame()));
-  const Vector3d p_UL = X_UL.translation();
-  const RotationMatrixd R_UL = X_UL.rotation();
-
   const Vector3d p_UL_expected(0.0, -0.5, 0.0);
   const Matrix3d R_UL_expected(Eigen::AngleAxisd(M_PI_4, Vector3d::UnitZ()));
 
-  EXPECT_TRUE(CompareMatrices(
-      p_UL, p_UL_expected, kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(
-      R_UL.matrix(), R_UL_expected, kTolerance, MatrixCompareType::relative));
+  // Verify the RotationMatrix and position returned by CalcRelativeTransform().
+  const RigidTransformd X_UL(tree().CalcRelativeTransform(
+      *context_, upper_link_->body_frame(), lower_link_->body_frame()));
+  EXPECT_TRUE(CompareMatrices(X_UL.rotation().matrix(), R_UL_expected,
+                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_UL.translation(), p_UL_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify the RotationMatrix returned by CalcRelativeRotationMatrix().
+  const RotationMatrixd R_UL = tree().CalcRelativeRotationMatrix(
+      *context_, upper_link_->body_frame(), lower_link_->body_frame());
+  EXPECT_TRUE(CompareMatrices(R_UL.matrix(), R_UL_expected,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
   shoulder_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
   elbow_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
 

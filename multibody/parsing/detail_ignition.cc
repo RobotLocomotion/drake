@@ -2,22 +2,21 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
+using math::RigidTransformd;
 
 Vector3d ToVector3(const ignition::math::Vector3d& vector) {
   return Vector3d(vector.X(), vector.Y(), vector.Z());
 }
 
-Isometry3d ToIsometry3(const ignition::math::Pose3d& pose) {
-  const Isometry3d::TranslationType translation(ToVector3(pose.Pos()));
+RigidTransformd ToRigidTransform(const ignition::math::Pose3d& pose) {
   const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
                                     pose.Rot().Y(), pose.Rot().Z());
-  return translation * rotation;
+  return RigidTransformd(rotation, ToVector3(pose.Pos()));;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -1,5 +1,6 @@
 #include "drake/solvers/solver_base.h"
 
+#include <limits>
 #include <utility>
 
 #include <fmt/format.h>
@@ -71,17 +72,6 @@ bool SolverBase::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   DRAKE_DEMAND(default_satisfied_ != nullptr);
   return default_satisfied_(prog);
-}
-
-// NOLINTNEXTLINE(runtime/references)
-SolutionResult SolverBase::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  prog.SetSolverResult(result.ConvertToSolverResult());
-#pragma GCC diagnostic pop
-  return result.get_solution_result();
 }
 
 }  // namespace solvers

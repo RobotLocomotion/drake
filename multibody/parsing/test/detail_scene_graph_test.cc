@@ -17,13 +17,13 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::Box;
+using geometry::Convex;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
@@ -32,13 +32,14 @@ using geometry::Mesh;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
+using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using multibody::detail::MakeCoulombFrictionFromSdfCollisionOde;
-using multibody::detail::MakeGeometryInstanceFromSdfVisual;
-using multibody::detail::MakeGeometryPoseFromSdfCollision;
-using multibody::detail::MakeShapeFromSdfGeometry;
-using multibody::detail::MakeVisualPropertiesFromSdfVisual;
+using multibody::internal::MakeCoulombFrictionFromSdfCollisionOde;
+using multibody::internal::MakeGeometryInstanceFromSdfVisual;
+using multibody::internal::MakeGeometryPoseFromSdfCollision;
+using multibody::internal::MakeShapeFromSdfGeometry;
+using multibody::internal::MakeVisualPropertiesFromSdfVisual;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -225,6 +226,22 @@ GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
   EXPECT_EQ(mesh->scale(), 3);
 }
 
+// Verify MakeShapeFromSdfGeometry can make a convex mesh from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
+  const std::string absolute_file_path = "path/to/some/mesh.obj";
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<mesh xmlns:drake='drake.mit.edu'>"
+      "  <drake:declare_convex/>"
+      "  <uri>" + absolute_file_path + "</uri>"
+      "  <scale> 3 3 3 </scale>"
+      "</mesh>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Convex* convex = dynamic_cast<const Convex*>(shape.get());
+  ASSERT_NE(convex, nullptr);
+  EXPECT_EQ(convex->filename(), absolute_file_path);
+  EXPECT_EQ(convex->scale(), 3);
+}
+
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
 // sdf::Visual.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
@@ -243,18 +260,16 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
 
-  const Isometry3d& X_LC = geometry_instance->pose();
+  const RigidTransformd X_LC(geometry_instance->pose());
 
   // These are the expected values as specified by the string above.
-  const Vector3d expected_rpy(3.14, 6.28, 1.57);
-  const Matrix3d R_LC_expected =
-      RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+  const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
+  const RotationMatrix<double> R_LC_expected(expected_rpy);
   const Vector3d p_LCo_expected(1.0, 2.0, 3.0);
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LC.linear(), R_LC_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(X_LC.rotation().IsNearlyEqualTo(R_LC_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LC.translation(), p_LCo_expected,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -395,18 +410,16 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const Matrix3d R_LC_expected =
-      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
+  const RotationMatrix<double> R_LC_expected =
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).rotation();
 
   // Retrieve the GeometryInstance pose as parsed from the sdf::Visual.
-  const Isometry3d& X_LC = geometry_instance->pose();
-  const Matrix3d& R_LC = X_LC.linear();
+  const RotationMatrix<double> R_LC = geometry_instance->pose().rotation();
   const Vector3d normal_L = R_LC.col(2);
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LC.linear(), R_LC_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(R_LC.IsNearlyEqualTo(R_LC_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(normal_L, normal_L_expected,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -684,18 +697,16 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
       "    <sphere/>"
       "  </geometry>"
       "</collision>");
-  const Isometry3d X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
 
   // These are the expected values as specified by the string above.
-  const Vector3d expected_rpy(3.14, 6.28, 1.57);
-  const Matrix3d R_LG_expected =
-      RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+  const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
+  const RotationMatrix<double> R_LG_expected(expected_rpy);
   const Vector3d p_LGo_expected(1.0, 2.0, 3.0);
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LG.linear(), R_LG_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(X_LG.rotation().IsNearlyEqualTo(R_LG_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LG.translation(), p_LGo_expected,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -717,20 +728,19 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </plane>"
       "  </geometry>"
       "</collision>");
-  const Isometry3d X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
 
   // The expected coordinates of the normal vector in the link frame L.
   const Vector3d normal_L_expected = Vector3d(1.0, 2.0, 3.0).normalized();
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const Matrix3d R_LG_expected =
-      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
+  const RotationMatrix<double> R_LG_expected =
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).rotation();
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LG.linear(), R_LG_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(X_LG.rotation().IsNearlyEqualTo(R_LG_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LG.translation(), Vector3d::Zero(),
                               kTolerance, MatrixCompareType::relative));
 }
@@ -896,7 +906,7 @@ GTEST_TEST(SceneGraphParserDetail,
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

@@ -16,19 +16,21 @@ AutoDiffVecXd EvalOrientationConstraintAutoDiff(
     const Frame<AutoDiffXd>& frameAbar, const RotationMatrixd& R_AbarA,
     const Frame<AutoDiffXd>& frameBbar, const RotationMatrixd& R_BbarB) {
   Vector1<AutoDiffXd> y_autodiff(1);
-  const Matrix3<AutoDiffXd> R_AbarBbar =
-      plant.CalcRelativeTransform(context, frameAbar, frameBbar).linear();
-  const Matrix3<AutoDiffXd> R_AB =
-      R_AbarA.matrix().cast<AutoDiffXd>().transpose() * R_AbarBbar *
-      R_BbarB.matrix().cast<AutoDiffXd>();
-  y_autodiff(0) = R_AB.trace();
+  const math::RotationMatrix<AutoDiffXd> R_AbarBbar =
+      plant.CalcRelativeRotationMatrix(context, frameAbar, frameBbar);
+  const math::RotationMatrix<AutoDiffXd> R_AB =
+      R_AbarA.cast<AutoDiffXd>().transpose() * R_AbarBbar *
+      R_BbarB.cast<AutoDiffXd>();
+  y_autodiff(0) = R_AB.matrix().trace();
   return y_autodiff;
 }
 
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   const double angle_bound{0.1 * M_PI};
-  const Frame<double>& frameAbar = plant_->GetFrameByName("iiwa_link_7");
-  const Frame<double>& frameBbar = plant_->GetFrameByName("iiwa_link_3");
+  const auto frameAbar_index = plant_->GetFrameByName("iiwa_link_7").index();
+  const auto frameBbar_index = plant_->GetFrameByName("iiwa_link_3").index();
+  const Frame<double>& frameAbar = plant_->get_frame(frameAbar_index);
+  const Frame<double>& frameBbar = plant_->get_frame(frameBbar_index);
   const math::RotationMatrix<double> R_AbarA(Eigen::AngleAxisd(
       0.2 * M_PI, Eigen::Vector3d(0.2, 0.4, -0.5).normalized()));
   const math::RotationMatrix<double> R_BbarB(Eigen::AngleAxisd(
@@ -76,6 +78,24 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
       plant_autodiff_->GetFrameByName(frameAbar.name()), R_AbarA,
       plant_autodiff_->GetFrameByName(frameBbar.name()), R_BbarB);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
+
+  // Checks if the constraint constructed from MBP<ADS> gives the same result
+  // as from MBP<double>.
+  const OrientationConstraint constraint_from_autodiff(
+      plant_autodiff_.get(), plant_autodiff_->get_frame(frameAbar_index),
+      R_AbarA, plant_autodiff_->get_frame(frameBbar_index), R_BbarB,
+      angle_bound, plant_context_autodiff_.get());
+  // Set dq to arbitrary value.
+  Eigen::Matrix<double, 7, 2> dq;
+  for (int i = 0; i < 7; ++i) {
+    dq(i, 0) = i * 2 + 1;
+    dq(i, 1) = std::sin(i + 0.2);
+  }
+  // tolerance for checking numerical gradient vs analytical gradient.
+  // The numerical gradient is only accurate up to 2E-6.
+  const double gradient_tol = 2E-6;
+  TestKinematicConstraintEval(*constraint, constraint_from_autodiff, q, dq,
+                              gradient_tol);
 }
 
 TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {

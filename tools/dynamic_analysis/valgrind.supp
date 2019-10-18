@@ -1,413 +1,48 @@
 # This is the valgrind.supp used by `bazel test --config memcheck`.
 
-# LCM (via glib) leaks a few hundred bytes in some global handler allocation.
 {
-   lcm_glib_leak
-   Memcheck:Leak
-   match-leak-kinds: definite
-   ...
-   fun:g_slice_alloc
-   ...
-   fun:g_static_rec_mutex_lock
-   fun:lcm_handle
-}
-
-{
-    <mosek-1>
+    MOSEK invalid memory access #1
     Memcheck:Addr4
     ...
     fun:checkout_from_flexlm
 }
 
 {
-    <mosek-2>
+    MOSEK invalid memory access #2
     Memcheck:Addr16
     ...
     fun:checkout_from_flexlm
 }
 
 {
-    <mosek-3>
-    Memcheck:Cond
-    ...
-    fun:MSK_sysenv_getsysinfo
-}
-
-# One of the other places MOSEK's issues with Valgrind have been suppressed quite sweepingly:
-# https://github.com/casadi/casadi/blob/master/test/internal/valgrind-casadi.supp#L242
-{
-    <mosek-4>
-    Memcheck:Cond
-    fun:__intel_sse2_strcpy
-    fun:MSKP_strdupenv
-    ...
-    fun:MSK_ehajakopr
-    fun:MSK_optimize
-    fun:MSK_optimizetrm
-}
-
-{
-    <mosek-5>
-    Memcheck:Cond
-    fun:MSK_hom_optlp
-    fun:MSK_hs_optlp
-    fun:MSK_opt_ipmslv
-    fun:MSK_contoptimizer
-    fun:MSK_optimizeunlicensed
-    fun:MSK_optimize
-    fun:MSK_optimizetrm
-}
-
-{
-    <mosek-6>
-    Memcheck:Cond
-    fun:mkl_lapack_ps_avx2_xdlansy
-    fun:mkl_lapack_ps_xdlansy
-    fun:mkl_lapack_dlansy
-    fun:mkl_lapack_dsyevd
-    fun:DSYEVD
-    fun:MSK_INTEL_P4_mathenv_symeig
-    fun:intpnt_sdp_ntscaling
-    fun:intpnt_inititer
-    fun:intpnt_conicoptimizer
-    fun:MSK_intpnt_optcone
-    fun:MSK_conic_optimizer
-    fun:MSKP_optimizeconic
-}
-
-# Similar to <mosek-4>, but specific to calling MSK_checkoutlicense via
-# MosekSolver::AcquireLicense().
-{
-   <mosek-7>
-   Memcheck:Cond
-   fun:__intel_sse2_strcpy
-   fun:MSKP_strdupenv
-   fun:checkout_from_flexlm
-   fun:MSK_ehajakopr
-   fun:MSK_checkoutlicense
-   ...
-   fun:_ZN5drake7solvers11MosekSolver14AcquireLicenseEv
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-8>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_xdtrsm_v1
-   fun:mkl_blas_avx2_xdtrsm
-   fun:DTRSM
-   fun:cblas_dtrsm
-   fun:MSK_GENERIC_CPU_mathenv_trsm_
-   fun:MSK_GENERIC_CPU_mathenv_ptrsm
-   fun:spchol_recursivepotrfseq
-   fun:spchol_pulltosuperandupdate_l
-   fun:spchol_updatefromleafgroup_l
-   fun:cotton_for32
-   fun:spchol_factor
-   fun:ipfac_factornew
-   fun:intpnt_conicoptimizer
-   fun:MSK_intpnt_optcone
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-9>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mm_account_ptr_by_tid..0
-   fun:mkl_serv_allocate
-   fun:DSYEVD
-   fun:MSK_GENERIC_CPU_mathenv_symeig
-   fun:intpnt_call_ntupdate_fast
-   fun:cotton_for32
-   fun:intpnt_start
-   fun:intpnt_conicoptimizer
-   fun:MSK_intpnt_optcone
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_optimize
-}
-
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-10>
-   Memcheck:Cond
-   fun:prslv_checkcones
-   fun:MSK_prslv_checkproblem
-   fun:MSK_prslv_reduce
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_optimize
-   fun:MSK_optimizetrm
-}
-
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-11>
-   Memcheck:Cond
-   fun:prslv_checkcones
-   fun:MSK_prslv_checkproblem
-   fun:MSK_prslv_reduce
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeqo
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_optimize
-   fun:MSK_optimizetrm
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-12>
-   Memcheck:Cond
-   fun:prselim_dopivot
-   fun:MSK_prslv_eliminator
-   fun:prslv_checkinitial
-   fun:MSK_prslv_reduce
-   fun:MSK_opt_ipmslv
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_optimize
-   fun:MSK_optimizetrm
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-13>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mkl_serv_allocate
-   fun:mkl_lapack_dsteqr
-   fun:mkl_lapack_dstedc
-   fun:mkl_lapack_dsyevd
-   fun:DSYEVD
-   fun:MSK_GENERIC_CPU_mathenv_symeig
-   fun:intpnt_call_ntupdate_fast
-   fun:cotton_for32
-   fun:intpnt_start
-   fun:intpnt_conicoptimizer
-   fun:MSK_intpnt_optcone
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-   fun:MSK_contoptimizer
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-14>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mkl_serv_allocate
-   fun:DSYEVD
-   fun:MSK_GENERIC_CPU_mathenv_symeig
-   fun:intpnt_call_ntupdate_fast
-   fun:cotton_for32
-   fun:intpnt_start
-   fun:intpnt_conicoptimizer
-   fun:MSK_intpnt_optcone
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_optimize
-   fun:MSK_optimizetrm
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-15>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mm_account_ptr_by_tid..0
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_dgemm_get_bufs
-   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
-   fun:mkl_blas_avx2_xdsyrk
-   fun:DSYRK
-   fun:cblas_dsyrk
-   fun:MSK_GENERIC_CPU_mathenv_syrk_
-   fun:ipfac_computehatschurpushpartial
-   fun:ipfac_computehatschur
-   fun:ipfac_factor
-   fun:hom_start
-   fun:MSK_hom_optlp
-   fun:MSK_hs_optlp
-   fun:MSK_opt_ipmslv
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-16>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_xdtrsm_v1
-   fun:mkl_blas_avx2_xdtrsm
-   fun:DTRSM
-   fun:cblas_dtrsm
-   fun:MSK_GENERIC_CPU_mathenv_trsm_
-   fun:MSK_GENERIC_CPU_mathenv_ptrsm
-   fun:intpnt_call_ntupdate_fast
-   fun:cotton_for32
-   fun:intpnt_start
-   fun:intpnt_conicoptimizer
-   fun:MSK_intpnt_optcone
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-17>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mm_account_ptr_by_tid..0
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_xdtrsm_v1
-   fun:mkl_blas_avx2_xdtrsm
-   fun:DTRSM
-   fun:cblas_dtrsm
-   fun:MSK_GENERIC_CPU_mathenv_trsm_
-   fun:MSK_GENERIC_CPU_mathenv_ptrsm
-   fun:intpnt_call_ntupdate_fast
-   fun:cotton_for32
-   fun:intpnt_start
-   fun:intpnt_conicoptimizer
-   fun:MSK_intpnt_optcone
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-18>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mm_account_ptr_by_tid..0
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_dgemm_get_bufs
-   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
-   fun:mkl_blas_avx2_xdsyrk
-   fun:DSYRK
-   fun:cblas_dsyrk
-   fun:MSK_GENERIC_CPU_mathenv_syrk_
-   fun:MSK_GENERIC_CPU_mathenv_psyrk
-   fun:MSK_GENERIC_CPU_mathenv_ppartialsyrk
-   fun:spchol_sparsepullupdate
-   fun:ipfac_hatschurspaatsparsepullupdate
-   fun:spaat_mapsparsepullnew
-   fun:cotton_for32
-   fun:spaat_computeaat
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-19>
-   Memcheck:Cond
-   fun:prslv_checkcones
-   fun:MSK_prslv_checkproblem
-   fun:MSK_prslv_reduce
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_zyrotlkgq
-   fun:opti_optimize
-   fun:opti_optimize_maxiter
-   fun:solve_root
-   fun:root_main_loop
-   fun:mski_solve
-   fun:MSK_mioptimizer
-   fun:MSK_eorpgtpsj
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-20>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mm_account_ptr_by_tid..0
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_xdtrsm_v1
-   fun:mkl_blas_avx2_xdtrsm
-   fun:DTRSM
-   fun:cblas_dtrsm
-   fun:MSK_GENERIC_CPU_mathenv_trsm_
-   fun:MSK_GENERIC_CPU_mathenv_ptrsm
-   fun:spchol_recursivepotrfseq
-   fun:spchol_pulltosuperandupdate_l
-   fun:spchol_updatefromleafgroup_l
-   fun:cotton_for32
-   fun:spchol_factor
-   fun:ipfac_factornew
-   fun:intpnt_conicoptimizer
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
-   <mosek-21>
-   Memcheck:Cond
-   fun:prslv_checkcones
-   fun:MSK_prslv_checkproblem
-   fun:MSK_prslv_reduce
-   fun:conic_rawoptimizer
-   fun:MSK_conic_optimizer
-   fun:MSKP_optimizeconic
-   fun:MSK_contoptimizer
-   fun:MSK_eorpgtpsj
-   fun:MSK_optimize
-   fun:MSK_optimizetrm
-}
-
-# TODO(jamiesnape): Determine whether this is a defect within MOSEK or its
-# dependencies (#10087).
-{
-   <mosek-21>
-   Memcheck:Cond
-   fun:__wcsnlen_avx2
-   fun:wcsrtombs
-   fun:MSK_sysenv_wfopen
-   fun:MSK_sysenv_fopen
-   fun:MSK_fopentask
-   fun:MSK_linkfiletotaskstream
-}
-
-# TODO(jamiesnape): Determine whether this is a defect within MOSEK or its
-# dependencies (#10087).
-{
-   <mosek-22>
+   MOSEK use of uninitialized CPU condition code #1
    Memcheck:Cond
    fun:internal_ascii_loop
    fun:__gconv_transform_internal_ascii
    fun:wcsrtombs
-   fun:MSK_sysenv_wfopen
-   fun:MSK_sysenv_fopen
-   fun:MSK_fopentask
-   fun:MSK_linkfiletotaskstream
+   obj:*/libmosek64.so.*
+}
+
+{
+   MOSEK use of uninitialized CPU condition code #2
+   Memcheck:Cond
+   fun:__wcsnlen_avx2
+   fun:wcsrtombs
+   obj:*/libmosek64.so.*
+}
+
+{
+   MOSEK use of uninitialized CPU condition code #3
+   Memcheck:Cond
+   obj:*/libmosek64.so.*
+}
+
+{
+   MOSEK memory leak #1
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   obj:*/libmosek64.so.*
 }
 
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
@@ -444,4 +79,149 @@
    fun:dmumps_f77_
    fun:dmumps_c
    fun:_ZN5Ipopt20MumpsSolverInterfaceC1Ev
+}
+
+{
+   bash: definite leak in set_default_locale
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:xmalloc
+   fun:set_default_locale
+   fun:main
+}
+
+{
+   bash: definite leak in reader_loop
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:xmalloc
+   ...
+   fun:reader_loop
+   fun:main
+}
+
+# TODO(sam.creasey) Write a printer function (or another workaround) for
+# drake::multibody::test::ModelLoadFunction so that gtest won't trigger
+# memcheck. Related to https://github.com/google/googletest/issues/1610.
+{
+   googletest: conditional jump or move depends on uninitialised value in PrintValue
+   Memcheck:Cond
+   ...
+   fun:vfprintf
+   fun:vsnprintf
+   fun:snprintf
+   fun:*PrintByteSegmentInObjectTo*
+   fun:PrintBytesInObjectToImpl
+   fun:*PrintBytesInObjectTo*
+   fun:PrintValue
+}
+
+{
+   googletest: use of uninitialized value of size 8 in PrintValue
+   Memcheck:Value8
+   ...
+   fun:vfprintf
+   fun:vsnprintf
+   fun:snprintf
+   fun:*PrintByteSegmentInObjectTo*
+   fun:PrintBytesInObjectToImpl
+   fun:*PrintBytesInObjectTo*
+   fun:PrintValue
+}
+
+{
+   nvidia-glcore: conditional jump or move depends on uninitialized value
+   Memcheck:Cond
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.*
+}
+
+{
+   python: invalid read of size 4 in PyObject_Free
+   Memcheck:Addr4
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: invalid read of size 4 in PyObject_Free
+   Memcheck:Value4
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Free
+   Memcheck:Addr8
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Free
+   Memcheck:Value8
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: conditional jump or move depends on uninitialized value in PyObject_Free
+   Memcheck:Cond
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: invalid read of size 4 in PyObject_Realloc
+   Memcheck:Addr4
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: invalid read of size 4 in PyObject_Realloc
+   Memcheck:Value4
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Realloc
+   Memcheck:Addr8
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Realloc
+   Memcheck:Value8
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: conditional jump or move depends on uninitialized value in PyObject_Realloc
+   Memcheck:Cond
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   swrast: conditional jump or move depends on uninitialized value in clone
+   Memcheck:Cond
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/swrast_dri.so
+   fun:start_thread
+   fun:clone
+}
+
+{
+   swrast: use of uninitialized value of size 8 in clone
+   Memcheck:Value8
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/swrast_dri.so
+   fun:start_thread
+   fun:clone
 }

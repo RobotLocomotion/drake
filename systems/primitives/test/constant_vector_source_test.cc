@@ -41,8 +41,8 @@ class ConstantVectorSourceTest : public ::testing::Test {
 // model of double.
 TEST_F(ConstantVectorSourceTest, EigenModel) {
   SetUpEigenModel();
-  ASSERT_EQ(source_->get_num_input_ports(), 0);
-  ASSERT_EQ(source_->get_num_output_ports(), 1);
+  ASSERT_EQ(source_->num_input_ports(), 0);
+  ASSERT_EQ(source_->num_output_ports(), 1);
 
   EXPECT_TRUE(kConstantVectorSource.isApprox(
       source_->get_output_port().Eval(*context_),
@@ -63,8 +63,8 @@ TEST_F(ConstantVectorSourceTest, EigenModel) {
 // BasicVector<double> model.
 TEST_F(ConstantVectorSourceTest, BasicVectorModel) {
   SetUpBasicVectorModel();
-  ASSERT_EQ(source_->get_num_input_ports(), 0);
-  ASSERT_EQ(source_->get_num_output_ports(), 1);
+  ASSERT_EQ(source_->num_input_ports(), 0);
+  ASSERT_EQ(source_->num_output_ports(), 1);
 
   EXPECT_EQ(43.0, source_->get_output_port().Eval<MyVector3d>(*context_)[1]);
 
@@ -87,8 +87,8 @@ TEST_F(ConstantVectorSourceTest, ConstantVectorSourceIsStateless) {
 TEST_F(ConstantVectorSourceTest, ToAutoDiffPass) {
   SetUpEigenModel();
   EXPECT_TRUE(is_autodiffxd_convertible(*source_, [&](const auto& converted) {
-    EXPECT_EQ(0, converted.get_num_input_ports());
-    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(0, converted.num_input_ports());
+    EXPECT_EQ(1, converted.num_output_ports());
     EXPECT_EQ(2, converted.get_output_port().size());
 
     auto new_context = converted.CreateDefaultContext();

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -13,6 +14,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -41,12 +43,10 @@ class InternalGeometry {
    @param frame_id      The id of the frame this belongs to.
    @param geometry_id   The identifier for _this_ geometry.
    @param name          The name of the geometry.
-   @param X_FG          The pose of the geometry G in the parent frame F.
-   @param index         The internal index of this internal geometry (w.r.t.
-                        its anchored/dynamic status).  */
+   @param X_FG          The pose of the geometry G in the parent frame F.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
                    FrameId frame_id, GeometryId geometry_id, std::string name,
-                   const Isometry3<double>& X_FG, GeometryIndex index);
+                   math::RigidTransform<double> X_FG);
 
   /** Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
@@ -73,13 +73,6 @@ class InternalGeometry {
   /** Returns the name of this geometry.  */
   const std::string& name() const { return name_; }
 
-  /** Returns the index of this geometry in the full scene graph.  */
-  GeometryIndex index() const { return index_; }
-
-  /** Sets the internal geometry's index -- facilitates removing geometries from
-   the scene graph.  */
-  void set_index(GeometryIndex index) { index_ = index; }
-
   /** Returns the source id that registered the geometry.  */
   SourceId source_id() const { return source_id_; }
 
@@ -103,11 +96,11 @@ class InternalGeometry {
   /** Returns the pose of this geometry in the declared *parent* frame -- note
    if this geometry was registered as a child of another geometry it will *not*
    be the same as X_FG().  */
-  const Isometry3<double>& X_PG() const { return X_PG_; }
+  const math::RigidTransform<double>& X_PG() const { return X_PG_; }
 
   /** Returns the pose of this geometry in the frame to which it is ultimately
    rigidly attached. This is in contrast to X_PG().  */
-  const Isometry3<double>& X_FG() const { return X_FG_; }
+  const math::RigidTransform<double>& X_FG() const { return X_FG_; }
 
   // TODO(SeanCurtis-TRI): Determine if tracking this parent geometry is
   // necessary for now or if that only exists to facilitate removal later on.
@@ -119,10 +112,10 @@ class InternalGeometry {
    be updated.
    @param id    The id of the parent geometry.
    @param X_FG  The new value for X_FG (assuming the constructed value is to be
-                interpreted as X_PG.  */
-  void set_geometry_parent(GeometryId id, const Isometry3<double>& X_FG) {
+                interpreted as X_PG).  */
+  void set_geometry_parent(GeometryId id, math::RigidTransform<double> X_FG) {
     parent_geometry_id_ = id;
-    X_FG_ = X_FG;
+    X_FG_ = std::move(X_FG);
   }
 
   /** Returns true if this geometry has a geometry parent and the parent has the
@@ -169,15 +162,17 @@ class InternalGeometry {
 
   //@}
 
-  /** @name   Role management  */
+  /** @name   Role management
+
+   These methods determine what the internal geometry *knows* about its role.
+   Updating a geometry's knowledge is not the same as actually applying that
+   role. It is the job of GeometryState to make sure that an individual
+   geometry's understanding of its role is kept in sync with the corresponding
+   engine's understanding as well.  */
   //@{
 
-  /** Assigns a proximity role to this geometry. Fails if it has already been
-   assigned.  */
+  /** Assigns a proximity role to this geometry.  */
   void SetRole(ProximityProperties properties) {
-    if (proximity_props_) {
-      throw std::logic_error("Geometry already has proximity role assigned");
-    }
     proximity_props_ = std::move(properties);
   }
 
@@ -190,6 +185,15 @@ class InternalGeometry {
     illustration_props_ = std::move(properties);
   }
 
+  /** Assigns a perception role to this geometry. Throws if the geometry has
+   already had perception properties assigned.  */
+  void SetRole(PerceptionProperties properties) {
+    if (perception_props_) {
+      throw std::logic_error("Geometry already has perception role assigned");
+    }
+    perception_props_ = std::move(properties);
+  }
+
   /** Reports if the geometry has the indicated `role`.  */
   bool has_role(Role role) const;
 
@@ -198,6 +202,9 @@ class InternalGeometry {
 
   /** Reports if the geometry has a illustration role.  */
   bool has_illustration_role() const { return illustration_props_ != nullopt; }
+
+  /** Reports if the geometry has a perception role. */
+  bool has_perception_role() const { return perception_props_ != nullopt; }
 
   /** Returns a pointer to the geometry's proximity properties (if they are
    defined. Nullptr otherwise.  */
@@ -213,11 +220,30 @@ class InternalGeometry {
     return nullptr;
   }
 
-  /** If this geometry has a proximity role, this that geometry's index in the
-   proximity engine. It will be undefined it it does not have the proximity
-   role.  */
-  ProximityIndex proximity_index() const { return proximity_index_; }
-  void set_proximity_index(ProximityIndex index) { proximity_index_ = index; }
+  /** Returns a pointer to the geometry's perception properties, or nullptr if
+   not defined.  */
+  const PerceptionProperties* perception_properties() const {
+    if (perception_props_) return &*perception_props_;
+    return nullptr;
+  }
+
+  /** Removes the proximity role assigned to this geometry -- if there was
+   no proximity role previously, this has no effect.  */
+  void RemoveProximityRole() {
+    proximity_props_ = nullopt;
+  }
+
+  /** Removes the illustration role assigned to this geometry -- if there was
+   no illustration role previously, this has no effect.  */
+  void RemoveIllustrationRole() {
+    illustration_props_ = nullopt;
+  }
+
+  /** Removes the perception role assigned to this geometry -- if there was
+   no perception role previously, this has no effect.  */
+  void RemovePerceptionRole() {
+    perception_props_ = nullopt;
+  }
 
   //@}
 
@@ -232,10 +258,6 @@ class InternalGeometry {
   // same frame.
   std::string name_;
 
-  // The index of this geometry in the "full" set of geometries (regardless of
-  // role).
-  GeometryIndex index_;
-
   // The source id that registered the geometry.
   SourceId source_id_;
 
@@ -244,14 +266,14 @@ class InternalGeometry {
 
   // The pose of this geometry in the registered parent frame. The parent may be
   // a frame or another registered geometry.
-  Isometry3<double> X_PG_;
+  math::RigidTransform<double> X_PG_;
 
   // The pose of this geometry in the ultimate frame to which this geometry is
   // rigidly affixed. If there is no parent geometry, X_PG_ == X_FG_.
-  Isometry3<double> X_FG_;
+  math::RigidTransform<double> X_FG_;
 
   // The identifier for this frame's parent frame.
-  optional<GeometryId> parent_geometry_id_{nullopt};
+  optional<GeometryId> parent_geometry_id_{};
 
   // The identifiers for the geometry hung on this frame.
   std::unordered_set<GeometryId> child_geometry_ids_;
@@ -260,14 +282,9 @@ class InternalGeometry {
   // defined at the frame level, and all child geometries inherit.
 
   // The optional property sets tied to the roles that the geometry plays.
-  optional<ProximityProperties> proximity_props_{nullopt};
-  optional<IllustrationProperties> illustration_props_{nullopt};
-
-  // The index of the geometry in the engine. Note: is currently unused but will
-  // gain importance when the API for *removing* geometry is added. It is the
-  // mechanism by which we map a geometry to its instantiation in the proximity
-  // engine.
-  ProximityIndex proximity_index_{};
+  optional<ProximityProperties> proximity_props_{};
+  optional<IllustrationProperties> illustration_props_{};
+  optional<PerceptionProperties> perception_props_{};
 };
 
 }  // namespace internal

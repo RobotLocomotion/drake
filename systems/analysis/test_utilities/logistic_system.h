@@ -24,7 +24,7 @@ class LogisticSystem : public LeafSystem<T> {
   LogisticSystem(double k, double alpha, double nu)
       : k_(k), alpha_(alpha), nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = this->DeclareWitnessFunction(
+    witness_ = this->MakeWitnessFunction(
         "Logistic witness", WitnessFunctionDirection::kCrossesZero,
         &LogisticSystem::GetStateValue, &LogisticSystem::InvokePublishCallback);
   }

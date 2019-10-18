@@ -1,10 +1,23 @@
-# Use Python 2 by default.
-build --python_path=/usr/bin/python2
-build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python2
+# Explicit configuration for Python 2.
+build:python2 --python_path=/usr/bin/python2
+build:python2 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python2
 
 # Explicit configuration for Python 3.
 build:python3 --python_path=/usr/bin/python3
 build:python3 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3
+
+# Use Python 3 by default.
+build --python_path=/usr/bin/python3
+build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3
+
+build:_drd --python_path=/usr/bin/python3-dbg
+build:_drd --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3-dbg
+
+build:_helgrind --python_path=/usr/bin/python3-dbg
+build:_helgrind --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3-dbg
+
+# TODO(jamiesnape): Builds with configuration "memcheck" should also use
+# /usr/bin/python3-dbg.
 
 # Configure ${PATH} for actions.
 # N.B. Ensure this is consistent with `execute.bzl`.

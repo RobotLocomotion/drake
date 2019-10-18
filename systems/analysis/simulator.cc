@@ -35,7 +35,7 @@ double Simulator<T>::get_actual_realtime_rate() const {
 template <typename T>
 void Simulator<T>::ResetStatistics() {
   integrator_->ResetStatistics();
-  num_substeps_taken_ = 0;
+  num_steps_taken_ = 0;
   num_discrete_updates_ = 0;
   num_unrestricted_updates_ = 0;
   num_publishes_ = 0;

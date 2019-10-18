@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
@@ -14,6 +13,8 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -52,7 +53,7 @@ drake_pybind_library(
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/attic/multibody:rigid_body_tree_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
@@ -93,7 +94,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/attic/multibody:rigid_body_tree_py",
     ],
 )
 
@@ -102,6 +103,7 @@ drake_py_unittest(
     data = [
         "//systems/sensors:test_models",
     ],
+    tags = vtk_test_tags(),
     deps = [
         ":sensors_py",
         "//bindings/pydrake/systems:sensors_py",
@@ -119,7 +121,4 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()

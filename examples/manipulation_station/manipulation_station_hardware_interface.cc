@@ -5,15 +5,17 @@
 #include "robotlocomotion/image_array_t.hpp"
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/pass_through.h"
@@ -38,12 +40,15 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
       camera_names_(std::move(camera_names)) {
   systems::DiagramBuilder<double> builder;
 
+  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>(
+      owned_lcm_.get());
+
   // Publish IIWA command.
   auto iiwa_command_sender =
-      builder.AddSystem<examples::kuka_iiwa_arm::IiwaCommandSender>();
+      builder.AddSystem<manipulation::kuka_iiwa::IiwaCommandSender>();
   auto iiwa_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_command>(
-          "IIWA_COMMAND", owned_lcm_.get(), 0.005
+          "IIWA_COMMAND", lcm, 0.005
           /* publish period: IIWA driver won't respond faster than 200Hz */));
   builder.ExportInput(iiwa_command_sender->get_position_input_port(),
                       "iiwa_position");
@@ -54,10 +59,10 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
 
   // Receive IIWA status and populate the output ports.
   auto iiwa_status_receiver =
-      builder.AddSystem<examples::kuka_iiwa_arm::IiwaStatusReceiver>();
+      builder.AddSystem<manipulation::kuka_iiwa::IiwaStatusReceiver>();
   iiwa_status_subscriber_ = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_status>(
-          "IIWA_STATUS", owned_lcm_.get()));
+          "IIWA_STATUS", lcm));
 
   builder.ExportOutput(
       iiwa_status_receiver->get_position_commanded_output_port(),
@@ -82,7 +87,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgCommandSender>();
   auto wsg_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_schunk_wsg_command>(
-          "SCHUNK_WSG_COMMAND", owned_lcm_.get(), 0.05
+          "SCHUNK_WSG_COMMAND", lcm, 0.05
           /* publish period: Schunk driver won't respond faster than 20Hz */));
   builder.ExportInput(wsg_command_sender->get_position_input_port(),
                       "wsg_position");
@@ -96,7 +101,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgStatusReceiver>();
   wsg_status_subscriber_ = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_status>(
-          "SCHUNK_WSG_STATUS", owned_lcm_.get()));
+          "SCHUNK_WSG_STATUS", lcm));
   builder.ExportOutput(wsg_status_receiver->get_state_output_port(),
                        "wsg_state_measured");
   builder.ExportOutput(wsg_status_receiver->get_force_output_port(),
@@ -107,7 +112,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   for (const std::string& name : camera_names_) {
     auto camera_subscriber = builder.AddSystem(
         systems::lcm::LcmSubscriberSystem::Make<image_array_t>(
-            "DRAKE_RGBD_CAMERA_IMAGES_" + name, owned_lcm_.get()));
+            "DRAKE_RGBD_CAMERA_IMAGES_" + name, lcm));
     auto array_to_images =
         builder.AddSystem<systems::sensors::LcmImageArrayToImages>();
     builder.Connect(camera_subscriber->get_output_port(),
@@ -135,29 +140,28 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
                                       owned_controller_plant_->GetFrameByName(
                                           "iiwa_link_0", controller_iiwa_model),
-                                      Isometry3d::Identity());
-  owned_controller_plant_
-      ->template AddForceElement<multibody::UniformGravityFieldElement>();
+                                      math::RigidTransformd::Identity());
   owned_controller_plant_->Finalize();
 }
 
 void ManipulationStationHardwareInterface::Connect(bool wait_for_cameras) {
-  owned_lcm_->StartReceiveThread();
-
-  std::cout << "Waiting for IIWA status message..." << std::flush;
-  iiwa_status_subscriber_->WaitForMessage(0);
-  std::cout << "Received!" << std::endl;
-
-  std::cout << "Waiting for WSG status message..." << std::flush;
-  wsg_status_subscriber_->WaitForMessage(0);
-  std::cout << "Received!" << std::endl;
-
-  if (wait_for_cameras) {
-    std::cout << "Waiting for cameras..." << std::flush;
-    for (const auto* sub : camera_subscribers_) {
-      sub->WaitForMessage(0);
-    }
+  drake::lcm::DrakeLcmInterface* const lcm = owned_lcm_.get();
+  auto wait_for_new_message = [lcm](const auto& lcm_sub) {
+    std::cout << "Waiting for " << lcm_sub.get_channel_name()
+              << " message..." << std::flush;
+    const int orig_count = lcm_sub.GetInternalMessageCount();
+    LcmHandleSubscriptionsUntil(lcm, [&]() {
+        return lcm_sub.GetInternalMessageCount() > orig_count;
+      }, 10 /* timeout_millis */);
     std::cout << "Received!" << std::endl;
+  };
+
+  wait_for_new_message(*iiwa_status_subscriber_);
+  wait_for_new_message(*wsg_status_subscriber_);
+  if (wait_for_cameras) {
+    for (const auto* sub : camera_subscribers_) {
+      wait_for_new_message(*sub);
+    }
   }
 }
 

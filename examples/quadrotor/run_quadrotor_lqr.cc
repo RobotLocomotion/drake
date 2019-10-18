@@ -9,6 +9,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/examples/quadrotor/quadrotor_geometry.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
@@ -50,9 +51,8 @@ int do_main() {
 
   // Set up visualization
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  quadrotor->RegisterGeometry(scene_graph);
-  builder.Connect(quadrotor->get_geometry_pose_output_port(),
-      scene_graph->get_source_pose_port(quadrotor->source_id()));
+  QuadrotorGeometry::AddToBuilder(
+      &builder, quadrotor->get_output_port(0), scene_graph);
   geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
 
   auto diagram = builder.Build();
@@ -77,8 +77,8 @@ int do_main() {
 
     // The following accuracy is necessary for the example to satisfy its
     // ending state tolerances.
-    simulator.get_mutable_integrator()->set_target_accuracy(5e-5);
-    simulator.StepTo(FLAGS_trial_duration);
+    simulator.get_mutable_integrator().set_target_accuracy(5e-5);
+    simulator.AdvanceTo(FLAGS_trial_duration);
 
     // Goal state verification.
     const Context<double>& context = simulator.get_context();

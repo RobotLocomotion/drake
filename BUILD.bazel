@@ -55,7 +55,6 @@ install(
     install_tests_script = _INSTALL_TEST_COMMANDS,
     docs = ["LICENSE.TXT"],
     deps = [
-        "//automotive/models:install_data",
         "//bindings/pydrake:install",
         "//common:install",
         "//common/proto:install",
@@ -63,6 +62,7 @@ install(
         "//lcmtypes:install",
         "//manipulation/models:install_data",
         "//setup:install",
+        "//tools/install/cmake:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
     ],
@@ -75,6 +75,9 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
+    # Running acceptance tests under Valgrind tools is extremely slow and of
+    # limited value, so skip them.
+    tags = ["no_valgrind_tools"],
 )
 
 add_lint_tests()

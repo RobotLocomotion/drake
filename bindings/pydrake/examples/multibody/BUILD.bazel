@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "get_drake_py_installs",
@@ -12,6 +11,7 @@ load(
     "drake_py_binary",
     "drake_py_library",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -44,13 +44,32 @@ drake_py_binary(
     deps = [
         ":module_py",
         "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/systems:analysis_py",
+    ],
+)
+
+drake_py_binary(
+    name = "pendulum_lqr_monte_carlo_analysis",
+    srcs = ["pendulum_lqr_monte_carlo_analysis.py"],
+    add_test_rule = 1,
+    data = ["//examples/pendulum:models"],
+    test_rule_args = [
+        "--num_samples=10",
+        "--torque_limit=2.0",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/systems",
     ],
 )
 
 PY_LIBRARIES = [
     ":cart_pole_passive_simulation",
+    ":pendulum_lqr_monte_carlo_analysis",
 ]
 
 # Package roll-up (for Bazel dependencies).
@@ -67,7 +86,4 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()

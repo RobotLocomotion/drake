@@ -193,6 +193,7 @@ def bitbucket_download_and_extract(
         urls,
         output = output,
         sha256 = _sha256(sha256),
+        type = "tar.gz",
         stripPrefix = strip_prefix,
     )
 

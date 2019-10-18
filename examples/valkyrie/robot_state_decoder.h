@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -21,7 +22,8 @@ namespace systems {
  * Note that a RobotStateDecoder simply ignores state information for joints
  * that it doesn't know about.
  */
-class RobotStateDecoder : public LeafSystem<double> {
+class DRAKE_DEPRECATED("2020-02-01", "The valkyrie example is being removed.")
+RobotStateDecoder : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotStateDecoder)
 

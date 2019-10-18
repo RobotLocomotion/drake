@@ -4,13 +4,17 @@
 #include <utility>
 #include <vector>
 
-#include <spruce.hh>
+#include <fmt/format.h>
 
 #include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/find_loaded_library.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 
+using std::getenv;
 using std::string;
 
 namespace drake {
@@ -100,129 +104,56 @@ void Result::CheckInvariants() {
 
 namespace {
 
-optional<std::string> getenv_optional(const char* const name) {
-  const char* const value = std::getenv(name);
-  if (value) {
-    return string(value);
-  }
-  return nullopt;
-}
-
-// If we are linked against libdrake_marker.so, return a candidate directory
-// based on libdrake_marker.so's path; otherwise, return nullopt.  The
-// resulting string will already end with "drake"; that is, the directory will
-// contain files named like "common/foo.txt", not "drake/common/foo.txt".
-optional<std::string>  GetCandidateDirFromLibDrakeMarker() {
-  // Ensure that we have the library loaded.
-  DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
-  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
-  if (libdrake_dir) {
-    libdrake_dir = libdrake_dir.value() + "/../share/drake";
-  }
-  return libdrake_dir;
-}
-
-// Returns true iff the path is relative (not absolute).
-bool IsRelativePath(const string& path) {
-  // TODO(jwnimmer-tri) Prevent .. escape?
-  return !path.empty() && (path[0] != '/');
-}
-
-// Returns the absolute_path iff the `$dirpath/$relpath` exists, else nullopt.
-// As a convenience to callers, if `dirpath` is nullopt, the result is nullopt.
-// (To inquire about an empty `dirpath`, pass the empty string, not nullopt.)
-optional<string> FileExists(
-    const optional<string>& dirpath, const string& relpath) {
-  DRAKE_ASSERT(IsRelativePath(relpath));
-  if (!dirpath) { return nullopt; }
-  const spruce::path dir_query(*dirpath);
-  if (!dir_query.isDir()) { return nullopt; }
-  const spruce::path file_query(dir_query.getStr() + '/' + relpath);
-  if (!file_query.exists()) { return nullopt; }
-  return file_query.getStr();
-}
-
-// Given a path like /foo/bar, returns the path /foo/bar/drake.
-// Iff the path is nullopt, then the result is nullopt.
-optional<string> AppendDrakeTo(const optional<string>& path) {
-  if (path) {
-    spruce::path result = *path;
-    result.append("drake");
-    return result.getStr();
-  }
-  return nullopt;
-}
-
-// Returns candidate_dir iff it exists and contains our sentinel file.
-// Candidate paths will already end with "drake" as their final path element,
-// or possibly a related name like "drake2"; that is, they will contain files
-// named like "common/foo.txt", not "drake/common/foo.txt".
-optional<string> CheckCandidateDir(const spruce::path& candidate_dir) {
-  // If we found the sentinel, we win.
-  spruce::path candidate_file = candidate_dir;
-  candidate_file.append(".drake-find_resource-sentinel");
-  if (candidate_file.isFile()) {
-    return candidate_dir.getStr();
-  }
-  return nullopt;
-}
-
-// Returns a sentinel directory appropriate when running under `bazel test`.
-optional<string> GetTestRunfilesDir() {
-  // These environment variables are documented at:
-  // https://docs.bazel.build/versions/master/test-encyclopedia.html#initial-conditions
-  // We check TEST_TMPDIR as a sanity check that we're being called by Bazel.
-  // Other than TEST_SRCDIR below, its the only other non-standard environment
-  // variable that Bazel is required to set when running a test.
-  if (::getenv("TEST_TMPDIR") == nullptr) {
-    // Not running under `bazel test`.
-    return nullopt;
-  }
-  char* test_srcdir = ::getenv("TEST_SRCDIR");
-  if (test_srcdir == nullptr) {
-    // Apparently running under `bazel test`, but no runfiles tree is set?
-    // Maybe TEST_TMPDIR was something other than Bazel; ignore it.
-    return nullopt;
-  }
-  return CheckCandidateDir(*AppendDrakeTo(string(test_srcdir)));
-}
-
-// Returns the directory that contains our sentinel file, searching from the
-// current directory and working up through all transitive parent directories
-// up to "/".  Candidate paths will already end with "drake" as their final
-// path element, or possibly a related name like "drake2"; that is, they will
-// contain files named like "common/foo.txt", not "drake/common/foo.txt".
-optional<string> FindSentinelDir() {
-  spruce::path candidate_dir = spruce::dir::getcwd();
-  int num_attempts = 0;
-  while (true) {
-    DRAKE_THROW_UNLESS(num_attempts < 1000);  // Insanity fail-fast.
-    ++num_attempts;
-
-    // If we fall off the end of the world somehow, stop.
-    if (!candidate_dir.isDir()) {
-      return nullopt;
-    }
-
-    // If we found the sentinel, we win.
-    optional<string> result = CheckCandidateDir(candidate_dir);
-    if (result) {
-      return result;
-    }
-
-    // Move up one directory; with spruce, "root" means "parent".
-    candidate_dir = candidate_dir.root();
-  }
-}
+// A valid resource root will always contain this file.
+const char* const kSentinelRelpath = "drake/.drake-find_resource-sentinel";
 
 bool StartsWith(const string& str, const string& prefix) {
   return str.compare(0, prefix.size(), prefix) == 0;
 }
 
+// Returns true iff the path is relative (not absolute nor empty).
+bool IsRelativePath(const string& path) {
+  return !path.empty() && (path[0] != '/');
+}
+
+// Taking `root` to be Drake's resource root, confirm that the sentinel file
+// exists and return the found resource_path (or an error if either the
+// sentinel or resource_path was missing).
+Result CheckAndMakeResult(
+    const string& root_description, const string& root,
+    const string& resource_path) {
+  DRAKE_DEMAND(!root_description.empty());
+  DRAKE_DEMAND(!root.empty());
+  DRAKE_DEMAND(!resource_path.empty());
+  DRAKE_DEMAND(filesystem::is_directory({root}));
+  DRAKE_DEMAND(IsRelativePath(resource_path));
+
+  // Check for the sentinel.
+  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
+    return Result::make_error(resource_path, fmt::format(
+        "Could not find Drake resource_path '{}' because {} specified a "
+        "resource root of '{}' but that root did not contain the expected "
+        "sentinel file '{}'.",
+        resource_path, root_description, root, kSentinelRelpath));
+  }
+
+  // Check for the resource_path.
+  const string abspath = root + '/' + resource_path;
+  if (!filesystem::is_regular_file({abspath})) {
+    return Result::make_error(resource_path, fmt::format(
+        "Could not find Drake resource_path '{}' because {} specified a "
+        "resource root of '{}' but that root did not contain the expected "
+        "file '{}'.",
+        resource_path, root_description, root, abspath));
+  }
+
+  return Result::make_success(resource_path, abspath);
+}
+
 // Opportunistically searches inside the attic for multibody resource paths.
 // This function is not unit tested -- only acceptance-tested by the fact that
 // none of the tests in the attic fail.
-Result MaybeFindResourceInAttic(const string& resource_path) {
+optional<string> MaybeFindResourceInAttic(const string& resource_path) {
   const string prefix("drake/");
   DRAKE_DEMAND(StartsWith(resource_path, prefix));
   const string substr = resource_path.substr(prefix.size());
@@ -237,14 +168,68 @@ Result MaybeFindResourceInAttic(const string& resource_path) {
            "systems/controllers/qp_inverse_dynamics/test"
        }) {
     if (StartsWith(substr, directory)) {
-      const Result attic_result =
-          FindResource(prefix + string("attic/") + substr);
-      if (attic_result.get_absolute_path() != nullopt) {
-        return attic_result;
+      const auto rlocation_or_error =
+          FindRunfile(prefix + string("attic/") + substr);
+      if (rlocation_or_error.error.empty()) {
+        return rlocation_or_error.abspath;
       }
     }
   }
-  return Result::make_error(resource_path, "Not an attic path");
+  return nullopt;
+}
+
+// If the DRAKE_RESOURCE_ROOT environment variable is usable as a resource
+// root, returns its value, else returns nullopt.
+optional<string> MaybeGetEnvironmentResourceRoot() {
+  const char* const env_name = kDrakeResourceRootEnvironmentVariableName;
+  const char* const env_value = getenv(env_name);
+  if (!env_value) {
+    log()->debug(
+        "FindResource ignoring {} because it is not set.",
+        env_name);
+    return nullopt;
+  }
+  const std::string root{env_value};
+  if (!filesystem::is_directory({root})) {
+    static const logging::Warn log_once(
+        "FindResource ignoring {}='{}' because it does not exist.",
+        env_name, env_value);
+    return nullopt;
+  }
+  if (!filesystem::is_directory({root + "/drake"})) {
+    static const logging::Warn log_once(
+        "FindResource ignoring {}='{}' because it does not contain a 'drake' "
+        "subdirectory.", env_name, env_value);
+    return nullopt;
+  }
+  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
+    static const logging::Warn log_once(
+        "FindResource ignoring {}='{}' because it does not contain the "
+        "expected sentinel file '{}'.", env_name, env_value, kSentinelRelpath);
+    return nullopt;
+  }
+  return root;
+}
+
+// If we are linked against libdrake_marker.so, and the install-tree-relative
+// path resolves correctly, returns the install tree resource root, else
+// returns nullopt.
+optional<string> MaybeGetInstallResourceRoot() {
+  // Ensure that we have the library loaded.
+  DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
+  optional<string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
+  if (libdrake_dir) {
+    const string root = *libdrake_dir + "/../share";
+    if (filesystem::is_directory({root})) {
+      return root;
+    } else {
+      log()->debug("FindResource ignoring CMake install candidate '{}' "
+                   "because it does not exist", root);
+    }
+  } else {
+    log()->debug("FindResource has no CMake install candidate");
+  }
+  return nullopt;
 }
 
 }  // namespace
@@ -252,28 +237,7 @@ Result MaybeFindResourceInAttic(const string& resource_path) {
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
-// Saves search directories path in a persistent variable.
-// This function is only accessible from this file and should not
-// be used outside of `GetResourceSearchPaths()` and
-// `AddResourceSearchPath()`.
-namespace {
-std::vector<string>& GetMutableResourceSearchPaths() {
-  static never_destroyed<std::vector<string>> search_paths;
-  return search_paths.access();
-}
-}  // namespace
-
-std::vector<string> GetResourceSearchPaths() {
-  return GetMutableResourceSearchPaths();
-}
-
-void AddResourceSearchPath(string search_path) {
-  // Throw an error if path is relative.
-  DRAKE_THROW_UNLESS(!IsRelativePath(search_path));
-  GetMutableResourceSearchPaths().push_back(std::move(search_path));
-}
-
-Result FindResource(string resource_path) {
+Result FindResource(const string& resource_path) {
   // Check if resource_path is well-formed: a relative path that starts with
   // "drake" as its first directory name.  A valid example would look like:
   // "drake/common/test/find_resource_test_data.txt".  Requiring strings passed
@@ -281,82 +245,64 @@ Result FindResource(string resource_path) {
   // compatibility with the original semantics of this function; if we want to
   // offer a function that takes paths without "drake", we can use a new name.
   if (!IsRelativePath(resource_path)) {
-    return Result::make_error(
-        std::move(resource_path),
-        "resource_path is not a relative path");
+    return Result::make_error(resource_path, fmt::format(
+        "Drake resource_path '{}' is not a relative path.",
+        resource_path));
   }
-  const std::string prefix("drake/");
+  const string prefix("drake/");
   if (!StartsWith(resource_path, prefix)) {
-    return Result::make_error(
-        std::move(resource_path),
-        "resource_path does not start with " + prefix);
-  }
-  const std::string resource_path_substr = resource_path.substr(prefix.size());
-
-  // Collect a list of (priority-ordered) directories to check.  Candidate
-  // paths will already end with "drake" as their final path element, or
-  // possibly a related name like "drake2"; that is, they will contain files
-  // named like "common/foo.txt", not "drake/common/foo.txt".
-  std::vector<optional<string>> candidate_dirs;
-
-  // (1) Search the environment variable first; if it works, it should always
-  // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
-  candidate_dirs.emplace_back(AppendDrakeTo(getenv_optional(
-      kDrakeResourceRootEnvironmentVariableName)));
-
-  // (2) Add the list of paths given programmatically. Paths are added only
-  // if the sentinel file can be found.
-  for (const auto& search_path : GetMutableResourceSearchPaths()) {
-    spruce::path candidate_dir(*AppendDrakeTo(search_path));
-    candidate_dirs.emplace_back(CheckCandidateDir(candidate_dir));
+    return Result::make_error(resource_path, fmt::format(
+        "Drake resource_path '{}' does not start with {}.",
+        resource_path, prefix));
   }
 
-  // (3) Find where `libdrake_marker.so` is, and add search path that
-  // corresponds to resource folder in install tree based on
-  // `libdrake_marker.so` location.
-  candidate_dirs.emplace_back(GetCandidateDirFromLibDrakeMarker());
+  // We will check each potential resource root one by one.  The first root
+  // that is present will be chosen, even if does not contain the particular
+  // resource_path.  We expect that all sources offer all files.
 
-  // (4) Find resources during `bazel test` execution.
-  candidate_dirs.emplace_back(GetTestRunfilesDir());
+  // (1) Check the environment variable.
+  if (auto guess = MaybeGetEnvironmentResourceRoot()) {
+    return CheckAndMakeResult(
+        fmt::format("{} environment variable",
+                    kDrakeResourceRootEnvironmentVariableName),
+        *guess, resource_path);
+  }
 
-  // (5) Search in cwd (and its parent, grandparent, etc.) to find Drake's
-  // resource-root sentinel file.
-  candidate_dirs.emplace_back(FindSentinelDir());
-
-  // Make sure that candidate_dirs are not relative paths. This could cause
-  // bugs, but in theory it should never happen as the code above should
-  // guard against it.
-  for (const auto& candidate_dir : candidate_dirs) {
-    if (candidate_dir && IsRelativePath(candidate_dir.value())) {
-        string error_message = "path is not absolute: " + candidate_dir.value();
-        return Result::make_error(std::move(resource_path), error_message);
-      }
-    }
-
-  // See which (if any) candidate contains the requested resource.
-  for (const auto& candidate_dir : candidate_dirs) {
-    if (auto absolute_path = FileExists(candidate_dir, resource_path_substr)) {
+  // (2) Check the Runfiles.
+  if (HasRunfiles()) {
+    auto rlocation_or_error = FindRunfile(resource_path);
+    if (rlocation_or_error.error.empty()) {
       return Result::make_success(
-          std::move(resource_path), std::move(*absolute_path));
+          resource_path, rlocation_or_error.abspath);
     }
+    // As a compatibility shim, for resource paths that have been moved into the
+    // attic, we opportunistically try a fallback search path for them.  This
+    // heuristic is only helpful for source trees -- any install data files from
+    // the attic should be installed without the "attic/" portion of their path.
+    if (auto attic_abspath = MaybeFindResourceInAttic(resource_path)) {
+      return Result::make_success(resource_path, *attic_abspath);
+    }
+    return Result::make_error(resource_path, rlocation_or_error.error);
   }
 
-  // As a compatibility shim, for resource paths that have been moved into the
-  // attic, we opportunistically try a fallback search path for them.  This
-  // heuristic is only helpful for source trees -- any install data files from
-  // the attic should be installed without the "attic/" portion of their path.
-  const Result attic_result = MaybeFindResourceInAttic(resource_path);
-  if (attic_result.get_absolute_path() != nullopt) {
-    return attic_result;
+  // (3) Check the `libdrake_marker.so` location in the install tree.
+  if (auto guess = MaybeGetInstallResourceRoot()) {
+    return CheckAndMakeResult(
+        "Drake CMake install marker",
+        *guess, resource_path);
   }
 
-  // Nothing found.
-  string error_message = "could not find resource: " + resource_path;
-  return Result::make_error(std::move(resource_path), error_message);
+  // No resource roots were found.
+  return Result::make_error(resource_path, fmt::format(
+      "Could not find Drake resource_path '{}' because no resource roots of "
+      "any kind could be found: {} is unset, a {} could not be created, and "
+      "there is no Drake CMake install marker.",
+      resource_path, kDrakeResourceRootEnvironmentVariableName,
+      "bazel::tools::cpp::runfiles::Runfiles"));
 }
 
-std::string FindResourceOrThrow(std::string resource_path) {
-  return FindResource(std::move(resource_path)).get_absolute_path_or_throw();
+string FindResourceOrThrow(const string& resource_path) {
+  return FindResource(resource_path).get_absolute_path_or_throw();
 }
 
 }  // namespace drake

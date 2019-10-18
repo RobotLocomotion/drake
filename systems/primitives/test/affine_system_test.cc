@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/affine_system.h"
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
@@ -34,7 +35,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
 
 // Tests that the affine system is correctly setup.
 TEST_F(AffineSystemTest, Construction) {
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
   EXPECT_EQ("test_affine_system", dut_->get_name());
   EXPECT_EQ(dut_->A(), A_);
   EXPECT_EQ(dut_->B(), B_);
@@ -42,8 +43,8 @@ TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->f0(), f0_);
   EXPECT_EQ(dut_->y0(), y0_);
-  EXPECT_EQ(dut_->get_num_output_ports(), 1);
-  EXPECT_EQ(dut_->get_num_input_ports(), 1);
+  EXPECT_EQ(dut_->num_output_ports(), 1);
+  EXPECT_EQ(dut_->num_input_ports(), 1);
 
   // Test TimeVaryingAffineSystem accessor methods.
   const double t = 3.5;
@@ -248,7 +249,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
   Eigen::Vector2d x(1, 2);
 
   auto context = sys.CreateDefaultContext();
-  context->set_time(t);
+  context->SetTime(t);
   context->get_mutable_continuous_state_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
@@ -267,7 +268,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   Eigen::Vector2d x(1, 2);
 
   auto context = sys.CreateDefaultContext();
-  context->set_time(t);
+  context->SetTime(t);
   context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
@@ -294,16 +295,17 @@ class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
   }
 };
 
-GTEST_TEST(IllegalTimeVaryingAffineSystemTest, EvalDeathTest) {
+GTEST_TEST(IllegalTimeVaryingAffineSystemTest, BadSizeTest) {
   IllegalTimeVaryingAffineSystem sys;
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   const double t = 2.5;
 
   auto context = sys.CreateDefaultContext();
-  context->set_time(t);
+  context->SetTime(t);
 
   auto derivatives = sys.AllocateTimeDerivatives();
-  ASSERT_DEATH(sys.CalcTimeDerivatives(*context, derivatives.get()), "rows");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      sys.CalcTimeDerivatives(*context, derivatives.get()),
+      std::exception, ".*rows.*");
 }
 
 class AffineSystemSymbolicTest : public ::testing::Test {

@@ -380,7 +380,9 @@ class TestOrthant
 TEST_P(TestOrthant, test) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    SolutionResult sol_result = gurobi_solver.Solve(prog_);
+    MathematicalProgramResult result;
+    gurobi_solver.Solve(prog_, {}, {}, &result);
+    SolutionResult sol_result = result.get_solution_result();
     // Since no two row or column vectors in R can lie in either the same of the
     // opposite orthant, the program should be infeasible.
     EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||

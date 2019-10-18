@@ -13,7 +13,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-namespace pose_aggregator_detail { struct InputRecord; }
+namespace pose_aggregator_internal { struct InputRecord; }
 
 /// A container with references to the input port for the pose input, and a
 /// reference to the input port for the velocity input.
@@ -126,7 +126,7 @@ class PoseAggregator : public LeafSystem<T> {
   // This is the method used by the allocator for the output port.
   PoseBundle<T> MakePoseBundle() const;
 
-  using InputRecord = pose_aggregator_detail::InputRecord;
+  using InputRecord = pose_aggregator_internal::InputRecord;
 
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
@@ -151,7 +151,7 @@ class PoseAggregator : public LeafSystem<T> {
 };
 
 /** @cond */
-namespace pose_aggregator_detail {
+namespace pose_aggregator_internal {
 
 // A private data structure of PoseAggregator.  It is not nested within
 // PoseAggregator because it does not (and should not) depend on the type
@@ -171,7 +171,7 @@ struct InputRecord {
   int model_instance_id{-1};
 };
 
-}  // namespace pose_aggregator_detail
+}  // namespace pose_aggregator_internal
 /** @endcond */
 
 }  // namespace rendering

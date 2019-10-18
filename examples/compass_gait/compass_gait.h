@@ -16,10 +16,9 @@ namespace compass_gait {
 
 /// Dynamical representation of the idealized hybrid dynamics of a "compass
 /// gait", as described in
-///   http://underactuated.mit.edu/underactuated.html?chapter=simple_legs
-/// with a few small differences.  The implementation here has no torque input
-/// (yet).  In addition, this implementation has two additional state
-/// variables that are not required in the mathematical model:
+///   http://underactuated.mit.edu/underactuated.html?chapter=simple_legs .
+/// This implementation has two additional state variables that are not
+/// required in the mathematical model:
 ///
 /// - a discrete state for the position of the stance toe along the ramp
 /// - a Boolean indicator for "left support" (true when the stance leg is
@@ -30,18 +29,16 @@ namespace compass_gait {
 ///
 /// @note This model only supports walking downhill on the ramp, because that
 /// restriction enables a clean / numerically robust implementation of the foot
-/// collision witness function that avoids falls detections on the "foot
+/// collision witness function that avoids fall detection on the "foot
 /// scuffing" collision.
 ///
-/// Inputs: None.<br/>
+/// @system{CompassGait,
+///    @input_port{hip_torque},
+///    @output_port{minimal_state, floating_base_state}
+/// }
 /// Continuous States: stance, swing, stancedot, swingdot.<br/>
 /// Discrete State: stance toe position.<br/>
 /// Abstract State: left support indicator.<br/>
-/// Outputs:
-///   <ol start=0>
-///   <li>continuous (minimal coordinates) state output</li>
-///   <li>floating-base state output</li>
-///   </ol>
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///

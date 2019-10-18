@@ -6,16 +6,16 @@ defs = read_version_defs(def_re)
 content = """
 {
   "Cps-Version": "0.8.0",
-  "Name": "ignition-math4",
+  "Name": "ignition-math%(VERSION_MAJOR)s",
   "Description": "Math classes and functions for robot applications",
   "License": "Apache-2.0",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
-  "Default-Components": [":ignition-math4"],
+  "Default-Components": [":ignition-math%(VERSION_MAJOR)s"],
   "Components": {
-    "ignition-math4": {
+    "ignition-math%(VERSION_MAJOR)s": {
       "Type": "dylib",
-      "Location": "@prefix@/lib/libdrake_ignition_math4.so",
-      "Includes": ["@prefix@/include/ignition-math4"]
+      "Location": "@prefix@/lib/libdrake_ignition_math.so",
+      "Includes": ["@prefix@/include/ignition-math%(VERSION_MAJOR)s"]
     }
   },
   "X-CMake-Variables": {

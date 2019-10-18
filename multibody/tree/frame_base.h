@@ -45,13 +45,13 @@ namespace multibody {
 template <typename T>
 class FrameBase : public MultibodyTreeElement<FrameBase<T>, FrameIndex> {
   // TODO(amcastro-tri): Provide a method with the signature:
-  // const Isometry3<T>& get_pose_in_world_frame(
+  // const math::RigidTransform<T>& get_pose_in_world_frame(
   //     const Context<T>& context) const;
   // returning the pose X_WF of this frame F measured and expressed in the world
   // frame W. The pose will be stored in the cache and will be the product of
   // the position kinematics update.
   // TODO(amcastro-tri): Consider to provide a method with signature:
-  // Isometry3<T> CalcPoseAsMeasuredIn(
+  // math::RigidTransform<T> CalcPoseAsMeasuredIn(
   //     const Context<T>& context,
   //     const FrameBase<T> measured_in_frame) const;
   // That computes the pose of `this` frame as measured in the

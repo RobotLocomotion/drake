@@ -1,0 +1,217 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "optimization",
+    deps = [
+        ":contact_wrench",
+        ":contact_wrench_evaluator",
+        ":manipulator_equation_constraint",
+        ":sliding_friction_complementarity_constraint",
+        ":static_equilibrium_constraint",
+        ":static_equilibrium_problem",
+        ":static_friction_cone_complementarity_constraint",
+        ":static_friction_cone_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_wrench",
+    srcs = [],
+    hdrs = ["contact_wrench.h"],
+    deps = [
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_wrench_evaluator",
+    srcs = ["contact_wrench_evaluator.cc"],
+    hdrs = ["contact_wrench_evaluator.h"],
+    deps = [
+        "//common:sorted_pair",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:evaluator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "sliding_friction_complementarity_constraint",
+    srcs = ["sliding_friction_complementarity_constraint.cc"],
+    hdrs = ["sliding_friction_complementarity_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        ":static_friction_cone_complementarity_constraint",
+        ":static_friction_cone_constraint",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "static_equilibrium_constraint",
+    srcs = ["static_equilibrium_constraint.cc"],
+    hdrs = ["static_equilibrium_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "manipulator_equation_constraint",
+    srcs = ["manipulator_equation_constraint.cc"],
+    hdrs = ["manipulator_equation_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "static_friction_cone_constraint",
+    srcs = ["static_friction_cone_constraint.cc"],
+    hdrs = ["static_friction_cone_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "static_friction_cone_complementarity_constraint",
+    srcs = ["static_friction_cone_complementarity_constraint.cc"],
+    hdrs = ["static_friction_cone_complementarity_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "static_equilibrium_problem",
+    srcs = ["static_equilibrium_problem.cc"],
+    hdrs = ["static_equilibrium_problem.h"],
+    deps = [
+        ":contact_wrench",
+        ":contact_wrench_evaluator",
+        ":static_equilibrium_constraint",
+        ":static_friction_cone_complementarity_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "optimization_with_contact_utilities",
+    testonly = 1,
+    srcs = ["test/optimization_with_contact_utilities.cc"],
+    hdrs = ["test/optimization_with_contact_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_wrench_evaluator_test",
+    deps = [
+        ":contact_wrench_evaluator",
+        ":optimization_with_contact_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_equilibrium_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_equilibrium_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_equilibrium_problem_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_equilibrium_problem",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_friction_cone_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_friction_cone_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_friction_cone_complementarity_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_friction_cone_complementarity_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_equation_constraint_test",
+    deps = [
+        ":manipulator_equation_constraint",
+        ":optimization_with_contact_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sliding_friction_complementarity_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":sliding_friction_complementarity_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

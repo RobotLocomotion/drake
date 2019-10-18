@@ -1,8 +1,14 @@
 # -*- python -*-
 
-# Should include everything any consumer of Drake would ever need.
+# This file governs the contents of libdrake.so.
+
+# Do not update this list by hand; instead, from the drake workspace run
 #
-# Do not update this list by hand; instead, run build_components_refresh.py.
+#   tools/install/libdrake/build_components_refresh.py
+#
+# and it will rewrite this file automatically for you.  If the refresh made any
+# edits, then `git status` will show this file as modified; in that case, you
+# should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
     "//attic/manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//attic/manipulation/planner",
@@ -26,46 +32,41 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/shapes",
     "//attic/perception",
     "//attic/systems/controllers",
-    "//attic/systems/controllers/plan_eval",
-    "//attic/systems/controllers/qp_inverse_dynamics",
     "//attic/systems/rendering",
     "//attic/systems/robotInterfaces",
     "//attic/systems/sensors",
     "//attic/systems/trajectory_optimization",
     "//attic/util",
-    "//automotive",
-    "//automotive/maliput/api",
-    "//automotive/maliput/base",
-    "//automotive/maliput/dragway",
-    "//automotive/maliput/geometry_base",
-    "//automotive/maliput/multilane",
-    "//automotive/maliput/rndf",
-    "//automotive/maliput/utility",
     "//common",
     "//common/proto",
     "//common/trajectories",
+    "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
     "//examples/acrobot:acrobot_input",  # unpackaged
     "//examples/acrobot:acrobot_params",  # unpackaged
     "//examples/acrobot:acrobot_plant",  # unpackaged
     "//examples/acrobot:acrobot_state",  # unpackaged
+    "//examples/acrobot:spong_controller",  # unpackaged
+    "//examples/acrobot:spong_controller_params",  # unpackaged
     "//examples/compass_gait:compass_gait",  # unpackaged
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
+    "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
+    "//examples/planar_gripper:gripper_brick",  # unpackaged
+    "//examples/quadrotor:quadrotor_geometry",  # unpackaged
     "//examples/quadrotor:quadrotor_plant",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
     "//examples/van_der_pol:van_der_pol",  # unpackaged
     "//geometry",
-    "//geometry/dev",
-    "//geometry/dev/render",
-    "//geometry/dev/render/shaders",
+    "//geometry/proximity",
     "//geometry/query_results",
-    "//geometry/test_utilities:geometry_set_tester",  # unpackaged
+    "//geometry/render",
+    "//geometry/render/shaders",
     "//lcm",
     "//manipulation/kuka_iiwa",
     "//manipulation/perception",
@@ -80,15 +81,21 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
-    "//multibody/hydroelastic_contact",
+    "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
+    "//multibody/optimization",
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
+    "//multibody/triangle_quadrature",
     "//perception",
     "//solvers",
+    "//solvers/fbstab:fbstab_algorithm",  # unpackaged
+    "//solvers/fbstab:fbstab_dense",  # unpackaged
+    "//solvers/fbstab:fbstab_mpc",  # unpackaged
     "//systems/analysis",
     "//systems/controllers",
     "//systems/estimators",
@@ -99,8 +106,15 @@ LIBDRAKE_COMPONENTS = [
     "//systems/primitives",
     "//systems/rendering",
     "//systems/sensors",
-    "//systems/sensors/dev",
     "//systems/trajectory_optimization",
-    # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
-    # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
+    # //solvers/fbstab/components:dense_data (indirectly)
+    # //solvers/fbstab/components:dense_feasibility (indirectly)
+    # //solvers/fbstab/components:dense_linear_solver (indirectly)
+    # //solvers/fbstab/components:dense_residual (indirectly)
+    # //solvers/fbstab/components:dense_variable (indirectly)
+    # //solvers/fbstab/components:mpc_data (indirectly)
+    # //solvers/fbstab/components:mpc_feasibility (indirectly)
+    # //solvers/fbstab/components:mpc_residual (indirectly)
+    # //solvers/fbstab/components:mpc_variable (indirectly)
+    # //solvers/fbstab/components:riccati_linear_solver (indirectly)
 ]

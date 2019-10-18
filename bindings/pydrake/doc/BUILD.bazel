@@ -3,7 +3,7 @@
 package(default_visibility = ["//visibility:private"])
 
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
-load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 drake_py_binary(
     name = "gen_sphinx",
@@ -18,9 +18,13 @@ drake_py_binary(
     ],
     imports = ["."],
     main = "gen_sphinx.py",
-    # Some (currently disabled) Sphinx extensions try to reach out to the
-    # network; we should fail-fast if someone tries to turn them on.
-    tags = ["block-network"],
+    tags = [
+        # Some (currently disabled) Sphinx extensions try to reach out to the
+        # network; we should fail-fast if someone tries to turn them on.
+        "block-network",
+        # Test exceeds timeout when run under Valgrind tools.
+        "no_valgrind_tools",
+    ],
     test_rule_args = ["--out_dir=<test>"],
     test_rule_size = "medium",
     deps = [
@@ -36,8 +40,6 @@ drake_py_binary(
     deps = ["//doc:sphinx_base"],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
+add_lint_tests_pydrake(
     python_lint_exclude = [":conf.py"],
 )

@@ -182,31 +182,31 @@ class TestSystem : public LeafSystem<T> {
   }
 
   // First testing type: no event specified.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithoutEvent() const {
-    return this->DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessWithoutEvent() const {
+    return this->MakeWitnessFunction(
         "dummy1", WitnessFunctionDirection::kCrossesZero,
         &TestSystem<double>::DummyWitnessFunction);
   }
 
   // Second testing type: event specified.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithEvent() const {
-    return this->DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessWithEvent() const {
+    return this->MakeWitnessFunction(
         "dummy2", WitnessFunctionDirection::kNone,
         &TestSystem<double>::DummyWitnessFunction,
         PublishEvent<double>());
   }
 
   // Third testing type: publish callback specified.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithPublish() const {
-    return this->DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessWithPublish() const {
+    return this->MakeWitnessFunction(
         "dummy3", WitnessFunctionDirection::kNone,
         &TestSystem<double>::DummyWitnessFunction,
         &TestSystem<double>::PublishCallback);
   }
 
   // Fourth testing type: discrete update callback specified.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithDiscreteUpdate() const {
-    return this->DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessWithDiscreteUpdate() const {
+    return this->MakeWitnessFunction(
         "dummy4", WitnessFunctionDirection::kNone,
         &TestSystem<double>::DummyWitnessFunction,
         &TestSystem<double>::DiscreteUpdateCallback);
@@ -214,8 +214,8 @@ class TestSystem : public LeafSystem<T> {
 
   // Fifth testing type: unrestricted update callback specified.
   std::unique_ptr<WitnessFunction<T>>
-      DeclareWitnessWithUnrestrictedUpdate() const {
-    return this->DeclareWitnessFunction(
+      MakeWitnessWithUnrestrictedUpdate() const {
+    return this->MakeWitnessFunction(
         "dummy5", WitnessFunctionDirection::kNone,
         &TestSystem<double>::DummyWitnessFunction,
         &TestSystem<double>::UnrestrictedUpdateCallback);
@@ -223,7 +223,7 @@ class TestSystem : public LeafSystem<T> {
 
   // Sixth testing type: lambda function with no event specified.
   std::unique_ptr<WitnessFunction<T>> DeclareLambdaWitnessWithoutEvent() const {
-    return this->DeclareWitnessFunction(
+    return this->MakeWitnessFunction(
         "dummy6", WitnessFunctionDirection::kCrossesZero,
         [](const Context<double>&) -> double { return 7.0; });
   }
@@ -231,7 +231,7 @@ class TestSystem : public LeafSystem<T> {
   // Seventh testing type: lambda function with event specified.
   std::unique_ptr<WitnessFunction<T>>
       DeclareLambdaWitnessWithUnrestrictedUpdate() const {
-    return this->DeclareWitnessFunction(
+    return this->MakeWitnessFunction(
         "dummy7", WitnessFunctionDirection::kPositiveThenNonPositive,
         [](const Context<double>&) -> double { return 11.0; },
         UnrestrictedUpdateEvent<double>());
@@ -311,27 +311,27 @@ class TestSystem : public LeafSystem<T> {
 
  private:
   // This dummy witness function exists only to test that the
-  // DeclareWitnessFunction() interface works as promised.
+  // MakeWitnessFunction() interface works as promised.
   T DummyWitnessFunction(const Context<T>& context) const {
     static int call_counter = 0;
     return static_cast<T>(++call_counter);
   }
 
   // Publish callback function, which serves to test whether the appropriate
-  // DeclareWitnessFunction() interface works as promised.
+  // MakeWitnessFunction() interface works as promised.
   void PublishCallback(const Context<T>&, const PublishEvent<T>&) const {
     publish_callback_called_ = true;
   }
 
   // Discrete update callback function, which serves to test whether the
-  // appropriate DeclareWitnessFunction() interface works as promised.
+  // appropriate MakeWitnessFunction() interface works as promised.
   void DiscreteUpdateCallback(const Context<T>&,
       const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const {
     discrete_update_callback_called_ = true;
   }
 
   // Unrestricted update callback function, which serves to test whether the
-  // appropriate DeclareWitnessFunction() interface works as promised.
+  // appropriate MakeWitnessFunction() interface works as promised.
   void UnrestrictedUpdateCallback(const Context<T>&,
       const UnrestrictedUpdateEvent<T>&, State<T>*) const {
     unrestricted_update_callback_called_ = true;
@@ -421,7 +421,7 @@ TEST_F(LeafSystemTest, DefaultPortNameTest) {
 // function) are done in diagram_test.cc and
 // drake/systems/analysis/test/simulator_test.cc.
 TEST_F(LeafSystemTest, WitnessDeclarations) {
-  auto witness1 = system_.DeclareWitnessWithoutEvent();
+  auto witness1 = system_.MakeWitnessWithoutEvent();
   ASSERT_TRUE(witness1);
   EXPECT_EQ(witness1->description(), "dummy1");
   EXPECT_EQ(witness1->direction_type(),
@@ -429,31 +429,34 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_FALSE(witness1->get_event());
   EXPECT_EQ(witness1->CalcWitnessValue(context_), 1.0);
 
-  auto witness2 = system_.DeclareWitnessWithEvent();
+  auto witness2 = system_.MakeWitnessWithEvent();
   ASSERT_TRUE(witness2);
   EXPECT_EQ(witness2->description(), "dummy2");
   EXPECT_EQ(witness2->direction_type(), WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness2->get_event());
+  EXPECT_EQ(witness2->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness2->CalcWitnessValue(context_), 2.0);
 
-  auto witness3 = system_.DeclareWitnessWithPublish();
+  auto witness3 = system_.MakeWitnessWithPublish();
   ASSERT_TRUE(witness3);
   EXPECT_EQ(witness3->description(), "dummy3");
   EXPECT_EQ(witness3->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness3->get_event());
+  EXPECT_EQ(witness3->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness3->CalcWitnessValue(context_), 3.0);
   auto pe = dynamic_cast<const PublishEvent<double>*>(witness3->get_event());
   ASSERT_TRUE(pe);
   pe->handle(context_);
   EXPECT_TRUE(system_.publish_callback_called());
 
-  auto witness4 = system_.DeclareWitnessWithDiscreteUpdate();
+  auto witness4 = system_.MakeWitnessWithDiscreteUpdate();
   ASSERT_TRUE(witness4);
   EXPECT_EQ(witness4->description(), "dummy4");
   EXPECT_EQ(witness4->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness4->get_event());
+  EXPECT_EQ(witness4->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness4->CalcWitnessValue(context_), 4.0);
   auto de = dynamic_cast<const DiscreteUpdateEvent<double>*>(
       witness4->get_event());
@@ -461,12 +464,13 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   de->handle(context_, nullptr);
   EXPECT_TRUE(system_.discrete_update_callback_called());
 
-  auto witness5 = system_.DeclareWitnessWithUnrestrictedUpdate();
+  auto witness5 = system_.MakeWitnessWithUnrestrictedUpdate();
   ASSERT_TRUE(witness5);
   EXPECT_EQ(witness5->description(), "dummy5");
   EXPECT_EQ(witness5->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness5->get_event());
+  EXPECT_EQ(witness5->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness5->CalcWitnessValue(context_), 5.0);
   auto ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness5->get_event());
@@ -487,6 +491,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness7->direction_type(),
             WitnessFunctionDirection::kPositiveThenNonPositive);
   EXPECT_TRUE(witness7->get_event());
+  EXPECT_EQ(witness7->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness7->CalcWitnessValue(context_), 11.0);
   ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness7->get_event());
@@ -495,7 +500,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
 
 // Tests that if no update events are configured, none are reported.
 TEST_F(LeafSystemTest, NoUpdateEvents) {
-  context_.set_time(25.0);
+  context_.SetTime(25.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
   EXPECT_TRUE(!leaf_info_->HasEvents());
@@ -528,7 +533,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
 TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
-  context_.set_time(2.0);
+  context_.SetTime(2.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -542,7 +547,7 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
 // update time is the offset, DiscreteUpdate and UnrestrictedUpdate happen
 // at the same time.
 TEST_F(LeafSystemTest, EventsAtTheSameTime) {
-  context_.set_time(2.0);
+  context_.SetTime(2.0);
   // Both actions happen at t = 5.
   system_.AddPeriodicUpdate();
   system_.AddPeriodicUnrestrictedUpdate(3, 5);
@@ -565,7 +570,7 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
 // Tests that if the current time is exactly the offset, the next
 // update time is in the future.
 TEST_F(LeafSystemTest, ExactlyAtOffset) {
-  context_.set_time(5.0);
+  context_.SetTime(5.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -578,7 +583,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
 // Tests that if the current time is larger than the offset, the next
 // update time is determined by the period.
 TEST_F(LeafSystemTest, OffsetIsInThePast) {
-  context_.set_time(23.0);
+  context_.SetTime(23.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -591,7 +596,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
 // Tests that if the current time is exactly an update time, the next update
 // time is in the future.
 TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
-  context_.set_time(25.0);
+  context_.SetTime(25.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -605,15 +610,15 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
 TEST_F(LeafSystemTest, PeriodicUpdateZeroOffset) {
   system_.AddPeriodicUpdate(2.0);
 
-  context_.set_time(0.0);
+  context_.SetTime(0.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(2.0, time);
 
-  context_.set_time(1.0);
+  context_.SetTime(1.0);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(2.0, time);
 
-  context_.set_time(2.1);
+  context_.SetTime(2.1);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(4.0, time);
 }
@@ -625,7 +630,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   system_.AddPublish(12.0);
 
   // The publish event fires at 12sec.
-  context_.set_time(9.0);
+  context_.SetTime(9.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(12.0, time);
   {
@@ -635,7 +640,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   }
 
   // The update event fires at 15sec.
-  context_.set_time(14.0);
+  context_.SetTime(14.0);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(15.0, time);
   {
@@ -645,7 +650,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   }
 
   // Both events fire at 60sec.
-  context_.set_time(59.0);
+  context_.SetTime(59.0);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(60.0, time);
   {
@@ -664,7 +669,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
 // time for that sample is slightly less than k * period due to floating point
 // rounding, the next sample time is (k + 1) * period.
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
-  context_.set_time(0.015 * 11);  // Slightly less than 0.165.
+  context_.SetTime(0.015 * 11);  // Slightly less than 0.165.
   system_.AddPeriodicUpdate(0.015);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   // 0.015 * 12 = 0.18.
@@ -675,7 +680,7 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
 // time for that sample is slightly less than k * period due to floating point
 // rounding, the next sample time is (k + 1) * period.
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
-  context_.set_time(0.0025 * 977);  // Slightly less than 2.4425
+  context_.SetTime(0.0025 * 977);  // Slightly less than 2.4425
   system_.AddPeriodicUpdate(0.0025);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_NEAR(2.445, time, 1e-8);
@@ -717,7 +722,7 @@ TEST_F(LeafSystemTest, NumericParameters) {
   EXPECT_EQ(7.0, vec[1]);
   BasicVector<double>& mutable_vec =
       system_.GetVanillaMutableNumericParameters(context.get());
-  mutable_vec.SetAtIndex(1, 42.0);
+  mutable_vec[1] = 42.0;
   EXPECT_EQ(42.0, vec[1]);
 
   EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
@@ -762,8 +767,8 @@ TEST_F(LeafSystemTest, AbstractParameters) {
 TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
   system_.DeclareContinuousState(2);
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -778,8 +783,8 @@ TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
   system_.DeclareContinuousState(MyVector2d());
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -797,8 +802,8 @@ TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   system_.DeclareContinuousState(4, 3, 2);
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(4 + 3 + 2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -814,8 +819,8 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<double, 4 + 3 + 2>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(4 + 3 + 2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -933,8 +938,8 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
-  ASSERT_EQ(dut.get_num_input_ports(), 5);
-  ASSERT_EQ(dut.get_num_output_ports(), 4);
+  ASSERT_EQ(dut.num_input_ports(), 5);
+  ASSERT_EQ(dut.num_output_ports(), 4);
 
   // Check that SystemBase port APIs work properly.
   const InputPortBase& in3_base = dut.get_input_port_base(InputPortIndex(3));
@@ -951,7 +956,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   auto context = dut.AllocateContext();
   const DependencyTracker& all_inputs_tracker =
       context->get_tracker(dut.all_input_ports_ticket());
-  for (InputPortIndex i(0); i < dut.get_num_input_ports(); ++i) {
+  for (InputPortIndex i(0); i < dut.num_input_ports(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(dut.input_port_ticket(i));
     EXPECT_TRUE(all_inputs_tracker.HasPrerequisite(tracker));
@@ -1184,7 +1189,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   // *may* avoid invalidation if the time hasn't actually changed.
 
   // Should invalidate time- and everything-dependents.
-  context->set_time(context->get_time() + 1.);
+  context->SetTime(context->get_time() + 1.);
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
   (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
@@ -1196,7 +1201,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   // Should invalidate accuracy- and everything-dependents. Note that the
   // method *may* avoid invalidation if the accuracy hasn't actually changed.
   EXPECT_FALSE(context->get_accuracy());  // None set initially.
-  context->set_accuracy(.000025);  // This is a change.
+  context->SetAccuracy(.000025);  // This is a change.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
@@ -1230,8 +1235,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
-  EXPECT_EQ(1.1, param.GetAtIndex(0));
-  EXPECT_EQ(2.2, param.GetAtIndex(1));
+  EXPECT_EQ(1.1, param[0]);
+  EXPECT_EQ(2.2, param[1]);
 }
 
 // Tests that various DeclareDiscreteState() signatures work correctly and
@@ -1438,8 +1443,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   context->EnableCaching();
 
   // Check topology.
-  EXPECT_EQ(dut.get_num_input_ports(), 0);
-  EXPECT_EQ(dut.get_num_output_ports(), 5);
+  EXPECT_EQ(dut.num_input_ports(), 0);
+  EXPECT_EQ(dut.num_output_ports(), 5);
 
   auto& out0 = dut.get_output_port(0);
   auto& out1 = dut.get_output_port(1);
@@ -1455,7 +1460,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   // Sanity check output port prerequisites. Leaf ports should not designate
   // a subsystem since they are resolved internally. We don't know the right
   // dependency ticket, but at least it should be valid.
-  for (OutputPortIndex i(0); i < dut.get_num_output_ports(); ++i) {
+  for (OutputPortIndex i(0); i < dut.num_output_ports(); ++i) {
     internal::OutputPortPrerequisite prereq =
         dut.get_output_port(i).GetPrerequisite();
     EXPECT_FALSE(prereq.child_subsystem.has_value());
@@ -1686,7 +1691,7 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   TestSystem<AutoDiffXd> system;
   LeafContext<AutoDiffXd> context;
 
-  context.set_time(21.0);
+  context.SetTime(21.0);
   system.AddPeriodicUpdate();
 
   auto event_info = system.AllocateCompositeEventCollection();
@@ -1695,32 +1700,55 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   EXPECT_EQ(25.0, time);
 }
 
-// A LeafSystem that uses the default, conservative direct-feedthrough
-// implementation, informed by neither symbolic sparsity analysis nor manual
-// sparsity declarations.
+// A LeafSystem that uses the default direct-feedthrough implementation without
+// symbolic sparsity analysis.  The only sparsity that is (optionally) used is
+// the output port cache prerequisites.  (The particular unit that employs this
+// system chooses those prerequisites.)
 class DefaultFeedthroughSystem : public LeafSystem<double> {
  public:
   DefaultFeedthroughSystem() {}
 
   ~DefaultFeedthroughSystem() override {}
 
-  void AddAbstractInputPort() {
-    this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
+  InputPortIndex AddAbstractInputPort() {
+    return this->DeclareAbstractInputPort(
+        kUseDefaultName, Value<std::string>{}).get_index();
   }
 
-  void AddAbstractOutputPort() {
-    this->DeclareAbstractOutputPort(
-        kUseDefaultName,
-        []() { return AbstractValue::Make<int>(0); },  // Dummies.
-        [](const ContextBase&, AbstractValue*) {});
+  OutputPortIndex AddAbstractOutputPort(
+      optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
+    // Dummies.
+    auto alloc = []() { return AbstractValue::Make<int>(0); };
+    auto calc = [](const ContextBase&, AbstractValue*) {};
+    if (prerequisites_of_calc) {
+      return this->DeclareAbstractOutputPort(
+          kUseDefaultName, alloc, calc, *prerequisites_of_calc).get_index();
+    } else {
+      // The DeclareAbstractOutputPort API's default value for the
+      // prerequisites_of_calc is everything (i.e., "all_sources_ticket()").
+      return this->DeclareAbstractOutputPort(
+          kUseDefaultName, alloc, calc).get_index();
+    }
   }
+
+  // Elevate helper methods to be public.
+  using LeafSystem<double>::accuracy_ticket;
+  using LeafSystem<double>::all_input_ports_ticket;
+  using LeafSystem<double>::all_parameters_ticket;
+  using LeafSystem<double>::all_sources_ticket;
+  using LeafSystem<double>::all_state_ticket;
+  using LeafSystem<double>::configuration_ticket;
+  using LeafSystem<double>::input_port_ticket;
+  using LeafSystem<double>::kinematics_ticket;
+  using LeafSystem<double>::nothing_ticket;
+  using LeafSystem<double>::time_ticket;
 };
 
 GTEST_TEST(FeedthroughTest, DefaultWithNoInputsOrOutputs) {
   DefaultFeedthroughSystem system;
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
   // No ports implies no pairs reported for direct feedthrough.
-  std::multimap<int, int> expected;
+  const std::multimap<int, int> expected;
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -1732,8 +1760,7 @@ GTEST_TEST(FeedthroughTest, DefaultWithBothInputsAndOutputs) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0));
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
   // Confirm all pairs are returned.
-  std::multimap<int, int> expected;
-  expected.emplace(0, 0);
+  const std::multimap<int, int> expected{{0, 0}};
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -1742,7 +1769,7 @@ GTEST_TEST(FeedthroughTest, DefaultWithInputsOnly) {
   system.AddAbstractInputPort();
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
   // No output ports implies no pairs reported for direct feedthrough.
-  std::multimap<int, int> expected;
+  const std::multimap<int, int> expected;
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -1752,8 +1779,39 @@ GTEST_TEST(FeedthroughTest, DefaultWithOutputsOnly) {
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
   EXPECT_FALSE(system.HasDirectFeedthrough(0));
   // No input ports implies no pairs reported for direct feedthrough.
-  std::multimap<int, int> expected;
+  const std::multimap<int, int> expected;
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+}
+
+GTEST_TEST(FeedthroughTest, DefaultWithPrerequisites) {
+  DefaultFeedthroughSystem system;
+  const auto input_port_index0 = system.AddAbstractInputPort();
+  const auto input_port_index1 = system.AddAbstractInputPort();
+
+  const std::vector<DependencyTicket> feedthrough_tickets{
+    system.input_port_ticket(input_port_index0),
+    system.input_port_ticket(input_port_index1),
+    system.all_input_ports_ticket(),
+    system.all_sources_ticket(),
+  };
+  const std::vector<DependencyTicket> non_feedthrough_tickets{
+    system.nothing_ticket(),
+    system.time_ticket(),
+    system.accuracy_ticket(),
+    system.all_state_ticket(),
+    system.all_parameters_ticket(),
+    system.configuration_ticket(),
+    system.kinematics_ticket(),
+  };
+
+  for (const auto& ticket : non_feedthrough_tickets) {
+    const auto output_port_index = system.AddAbstractOutputPort({{ ticket }});
+    EXPECT_FALSE(system.HasDirectFeedthrough(output_port_index));
+  }
+  for (const auto& ticket : feedthrough_tickets) {
+    const auto output_port_index = system.AddAbstractOutputPort({{ ticket }});
+    EXPECT_TRUE(system.HasDirectFeedthrough(output_port_index));
+  }
 }
 
 // With multiple input and output ports, all input ports are thought to feed
@@ -1782,49 +1840,6 @@ GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
   EXPECT_EQ(feedthrough_pairs, expected);
 }
 
-// A MIMO system with manually-configured direct feedthrough properties: input
-// 0 affects only output 1, and input 1 affects only output 0.
-class ManualSparsitySystem : public DefaultFeedthroughSystem {
- public:
-  ManualSparsitySystem() {
-    this->AddAbstractInputPort();
-    this->AddAbstractInputPort();
-    this->AddAbstractOutputPort();
-    this->AddAbstractOutputPort();
-  }
-
- protected:
-  optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const override {
-    if (input_port == 0 && output_port == 1) {
-      return true;
-    }
-    if (input_port == 1 && output_port == 0) {
-      return true;
-    }
-    return false;
-  }
-};
-
-GTEST_TEST(FeedthroughTest, ManualSparsity) {
-  ManualSparsitySystem system;
-  // Both the output ports have direct feedthrough from some input.
-  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
-  EXPECT_TRUE(system.HasDirectFeedthrough(0));
-  EXPECT_TRUE(system.HasDirectFeedthrough(1));
-  // Check the entire matrix.
-  EXPECT_FALSE(system.HasDirectFeedthrough(0, 0));
-  EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
-  EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
-  EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
-  // Confirm all pairs are returned.
-  std::multimap<int, int> expected;
-  expected.emplace(1, 0);
-  expected.emplace(0, 1);
-  auto feedthrough_pairs = system.GetDirectFeedthroughs();
-  EXPECT_EQ(feedthrough_pairs, expected);
-}
-
 // SymbolicSparsitySystem has the same sparsity matrix as ManualSparsitySystem,
 // but the matrix can be inferred from the symbolic form.
 template <typename T>
@@ -1842,6 +1857,8 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
  protected:
   explicit SymbolicSparsitySystem(SystemScalarConverter converter)
       : LeafSystem<T>(std::move(converter)) {
+    const int kSize = 1;
+
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
@@ -1863,8 +1880,6 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     const auto& u0 = this->get_input_port(0).Eval(context);
     y1->set_value(u0);
   }
-
-  const int kSize = 1;
 };
 
 // The sparsity reporting should be the same no matter which scalar type the
@@ -2189,7 +2204,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(0));
+    *value = Vector1d(context.get_continuous_state_vector()[0]);
   }
   void CalcStateConstraint(const Context<double>& context,
                            Eigen::VectorXd* value) const {
@@ -2216,12 +2231,12 @@ class ConstraintTestSystem : public LeafSystem<double> {
 // Tests adding constraints implemented as methods inside the System class.
 GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   ConstraintTestSystem dut;
-  EXPECT_EQ(dut.get_num_constraints(), 0);
+  EXPECT_EQ(dut.num_constraints(), 0);
 
   EXPECT_EQ(dut.DeclareEqualityConstraint(
                 &ConstraintTestSystem::CalcState0Constraint, 1, "x0"),
             0);
-  EXPECT_EQ(dut.get_num_constraints(), 1);
+  EXPECT_EQ(dut.num_constraints(), 1);
 
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
@@ -2229,7 +2244,7 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
           { Eigen::Vector2d::Zero(), nullopt },
           "x"),
       1);
-  EXPECT_EQ(dut.get_num_constraints(), 2);
+  EXPECT_EQ(dut.num_constraints(), 2);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(
@@ -2260,23 +2275,23 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
 // Tests adding constraints implemented as function handles (lambda functions).
 GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   ConstraintTestSystem dut;
-  EXPECT_EQ(dut.get_num_constraints(), 0);
+  EXPECT_EQ(dut.num_constraints(), 0);
 
   ContextConstraintCalc<double> calc0 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+    *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
                                             { Vector1d::Zero(), nullopt },
                                             "x1_lower"),
             0);
-  EXPECT_EQ(dut.get_num_constraints(), 1);
+  EXPECT_EQ(dut.num_constraints(), 1);
 
   ContextConstraintCalc<double> calc1 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value =
-        Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
-                        context.get_continuous_state_vector().GetAtIndex(0));
+        Eigen::Vector2d(context.get_continuous_state_vector()[1],
+                        context.get_continuous_state_vector()[0]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
                                             { nullopt, Eigen::Vector2d(2, 3) },
@@ -2306,7 +2321,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(inequality_constraint1.description(), "x_upper");
 
   EXPECT_EQ(dut.DeclareEqualityConstraint(calc0, 1, "x1eq"), 2);
-  EXPECT_EQ(dut.get_num_constraints(), 3);
+  EXPECT_EQ(dut.num_constraints(), 3);
 
   const SystemConstraint<double>& equality_constraint =
       dut.get_constraint(SystemConstraintIndex(2));
@@ -2320,13 +2335,13 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
 // Tests constraints implied by BasicVector subtypes.
 GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   ConstraintTestSystem dut;
-  EXPECT_EQ(dut.get_num_constraints(), 0);
+  EXPECT_EQ(dut.num_constraints(), 0);
 
   // Declaring a constrained model vector parameter should add constraints.
   // We want `vec[0] >= 11` on the parameter vector.
   using ParameterVector = ConstraintBasicVector<double, 11>;
   dut.DeclareNumericParameter(ParameterVector{});
-  ASSERT_EQ(dut.get_num_constraints(), 1);
+  ASSERT_EQ(dut.num_constraints(), 1);
   using Index = SystemConstraintIndex;
   const SystemConstraint<double>& constraint0 = dut.get_constraint(Index{0});
   const double kInf = std::numeric_limits<double>::infinity();
@@ -2340,7 +2355,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // We want `vec[0] >= 22` on the state vector.
   using StateVector = ConstraintBasicVector<double, 22>;
   dut.DeclareContinuousState(StateVector{}, 0, 0, StateVector::kSize);
-  EXPECT_EQ(dut.get_num_constraints(), 2);
+  EXPECT_EQ(dut.num_constraints(), 2);
   const SystemConstraint<double>& constraint1 = dut.get_constraint(Index{1});
   EXPECT_TRUE(CompareMatrices(constraint1.lower_bound(), Vector1d(22)));
   EXPECT_TRUE(CompareMatrices(constraint1.upper_bound(), Vector1d(kInf)));
@@ -2352,7 +2367,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // We want `vec[0] >= 33` on the input vector.
   using InputVector = ConstraintBasicVector<double, 33>;
   dut.DeclareVectorInputPort(InputVector{});
-  EXPECT_EQ(dut.get_num_constraints(), 3);
+  EXPECT_EQ(dut.num_constraints(), 3);
   const SystemConstraint<double>& constraint2 = dut.get_constraint(Index{2});
   EXPECT_TRUE(CompareMatrices(constraint2.lower_bound(), Vector1d(33)));
   EXPECT_TRUE(CompareMatrices(constraint2.upper_bound(), Vector1d(kInf)));
@@ -2363,7 +2378,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // Declaring a constrained model vector output should add constraints.
   // We want `vec[0] >= 44` on the output vector.
   dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
-  EXPECT_EQ(dut.get_num_constraints(), 4);
+  EXPECT_EQ(dut.num_constraints(), 4);
   const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
   EXPECT_TRUE(CompareMatrices(constraint3.lower_bound(), Vector1d(44)));
   EXPECT_TRUE(CompareMatrices(constraint3.upper_bound(), Vector1d(kInf)));
@@ -2375,7 +2390,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // We want `vec[0] >= 55` on the state vector.
   using DiscreteStateVector = ConstraintBasicVector<double, 55>;
   dut.DeclareDiscreteState(DiscreteStateVector{});
-  EXPECT_EQ(dut.get_num_constraints(), 5);
+  EXPECT_EQ(dut.num_constraints(), 5);
   const SystemConstraint<double>& constraint4 = dut.get_constraint(Index{4});
   EXPECT_TRUE(CompareMatrices(constraint4.lower_bound(), Vector1d(55)));
   EXPECT_TRUE(CompareMatrices(constraint4.upper_bound(), Vector1d(kInf)));
@@ -2388,21 +2403,21 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   auto context = dut.CreateDefaultContext();
 
   // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `1.0 >= 11.0`.
-  context->get_mutable_numeric_parameter(0).SetAtIndex(0, 1.0);
+  context->get_mutable_numeric_parameter(0)[0] = 1.0;
   Eigen::VectorXd value0;
   constraint0.Calc(*context, &value0);
   EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(1.0)));
 
   // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `2.0 >= 22.0`.
-  context->get_mutable_continuous_state_vector().SetAtIndex(0, 2.0);
+  context->get_mutable_continuous_state_vector()[0] = 2.0;
   Eigen::VectorXd value1;
   constraint1.Calc(*context, &value1);
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(2.0)));
 
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `3.0 >= 33.0`.
   InputVector input;
-  input.SetAtIndex(0, 3.0);
-  context->FixInputPort(0, input);
+  input[0] = 3.0;
+  dut.get_input_port(0).FixValue(&*context, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(3.0)));
@@ -2436,8 +2451,8 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
     for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
-      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
-                                                          uniform(*generator));
+      params->get_mutable_numeric_parameter(0).SetAtIndex(
+          i, uniform(*generator));
     }
   }
 };
@@ -2582,9 +2597,23 @@ class EventSugarTestSystem : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
 
-    // Two forced publish callbacks (to ensure sure that they are additive).
+    // Two forced publish callbacks (to ensure that they are additive).
     DeclareForcedPublishEvent(&EventSugarTestSystem::MyPublishHandler);
     DeclareForcedPublishEvent(&EventSugarTestSystem::MySecondPublishHandler);
+
+    // Two forced discrete update callbacks (to ensure that they are
+    // additive).
+    DeclareForcedDiscreteUpdateEvent(
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclareForcedDiscreteUpdateEvent(
+        &EventSugarTestSystem::MySecondDiscreteUpdateHandler);
+
+    // Two forced unrestricted update callbacks (to ensure that they are
+    // additive).
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MySecondUnrestrictedUpdateHandler);
 
     // These variants don't require an EventStatus return.
     DeclarePeriodicPublishEvent(kPeriod, kOffset,
@@ -2603,7 +2632,11 @@ class EventSugarTestSystem : public LeafSystem<double> {
     return num_second_publish_handler_publishes_;
   }
   int num_discrete_update() const {return num_discrete_update_;}
+  int num_second_discrete_update() const {return num_second_discrete_update_;}
   int num_unrestricted_update() const {return num_unrestricted_update_;}
+  int num_second_unrestricted_update() const {
+    return num_second_unrestricted_update_;
+  }
 
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
@@ -2623,9 +2656,22 @@ class EventSugarTestSystem : public LeafSystem<double> {
     return EventStatus::Succeeded();
   }
 
+  EventStatus MySecondDiscreteUpdateHandler(
+      const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const {
+    ++num_second_discrete_update_;
+    return EventStatus::Succeeded();
+  }
+
   EventStatus MyUnrestrictedUpdateHandler(const Context<double>& context,
                                           State<double>* state) const {
     MySuccessfulUnrestrictedUpdateHandler(context, &*state);
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MySecondUnrestrictedUpdateHandler(const Context<double>& context,
+                                                State<double>* state) const {
+    ++num_second_unrestricted_update_;
     return EventStatus::Succeeded();
   }
 
@@ -2646,7 +2692,9 @@ class EventSugarTestSystem : public LeafSystem<double> {
   mutable int num_publish_{0};
   mutable int num_second_publish_handler_publishes_{0};
   mutable int num_discrete_update_{0};
+  mutable int num_second_discrete_update_{0};
   mutable int num_unrestricted_update_{0};
+  mutable int num_second_unrestricted_update_{0};
 };
 
 GTEST_TEST(EventSugarTest, EventsAreRegistered) {
@@ -2692,15 +2740,19 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
 
   dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
+  dut.CalcUnrestrictedUpdate(*context, &*state);
   dut.CalcDiscreteVariableUpdates(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
+  dut.CalcDiscreteVariableUpdates(*context, &*discrete_state);
   dut.Publish(*context, all_events->get_publish_events());
   dut.Publish(*context);
 
   EXPECT_EQ(dut.num_publish(), 5);
   EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
-  EXPECT_EQ(dut.num_discrete_update(), 4);
-  EXPECT_EQ(dut.num_unrestricted_update(), 4);
+  EXPECT_EQ(dut.num_discrete_update(), 5);
+  EXPECT_EQ(dut.num_second_discrete_update(), 1);
+  EXPECT_EQ(dut.num_unrestricted_update(), 5);
+  EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
 }
 
 }  // namespace

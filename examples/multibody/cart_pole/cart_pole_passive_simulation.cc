@@ -12,7 +12,6 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -30,7 +29,6 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::RevoluteJoint;
-using drake::multibody::UniformGravityFieldElement;
 
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
@@ -56,9 +54,6 @@ int do_main() {
   MultibodyPlant<double>& cart_pole =
       *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
   Parser(&cart_pole, &scene_graph).AddModelFromFile(full_name);
-
-  // Add gravity to the model.
-  cart_pole.AddForceElement<UniformGravityFieldElement>();
 
   // Now the model is complete.
   cart_pole.Finalize();
@@ -99,7 +94,7 @@ int do_main() {
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
 }

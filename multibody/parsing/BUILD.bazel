@@ -51,7 +51,6 @@ drake_cc_library(
     ],
     deps = [
         "//common",
-        "@spruce",
         "@tinydir",
         "@tinyxml2",
     ],
@@ -80,7 +79,6 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/plant:coulomb_friction",
         "@sdformat",
-        "@spruce",
         "@tinyxml2",
     ],
 )
@@ -104,7 +102,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
-        "//geometry:geometry_visualization",
+        "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//multibody/plant:coulomb_friction",
         "@sdformat",
@@ -165,6 +163,7 @@ drake_cc_library(
     deps = [
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        "//common:filesystem",
     ],
 )
 
@@ -193,13 +192,6 @@ drake_cc_googletest(
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
-    # TODO(sam.creasey) Write a printer function (or another
-    # workaround) for ModelLoadFunction so that gtest won't trigger
-    # memcheck.  Related to
-    # https://github.com/google/googletest/issues/1610
-    tags = [
-        "no_memcheck",
-    ],
     deps = [
         ":test_loaders",
         "//common/test_utilities",
@@ -212,13 +204,6 @@ drake_cc_googletest(
     name = "common_parser_test",
     data = [
         ":test_models",
-    ],
-    # TODO(sam.creasey) Write a printer function (or another
-    # workaround) for ModelLoadFunction so that gtest won't trigger
-    # memcheck.  Related to
-    # https://github.com/google/googletest/issues/1610
-    tags = [
-        "no_memcheck",
     ],
     deps = [
         ":test_loaders",
@@ -234,6 +219,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":parser",
+        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -248,6 +234,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_parser",
+        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -263,6 +250,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
+        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
@@ -299,6 +287,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":package_map",
+        "//common:filesystem",
         "//common:find_resource",
     ],
 )
@@ -310,6 +299,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_misc",
+        "//common:filesystem",
         "//common/test_utilities",
     ],
 )

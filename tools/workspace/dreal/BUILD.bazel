@@ -2,25 +2,20 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "install",
+    "install_files",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "linux",
-    values = {"cpu": "k8"},
-)
-
-# Only Ubuntu needs an installation rule; on macOS, we are using dReal from
-# homebrew, so Drake's installation script doesn't need to do anything extra.
-install(
+install_files(
     name = "install",
-    deps = select({
-        ":linux": ["@dreal//:install"],
-        "@//conditions:default": [],
-    }),
+    dest = "share/doc/dreal",
+    files = [
+        "@dreal//:LICENSE",
+    ],
+    allowed_externals = [
+        "@dreal//:LICENSE",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
 )
 
 add_lint_tests()

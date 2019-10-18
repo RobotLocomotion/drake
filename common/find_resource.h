@@ -72,38 +72,31 @@ class FindResourceResult {
   optional<std::string> error_message_;
 };
 
-/// Adds a path in which resources are searched in a persistent variable. Paths
-/// are accumulated each time this function is called. It is searched after the
-/// path given by the environment variable but before the path that can be
-/// found with the sentinel `.drake-resource-sentinel`. This can be used to
-/// find data in installed distributions of drake (or in `pydrake`).
-/// @throws std::runtime_error if the given path is not absolute.
-void AddResourceSearchPath(std::string root_directory);
-
-/// Gets current root directory value from a persistent variable.
-std::vector<std::string> GetResourceSearchPaths();
-
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake source
 /// repository, prepended with `drake/`.  For example, to find the source
 /// file `examples/pendulum/Pendulum.urdf`, the @p resource_path would be
 /// `drake/examples/pendulum/Pendulum.urdf`.  Paths that do not start with
-/// `drake/` will return a failed result.
+/// `drake/` will return an error result.  The @p resource_path must refer
+/// to a file (not a directory).
 ///
-/// The search scans for the resource in the following places and in
+/// The search scans for the resource in the following resource roots and in
 /// the following order:
 ///
-/// 1. In the DRAKE_RESOURCE_ROOT environment variable
-/// 2. In the directories specified by `AddResourceSearchPath()` and
-/// 3. In the drake source workspace.
+/// 1. In the DRAKE_RESOURCE_ROOT environment variable.
+/// 2. In the Bazel runfiles for a bazel-bin/pkg/program.
+/// 3. In the Drake CMake install directory.
 ///
-/// If all of these are unavailable, or do not have the resource, then it will
-/// return a failed result.
-FindResourceResult FindResource(std::string resource_path);
+/// The first resource root from the list that exists is used to find any and
+/// all Drake resources.  If the resource root does not contain the resource,
+/// the result is an error even (if a resource root lower on the list happens
+/// to have the resource).  If all three roots are unavailable, then returns an
+/// error result.
+FindResourceResult FindResource(const std::string& resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
 /// FindResourceResult::get_absolute_path_or_throw().
-std::string FindResourceOrThrow(std::string resource_path);
+std::string FindResourceOrThrow(const std::string& resource_path);
 
 /// The name of the environment variable that provides the first place where
 /// FindResource attempts to look.  The environment variable is allowed to be

@@ -220,7 +220,7 @@ std::unique_ptr<System<T>> SystemScalarConverter::Convert(
   return std::unique_ptr<System<T>>(result);
 }
 
-namespace system_scalar_converter_detail {
+namespace system_scalar_converter_internal {
 // When Traits says that conversion is supported.
 template <template <typename> class S, typename T, typename U>
 static std::unique_ptr<System<T>> Make(
@@ -250,9 +250,9 @@ static std::unique_ptr<System<T>> Make(
     bool, const System<U>&, std::false_type) {
   // AddIfSupported is guaranteed not to call us, but we *will* be compiled,
   // so we have to have some kind of function body.
-  throw std::logic_error("system_scalar_converter_detail");
+  throw std::logic_error("system_scalar_converter_internal");
 }
-}  // namespace system_scalar_converter_detail
+}  // namespace system_scalar_converter_internal
 
 template <template <typename> class S, typename T, typename U>
 void SystemScalarConverter::AddIfSupported(
@@ -265,7 +265,7 @@ void SystemScalarConverter::AddIfSupported(
       // Dispatch to an overload based on whether S<U> ==> S<T> is supported.
       // (At runtime, this block is only executed for supported conversions,
       // but at compile time, Make will be instantiated unconditionally.)
-      return system_scalar_converter_detail::Make<S, T, U>(
+      return system_scalar_converter_internal::Make<S, T, U>(
           (subtype_preservation == GuaranteedSubtypePreservation::kEnabled),
           other, supported{});
     };

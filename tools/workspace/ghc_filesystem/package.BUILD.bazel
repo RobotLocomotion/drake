@@ -1,0 +1,22 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ghc_filesystem",
+    hdrs = ["include/ghc/filesystem.hpp"],
+    strip_include_prefix = "include",
+    linkstatic = 1,
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

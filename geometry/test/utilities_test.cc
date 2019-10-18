@@ -5,11 +5,16 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
+
+using math::RigidTransform;
+using math::RollPitchYaw;
 
 GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
   // Confirms that the canonical version of the given name is unchanged.
@@ -54,19 +59,34 @@ GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
   }
 }
 
-GTEST_TEST(GeometryUtilities, IsometryConversion) {
-  Isometry3<double> X_AB = Isometry3<double>::Identity();
-  X_AB.translation() << 1, 2, 3;
-  // NOTE: Not a valid transform; we're just looking for unique values.
-  X_AB.linear() << 10, 20, 30, 40, 50, 60, 70, 80, 90;
-  X_AB.makeAffine();
+GTEST_TEST(GeometryUtilities, RigidTransformConversion) {
+  RigidTransform<double> X_AB{
+      RollPitchYaw<double>{M_PI / 3, M_PI / 6, M_PI / 7},
+      Vector3<double>{1, 2, 3}};
 
-  Isometry3<double> X_AB_converted = convert(X_AB);
-  EXPECT_TRUE(CompareMatrices(X_AB.matrix(), X_AB_converted.matrix()));
+  // Double to double conversion is just a pass through without copying.
+  const RigidTransform<double>& X_AB_converted_ref = convert_to_double(X_AB);
+  EXPECT_EQ(&X_AB, &X_AB_converted_ref);
 
-  Isometry3<AutoDiffXd> X_AB_ad(X_AB);
-  Isometry3<double> X_AB_ad_converted = convert(X_AB_ad);
-  EXPECT_TRUE(CompareMatrices(X_AB.matrix(), X_AB_ad_converted.matrix()));
+  RigidTransform<AutoDiffXd> X_AB_ad(X_AB.cast<AutoDiffXd>());
+  RigidTransform<double> X_AB_ad_converted = convert_to_double(X_AB_ad);
+  EXPECT_TRUE(
+      CompareMatrices(X_AB.GetAsMatrix34(), X_AB_ad_converted.GetAsMatrix34()));
+}
+
+GTEST_TEST(GeometryUtilities, Vector3Conversion) {
+  Vector3<double> p_AB{1, 2, 3};
+
+  Vector3<double> p_AB_converted = convert_to_double(p_AB);
+  EXPECT_TRUE(CompareMatrices(p_AB, p_AB_converted));
+  // Double to double conversion is just a pass through without copying, so
+  // we'll compare addresses.
+  const Vector3<double>& p_AB_converted_ref = convert_to_double(p_AB);
+  EXPECT_EQ(&p_AB, &p_AB_converted_ref);
+
+  Vector3<AutoDiffXd> p_AB_ad(p_AB);
+  Vector3<double> X_AB_ad_converted = convert_to_double(p_AB_ad);
+  EXPECT_TRUE(CompareMatrices(p_AB, X_AB_ad_converted));
 }
 
 }  // namespace

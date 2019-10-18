@@ -51,7 +51,7 @@ class TestGyroscope : public ::testing::Test {
     dut_ = make_unique<Gyroscope>(kSensorName, *frame, *tree_);
 
     context_ = dut_->CreateDefaultContext();
-    EXPECT_EQ(context_->get_num_input_ports(), 1);
+    EXPECT_EQ(context_->num_input_ports(), 1);
     EXPECT_EQ(context_->get_continuous_state_vector().size(), 0);
 
     num_positions_ = tree_->get_num_positions();
@@ -84,7 +84,7 @@ TEST_F(TestGyroscope, TestFreeFall) {
       make_unique<BasicVector<double>>(state_vector));
 
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput();
-  ASSERT_EQ(output->get_num_ports(), 1);
+  ASSERT_EQ(output->num_ports(), 1);
   dut_->CalcOutput(*context_, output.get());
 
   const GyroscopeOutput<double>* gyroscope_output =
@@ -120,7 +120,7 @@ TEST_F(TestGyroscope, TestNonZeroRotationalVelocity) {
       make_unique<BasicVector<double>>(state_vector));
 
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput();
-  ASSERT_EQ(output->get_num_ports(), 1);
+  ASSERT_EQ(output->num_ports(), 1);
   dut_->CalcOutput(*context_, output.get());
 
   const GyroscopeOutput<double>* gyroscope_output =

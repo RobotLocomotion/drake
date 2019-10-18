@@ -39,15 +39,15 @@ class DifferentialIK(LeafSystem):
             self.robot_context)[-robot.num_velocities():].any()
 
         # Store the robot positions as state.
-        self._DeclareDiscreteState(robot.num_positions())
-        self._DeclarePeriodicDiscreteUpdate(time_step)
+        self.DeclareDiscreteState(robot.num_positions())
+        self.DeclarePeriodicDiscreteUpdate(time_step)
 
         # Desired pose of frame E in world frame.
-        self._DeclareInputPort("rpy_xyz_desired",
-                               PortDataType.kVectorValued, 6)
+        self.DeclareInputPort("rpy_xyz_desired",
+                              PortDataType.kVectorValued, 6)
 
         # Provide the output as desired positions.
-        self._DeclareVectorOutputPort("joint_position_desired", BasicVector(
+        self.DeclareVectorOutputPort("joint_position_desired", BasicVector(
             robot.num_positions()), self.CopyPositionOut)
 
     def SetPositions(self, context, q):
@@ -69,7 +69,7 @@ class DifferentialIK(LeafSystem):
                             pose.rotation().transpose())
         err_vec[:3] = rot_err.axis() * rot_err.angle()
 
-    def _DoCalcDiscreteVariableUpdates(
+    def DoCalcDiscreteVariableUpdates(
             self, context, events, discrete_state):
         rpy_xyz_desired = self.EvalVectorInput(context, 0).get_value()
         X_WE_desired = RigidTransform(RollPitchYaw(rpy_xyz_desired[:3]),

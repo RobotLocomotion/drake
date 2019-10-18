@@ -183,7 +183,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   auto context = acrobot.CreateDefaultContext();
 
   // Set nominal torque to zero.
-  context->FixInputPort(0, Vector1d::Constant(0.0));
+  acrobot.GetInputPort("elbow_torque").FixValue(context.get(), 0.0);
 
   // Set nominal state to the upright fixed point.
   AcrobotState<double>* x = dynamic_cast<AcrobotState<double>*>(

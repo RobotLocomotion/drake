@@ -8,10 +8,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/sorted_pair.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace geometry {
 namespace {
-
 
 // Creates various dummy index types to test.
 using std::set;
@@ -91,6 +94,22 @@ TEST_F(IdentifierTests, ServeAsMapKey) {
   EXPECT_EQ(ids.size(), 2);
 
   EXPECT_EQ(ids.find(a3_), ids.end());
+}
+
+// Confirms that SortedPair<GeometryId> can serve as a key in STL containers.
+// This shows that Identifier is not just hashable, but implicitly shows that
+// it is compatible with the Drake hash mechanism (because it assumes that the
+// SortedPair is compatible).
+TEST_F(IdentifierTests, SortedPairAsKey) {
+  unordered_set<SortedPair<AId>> ids;
+
+  EXPECT_EQ(ids.size(), 0u);
+  ids.insert({a1_, a2_});
+  EXPECT_EQ(ids.size(), 1u);
+
+  // An equivalent pair to what was inserted.
+  SortedPair<AId> pair{a1_, a2_};
+  EXPECT_NE(ids.find(pair), ids.end());
 }
 
 // Confirms that ids are configured to serve as values in STL containers.
@@ -192,67 +211,51 @@ TEST_F(IdentifierTests, Convertible) {
                 "Identifiers should not be convertible from ints");
 }
 
-// Suite of tests to catch the debug-build assertions.
-class IdentifierDeathTests : public IdentifierTests {};
-
 // Attempting to acquire the value is an error.
-TEST_F(IdentifierDeathTests, InvalidGetValueCall) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+TEST_F(IdentifierTests, InvalidGetValueCall) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  int64_t value = -1;
-  ASSERT_DEATH(
-      {value = invalid.get_value();},
-      "abort: .*identifier.h:.+ in get_value.+"
-          "'is_valid\\(\\)' failed");
-  // This lets gcc thinks the variable is used.
-  EXPECT_EQ(value, -1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(invalid.get_value()),
+      std::exception, ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
-TEST_F(IdentifierDeathTests, InvalidEqualityCompare) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+TEST_F(IdentifierTests, InvalidEqualityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  bool result = true;
-  EXPECT_DEATH(
-      {result = invalid == a1_;},
-      "abort: .*identifier.h:.+ in operator==.+"
-          "'is_valid\\(\\) && other.is_valid\\(\\)' failed");
-  // This lets gcc thinks the variable is used.
-  EXPECT_EQ(result, true);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(invalid == a1_),
+      std::exception, ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
-TEST_F(IdentifierDeathTests, InvalidInequalityCompare) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+TEST_F(IdentifierTests, InvalidInequalityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  bool result = true;
-  EXPECT_DEATH(
-      {result = invalid != a1_;},
-      "abort:.*identifier.h:.+ in operator!=.+"
-          "'is_valid\\(\\) && other.is_valid\\(\\)' failed");
-  // This lets gcc thinks the variable is used.
-  EXPECT_EQ(result, true);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(invalid != a1_),
+      std::exception, ".*is_valid.*failed.*");
 }
 
-// Hashing an invalid id is an error.
-TEST_F(IdentifierDeathTests, InvalidHash) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  if (kDrakeAssertIsDisarmed) { return; }
+// Hashing an invalid id is *not* an error.
+TEST_F(IdentifierTests, InvalidHash) {
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
   std::unordered_set<AId> ids;
   AId invalid;
-  ASSERT_DEATH({ids.insert(invalid);}, "");
+  EXPECT_NO_THROW(ids.insert(invalid));
 }
 
 // Streaming an invalid id is an error.
-TEST_F(IdentifierDeathTests, InvalidStream) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+TEST_F(IdentifierTests, InvalidStream) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   std::stringstream ss;
-  ASSERT_DEATH({ss << invalid;}, "");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      unused(ss << invalid),
+      std::exception, ".*is_valid.*failed.*");
 }
 
 }  // namespace

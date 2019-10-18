@@ -6,7 +6,8 @@ import numpy as np
 
 import pydrake.systems.framework as framework
 from pydrake.examples.acrobot import (
-    AcrobotInput, AcrobotParams, AcrobotPlant, AcrobotState
+    AcrobotInput, AcrobotParams, AcrobotPlant, AcrobotSpongController,
+    AcrobotState, SpongControllerParams
     )
 from pydrake.systems.analysis import (
     Simulator
@@ -60,7 +61,7 @@ class TestAcrobot(unittest.TestCase):
         # Set an input torque.
         input = AcrobotInput()
         input.set_tau(1.)
-        context.FixInputPort(0, input)
+        acrobot.GetInputPort("elbow_torque").FixValue(context, input)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()
@@ -76,8 +77,49 @@ class TestAcrobot(unittest.TestCase):
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
 
         self.assertLessEqual(acrobot.CalcPotentialEnergy(context) +
                              acrobot.CalcKineticEnergy(context),
                              initial_total_energy)
+
+
+class TestAcrobotSpongController(unittest.TestCase):
+
+    def test_default_parameters(self):
+        controller = AcrobotSpongController()
+        context = controller.CreateDefaultContext()
+        expected_parameters = SpongControllerParams()
+        actual_parameters = controller.get_parameters(context)
+        self.assertEqual(actual_parameters.k_e(), expected_parameters.k_e())
+        self.assertEqual(actual_parameters.k_p(), expected_parameters.k_p())
+        self.assertEqual(actual_parameters.k_d(), expected_parameters.k_d())
+        self.assertEqual(actual_parameters.balancing_threshold(),
+                         expected_parameters.balancing_threshold())
+
+    def test_param_accessors(self):
+        controller = AcrobotSpongController()
+        context = controller.CreateDefaultContext()
+        controller.get_mutable_parameters(context).set_k_e(1.)
+        actual_parameters = controller.get_parameters(context)
+        self.assertEqual(actual_parameters.k_e(), 1.)
+
+
+class TestSpongControllerParams(unittest.TestCase):
+    def test_param_accessors(self):
+        params = SpongControllerParams()
+        params.set_k_e(1.)
+        params.set_k_p(2.)
+        params.set_k_d(3.)
+        params.set_balancing_threshold(4.)
+        self.assertEqual(params.k_e(), 1.)
+        self.assertEqual(params.k_p(), 2.)
+        self.assertEqual(params.k_d(), 3.)
+        self.assertEqual(params.balancing_threshold(), 4.)
+
+    def test_param_defaults(self):
+        params = SpongControllerParams()
+        self.assertEqual(params.k_e(), 5.)
+        self.assertEqual(params.k_p(), 50.)
+        self.assertEqual(params.k_d(), 5.)
+        self.assertEqual(params.balancing_threshold(), 1000.)

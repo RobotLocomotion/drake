@@ -17,7 +17,6 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -31,26 +30,23 @@ namespace examples {
 namespace simple_gripper {
 namespace {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
-using drake::geometry::SceneGraph;
-using drake::geometry::Sphere;
-using drake::lcm::DrakeLcm;
-using drake::math::RollPitchYaw;
-using drake::math::RotationMatrix;
-using drake::multibody::Body;
-using drake::multibody::CoulombFriction;
-using drake::multibody::ConnectContactResultsToDrakeVisualizer;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::PrismaticJoint;
-using drake::multibody::UniformGravityFieldElement;
-using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
-using drake::systems::Sine;
+using geometry::SceneGraph;
+using geometry::Sphere;
+using lcm::DrakeLcm;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using multibody::Body;
+using multibody::CoulombFriction;
+using multibody::ConnectContactResultsToDrakeVisualizer;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::PrismaticJoint;
+using systems::ImplicitEulerIntegrator;
+using systems::RungeKutta2Integrator;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
+using systems::Sine;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
 // configuration file (e.g. YAML).
@@ -149,7 +145,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the finger frame F.
-    const Isometry3d X_FS = Isometry3d(Translation3d(p_FSo));
+    const RigidTransformd X_FS(p_FSo);
 
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
@@ -157,7 +153,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                      "collision" + std::to_string(i), friction);
 
-    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
+    const Vector4<double> red(0.8, 0.2, 0.2, 1.0);
     plant->RegisterVisualGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                   "visual" + std::to_string(i), red);
   }
@@ -195,10 +191,9 @@ int do_main() {
   const Vector3d axis = translate_joint.translation_axis();
   if (axis.isApprox(Vector3d::UnitZ())) {
     fmt::print("Gripper motions forced in the vertical direction.\n");
+    plant.mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
   } else if (axis.isApprox(Vector3d::UnitX())) {
     fmt::print("Gripper motions forced in the horizontal direction.\n");
-    // Add gravity to the model.
-    plant.AddForceElement<UniformGravityFieldElement>();
   } else {
     throw std::runtime_error(
         "Only horizontal or vertical motions of the gripper are supported for "
@@ -332,12 +327,10 @@ int do_main() {
       plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
-  Isometry3d X_WM;
-  Vector3d rpy(FLAGS_rx * M_PI / 180,
-               FLAGS_ry * M_PI / 180,
-               (FLAGS_rz * M_PI / 180) + M_PI);
-  X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
-  X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
+  RigidTransformd X_WM(
+      RollPitchYawd(FLAGS_rx * M_PI / 180, FLAGS_ry * M_PI / 180,
+                    (FLAGS_rz * M_PI / 180) + M_PI),
+      Vector3d(0.0, mug_y_W, 0.0));
   plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with
@@ -381,7 +374,7 @@ int do_main() {
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   if (FLAGS_time_stepping) {
     fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);

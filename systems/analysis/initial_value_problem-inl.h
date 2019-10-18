@@ -16,7 +16,7 @@
 namespace drake {
 namespace systems {
 
-namespace detail {
+namespace internal {
 
 /// A LeafSystem subclass used to describe parameterized ODE systems
 /// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ.
@@ -96,7 +96,7 @@ void ODESystem<T>::DoCalcTimeDerivatives(
       parameter_vector.get_value()));
 }
 
-}  // namespace detail
+}  // namespace internal
 
 template<typename T>
 const double InitialValueProblem<T>::kDefaultAccuracy = 1e-4;
@@ -124,13 +124,13 @@ InitialValueProblem<T>::InitialValueProblem(
     throw std::logic_error("No default parameters vector k was given.");
   }
   // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<detail::ODESystem<T>>(
+  system_ = std::make_unique<internal::ODESystem<T>>(
       ode_function, default_values_.x0.value(), default_values_.k.value());
 
   // Allocates a new default integration context with the
   // given default initial time.
   context_ = system_->CreateDefaultContext();
-  context_->set_time(default_values_.t0.value());
+  context_->SetTime(default_values_.t0.value());
 
   // Instantiates an explicit RK3 integrator by default.
   integrator_ = std::make_unique<RungeKutta3Integrator<T>>(
@@ -176,7 +176,7 @@ template <typename T>
 void InitialValueProblem<T>::ResetCachedState(
     const SpecifiedValues& values) const {
   // Sets context (initial) time.
-  context_->set_time(values.t0.value());
+  context_->SetTime(values.t0.value());
 
   // Sets context (initial) state. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just

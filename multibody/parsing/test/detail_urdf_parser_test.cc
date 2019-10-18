@@ -5,13 +5,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using Eigen::Vector3d;
@@ -28,12 +29,13 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
 
   const std::string full_urdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf");
-  const std::string package_path = FindResourceOrThrow(
-      "drake/multibody/parsing/test/box_package");
+  filesystem::path package_path = full_urdf_filename;
+  package_path = package_path.parent_path();
+  package_path = package_path.parent_path();
 
   // Construct the PackageMap.
   PackageMap package_map;
-  package_map.PopulateFromFolder(package_path);
+  package_map.PopulateFromFolder(package_path.string());
 
   // Read in the URDF file.
   AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant,
@@ -109,7 +111,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(model_file, "", package_map, &plant, &scene_graph);
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 7);
   EXPECT_EQ(plant.num_velocities(), 6);
@@ -186,6 +188,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

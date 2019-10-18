@@ -1,7 +1,11 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace geometry {
+
+using math::RigidTransform;
 
 Shape::~Shape() {}
 
@@ -11,66 +15,86 @@ void Shape::Reify(ShapeReifier* reifier, void* user_data) const {
 std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 
 Sphere::Sphere(double radius)
-    : Shape(ShapeTag<Sphere>()), radius_(radius) {}
+    : Shape(ShapeTag<Sphere>()), radius_(radius) {
+  if (radius < 0) {
+    throw std::logic_error(
+        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
+  }
+}
 
 Cylinder::Cylinder(double radius, double length)
     : Shape(ShapeTag<Cylinder>()),
       radius_(radius),
-      length_(length) {}
+      length_(length) {
+  if (radius <= 0 || length <= 0) {
+    throw std::logic_error(
+        fmt::format("Cylinder radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
+  }
+}
 
 HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
-Isometry3<double> HalfSpace::MakePose(const Vector3<double>& Cz_F,
-                                      const Vector3<double>& p_FC) {
-  // TODO(SeanCurtis-TRI): Ultimately, use RotationMatrix to create the basis.
-  double norm = Cz_F.norm();
+RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
+                                           const Vector3<double>& p_FB) {
+  const double norm = Hz_dir_F.norm();
   // Note: this value of epsilon is somewhat arbitrary. It's merely a minor
   // fence over which ridiculous vectors will trip.
-  if (norm < 1e-10)
+  if (norm < 1e-10) {
     throw std::logic_error("Can't make pose from a zero vector.");
+  }
 
   // First create basis.
   // Projects the normal into the first quadrant in order to identify the
   // *smallest* component of the normal.
-  const Vector3<double> u(Cz_F.cwiseAbs());
-  int minAxis;
-  u.minCoeff(&minAxis);
+  const Vector3<double> u(Hz_dir_F.cwiseAbs());
+  int min_axis;
+  u.minCoeff(&min_axis);
   // The axis corresponding to the smallest component of the normal will be
   // *most* perpendicular.
-  Vector3<double> perpAxis;
-  perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
-      (minAxis == 2 ? 1 : 0);
-  // Now define x-, y-, and z-axes. The z-axis lies in the normal direction.
-  Vector3<double> z_axis_F = Cz_F / norm;
-  Vector3<double> x_axis_F = Cz_F.cross(perpAxis).normalized();
-  Vector3<double> y_axis_F = z_axis_F.cross(x_axis_F);
-  // Transformation from canonical frame C to target frame F.
-  Matrix3<double> R_FC;
-  R_FC.col(0) = x_axis_F;
-  R_FC.col(1) = y_axis_F;
-  R_FC.col(2) = z_axis_F;
+  Vector3<double> perp_axis{0, 0, 0};
+  perp_axis(min_axis) = 1;
+  // Now define x-, y-, and z-axes. The z-axis lies in the given direction.
+  Vector3<double> Hz_F = Hz_dir_F / norm;
+  Vector3<double> Hx_F = Hz_F.cross(perp_axis).normalized();
+  Vector3<double> Hy_F = Hz_F.cross(Hx_F);
 
-  // Construct pose from basis and point.
-  Isometry3<double> X_FC = Isometry3<double>::Identity();
-  X_FC.linear() = R_FC;
-  // Find the *minimum* translation to make sure the point lies on the plane.
-  X_FC.translation() = z_axis_F.dot(p_FC) * z_axis_F;
-  return X_FC;
+  // Transformation from canonical frame C to target frame F.
+  const auto R_FH =
+      math::RotationMatrixd::MakeFromOrthonormalColumns(Hx_F, Hy_F, Hz_F);
+  const Vector3<double> p_FH = Hz_F.dot(p_FB) * Hz_F;
+  return RigidTransform<double>(R_FH, p_FH);
 }
 
 Box::Box(double width, double depth, double height)
     : Shape(ShapeTag<Box>()),
-      size_(width, depth, height) {}
+      size_(width, depth, height) {
+  if (width <= 0 || depth <= 0 || height <= 0) {
+    throw std::logic_error(
+        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
+                    "{}, and {}, respectively).",
+                    width, depth, height));
+  }
+}
 
 Box Box::MakeCube(double edge_size) {
   return Box(edge_size, edge_size, edge_size);
 }
 
 Mesh::Mesh(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {}
+    : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
+  }
+}
 
 Convex::Convex(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {}
+    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Convex |scale| cannot be < 1e-8.");
+  }
+}
 
 }  // namespace geometry
 }  // namespace drake

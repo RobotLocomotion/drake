@@ -8,6 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 /** @file
  Provides the classes through which geometric shapes are introduced into
@@ -104,6 +105,9 @@ class Sphere final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
+  /** Constructs a sphere with the given `radius`.
+   @throws std::logic_error if `radius` is negative. Note that a zero radius is
+   is considered valid. */
   explicit Sphere(double radius);
 
   double get_radius() const { return radius_; }
@@ -118,6 +122,9 @@ class Cylinder final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
 
+  /** Constructs a cylinder with the given `radius` and `length`.
+   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   */
   Cylinder(double radius, double length);
 
   double get_radius() const { return radius_; }
@@ -137,7 +144,9 @@ class Box final : public Shape {
 
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
-   respectively. */
+   respectively.
+   @throws std::logic_error if `width`, `depth` or `height` are not strictly
+   positive. */
   Box(double width, double depth, double height);
 
   /** Constructs a cube with the given `edge_size` for its width, depth, and
@@ -174,19 +183,20 @@ class HalfSpace final : public Shape {
 
   /** Creates the pose of a canonical half space in frame F.
    The half space's normal is aligned to the positive z-axis of its canonical
-   frame C. Given the measure of that axis in frame F (Cz_F) and a position
-   vector to a point on the plane expressed in the same frame, `p_FC`, creates
-   the pose of the half space in frame F: `X_FC`.
-   @param Cz_F      The positive z-axis of the canonical frame expressed in
-                    frame F. It must be a non-zero vector but need not be unit
-                    length.
-   @param p_FC      A point lying on the half-space's boundary measured
+   frame H. Given a vector that points in the same direction, measured in the
+   F frame (Hz_dir_F) and a position vector to a point on the half space's
+   *boundary* expressed in the same frame, `p_FB`, creates
+   the pose of the half space in frame F: `X_FH`.
+   @param Hz_dir_F  A vector in the direction of the positive z-axis of the
+                    canonical frame expressed in frame F. It must be a non-zero
+                    vector but need not be unit length.
+   @param p_FB      A point B lying on the half space's boundary measured
                     and expressed in frame F.
-   @retval X_FC     The pose of the canonical half-space in frame F.
+   @retval X_FH     The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
                             ‖normal_F‖₂ < ε). */
-  static Isometry3<double> MakePose(const Vector3<double>& Cz_F,
-                                    const Vector3<double>& p_FC);
+  static math::RigidTransform<double> MakePose(const Vector3<double>& Hz_dir_F,
+                                               const Vector3<double>& p_FB);
 };
 
 // TODO(SeanCurtis-TRI): Update documentation when the level of support for
@@ -201,7 +211,10 @@ class Mesh final : public Shape {
 
   /** Constructs a mesh specification from the mesh file located at the given
    _absolute_ file path. Optionally uniformly scaled by the given scale factor.
-   */
+   @throws std::logic_error if |scale| < 1e-8. Note that a negative scale is
+   considered valid. We want to preclude scales near zero but recognise that
+   scale is a convenience tool for "tweaking" models. 8 orders of magnitude
+   should be plenty without considering revisiting the model itself. */
   explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
@@ -231,7 +244,12 @@ class Convex final : public Shape {
                                 multiple object-name statements (e.g.,
                                 "o object_name"), or if there are faces defined
                                 outside a single object-name statement.
-   */
+   @throws std::logic_error     if |scale| < 1e-8. Note that a negative scale is
+                                considered valid. We want to preclude scales
+                                near zero but recognise that scale is a
+                                convenience tool for "tweaking" models. 8 orders
+                                of magnitude should be plenty without
+                                considering revisiting the model itself. */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
@@ -293,7 +311,8 @@ class Convex final : public Shape {
  implementations require.  */
 class ShapeReifier {
  public:
-  virtual ~ShapeReifier() {}
+  virtual ~ShapeReifier() = default;
+
   virtual void ImplementGeometry(const Sphere& sphere, void* user_data) = 0;
   virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
   virtual void ImplementGeometry(const HalfSpace& half_space,
@@ -301,6 +320,10 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Box& box, void* user_data) = 0;
   virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
   virtual void ImplementGeometry(const Convex& convex, void* user_data) = 0;
+
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
+  ShapeReifier() = default;
 };
 
 template <typename S>

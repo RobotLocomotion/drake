@@ -8,6 +8,7 @@
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
@@ -24,9 +25,9 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/pass_through.h"
 
@@ -34,10 +35,13 @@ namespace drake {
 namespace examples {
 namespace valkyrie {
 
-class ValkyrieSimulationDiagram : public systems::Diagram<double> {
+class DRAKE_DEPRECATED("2020-02-01", "The valkyrie example is being removed.")
+ValkyrieSimulationDiagram : public systems::Diagram<double> {
  public:
-  ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm, double dt) {
+  ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm_arg, double dt) {
     systems::DiagramBuilder<double> builder;
+
+    auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>(lcm_arg);
 
     // Create RigidBodyTree.
     auto tree_ptr = std::make_unique<RigidBodyTree<double>>();

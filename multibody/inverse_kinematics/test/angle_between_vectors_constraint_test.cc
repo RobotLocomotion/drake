@@ -13,9 +13,9 @@ AutoDiffVecXd EvalAngleBetweenVectorsConstraint(
     const Frame<AutoDiffXd>& frameA, const Vector3<double>& n_A,
     const Frame<AutoDiffXd>& frameB, const Vector3<double>& n_B) {
   Vector1<AutoDiffXd> y_autodiff;
-  y_autodiff(0) = n_A.normalized().dot(
-      plant.CalcRelativeTransform(context, frameA, frameB).linear() *
-      n_B.normalized());
+  const math::RotationMatrix<AutoDiffXd> R_AB =
+      plant.CalcRelativeRotationMatrix(context, frameA, frameB);
+  y_autodiff(0) = n_A.normalized().dot(R_AB.matrix() * n_B.normalized());
   return y_autodiff;
 }
 
@@ -24,8 +24,10 @@ TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
   const Eigen::Vector3d n_B(1.6, -3.2, 1.2);
   const double angle_lower{0.1};
   const double angle_upper{0.5 * M_PI};
-  const Frame<double>& frameA = plant_->GetFrameByName("iiwa_link_3");
-  const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_7");
+  const auto frameA_index = plant_->GetFrameByName("iiwa_link_3").index();
+  const auto frameB_index = plant_->GetFrameByName("iiwa_link_7").index();
+  const Frame<double>& frameA = plant_->get_frame(frameA_index);
+  const Frame<double>& frameB = plant_->get_frame(frameB_index);
   AngleBetweenVectorsConstraint constraint(plant_, frameA, n_A, frameB, n_B,
                                            angle_lower, angle_upper,
                                            plant_context_);
@@ -62,6 +64,24 @@ TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
       plant_autodiff_->GetFrameByName(frameA.name()), n_A,
       plant_autodiff_->GetFrameByName(frameB.name()), n_B);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
+
+  // Checks if the constraint constructed from MBP<ADS> gives the same result
+  // as from MBP<double>.
+  const AngleBetweenVectorsConstraint constraint_from_autodiff(
+      plant_autodiff_.get(), plant_autodiff_->get_frame(frameA_index), n_A,
+      plant_autodiff_->get_frame(frameB_index), n_B, angle_lower, angle_upper,
+      plant_context_autodiff_.get());
+  // Set dq to arbitrary value.
+  Eigen::Matrix<double, 7, 2> dq;
+  for (int i = 0; i < 7; ++i) {
+    dq(i, 0) = i * 2 + 1;
+    dq(i, 1) = std::sin(i + 0.2);
+  }
+  /* tolerance for checking numerical gradient vs analytical gradient. The
+   * numerical gradient is only accurate up to 1E-6 */
+  const double gradient_tol = 1E-6;
+  TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
+                              gradient_tol);
 }
 
 TEST_F(TwoFreeBodiesConstraintTest, AngleBetweenVectorsConstraint) {

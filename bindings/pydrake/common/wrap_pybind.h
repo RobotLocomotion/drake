@@ -15,31 +15,7 @@
 namespace drake {
 namespace pydrake {
 
-/// Defines a function in object `a` and mirrors `def` calls to object `b`.
-///
-/// @tparam A Type of object `a`
-/// @tparam B Type of object `b`
-template <typename A, typename B>
-class MirrorDef {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MirrorDef);
-
-  MirrorDef(A* a, B* b) : a_(a), b_(b) {}
-
-  /// Calls `def` for both `a` and `b`.
-  template <typename... Args>
-  MirrorDef& def(const char* name, Args&&... args) {
-    a_->def(name, std::forward<Args>(args)...);
-    b_->def(name, std::forward<Args>(args)...);
-    return *this;
-  }
-
- private:
-  A* const a_{};
-  B* const b_{};
-};
-
-namespace detail {
+namespace internal {
 
 template <typename T, typename = void>
 struct wrap_ref_ptr : public wrap_arg_default<T> {};
@@ -66,7 +42,7 @@ template <typename Signature>
 struct wrap_callback<std::function<Signature>>
     : public wrap_callback<const std::function<Signature>&> {};
 
-}  // namespace detail
+}  // namespace internal
 
 /// Ensures that any `std::function<>` arguments are wrapped such that any `T&`
 /// (which can infer for `T = const U`) is wrapped as `U*` (and conversely
@@ -79,7 +55,7 @@ struct wrap_callback<std::function<Signature>>
 /// For more information, see: https://github.com/pybind/pybind11/issues/1241
 template <typename Func>
 auto WrapCallbacks(Func&& func) {
-  return WrapFunction<detail::wrap_callback, false>(std::forward<Func>(func));
+  return WrapFunction<internal::wrap_callback, false>(std::forward<Func>(func));
 }
 
 /// Idempotent to pybind11's `def_readwrite()`, with the exception that the

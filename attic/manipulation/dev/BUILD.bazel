@@ -32,6 +32,7 @@ drake_cc_library(
         "//attic/multibody:rigid_body_tree",
         "//attic/systems/controllers:control_util",
         "//math:geometric_transform",
+        "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//systems/framework:leaf_system",
     ],

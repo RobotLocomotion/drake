@@ -1,15 +1,22 @@
 """Provides containers for tracking instantiations of C++ templates. """
 
 import inspect
-import six
+import sys
 import types
+
+import six
 
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
 
 
-def _get_module_name_from_stack(frame=2):
+def _get_module_from_stack(frame=2):
     # Infers module name from call stack.
-    return inspect.getmodule(inspect.stack()[frame][0]).__name__
+    return inspect.getmodule(inspect.stack()[frame][0])
+
+
+def _is_pybind11_type_error(e):
+    return ("incompatible function arguments" in str(e) or
+            "incompatible constructor arguments" in str(e))
 
 
 def get_or_init(scope, name, template_cls, *args, **kwargs):
@@ -32,11 +39,7 @@ def get_or_init(scope, name, template_cls, *args, **kwargs):
     """
     template = getattr(scope, name, None)
     if template is None:
-        if isinstance(scope, type):
-            module_name = scope.__module__
-        else:
-            module_name = scope.__name__
-        template = template_cls(name, *args, module_name=module_name, **kwargs)
+        template = template_cls(name, *args, scope=scope, **kwargs)
         setattr(scope, name, template)
     return template
 
@@ -45,22 +48,22 @@ class TemplateBase(object):
     """Provides a mechanism to map parameters (types or literals) to
     instantiations, following C++ mechanics.
     """
-    def __init__(self, name, allow_default=True, module_name=None):
+    def __init__(self, name, allow_default=True, scope=None):
         """
         Args:
             name: Name of the template object.
             allow_default: Allow a default value (None) to resolve to the
                 parameters of the instantiation that was first added.
-            module_name: Parent module for the template object.
+            scope: Parent scope for the template object.
         """
         self.name = name
         self.param_list = []
         self._allow_default = allow_default
         self._instantiation_map = {}
         self._instantiation_alias_map = {}
-        if module_name is None:
-            module_name = _get_module_name_from_stack()
-        self._module_name = module_name
+        if scope is None:
+            scope = _get_module_from_stack()
+        self._scope = scope
         self._instantiation_func = None
         self.__doc__ = ""
 
@@ -78,6 +81,33 @@ class TemplateBase(object):
         if len(param) == 1:
             param = param[0]
         return self.get_instantiation(param)[0]
+
+    def __call__(self, *args, **kwargs):
+        """Permits pseudo argument deduction for a template. This is intended
+        for use with pybind11, where any invalid argument raises a TypeError.
+
+        This must have arguments passed to it.
+
+        Note:
+            While pybind11 has two passes for checking overloads (once
+            without and once with conversions), this only passes through the
+            instantiations once with conversions; therefore, be careful in how
+            arguments are assigned.
+        """
+        if len(args) == 0 and len(kwargs) == 0:
+            raise TypeError(
+                ("{}: incompatible function arguments for template: Cannot "
+                 "call without arguments").format(self.name))
+        for param in self.param_list:
+            instantiation = self._instantiation_map[param]
+            try:
+                return instantiation(*args, **kwargs)
+            except TypeError as e:
+                if not _is_pybind11_type_error(e):
+                    raise e
+        raise TypeError(
+            ("{}: incompatible function arguments for template: No "
+             "compatible instantiations").format(self.name))
 
     # Unique token to signify that this instantiation is deferred when using
     # `add_instantiations` or `define`. The instantiation function will not be
@@ -167,7 +197,7 @@ class TemplateBase(object):
         assert instantiation_func is not None
         if self._instantiation_func is not None:
             raise RuntimeError(
-                "`add_instsantiations` cannot be called multiple times.")
+                "`add_instantiations` cannot be called multiple times.")
         self._instantiation_func = instantiation_func
         for param in param_list:
             self.add_instantiation(param, TemplateBase._deferred)
@@ -213,7 +243,7 @@ class TemplateBase(object):
         return '{}[{}]'.format(self.name, ', '.join(names))
 
     def _full_name(self):
-        return "{}.{}".format(self._module_name, self.name)
+        return "{}.{}".format(self._scope.__name__, self.name)
 
     def __str__(self):
         cls_name = type(self).__name__
@@ -265,10 +295,10 @@ class TemplateBase(object):
 
 class TemplateClass(TemplateBase):
     """Extension of `TemplateBase` for classes."""
-    def __init__(self, name, override_meta=True, module_name=None, **kwargs):
-        if module_name is None:
-            module_name = _get_module_name_from_stack()
-        TemplateBase.__init__(self, name, module_name=module_name, **kwargs)
+    def __init__(self, name, override_meta=True, scope=None, **kwargs):
+        if scope is None:
+            scope = _get_module_from_stack()
+        TemplateBase.__init__(self, name, scope=scope, **kwargs)
         self._override_meta = override_meta
 
     def _on_add(self, param, cls):
@@ -283,7 +313,9 @@ class TemplateClass(TemplateBase):
             # TODO(eric.cousineau): When porting to Python3 / six, try to
             # ensure this handles nesting.
             cls.__qualname__ = cls.__name__
-            cls.__module__ = self._module_name
+            cls.__module__ = self._scope.__name__
+            # Ensure instantiation is available for pickling... magically...
+            setattr(self._scope, cls.__name__, cls)
         return cls
 
     def is_subclass_of_instantiation(self, obj):
@@ -299,7 +331,11 @@ class TemplateClass(TemplateBase):
         return None
 
 
-def _rename_callable(f, module, name, cls=None):
+def _rename_callable(f, scope, name, cls=None):
+    if isinstance(scope, type):
+        module = scope.__module__
+    else:
+        module = scope.__name__
     # Renames a function.
     if (f.__module__, f.__name__) == (module, name):
         # Short circuit.
@@ -321,11 +357,9 @@ def _rename_callable(f, module, name, cls=None):
         f.__name__ = name
         f.__qualname__ = qualname
         f.__doc__ = orig.__doc__
-        f._original_name = orig.__name__
         if cls and six.PY2:
             f = types.MethodType(f, None, cls)
     else:
-        f._original_name = f.__name__
         f.__module__ = module
         f.__name__ = name
         f.__qualname__ = qualname
@@ -336,22 +370,26 @@ class TemplateFunction(TemplateBase):
     """Extension of `TemplateBase` for functions."""
     def _on_add(self, param, func):
         func = _rename_callable(
-            func, self._module_name, self._instantiation_name(param))
+            func, self._scope, self._instantiation_name(param))
+        setattr(self._scope, func.__name__, func)
         return func
 
 
 class TemplateMethod(TemplateBase):
     """Extension of `TemplateBase` for class methods."""
-    def __init__(self, name, cls, module_name=None, **kwargs):
-        if module_name is None:
-            module_name = _get_module_name_from_stack()
-        TemplateBase.__init__(self, name, module_name=module_name, **kwargs)
+    def __init__(self, name, cls, scope=None, **kwargs):
+        if scope is None:
+            scope = _get_module_from_stack()
+        TemplateBase.__init__(self, name, scope=scope, **kwargs)
+        # TODO(eric.cousineau): Merge `cls` into `scope` once we are Python 3
+        # only.
         self._cls = cls
 
     def _on_add(self, param, func):
         func = _rename_callable(
-            func, self._module_name, self._instantiation_name(param),
+            func, self._scope, self._instantiation_name(param),
             self._cls)
+        setattr(self._cls, func.__name__, func)
         return func
 
     def __get__(self, obj, objtype):

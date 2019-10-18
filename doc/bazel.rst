@@ -4,13 +4,11 @@
 Bazel build system
 ******************
 
-The Bazel build system is officially supported for a subset of Drake on Ubuntu
-Xenial and Bionic and macOS High Sierra and Mojave.
+Drake's primary build system is Bazel.  For more information about Bazel, see
+https://bazel.build/.
 
-For more information, see:
-
- * https://bazel.build/
- * https://github.com/RobotLocomotion/drake/issues/3129
+Drake also offers a CMake build system wrapper that invokes Bazel under the
+hood.
 
 Bazel Installation
 ==================
@@ -39,7 +37,7 @@ typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 5.4 on Xenial and GCC 7.3 on Bionic. On macOS, the
+``PATH``, usually GCC 5.4 on Xenial and GCC 7.4 on Bionic. On macOS, the
 default compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu, set
 the ``CC`` and ``CXX`` environment variables before running **bazel build**,
 **bazel test**, or any other **bazel** commands.
@@ -146,12 +144,14 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 Python Versions
 ===============
-By default, Python 2 will be used. To use Python 3 for both Bazel and the Python
-bindings, use ``--config=python3``.
+By default, Python 3 will be used for both Bazel and the Python bindings if
+supported on the given platform; it is also usable by passing
+``--config=python3``.
 
-As an example to run all lint checks in Python 3::
+To use Python 2, pass ``--config=python2``. As an example to run all lint
+checks in Python 2::
 
-    bazel test --config=python3 --config=lint //...
+    bazel test --config=python2 --config=lint //...
 
 Updating BUILD files
 ====================
@@ -174,8 +174,8 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi 8.0.0
- * MOSEK 8.1
+ * Gurobi 8.0.1
+ * MOSEK 9.0
  * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
@@ -183,7 +183,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 
 .. _gurobi:
 
-Gurobi 8.0.0
+Gurobi 8.0.1
 ------------
 
 Install on Ubuntu
@@ -191,16 +191,16 @@ Install on Ubuntu
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi8.0.0_linux64.tar.gz``
-5. Unzip it.  We suggest that you use ``/opt/gurobi800`` to simplify working with Drake installations.
-6. ``export GUROBI_PATH=/opt/gurobi800/linux64``
+4. Download ``gurobi8.0.1_linux64.tar.gz``
+5. Unzip it.  We suggest that you use ``/opt/gurobi801`` to simplify working with Drake installations.
+6. ``export GUROBI_PATH=/opt/gurobi801/linux64``
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi8.0.0_mac64.pkg``.
+4. Download and install ``gurobi8.0.1_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi:
@@ -212,10 +212,10 @@ these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
-MOSEK 8.1
----------
+MOSEK
+-----
 
-The Drake Bazel build system downloads MOSEK 8.1.0.51 automatically.  No manual
+The Drake Bazel build system downloads MOSEK 9.0.96 automatically.  No manual
 installation is required.  Set the location of your license file as follows:
 
 ``export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic``
@@ -265,16 +265,15 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
 
  - The ``--config snopt_f2c`` option selects the legacy bindings that use the
-   f2c compiler; these bindings will be removed on 2019-05-01.
+   f2c compiler; these bindings will be removed on 2019-11-01.
  - The ``--config snopt_fortran`` option selects the bindings that use the
    gfortran compiler; these bindings will be supported for the foreseeable
    future.
- - The ``--config snopt`` option selects a default choice (currently f2c, but
-   will soon change to gfortran).
+ - The ``--config snopt`` is synonymous with ``--config snopt_fortran``.
 
 The gfortran bindings are superior in several ways (such as being threadsafe),
-but have a known problem with unbounded linear programs (see drake issue
-`#10423 <https://github.com/RobotLocomotion/drake/issues/10423>`_).
+but have some known problems on certain programs (see drake issue `#10422
+<https://github.com/RobotLocomotion/drake/issues/10422>`_ for a summary).
 
 Optional Tools
 ==============

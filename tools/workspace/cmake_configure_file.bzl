@@ -15,6 +15,8 @@ def _cmake_configure_file_impl(ctx):
     ]
     for item in ctx.attr.defines:
         arguments += ["-D" + item]
+    for item in ctx.attr.undefines:
+        arguments += ["-U" + item]
     for item in ctx.files.cmakelists:
         arguments += ["--cmakelists", item.path]
     ctx.actions.run(
@@ -24,7 +26,7 @@ def _cmake_configure_file_impl(ctx):
         env = ctx.attr.env,
         executable = ctx.executable.cmake_configure_file_py,
     )
-    return struct()
+    return []
 
 # Defines the rule to cmake_configure_file.
 _cmake_configure_file_gen = rule(
@@ -35,6 +37,7 @@ _cmake_configure_file_gen = rule(
         ),
         "out": attr.output(mandatory = True),
         "defines": attr.string_list(),
+        "undefines": attr.string_list(),
         "cmakelists": attr.label_list(allow_files = True),
         "cmake_configure_file_py": attr.label(
             cfg = "host",
@@ -55,6 +58,7 @@ def cmake_configure_file(
         src = None,
         out = None,
         defines = None,
+        undefines = None,
         cmakelists = None,
         **kwargs):
     """Creates a rule to generate an out= file from a src= file, using CMake's
@@ -68,6 +72,9 @@ def cmake_configure_file(
     Definitions optionally can be read from simple CMakeLists files that
     contain statements of the form "set(FOO_MAJOR_VERSION 1)" and similar.
 
+    Variables that are known substitutions but which should be undefined can be
+    passed as undefines= strings.
+
     See cmake_configure_file.py for our implementation of the configure_file
     substitution rules.
 
@@ -80,6 +87,7 @@ def cmake_configure_file(
         src = src,
         out = out,
         defines = defines,
+        undefines = undefines,
         cmakelists = cmakelists,
         env = hermetic_python_env(),
         **kwargs

@@ -51,11 +51,11 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
 
   // Replaces default integrator.
   const double kMaximumStep = 0.1;
-  const IntegratorBase<double>* default_integrator = ivp.get_integrator();
+  const IntegratorBase<double>& default_integrator = ivp.get_integrator();
   IntegratorBase<double>* configured_integrator =
       ivp.reset_integrator<RungeKutta2Integrator<double>>(kMaximumStep);
-  EXPECT_NE(configured_integrator, default_integrator);
-  EXPECT_EQ(configured_integrator, ivp.get_integrator());
+  EXPECT_NE(configured_integrator, &default_integrator);
+  EXPECT_EQ(configured_integrator, &ivp.get_integrator());
 
   // Specifies a different parameter vector, but leaves both
   // initial time and state as defaults.
@@ -226,9 +226,9 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
         return (std::sin(t) - q / Cs) / Rs;
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       stored_charge_ivp.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kLowestResistance = 1.0;
   const double kHighestResistance = 10.0;
@@ -310,9 +310,9 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
         return r * n;
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       population_growth_ivp.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kLowestMalthusParam = 0.1;
   const double kHighestMalthusParam = 1.0;

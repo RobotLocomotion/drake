@@ -75,13 +75,12 @@ GTEST_TEST(GlobalInverseKinematicsTest, BodySphereInOneOfPolytopesTest) {
       global_ik.BodySphereInOneOfPolytopes(link_idx, p_BQ, radius, polytopes);
 
   solvers::GurobiSolver solver;
-  const auto result = solver.Solve(global_ik);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  const auto result = solver.Solve(global_ik, {}, {});
+  EXPECT_TRUE(result.is_success());
 
-  const auto p_WB_sol =
-      global_ik.GetSolution(global_ik.body_position(link_idx));
+  const auto p_WB_sol = result.GetSolution(global_ik.body_position(link_idx));
   const auto R_WB_sol =
-      global_ik.GetSolution(global_ik.body_rotation_matrix(link_idx));
+      result.GetSolution(global_ik.body_rotation_matrix(link_idx));
 
   const Eigen::Vector3d p_WQ_sol = p_WB_sol + R_WB_sol * p_BQ;
   const double tol = 1E-6;
@@ -92,7 +91,7 @@ GTEST_TEST(GlobalInverseKinematicsTest, BodySphereInOneOfPolytopesTest) {
               boxes[0].center(i) - boxes[0].size(i) / 2 - tol);
   }
   EXPECT_TRUE(
-      CompareMatrices(global_ik.GetSolution(z), Eigen::Vector2d(1, 0), tol));
+      CompareMatrices(result.GetSolution(z), Eigen::Vector2d(1, 0), tol));
 }
 
 TEST_F(KukaTest, CollisionAvoidanceTest) {
@@ -166,10 +165,11 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
   // First run the global IK without collision avoidance.
   solvers::GurobiSolver gurobi_solver;
   global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
-  SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
-  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+  solvers::MathematicalProgramResult result =
+      gurobi_solver.Solve(global_ik_, {}, {});
+  EXPECT_TRUE(result.is_success());
   const auto& q_without_collision_avoidance =
-      global_ik_.ReconstructGeneralizedPositionSolution();
+      global_ik_.ReconstructGeneralizedPositionSolution(result);
   auto cache = rigid_body_tree_->CreateKinematicsCache();
   cache.initialize(q_without_collision_avoidance);
   rigid_body_tree_->doKinematics(cache);
@@ -202,10 +202,10 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
         link6_idx, link6_pts[i], region_vertices);
   }
 
-  sol_result = gurobi_solver.Solve(global_ik_);
-  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+  result = gurobi_solver.Solve(global_ik_, {}, {});
+  EXPECT_TRUE(result.is_success());
   const auto& q_with_collision_avoidance =
-      global_ik_.ReconstructGeneralizedPositionSolution();
+      global_ik_.ReconstructGeneralizedPositionSolution(result);
   cache.initialize(q_with_collision_avoidance);
   rigid_body_tree_->doKinematics(cache);
   const auto ee_pose_ik_with_collision_avoidance =
@@ -228,7 +228,7 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
             link5_pose_ik_with_collision_avoidance.translation(),
         box_pos, box_size);
     const auto& link5_collision_avoidance_binary_val =
-        global_ik_.GetSolution(link5_collision_avoidance_binary[i]);
+        result.GetSolution(link5_collision_avoidance_binary[i]);
     CheckPtCollisionFreeBinary(link5_collision_avoidance_binary_val);
   }
   for (int i = 0; i < static_cast<int>(link6_pts.size()); ++i) {
@@ -237,7 +237,7 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
             link6_pose_ik_with_collision_avoidance.translation(),
         box_pos, box_size);
     const auto& link6_collision_avoidance_binary_val =
-        global_ik_.GetSolution(link6_collision_avoidance_binary[i]);
+        result.GetSolution(link6_collision_avoidance_binary[i]);
     CheckPtCollisionFreeBinary(link6_collision_avoidance_binary_val);
   }
 }

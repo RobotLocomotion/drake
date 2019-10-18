@@ -116,7 +116,9 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType3) {
   // We cannot construct a polynomial from the `map` because variable a is used
   // as a decision variable (x ↦ -2a) and an indeterminate (a² ↦ 4b) at the same
   // time.
-  EXPECT_THROW(Polynomial{map}, runtime_error);
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(Polynomial{map}, runtime_error);
+  }
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {
@@ -836,6 +838,73 @@ TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
 
   // p1 * p2 is not equal to p2 * p3 after expansion.
   EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
+}
+
+// Checks if internal::CompareMonomial implements the lexicographical order.
+TEST_F(SymbolicPolynomialTest, InternalCompareMonomial) {
+  // clang-format off
+  const Monomial m1{{{var_x_, 1},                         }};
+  const Monomial m2{{{var_x_, 1},              {var_z_, 2}}};
+  const Monomial m3{{{var_x_, 1}, {var_y_, 1}             }};
+  const Monomial m4{{{var_x_, 1}, {var_y_, 1}, {var_z_, 1}}};
+  const Monomial m5{{{var_x_, 1}, {var_y_, 1}, {var_z_, 2}}};
+  const Monomial m6{{{var_x_, 1}, {var_y_, 2}, {var_z_, 2}}};
+  const Monomial m7{{{var_x_, 1}, {var_y_, 3}, {var_z_, 1}}};
+  const Monomial m8{{{var_x_, 2},                         }};
+  const Monomial m9{{{var_x_, 2},              {var_z_, 1}}};
+  // clang-format on
+
+  EXPECT_TRUE(internal::CompareMonomial()(m1, m2));
+  EXPECT_TRUE(internal::CompareMonomial()(m2, m3));
+  EXPECT_TRUE(internal::CompareMonomial()(m3, m4));
+  EXPECT_TRUE(internal::CompareMonomial()(m4, m5));
+  EXPECT_TRUE(internal::CompareMonomial()(m5, m6));
+  EXPECT_TRUE(internal::CompareMonomial()(m6, m7));
+  EXPECT_TRUE(internal::CompareMonomial()(m7, m8));
+  EXPECT_TRUE(internal::CompareMonomial()(m8, m9));
+
+  EXPECT_FALSE(internal::CompareMonomial()(m2, m1));
+  EXPECT_FALSE(internal::CompareMonomial()(m3, m2));
+  EXPECT_FALSE(internal::CompareMonomial()(m4, m3));
+  EXPECT_FALSE(internal::CompareMonomial()(m5, m4));
+  EXPECT_FALSE(internal::CompareMonomial()(m6, m5));
+  EXPECT_FALSE(internal::CompareMonomial()(m7, m6));
+  EXPECT_FALSE(internal::CompareMonomial()(m8, m7));
+  EXPECT_FALSE(internal::CompareMonomial()(m9, m8));
+}
+
+TEST_F(SymbolicPolynomialTest, DeterministicTraversal) {
+  // Using the following monomials, we construct two polynomials; one by summing
+  // up from top to bottom and another by summing up from bottom to top. The two
+  // polynomials should be the same mathematically. We check that the traversal
+  // operations over the two polynomials give the same sequences as well. See
+  // https://github.com/RobotLocomotion/drake/issues/11023#issuecomment-499948333
+  // for details.
+
+  const Monomial m1{{{var_x_, 1}}};
+  const Monomial m2{{{var_x_, 1}, {var_y_, 1}}};
+  const Monomial m3{{{var_x_, 1}, {var_y_, 1}, {var_z_, 1}}};
+  const Monomial m4{{{var_x_, 1}, {var_y_, 1}, {var_z_, 2}}};
+
+  const Polynomial p1{m1 + (m2 + (m3 + m4))};
+  const Polynomial p2{m4 + (m3 + (m2 + m1))};
+
+  const Polynomial::MapType& map1{p1.monomial_to_coefficient_map()};
+  const Polynomial::MapType& map2{p2.monomial_to_coefficient_map()};
+
+  EXPECT_EQ(map1.size(), map2.size());
+
+  auto it1 = map1.begin();
+  auto it2 = map2.begin();
+
+  for (; it1 != map1.end(); ++it1, ++it2) {
+    const Monomial& m_1{it1->first};
+    const Monomial& m_2{it2->first};
+    const Expression& e_1{it1->second};
+    const Expression& e_2{it2->second};
+    EXPECT_TRUE(m_1 == m_2);
+    EXPECT_TRUE(e_1.EqualTo(e_2));
+  }
 }
 }  // namespace
 }  // namespace symbolic

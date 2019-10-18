@@ -5,8 +5,9 @@
 #include <functional>
 #include <string>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
+#include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -29,7 +30,7 @@ namespace geometry {
 
  It is possible for a programmer to accidentally switch the two ids in an
  invocation. This mistake would still be _syntactically_ correct; it will
- successfully compile but  lead to inscrutable run-time errors. This identifier
+ successfully compile but lead to inscrutable run-time errors. This identifier
  class provides the same speed and efficiency of passing `int64_t`s, but
  enforces unique types and limits the valid operations, providing compile-time
  checking. The function would now look like:
@@ -60,9 +61,9 @@ namespace geometry {
 
  While there _is_ the concept of an invalid identifier, this only exists to
  facilitate use with STL containers that require default constructors. Using an
- invalid identifier in any operation is considered an error. In Debug build,
- attempts to compare, get the value of, hash, or write an invalid identifier to
- a stream will cause program failure.
+ invalid identifier is generally considered to be an error. In Debug build,
+ attempts to compare, get the value of, or write an invalid identifier to a
+ stream will throw an exception.
 
  Functions that query for identifiers should not return invalid identifiers. We
  prefer the practice of returning std::optional<Identifier> instead.
@@ -146,8 +147,11 @@ class Identifier {
    considered invalid for invalid ids and is strictly enforced in Debug builds.
    */
   int64_t get_value() const {
-    DRAKE_ASSERT(is_valid());
-    return value_; }
+    if (kDrakeAssertIsArmed) {
+      DRAKE_THROW_UNLESS(this->is_valid());
+    }
+    return value_;
+  }
 
   /** Reports if the id is valid. */
   bool is_valid() const { return value_ > 0; }
@@ -156,24 +160,21 @@ class Identifier {
    is considered invalid for invalid ids and is strictly enforced in Debug
    builds. */
   bool operator==(Identifier other) const {
-    DRAKE_ASSERT(is_valid() && other.is_valid());
-    return value_ == other.value_;
+    return this->get_value() == other.get_value();
   }
 
   /** Compares one identifier with another of the same type for inequality. This
    is considered invalid for invalid ids and is strictly enforced in Debug
    builds. */
   bool operator!=(Identifier other) const {
-    DRAKE_ASSERT(is_valid() && other.is_valid());
-    return value_ != other.value_ && is_valid() && other.is_valid();
+    return this->get_value() != other.get_value();
   }
 
   /** Compare two identifiers in order to define a total ordering among
    identifiers. This makes identifiers compatible with data structures which
    require total ordering (e.g., std::set).  */
   bool operator<(Identifier other) const {
-    DRAKE_ASSERT(is_valid() && other.is_valid());
-    return value_ < other.value_;
+    return this->get_value() < other.get_value();
   }
 
   /** Generates a new identifier for this id type. This new identifier will be
@@ -189,12 +190,23 @@ class Identifier {
     return Identifier(next_index.access()++);
   }
 
- private:
+  /** Implements the @ref hash_append concept. And invalid id will successfully
+   hash (in order to satisfy STL requirements), and it is up to the user to
+   confirm it is valid before using it as a key (or other hashing application).
+   */
+  template <typename HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher, const Identifier& i) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, i.value_);
+  }
+
+ protected:
   // Instantiates an identifier from the underlying representation type.
   explicit Identifier(int64_t val) : value_(val) {}
 
+ private:
   // The underlying value.
-  int64_t value_;
+  int64_t value_{};
 };
 
 /** Streaming output operator.   This is considered invalid for invalid ids and
@@ -221,14 +233,11 @@ std::string to_string(const drake::geometry::Identifier<Tag>& id) {
 }  // namespace drake
 
 namespace std {
+
 /** Enables use of the identifier to serve as a key in STL containers.
  @relates Identifier
  */
 template <typename Tag>
-struct hash<drake::geometry::Identifier<Tag>> {
-  size_t operator()(const drake::geometry::Identifier<Tag>& id) const {
-    return std::hash<int64_t>()(id.get_value());
-  }
-};
+struct hash<drake::geometry::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std

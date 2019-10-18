@@ -21,7 +21,6 @@ namespace {
 
 TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   SetArbitraryConfiguration();
-  context_->EnableCaching();
 
   // An arbitrary point on the end effector frame E.
   Vector3<double> p_EP(0.1, -0.05, 0.3);
@@ -57,15 +56,18 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
 
   // Frame Jacobian for point p_EP.
   MatrixX<double> Jv_WEp(6, nv);
-  plant_->CalcFrameGeometricJacobianExpressedInWorld(
-      *context_, end_effector_link_->body_frame(), p_EP, &Jv_WEp);
+  const Frame<double>& frame_W = plant_->world_frame();
+  plant_->CalcJacobianSpatialVelocity(*context_,
+                                      multibody::JacobianWrtVariable::kV,
+                                      end_effector_link_->body_frame(), p_EP,
+                                      frame_W, frame_W, &Jv_WEp);
 
   // Compute the expected value of inverse dynamics when external forcing is
   // considered.
-  const Matrix3<double> R_WE =
-      end_effector_link_->EvalPoseInWorld(*context_).linear();
+  const math::RotationMatrix<double>& R_WE =
+      end_effector_link_->EvalPoseInWorld(*context_).rotation();
   const SpatialForce<double> F_Ep_W = R_WE * F_Ep_E;
-  VectorX<double> tau_id_expected =
+  const VectorX<double> tau_id_expected =
       M * vdot + C - Jv_WEp.transpose() * F_Ep_W.get_coeffs();
 
   // Numerical tolerance used to verify numerical results.
@@ -75,6 +77,25 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   EXPECT_TRUE(CompareMatrices(
       tau_id, tau_id_expected,
       kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, BodyForceApi) {
+  SetArbitraryConfiguration();
+  MultibodyForces<double> forces(*plant_);
+  Vector6<double> F_expected;
+  F_expected << 1, 2, 3, 4, 5, 6;
+  SpatialForce<double> F_Bo_W(F_expected);
+  end_effector_link_->AddInForceInWorld(*context_, F_Bo_W, &forces);
+  EXPECT_TRUE(CompareMatrices(
+      end_effector_link_->GetForceInWorld(*context_, forces).get_coeffs(),
+      F_expected));
+  // Test frame-specfic, and ensure we accumulate.
+  end_effector_link_->AddInForce(
+      *context_, Vector3<double>::Zero(), F_Bo_W, plant_->world_frame(),
+      &forces);
+  EXPECT_TRUE(CompareMatrices(
+      end_effector_link_->GetForceInWorld(*context_, forces).get_coeffs(),
+      2 * F_expected));
 }
 
 }  // namespace

@@ -32,12 +32,12 @@ RimlessWheel<T>::RimlessWheel()
   this->DeclareNumericParameter(RimlessWheelParams<T>());
 
   // Create the witness functions.
-  step_backward_ = this->DeclareWitnessFunction(
+  step_backward_ = this->MakeWitnessFunction(
       "step backward",
       systems::WitnessFunctionDirection::kPositiveThenNonPositive,
       &RimlessWheel::StepBackwardGuard, &RimlessWheel::StepBackwardReset);
 
-  step_forward_ = this->DeclareWitnessFunction(
+  step_forward_ = this->MakeWitnessFunction(
       "step forward",
       systems::WitnessFunctionDirection::kPositiveThenNonPositive,
       &RimlessWheel::StepForwardGuard, &RimlessWheel::StepForwardReset);

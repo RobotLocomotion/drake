@@ -15,13 +15,14 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
+using std::make_unique;
+
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using std::make_unique;
+using math::RigidTransformd;
 
 namespace {
 
@@ -151,8 +152,13 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         }
         scale = scale_vector.X();
       }
+
       // TODO(amcastro-tri): Fix the given path to be an absolute path.
-      return make_unique<geometry::Mesh>(file_name, scale);
+      if (mesh_element->HasElement("drake:declare_convex")) {
+        return make_unique<geometry::Convex>(file_name, scale);
+      } else {
+        return make_unique<geometry::Mesh>(file_name, scale);
+      }
     }
   }
 
@@ -169,7 +175,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   // Retrieve the pose of the visual frame G in the parent link L in which
   // geometry gets defined.
-  const Isometry3d X_LG = ToIsometry3(sdf_visual.Pose());
+  const RigidTransformd X_LG = ToRigidTransform(sdf_visual.Pose());
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
@@ -177,7 +183,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   // - etc.
 
   // X_LC defines the pose of the canonical frame in the link frame L.
-  Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
+  // N.B. In most cases C coincides with the SDF G frame.
+  RigidTransformd X_LC = X_LG;
 
   // For a half-space, C and G are not the same since SDF allows to specify
   // the normal of the plane in the G frame.
@@ -203,8 +210,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       // The normal expressed in the frame G defines the pose of the half space
       // in its canonical frame C in which the normal aligns with the z-axis
       // direction.
-      const Isometry3d X_GC =
-          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+      const RigidTransformd X_GC(
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero()));
 
       // Correct X_LC to include the pose X_GC
       X_LC = X_LG * X_GC;
@@ -261,11 +268,11 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
   return properties;
 }
 
-Isometry3d MakeGeometryPoseFromSdfCollision(
+RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision) {
   // Retrieve the pose of the collision frame G in the parent link L in which
   // geometry gets defined.
-  const Isometry3d X_LG = ToIsometry3(sdf_collision.Pose());
+  const RigidTransformd X_LG = ToRigidTransform(sdf_collision.Pose());
 
   // GeometryInstance defines its shapes in a "canonical frame" C. The canonical
   // frame C is the frame in which the geometry is defined and it generally
@@ -280,7 +287,8 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
   // frame G which does not necessarily coincide with C.
 
   // X_LC defines the pose of the canonical frame in the link frame L.
-  Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
+  // N.B. In most cases C coincides with the SDF G frame.
+  RigidTransformd X_LC = X_LG;
 
   // For a half-space, C and G are not the same since SDF allows to specify
   // the normal of the plane in the G frame.
@@ -305,8 +313,8 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
       // The normal expressed in the frame G defines the pose of the half space
       // in its canonical frame C in which the normal aligns with the z-axis
       // direction.
-      const Isometry3d X_GC =
-          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+      const RigidTransformd X_GC(
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero()));
 
       // Correct X_LC to include the pose X_GC
       X_LC = X_LG * X_GC;
@@ -381,6 +389,6 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
   return visual;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

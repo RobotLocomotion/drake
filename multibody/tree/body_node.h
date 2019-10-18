@@ -341,7 +341,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
     // position kinematics cache.
     /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).linear() * get_X_PB(pc).translation();
+    const math::RotationMatrix<T>& R_WP = get_X_WP(pc).rotation();
+    const Vector3<T> p_PB_W =  R_WP * get_X_PB(pc).translation();
 
     // Since we are in a base-to-tip recursion the parent body P's spatial
     // velocity is already available in the cache.
@@ -364,6 +365,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   An already updated position kinematics cache in sync with `context`.
   /// @param[in] vc
   ///   An already updated velocity kinematics cache in sync with `context`.
+  ///   If vc is nullptr, velocities are assumed to be zero and velocity
+  ///   dependent terms are not computed.
   /// @param[in] mbt_vdot
   ///   The entire vector of generalized accelerations for the full
   ///   MultibodyTree model. It must have a size equal to the number of
@@ -398,7 +401,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcSpatialAcceleration_BaseToTip(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
+      const VelocityKinematicsCache<T>* vc,
       const VectorX<T>& mbt_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array_ptr) const {
     // This method must not be called for the "world" body node.
@@ -474,27 +477,25 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // TODO(amcastro-tri): consider caching these. Especially true if bodies are
     // flexible. Also used in velocity kinematics.
-    const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
-    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const math::RigidTransform<T> X_MB =
+        frame_M.CalcPoseInBodyFrame(context).inverse();
 
     // Pose of the parent body P in world frame W.
     // Available since we are called within a base-to-tip recursion.
-    const Isometry3<T>& X_WP = get_X_WP(pc);
+    const math::RigidTransform<T>& X_WP = get_X_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
     // TODO(amcastro-tri): consider caching X_WF since it is also used to
     // compute H_PB_W.
-    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
+    const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     // TODO(amcastro-tri): consider caching this since it is also used to
     // compute H_PB_W.
-    const Vector3<T> p_MB_F =
-        /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).linear() * X_MB.translation();
-
-    // Across mobilizer velocity is available from the velocity kinematics.
-    const SpatialVelocity<T>& V_FM = get_V_FM(vc);
+    const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
+    const Vector3<T>& p_MB_M = X_MB.translation();
+    const Vector3<T> p_MB_F = R_FM * p_MB_M;
 
     // Generalized velocities' time derivatives local to this node's mobilizer.
     const auto& vmdot = this->get_mobilizer_velocities(mbt_vdot);
@@ -503,35 +504,48 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialAcceleration<T> A_FM =
         get_mobilizer().CalcAcrossMobilizerSpatialAcceleration(context, vmdot);
 
-    SpatialAcceleration<T> A_PB_W =
-        R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (4)
-
     // =========================================================================
     // Compose acceleration A_WP of P in W with acceleration A_PB of B in P,
     // Eq. (2)
 
-    // Since we are in a base-to-tip recursion the parent body P's spatial
-    // velocity is already available in the cache.
-    const SpatialVelocity<T>& V_WP = get_V_WP(vc);
-
     // Obtains a const reference to the parent acceleration from A_WB_array.
     const SpatialAcceleration<T>& A_WP = get_A_WP_from_array(A_WB_array);
-
-    // For body B, only the spatial velocity V_PB_W is already available in the
-    // cache. The acceleration A_PB_W was computed above.
-    const SpatialVelocity<T>& V_PB_W = get_V_PB_W(vc);
 
     // Shift vector between the parent body P and this node's body B,
     // expressed in the world frame W.
     // TODO(amcastro-tri): consider computing p_PB_W in
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
     // position kinematics cache.
-    /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).linear() * get_X_PB(pc).translation();
+    const math::RotationMatrix<T>& R_WP = get_X_WP(pc).rotation();
+    const Vector3<T>& p_PB_P = get_X_PB(pc).translation();
+    const Vector3<T> p_PB_W = R_WP * p_PB_P;
 
-    get_mutable_A_WB_from_array(&A_WB_array) =
-        A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
-                                                V_PB_W, A_PB_W);
+    if (vc != nullptr) {
+      // Since we are in a base-to-tip recursion the parent body P's spatial
+      // velocity is already available in the cache.
+      const SpatialVelocity<T>& V_WP = get_V_WP(*vc);
+
+      // For body B, only the spatial velocity V_PB_W is already available in
+      // the cache. The acceleration A_PB_W was computed above.
+      const SpatialVelocity<T>& V_PB_W = get_V_PB_W(*vc);
+
+      // Across mobilizer velocity is available from the velocity kinematics.
+      const SpatialVelocity<T>& V_FM = get_V_FM(*vc);
+
+      const SpatialAcceleration<T> A_PB_W =
+          R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (4)
+
+      // Velocities are non-zero.
+      get_mutable_A_WB_from_array(&A_WB_array) =
+          A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
+                                                  V_PB_W, A_PB_W);
+    } else {
+      const SpatialAcceleration<T> A_PB_W =
+          R_WF * A_FM.Shift(p_MB_F);  // Eq. (4), with w_FM = 0.
+      // Velocities are zero. No need to compute terms that become zero.
+      get_mutable_A_WB_from_array(&A_WB_array).get_coeffs() =
+          A_WP.Shift(p_PB_W).get_coeffs() + A_PB_W.get_coeffs();
+    }
   }
 
   /// Computes the generalized forces `tau` for a single BodyNode.
@@ -544,8 +558,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in] context The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] vc
-  ///   An already updated velocity kinematics cache in sync with `context`.
+  /// @param[in] M_B_W_cache
+  ///   An already updated cache storing the spatial inertia M_Bo_W(q) for each
+  ///   body in the model, in sync with `context`.
+  /// @param[in] b_Bo_W_cache
+  ///   An already updated cache storing the bias term b_Bo_W(q, v) for each
+  ///   body in the model, in sync with `context`.
+  ///   If b_Bo_W_cache is nullptr, velocities are assumed to be zero (thus
+  ///   b_Bo_W is zero) and velocity dependent terms are not computed.
   /// @param[in] A_WB_array
   ///   A vector of known spatial accelerations containing the spatial
   ///   acceleration `A_WB` for each body in the MultibodyTree model. It must be
@@ -600,7 +620,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcInverseDynamics_TipToBase(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
+      const std::vector<SpatialInertia<T>>& M_B_W_cache,
+      const std::vector<SpatialForce<T>>* b_Bo_W_cache,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
@@ -672,19 +693,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Total spatial force on body B producing acceleration A_WB.
     SpatialForce<T> Ftot_BBo_W;
-    CalcBodySpatialForceGivenItsSpatialAcceleration(context,
-                                                    pc,
-                                                    vc,
-                                                    A_WB,
-                                                    &Ftot_BBo_W);
+    CalcBodySpatialForceGivenItsSpatialAcceleration(M_B_W_cache, b_Bo_W_cache,
+                                                    A_WB, &Ftot_BBo_W);
 
     // Compute shift vector from Bo to Mo expressed in the world frame W.
     const Frame<T>& frame_M = outboard_frame();
     DRAKE_DEMAND(frame_M.body().index() == body_B.index());
-    const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
+    const math::RigidTransform<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
     const Vector3<T>& p_BoMo_B = X_BM.translation();
-    const Isometry3<T>& X_WB = get_X_WB(pc);
-    const Matrix3<T>& R_WB = X_WB.linear();
+    const math::RigidTransform<T>& X_WB = get_X_WB(pc);
+    const math::RotationMatrix<T>& R_WB = X_WB.rotation();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
     // Output spatial force that would need to be exerted by this node's
@@ -701,14 +719,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       BodyNodeIndex child_node_index = child_node->index();
 
       // Pose of child body C in this node's body frame B.
-      const Isometry3<T>& X_BC = child_node->get_X_PB(pc);
-      // p_BoCo_W = R_WB * p_BoCo_B:
-      const Vector3<T> p_BoCo_W = R_WB * X_BC.translation();
+      const math::RigidTransform<T>& X_BC = child_node->get_X_PB(pc);
+      const Vector3<T>& p_BoCo_B = X_BC.translation();
+      const Vector3<T> p_BoCo_W = R_WB * p_BoCo_B;
 
       // p_CoMc_W:
       const Frame<T>& frame_Mc = child_node->outboard_frame();
-      const Matrix3<T>& R_WC = child_node->get_X_WB(pc).linear();
-      const Isometry3<T> X_CMc = frame_Mc.CalcPoseInBodyFrame(context);
+      const math::RotationMatrix<T>& R_WC = child_node->get_X_WB(pc).rotation();
+      const math::RigidTransform<T> X_CMc =
+          frame_Mc.CalcPoseInBodyFrame(context);
       const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
 
       // Shift position vector from child C outboard mobilizer frame Mc to body
@@ -739,11 +758,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Re-express F_BMo_W in the inboard frame F before projecting it onto the
     // sub-space generated by H_FM(q).
-    const Isometry3<T> X_PF = inboard_frame().CalcPoseInBodyFrame(context);
-    const Isometry3<T>& X_WP = get_X_WP(pc);
+    const math::RigidTransform<T> X_PF =
+        inboard_frame().CalcPoseInBodyFrame(context);
+    const math::RigidTransform<T>& X_WP = get_X_WP(pc);
     // TODO(amcastro-tri): consider caching X_WF since also used in position and
     // velocity kinematics.
-    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
+    const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
     const SpatialForce<T> F_BMo_F = R_WF.transpose() * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
@@ -799,19 +819,20 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Outboard frame M of this node's mobilizer.
     const Frame<T>& frame_M = outboard_frame();
 
-    const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
-    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const math::RigidTransform<T> X_MB =
+        frame_M.CalcPoseInBodyFrame(context).inverse();
 
     // Pose of the parent body P in world frame W.
-    const Isometry3<T>& X_WP = get_X_WP(pc);
+    const math::RigidTransform<T>& X_WP = get_X_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
-    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
+    const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
-    const Vector3<T> p_MB_F =
-        /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).linear() * X_MB.translation();
+    const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
+    const Vector3<T>& p_MB_M = X_MB.translation();
+    const Vector3<T> p_MB_F = R_FM * p_MB_M;
 
     // Compute the imob-th column in J_PB_W:
     VectorUpTo6<T> v = VectorUpTo6<T>::Zero(get_num_mobilizer_velocities());
@@ -973,11 +994,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Body for this node.
     const Body<T>& body_B = body();
 
-    // Get pose of B in W.
-    const Isometry3<T>& X_WB = get_X_WB(pc);
-
-    // Get R_WB.
-    const math::RotationMatrix<T> R_WB(X_WB.linear());
+    // Get pose of B in W and its rotation matrix R_WB.
+    const math::RigidTransform<T>& X_WB = get_X_WB(pc);
+    const math::RotationMatrix<T>& R_WB = X_WB.rotation();
 
     // Compute the spatial inertia for this body and re-express in W frame.
     const SpatialInertia<T> M_B = body_B.CalcSpatialInertiaInBodyFrame(context);
@@ -989,7 +1008,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Add articulated body inertia contributions from all children.
     for (const BodyNode<T>* child : children_) {
       // Get X_BC (which is X_PB for child).
-      const Isometry3<T>& X_BC = child->get_X_PB(pc);
+      const math::RigidTransform<T>& X_BC = child->get_X_PB(pc);
 
       // Compute shift vector p_CoBo_W.
       const Vector3<T> p_CoBo_B = -X_BC.translation();
@@ -1094,42 +1113,49 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Returns a const reference to the pose of the body B associated with this
   // node as measured and expressed in the world frame W.
-  const Isometry3<T>& get_X_WB(const PositionKinematicsCache<T>& pc) const {
+  const math::RigidTransform<T>& get_X_WB(
+      const PositionKinematicsCache<T>& pc) const {
     return pc.get_X_WB(topology_.index);
   }
 
   // Mutable version of get_X_WB().
-  Isometry3<T>& get_mutable_X_WB(PositionKinematicsCache<T>* pc) const {
+  math::RigidTransform<T>& get_mutable_X_WB(
+      PositionKinematicsCache<T>* pc) const {
     return pc->get_mutable_X_WB(topology_.index);
   }
 
   // Returns a const reference to the pose of the parent body P measured and
   // expressed in the world frame W.
-  const Isometry3<T>& get_X_WP(const PositionKinematicsCache<T>& pc) const {
+  const math::RigidTransform<T>& get_X_WP(
+      const PositionKinematicsCache<T>& pc) const {
     return pc.get_X_WB(topology_.parent_body_node);
   }
 
   // Returns a constant reference to the across-mobilizer pose of the outboard
   // frame M as measured and expressed in the inboard frame F.
-  const Isometry3<T>& get_X_FM(const PositionKinematicsCache<T>& pc) const {
+  const math::RigidTransform<T>& get_X_FM(
+      const PositionKinematicsCache<T>& pc) const {
     return pc.get_X_FM(topology_.index);
   }
 
   // Returns a mutable reference to the across-mobilizer pose of the outboard
   // frame M as measured and expressed in the inboard frame F.
-  Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
+  math::RigidTransform<T>& get_mutable_X_FM(
+      PositionKinematicsCache<T>* pc) const {
     return pc->get_mutable_X_FM(topology_.index);
   }
 
   // Returns a const reference to the pose of body B as measured and expressed
   // in the frame of the parent body P.
-  const Isometry3<T>& get_X_PB(const PositionKinematicsCache<T>& pc) const {
+  const math::RigidTransform<T>& get_X_PB(
+      const PositionKinematicsCache<T>& pc) const {
     return pc.get_X_PB(topology_.index);
   }
 
   // Returns a mutable reference to the pose of body B as measured and expressed
   // in the frame of the parent body P.
-  Isometry3<T>& get_mutable_X_PB(PositionKinematicsCache<T>* pc) const {
+  math::RigidTransform<T>& get_mutable_X_PB(
+      PositionKinematicsCache<T>* pc) const {
     return pc->get_mutable_X_PB(topology_.index);
   }
 
@@ -1325,19 +1351,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - X_FM(qm_B)
     // - X_WP(q(W:B)), where q(W:B) includes all positions in the kinematics
     //                 path from body B to the world W.
-    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
-    const Isometry3<T>& X_FM = get_X_FM(*pc);  // mobilizer.Eval_X_FM(ctx)
-    const Isometry3<T>& X_WP = get_X_WP(*pc);  // body_P.EvalPoseInWorld(ctx)
+    const math::RigidTransform<T> X_MB =
+        frame_M.CalcPoseInBodyFrame(context).inverse();
+    const math::RigidTransform<T>& X_FM =
+        get_X_FM(*pc);  // mobilizer.Eval_X_FM(ctx)
+    const math::RigidTransform<T>& X_WP =
+        get_X_WP(*pc);  // body_P.EvalPoseInWorld(ctx)
 
     // Output (updating a cache entry):
     // - X_PB(qf_P, qr_B, qf_B)
     // - X_WB(q(W:P), qf_P, qr_B, qf_B)
-    Isometry3<T>& X_PB = get_mutable_X_PB(pc);
-    Isometry3<T>& X_WB = get_mutable_X_WB(pc);  // body_B.EvalPoseInWorld(ctx)
+    math::RigidTransform<T>& X_PB = get_mutable_X_PB(pc);
+    math::RigidTransform<T>& X_WB =
+        get_mutable_X_WB(pc);  // body_B.EvalPoseInWorld(ctx)
 
     // TODO(amcastro-tri): Consider logic for the common case B = M.
     // In that case X_FB = X_FM as suggested by setting X_MB = Id.
-    const Isometry3<T> X_FB = X_FM * X_MB;
+    const math::RigidTransform<T> X_FB = X_FM * X_MB;
 
     // Given the pose X_FB of body frame B measured in the mobilizer inboard
     // frame F, we can ask frame F (who's parent body is P) for the pose of body
@@ -1373,7 +1403,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {
     DRAKE_ASSERT(pc != nullptr);
-    Isometry3<T>& X_FM = get_mutable_X_FM(pc);
+    math::RigidTransform<T>& X_FM = get_mutable_X_FM(pc);
     X_FM = get_mobilizer().CalcAcrossMobilizerTransform(context);
   }
 
@@ -1388,10 +1418,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   //   1. Ftot_BBo = b_Bo when A_WB = 0.
   //   2. b_Bo = 0 when w_WB = 0.
   //   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
+  //      When b_Bo_W_cache is nullptr velocites are considered to be zero.
+  //      Therefore, from (2), the bias term is assumed to be zero and is not
+  //      computed.
   void CalcBodySpatialForceGivenItsSpatialAcceleration(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
+      const std::vector<SpatialInertia<T>>& M_B_W_cache,
+      const std::vector<SpatialForce<T>>* b_Bo_W_cache,
       const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
   const {
     DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
@@ -1404,41 +1436,20 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Body for this node.
     const Body<T>& body_B = body();
 
-    // Pose of B in W.
-    const Isometry3<T>& X_WB = get_X_WB(pc);
-
-    // Orientation of B in W.
-    const math::RotationMatrix<T> R_WB(X_WB.linear());
-
-    // Body spatial velocity in W.
-    const SpatialVelocity<T>& V_WB = get_V_WB(vc);
-    const Vector3<T>& w_WB = V_WB.rotational();
-
-    // Spatial inertia of body B about Bo and expressed in the body frame B.
-    const SpatialInertia<T> M_B = body_B.CalcSpatialInertiaInBodyFrame(context);
-
-    // Re-express body B's spatial inertia in the world frame W.
-    // TODO(amcastro-tri): Consider placing M_B_W within a PositionDynamicsCache
-    // containing this and other dynamic quantities dependent on
-    // PositionKinematicsCache.
-    const SpatialInertia<T> M_B_W = M_B.ReExpress(R_WB);
-    const T& mass = M_B_W.get_mass();
-    // B's center of mass measured in B and expressed in W.
-    const Vector3<T>& p_BoBcm_W = M_B_W.get_com();
-    // B's unit rotational inertia about Bo, expressed in W.
-    const UnitInertia<T>& G_B_W = M_B_W.get_unit_inertia();
-
-    // Gyroscopic spatial force on body B about Bo.
-    // Notice b_Bo_W(q, v) is a function of positions and velocities only.
-    // TODO(amcastro-tri): consider caching b_Bo_W in PositionDynamicsCache.
-    SpatialForce<T> b_Bo_W = mass *
-        SpatialForce<T>(w_WB.cross(G_B_W * w_WB),         /* rotational */
-                        w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
+    // Body B spatial inertia about Bo expressed in world W.
+    const SpatialInertia<T>& M_B_W = M_B_W_cache[body_B.node_index()];
 
     // Equations of motion for a rigid body written at a generic point Bo not
     // necessarily coincident with the body's center of mass. This corresponds
     // to Eq. 2.26 (p. 27) in A. Jain's book.
-    Ftot_BBo_W = M_B_W * A_WB + b_Bo_W;
+    Ftot_BBo_W = M_B_W * A_WB;
+
+    // If velocities are zero, then b_Bo_W is zero and does not contribute.
+    if (b_Bo_W_cache != nullptr) {
+      // Dynamic bias for body B.
+      const SpatialForce<T>& b_Bo_W = (*b_Bo_W_cache)[body_B.node_index()];
+      Ftot_BBo_W += b_Bo_W;
+    }
   }
 
   // Implementation for MultibodyTreeElement::DoSetTopology().

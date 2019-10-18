@@ -15,6 +15,8 @@ using drake::geometry::SceneGraph;
 namespace drake {
 namespace multibody {
 
+using math::RigidTransformd;
+
 IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   const std::string iiwa_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/"
@@ -28,8 +30,6 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0"));
   plant_->Finalize();
-
-  drake::log()->info("plant_->num_positions = {}", plant_->num_positions());
 
   diagram_ = builder.Build();
   diagram_context_ = diagram_->CreateDefaultContext();
@@ -91,8 +91,8 @@ Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q) {
 namespace {
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
-    double radius1, double radius2, const Eigen::Isometry3d& X_B1S1,
-    const Eigen::Isometry3d& X_B2S2, MultibodyPlant<T>** plant,
+    double radius1, double radius2, const RigidTransformd& X_B1S1,
+    const RigidTransformd& X_B2S2, MultibodyPlant<T>** plant,
     geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
     FrameIndex* sphere2_index) {
   systems::DiagramBuilder<T> builder;
@@ -101,24 +101,22 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
   const auto& sphere1 = (*plant)->GetBodyByName("body1");
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
   (*plant)->RegisterCollisionGeometry(
-      sphere1, X_B1S1, geometry::Sphere(radius1), "sphere1_collision",
-      multibody::CoulombFriction<double>(), *scene_graph);
+      sphere1, RigidTransformd(X_B1S1), geometry::Sphere(radius1),
+      "sphere1_collision", multibody::CoulombFriction<double>());
   (*plant)->RegisterCollisionGeometry(
-      sphere2, X_B2S2, geometry::Sphere(radius2), "sphere2_collision",
-      multibody::CoulombFriction<double>(), *scene_graph);
+      sphere2, RigidTransformd(X_B2S2), geometry::Sphere(radius2),
+      "sphere2_collision", multibody::CoulombFriction<double>());
   *sphere1_index = sphere1.body_frame().index();
   *sphere2_index = sphere2.body_frame().index();
-  (*plant)->Finalize(*scene_graph);
+  (*plant)->Finalize();
 
   return builder.Build();
 }
 }  // namespace
 
 TwoFreeSpheresTest::TwoFreeSpheresTest() {
-  X_B1S1_.setIdentity();
-  X_B1S1_.translation() << 0.01, 0.02, 0.03;
-  X_B2S2_.setIdentity();
-  X_B2S2_.translation() << 0.02, -0.01, -0.02;
+  X_B1S1_.set_translation({0.01, 0.02, 0.03});
+  X_B2S2_.set_translation({0.02, -0.01, -0.02});
   diagram_double_ = BuildTwoFreeSpheresDiagram(
       radius1_, radius2_, X_B1S1_, X_B2S2_, &plant_double_,
       &scene_graph_double_, &sphere1_index_, &sphere2_index_);
@@ -145,16 +143,16 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
       "box", SpatialInertia<double>(1, Eigen::Vector3d(0, 0, 0),
                                     UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
-      box, Isometry3<double>::Identity(),
+      box, RigidTransformd::Identity(),
       geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
-      CoulombFriction<double>(0.9, 0.8), *scene_graph);
+      CoulombFriction<double>(0.9, 0.8));
 
   const auto& sphere = (*plant)->AddRigidBody(
       "sphere", SpatialInertia<double>(1, Eigen::Vector3d::Zero(),
                                        UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
-      sphere, Isometry3<double>::Identity(), geometry::Sphere(radius), "sphere",
-      CoulombFriction<double>(0.9, 0.8), *scene_graph);
+      sphere, RigidTransformd::Identity(), geometry::Sphere(radius), "sphere",
+      CoulombFriction<double>(0.9, 0.8));
 
   (*plant)->Finalize();
 

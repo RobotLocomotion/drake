@@ -8,12 +8,16 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using drake::math::RollPitchYawd;
+using drake::math::RigidTransformd;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
@@ -43,18 +47,18 @@ GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
                std::invalid_argument);
 
 
-  Eigen::Vector3d vec3 = Eigen::Vector3d::Zero();
+  Vector3d vec3 = Vector3d::Zero();
   EXPECT_TRUE(ParseVectorAttribute(element, "vec3", &vec3));
-  EXPECT_TRUE(CompareMatrices(vec3, Eigen::Vector3d(2.1, 3.2, 4.3)));
+  EXPECT_TRUE(CompareMatrices(vec3, Vector3d(2.1, 3.2, 4.3)));
   EXPECT_FALSE(ParseVectorAttribute(element, "vec3_foo", &vec3));
   EXPECT_THROW(ParseVectorAttribute(element, "vec4", &vec3),
                std::invalid_argument);
   EXPECT_THROW(ParseVectorAttribute(element, "scalar", &vec3),
                std::invalid_argument);
 
-  Eigen::Vector4d vec4 = Eigen::Vector4d::Zero();
+  Vector4d vec4 = Vector4d::Zero();
   EXPECT_TRUE(ParseVectorAttribute(element, "vec4", &vec4));
-  EXPECT_TRUE(CompareMatrices(vec4, Eigen::Vector4d(5, 6, 7, 8)));
+  EXPECT_TRUE(CompareMatrices(vec4, Vector4d(5, 6, 7, 8)));
   EXPECT_FALSE(ParseVectorAttribute(element, "vec4_foo", &vec4));
   EXPECT_THROW(ParseVectorAttribute(element, "vec3", &vec4),
                std::invalid_argument);
@@ -71,15 +75,10 @@ GTEST_TEST(TinyxmlUtilTest, OriginAttributesTest) {
   XMLElement* element = xml_doc.FirstChildElement("element");
   ASSERT_TRUE(element != nullptr);
 
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  T = detail::OriginAttributesToTransform(element);
+  const RigidTransformd actual = internal::OriginAttributesToTransform(element);
+  const RigidTransformd expected(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
 
-  Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
-  const math::RollPitchYaw<double> rpy(1, 2, 3);
-  Eigen::Vector3d xyz(4, 5, 6);
-  expected.matrix() << rpy.ToMatrix3ViaRotationMatrix(), xyz, 0, 0, 0, 1;
-
-  EXPECT_TRUE(CompareMatrices(T.matrix(), expected.matrix()));
+  EXPECT_TRUE(CompareMatrices(actual.matrix(), expected.matrix()));
 }
 
 GTEST_TEST(TinyxmlUtilTest, MalformedRpyOriginAttributesTest) {
@@ -91,7 +90,7 @@ GTEST_TEST(TinyxmlUtilTest, MalformedRpyOriginAttributesTest) {
   XMLElement* element = xml_doc.FirstChildElement("element");
   ASSERT_TRUE(element != nullptr);
 
-  EXPECT_THROW(detail::OriginAttributesToTransform(element),
+  EXPECT_THROW(internal::OriginAttributesToTransform(element),
                std::invalid_argument);
 }
 
@@ -104,14 +103,14 @@ GTEST_TEST(TinyxmlUtilTest, ThreeVectorAttributeTest) {
   XMLElement* element = xml_doc.FirstChildElement("element");
   ASSERT_TRUE(element != nullptr);
 
-  Eigen::Vector3d out = Eigen::Vector3d::Zero();
-  EXPECT_TRUE(detail::ParseThreeVectorAttribute(element, "one", &out));
-  EXPECT_TRUE(CompareMatrices(out, Eigen::Vector3d(1, 1, 1)));
+  Vector3d out = Vector3d::Zero();
+  EXPECT_TRUE(internal::ParseThreeVectorAttribute(element, "one", &out));
+  EXPECT_TRUE(CompareMatrices(out, Vector3d(1, 1, 1)));
 
-  EXPECT_TRUE(detail::ParseThreeVectorAttribute(element, "three", &out));
-  EXPECT_TRUE(CompareMatrices(out, Eigen::Vector3d(4, 5, 6)));
+  EXPECT_TRUE(internal::ParseThreeVectorAttribute(element, "three", &out));
+  EXPECT_TRUE(CompareMatrices(out, Vector3d(4, 5, 6)));
 
-  EXPECT_FALSE(detail::ParseThreeVectorAttribute(element, "meh", &out));
+  EXPECT_FALSE(internal::ParseThreeVectorAttribute(element, "meh", &out));
 }
 
 GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
@@ -134,7 +133,7 @@ GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
   ASSERT_TRUE(element != nullptr);
 
   double scalar = 0.0;
-  EXPECT_TRUE(detail::ParseScalarAttribute(element, "oneAndHalf", &scalar));
+  EXPECT_TRUE(internal::ParseScalarAttribute(element, "oneAndHalf", &scalar));
   EXPECT_EQ(scalar, 1.5);
 
   // Restore the original global locale
@@ -142,6 +141,6 @@ GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

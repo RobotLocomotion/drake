@@ -1,20 +1,14 @@
-#include <cmath>
-#include <memory>
-
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/examples/pendulum/pendulum_geometry.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
-#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -36,9 +30,8 @@ int DoMain() {
   auto& desired_state = pendulum->get_mutable_state(pendulum_context.get());
   desired_state.set_theta(M_PI);
   desired_state.set_thetadot(0);
-  auto input = std::make_unique<PendulumInput<double>>();
-  input->set_tau(0.0);
-  pendulum_context->FixInputPort(0, std::move(input));
+  pendulum->get_input_port().FixValue(
+      pendulum_context.get(), PendulumInput<double>{}.with_tau(0.0));
 
   // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
   // The factor of 10 is heuristic, but roughly accounts for the unit conversion
@@ -58,12 +51,9 @@ int DoMain() {
   builder.Connect(controller->get_output_port(), pendulum->get_input_port());
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  pendulum->RegisterGeometry(pendulum->get_parameters(*pendulum_context),
-                             scene_graph);
-  builder.Connect(pendulum->get_geometry_pose_output_port(),
-                  scene_graph->get_source_pose_port(pendulum->source_id()));
-
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  PendulumGeometry::AddToBuilder(
+      &builder, pendulum->get_state_output_port(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -76,7 +66,7 @@ int DoMain() {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   // Adds a numerical test to make sure we're stabilizing the fixed point.
   DRAKE_DEMAND(is_approx_equal_abstol(state.get_value(),

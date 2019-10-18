@@ -15,15 +15,20 @@ namespace examples {
 namespace scene_graph {
 namespace bouncing_ball {
 
+using Eigen::Vector4d;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
+using math::RigidTransform;
+using math::RigidTransformd;
 using std::make_unique;
 using systems::Context;
 
@@ -31,16 +36,17 @@ template <typename T>
 BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
                                         SceneGraph<T>* scene_graph,
                                         const Vector2<double>& p_WB)
-    : source_id_(source_id), p_WB_(p_WB) {
+    : p_WB_(p_WB) {
   DRAKE_DEMAND(scene_graph != nullptr);
-  DRAKE_DEMAND(source_id_.is_valid());
+  DRAKE_DEMAND(source_id.is_valid());
 
   geometry_query_port_ = this->DeclareAbstractInputPort(
       systems::kUseDefaultName, Value<geometry::QueryObject<T>>{})
           .get_index();
   state_port_ =
       this->DeclareVectorOutputPort(BouncingBallVector<T>(),
-                                    &BouncingBallPlant::CopyStateToOutput)
+                                    &BouncingBallPlant::CopyStateToOutput,
+                                    {this->all_state_ticket()})
           .get_index();
 
   this->DeclareContinuousState(BouncingBallVector<T>(), 1 /* num_q */,
@@ -48,20 +54,26 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   static_assert(BouncingBallVectorIndices::kNumCoordinates == 1 + 1, "");
 
   ball_frame_id_ = scene_graph->RegisterFrame(
-      source_id, GeometryFrame("ball_frame", Isometry3<double>::Identity()));
+      source_id, GeometryFrame("ball_frame"));
   ball_id_ = scene_graph->RegisterGeometry(
       source_id, ball_frame_id_,
-      make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
+      make_unique<GeometryInstance>(RigidTransformd::Identity(), /*X_FG*/
                                     make_unique<Sphere>(diameter_ / 2.0),
                                     "ball"));
   // Use the default material.
   scene_graph->AssignRole(source_id, ball_id_, IllustrationProperties());
   scene_graph->AssignRole(source_id, ball_id_, ProximityProperties());
+  PerceptionProperties perception_properties;
+  perception_properties.AddProperty("phong", "diffuse",
+                                    Vector4d{0.8, 0.8, 0.8, 1.0});
+  perception_properties.AddProperty("label", "id",
+                                    RenderLabel(ball_id_.get_value()));
+  scene_graph->AssignRole(source_id, ball_id_, perception_properties);
 
   // Allocate the output port now that the frame has been registered.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-          FramePoseVector<double>(source_id_, {ball_frame_id_}),
-          &BouncingBallPlant::CalcFramePoseOutput)
+          &BouncingBallPlant::CalcFramePoseOutput,
+          {this->configuration_ticket()})
       .get_index();
 }
 
@@ -97,14 +109,10 @@ void BouncingBallPlant<T>::CopyStateToOutput(
 template <typename T>
 void BouncingBallPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  DRAKE_DEMAND(poses->source_id() == source_id_);
-  DRAKE_DEMAND(poses->size() == 1);
-
-  Isometry3<T> pose = Isometry3<T>::Identity();
+  RigidTransform<T> pose = RigidTransform<T>::Identity();
   const BouncingBallVector<T>& state = get_state(context);
-  pose.translation() << p_WB_.x(), p_WB_.y(), state.z();
-  poses->clear();
-  poses->set_value(ball_frame_id_, pose);
+  pose.set_translation({p_WB_.x(), p_WB_.y(), state.z()});
+  *poses = {{ball_frame_id_, pose}};
 }
 
 // Compute the actual physics.
@@ -117,9 +125,8 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
   const BouncingBallVector<T>& state = get_state(context);
   BouncingBallVector<T>& derivative_vector = get_mutable_state(derivatives);
 
-  const geometry::QueryObject<T>& query_object =
-      get_geometry_query_input_port().
-          template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object = get_geometry_query_input_port().
+      template Eval<geometry::QueryObject<T>>(context);
 
   std::vector<PenetrationAsPointPair<T>> penetrations =
       query_object.ComputePointPairPenetration();

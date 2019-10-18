@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace systems {
-namespace detail {
+namespace internal {
 namespace {
 
 using symbolic::Expression;
@@ -131,6 +131,6 @@ GTEST_TEST(ModelValuesTest, NullTest) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace systems
 }  // namespace drake

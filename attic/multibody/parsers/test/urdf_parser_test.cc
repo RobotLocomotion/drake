@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -195,8 +196,10 @@ GTEST_TEST(URDFParserTest,
   const string model_file = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
 
+  const string atlas_xml = FindResourceOrThrow(
+      "drake/examples/atlas/package.xml");
   PackageMap package_map;
-  package_map.Add("Atlas", FindResourceOrThrow("drake/examples/atlas"));
+  package_map.Add("Atlas", filesystem::path(atlas_xml).parent_path());
 
   auto tree = make_unique<RigidBodyTree<double>>();
   ASSERT_NO_THROW(AddModelInstanceFromUrdfFileSearchingInRosPackages(

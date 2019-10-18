@@ -47,14 +47,14 @@ class OrientationConstraint : public solvers::Constraint {
    * @param theta_bound The bound on the angle difference between frame A's
    *   orientation and frame B's orientation. It is denoted as θ_bound in the
    *   class documentation. `theta_bound` is in radians.
-   * @param context The Context that has been allocated for this `tree`. We
-   *   will update the context when evaluating the constraint. `context` should
-   *   be alive during the lifetime of this constraint.
+   * @param plant_context The Context that has been allocated for this
+   *   `tree`. We will update the context when evaluating the constraint.
+   *   `plant_context` should be alive during the lifetime of this constraint.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::logic_error if `frameAbar` or `frameBbar` does not belong to
    *   `plant`.
    * @throws std::invalid_argument if angle_bound < 0.
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
   OrientationConstraint(
       const MultibodyPlant<double>* const plant,
@@ -62,7 +62,21 @@ class OrientationConstraint : public solvers::Constraint {
       const math::RotationMatrix<double>& R_AbarA,
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double theta_bound,
-      systems::Context<double>* context);
+      systems::Context<double>* plant_context);
+
+  /**
+   * Overloaded constructor.
+   * Constructs the constraint using MultibodyPlant<AutoDiffXd>
+   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+   * Documentation string is manually recreated in Python.}
+   */
+  OrientationConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+                        const Frame<AutoDiffXd>& frameAbar,
+                        const math::RotationMatrix<double>& R_AbarA,
+                        const Frame<AutoDiffXd>& frameBbar,
+                        const math::RotationMatrix<double>& R_BbarB,
+                        double theta_bound,
+                        systems::Context<AutoDiffXd>* plant_context);
 
   ~OrientationConstraint() override {}
 
@@ -80,12 +94,17 @@ class OrientationConstraint : public solvers::Constraint {
         "variables.");
   }
 
-  const MultibodyPlant<double>& plant_;
+  bool use_autodiff() const { return plant_autodiff_; }
+
+  const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameAbar_index_;
   const FrameIndex frameBbar_index_;
   const math::RotationMatrix<double> R_AbarA_;
   const math::RotationMatrix<double> R_BbarB_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

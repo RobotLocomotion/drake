@@ -1,10 +1,17 @@
 import pydrake.common.eigen_geometry as mut
 
-import numpy as np
-import six
+import copy
 import unittest
 
+import numpy as np
+import six
+
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import Expression
 import pydrake.common.test.eigen_geometry_test_util as test_util
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 
 def normalize(x):
@@ -12,136 +19,201 @@ def normalize(x):
 
 
 class TestEigenGeometry(unittest.TestCase):
-    def test_quaternion(self):
+    def check_cast(self, template, T):
+        value = template[T]()
+        # Refer to docstrings for `CastUPack` in `default_scalars_pybind.h`.
+        if T == float:
+            U_list = [float, AutoDiffXd, Expression]
+        else:
+            U_list = [T]
+        for U in U_list:
+            self.assertIsInstance(value.cast[U](), template[U], U)
+
+    @numpy_compare.check_all_types
+    def test_argument_deduction(self, T):
+        # Brief check for argument deduction (#11667).
+        q = mut.Quaternion_(w=T(1), x=T(0), y=T(0), z=T(0))
+        self.assertIsInstance(q, mut.Quaternion_[T])
+
+    @numpy_compare.check_all_types
+    def test_quaternion(self, T):
         # Simple API.
-        q_identity = mut.Quaternion()
-        self.assertTrue(np.allclose(q_identity.wxyz(), [1, 0, 0, 0]))
-        self.assertTrue(np.allclose(
-            q_identity.wxyz(), mut.Quaternion.Identity().wxyz()))
-        self.assertEqual(
-            str(q_identity), "Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)")
+        Quaternion = mut.Quaternion_[T]
+        cast = np.vectorize(T)
+        q_identity = Quaternion()
+        self.assertEqual(numpy_compare.resolve_type(q_identity.wxyz()), T)
+        numpy_compare.assert_float_equal(q_identity.wxyz(), [1., 0, 0, 0])
+        numpy_compare.assert_float_equal(
+                copy.copy(q_identity).wxyz(), [1., 0, 0, 0])
+        numpy_compare.assert_equal(
+                q_identity.wxyz(), Quaternion.Identity().wxyz())
+        if T == float:
+            self.assertEqual(
+                str(q_identity),
+                "Quaternion_[float](w=1.0, x=0.0, y=0.0, z=0.0)")
+        self.check_cast(mut.Quaternion_, T)
         # Test ordering.
         q_wxyz = normalize([0.1, 0.3, 0.7, 0.9])
-        q = mut.Quaternion(w=q_wxyz[0], x=q_wxyz[1], y=q_wxyz[2], z=q_wxyz[3])
+        q = Quaternion(w=q_wxyz[0], x=q_wxyz[1], y=q_wxyz[2], z=q_wxyz[3])
         # - Accessors.
-        self.assertEqual(q.w(), q_wxyz[0])
-        self.assertEqual(q.x(), q_wxyz[1])
-        self.assertEqual(q.y(), q_wxyz[2])
-        self.assertEqual(q.z(), q_wxyz[3])
-        self.assertTrue(np.allclose(q.xyz(), q_wxyz[1:]))
-        self.assertTrue(np.allclose(q.wxyz(), q_wxyz))
+        numpy_compare.assert_float_equal(q.w(), q_wxyz[0])
+        numpy_compare.assert_float_equal(q.x(), q_wxyz[1])
+        numpy_compare.assert_float_equal(q.y(), q_wxyz[2])
+        numpy_compare.assert_float_equal(q.z(), q_wxyz[3])
+        numpy_compare.assert_float_equal(q.xyz(), q_wxyz[1:])
+        numpy_compare.assert_float_equal(q.wxyz(), q_wxyz)
         # - Mutators.
         q_wxyz_new = q_wxyz[::-1]
-        self.assertFalse(np.allclose(q_wxyz, q_wxyz_new))
+        numpy_compare.assert_not_equal(q_wxyz, q_wxyz_new)
         q.set_wxyz(wxyz=q_wxyz_new)
-        self.assertTrue(np.allclose(q.wxyz(), q_wxyz_new))
+        numpy_compare.assert_float_equal(q.wxyz(), q_wxyz_new)
         q.set_wxyz(
             w=q_wxyz_new[0], x=q_wxyz_new[1], y=q_wxyz_new[2], z=q_wxyz_new[3])
-        self.assertTrue(np.allclose(q.wxyz(), q_wxyz_new))
+        numpy_compare.assert_float_equal(q.wxyz(), q_wxyz_new)
         # Alternative constructors.
-        q_other = mut.Quaternion(wxyz=q_wxyz)
-        self.assertTrue(np.allclose(q_other.wxyz(), q_wxyz))
+        q_other = Quaternion(wxyz=q_wxyz)
+        numpy_compare.assert_float_equal(q_other.wxyz(), q_wxyz)
         R = np.array([
-            [0, 0, 1],
+            [0., 0, 1],
             [1, 0, 0],
             [0, 1, 0]])
         q_wxyz_expected = np.array([0.5, 0.5, 0.5, 0.5])
-        q_other = mut.Quaternion(q_wxyz_expected)
-        self.assertTrue(np.allclose(q_other.rotation(), R))
+        q_other = Quaternion(q_wxyz_expected)
+        numpy_compare.assert_float_equal(q_other.rotation(), R)
         R_I = np.eye(3, 3)
         q_other.set_rotation(R_I)
-        self.assertTrue(np.allclose(q_other.wxyz(), q_identity.wxyz()))
+        numpy_compare.assert_equal(q_other.wxyz(), q_identity.wxyz())
         # - Copy constructor.
-        cp = mut.Quaternion(other=q)
-        self.assertTrue(np.allclose(q.wxyz(), cp.wxyz()))
+        cp = Quaternion(other=q)
+        numpy_compare.assert_equal(q.wxyz(), cp.wxyz())
         # Bad values.
-        q = mut.Quaternion.Identity()
-        # - wxyz
-        q_wxyz_bad = [1., 2, 3, 4]
-        with self.assertRaises(RuntimeError):
-            q.set_wxyz(q_wxyz_bad)
-        self.assertTrue(np.allclose(q.wxyz(), [1, 0, 0, 0]))
-        # - Rotation.
-        R_bad = np.copy(R)
-        R_bad[0, 0] = 10
-        with self.assertRaises(RuntimeError):
-            q_other.set_rotation(R_bad)
-        self.assertTrue(np.allclose(q_other.rotation(), R_I))
+        if T != Expression:
+            q = Quaternion.Identity()
+            # - wxyz
+            q_wxyz_bad = [1., 2, 3, 4]
+            with self.assertRaises(RuntimeError):
+                q.set_wxyz(q_wxyz_bad)
+            numpy_compare.assert_float_equal(q.wxyz(), [1., 0, 0, 0])
+            # - Rotation.
+            R_bad = np.copy(R)
+            R_bad[0, 0] = 10
+            with self.assertRaises(RuntimeError):
+                q_other.set_rotation(R_bad)
+            numpy_compare.assert_float_equal(q_other.rotation(), R_I)
 
         # Operations.
-        q = mut.Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
-        self.assertTrue(
-            (q.multiply(position=[1, 2, 3]) == [3, 1, 2]).all())
-        q_I = q.inverse().multiply(q)
-        self.assertTrue(np.allclose(q_I.wxyz(), [1, 0, 0, 0]))
+        q_AB = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
+        q_I = q_AB.inverse().multiply(q_AB)
+        numpy_compare.assert_float_equal(q_I.wxyz(), [1., 0, 0, 0])
         if six.PY3:
-            self.assertTrue(np.allclose(
-                eval("q.inverse() @ q").wxyz(), [1, 0, 0, 0]))
-        q_conj = q.conjugate()
-        self.assertTrue(np.allclose(q_conj.wxyz(), [0.5, -0.5, -0.5, -0.5]))
+            numpy_compare.assert_float_equal(
+                eval("q_AB.inverse() @ q_AB").wxyz(), [1., 0, 0, 0])
+        v_B = np.array([1., 2, 3])
+        v_A = np.array([3., 1, 2])
+        numpy_compare.assert_float_allclose(q_AB.multiply(vector=v_B), v_A)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_equal(
+            q_AB.multiply(vector=vlist_B), vlist_A)
+        # Test deprecation.
+        with catch_drake_warnings(expected_count=2):
+            self.assertEqual(q_AB.multiply(position=v_B).shape, v_B.shape)
+            self.assertEqual(
+                q_AB.multiply(position=vlist_B).shape, vlist_B.shape)
+        with catch_drake_warnings(expected_count=0):
+            # No deprecation should happen with position arguments.
+            self.assertEqual(q_AB.multiply(v_B).shape, v_B.shape)
+            self.assertEqual(q_AB.multiply(vlist_B).shape, vlist_B.shape)
+
+        q_AB_conj = q_AB.conjugate()
+        numpy_compare.assert_float_equal(
+                q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
 
         # Test `type_caster`s.
-        value = test_util.create_quaternion()
-        self.assertTrue(isinstance(value, mut.Quaternion))
-        test_util.check_quaternion(value)
+        if T == float:
+            value = test_util.create_quaternion()
+            self.assertTrue(isinstance(value, mut.Quaternion))
+            test_util.check_quaternion(value)
 
-    def test_isometry3(self):
+        assert_pickle(self, q_AB, Quaternion.wxyz, T=T)
+
+    @numpy_compare.check_all_types
+    def test_isometry3(self, T):
+        Isometry3 = mut.Isometry3_[T]
         # - Default constructor
-        transform = mut.Isometry3()
-        X = np.eye(4, 4)
-        self.assertTrue(np.allclose(transform.matrix(), X))
-        self.assertEqual(str(transform), str(X))
-        # - Constructor with (X)
-        transform = mut.Isometry3(matrix=X)
-        self.assertTrue(np.allclose(transform.matrix(), X))
+        transform = Isometry3()
+        self.assertEqual(numpy_compare.resolve_type(transform.matrix()), T)
+        X_I_np = np.eye(4, 4)
+        numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
+        numpy_compare.assert_float_equal(copy.copy(transform).matrix(), X_I_np)
+        if T == float:
+            self.assertEqual(str(transform), str(X_I_np))
+        # - Constructor with (X_I_np)
+        transform = Isometry3(matrix=X_I_np)
+        numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         # - Copy constructor.
-        cp = mut.Isometry3(other=transform)
-        self.assertTrue(np.allclose(transform.matrix(), cp.matrix()))
+        cp = Isometry3(other=transform)
+        numpy_compare.assert_equal(transform.matrix(), cp.matrix())
         # - Identity
-        transform = mut.Isometry3.Identity()
-        self.assertTrue(np.allclose(transform.matrix(), X))
+        transform = Isometry3.Identity()
+        numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         # - Constructor with (R, p)
-        R = np.array([
+        R_AB = np.array([
             [0., 1, 0],
             [-1, 0, 0],
             [0, 0, 1]])
-        p = np.array([1., 2, 3])
-        X = np.vstack((np.hstack((R, p.reshape((-1, 1)))), [0, 0, 0, 1]))
-        transform = mut.Isometry3(rotation=R, translation=p)
-        self.assertTrue(np.allclose(transform.matrix(), X))
-        self.assertTrue(np.allclose(transform.translation(), p))
-        transform.set_translation(-p)
-        self.assertTrue(np.allclose(transform.translation(), -p))
-        self.assertTrue(np.allclose(transform.rotation(), R))
-        transform.set_rotation(R.T)
-        self.assertTrue(np.allclose(transform.rotation(), R.T))
+        p_AB = np.array([1., 2, 3])
+        X_AB_np = np.eye(4)
+        X_AB_np[:3, :3] = R_AB
+        X_AB_np[:3, 3] = p_AB
+        X_AB = Isometry3(rotation=R_AB, translation=p_AB)
+        numpy_compare.assert_float_equal(X_AB.matrix(), X_AB_np)
+        numpy_compare.assert_float_equal(X_AB.translation(), p_AB)
+        numpy_compare.assert_float_equal(X_AB.rotation(), R_AB)
+        # - Setters.
+        X_AB = Isometry3()
+        X_AB.set_translation(p_AB)
+        numpy_compare.assert_float_equal(X_AB.translation(), p_AB)
+        X_AB.set_rotation(R_AB)
+        numpy_compare.assert_float_equal(X_AB.rotation(), R_AB)
+        # - Cast
+        self.check_cast(mut.Isometry3_, T)
         # - Check transactions for bad values.
-        transform = mut.Isometry3(rotation=R, translation=p)
-        R_bad = np.copy(R)
-        R_bad[0, 0] = 10.
-        with self.assertRaises(RuntimeError):
-            transform.set_rotation(R_bad)
-        self.assertTrue(np.allclose(R, transform.rotation()))
-        X_bad = np.copy(X)
-        X_bad[:3, :3] = R_bad
-        with self.assertRaises(RuntimeError):
-            transform.set_matrix(X_bad)
-        self.assertTrue(np.allclose(X, transform.matrix()))
+        if T != Expression:
+            X_temp = Isometry3(rotation=R_AB, translation=p_AB)
+            R_bad = np.copy(R_AB)
+            R_bad[0, 0] = 10.
+            with self.assertRaises(RuntimeError):
+                X_temp.set_rotation(R_bad)
+            numpy_compare.assert_float_equal(X_temp.rotation(), R_AB)
+            X_bad_np = np.copy(X_I_np)
+            X_bad_np[:3, :3] = R_bad
+            with self.assertRaises(RuntimeError):
+                X_temp.set_matrix(X_bad_np)
+            numpy_compare.assert_float_equal(X_temp.matrix(), X_AB_np)
         # Test `type_caster`s.
-        value = test_util.create_isometry()
-        self.assertTrue(isinstance(value, mut.Isometry3))
-        test_util.check_isometry(value)
+        if T == float:
+            value = test_util.create_isometry()
+            self.assertTrue(isinstance(value, mut.Isometry3))
+            test_util.check_isometry(value)
         # Operations.
-        transform = mut.Isometry3(rotation=R, translation=p)
-        transform_I = transform.inverse().multiply(transform)
-        self.assertTrue(np.allclose(transform_I.matrix(), np.eye(4)))
-        self.assertTrue((
-            transform.multiply(position=[10, 20, 30]) == [21, -8, 33]).all())
+        X_AB = Isometry3(rotation=R_AB, translation=p_AB)
+        X_I = X_AB.inverse().multiply(X_AB)
+        numpy_compare.assert_float_equal(X_I.matrix(), X_I_np)
+        p_BQ = [10, 20, 30]
+        p_AQ = [21., -8, 33]
+        numpy_compare.assert_float_equal(X_AB.multiply(position=p_BQ), p_AQ)
+        p_BQlist = np.array([p_BQ, p_BQ]).T
+        p_AQlist = np.array([p_AQ, p_AQ]).T
+        numpy_compare.assert_float_equal(
+            X_AB.multiply(position=p_BQlist), p_AQlist)
         if six.PY3:
-            self.assertTrue(np.allclose(
-                eval("transform.inverse() @ transform").matrix(), np.eye(4)))
-            self.assertTrue((
-                eval("transform @ [10, 20, 30]") == [21, -8, 33]).all())
+            numpy_compare.assert_float_equal(
+                eval("X_AB.inverse() @ X_AB").matrix(), X_I_np)
+            numpy_compare.assert_float_equal(
+                eval("X_AB @ p_BQ"), p_AQ)
+
+        assert_pickle(self, X_AB, Isometry3.matrix, T=T)
 
     def test_translation(self):
         # Test `type_caster`s.
@@ -149,58 +221,67 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertEqual(value.shape, (3,))
         test_util.check_translation(value)
 
-    def test_angle_axis(self):
-        value_identity = mut.AngleAxis.Identity()
-        self.assertEqual(value_identity.angle(), 0)
-        self.assertTrue((value_identity.axis() == [1, 0, 0]).all())
+    @numpy_compare.check_all_types
+    def test_angle_axis(self, T):
+        AngleAxis = mut.AngleAxis_[T]
+        value_identity = AngleAxis.Identity()
+        self.assertEqual(numpy_compare.resolve_type(value_identity.angle()), T)
+        numpy_compare.assert_float_equal(value_identity.angle(), 0.)
+        numpy_compare.assert_float_equal(value_identity.axis(), [1., 0, 0])
 
         # Construct with rotation matrix.
         R = np.array([
             [0., 1, 0],
             [-1, 0, 0],
             [0, 0, 1]])
-        value = mut.AngleAxis(rotation=R)
-        self.assertTrue(np.allclose(value.rotation(), R, atol=1e-15, rtol=0))
-        self.assertTrue(np.allclose(
-            value.inverse().rotation(), R.T, atol=1e-15, rtol=0))
-        self.assertTrue(np.allclose(
-            value.multiply(value.inverse()).rotation(), np.eye(3),
-            atol=1e-15, rtol=0))
+        value = AngleAxis(rotation=R)
+        numpy_compare.assert_float_allclose(value.rotation(), R)
+        numpy_compare.assert_float_allclose(copy.copy(value).rotation(), R)
+        numpy_compare.assert_float_allclose(value.inverse().rotation(), R.T)
+        numpy_compare.assert_float_allclose(
+            value.multiply(value.inverse()).rotation(), np.eye(3))
         if six.PY3:
-            self.assertTrue(np.allclose(
-                eval("value @ value.inverse()").rotation(), np.eye(3),
-                atol=1e-15, rtol=0))
+            numpy_compare.assert_float_allclose(
+                eval("value @ value.inverse()").rotation(), np.eye(3))
         value.set_rotation(np.eye(3))
-        self.assertTrue((value.rotation() == np.eye(3)).all())
+        numpy_compare.assert_float_equal(value.rotation(), np.eye(3))
 
         # Construct with quaternion.
-        q = mut.Quaternion(R)
-        value = mut.AngleAxis(quaternion=q)
-        self.assertTrue(np.allclose(
-            value.quaternion().wxyz(), q.wxyz(), atol=1e-15, rtol=0))
-        value.set_quaternion(mut.Quaternion.Identity())
-        self.assertTrue((value.quaternion().wxyz() == [1, 0, 0, 0]).all())
+        Quaternion = mut.Quaternion_[T]
+        q = Quaternion(R)
+        value = AngleAxis(quaternion=q)
+        numpy_compare.assert_float_allclose(
+            value.quaternion().wxyz(), numpy_compare.to_float(q.wxyz()))
+        value.set_quaternion(Quaternion.Identity())
+        numpy_compare.assert_float_equal(
+                value.quaternion().wxyz(), [1., 0, 0, 0])
 
         # Test setters.
-        value = mut.AngleAxis(value_identity)
+        value = AngleAxis(value_identity)
         value.set_angle(np.pi / 4)
         v = normalize(np.array([0.1, 0.2, 0.3]))
-        with self.assertRaises(RuntimeError):
-            value.set_axis([0.1, 0.2, 0.3])
+        if T != Expression:
+            with self.assertRaises(RuntimeError):
+                value.set_axis([0.1, 0.2, 0.3])
         value.set_axis(v)
-        self.assertEqual(value.angle(), np.pi / 4)
-        self.assertTrue((value.axis() == v).all())
+        numpy_compare.assert_float_equal(value.angle(), np.pi / 4)
+        numpy_compare.assert_float_equal(value.axis(), v)
+
+        # Cast.
+        self.check_cast(mut.AngleAxis_, T)
 
         # Test symmetry based on accessors.
         # N.B. `Eigen::AngleAxis` does not disambiguate by restricting internal
         # angles and axes to a half-plane.
         angle = np.pi / 6
         axis = normalize([0.1, 0.2, 0.3])
-        value = mut.AngleAxis(angle=angle, axis=axis)
-        value_sym = mut.AngleAxis(angle=-angle, axis=-axis)
-        self.assertTrue(np.allclose(
-            value.rotation(), value_sym.rotation(), atol=1e-15, rtol=0))
-        self.assertTrue(np.allclose(
-            value.angle(), -value_sym.angle(), atol=1e-15, rtol=0))
-        self.assertTrue(np.allclose(
-            value.axis(), -value_sym.axis(), atol=1e-15, rtol=0))
+        value = AngleAxis(angle=angle, axis=axis)
+        value_sym = AngleAxis(angle=-angle, axis=-axis)
+        numpy_compare.assert_equal(value.rotation(), value_sym.rotation())
+        numpy_compare.assert_equal(value.angle(), -value_sym.angle())
+        numpy_compare.assert_equal(value.axis(), -value_sym.axis())
+
+        def get_vector(value):
+            return np.hstack((value.angle(), value.axis()))
+
+        assert_pickle(self, value, get_vector, T=T)

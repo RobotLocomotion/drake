@@ -6,12 +6,13 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /** Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
@@ -80,7 +81,7 @@ geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 /** Given `sdf_collision` stemming from the parsing of a `<collision>` element
  in an SDF file, this method makes the pose `X_LG` of frame G for the geometry
  of that collision element in the frame L of the link it belongs to.  */
-Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
+math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision);
 
 /** Parses friction coefficients from `sdf_collision`.
@@ -122,6 +123,6 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
                              const multibody::PackageMap& package_map,
                              const std::string& root_dir);
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <set>
 #include <unordered_map>
 
 #include "drake/math/matrix_util.h"
@@ -32,7 +33,6 @@ symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
     return e <= ub;
   }
 }
-
 }  // namespace
 
 symbolic::Formula Constraint::DoCheckSatisfied(
@@ -74,7 +74,7 @@ void QuadraticConstraint::DoEval(
 template <typename DerivedX, typename ScalarY>
 void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
-  const VectorX<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
+  const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
   (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
@@ -99,7 +99,7 @@ void LorentzConeConstraint::DoEval(
 template <typename DerivedX, typename ScalarY>
 void RotatedLorentzConeConstraint::DoEvalGeneric(
     const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
-  const VectorX<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
+  const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
   (*y)(1) = z(1);
@@ -386,5 +386,41 @@ void ExpressionConstraint::DoEval(
   }
 }
 
+ExponentialConeConstraint::ExponentialConeConstraint(
+    const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+    const Eigen::Ref<const Eigen::Vector3d>& b)
+    : Constraint(
+          2, A.cols(), Eigen::Vector2d::Zero(),
+          Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
+      A_{A},
+      b_{b} {
+  DRAKE_DEMAND(A.rows() == 3);
+}
+
+template <typename DerivedX, typename ScalarY>
+void ExponentialConeConstraint::DoEvalGeneric(
+    const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
+  y->resize(num_constraints());
+  Vector3<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
+  using std::exp;
+  (*y)(0) = z(0) - z(1) * exp(z(2) / z(1));
+  (*y)(1) = z(1);
+}
+
+void ExponentialConeConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  DoEvalGeneric(x, y);
+}
+
+void ExponentialConeConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                       AutoDiffVecXd* y) const {
+  DoEvalGeneric(x, y);
+}
+
+void ExponentialConeConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+    VectorX<symbolic::Expression>* y) const {
+  DoEvalGeneric(x, y);
+}
 }  // namespace solvers
 }  // namespace drake

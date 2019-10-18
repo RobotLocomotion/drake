@@ -2,6 +2,7 @@
 ///
 /// Implements a controller for a KUKA iiwa arm.
 
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -19,7 +20,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -91,11 +91,6 @@ int DoMain() {
           kLcmPlanChannel, &lcm));
   plan_sub->set_name("plan_sub");
 
-  auto status_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_status>(
-          kLcmStatusChannel, &lcm));
-  status_sub->set_name("status_sub");
-
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
           kLcmCommandChannel, &lcm));
@@ -104,45 +99,55 @@ int DoMain() {
   // Connect subscribers to input ports.
   builder.Connect(plan_sub->get_output_port(),
                   plan_interpolator->get_input_port_iiwa_plan());
-  builder.Connect(status_sub->get_output_port(),
-                  plan_interpolator->get_input_port_iiwa_status());
 
   // Connect publisher to output port.
   builder.Connect(plan_interpolator->get_output_port_iiwa_command(),
                   command_pub->get_input_port());
 
-  auto diagram = builder.Build();
-
-  drake::log()->info("controller started");
-
-  systems::lcm::LcmDrivenLoop loop(
-      *diagram, *status_sub, nullptr, &lcm,
-      std::make_unique<
-          systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
-
-  // Waits for the first message.
-  const AbstractValue& first_msg = loop.WaitForMessage();
-  double msg_time =
-      loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
-  const auto& first_status = first_msg.get_value<lcmt_iiwa_status>();
-  VectorX<double> q0(kNumJoints);
-  DRAKE_DEMAND(kNumJoints == first_status.num_joints);
-  for (int i = 0; i < kNumJoints; i++)
-    q0[i] = first_status.joint_position_measured[i];
-
-  systems::Context<double>& diagram_context = loop.get_mutable_context();
-  systems::Context<double>& status_sub_context =
-      diagram->GetMutableSubsystemContext(*status_sub, &diagram_context);
-  status_sub->SetDefaultContext(&status_sub_context);
-
-  // Explicit initialization.
-  diagram_context.set_time(msg_time);
+  // Create the diagram, simulator, and context.
+  auto owned_diagram = builder.Build();
+  const auto& diagram = *owned_diagram;
+  systems::Simulator<double> simulator(std::move(owned_diagram));
+  auto& diagram_context = simulator.get_mutable_context();
   auto& plan_interpolator_context =
-      diagram->GetMutableSubsystemContext(*plan_interpolator, &diagram_context);
-  plan_interpolator->Initialize(msg_time, q0, &plan_interpolator_context);
+      diagram.GetMutableSubsystemContext(*plan_interpolator, &diagram_context);
 
-  loop.RunToSecondsAssumingInitialized();
-  return 0;
+  // Wait for the first message.
+  drake::log()->info("Waiting for first lcmt_iiwa_status");
+  lcm::Subscriber<lcmt_iiwa_status> status_sub(&lcm, kLcmStatusChannel);
+  LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+  DRAKE_DEMAND(status_sub.message().num_joints == kNumJoints);
+
+  // Initialize the context based on the first message.
+  const double t0 = status_sub.message().utime * 1e-6;
+  VectorX<double> q0(kNumJoints);
+  for (int i = 0; i < kNumJoints; ++i) {
+    q0[i] = status_sub.message().joint_position_measured[i];
+  }
+  diagram_context.SetTime(t0);
+  plan_interpolator->Initialize(t0, q0, &plan_interpolator_context);
+  auto& status_value = plan_interpolator->get_input_port_iiwa_status().FixValue(
+      &plan_interpolator_context, status_sub.message());
+
+  // Run forever, using the lcmt_iiwa_status message to dictate when simulation
+  // time advances.  The robot_plan_t message is handled whenever the next
+  // lcmt_iiwa_status occurs.
+  drake::log()->info("Controller started");
+  while (true) {
+    // Wait for an lcmt_iiwa_status message.
+    status_sub.clear();
+    LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+    // Write the lcmt_iiwa_status message into the context and advance.
+    status_value.GetMutableData()->set_value(status_sub.message());
+    const double time = status_sub.message().utime * 1e-6;
+    simulator.AdvanceTo(time);
+    // Force-publish the lcmt_iiwa_command (via the command_pub system within
+    // the diagram).
+    diagram.Publish(diagram_context);
+  }
+
+  // We should never reach here.
+  return EXIT_FAILURE;
 }
 
 }  // namespace

@@ -19,7 +19,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
   multibody::Parser(&mbp).AddModelFromFile(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
                           "/iiwa7_no_collision.sdf"));
-  mbp.Finalize(&scene_graph);
+  mbp.Finalize();
 
   const MultibodyPositionToGeometryPose<double> dut(mbp);
 
@@ -35,7 +35,6 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
 
   const auto& output =
       dut.get_output_port().Eval<geometry::FramePoseVector<double>>(*context);
-  EXPECT_EQ(output.source_id(), mbp.get_source_id());
   for (multibody::BodyIndex i(0); i < mbp.num_bodies(); i++) {
     if (i == mbp.world_body().index()) {
       // The world geometry will not appear in the poses.

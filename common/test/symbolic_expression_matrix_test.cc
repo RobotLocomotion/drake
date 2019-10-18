@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
@@ -16,9 +17,11 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
+  const Variable var_w_{"w"};
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
+  const Expression w_{var_w_};
 
   const Expression zero_{0.0};
   const Expression one_{1.0};
@@ -175,7 +178,7 @@ TEST_F(SymbolicExpressionMatrixTest, CheckStructuralEquality) {
 bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
   const Formula f1{m1 == m2};
-  const Formula f2{(m1.array() == m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() == m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -185,7 +188,7 @@ bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 != m2};
-  const Formula f2{(m1.array() != m2.array()).redux(detail::logic_or)};
+  const Formula f2{(m1.array() != m2.array()).redux(internal::logic_or)};
   return f1.EqualTo(f2);
 }
 
@@ -195,7 +198,7 @@ bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorLt(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
   const Formula f1{m1 < m2};
-  const Formula f2{(m1.array() < m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() < m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -205,7 +208,7 @@ bool CheckMatrixOperatorLt(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorLte(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 <= m2};
-  const Formula f2{(m1.array() <= m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() <= m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -215,7 +218,7 @@ bool CheckMatrixOperatorLte(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorGt(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
   const Formula f1{m1 > m2};
-  const Formula f2{(m1.array() > m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() > m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -225,7 +228,7 @@ bool CheckMatrixOperatorGt(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorGte(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 >= m2};
-  const Formula f2{(m1.array() >= m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() >= m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -508,6 +511,32 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {
   EXPECT_PRED2(ExprEqual, B(0, 0), B(1, 1));
   EXPECT_EQ(B_eval(0, 0), B_eval(1, 1));
 }
+
+// Tests Eigen `.inverse` method works for symbolic matrices. We demonstrate it
+// by showing that the following two values are matched for a 2x2 symbolic
+// matrix `M` and a substitution (Variable -> double) `subst`:
+//
+//  1. Substitute(M.inverse(), subst)
+//  2. Substitute(M, subst).inverse()
+//
+// Note that in 1) Matrix<Expression>::inverse() is called while in 2)
+// Matrix<double>::inverse() is used.
+TEST_F(SymbolicExpressionMatrixTest, Inverse) {
+  Eigen::Matrix<Expression, 2, 2> M;
+  // clang-format off
+  M << x_, y_,
+       z_, w_;
+  // clang-format on
+  const Substitution subst{
+      {var_x_, 1.0},
+      {var_y_, 2.0},
+      {var_w_, 3.0},
+      {var_z_, 4.0},
+  };
+  EXPECT_TRUE(CompareMatrices(Substitute(M.inverse(), subst),
+                              Substitute(M, subst).inverse(), 1e-10));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

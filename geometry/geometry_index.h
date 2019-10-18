@@ -5,16 +5,7 @@
 namespace drake {
 namespace geometry {
 
-
-/** Index used to identify a geometry in the proximity engine. The same index
- type applies to both anchored and dynamic geometries. They are distinguished
- by which method they are passed to.  */
-using ProximityIndex = TypeSafeIndex<class ProximityTag>;
-
-/** Index into the ordered vector of all registered geometries (regardless of
- parent frame, role, etc.)   */
-using GeometryIndex = TypeSafeIndex<class GeometryTag>;
-
+// TODO(SeanCurtis-TRI): Remove FrameIndex.
 /** Index into the ordered vector of all registered frames -- by convention,
  the world frame's index is always zero.  */
 using FrameIndex = TypeSafeIndex<class GeometryTag>;

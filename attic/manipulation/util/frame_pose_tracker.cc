@@ -11,6 +11,7 @@ namespace manipulation {
 namespace util {
 
 using drake::systems::KinematicsResults;
+using drake::math::RigidTransformd;
 
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
@@ -100,7 +101,6 @@ void FramePoseTracker::Init() {
 
   pose_vector_output_port_index_ =
       this->DeclareAbstractOutputPort(
-          geometry::FramePoseVector<double>(source_id_, frame_ids),
           &FramePoseTracker::OutputStatus).get_index();
 }
 
@@ -121,8 +121,8 @@ void FramePoseTracker::OutputStatus(
        it != frame_name_to_frame_map_.end(); ++it) {
     output->set_value(
         frame_name_to_id_map_.at(it->first),
-        tree_->CalcFramePoseInWorldFrame(
-            kinematic_results->get_cache(), *(it->second.get())));
+        RigidTransformd(tree_->CalcFramePoseInWorldFrame(
+            kinematic_results->get_cache(), *(it->second.get()))));
   }
 }
 

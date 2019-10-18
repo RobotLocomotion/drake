@@ -1,11 +1,8 @@
-#include <memory>
-
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/examples/pendulum/pendulum_geometry.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -21,24 +18,17 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int DoMain() {
-  PendulumParams<double> params;
-
-  PendulumInput<double> input;
-  input.set_tau(0.0);
-
   systems::DiagramBuilder<double> builder;
-  auto source = builder.AddSystem<systems::ConstantVectorSource>(input);
-  source->set_name("tau");
+  auto source = builder.AddSystem<systems::ConstantVectorSource>(
+      PendulumInput<double>{}.with_tau(0.0));
+  source->set_name("source");
   auto pendulum = builder.AddSystem<PendulumPlant>();
   pendulum->set_name("pendulum");
-  builder.Connect(source->get_output_port(), pendulum->get_input_port());
-
+  builder.Connect(*source, *pendulum);
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  pendulum->RegisterGeometry(params, scene_graph);
-  builder.Connect(pendulum->get_geometry_pose_output_port(),
-                  scene_graph->get_source_pose_port(pendulum->source_id()));
-
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  PendulumGeometry::AddToBuilder(
+      &builder, pendulum->get_state_output_port(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -53,7 +43,7 @@ int DoMain() {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
 

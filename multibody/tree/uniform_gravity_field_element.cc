@@ -55,11 +55,11 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   // the generalized forces due to gravity.
   // TODO(amcastro-tri): Replace this inverse dynamics implementation by a JᵀF
   // operator implementation, which would be more efficient.
+  const double ignore_velocities = true;
   model.CalcInverseDynamics(
-      context, pc, vc, /* state */
-      VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
+      context, VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
       /* Applied forces. In this case only gravity. */
-      forces.body_forces(), forces.generalized_forces(),
+      forces.body_forces(), forces.generalized_forces(), ignore_velocities,
       &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
       &tau_g /* Output, the generalized forces. */);
   return -tau_g;
@@ -87,7 +87,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Matrix3<T> R_WB = pc.get_X_WB(node_index).linear();
+    const math::RotationMatrix<T> R_WB = pc.get_X_WB(node_index).rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
@@ -114,8 +114,8 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(body.node_index());
-    const Matrix3<T> R_WB = X_WB.linear();
+    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
+    const math::RotationMatrix<T> R_WB = X_WB.rotation();
     const Vector3<T> p_WBo = X_WB.translation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
@@ -144,8 +144,8 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(body.node_index());
-    const Matrix3<T> R_WB = X_WB.linear();
+    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
+    const math::RotationMatrix<T> R_WB = X_WB.rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 

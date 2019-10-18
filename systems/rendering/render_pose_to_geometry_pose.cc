@@ -7,6 +7,7 @@
 
 using drake::geometry::FrameId;
 using drake::geometry::SourceId;
+using drake::math::RigidTransform;
 
 namespace drake {
 namespace systems {
@@ -22,16 +23,13 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
   using Output = geometry::FramePoseVector<T>;
   this->DeclareVectorInputPort(Input{});
   this->DeclareAbstractOutputPort(
-      [source_id, frame_id]() {
-        const std::vector<FrameId> frame_ids{frame_id};
-        const Output result(source_id, frame_ids);
-        return Value<Output>::Make(result);
+      []() {
+        return Value<Output>{}.Clone();
       },
       [this, frame_id](const Context<T>& context, AbstractValue* calculated) {
         const Input& input = get_input_port().template Eval<Input>(context);
-        Output& output = calculated->get_mutable_value<Output>();
-        output.clear();
-        output.set_value(frame_id, input.get_isometry());
+        calculated->get_mutable_value<Output>() =
+            {{frame_id, RigidTransform<T>(input.get_isometry())}};
       });
 }
 

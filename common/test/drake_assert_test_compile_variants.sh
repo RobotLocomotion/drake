@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # This test should only be invoked via Bazel.
 set -ex
 
@@ -19,7 +21,7 @@ if [[ ! -e ./drake ]]; then
 fi
 
 # Confirm that it compiles successfully, whether or not assertions are enabled.
-TESTING_CXXFLAGS="-std=c++14 -I . \
+TESTING_CXXFLAGS="$BAZEL_CC_FLAGS -std=c++14 -I . \
     -c $drake_assert_test_compile_cc \
     -o /dev/null"
 "$BAZEL_CC" $TESTING_CXXFLAGS

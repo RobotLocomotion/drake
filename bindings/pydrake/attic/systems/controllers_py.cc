@@ -46,10 +46,8 @@ PYBIND11_MODULE(controllers, m) {
                const VectorX<double>&, bool>(),
           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("has_reference_acceleration"),
-          // Keep alive, ownership: RigidBodyTree keeps this alive.
-          // See "Keep Alive Behavior" in pydrake_pybind.h for details.
-          py::keep_alive<2 /* Nurse */, 1 /* Patient */>(),
-          doc.rbt.InverseDynamicsController.ctor.doc)
+          // Keep alive, ownership: `robot` keeps `self` alive.
+          py::keep_alive<2, 1>(), doc.rbt.InverseDynamicsController.ctor.doc)
       .def("set_integral_value",
           &rbt::InverseDynamicsController<double>::set_integral_value,
           doc.rbt.InverseDynamicsController.set_integral_value.doc);

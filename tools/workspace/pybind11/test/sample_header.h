@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 
 /// @def PREPROCESSOR_DEFINITION
@@ -240,6 +241,15 @@ class Class {
   /// The const one.
   void get_foo() const;
 
+  /// Docstring 1.
+  /// @pydrake_mkdoc_identifier{stuff_1}
+  void do_stuff(double);
+
+  /// Docstring 2.
+  /// @pydrake_mkdoc_identifier{stuff_2}
+  template <typename T>
+  void do_stuff(T);
+
  protected:
   /// @protected
   /// Protected method. **Bold**. Nibh sed pulvinar proin gravida hendrerit.
@@ -365,6 +375,29 @@ enum {
   /// Anonymous enum's constant.
   AnonymousConstant,
 };
+
+/// I am measurably old.
+class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.")
+DrakeDeprecatedClass {
+ public:
+  DRAKE_DEPRECATED("2038-01-19",
+    "f() is slow; use g() instead. "
+    "Also, I like hats.")
+  int f(int arg);
+
+  DRAKE_DEPRECATED("2038-01-19",
+    "f() now requires an int.")
+  int f();
+
+  /// Ideally this overview would still appear, but it does not yet.
+  DRAKE_DEPRECATED("2038-01-19", "a() is slow; use b() instead.")
+  int a();
+};
+
+/// I am symbolically old.
+template <typename T>
+class DRAKE_DEPRECATED("2038-01-19", "Templates rule!")
+DrakeDeprecatedTemplateClass {};
 
 }  // namespace mkdoc_test
 }  // namespace drake

@@ -16,6 +16,18 @@ py_library(
 )
 
 drake_py_binary(
+    name = "mirror_to_s3",
+    srcs = [
+        "metadata.py",
+        "mirror_to_s3.py",
+    ],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    visibility = ["//visibility:private"],
+    deps = [":module_py"],
+)
+
+drake_py_binary(
     name = "new_release",
     srcs = [
         "metadata.py",
@@ -41,8 +53,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "eigen",
     "fcl",
     "fmt",
+    "ghc_filesystem",
     "ignition_math",
-    "ignition_rndf",
     "json",
     "lcm",
     "lcmtypes_bot2_core",
@@ -50,29 +62,42 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat",
     "meshcat_python",
     "octomap",
-    "osqp",
     "pybind11",
-    "qdldl",
-    "scs",
     "sdformat",
     "spdlog",
-    "spruce",
     "stx",
     "tinydir",
     "tinyobjloader",
     "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
+    "cds",
     "dreal",
-    "net_sf_jchart2d",
     "find_protobuf_cmake",
+    "net_sf_jchart2d",
     "optitrack_driver",
+    "picosat",
 ]] + select({
+    "//conditions:default": ["@csdp//:install"],
+    "//tools:no_csdp": [],
+}) + select({
+    "//conditions:default": ["//tools/workspace/ibex:install"],
+    "//tools:no_dreal": [],
+}) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
     "//conditions:default": [],
 }) + select({
     "//tools:with_mosek": ["@mosek//:install"],
     "//conditions:default": [],
+}) + select({
+    "//conditions:default": [
+        "@osqp//:install",
+        "@qdldl//:install",
+    ],
+    "//tools:no_osqp": [],
+}) + select({
+    "//conditions:default": ["@scs//:install"],
+    "//tools:no_scs": [],
 })
 
 install(

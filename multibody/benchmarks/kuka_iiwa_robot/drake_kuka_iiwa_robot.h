@@ -42,9 +42,6 @@ class MultibodyPlantTester {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
 
-using Eigen::Vector3d;
-using test_utilities::SpatialKinematicsPVA;
-
 /// Utility struct to assist with returning joint torques/forces.
 /// --------|----------------------------------------------------------
 /// F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
@@ -138,7 +135,7 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
   /// @returns G's kinematics in N, expressed in N.
-  SpatialKinematicsPVA<T>
+  test_utilities::SpatialKinematicsPVA<T>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) {
@@ -151,7 +148,7 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
-    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->node_index());
+    const math::RigidTransform<T>& X_NG = pc.get_X_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
@@ -167,7 +164,7 @@ class DrakeKukaIIwaRobot {
     const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->index()];
 
     // Create a class to return the results.
-    return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
+    return test_utilities::SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
   /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
@@ -228,7 +225,7 @@ class DrakeKukaIIwaRobot {
         forces.mutable_generalized_forces();
 
     // Calculate inverse dynamics on this robot.
-    tree().CalcInverseDynamics(*context_, pc, vc, qDDt,
+    tree().CalcInverseDynamics(*context_, qDDt,
                 Fapplied_Bo_W_array, generalized_force_applied,
                 &A_WB_array, &F_BMo_W_array, &generalized_force_output);
 

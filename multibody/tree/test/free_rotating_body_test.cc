@@ -23,8 +23,9 @@ using systems::RungeKutta3Integrator;
 
 GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
-  // The numerical tolerance accepted for these tests.
+  // The integrator's desired local accuracy, chosen to pass the tests under
+  // the global error tolerance defined below.
+  const double kAccuracy = 1.0e-7;
   const double kTolerance = 1.0e-5;
   const double kMaxDt = 0.1;
   const double kEndTime = 5.0;
@@ -46,6 +47,20 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   // Instantiate the model for the free body in space.
   FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(),
                                                 benchmark_.get_J());
+
+  // We expect the body in this model to be a floating body, however not modeled
+  // using a quaternion mobilizer (it uses a SpaceXYZMobilizer).
+  EXPECT_TRUE(free_body_plant.body().is_floating());
+  EXPECT_FALSE(free_body_plant.body().has_quaternion_dofs());
+
+  // For this simple example with a single floating body we can verify indexes
+  // into the state. In addition, the test above verifies we are not using a
+  // quaternions, but a SpaceXYZMobilizer (3-dofs).
+  // In the state vector x for the model, positions q go first followed by
+  // velocities v. Similarly, angular components go first, followed by
+  // translational components.
+  EXPECT_EQ(free_body_plant.body().floating_positions_start(), 0);
+  EXPECT_EQ(free_body_plant.body().floating_velocities_start(), 3);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
@@ -83,7 +98,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
 
   // Simulate:
-  simulator.StepTo(kEndTime);
+  simulator.AdvanceTo(kEndTime);
 
   // Get solution:
   math::RigidTransformd X_WB = free_body_plant.CalcPoseInWorldFrame(context);

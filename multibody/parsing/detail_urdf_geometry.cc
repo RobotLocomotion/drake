@@ -9,18 +9,17 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using math::RigidTransformd;
 using tinyxml2::XMLElement;
 
 namespace {
@@ -197,7 +196,12 @@ std::unique_ptr<geometry::Shape> ParseMesh(
     }
     scale = scale_vector(0);
   }
-  return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+
+  if (shape_node->FirstChildElement("drake:declare_convex")) {
+    return std::make_unique<geometry::Convex>(resolved_filename, scale);
+  } else {
+    return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+  }
 }
 
 std::unique_ptr<geometry::Shape> ParseGeometry(
@@ -263,7 +267,7 @@ geometry::GeometryInstance ParseVisual(
   // Obtains the reference frame of the visualization relative to the reference
   // frame of the rigid body that is being visualized. It defaults to identity
   // if no transform is specified.
-  Isometry3d T_element_to_link = Isometry3d::Identity();
+  RigidTransformd T_element_to_link;
   const XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
     T_element_to_link = OriginAttributesToTransform(origin);
@@ -335,7 +339,7 @@ geometry::GeometryInstance ParseVisual(
     // node, use that color. It takes precedence over any material saved in
     // the material map.
     if (color_specified) {
-      properties = geometry::MakeDrakeVisualizerProperties(rgba);
+      properties = geometry::MakePhongIllustrationProperties(rgba);
     } else if (name_specified) {
       // No color specified. Checks if the material is already in the
       // materials map.
@@ -345,7 +349,7 @@ geometry::GeometryInstance ParseVisual(
         // The material is in the map. Sets the material of the visual
         // element based on the value in the map.
         properties =
-            geometry::MakeDrakeVisualizerProperties(material_iter->second);
+            geometry::MakePhongIllustrationProperties(material_iter->second);
       }
     }
   }
@@ -386,7 +390,7 @@ geometry::GeometryInstance ParseCollision(
   // Obtains the reference frame of the visualization relative to the
   // reference frame of the rigid body that is being visualized. It defaults
   // to identity if no transform is specified.
-  Isometry3d T_element_to_link = Isometry3d::Identity();
+  RigidTransformd T_element_to_link;
   const XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
     T_element_to_link = OriginAttributesToTransform(origin);
@@ -460,6 +464,6 @@ geometry::GeometryInstance ParseCollision(
                                     geometry_name);
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

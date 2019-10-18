@@ -8,6 +8,7 @@
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
@@ -102,11 +103,21 @@ class SceneGraphInspector {
 
   /** Returns the set of all ids for registered geometries. The order is _not_
    guaranteed to have any particular meaning. But the order is
+   guaranteed to remain fixed until a topological change is made (e.g., removal
+   or addition of geometry/frames).  */
+  const std::vector<GeometryId> GetAllGeometryIds() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetAllGeometryIds();
+  }
+
+  /** Returns the set of all ids for registered geometries. The order is _not_
+   guaranteed to have any particular meaning. But the order is
    guaranteed to remain fixed between topological changes (e.g., removal or
    addition of geometry/frames).  */
-  const std::vector<GeometryId>& all_geometry_ids() const {
+  DRAKE_DEPRECATED("2019-11-01", "Please use GetAllGeometryIds() instead")
+  const std::vector<GeometryId> all_geometry_ids() const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_geometry_ids();
+    return state_->GetAllGeometryIds();
   }
 
   /** Reports the _total_ number of geometries in the scene graph with the
@@ -203,7 +214,9 @@ class SceneGraphInspector {
   }
 
   /** Reports the name of the frame with the given `id`.
-   @throws std::logic_error if `id` does not map to a registered frame.  */
+   @throws std::logic_error if `id` does not map to a registered frame.
+   @pydrake_mkdoc_identifier{1args_frame_id}
+   */
   const std::string& GetName(FrameId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_frame_name(id);
@@ -289,10 +302,12 @@ class SceneGraphInspector {
 
   /** Reports the stored, canonical name of the geometry with the given `id`
    (see  @ref canonicalized_geometry_names "GeometryInstance" for details).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::logic_error if `id` does not map to a registered geometry.
+   @pydrake_mkdoc_identifier{1args_geometry_id}
+   */
   const std::string& GetName(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_name(id);
+    return state_->GetName(id);
   }
 
   /** Returns the shape specified for the geometry with the given `id`. In order
@@ -307,7 +322,18 @@ class SceneGraphInspector {
    _topological parent_ P. That topological parent may be a frame F or another
    geometry. If the geometry was registered directly to F, then `X_PG = X_FG`.
    @throws std::logic_error if `id` does not map to a registered geometry.  */
+  DRAKE_DEPRECATED("2019-11-01", "Simply use GetPoseInParent()")
   const Isometry3<double> X_PG(GeometryId id) const {
+    return GetPoseInParent(id).GetAsIsometry3();
+  }
+
+  /** Reports the pose of the geometry G with the given `id` in its registered
+   _topological parent_ P, `X_PG`. That topological parent may be a frame F or
+   another geometry. If the geometry was registered directly to F, then
+   `X_PG = X_FG`.
+   @sa GetPoseInFrame()
+   @throws std::logic_error if `id` does not map to a registered geometry.  */
+  const math::RigidTransform<double>& GetPoseInParent(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetPoseInParent(id);
   }
@@ -317,7 +343,18 @@ class SceneGraphInspector {
    or not). If the geometry was registered directly to the frame F, then
    `X_PG = X_FG`.
    @throws std::logic_error if `id` does not map to a registered geometry.  */
+  DRAKE_DEPRECATED("2019-11-01", "Simply use GetPoseInFrame()")
   const Isometry3<double> X_FG(GeometryId id) const {
+    return GetPoseInFrame(id).GetAsIsometry3();
+  }
+
+  /** Reports the pose of the geometry G with the given `id` in its registered
+   frame F (regardless of whether its _topological parent_ is another geometry P
+   or not). If the geometry was registered directly to the frame F, then
+   `X_PG = X_FG`.
+   @sa GetPoseInParent()
+   @throws std::logic_error if `id` does not map to a registered geometry.  */
+  const math::RigidTransform<double>& GetPoseInFrame(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetPoseInFrame(id);
   }
@@ -331,7 +368,7 @@ class SceneGraphInspector {
   const ProximityProperties* GetProximityProperties(
       GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_proximity_properties(id);
+    return state_->GetProximityProperties(id);
   }
 
   /** Returns a pointer to the const illustration properties of the geometry
@@ -343,7 +380,19 @@ class SceneGraphInspector {
   const IllustrationProperties* GetIllustrationProperties(
       GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_illustration_properties(id);
+    return state_->GetIllustrationProperties(id);
+  }
+
+  /** Returns a pointer to the const perception properties of the geometry
+   with the given `id`.
+   @param id   The identifier for the queried geometry.
+   @return A pointer to the properties (or nullptr if there are no such
+           properties).
+   @throws std::logic_error if `id` does not map to a registered geometry.  */
+  const PerceptionProperties* GetPerceptionProperties(
+      GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetPerceptionProperties(id);
   }
 
   /** Reports true if the two geometries with given ids `id1` and `id2`, define
@@ -354,6 +403,16 @@ class SceneGraphInspector {
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->CollisionFiltered(id1, id2);
+  }
+
+  /** Introspects the geometry indicated by the given `id`. The geometry will
+   be passed into the provided `reifier`. This is the mechanism by which
+   external code can discover and respond to the different types of geometries
+   stored in SceneGraph. See ShapeToString as an example.
+   @throws std::logic_error if the `id` does not refer to a valid geometry.  */
+  void Reify(GeometryId id, ShapeReifier* reifier) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    state_->GetShape(id).Reify(reifier);
   }
 
   //@}

@@ -12,6 +12,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
@@ -544,6 +545,17 @@ GTEST_TEST(TypeSafeIndex, CompatibleWithUnorderedSet) {
   EXPECT_EQ(indexes.find(a3), indexes.end());
   EXPECT_NE(indexes.find(a1), indexes.end());
   EXPECT_NE(indexes.find(a2), indexes.end());
+}
+
+// Confirms that a SortedPair<IndexType> can be used as a key in a hashing
+// container. This is representative of TypeSafeIndex's compatibility with the
+// DrakeHash notion.
+GTEST_TEST(TypeSafeIndex, SortedPairIndexHashable) {
+  AIndex a1(1);
+  AIndex a2(2);
+  std::unordered_set<SortedPair<AIndex>> pairs;
+  pairs.insert({a2, a1});
+  EXPECT_EQ(pairs.count(SortedPair<AIndex>(a1, a2)), 1);
 }
 
 }  // namespace

@@ -1,0 +1,89 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# libraries
+drake_cc_library(
+    name = "fbstab_dense",
+    srcs = [
+        "fbstab_dense.cc",
+    ],
+    hdrs = ["fbstab_dense.h"],
+    deps = [
+        ":fbstab_algorithm",
+        "//common:essential",
+        "//solvers/fbstab/components:dense_data",
+        "//solvers/fbstab/components:dense_feasibility",
+        "//solvers/fbstab/components:dense_linear_solver",
+        "//solvers/fbstab/components:dense_residual",
+        "//solvers/fbstab/components:dense_variable",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "fbstab_mpc",
+    srcs = [
+        "fbstab_mpc.cc",
+    ],
+    hdrs = ["fbstab_mpc.h"],
+    deps = [
+        ":fbstab_algorithm",
+        "//common:essential",
+        "//solvers/fbstab/components:mpc_data",
+        "//solvers/fbstab/components:mpc_feasibility",
+        "//solvers/fbstab/components:mpc_residual",
+        "//solvers/fbstab/components:mpc_variable",
+        "//solvers/fbstab/components:riccati_linear_solver",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "fbstab_algorithm",
+    hdrs = ["fbstab_algorithm.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "ocp_generator",
+    testonly = 1,
+    srcs = [
+        "test/ocp_generator.cc",
+    ],
+    hdrs = ["test/ocp_generator.h"],
+    deps = [
+        ":fbstab_mpc",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+# tests
+drake_cc_googletest(
+    name = "dense_unit_tests",
+    srcs = ["test/fbstab_dense_unit_tests.cc"],
+    deps = [
+        ":fbstab_dense",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mpc_unit_tests",
+    srcs = ["test/fbstab_mpc_unit_tests.cc"],
+    deps = [
+        ":fbstab_mpc",
+        ":ocp_generator",
+        "@eigen",
+    ],
+)
+
+add_lint_tests()

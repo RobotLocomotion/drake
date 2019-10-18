@@ -9,7 +9,6 @@ namespace multibody {
 namespace benchmarks {
 namespace acrobot {
 
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 using geometry::Cylinder;
@@ -53,18 +52,18 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
 
     // Pose of the geometry for link 1 in the link's frame.
     const RigidTransformd X_L1G1(-params.l1() / 2.0 * Vector3d::UnitZ());
-    plant->RegisterVisualGeometry(link1, X_L1G1.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(link1, X_L1G1,
                                   Cylinder(params.r1(), params.l1()), "visual");
 
     // Pose of the geometry for link 2 in the link's frame.
     const RigidTransformd X_L2G2(-params.l2() / 2.0 * Vector3d::UnitZ());
-    plant->RegisterVisualGeometry(link2, X_L2G2.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(link2, X_L2G2,
                                   Cylinder(params.r2(), params.l2()), "visual");
 
     // Register some (anchored) geometry to the world.
     const RigidTransformd X_WG;  // Default is identity transform.
     plant->RegisterVisualGeometry(
-        plant->world_body(), X_WG.GetAsIsometry3(),
+        plant->world_body(), X_WG,
         Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
         "visual");
   }
@@ -72,9 +71,9 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
-      plant->world_body(), {},
+      plant->world_body(), nullopt,
       /* Shoulder outboard frame So IS frame L1. */
-      link1, {},
+      link1, nullopt,
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
   // Pose of the elbow inboard frame Ei in Link 1's frame.
@@ -82,17 +81,17 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
   const RevoluteJoint<double>& elbow = plant->AddJoint<RevoluteJoint>(
       params.elbow_joint_name(),
       link1,
-      X_link1_Ei.GetAsIsometry3(),
+      X_link1_Ei,
       link2,
       /* Elbow outboard frame Eo IS frame L2 for link 2. */
-      {},
+      optional<RigidTransformd>{},  // `nullopt` is ambiguous
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
   // Add acrobot's actuator at the elbow joint.
   plant->AddJointActuator(params.actuator_name(), elbow);
 
   // Gravity acting in the -z direction.
-  plant->AddForceElement<UniformGravityFieldElement>(
+  plant->mutable_gravity_field().set_gravity_vector(
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.

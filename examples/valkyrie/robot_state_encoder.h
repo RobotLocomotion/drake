@@ -8,6 +8,7 @@
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
@@ -26,7 +27,8 @@ namespace systems {
 
 /// Assembles information from various input ports into a robot_state_t LCM
 /// message, presented on an output port.
-class RobotStateEncoder final : public LeafSystem<double> {
+class DRAKE_DEPRECATED("2020-02-01", "The valkyrie example is being removed.")
+RobotStateEncoder final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotStateEncoder)
 
@@ -74,7 +76,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
 
   // Computes the spatial force applied at the origin of Body1 by Body2,
   // expressed in Body1's local frame.
-  SpatialForce<double> GetSpatialForceActingOnBody1ByBody2InBody1Frame(
+  Vector6<double> GetSpatialForceActingOnBody1ByBody2InBody1Frame(
       const KinematicsResults<double>& kinematics_results,
       const ContactResults<double>& contact_results,
       const RigidBody<double>& body1, const RigidBody<double>& body2) const;

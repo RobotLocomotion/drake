@@ -1,6 +1,6 @@
 #include <limits>
 
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 #include "drake/solvers/rotation_constraint.h"
@@ -11,7 +11,7 @@
 ///    min_R max_(i,j) |R(i,j) - R_sample(i,j)|
 ///   subject to  [ chosen list of constraints on R ]
 /// It then evaluates this program over a large number of samples and plots the
-/// points (using call_matlab) for which R==R_sample (within some tol).
+/// points (using call_python) for which R==R_sample (within some tol).
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -53,21 +53,20 @@ void DrawCircle(double radius = 1.0) {
         Eigen::Vector2d(radius * std::cos(theta), radius * std::sin(theta));
   }
 
-  common::CallMatlab("plot", points.row(0), points.row(1), "k", "LineWidth",
+  common::CallPython("plot", points.row(0), points.row(1), "k", "linewidth",
                      4.0);
 }
 
 void PlotFeasiblePoints(const Eigen::Matrix2Xd& points, double radius = 1.0,
                         int fig_num = 1) {
-  using common::CallMatlab;
-  CallMatlab("figure", fig_num);
-  CallMatlab("clf");
-  CallMatlab("hold", "on");
-  CallMatlab("plot", points.row(0), points.row(1), ".", "MarkerSize", 20.0);
+  using common::CallPython;
+  CallPython("figure", fig_num);
+  CallPython("clf");
+  CallPython("plot", points.row(0), points.row(1), ".", "markersize", 20.0);
   DrawCircle(radius);
-  CallMatlab("xlim", Eigen::RowVector2d(-1.1, 1.1));
-  CallMatlab("ylim", Eigen::RowVector2d(-1.1, 1.1));
-  CallMatlab("axis", "equal");
+  CallPython("xlim", Eigen::RowVector2d(-1.1, 1.1));
+  CallPython("ylim", Eigen::RowVector2d(-1.1, 1.1));
+  CallPython("axis", "equal");
 }
 
 void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
@@ -104,9 +103,10 @@ void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
 
   PlotFeasiblePoints(feasible_points, std::sqrt(1 - sample(2) * sample(2)),
                      fig_num);
-  common::CallMatlab("xlabel", "R(0,0)");
-  common::CallMatlab("ylabel", "R(1,0)");
-  common::CallMatlab("title", "R(2,0) = " + std::to_string(z));
+  using common::CallPython;
+  CallPython("xlabel", "R(0,0)");
+  CallPython("ylabel", "R(1,0)");
+  CallPython("title", "R(2,0) = " + std::to_string(z));
 }
 
 void DoMain() {

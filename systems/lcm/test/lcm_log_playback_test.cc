@@ -22,7 +22,7 @@ void SetInput(double time, const std::string& name, double val,
   msg.val.resize(kDim, val);
   msg.coord.resize(kDim, name);
   msg.timestamp = time * 1e6;
-  context->set_time(time);
+  context->SetTime(time);
   context->FixInputPort(0, AbstractValue::Make<lcmt_drake_signal>(msg));
 }
 
@@ -163,7 +163,7 @@ void CheckLog() {
   auto diagram = builder.Build();
 
   Simulator<double> sim(*diagram);
-  sim.StepTo(0.5);
+  sim.AdvanceTo(0.5);
 
   // printer0 should have msg at t = [0.1, 0.3], with val = [1, 5].
   CheckLog({0.1, 0.3}, {1, 5}, "Ch0", printer0->get_received_msgs(),

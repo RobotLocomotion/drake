@@ -12,6 +12,7 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using math::RigidTransformd;
 using std::make_unique;
 using std::move;
 
@@ -21,12 +22,12 @@ GTEST_TEST(GeometryInstanceTest, IsCopyable) {
   // have a runtime check available but this will fail to compile if the class
   // is not copyable.
   copyable_unique_ptr<GeometryInstance> geo(make_unique<GeometryInstance>
-      (Isometry3<double>(), make_unique<Sphere>(1), "sphere"));
+      (RigidTransformd(), make_unique<Sphere>(1), "sphere"));
   EXPECT_TRUE(geo->id().is_valid());
 }
 
 GTEST_TEST(GeometryInstanceTest, IdCopies) {
-  Isometry3<double> pose = Isometry3<double>::Identity();
+  RigidTransformd pose = RigidTransformd::Identity();
   auto shape = make_unique<Sphere>(1.0);
   GeometryInstance geometry_a{pose, move(shape), "geometry_a"};
   GeometryInstance geometry_b(geometry_a);
@@ -46,7 +47,7 @@ GTEST_TEST(GeometryInstanceTest, IdCopies) {
 // version of the given name. This doesn't test the definition of
 // canonicalization merely the fact of the act.
 GTEST_TEST(GeometryInstanceTest, CanonicalName) {
-  Isometry3<double> pose = Isometry3<double>::Identity();
+  RigidTransformd pose = RigidTransformd::Identity();
 
   auto make_instance = [&pose](const std::string& name) {
     auto shape = make_unique<Sphere>(1.0);

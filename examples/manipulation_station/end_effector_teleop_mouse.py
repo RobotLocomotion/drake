@@ -1,22 +1,24 @@
 import argparse
+import os
+import sys
+
 import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateDefaultYcbObjectList)
+    CreateClutterClearingYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 
-from differential_ik import DifferentialIK
-import sys
+from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
 try:
     import pygame
@@ -48,7 +50,7 @@ def print_instructions():
 
 class TeleopMouseKeyboardManager():
 
-    def __init__(self):
+    def __init__(self, grab_focus=True):
         pygame.init()
         # We don't actually want a screen, but
         # I can't get this to work without a tiny screen.
@@ -58,7 +60,8 @@ class TeleopMouseKeyboardManager():
 
         self.side_button_back_DOWN = False
         self.side_button_fwd_DOWN = False
-        self.grab_mouse_focus()
+        if grab_focus:
+            self.grab_mouse_focus()
 
     def grab_mouse_focus(self):
         pygame.event.set_grab(True)
@@ -120,20 +123,20 @@ class TeleopMouseKeyboardManager():
 
 
 class MouseKeyboardTeleop(LeafSystem):
-    def __init__(self):
+    def __init__(self, grab_focus=True):
         LeafSystem.__init__(self)
-        self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
-                                      self._DoCalcOutput)
-        self._DeclareVectorOutputPort("position", BasicVector(1),
-                                      self.CalcPositionOutput)
-        self._DeclareVectorOutputPort("force_limit", BasicVector(1),
-                                      self.CalcForceLimitOutput)
+        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+                                     self.DoCalcOutput)
+        self.DeclareVectorOutputPort("position", BasicVector(1),
+                                     self.CalcPositionOutput)
+        self.DeclareVectorOutputPort("force_limit", BasicVector(1),
+                                     self.CalcForceLimitOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self._DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicPublish(0.01, 0.0)
 
-        self.teleop_manager = TeleopMouseKeyboardManager()
+        self.teleop_manager = TeleopMouseKeyboardManager(grab_focus=grab_focus)
         self.roll = self.pitch = self.yaw = 0
         self.x = self.y = self.z = 0
         self.gripper_max = 0.107
@@ -219,7 +222,7 @@ class MouseKeyboardTeleop(LeafSystem):
         self._force_limit = 40
         output.SetAtIndex(0, self._force_limit)
 
-    def _DoCalcOutput(self, context, output):
+    def DoCalcOutput(self, context, output):
         events = self.teleop_manager.get_events()
         self.SetXyzFromEvents(events)
         self.SetRpyFromEvents(events)
@@ -232,127 +235,141 @@ class MouseKeyboardTeleop(LeafSystem):
         output.SetAtIndex(5, self.z)
 
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument(
-    "--target_realtime_rate", type=float, default=1.0,
-    help="Desired rate relative to real time.  See documentation for "
-         "Simulator::set_target_realtime_rate() for details.")
-parser.add_argument(
-    "--duration", type=float, default=np.inf,
-    help="Desired duration of the simulation in seconds.")
-parser.add_argument(
-    "--hardware", action='store_true',
-    help="Use the ManipulationStationHardwareInterface instead of an "
-         "in-process simulation.")
-parser.add_argument(
-    "--test", action='store_true',
-    help="Disable opening the gui window for testing.")
-parser.add_argument(
-    "--filter_time_const", type=float, default=0.005,
-    help="Time constant for the first order low pass filter applied to"
-         "the teleop commands")
-parser.add_argument(
-    "--velocity_limit_factor", type=float, default=1.0,
-    help="This value, typically between 0 and 1, further limits the iiwa14 "
-         "joint velocities. It multiplies each of the seven pre-defined "
-         "joint velocity limits. "
-         "Note: The pre-defined velocity limits are specified by "
-         "iiwa14_velocity_limits, found in this python file.")
-parser.add_argument(
-    '--setup', type=str, default='default',
-    help="The manipulation station setup to simulate. ",
-    choices=['default', 'clutter_clearing'])
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--target_realtime_rate", type=float, default=1.0,
+        help="Desired rate relative to real time.  See documentation for "
+             "Simulator::set_target_realtime_rate() for details.")
+    parser.add_argument(
+        "--duration", type=float, default=np.inf,
+        help="Desired duration of the simulation in seconds.")
+    parser.add_argument(
+        "--hardware", action='store_true',
+        help="Use the ManipulationStationHardwareInterface instead of an "
+             "in-process simulation.")
+    parser.add_argument(
+        "--test", action='store_true',
+        help="Disable opening the gui window for testing.")
+    parser.add_argument(
+        "--filter_time_const", type=float, default=0.005,
+        help="Time constant for the first order low pass filter applied to"
+             "the teleop commands")
+    parser.add_argument(
+        "--velocity_limit_factor", type=float, default=1.0,
+        help="This value, typically between 0 and 1, further limits the "
+             "iiwa14 joint velocities. It multiplies each of the seven "
+             "pre-defined joint velocity limits. "
+             "Note: The pre-defined velocity limits are specified by "
+             "iiwa14_velocity_limits, found in this python file.")
+    parser.add_argument(
+        '--setup', type=str, default='manipulation_class',
+        help="The manipulation station setup to simulate. ",
+        choices=['manipulation_class', 'clutter_clearing'])
+    MeshcatVisualizer.add_argparse_argument(parser)
+    args = parser.parse_args()
 
-MeshcatVisualizer.add_argparse_argument(parser)
-args = parser.parse_args()
+    if args.test:
+        # Don't grab mouse focus during testing.
+        grab_focus = False
+        # See: https://stackoverflow.com/a/52528832/7829525
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
+    else:
+        grab_focus = True
 
-builder = DiagramBuilder()
+    builder = DiagramBuilder()
 
-if args.hardware:
-    station = builder.AddSystem(ManipulationStationHardwareInterface())
-    station.Connect(wait_for_cameras=False)
-else:
-    station = builder.AddSystem(ManipulationStation())
+    if args.hardware:
+        station = builder.AddSystem(ManipulationStationHardwareInterface())
+        station.Connect(wait_for_cameras=False)
+    else:
+        station = builder.AddSystem(ManipulationStation())
 
-    # Initializes the chosen station type.
-    if args.setup == 'default':
-        station.SetupDefaultStation()
-    elif args.setup == 'clutter_clearing':
-        station.SetupClutterClearingStation()
-        ycb_objects = CreateDefaultYcbObjectList()
-        for model_file, X_WObject in ycb_objects:
-            station.AddManipulandFromFile(model_file, X_WObject)
+        # Initializes the chosen station type.
+        if args.setup == 'manipulation_class':
+            station.SetupManipulationClassStation()
+            station.AddManipulandFromFile(
+                ("drake/examples/manipulation_station/models/"
+                 "061_foam_brick.sdf"),
+                RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
+        elif args.setup == 'clutter_clearing':
+            station.SetupClutterClearingStation()
+            ycb_objects = CreateClutterClearingYcbObjectList()
+            for model_file, X_WObject in ycb_objects:
+                station.AddManipulandFromFile(model_file, X_WObject)
 
-    station.Finalize()
-    ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                           station.GetOutputPort("pose_bundle"))
-    if args.meshcat:
-        meshcat = builder.AddSystem(MeshcatVisualizer(
-            station.get_scene_graph(), zmq_url=args.meshcat))
-        builder.Connect(station.GetOutputPort("pose_bundle"),
-                        meshcat.get_input_port(0))
+        station.Finalize()
+        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
+                               station.GetOutputPort("pose_bundle"))
+        if args.meshcat:
+            meshcat = builder.AddSystem(MeshcatVisualizer(
+                station.get_scene_graph(), zmq_url=args.meshcat))
+            builder.Connect(station.GetOutputPort("pose_bundle"),
+                            meshcat.get_input_port(0))
 
-robot = station.get_controller_plant()
-params = DifferentialInverseKinematicsParameters(robot.num_positions(),
-                                                 robot.num_velocities())
+    robot = station.get_controller_plant()
+    params = DifferentialInverseKinematicsParameters(robot.num_positions(),
+                                                     robot.num_velocities())
 
-time_step = 0.005
-params.set_timestep(time_step)
-# True velocity limits for the IIWA14 (in rad, rounded down to the first
-# decimal)
-iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
-# Stay within a small fraction of those limits for this teleop demo.
-factor = args.velocity_limit_factor
-params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
-                                  factor*iiwa14_velocity_limits))
+    time_step = 0.005
+    params.set_timestep(time_step)
+    # True velocity limits for the IIWA14 (in rad, rounded down to the first
+    # decimal)
+    iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
+    # Stay within a small fraction of those limits for this teleop demo.
+    factor = args.velocity_limit_factor
+    params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
+                                      factor*iiwa14_velocity_limits))
 
-differential_ik = builder.AddSystem(DifferentialIK(
-    robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
+    differential_ik = builder.AddSystem(DifferentialIK(
+        robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
 
-builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
-                station.GetInputPort("iiwa_position"))
+    builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
+                    station.GetInputPort("iiwa_position"))
 
-teleop = builder.AddSystem(MouseKeyboardTeleop())
-if args.test:
-    # Don't let mouse grab focus during testing.
-    teleop.teleop_manager.release_mouse_focus()
-filter = builder.AddSystem(
-    FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
+    teleop = builder.AddSystem(MouseKeyboardTeleop(grab_focus=grab_focus))
+    filter_ = builder.AddSystem(
+        FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
-builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
-builder.Connect(filter.get_output_port(0),
-                differential_ik.GetInputPort("rpy_xyz_desired"))
+    builder.Connect(teleop.get_output_port(0), filter_.get_input_port(0))
+    builder.Connect(filter_.get_output_port(0),
+                    differential_ik.GetInputPort("rpy_xyz_desired"))
 
-builder.Connect(teleop.GetOutputPort("position"), station.GetInputPort(
-    "wsg_position"))
-builder.Connect(teleop.GetOutputPort("force_limit"),
-                station.GetInputPort("wsg_force_limit"))
+    builder.Connect(teleop.GetOutputPort("position"), station.GetInputPort(
+        "wsg_position"))
+    builder.Connect(teleop.GetOutputPort("force_limit"),
+                    station.GetInputPort("wsg_force_limit"))
 
-diagram = builder.Build()
-simulator = Simulator(diagram)
+    diagram = builder.Build()
+    simulator = Simulator(diagram)
 
-station_context = diagram.GetMutableSubsystemContext(
-    station, simulator.get_mutable_context())
+    # This is important to avoid duplicate publishes to the hardware interface:
+    simulator.set_publish_every_time_step(False)
 
-station_context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+    station_context = diagram.GetMutableSubsystemContext(
+        station, simulator.get_mutable_context())
 
-q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
-differential_ik.parameters.set_nominal_joint_position(q0)
+    station.GetInputPort("iiwa_feedforward_torque").FixValue(
+        station_context, np.zeros(7))
 
-teleop.SetPose(differential_ik.ForwardKinematics(q0))
-filter.set_initial_output_value(
-    diagram.GetMutableSubsystemContext(
-        filter, simulator.get_mutable_context()),
-    teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
-        teleop, simulator.get_mutable_context())))
-differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
-    differential_ik, simulator.get_mutable_context()), q0)
+    simulator.AdvanceTo(1e-6)
+    q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
+    differential_ik.parameters.set_nominal_joint_position(q0)
 
-# This is important to avoid duplicate publishes to the hardware interface:
-simulator.set_publish_every_time_step(False)
+    teleop.SetPose(differential_ik.ForwardKinematics(q0))
+    filter_.set_initial_output_value(
+        diagram.GetMutableSubsystemContext(
+            filter_, simulator.get_mutable_context()),
+        teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
+            teleop, simulator.get_mutable_context())))
+    differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
+        differential_ik, simulator.get_mutable_context()), q0)
 
-simulator.set_target_realtime_rate(args.target_realtime_rate)
+    simulator.set_target_realtime_rate(args.target_realtime_rate)
 
-print_instructions()
-simulator.StepTo(args.duration)
+    print_instructions()
+    simulator.AdvanceTo(args.duration)
+
+
+if __name__ == "__main__":
+    main()

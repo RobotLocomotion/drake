@@ -104,7 +104,7 @@ class System : public SystemBase {
       const InputPort<T>& input_port) const {
     DRAKE_THROW_UNLESS(input_port.get_data_type() == kVectorValued);
     const int index = input_port.get_index();
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(index >= 0 && index < num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
     std::unique_ptr<AbstractValue> value = DoAllocateInput(input_port);
     return value->get_value<BasicVector<T>>().Clone();
@@ -115,7 +115,7 @@ class System : public SystemBase {
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
       const InputPort<T>& input_port) const {
     const int index = input_port.get_index();
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(index >= 0 && index < num_input_ports());
     return DoAllocateInput(input_port);
   }
 
@@ -126,7 +126,7 @@ class System : public SystemBase {
   std::unique_ptr<SystemOutput<T>> AllocateOutput() const {
     // make_unique can't invoke this private constructor.
     auto output = std::unique_ptr<SystemOutput<T>>(new SystemOutput<T>());
-    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+    for (int i = 0; i < this->num_output_ports(); ++i) {
       const OutputPort<T>& port = this->get_output_port(i);
       output->add_port(port.Allocate());
     }
@@ -175,15 +175,15 @@ class System : public SystemBase {
   void SetDefaultContext(Context<T>* context) const {
     // Set the default state, checking that the number of state variables does
     // not change.
-    const int n_xc = context->get_continuous_state().size();
-    const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_states();
+    const int n_xc = context->num_continuous_states();
+    const int n_xd = context->num_discrete_state_groups();
+    const int n_xa = context->num_abstract_states();
 
     SetDefaultState(*context, &context->get_mutable_state());
 
-    DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
-    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
+    DRAKE_DEMAND(n_xc == context->num_continuous_states());
+    DRAKE_DEMAND(n_xd == context->num_discrete_state_groups());
+    DRAKE_DEMAND(n_xa == context->num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -232,15 +232,15 @@ class System : public SystemBase {
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
     // Set the default state, checking that the number of state variables does
     // not change.
-    const int n_xc = context->get_continuous_state().size();
-    const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_states();
+    const int n_xc = context->num_continuous_states();
+    const int n_xd = context->num_discrete_state_groups();
+    const int n_xa = context->num_abstract_states();
 
     SetRandomState(*context, &context->get_mutable_state(), generator);
 
-    DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
-    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
+    DRAKE_DEMAND(n_xc == context->num_continuous_states());
+    DRAKE_DEMAND(n_xd == context->num_discrete_state_groups());
+    DRAKE_DEMAND(n_xa == context->num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -254,7 +254,7 @@ class System : public SystemBase {
   /// that this System requires, and binds it to the port, disconnecting any
   /// prior input. Does not assign any values to the fixed inputs.
   void AllocateFixedInputs(Context<T>* context) const {
-    for (InputPortIndex i(0); i < get_num_input_ports(); ++i) {
+    for (InputPortIndex i(0); i < num_input_ports(); ++i) {
       const InputPort<T>& port = get_input_port(i);
       if (port.get_data_type() == kVectorValued) {
         context->FixInputPort(port.get_index(), AllocateInputVector(port));
@@ -264,17 +264,6 @@ class System : public SystemBase {
       }
     }
   }
-
-  /// Reports all direct feedthroughs from input ports to output ports. For
-  /// a system with m input ports: `I = i₀, i₁, ..., iₘ₋₁`, and n output ports,
-  /// `O = o₀, o₁, ..., oₙ₋₁`, the return map will contain pairs (u, v) such
-  /// that
-  ///
-  /// - 0 ≤ u < m,
-  /// - 0 ≤ v < n,
-  /// - and there _might_ be a direct feedthrough from input iᵤ to each
-  ///   output oᵥ.
-  virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
 
   /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
@@ -302,6 +291,8 @@ class System : public SystemBase {
     }
     return false;
   }
+
+  using SystemBase::GetDirectFeedthroughs;
   //@}
 
   //----------------------------------------------------------------------------
@@ -380,12 +371,17 @@ class System : public SystemBase {
   /// @retval xcdot The time derivatives of `xc` returned as a reference to an
   ///               object of the same type and size as this %Context's
   ///               continuous state.
-  /// @see CalcTimeDerivatives()
+  /// @see CalcTimeDerivatives(), get_time_derivatives_cache_entry()
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
-    const CacheEntry& entry =
-        this->get_cache_entry(time_derivatives_cache_index_);
+    const CacheEntry& entry = get_time_derivatives_cache_entry();
     return entry.Eval<ContinuousState<T>>(context);
+  }
+
+  /// (Advanced) Returns the CacheEntry used to cache time derivatives for
+  /// EvalTimeDerivatives().
+  const CacheEntry& get_time_derivatives_cache_entry() const {
+    return this->get_cache_entry(time_derivatives_cache_index_);
   }
 
   /// Returns a reference to the cached value of the potential energy (PE),
@@ -568,7 +564,7 @@ class System : public SystemBase {
   /// context (useful in case the number of constraints is dependent upon the
   /// current state (as might be the case with a system modeled using piecewise
   /// differential algebraic equations).
-  int get_num_constraint_equations(const Context<T>& context) const {
+  int num_constraint_equations(const Context<T>& context) const {
     return do_get_num_constraint_equations(context);
   }
 
@@ -577,7 +573,7 @@ class System : public SystemBase {
   /// allows the set of constraints to be dependent upon the current system
   /// state (as might be the case with a system modeled using piecewise
   /// differential algebraic equations).
-  /// @returns a vector of dimension get_num_constraint_equations(); the
+  /// @returns a vector of dimension num_constraint_equations(); the
   ///          zero vector indicates that the algebraic constraints are all
   ///          satisfied.
   Eigen::VectorXd EvalConstraintEquations(const Context<T>& context) const {
@@ -589,7 +585,7 @@ class System : public SystemBase {
   /// context. The context allows the set of constraints to be dependent upon
   /// the current system state (as might be the case with a system modeled using
   /// piecewise differential algebraic equations).
-  /// @returns a vector of dimension get_num_constraint_equations().
+  /// @returns a vector of dimension num_constraint_equations().
   Eigen::VectorXd EvalConstraintEquationsDot(const Context<T>& context) const {
     return DoEvalConstraintEquationsDot(context);
   }
@@ -618,8 +614,8 @@ class System : public SystemBase {
   Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
       const Context<T>& context, const Eigen::MatrixXd& J,
       const Eigen::VectorXd& lambda) const {
-    DRAKE_ASSERT(lambda.size() == get_num_constraint_equations(context));
-    DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
+    DRAKE_ASSERT(lambda.size() == num_constraint_equations(context));
+    DRAKE_ASSERT(J.rows() == num_constraint_equations(context));
     DRAKE_ASSERT(
         J.cols() ==
         context.get_continuous_state().get_generalized_velocity().size());
@@ -631,10 +627,10 @@ class System : public SystemBase {
   /// different state variable instances). This norm need be neither continuous
   /// nor differentiable.
   /// @throws std::logic_error if the dimension of @p err is not equivalent to
-  ///         the output of get_num_constraint_equations().
+  ///         the output of num_constraint_equations().
   double CalcConstraintErrorNorm(const Context<T>& context,
                                  const Eigen::VectorXd& error) const {
-    if (error.size() != get_num_constraint_equations(context))
+    if (error.size() != num_constraint_equations(context))
       throw std::logic_error("Error vector is mis-sized.");
     return DoCalcConstraintErrorNorm(context, error);
   }
@@ -715,6 +711,29 @@ class System : public SystemBase {
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
 
+  /// Given the @p discrete_state results of a previous call to
+  /// CalcDiscreteVariableUpdates() that processed the given collection of
+  /// events, modifies the @p context to reflect the updated @p discrete_state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p discrete_state.
+  /// @param[in,out] discrete_state
+  ///     The updated discrete state from a CalcDiscreteVariableUpdates()
+  ///     call. This is mutable to permit its contents to be swapped with the
+  ///     corresponding @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose discrete state is modified to match
+  ///     @p discrete_state. Note that swapping contents with @p discrete_state
+  ///     may cause addresses of individual discrete state group vectors in
+  ///     @p context to be different on return than they were on entry.
+  /// @pre @p discrete_state is the result of a previous
+  ///      CalcDiscreteVariableUpdates() call that processed this @p events
+  ///      collection.
+  void ApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const {
+    DoApplyDiscreteVariableUpdate(events, discrete_state, context);
+  }
+
   /// This method forces a discrete update on the system given a @p context,
   /// and the updated discrete state is stored in @p discrete_state. The
   /// discrete update event will have a trigger type of kForced, with no
@@ -743,10 +762,6 @@ class System : public SystemBase {
     const int discrete_state_dim = state->get_discrete_state().num_groups();
     const int abstract_state_dim = state->get_abstract_state().size();
 
-    // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalcUnrestrictedUpdate().
-    state->SetFrom(context.get_state());
-
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
     if (continuous_state_dim != state->get_continuous_state().size() ||
@@ -755,6 +770,28 @@ class System : public SystemBase {
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
+  }
+
+  /// Given the @p state results of a previous call to CalcUnrestrictedUpdate()
+  /// that processed the given collection of events, modifies the @p context to
+  /// reflect the updated @p state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p state.
+  /// @param[in,out] state
+  ///     The updated State from a CalcUnrestrictedUpdate() call. This is
+  ///     mutable to permit its contents to be swapped with the corresponding
+  ///     @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose State is modified to match @p state. Note that
+  ///     swapping contents with the @p state may cause addresses of
+  ///     continuous, discrete, and abstract state containers in @p context
+  ///     to be different on return than they were on entry.
+  /// @pre @p state is the result of a previous CalcUnrestrictedUpdate() call
+  ///      that processed this @p events collection.
+  void ApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const {
+    DoApplyUnrestrictedUpdate(events, state, context);
   }
 
   /// This method forces an unrestricted update on the system given a
@@ -792,8 +829,8 @@ class System : public SystemBase {
     return time;
   }
 
-  /// This method is called by Simulator::Initialize() to gather all
-  /// update and publish events that are to be handled in StepTo() at the point
+  /// This method is called by Simulator::Initialize() to gather all update
+  /// and publish events that are to be handled in AdvanceTo() at the point
   /// before Simulator integrates continuous state. It is assumed that these
   /// events remain constant throughout the simulation. The "step" here refers
   /// to the major time step taken by the Simulator. During every simulation
@@ -871,7 +908,7 @@ class System : public SystemBase {
     DRAKE_DEMAND(outputs != nullptr);
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
-    for (OutputPortIndex i(0); i < get_num_output_ports(); ++i) {
+    for (OutputPortIndex i(0); i < num_output_ports(); ++i) {
       // TODO(sherm1) Would be better to use Eval() here but we don't have
       // a generic abstract assignment capability that would allow us to
       // copy into existing memory in `outputs` (rather than clone). User
@@ -1088,9 +1125,9 @@ class System : public SystemBase {
                                            GetGraphvizId());
   }
 
-  // So we don't have to keep writing this->get_num_input_ports().
-  using SystemBase::get_num_input_ports;
-  using SystemBase::get_num_output_ports;
+  // So we don't have to keep writing this->num_input_ports().
+  using SystemBase::num_input_ports;
+  using SystemBase::num_output_ports;
 
   /// Returns the typed input port at index @p port_index.
   // TODO(sherm1) Make this an InputPortIndex.
@@ -1099,12 +1136,34 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
+  /// Returns the typed input port specified by the InputPortSelection or by
+  /// the InputPortIndex.  Returns nullptr if no port is selected.  This is
+  /// provided as a convenience method since many algorithms provide the same
+  /// common default or optional port semantics.
+  const InputPort<T>* get_input_port_selection(
+      variant<InputPortSelection, InputPortIndex> port_index) const {
+    if (holds_alternative<InputPortIndex>(port_index)) {
+      return &get_input_port(get<InputPortIndex>(port_index));
+    }
+
+    switch (get<InputPortSelection>(port_index)) {
+      case InputPortSelection::kUseFirstInputIfItExists:
+        if (num_input_ports() > 0) {
+          return &get_input_port(0);
+        }
+        return nullptr;
+      case InputPortSelection::kNoInput:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
   /// Returns the typed input port with the unique name @p port_name.
   /// The current implementation performs a linear search over strings; prefer
   /// get_input_port() when performance is a concern.
   /// @throws std::logic_error if port_name is not found.
   const InputPort<T>& GetInputPort(const std::string& port_name) const {
-    for (InputPortIndex i{0}; i < get_num_input_ports(); i++) {
+    for (InputPortIndex i{0}; i < num_input_ports(); i++) {
       if (port_name == get_input_port_base(i).get_name()) {
         return get_input_port(i);
       }
@@ -1121,12 +1180,33 @@ class System : public SystemBase {
         this->GetOutputPortBaseOrThrow(__func__, port_index));
   }
 
+  /// Returns the typed output port specified by the OutputPortSelection or by
+  /// the OutputPortIndex.  Returns nullptr if no port is selected. This is
+  /// provided as a convenience method since many algorithms provide the same
+  /// common default or optional port semantics.
+  const OutputPort<T>* get_output_port_selection(
+      variant<OutputPortSelection, OutputPortIndex> port_index) const {
+    if (holds_alternative<OutputPortIndex>(port_index)) {
+      return &get_output_port(get<OutputPortIndex>(port_index));
+    }
+    switch (get<OutputPortSelection>(port_index)) {
+      case OutputPortSelection::kUseFirstOutputIfItExists:
+        if (num_output_ports() > 0) {
+          return &get_output_port(0);
+        }
+        return nullptr;
+      case OutputPortSelection::kNoOutput:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
   /// Returns the typed output port with the unique name @p port_name.
   /// The current implementation performs a linear search over strings; prefer
   /// get_output_port() when performance is a concern.
   /// @throws std::logic_error if port_name is not found.
   const OutputPort<T>& GetOutputPort(const std::string& port_name) const {
-    for (OutputPortIndex i{0}; i < get_num_output_ports(); i++) {
+    for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
       if (port_name == get_output_port_base(i).get_name()) {
         return get_output_port(i);
       }
@@ -1137,24 +1217,25 @@ class System : public SystemBase {
   }
 
   /// Returns the number of constraints specified for the system.
-  int get_num_constraints() const {
+  int num_constraints() const {
     return static_cast<int>(constraints_.size());
   }
 
-
   /// Returns the dimension of the continuous state vector that has been
   /// declared until now.
-  virtual int get_num_continuous_states() const = 0;
+  int num_continuous_states() const {
+    return do_get_num_continuous_states();
+  }
 
   /// Returns the constraint at index @p constraint_index.
   /// @throws std::out_of_range for an invalid constraint_index.
   const SystemConstraint<T>& get_constraint(
       SystemConstraintIndex constraint_index) const {
-    if (constraint_index < 0 || constraint_index >= get_num_constraints()) {
+    if (constraint_index < 0 || constraint_index >= num_constraints()) {
       throw std::out_of_range("System " + get_name() + ": Constraint index " +
                               std::to_string(constraint_index) +
                               " is out of range. There are only " +
-                              std::to_string(get_num_constraints()) +
+                              std::to_string(num_constraints()) +
                               " constraints.");
     }
     return *constraints_[constraint_index];
@@ -1190,10 +1271,10 @@ class System : public SystemBase {
 
     // Checks that the number of output ports in the system output is consistent
     // with the number of output ports declared by the System.
-    DRAKE_THROW_UNLESS(output->get_num_ports() == get_num_output_ports());
+    DRAKE_THROW_UNLESS(output->num_ports() == num_output_ports());
 
     // Checks the validity of each output port.
-    for (int i = 0; i < get_num_output_ports(); ++i) {
+    for (int i = 0; i < num_output_ports(); ++i) {
       // TODO(sherm1): consider adding (very expensive) validation of the
       // abstract ports also.
       if (get_output_port(i).get_data_type() == kVectorValued) {
@@ -1214,15 +1295,15 @@ class System : public SystemBase {
   void CheckValidContextT(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
-    DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
-                       this->get_num_input_ports());
+    DRAKE_THROW_UNLESS(context.num_input_ports() ==
+                       this->num_input_ports());
 
-    DRAKE_THROW_UNLESS(context.get_num_output_ports() ==
-                       this->get_num_output_ports());
+    DRAKE_THROW_UNLESS(context.num_output_ports() ==
+                       this->num_output_ports());
 
     // Checks that the size of the fixed vector input ports in the context
     // matches the declarations made by the system.
-    for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
+    for (InputPortIndex i(0); i < this->num_input_ports(); ++i) {
       const FixedInputPortValue* port_value =
           context.MaybeGetFixedInputPortValue(i);
 
@@ -1444,7 +1525,7 @@ class System : public SystemBase {
     DRAKE_ASSERT_VOID(other_system.CheckValidContext(other_context));
     DRAKE_ASSERT_VOID(other_system.CheckValidContextT(*target_context));
 
-    for (int i = 0; i < get_num_input_ports(); ++i) {
+    for (int i = 0; i < num_input_ports(); ++i) {
       const auto& input_port = get_input_port(i);
       const auto& other_port = other_system.get_input_port(i);
       if (!other_port.HasValue(other_context)) {
@@ -1615,12 +1696,20 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
+  virtual void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const = 0;
+
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;
+
+  virtual void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const = 0;
   //@}
 
   //----------------------------------------------------------------------------
@@ -1720,7 +1809,7 @@ class System : public SystemBase {
   const InputPort<T>& DeclareInputPort(
       variant<std::string, UseDefaultName> name, PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
-    const InputPortIndex port_index(get_num_input_ports());
+    const InputPortIndex port_index(num_input_ports());
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
     auto eval = [this, port_index](const ContextBase& context_base) {
@@ -1995,12 +2084,15 @@ class System : public SystemBase {
   /// @name             Constraint-related functions (protected).
   //@{
 
+  /// Totals the number of continuous state variables in this System or Diagram.
+  virtual int do_get_num_continuous_states() const = 0;
+
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
   /// dependent upon the current state (as might be the case with a piecewise
   /// differential algebraic equation). Derived classes can override this
-  /// function, which is called by get_num_constraint_equations().
-  /// @sa get_num_constraint_equations() for parameter documentation.
+  /// function, which is called by num_constraint_equations().
+  /// @sa num_constraint_equations() for parameter documentation.
   /// @returns zero by default
   virtual int do_get_num_constraint_equations(const Context<T>& context) const {
     unused(context);
@@ -2015,12 +2107,12 @@ class System : public SystemBase {
   /// zero-dimensional vector. Derived classes can override this function,
   /// which is called by EvalConstraintEquations().
   /// @sa EvalConstraintEquations() for parameter documentation.
-  /// @returns a vector of dimension get_num_constraint_equations(); the
+  /// @returns a vector of dimension num_constraint_equations(); the
   ///          zero vector indicates that the algebraic constraints are all
   ///          satisfied.
   virtual Eigen::VectorXd DoEvalConstraintEquations(
       const Context<T>& context) const {
-    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    DRAKE_DEMAND(num_constraint_equations(context) == 0);
     return Eigen::VectorXd();
   }
 
@@ -2031,11 +2123,11 @@ class System : public SystemBase {
   /// differential algebraic equation). The default implementation of this
   /// function returns a zero-dimensional vector. Derived classes can override
   /// this function, which is called by EvalConstraintEquationsDot().
-  /// @returns a vector of dimension get_num_constraint_equations().
+  /// @returns a vector of dimension num_constraint_equations().
   /// @sa EvalConstraintEquationsDot() for parameter documentation.
   virtual Eigen::VectorXd DoEvalConstraintEquationsDot(
       const Context<T>& context) const {
-    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    DRAKE_DEMAND(num_constraint_equations(context) == 0);
     return Eigen::VectorXd();
   }
 
@@ -2050,7 +2142,7 @@ class System : public SystemBase {
       const Context<T>& context, const Eigen::MatrixXd& J,
       const Eigen::VectorXd& lambda) const {
     unused(J, lambda);
-    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    DRAKE_DEMAND(num_constraint_equations(context) == 0);
     const auto& gv = context.get_continuous_state().get_generalized_velocity();
     return Eigen::VectorXd::Zero(gv.size());
   }
@@ -2077,7 +2169,7 @@ class System : public SystemBase {
   /// may invalidate cache entries as a result.
   Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
                                                         int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
+    DRAKE_ASSERT(0 <= port_index && port_index < num_output_ports());
 
     BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
@@ -2100,7 +2192,20 @@ class System : public SystemBase {
   }
 
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
+    DRAKE_DEMAND(forced_publish_events_.get());
     return *forced_publish_events_;
+  }
+
+  EventCollection<DiscreteUpdateEvent<T>>&
+  get_mutable_forced_discrete_update_events() {
+    DRAKE_DEMAND(forced_discrete_update_events_.get());
+    return *forced_discrete_update_events_;
+  }
+
+  EventCollection<UnrestrictedUpdateEvent<T>>&
+  get_mutable_forced_unrestricted_update_events() {
+    DRAKE_DEMAND(forced_unrestricted_update_events_.get());
+    return *forced_unrestricted_update_events_;
   }
 
   const EventCollection<PublishEvent<T>>&

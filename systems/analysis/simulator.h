@@ -25,21 +25,21 @@
 namespace drake {
 namespace systems {
 
-/**
- A class for advancing the state of hybrid dynamic systems, represented by
- `System<T>` objects, forward in time. Starting with an initial Context for a
- given System, %Simulator advances time and produces a series of Context
- values that forms a trajectory satisfying the system's dynamic equations to
- a specified accuracy. Only the Context is modified by a %Simulator; the
- System is const.
+/** @ingroup simulation
+A class for advancing the state of hybrid dynamic systems, represented by
+`System<T>` objects, forward in time. Starting with an initial Context for a
+given System, %Simulator advances time and produces a series of Context
+values that forms a trajectory satisfying the system's dynamic equations to
+a specified accuracy. Only the Context is modified by a %Simulator; the
+System is const.
 
- A Drake System is a continuous/discrete/hybrid dynamic system where the
- continuous part is a DAE, that is, it is expected to consist of a set of
- differential equations and bilateral algebraic constraints. The set of
- active constraints may change as a result of particular events, such as
- contact.
+A Drake System is a continuous/discrete/hybrid dynamic system where the
+continuous part is a DAE, that is, it is expected to consist of a set of
+differential equations and bilateral algebraic constraints. The set of
+active constraints may change as a result of particular events, such as
+contact.
 
- Given a current Context, we expect a System to provide us with
+Given a current Context, we expect a System to provide us with
  - derivatives for the continuous differential equations that already satisfy
    the differentiated form of the constraints (typically, acceleration
    constraints),
@@ -93,15 +93,13 @@ value of an individual partition at a particular stage of the stepping
 algorithm.
 
 The following pseudocode uses the above notation to describe the algorithm
-"Advance()" that the %Simulator uses to incrementally advance the system
-trajectory (time t and state x). We refer to such an advancement as a "substep"
-to make it clear that we are not talking about a StepTo() call, which may cause
-many substeps to occur. (We'll define StepTo() in terms of Advance() below.) In
-general, the length of a substep is not known a priori and is determined by
-the Advance() algorithm. Each substep consists of zero or more unrestricted
-updates, followed by zero or more discrete updates, followed by (possibly
-zero-length) continuous time and state advancement, followed by zero or more
-publishes.
+"Step()" that the %Simulator uses to incrementally advance the system
+trajectory (time t and state x). The Simulator's AdvanceTo() method will be
+defined in terms of Step below. In general, the length of a step is not known a
+priori and is determined by the Step() algorithm. Each step consists of zero or
+more unrestricted updates, followed by zero or more discrete updates, followed
+by (possibly zero-length) continuous time and state advancement, followed by
+zero or more publishes.
 
 The pseudocode will clarify the effects on time and state of each of the update
 stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
@@ -110,7 +108,7 @@ given tₘₐₓ.
 ```
 // Advance the trajectory (time and state) from start value {tₛ, x⁻(tₛ)} to an
 // end value {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
-procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
+procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
 
   // Update any variables (no restrictions).
   x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x⁻(tₛ))
@@ -149,22 +147,29 @@ procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
   return {tₑ, x⁻(tₑ)}
 ```
 
-We can use the notation and pseudocode to flesh out the StepTo() and
-Initialize() functions:
+We can use the notation and pseudocode to flesh out the AdvanceTo(),
+AdvancePendingEvents(), and Initialize() functions:
 ```
 // Advance the simulation until time tₘₐₓ.
-procedure StepTo(tₘₐₓ)
+procedure AdvanceTo(tₘₐₓ)
   t ← current_time
   while t < tₘₐₓ
-    {tₑ, x⁻(tₑ)} ← Advance(t, x⁻(t), tₘₐₓ)
+    {tₑ, x⁻(tₑ)} ← Step(t, x⁻(t), tₘₐₓ)
     {t, x⁻(t)} ← {tₑ, x⁻(tₑ)}
   endwhile
 
+// AdvancePendingEvents() is an advanced method, not commonly used.
+// Perform just the start-of-step update to advance from x⁻(t) to x⁺(t).
+procedure AdvancePendingEvents()
+  t ≜ current_time, x⁻(t) ≜ current_state
+  x⁺(t) ← DoAnyPendingUpdates(t, x⁻(t)) as in Step()
+  x(t) ← x⁺(t)  // No continuous update needed.
+
 // Update time and state to {t₀, x⁻(t₀)}, which is the starting value of the
 // trajectory, and thus the value the Context should contain at the start of the
-// first simulation substep.
+// first simulation step.
 procedure Initialize(t₀, x₀)
-  x⁺(t₀) ← DoAnyUpdates as in Advance()
+  x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
   x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
   // ----------------------------------
@@ -173,11 +178,11 @@ procedure Initialize(t₀, x₀)
 
   DoAnyPublishes(t₀, x⁻(t₀))
 ```
-Initialize() can be viewed as a "0ᵗʰ substep" that occurs before the first
-Advance() substep as described above. Like Advance(), Initialize() first
+Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
+Step() call as described above. Like Step(), Initialize() first
 performs pending updates (in this case only initialization events can be
 "pending"). Time doesn't advance so there is no continuous update phase and
-witnesses cannot trigger. Finally, again like Advance(), the initial trajectory
+witnesses cannot trigger. Finally, again like Step(), the initial trajectory
 point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
 events. That includes initialization publish events, per-step publish events,
 and periodic or timed publish events that trigger at t₀.
@@ -191,9 +196,6 @@ available to link against in the containing library:
 
 Other instantiations are permitted but take longer to compile.
 */
-
-// TODO(sherm1) When API stabilizes, should list the methods above in addition
-// to describing them.
 template <typename T>
 class Simulator {
  public:
@@ -222,6 +224,9 @@ class Simulator {
   Simulator(std::unique_ptr<const System<T>> system,
             std::unique_ptr<Context<T>> context = nullptr);
 
+  // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
+  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
+  //              automatically by AdvanceTo() if the Context has changed.
   /// Prepares the %Simulator for a simulation. In order, the sequence of
   /// actions taken here are:
   /// - The active integrator's Initialize() method is invoked.
@@ -236,12 +241,13 @@ class Simulator {
   /// See the class documentation for more information. We recommend calling
   /// Initialize() explicitly prior to beginning a simulation so that error
   /// conditions will be discovered early. However, Initialize() will be called
-  /// automatically by the first StepTo() call if it hasn't already been called.
+  /// automatically by the first AdvanceTo() call if it hasn't already been
+  /// called.
   ///
   /// @note If you make a change to the Context or to Simulator options between
-  /// StepTo() calls you should consider whether to call Initialize() before
-  /// resuming; StepTo() will not do that automatically for you. Whether to do
-  /// so depends on whether you want the above initialization operations
+  /// AdvanceTo() calls you should consider whether to call Initialize() before
+  /// resuming; AdvanceTo() will not do that automatically for you. Whether to
+  /// do so depends on whether you want the above initialization operations
   /// performed. For example, if you changed the time you will likely want the
   /// time-triggered events to be recalculated in case one is due at the new
   /// starting time.
@@ -253,9 +259,7 @@ class Simulator {
   /// This method will throw `std::logic_error` if the combination of options
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
-  // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
-  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
-  //              automatically by StepTo() if the Context has changed.
+  /// @see AdvanceTo(), AdvancePendingEvents()
   void Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
@@ -266,20 +270,47 @@ class Simulator {
   /// and display the `what()` message.
   ///
   /// We recommend that you call Initialize() prior to making the first call
-  /// to StepTo(). However, if you don't it will be called for you the first
+  /// to AdvanceTo(). However, if you don't it will be called for you the first
   /// time that you attempt a step, possibly resulting in unexpected error
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
   ///
   /// @warning You should consider calling Initialize() if you alter the
-  /// the Context or Simulator options between successive StepTo() calls. See
+  /// the Context or Simulator options between successive AdvanceTo() calls. See
   /// Initialize() for more information.
   ///
   /// @param boundary_time The time to advance the context to.
   /// @pre The internal Context satisfies all System constraints or will after
   ///      pending Context updates are performed.
-  void StepTo(const T& boundary_time);
+  /// @see Initialize(), AdvancePendingEvents()
+  void AdvanceTo(const T &boundary_time);
 
+  /// (Advanced) Handles discrete and abstract state update events that are
+  /// pending from the previous AdvanceTo() call, without advancing time.
+  /// See the %Simulator class description for details about how %Simulator
+  /// advances time and handles events. In the terminology used there, this
+  /// method advances the internal Context from `{t, x⁻(t)}` to `{t, x⁺(t)}`.
+  ///
+  /// Normally, these update events would be handled at the start of the next
+  /// AdvanceTo() call, so this method is rarely needed. It can be useful
+  /// at the end of a simulation or to get intermediate results when you are
+  /// specifically interested in the `x⁺(t)` result.
+  ///
+  /// This method is equivalent to `AdvanceTo(current_time)`, where
+  /// `current_time=simulator.get_context().get_time())`. If there are no
+  /// pending events, nothing happens.
+  /// @see AdvanceTo(), Initialize()
+  void AdvancePendingEvents() {
+    AdvanceTo(get_context().get_time());
+  }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED("2020-01-01", "Use AdvanceTo() instead.")
+  void StepTo(const T& boundary_time) { AdvanceTo(boundary_time); }
+#endif
+
+  // TODO(sherm1): Provide options for issuing a warning or aborting the
+  // simulation if the desired rate cannot be achieved.
   /// Slow the simulation down to *approximately* synchronize with real time
   /// when it would otherwise run too fast. Normally the %Simulator takes steps
   /// as quickly as it can. You can request that it slow down to synchronize
@@ -303,8 +334,6 @@ class Simulator {
   ///   run twice as fast as real time, 0.5 for half speed, etc. Zero or
   ///   negative restores the rate to its default of 0, meaning the simulation
   ///   will proceed as fast as possible.
-  // TODO(sherm1): Provide options for issuing a warning or aborting the
-  // simulation if the desired rate cannot be achieved.
   void set_target_realtime_rate(double realtime_rate) {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
@@ -338,7 +367,7 @@ class Simulator {
   double get_actual_realtime_rate() const;
 
   /// Sets whether the simulation should trigger a forced-Publish event on the
-  /// System under simulation at the end of every trajectory-advancing substep.
+  /// System under simulation at the end of every trajectory-advancing step.
   /// Specifically, that means the System::Publish() event dispatcher will be
   /// invoked on each subsystem of the System and passed the current Context
   /// and a forced-publish Event. If a subsystem has declared a forced-publish
@@ -421,9 +450,10 @@ class Simulator {
   /// ResetStatistics() call.
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /// Gets the number of substeps since the last Initialize() call. (We're
-  /// not counting the Initialize() 0-length "substep".)
-  int64_t get_num_steps_taken() const { return num_substeps_taken_; }
+  /// Gets the number of steps since the last Initialize() call. (We're
+  /// not counting the Initialize() 0-length "step".) Note that every
+  /// AdvanceTo() call can potentially take many steps.
+  int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
   /// Gets the number of discrete variable updates performed since the last
   /// Initialize() call.
@@ -434,13 +464,13 @@ class Simulator {
   int64_t get_num_unrestricted_updates() const {
     return num_unrestricted_updates_; }
 
-  /// Gets a pointer to the integrator used to advance the continuous aspects
+  /// Gets a reference to the integrator used to advance the continuous aspects
   /// of the system.
-  const IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
+  const IntegratorBase<T>& get_integrator() const { return *integrator_.get(); }
 
-  /// Gets a pointer to the mutable integrator used to advance the continuous
-  /// aspects of the system.
-  IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
+  /// Gets a reference to the mutable integrator used to advance the continuous
+  /// state of the system.
+  IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
   /// Resets the integrator with a new one. An example usage is:
   /// @code
@@ -450,8 +480,11 @@ class Simulator {
   /// ensure the integrator is properly initialized. You can do that explicitly
   /// with the Initialize() method or it will be done implicitly at the first
   /// time step.
+  /// @throws std::logic_error if `integrator` is nullptr.
   template <class U>
   U* reset_integrator(std::unique_ptr<U> integrator) {
+    if (!integrator)
+      throw std::logic_error("Integrator cannot be null.");
     initialization_done_ = false;
     integrator_ = std::move(integrator);
     return static_cast<U*>(integrator_.get());
@@ -505,10 +538,18 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  enum TimeOrWitnessTriggered {
+    kNothingTriggered = 0b00,
+    kTimeTriggered = 0b01,
+    kWitnessTriggered = 0b10,
+    kBothTriggered = 0b11
+  };
+
   // All constructors delegate to here.
-  Simulator(const System<T>* system,
-            std::unique_ptr<const System<T>> owned_system,
-            std::unique_ptr<Context<T>> context);
+  Simulator(
+      const System<T>* system,
+      std::unique_ptr<const System<T>> owned_system,
+      std::unique_ptr<Context<T>> context);
 
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -518,17 +559,31 @@ class Simulator {
 
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
-  bool IntegrateContinuousState(const T& next_publish_dt,
-                                const T& next_update_dt,
-                                const T& time_of_next_timed_event,
-                                const T& boundary_dt,
-                                CompositeEventCollection<T>* events);
+  TimeOrWitnessTriggered IntegrateContinuousState(
+      const T& next_publish_dt,
+      const T& next_update_dt,
+      const T& time_of_next_timed_event,
+      const T& boundary_dt,
+      CompositeEventCollection<T>* events);
 
+  // Private methods related to witness functions.
   void IsolateWitnessTriggers(
       const std::vector<const WitnessFunction<T>*>& witnesses,
       const VectorX<T>& w0,
       const T& t0, const VectorX<T>& x0, const T& tf,
       std::vector<const WitnessFunction<T>*>* triggered_witnesses);
+  void PopulateEventDataForTriggeredWitness(
+      const T& t0, const T& tf, const WitnessFunction<T>* witness,
+      Event<T>* event, CompositeEventCollection<T>* events) const;
+  static bool DidWitnessTrigger(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const VectorX<T>& w0,
+    const VectorX<T>& wf,
+    std::vector<const WitnessFunction<T>*>* triggered_witnesses);
+  VectorX<T> EvaluateWitnessFunctions(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const Context<T>& context) const;
+  void RedetermineActiveWitnessFunctionsIfNecessary();
 
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
@@ -586,8 +641,8 @@ class Simulator {
   // The number of publishes since the last statistics reset.
   int64_t num_publishes_{0};
 
-  // The number of integration substeps since the last statistics reset.
-  int64_t num_substeps_taken_{0};
+  // The number of integration steps since the last statistics reset.
+  int64_t num_steps_taken_{0};
 
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
@@ -600,7 +655,7 @@ class Simulator {
   bool redetermine_active_witnesses_{true};
 
   // Per step events that are to be handled on every "major time step" (i.e.,
-  // every successful completion of a substep). This collection is constructed
+  // every successful completion of a step). This collection is constructed
   // within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
@@ -609,15 +664,17 @@ class Simulator {
   std::unique_ptr<CompositeEventCollection<T>> timed_events_;
 
   // Witnessed events are triggered as a witness function crosses zero during
-  // StepTo(). This collection is constructed within Initialize().
+  // AdvanceTo(). This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next
-  // call to StepTo().
-  bool timed_or_witnessed_event_triggered_{false};
+  // call to AdvanceTo().
+  TimeOrWitnessTriggered time_or_witness_triggered_{
+      TimeOrWitnessTriggered::kNothingTriggered
+  };
 
   // The time that the next timed event is to be handled. This value is set in
-  // both Initialize() and StepTo().
+  // both Initialize() and AdvanceTo().
   T next_timed_event_time_{std::numeric_limits<double>::quiet_NaN()};
 
   // Pre-allocated temporaries for updated discrete states.
@@ -766,18 +823,21 @@ void Simulator<T>::Initialize() {
   const T current_time = context_->get_time();
   const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
       current_time);
-  context_->set_time(slightly_before_current_time);
+  context_->SetTime(slightly_before_current_time);
 
   // Get the next timed event.
   next_timed_event_time_ =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
   // Reset the context time.
-  context_->set_time(current_time);
+  context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
-  timed_or_witnessed_event_triggered_ =
-      (next_timed_event_time_ == current_time);
+  if (next_timed_event_time_ == current_time) {
+    time_or_witness_triggered_ = kTimeTriggered;
+  } else {
+    time_or_witness_triggered_ = kNothingTriggered;
+  }
 
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
@@ -788,9 +848,8 @@ void Simulator<T>::Initialize() {
   // Note that per-step and timed discrete/unrestricted update events are *not*
   // processed here; just publish events.
   init_events->Merge(*per_step_events_);
-  if (timed_or_witnessed_event_triggered_) {
+  if (time_or_witness_triggered_ & kTimeTriggered)
     init_events->Merge(*timed_events_);
-  }
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
@@ -812,10 +871,9 @@ void Simulator<T>::HandleUnrestrictedUpdate(
     // First, compute the unrestricted updates into a temporary buffer.
     system_.CalcUnrestrictedUpdate(*context_, events,
         unrestricted_updates_.get());
-    // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
-    State<T>& x = context_->get_mutable_state();
-    x.SetFrom(*unrestricted_updates_);
+    system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
+        context_.get());
     ++num_unrestricted_updates_;
 
     // Mark the witness function vector as needing to be redetermined.
@@ -832,8 +890,8 @@ void Simulator<T>::HandleDiscreteUpdate(
     system_.CalcDiscreteVariableUpdates(*context_, events,
         discrete_updates_.get());
     // Then, write them back into the context.
-    DiscreteValues<T>& xd = context_->get_mutable_discrete_state();
-    xd.SetFrom(*discrete_updates_);
+    system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
+        context_.get());
     ++num_discrete_updates_;
   }
 }
@@ -848,15 +906,8 @@ void Simulator<T>::HandlePublish(
   }
 }
 
-// TODO(edrumwri): Consider adding a special function to "complete" a simulation
-//                 by calling, in effect, StepTo(get_context().get_time()) to
-//                 process any events that have triggered but not been processed
-//                 at the conclusion to a StepTo() call. At the present time, we
-//                 believe the issue of remaining, unprocessed events is rarely
-//                 likely to be important and can be circumvented in multiple
-//                 ways, like calling StepTo(get_context().get_time()).
 template <typename T>
-void Simulator<T>::StepTo(const T& boundary_time) {
+void Simulator<T>::AdvanceTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
@@ -872,15 +923,15 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   merged_events->Merge(*per_step_events_);
 
   // Merge in timed and witnessed events, if necessary.
-  if (timed_or_witnessed_event_triggered_) {
+  if (time_or_witness_triggered_ & kTimeTriggered)
     merged_events->Merge(*timed_events_);
+  if (time_or_witness_triggered_ & kWitnessTriggered)
     merged_events->Merge(*witnessed_events_);
-  }
 
   while (true) {
-    // Starting a new substep on the trajectory.
+    // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
-    SPDLOG_TRACE(log(), "Starting a simulation substep at {}", step_start_time);
+    SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
 
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
@@ -913,15 +964,15 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     }
 
     // Integrate the continuous state forward in time.
-    timed_or_witnessed_event_triggered_ = IntegrateContinuousState(
+    time_or_witness_triggered_ = IntegrateContinuousState(
         next_publish_time,
         next_update_time,
         next_timed_event_time_,
         boundary_time,
         witnessed_events_.get());
 
-    // Update the number of simulation substeps taken.
-    ++num_substeps_taken_;
+    // Update the number of simulation steps taken.
+    ++num_steps_taken_;
 
     // TODO(sherm1) Constraint projection goes here.
 
@@ -932,10 +983,10 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
-    if (timed_or_witnessed_event_triggered_) {
+    if (time_or_witness_triggered_ & kTimeTriggered)
       merged_events->Merge(*timed_events_);
+    if (time_or_witness_triggered_ & kWitnessTriggered)
       merged_events->Merge(*witnessed_events_);
-    }
 
     // Handle any publish events at the end of the loop.
     HandlePublish(merged_events->get_publish_events());
@@ -1003,22 +1054,30 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
              iso_scale_factor * accuracy.value() * characteristic_time);
 }
 
-// Isolates the first time at one or more witness functions triggered (in the
-// interval [t0, tf]), to the requisite interval length.
-// @param[in,out] on entry, the set of witness functions that triggered over
-//                [t0, tf]; on exit, the set of witness functions that triggered
-//                over [t0, tw], where tw is the first time that any witness
-//                function triggered.
-// @pre The context and state are at tf and x(tf), respectively, and at least
+// Determines whether any witnesses trigger over the interval [t0, tw],
+// where tw - t0 < ε and ε is the "witness isolation length". If one or more
+// witnesses does trigger over this interval, the time (and corresponding state)
+// will be advanced to tw and those witnesses will be stored in
+// `triggered_witnesses` on return. On the other hand (i.e., if no witnesses)
+// trigger over [t0, t0 + ε], time (and corresponding state) will be advanced
+// to some tc in the open interval (t0, tf) such that no witnesses trigger
+// over [t0, tc]; in other words, we deem it "safe" to integrate to tc.
+// @param[in,out] triggered_witnesses on entry, the set of witness functions
+//                that triggered over [t0, tf]; on exit, the set of witness
+//                functions that triggered over [t0, tw], where tw is some time
+//                such that tw - t0 < ε. If no functions trigger over
+//                [t0, t0 + ε], `triggered_witnesses` will be empty on exit.
+// @pre The time and state are at tf and x(tf), respectively, and at least
 //      one witness function has triggered over [t0, tf].
-// @post The context will be isolated to the first witness function trigger(s),
-//       to within the requisite interval length. It is guaranteed that all
-//       triggered witness functions change sign over [t0, tw].
-// @note We assume that, if a witness function triggers over an interval
-//       [a, b], it also triggers over any larger interval [a, d], for d > b
-//       and d ≤ the maximum integrator step size (per WitnessFunction
-//       documentation, we assume that a witness function crosses zero at most
-//       once over an interval of size [t0, tf]).
+// @post If `triggered_witnesses` is empty, the time and state will be
+//       set to some tc and x(tc), respectively, such that no witnesses trigger
+//       over [t0, tc]. Otherwise, the time and state will be set to tw and
+//       x(tw), respectively.
+// @note The underlying assumption is that a witness function triggers over a
+//       interval [a, d] for d ≤ the maximum integrator step size if that
+//       witness also triggers over interval [a, b] for some b < d. Per
+//       WitnessFunction documentation, we assume that a witness function
+//       crosses zero at most once over an interval of size [t0, tf]).
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -1048,13 +1107,17 @@ void Simulator<T>::IsolateWitnessTriggers(
   std::function<void(const T&)> integrate_forward =
       [&t0, &x0, &context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
-    context.set_time(t0);
+    context.SetTime(t0);
     context.get_mutable_continuous_state().SetFromVector(x0);
     while (context.get_time() < t_des)
       integrator_->IntegrateNoFurtherThanTime(inf, inf, t_des);
   };
 
-  // Loop until the isolation window is sufficiently small.
+  // Starting from c = (t0 + tf)/2, look for a witness function triggering
+  // over the interval [t0, tc]. Assuming a witness does trigger, c will
+  // continue moving leftward as a witness function triggers until the length of
+  // the time interval is small. If a witness fails to trigger as c moves
+  // leftward, we return, indicating that no witnesses triggered over [t0, c].
   SPDLOG_DEBUG(drake::log(),
       "Isolating witness functions using isolation window of {} over [{}, {}]",
       witness_iso_len.value(), t0, tf);
@@ -1087,7 +1150,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       // but the current logic appears easier to follow.
       SPDLOG_DEBUG(drake::log(), "No witness functions triggered up to {}", c);
       triggered_witnesses->clear();
-      return;
+      return;  // Time is c.
     } else {
       b = c;
     }
@@ -1101,6 +1164,78 @@ void Simulator<T>::IsolateWitnessTriggers(
   }
 }
 
+// Evaluates the given vector of witness functions.
+template <class T>
+VectorX<T> Simulator<T>::EvaluateWitnessFunctions(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const Context<T>& context) const {
+  const System<T>& system = get_system();
+  VectorX<T> weval(witness_functions.size());
+  for (size_t i = 0; i < witness_functions.size(); ++i)
+    weval[i] = system.CalcWitnessValue(context, *witness_functions[i]);
+  return weval;
+}
+
+// Determines whether at least one of a collection of witness functions
+// triggered over a time interval [t0, tf] using the values of those functions
+// evaluated at the left and right hand sides of that interval.
+// @param witness_functions a vector of all witness functions active over
+//        [t0, tf].
+// @param w0 the values of the witnesses evaluated at t0.
+// @param wf the values of the witnesses evaluated at tf.
+// @param [out] triggered_witnesses Returns one of the witnesses that triggered,
+//              if any.
+// @returns `true` if a witness triggered or `false` otherwise.
+template <class T>
+bool Simulator<T>::DidWitnessTrigger(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const VectorX<T>& w0,
+    const VectorX<T>& wf,
+    std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
+  // See whether a witness function triggered.
+  triggered_witnesses->clear();
+  bool witness_triggered = false;
+  for (size_t i = 0; i < witness_functions.size() && !witness_triggered; ++i) {
+      if (witness_functions[i]->should_trigger(w0[i], wf[i])) {
+        witness_triggered = true;
+        triggered_witnesses->push_back(witness_functions[i]);
+      }
+  }
+
+  return witness_triggered;
+}
+
+// Populates event data for `event` triggered by a witness function (`witness`)
+// that was evaluated over the time interval [`t0`, `tf`] and adds it to the
+// given event collection (`events`).
+template <class T>
+void Simulator<T>::PopulateEventDataForTriggeredWitness(
+    const T& t0, const T& tf, const WitnessFunction<T>* witness,
+    Event<T>* event, CompositeEventCollection<T>* events) const {
+  // Populate the event data.
+  auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
+      event->get_mutable_event_data());
+  event_data->set_triggered_witness(witness);
+  event_data->set_t0(t0);
+  event_data->set_tf(tf);
+  event_data->set_xc0(event_handler_xc_.get());
+  event_data->set_xcf(&context_->get_continuous_state());
+  get_system().AddTriggeredWitnessFunctionToCompositeEventCollection(
+      event, events);
+}
+
+// (Re)determines the set of witness functions active over this interval,
+// if necessary.
+template <class T>
+void Simulator<T>::RedetermineActiveWitnessFunctionsIfNecessary() {
+  const System<T>& system = get_system();
+  if (redetermine_active_witnesses_) {
+    witness_functions_->clear();
+    system.GetWitnessFunctions(get_context(), witness_functions_.get());
+    redetermine_active_witnesses_ = false;
+  }
+}
+
 // Integrates the continuous state forward in time while also locating
 // the first zero of any triggered witness functions.
 // @param next_publish_time the time at which the next publish event occurs.
@@ -1109,10 +1244,10 @@ void Simulator<T>::IsolateWitnessTriggers(
 // @param boundary_time the maximum time to advance to.
 // @param events a non-null collection of events, which the method will clear
 //        on entry.
-// @returns `true` if integration terminated on an event trigger, indicating
-//          that an event needs to be handled at the state on return.
+// @returns the event triggers that terminated integration.
 template <class T>
-bool Simulator<T>::IntegrateContinuousState(
+typename Simulator<T>::TimeOrWitnessTriggered
+Simulator<T>::IntegrateContinuousState(
     const T& next_publish_time, const T& next_update_time,
     const T&, const T& boundary_time,
     CompositeEventCollection<T>* events) {
@@ -1128,18 +1263,11 @@ bool Simulator<T>::IntegrateContinuousState(
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
   // Get the set of witness functions active at the current state.
-  const System<T>& system = get_system();
-  if (redetermine_active_witnesses_) {
-    witness_functions_->clear();
-    system.GetWitnessFunctions(context, witness_functions_.get());
-    redetermine_active_witnesses_ = false;
-  }
+  RedetermineActiveWitnessFunctionsIfNecessary();
   const auto& witness_functions = *witness_functions_;
 
   // Evaluate the witness functions.
-  w0_.resize(witness_functions.size());
-  for (size_t i = 0; i < witness_functions.size(); ++i)
-      w0_[i] = system.CalcWitnessValue(context, *witness_functions[i]);
+  w0_ = EvaluateWitnessFunctions(witness_functions, context);
 
   // Attempt to integrate. Updates and boundary times are consciously
   // distinguished between. See internal documentation for
@@ -1150,22 +1278,10 @@ bool Simulator<T>::IntegrateContinuousState(
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
-  wf_.resize(witness_functions.size());
-  for (size_t i =0; i < witness_functions.size(); ++i)
-    wf_[i] = system.CalcWitnessValue(context, *witness_functions[i]);
-
-  // See whether a witness function triggered.
-  triggered_witnesses_.clear();
-  bool witness_triggered = false;
-  for (size_t i =0; i < witness_functions.size() && !witness_triggered; ++i) {
-      if (witness_functions[i]->should_trigger(w0_[i], wf_[i])) {
-        witness_triggered = true;
-        triggered_witnesses_.push_back(witness_functions[i]);
-      }
-  }
+  wf_ = EvaluateWitnessFunctions(witness_functions, context);
 
   // Triggering requires isolating the witness function time.
-  if (witness_triggered) {
+  if (DidWitnessTrigger(witness_functions, w0_, wf_, &triggered_witnesses_)) {
     // Isolate the time that the witness function triggered. If witness triggers
     // are detected in the interval [t0, tf], any additional time-triggered
     // events are only relevant iff at least one witness function is
@@ -1184,39 +1300,56 @@ bool Simulator<T>::IntegrateContinuousState(
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->description(), context.get_time());
 
-      // Skip witness functions that have no associated event.
+      // Skip witness functions that have no associated event (i.e., skip
+      // witness functions whose sole purpose is to insert a break in the
+      // integration of continuous state).
       if (!fn->get_event())
         continue;
 
       // Get the event object that corresponds to this witness function. If
-      // there is none, create it.
+      // Simulator has yet to create this object, go ahead and create it.
       auto& event = witness_function_events_[fn];
       if (!event) {
         event = fn->get_event()->Clone();
         event->set_trigger_type(TriggerType::kWitness);
         event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
       }
-
-      // Populate the event data.
-      auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
-          event->get_mutable_event_data());
-      event_data->set_triggered_witness(fn);
-      event_data->set_t0(t0);
-      event_data->set_tf(tf);
-      event_data->set_xc0(event_handler_xc_.get());
-      event_data->set_xcf(&context_->get_continuous_state());
-      system.AddTriggeredWitnessFunctionToCompositeEventCollection(
-          event.get(),
-          events);
+      PopulateEventDataForTriggeredWitness(t0, tf, fn, event.get(), events);
     }
 
-    // Indicate an event should be triggered if at least one witness function
-    // triggered (meaning that an event should be handled on the next simulation
-    // loop). If no witness functions triggered over a smaller interval (recall
-    // that we're in this if/then conditional block because a witness triggered
-    // over a larger interval), we know that time advanced and that no events
-    // triggered.
-    return !triggered_witnesses_.empty();
+    // When successful, the isolation process produces a vector of witnesses
+    // that trigger over every interval [t0, ti], ∀ti in (t0, tf]. If this
+    // vector (triggered_witnesses_) is empty, then time advanced to the first
+    // ti such that no witnesses triggered over [t0, ti].
+    const T& ti = context_->get_time();
+    if (!triggered_witnesses_.empty()) {
+      // We now know that integration terminated at a witness function crossing.
+      // Now we need to look for the unusual case in which a timed event should
+      // also trigger simultaneously.
+      // IntegratorBase::IntegrateNoFurtherThanTime(.) pledges to step no
+      // further than min(next_publish_time, next_update_time, boundary_time),
+      // so we'll verify that assertion.
+      DRAKE_DEMAND(ti <= next_update_time && tf <= next_publish_time);
+      if (ti == next_update_time || ti == next_publish_time) {
+        return kBothTriggered;
+      } else {
+        return kWitnessTriggered;
+      }
+    } else {
+      // Integration didn't succeed on the larger interval [t0, tf]; instead,
+      // the continuous state was integrated to the intermediate time ti, where
+      // t0 < ti < tf. Since any publishes/updates must occur at tf, there
+      // should be no triggers.
+      DRAKE_DEMAND(t0 < ti && ti < tf);
+
+      // The contract for IntegratorBase::IntegrateNoFurtherThanTime() specifies
+      // that tf must be less than or equal to next_update_time and
+      // next_publish_time. Since ti must be strictly less than tf, it follows
+      // that ti must be strictly less than next_update_time and
+      // next_publish_time.
+      DRAKE_DEMAND(next_update_time > ti && next_publish_time > ti);
+      return kNothingTriggered;
+    }
   }
 
   // No witness function triggered; handle integration as usual.
@@ -1226,18 +1359,17 @@ bool Simulator<T>::IntegrateContinuousState(
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:
-      return true;
+      return kTimeTriggered;
 
+    // We do nothing for these two cases.
     case IntegratorBase<T>::kTimeHasAdvanced:
     case IntegratorBase<T>::kReachedBoundaryTime:
-      return false;           // Did not hit a time for a timed event.
+      return kNothingTriggered;
 
     case IntegratorBase<T>::kReachedZeroCrossing:
     case IntegratorBase<T>::kReachedStepLimit:
       throw std::logic_error("Unexpected integrator result");
   }
-
-  // TODO(sherm1) Constraint projection goes here.
 
   DRAKE_UNREACHABLE();
 }

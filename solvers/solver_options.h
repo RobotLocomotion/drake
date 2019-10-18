@@ -31,7 +31,7 @@ namespace solvers {
  *
  * "GUROBI" -- Parameter name and values as specified in Gurobi Reference
  * Manual, section 10.2 "Parameter Descriptions"
- * https://www.gurobi.com/documentation/7.5/refman/parameters.html
+ * https://www.gurobi.com/documentation/8.0/refman/parameters.html
  *
  * "SCS" -- Parameter name and values as specified in the struct SCS_SETTINGS in
  * SCS header file https://github.com/cvxgrp/scs/blob/master/include/scs.h
@@ -39,7 +39,7 @@ namespace solvers {
  * version used in Drake.
  *
  * "MOSEK" -- Parameter name and values as specified in Mosek Reference
- * https://docs.mosek.com/8.0/capi/parameters.html
+ * https://docs.mosek.com/9.0/capi/parameters.html
  */
 class SolverOptions {
  public:

@@ -1,8 +1,11 @@
+import gc
 import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import Expression
+from pydrake.common import RandomDistribution
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue,
@@ -21,10 +24,9 @@ from pydrake.systems.primitives import (
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
     Demultiplexer, Demultiplexer_,
-    ExponentialRandomSource,
+    DiscreteTimeDelay, DiscreteTimeDelay_,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
-    GaussianRandomSource,
     Gain, Gain_,
     Integrator, Integrator_,
     IsControllable,
@@ -36,10 +38,11 @@ from pydrake.systems.primitives import (
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
+    RandomSource,
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     Sine, Sine_,
-    UniformRandomSource,
+    SymbolicVectorSystem, SymbolicVectorSystem_,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
@@ -72,6 +75,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(ConstantValueSource_)
         self._check_instantiations(ConstantVectorSource_)
         self._check_instantiations(Demultiplexer_)
+        self._check_instantiations(DiscreteTimeDelay_)
         self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
         self._check_instantiations(LinearSystem_)
@@ -80,6 +84,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Saturation_)
         self._check_instantiations(SignalLogger_)
         self._check_instantiations(Sine_)
+        self._check_instantiations(SymbolicVectorSystem_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -110,7 +115,7 @@ class TestGeneral(unittest.TestCase):
         diagram = builder.Build()
         simulator = Simulator(diagram)
         kTime = 1.
-        simulator.StepTo(kTime)
+        simulator.AdvanceTo(kTime)
 
         # Verify outputs of the every-step logger
         t = logger_per_step.sample_times()
@@ -128,6 +133,21 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
         logger_per_step.reset()
+
+        # Verify that t and x retain their values after systems are deleted.
+        t_copy = t.copy()
+        x_copy = x.copy()
+        del builder
+        del integrator
+        del logger_periodic
+        del logger_per_step
+        del logger_per_step_2
+        del diagram
+        del simulator
+        del source
+        gc.collect()
+        self.assertTrue((t == t_copy).all())
+        self.assertTrue((x == x_copy).all())
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
@@ -160,6 +180,8 @@ class TestGeneral(unittest.TestCase):
         self.assertFalse(IsObservable(system))
 
         system = AffineSystem(A, B, f0, C, D, y0, .1)
+        self.assertEqual(system.get_input_port(0), system.get_input_port())
+        self.assertEqual(system.get_output_port(0), system.get_output_port())
         context = system.CreateDefaultContext()
         self.assertEqual(system.get_input_port(0).size(), 1)
         self.assertEqual(context.get_discrete_state_vector().size(), 2)
@@ -172,7 +194,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.y0(), y0)
         self.assertEqual(system.time_period(), .1)
 
-        context.FixInputPort(0, BasicVector([0]))
+        system.get_input_port(0).FixValue(context, 0)
         linearized = Linearize(system, context)
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
@@ -185,7 +207,7 @@ class TestGeneral(unittest.TestCase):
         model_value = BasicVector([1., 2, 3])
         system = PassThrough(model_value.size())
         context = system.CreateDefaultContext()
-        context.FixInputPort(0, model_value)
+        system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
         input_eval = system.EvalVectorInput(context, 0)
         compare_value(self, input_eval, model_value)
@@ -197,7 +219,7 @@ class TestGeneral(unittest.TestCase):
         model_value = AbstractValue.Make("Hello world")
         system = PassThrough(model_value)
         context = system.CreateDefaultContext()
-        context.FixInputPort(0, model_value)
+        system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
         input_eval = system.EvalAbstractInput(context, 0)
         compare_value(self, input_eval, model_value)
@@ -228,7 +250,7 @@ class TestGeneral(unittest.TestCase):
             output = system.AllocateOutput()
 
             def mytest(input, expected):
-                context.FixInputPort(0, BasicVector(input))
+                system.get_input_port(0).FixValue(context, input)
                 system.CalcOutput(context, output)
                 self.assertTrue(np.allclose(output.get_vector_data(
                     0).CopyToVector(), expected))
@@ -242,7 +264,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
 
         def mytest(input, expected):
-            context.FixInputPort(0, BasicVector(input))
+            system.get_input_port(0).FixValue(context, input)
             system.CalcOutput(context, output)
             self.assertTrue(np.allclose(output.get_vector_data(
                 0).CopyToVector(), expected))
@@ -260,7 +282,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
 
         def mytest(input, expected):
-            context.set_time(input)
+            context.SetTime(input)
             system.CalcOutput(context, output)
             self.assertTrue(np.allclose(output.get_vector_data(
                 0).CopyToVector(), expected))
@@ -269,6 +291,43 @@ class TestGeneral(unittest.TestCase):
         mytest(0.5, (2.5, 1.5))
         mytest(1.0, (3.0, 1.0))
 
+    def test_symbolic_vector_system(self):
+        t = Variable("t")
+        x = [Variable("x0"), Variable("x1")]
+        u = [Variable("u0"), Variable("u1")]
+        system = SymbolicVectorSystem(time=t, state=x, input=u,
+                                      dynamics=[x[0] + x[1], t],
+                                      output=[u[1]],
+                                      time_period=0.0)
+        context = system.CreateDefaultContext()
+
+        self.assertEqual(context.num_continuous_states(), 2)
+        self.assertEqual(context.num_discrete_state_groups(), 0)
+        self.assertEqual(system.get_input_port(0).size(), 2)
+        self.assertEqual(system.get_output_port(0).size(), 1)
+        self.assertEqual(context.num_abstract_parameters(), 0)
+        self.assertEqual(context.num_numeric_parameter_groups(), 0)
+
+    def test_symbolic_vector_system_parameters(self):
+        t = Variable("t")
+        x = [Variable("x0"), Variable("x1")]
+        u = [Variable("u0"), Variable("u1")]
+        p = [Variable("p0"), Variable("p1")]
+        system = SymbolicVectorSystem(time=t, state=x, input=u,
+                                      parameter=p,
+                                      dynamics=[p[0] * x[0] + x[1] + p[1], t],
+                                      output=[u[1]],
+                                      time_period=0.0)
+        context = system.CreateDefaultContext()
+
+        self.assertEqual(context.num_continuous_states(), 2)
+        self.assertEqual(context.num_discrete_state_groups(), 0)
+        self.assertEqual(system.get_input_port(0).size(), 2)
+        self.assertEqual(system.get_output_port(0).size(), 1)
+        self.assertEqual(context.num_abstract_parameters(), 0)
+        self.assertEqual(context.num_numeric_parameter_groups(), 1)
+        self.assertEqual(context.get_numeric_parameter(0).size(), 2)
+
     def test_wrap_to_system(self):
         system = WrapToSystem(2)
         system.set_interval(1, 1., 2.)
@@ -276,7 +335,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
 
         def mytest(input, expected):
-            context.FixInputPort(0, BasicVector(input))
+            system.get_input_port(0).FixValue(context, input)
             system.CalcOutput(context, output)
             self.assertTrue(np.allclose(output.get_vector_data(
                 0).CopyToVector(), expected))
@@ -288,11 +347,11 @@ class TestGeneral(unittest.TestCase):
         # Test demultiplexer with scalar outputs.
         demux = Demultiplexer(size=4)
         context = demux.CreateDefaultContext()
-        self.assertEqual(demux.get_num_input_ports(), 1)
-        self.assertEqual(demux.get_num_output_ports(), 4)
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), 4)
 
         input_vec = np.array([1., 2., 3., 4.])
-        context.FixInputPort(0, BasicVector(input_vec))
+        demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
         demux.CalcOutput(context, output)
 
@@ -302,12 +361,12 @@ class TestGeneral(unittest.TestCase):
                             input_vec[i]))
 
         # Test demultiplexer with vector outputs.
-        demux = Demultiplexer(size=4, output_ports_sizes=2)
+        demux = Demultiplexer(size=4, output_ports_size=2)
         context = demux.CreateDefaultContext()
-        self.assertEqual(demux.get_num_input_ports(), 1)
-        self.assertEqual(demux.get_num_output_ports(), 2)
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), 2)
 
-        context.FixInputPort(0, BasicVector(input_vec))
+        demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
         demux.CalcOutput(context, output)
 
@@ -315,6 +374,28 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(
                 np.allclose(output.get_vector_data(i).get_value(),
                             input_vec[2*i:2*i+2]))
+
+        # Test demultiplexer with different output port sizes.
+        output_ports_sizes = np.array([1, 2, 1])
+        num_output_ports = output_ports_sizes.size
+        input_vec = np.array([1., 2., 3., 4.])
+        demux = Demultiplexer(output_ports_sizes=output_ports_sizes)
+        context = demux.CreateDefaultContext()
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), num_output_ports)
+
+        demux.get_input_port(0).FixValue(context, input_vec)
+        output = demux.AllocateOutput()
+        demux.CalcOutput(context, output)
+
+        output_port_start = 0
+        for i in range(num_output_ports):
+            output_port_size = output.get_vector_data(i).size()
+            self.assertTrue(
+                np.allclose(output.get_vector_data(i).get_value(),
+                            input_vec[output_port_start:
+                                      output_port_start+output_port_size]))
+            output_port_start += output_port_size
 
     def test_multiplexer(self):
         my_vector = MyVector2(data=[1., 2.])
@@ -333,9 +414,9 @@ class TestGeneral(unittest.TestCase):
             context = mux.CreateDefaultContext()
             output = mux.AllocateOutput()
             num_ports = len(case['data'])
-            self.assertEqual(context.get_num_input_ports(), num_ports)
+            self.assertEqual(context.num_input_ports(), num_ports)
             for j, vec in enumerate(case['data']):
-                context.FixInputPort(j, BasicVector(vec))
+                mux.get_input_port(j).FixValue(context, vec)
             mux.CalcOutput(context, output)
             self.assertTrue(
                 np.allclose(output.get_vector_data(0).get_value(),
@@ -345,18 +426,10 @@ class TestGeneral(unittest.TestCase):
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
 
-    def test_random_sources(self):
-        uniform_source = UniformRandomSource(num_outputs=2,
-                                             sampling_interval_sec=0.01)
-        self.assertEqual(uniform_source.get_output_port(0).size(), 2)
-
-        gaussian_source = GaussianRandomSource(num_outputs=3,
-                                               sampling_interval_sec=0.01)
-        self.assertEqual(gaussian_source.get_output_port(0).size(), 3)
-
-        exponential_source = ExponentialRandomSource(num_outputs=4,
-                                                     sampling_interval_sec=0.1)
-        self.assertEqual(exponential_source.get_output_port(0).size(), 4)
+    def test_random_source(self):
+        source = RandomSource(distribution=RandomDistribution.kUniform,
+                              num_outputs=2, sampling_interval_sec=0.01)
+        self.assertEqual(source.get_output_port(0).size(), 2)
 
         builder = DiagramBuilder()
         # Note: There are no random inputs to add to the empty diagram, but it
@@ -369,6 +442,10 @@ class TestGeneral(unittest.TestCase):
         """
         ConstantValueSource(AbstractValue.Make("Hello world"))
         ConstantVectorSource(source_value=[1., 2.])
+        DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
+        DiscreteTimeDelay(
+            update_sec=0.1, delay_timesteps=5,
+            abstract_model_value=AbstractValue.Make("Hello world"))
         ZeroOrderHold(period_sec=0.1, vector_size=2)
         ZeroOrderHold(
             period_sec=0.1,

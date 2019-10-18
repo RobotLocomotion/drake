@@ -57,23 +57,34 @@ Each commit on Drake master should pass all unit tests and lint checks, should
 be logically cohesive (should not require other commits to make sense), and
 should have a meaningful commit message.
 
-The label ``status: curate commits before merging`` on a PR indicates that (at
-the time the label was added) the commits pushed to the PR do not meet those
-criteria, usually because the commits contain "work-in-progress" checkpoints or
-scattered "fix review comments" adjustments.
+Therefore, our reviewable settings by default prevent a PR with more than one
+commit from being merged.
 
-When applied to a PR, this label will prevent a PR with more than one commit
-from being merged.
+Often a PR may end up with more than one commit, including "work-in-progress"
+checkpoints or "fix review comments" pushes.  In that case, when the PR is
+ready to merge, the author of a PR has three choices for how to proceed:
 
-The author of a PR has three choices for how to resolve this defect:
-
-* Remove the label and then immediately use the "squash and merge" button to
-  merge the PR, being careful to tweak the the commit message in the github
-  edit box to be a sensible description of the change.
+* Ask the assigned Platform Reviewer to "Squash and merge" the PR.
 * Locally (rebase and) squash the PR down to a single commit, and force-push
-  that commit into the PR.  This will automatically remove the merge
-  impediment: even though the label still exists, it is a no-op when there is
-  only one commit in the PR.
-* Locally (rebase and) squash the PR to contain more than one commit, but where
-  each individual commit meets the above recommendations, and then remove the
-  label.
+  that commit into the PR.
+* Apply the label ``status: squashing now`` and then immediately use the "squash
+  and merge" button to merge the PR, being careful to tweak the commit message
+  in the web page's edit box to be a sensible description of the change.
+
+On the other hand, some PR authors carefully curate their commits so that each
+individual commit on a PR meets the acceptance criteria on its own.  In that
+case, the author should apply the label ``status: commits are properly
+curated``, which removes the single-commit requirement.  PRs with this label
+should be merged to master using the "Create a merge commit" option, not
+"Squash and merge" option.
+
+Joint Feature and Platform review
+=================================
+
+For a review to be considered complete, both Feature Review and Platform Review
+must be completed (see :ref:`Review Process <review_process>`).
+
+Therefore, our reviewable settings require at least two assigned reviewers.  In
+cases where the platform reviewer decides to double-count as feature review,
+the reviewer should apply the label ``status: single reviewer ok`` to note this
+condition, which removes the two-assignee requirement.

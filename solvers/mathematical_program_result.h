@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <typeinfo>
 #include <unordered_map>
@@ -8,8 +9,9 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/value.h"
+#include "drake/solvers/binding.h"
 #include "drake/solvers/solution_result.h"
-#include "drake/solvers/solver_result.h"
+#include "drake/solvers/solver_id.h"
 
 namespace drake {
 namespace solvers {
@@ -84,11 +86,14 @@ class MathematicalProgramResult final {
   /**
    * Sets decision_variable_index mapping, that maps each decision variable to
    * its index in the aggregated vector containing all decision variables in
-   * MathematicalProgram.
+   * MathematicalProgram. Initialize x_val to NAN.
    */
   void set_decision_variable_index(
       std::unordered_map<symbolic::Variable::Id, int> decision_variable_index) {
     decision_variable_index_ = std::move(decision_variable_index);
+    x_val_ =
+        Eigen::VectorXd::Constant(decision_variable_index_->size(),
+                                  std::numeric_limits<double>::quiet_NaN());
   }
 
   /** Sets SolutionResult. */
@@ -148,19 +153,6 @@ class MathematicalProgramResult final {
     }
     return solver_details_->get_mutable_value<T>();
   }
-
-  /**
-   * Convert MathematicalProgramResult to SolverResult.
-   * @note This function doesn't set optimal_cost_lower_bound. If
-   * SolverResult.optimal_cost_lower_bound needs to be set (like in
-   * GurobiSolver), then the user will have to set it after calling
-   * ConvertToSolverResult.
-   */
-  DRAKE_DEPRECATED("2019-06-01",
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.")
-  internal::SolverResult ConvertToSolverResult() const;
 
   /**
    * Gets the solution of all decision variables.
@@ -223,6 +215,26 @@ class MathematicalProgramResult final {
       }
     }
     return value;
+  }
+
+  /**
+   * Evaluate a Binding at the solution.
+   * @param binding A binding between a constraint/cost and the variables.
+   * @pre The binding.variables() must be the within the decision variables in
+   * the MathematicalProgram that generated this %MathematicalProgramResult.
+   * @pre The user must have called set_decision_variable_index() function.
+   */
+  template <typename Evaluator>
+  Eigen::VectorXd EvalBinding(const Binding<Evaluator>& binding) const {
+    DRAKE_ASSERT(decision_variable_index_.has_value());
+    Eigen::VectorXd binding_x(binding.GetNumElements());
+    for (int i = 0; i < binding_x.rows(); ++i) {
+      binding_x(i) =
+          x_val_(decision_variable_index_->at(binding.variables()(i).get_id()));
+    }
+    Eigen::VectorXd binding_y(binding.evaluator()->num_outputs());
+    binding.evaluator()->Eval(binding_x, &binding_y);
+    return binding_y;
   }
 
   /**

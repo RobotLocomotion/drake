@@ -164,7 +164,7 @@ drake_cc_googletest(
     deps = [
         ":dynamic_programming",
         ":linear_quadratic_regulator",
-        "//common/proto:call_matlab",
+        "//common/proto:call_python",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/primitives:integrator",
         "//systems/primitives:linear_system",

@@ -121,8 +121,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             // behavior.
             py::object self = py::cast(&tree);
             for (auto& body_unique_ptr : body_unique_ptrs) {
-              py_bodies.append(
-                  py::cast(body_unique_ptr.get(), py_reference_internal, self));
+              py::object body_py =
+                  py::cast(body_unique_ptr.get(), py_reference);
+              py_bodies.append(py_keep_alive(body_py, self));
             }
             return py_bodies;
           },
@@ -159,11 +160,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("getBodyOrFrameName", &RigidBodyTree<double>::getBodyOrFrameName,
           py::arg("body_or_frame_id"), doc.RigidBodyTree.getBodyOrFrameName.doc)
       .def("number_of_positions", &RigidBodyTree<double>::get_num_positions,
-          doc.RigidBodyTree.number_of_positions.doc)
+          doc.RigidBodyTree.number_of_positions.doc_deprecated)
       .def("get_num_positions", &RigidBodyTree<double>::get_num_positions,
           doc.RigidBodyTree.get_num_positions.doc)
       .def("number_of_velocities", &RigidBodyTree<double>::get_num_velocities,
-          doc.RigidBodyTree.number_of_velocities.doc)
+          doc.RigidBodyTree.number_of_velocities.doc_deprecated)
       .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities,
           doc.RigidBodyTree.get_num_velocities.doc)
       .def("get_body", &RigidBodyTree<double>::get_body,
@@ -514,14 +515,14 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyFrame.get_frame_index.doc)
       .def("get_rigid_body", &RigidBodyFrame<double>::get_rigid_body,
           py_reference,
-          // Keep alive: `this` keeps `return` alive.
+          // Keep alive: `self` keeps `return` alive.
           py::keep_alive<1, 0>(), doc.RigidBodyFrame.get_rigid_body.doc)
       .def("get_transform_to_body",
           &RigidBodyFrame<double>::get_transform_to_body,
           doc.RigidBodyFrame.get_transform_to_body.doc);
 
   const char* const doc_AddModelInstanceFromUrdfFile =
-      doc.drake.parsers.urdf.AddModelInstanceFromUrdfFile.doc;
+      doc.drake.parsers.urdf.AddModelInstanceFromUrdfFile.doc_deprecated_5args;
   m.def("AddModelInstanceFromUrdfFile",
       [](const std::string& urdf_filename,
           const FloatingBaseType floating_base_type,

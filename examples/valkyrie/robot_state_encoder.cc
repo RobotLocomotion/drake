@@ -3,6 +3,7 @@
 #include <list>
 
 #include "drake/common/constants.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
@@ -144,7 +145,7 @@ void RobotStateEncoder::SetStateAndEfforts(
   translator_.EncodeMessageTorque(torque, message);
 }
 
-SpatialForce<double>
+Vector6<double>
 RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
     const KinematicsResults<double>& kinematics_results,
     const ContactResults<double>& contact_results,
@@ -177,12 +178,13 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
     calc.AddForce(f);
   }
 
-  SpatialForce<double> spatial_force_in_world_aligned_body_frame =
+  Vector6<double> spatial_force_in_world_aligned_body_frame =
       calc.ComputeResultant(reference_point).get_spatial_force();
-  Isometry3<double> world_aligned_to_body_frame(Isometry3<double>::Identity());
-  world_aligned_to_body_frame.linear() =
-      kinematics_results.get_pose_in_world(body1).linear().transpose();
-  return transformSpatialForce(world_aligned_to_body_frame,
+  const math::RotationMatrix<double> R_WB(
+      kinematics_results.get_pose_in_world(body1).linear());
+  const math::RigidTransform<double> world_aligned_to_body_frame(
+      R_WB.transpose());
+  return transformSpatialForce(world_aligned_to_body_frame.GetAsIsometry3(),
                                spatial_force_in_world_aligned_body_frame);
 }
 
@@ -190,13 +192,13 @@ void RobotStateEncoder::SetForceTorque(
     const KinematicsResults<double>& kinematics_results,
     const ContactResults<double>& contact_results,
     bot_core::robot_state_t* message) const {
-  std::vector<SpatialForce<double>> spatial_force_in_sensor_frame(
+  std::vector<Vector6<double>> spatial_force_in_sensor_frame(
       force_torque_sensor_info_.size());
 
   for (size_t i = 0; i < force_torque_sensor_info_.size(); ++i) {
     const RigidBody<double>& body =
         force_torque_sensor_info_[i].get_rigid_body();
-    SpatialForce<double> spatial_force =
+    Vector6<double> spatial_force =
         GetSpatialForceActingOnBody1ByBody2InBody1Frame(
             kinematics_results, contact_results, body,
             translator_.get_robot().world());
@@ -209,7 +211,7 @@ void RobotStateEncoder::SetForceTorque(
   auto& force_torque = message->force_torque;
 
   if (l_foot_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& spatial_force =
+    const Vector6<double>& spatial_force =
         spatial_force_in_sensor_frame.at(l_foot_ft_sensor_idx_);
     force_torque.l_foot_force_z =
         static_cast<float>(spatial_force[kForceZIndex]);
@@ -219,7 +221,7 @@ void RobotStateEncoder::SetForceTorque(
         static_cast<float>(spatial_force[kTorqueYIndex]);
   }
   if (r_foot_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& spatial_force =
+    const Vector6<double>& spatial_force =
         spatial_force_in_sensor_frame.at(r_foot_ft_sensor_idx_);
     force_torque.r_foot_force_z =
         static_cast<float>(spatial_force[kForceZIndex]);
@@ -229,7 +231,7 @@ void RobotStateEncoder::SetForceTorque(
         static_cast<float>(spatial_force[kTorqueYIndex]);
   }
   if (l_hand_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& spatial_force =
+    const Vector6<double>& spatial_force =
         spatial_force_in_sensor_frame.at(l_hand_ft_sensor_idx_);
     eigenVectorToCArray(spatial_force.head<kSpaceDimension>(),
                         force_torque.l_hand_torque);
@@ -237,7 +239,7 @@ void RobotStateEncoder::SetForceTorque(
                         force_torque.l_hand_force);
   }
   if (r_hand_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& spatial_force =
+    const Vector6<double>& spatial_force =
         spatial_force_in_sensor_frame.at(r_hand_ft_sensor_idx_);
     eigenVectorToCArray(spatial_force.head<kSpaceDimension>(),
                         force_torque.r_hand_torque);

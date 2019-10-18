@@ -171,7 +171,7 @@ template<typename T> class BodyNode;
 /// </pre>
 ///
 /// Similarly, for the rotational component: <pre>
-///  dR_FM/dt = Xdot_FM.linear() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
+///  dR_FM/dt = Xdot_FM.rotation() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
 /// </pre>
 /// where `[w_FM]` is the cross product matrix of the across-mobilizer angular
 /// velocity `w_FM`, `R_FM` is the orientation of M in F, and `Hw_FM`
@@ -305,6 +305,12 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     return outboard_frame().body();
   }
 
+  /// Returns `true` if `this` mobilizer grants 6-dofs to the outboard frame.
+  virtual bool is_floating() const { return false; }
+
+  /// Returns `true` if `this` uses a quaternion parametrization of rotations.
+  virtual bool has_quaternion_dofs() const { return false; }
+
   /// Returns the topology information for this mobilizer. Users should not
   /// need to call this method since MobilizerTopology is an internal
   /// bookkeeping detail.
@@ -376,7 +382,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   ///
   /// Additionally, `context` can provide any other parameters the mobilizer
   /// could depend on.
-  virtual Isometry3<T> CalcAcrossMobilizerTransform(
+  virtual math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const = 0;
 
   /// Computes the across-mobilizer spatial velocity `V_FM(q, v)` of the

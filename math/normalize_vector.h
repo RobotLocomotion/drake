@@ -40,10 +40,10 @@ void NormalizeVector(
 
     if (ddx_norm) {
       auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
-      auto ddx_norm_times_norm = -matGradMultMat(
+      auto minus_ddx_norm_times_norm = matGradMultMat(
           x_norm, x_norm.transpose(), (*dx_norm), dx_norm_transpose);
       auto dnorm_inv = -x.transpose() / (xdotx * norm_x);
-      (*ddx_norm) = ddx_norm_times_norm / norm_x;
+      (*ddx_norm) = -minus_ddx_norm_times_norm / norm_x;
       auto temp = (*dx_norm) * norm_x;
       typename Derived::Index n = x.rows();
       for (int col = 0; col < n; col++) {

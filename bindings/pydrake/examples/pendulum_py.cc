@@ -33,7 +33,14 @@ PYBIND11_MODULE(pendulum, m) {
 
   py::class_<PendulumPlant<T>, LeafSystem<T>>(
       m, "PendulumPlant", doc.PendulumPlant.doc)
-      .def(py::init<>(), doc.PendulumPlant.ctor.doc);
+      .def(py::init<>(), doc.PendulumPlant.ctor.doc)
+      .def("get_input_port", &System<T>::get_input_port, py_reference_internal,
+          py::arg("port_index"),
+          pydrake_doc.drake.systems.System.get_input_port.doc)
+      .def("get_input_port", &PendulumPlant<T>::get_input_port,
+          py_reference_internal, doc.PendulumPlant.get_input_port.doc)
+      .def("get_state_output_port", &PendulumPlant<T>::get_state_output_port,
+          py_reference_internal, doc.PendulumPlant.get_state_output_port.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<PendulumInput<T>, BasicVector<T>>(

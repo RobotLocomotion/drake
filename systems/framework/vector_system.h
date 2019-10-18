@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -35,7 +36,7 @@ class VectorSystem : public LeafSystem<T> {
 
   /// Returns the sole input port.
   const InputPort<T>& get_input_port() const {
-    DRAKE_DEMAND(this->get_num_input_ports() == 1);
+    DRAKE_DEMAND(this->num_input_ports() == 1);
     return LeafSystem<T>::get_input_port(0);
   }
 
@@ -44,7 +45,7 @@ class VectorSystem : public LeafSystem<T> {
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
-    DRAKE_DEMAND(this->get_num_output_ports() == 1);
+    DRAKE_DEMAND(this->num_output_ports() == 1);
     return LeafSystem<T>::get_output_port(0);
   }
 
@@ -56,17 +57,30 @@ class VectorSystem : public LeafSystem<T> {
   /// sizes, when the sizes are non-zero.  Either size can be zero, in which
   /// case no input (or output) port is created.
   ///
+  /// The `direct_feedthrough` specifies whether the input port direct feeds
+  /// through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
+  /// When not provided, assumes true (the output is direct feedthrough).
+  /// When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
+  ///
   /// Does *not* declare scalar-type conversion support (AutoDiff, etc.).  To
   /// enable AutoDiff support, use the SystemScalarConverter-based constructor.
   /// (For that, see @ref system_scalar_conversion at the example titled
   /// "Example using drake::systems::VectorSystem as the base class".)
-  VectorSystem(int input_size, int output_size)
-      : VectorSystem(SystemScalarConverter{}, input_size, output_size) {}
+  VectorSystem(int input_size, int output_size,
+               optional<bool> direct_feedthrough = nullopt)
+      : VectorSystem(SystemScalarConverter{}, input_size, output_size,
+                     direct_feedthrough) {}
 
   /// Creates a system with one input port and one output port of the given
   /// sizes, when the sizes are non-zero.  Either size can be zero, in which
   /// case no input (or output) port is created.  This constructor allows
   /// subclasses to declare scalar-type conversion support (AutoDiff, etc.).
+  ///
+  /// The `direct_feedthrough` specifies whether the input port direct feeds
+  /// through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
+  /// When not provided, infers feedthrough from the symbolic form if
+  /// available, or else assumes true (the output is direct feedthrough).
+  /// When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
   ///
   /// The scalar-type conversion support will use @p converter.
   /// To enable scalar-type conversion support, pass a `SystemTypeTag<S>{}`
@@ -75,14 +89,31 @@ class VectorSystem : public LeafSystem<T> {
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support, especially the example titled
   /// "Example using drake::systems::VectorSystem as the base class".
-  VectorSystem(SystemScalarConverter converter, int input_size, int output_size)
+  VectorSystem(SystemScalarConverter converter, int input_size, int output_size,
+               optional<bool> direct_feedthrough = nullopt)
       : LeafSystem<T>(std::move(converter)) {
     if (input_size > 0) {
       this->DeclareInputPort(kVectorValued, input_size);
     }
     if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
+      std::set<DependencyTicket> prerequisites_of_calc;
+      if (direct_feedthrough.value_or(true)) {
+        // Depend on everything.
+        prerequisites_of_calc = {
+          this->all_sources_ticket()
+        };
+      } else {
+        // Depend on everything *except* for the inputs.
+        prerequisites_of_calc = {
+          this->time_ticket(),
+          this->accuracy_ticket(),
+          this->all_state_ticket(),
+          this->all_parameters_ticket(),
+        };
+      }
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(output_size), &VectorSystem::CalcVectorOutput,
+          std::move(prerequisites_of_calc));
     }
   }
 
@@ -92,7 +123,7 @@ class VectorSystem : public LeafSystem<T> {
   Eigen::VectorBlock<const VectorX<T>> EvalVectorInput(
       const Context<T>& context) const {
     // Obtain the block form of u (or the empty vector).
-    if (this->get_num_input_ports() > 0) {
+    if (this->num_input_ports() > 0) {
       return this->get_input_port().Eval(context);
     }
     static const never_destroyed<VectorX<T>> empty_vector(0);
@@ -104,9 +135,9 @@ class VectorSystem : public LeafSystem<T> {
   Eigen::VectorBlock<const VectorX<T>> GetVectorState(
       const Context<T>& context) const {
     // Obtain the block form of xc or xd.
-    DRAKE_ASSERT(context.get_num_abstract_states() == 0);
+    DRAKE_ASSERT(context.num_abstract_states() == 0);
     const BasicVector<T>* state_vector{};
-    if (context.get_num_discrete_state_groups() == 0) {
+    if (context.num_discrete_state_groups() == 0) {
       const VectorBase<T>& vector_base = context.get_continuous_state_vector();
       state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
     } else {
@@ -182,13 +213,13 @@ class VectorSystem : public LeafSystem<T> {
   void CalcVectorOutput(const Context<T>& context,
                         BasicVector<T>* output) const {
     // Should only get here if we've declared an output.
-    DRAKE_ASSERT(this->get_num_output_ports() > 0);
+    DRAKE_ASSERT(this->num_output_ports() > 0);
 
     // Decide whether we should evaluate our input port and pass its value to
     // our subclass's DoCalcVectorOutput method.  When should_eval_input is
     // false, we will pass an empty vector instead of pulling on our input.
     bool should_eval_input = false;
-    if (this->get_num_input_ports() > 0) {
+    if (this->num_input_ports() > 0) {
       // We have an input port, but when our subclass's DoCalcVectorOutput is
       // not direct-feedthrough, then evaluating the input port might cause a
       // computational loop.  We should only evaluate the input when this
@@ -314,14 +345,14 @@ class VectorSystem : public LeafSystem<T> {
     // should be invariants guaranteed by the framework, so are asserted.
 
     // Exactly one input and output.
-    DRAKE_THROW_UNLESS(this->get_num_input_ports() <= 1);
-    DRAKE_THROW_UNLESS(this->get_num_output_ports() <= 1);
-    DRAKE_DEMAND(context.get_num_input_ports() <= 1);
+    DRAKE_THROW_UNLESS(this->num_input_ports() <= 1);
+    DRAKE_THROW_UNLESS(this->num_output_ports() <= 1);
+    DRAKE_DEMAND(context.num_input_ports() <= 1);
 
     // At most one of either continuous or discrete state.
-    DRAKE_THROW_UNLESS(context.get_num_abstract_states() == 0);
-    const int continuous_size = context.get_continuous_state().size();
-    const int num_discrete_groups = context.get_num_discrete_state_groups();
+    DRAKE_THROW_UNLESS(context.num_abstract_states() == 0);
+    const int continuous_size = context.num_continuous_states();
+    const int num_discrete_groups = context.num_discrete_state_groups();
     DRAKE_DEMAND(continuous_size >= 0);
     DRAKE_DEMAND(num_discrete_groups >= 0);
     DRAKE_THROW_UNLESS(num_discrete_groups <= 1);

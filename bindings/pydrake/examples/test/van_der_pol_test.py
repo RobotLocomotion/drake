@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import numpy as np
 import unittest
 
 from pydrake.examples.van_der_pol import VanDerPolOscillator
@@ -20,5 +21,17 @@ class TestVanDerPol(unittest.TestCase):
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
         self.assertFalse((state.CopyToVector() == initial_state).any())
+
+    def test_ports(self):
+        vdp = VanDerPolOscillator()
+
+        self.assertTrue(vdp.get_position_output_port().get_index().is_valid())
+        self.assertTrue(
+            vdp.get_full_state_output_port().get_index().is_valid())
+
+    def test_limit_cycle(self):
+        cycle = VanDerPolOscillator.CalcLimitCycle()
+
+        np.testing.assert_almost_equal(cycle[:, 0], cycle[:, -1], 2)

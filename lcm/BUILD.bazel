@@ -14,19 +14,18 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "lcm",
     deps = [
+        ":drake_lcm",
         ":interface",
         ":lcm_log",
         ":mock",
         ":real",
-        ":translator_base",
     ],
 )
 
 drake_cc_library(
     name = "interface",
-    hdrs = [
-        "drake_lcm_interface.h",
-    ],
+    srcs = ["drake_lcm_interface.cc"],
+    hdrs = ["drake_lcm_interface.h"],
     deps = [
         "//common:essential",
     ],
@@ -41,16 +40,18 @@ drake_cc_library(
     ],
 )
 
+# TODO(jwnimmer-tri) Deprecate this compatibility shim.
 drake_cc_library(
     name = "real",
-    srcs = [
-        "drake_lcm.cc",
-        "lcm_receive_thread.cc",
+    deps = [
+        ":drake_lcm",
     ],
-    hdrs = [
-        "drake_lcm.h",
-        "lcm_receive_thread.h",
-    ],
+)
+
+drake_cc_library(
+    name = "drake_lcm",
+    srcs = ["drake_lcm.cc"],
+    hdrs = ["drake_lcm.h"],
     deps = [
         ":interface",
         "//common:essential",
@@ -60,12 +61,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "lcm_log",
-    srcs = [
-        "drake_lcm_log.cc",
-    ],
-    hdrs = [
-        "drake_lcm_log.h",
-    ],
+    srcs = ["drake_lcm_log.cc"],
+    hdrs = ["drake_lcm_log.h"],
     deps = [
         ":interface",
         "//common:essential",
@@ -84,17 +81,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "translator_base",
-    hdrs = [
-        "translator_base.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//common:unused",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -108,9 +94,20 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
+    flaky = True,
     deps = [
+        ":drake_lcm",
         ":lcmt_drake_signal_utils",
-        ":real",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_lcm_thread_test",
+    flaky = True,
+    deps = [
+        ":drake_lcm",
+        ":lcmt_drake_signal_utils",
     ],
 )
 

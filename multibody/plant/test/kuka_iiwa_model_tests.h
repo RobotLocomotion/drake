@@ -48,7 +48,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // Add a frame H with a fixed pose X_EH in the end effector frame E.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        "H", *end_effector_link_, X_EH_.GetAsIsometry3()));
+        "H", *end_effector_link_, X_EH_));
     plant_->Finalize();
 
     context_ = plant_->CreateDefaultContext();
@@ -81,8 +81,7 @@ class KukaIiwaModelTests : public ::testing::Test {
         RollPitchYaw<double>(M_PI / 3, -M_PI / 2, M_PI / 8),
         Vector3<double>(0.05, -0.2, 0.05));
     plant_->SetFreeBodyPoseInAnchoredFrame(
-        context_.get(), plant_->world_frame(), base_body,
-        X_WB.GetAsIsometry3());
+        context_.get(), plant_->world_frame(), base_body, X_WB);
     // Set an arbitrary non-zero spatial velocity of the floating base link.
     const Vector3<double> w_WB{-1, 1, -1};
     const Vector3<double> v_WB{1, -1, 1};
@@ -127,25 +126,6 @@ class KukaIiwaModelTests : public ::testing::Test {
     x << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
 
     return x;
-  }
-
-  // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_EPi in the end
-  // effector frame.
-  // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcPointsAnalyticalJacobianExpressedInWorld() for
-  // details.
-  // TODO(amcastro-tri): Rename this method as per issue #10155.
-  template <typename T>
-  void CalcPointsOnEndEffectorAnalyticJacobian(
-      const MultibodyPlant<T>& plant_on_T,
-      const Context<T>& context_on_T,
-      const MatrixX<T>& p_EPi,
-      MatrixX<T>* p_WPi, MatrixX<T>* Jq_WPi) const {
-    const Body<T>& linkG_on_T =
-        plant_on_T.get_body(end_effector_link_->index());
-    plant_on_T.CalcPointsAnalyticalJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jq_WPi);
   }
 
  protected:

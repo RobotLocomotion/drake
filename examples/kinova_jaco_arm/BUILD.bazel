@@ -13,20 +13,6 @@ package(
 )
 
 drake_cc_library(
-    name = "jaco_common",
-    srcs = [
-        "jaco_common.cc",
-    ],
-    hdrs = [
-        "jaco_common.h",
-    ],
-    deps = [
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
-    ],
-)
-
-drake_cc_library(
     name = "jaco_lcm",
     srcs = ["jaco_lcm.cc"],
     hdrs = ["jaco_lcm.h"],
@@ -39,17 +25,21 @@ drake_cc_library(
 drake_cc_binary(
     name = "jaco_controller",
     srcs = ["jaco_controller.cc"],
+    copts = [
+        # TODO(sammy-tri) Remove this once ported away from lcm_driven_loop.
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//manipulation/models/jaco_description:models",
     ],
     deps = [
         ":jaco_lcm",
-        "//attic/manipulation/planner:robot_plan_interpolator",
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//lcm",
+        "//manipulation/planner:robot_plan_interpolator",
+        "//systems/analysis:simulator",
         "//systems/controllers:pid_controller",
-        "//systems/lcm:lcm_driven_loop",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:adder",
         "//systems/primitives:demultiplexer",
@@ -61,70 +51,43 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "run_passive_jaco_demo",
-    srcs = ["run_passive_jaco_demo.cc"],
+    name = "jaco_simulation",
+    srcs = ["jaco_simulation.cc"],
     add_test_rule = 1,
     data = [
         "//manipulation/models/jaco_description:models",
     ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
-        ":jaco_common",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/rigid_body_plant",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
+        ":jaco_lcm",
         "//common:find_resource",
         "//common:text_logging_gflags",
-        "//lcm",
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
-        "//systems/primitives:constant_vector_source",
+        "//systems/controllers:inverse_dynamics_controller",
         "@gflags",
     ],
 )
 
 drake_cc_binary(
-    name = "run_setpose_jaco_demo",
-    srcs = ["run_setpose_jaco_demo.cc"],
-    add_test_rule = 1,
+    name = "move_jaco_ee",
+    srcs = ["move_jaco_ee.cc"],
     data = [
         "//manipulation/models/jaco_description:models",
     ],
-    test_rule_args = ["--simulation_sec=0.1"],
     deps = [
-        ":jaco_common",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/rigid_body_plant",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
+        ":jaco_lcm",
         "//common:find_resource",
-        "//lcm",
-        "//systems/analysis:simulator",
-        "//systems/primitives:constant_vector_source",
-        "@gflags",
-    ],
-)
-
-drake_cc_binary(
-    name = "run_controlled_jaco_demo",
-    srcs = ["run_controlled_jaco_demo.cc"],
-    add_test_rule = 1,
-    data = [
-        "//manipulation/models/jaco_description:models",
-    ],
-    test_rule_args = ["--simulation_sec=0.1"],
-    deps = [
-        ":jaco_common",
-        "//attic/multibody:inverse_kinematics",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/rigid_body_plant",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
-        "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial",
-        "//lcm",
-        "//systems/analysis:simulator",
-        "//systems/primitives:trajectory_source",
-        "@gflags",
+        "//common:text_logging_gflags",
+        "//lcmtypes:jaco",
+        "//manipulation/planner:differential_inverse_kinematics",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "@lcm",
     ],
 )
 

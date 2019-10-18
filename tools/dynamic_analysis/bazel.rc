@@ -2,137 +2,121 @@
 # This filed is included by //tools:bazel.rc.
 
 ### Kcov coverage build. ###
+build:kcov --build_tests_only
 build:kcov --copt -g
 build:kcov --copt -O0
-test:kcov --spawn_strategy=standalone
-test:kcov --run_under //tools/dynamic_analysis:kcov
-test:kcov --local_test_jobs=1
-test:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
-test:kcov --nocache_test_results
+build:kcov --spawn_strategy=standalone
+build:kcov --run_under //tools/dynamic_analysis:kcov
+build:kcov --local_test_jobs=1
+build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
+build:kcov --nocache_test_results
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
 # significantly. Timeouts are 3.5x default values.
-test:kcov --test_timeout=210,1050,3150,12600
+build:kcov --test_timeout=210,1050,3150,12600
 
 ### Kcov everything build. ###
+build:kcov_everything --build_tests_only
 build:kcov_everything --define=WITH_GUROBI=ON
 build:kcov_everything --define=WITH_MOSEK=ON
 build:kcov_everything --define=WITH_SNOPT=ON
 build:kcov_everything --copt -g
 build:kcov_everything --copt -O0
-
-test:kcov_everything --spawn_strategy=standalone
-test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
-test:kcov_everything --local_test_jobs=1
-test:kcov_everything --test_tag_filters=-lint,-no_kcov
-test:kcov_everything --nocache_test_results
+build:kcov_everything --spawn_strategy=standalone
+build:kcov_everything --run_under=//tools/dynamic_analysis:kcov
+build:kcov_everything --local_test_jobs=1
+build:kcov_everything --test_tag_filters=-lint,-no_kcov
+build:kcov_everything --nocache_test_results
 # See timeout note above. Timeouts are 5x default values.
-test:kcov_everything --test_timeout=300,1500,4500,18000
+build:kcov_everything --test_timeout=300,1500,4500,18000
 
-### ASan build. ###
-build:asan --copt -g
-build:asan --copt -fsanitize=address
-build:asan --copt -O1
-build:asan --copt -fno-omit-frame-pointer
-build:asan --linkopt -fsanitize=address
-test:asan --run_under=//tools/dynamic_analysis:asan
-test:asan --test_env=ASAN_OPTIONS
-test:asan --test_env=LSAN_OPTIONS
-test:asan --test_env=ASAN_SYMBOLIZER_PATH
+### ASan build. Clang only. ###
+build:asan --build_tests_only
+build:asan --copt=-g
+# https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
+build:asan --copt=-fno-common
+build:asan --copt=-fsanitize=address
+build:asan --copt=-fsanitize-address-use-after-scope
+build:asan --copt=-fstandalone-debug
+build:asan --copt=-O0
+build:asan --copt=-fno-omit-frame-pointer
+build:asan --linkopt=-fsanitize=address
+build:asan --linkopt=-fsanitize-address-use-after-scope
+build:asan --run_under=//tools/dynamic_analysis:asan
+build:asan --test_env=ASAN_OPTIONS
+build:asan --test_env=LSAN_OPTIONS
+build:asan --test_env=ASAN_SYMBOLIZER_PATH
+build:asan --test_env=LSAN_SYMBOLIZER_PATH
 # LSan is run with ASan by default
-test:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
-test:asan --test_lang_filters=-sh,-py
+build:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
+build:asan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-test:asan --test_timeout=150,750,2250,9000  # 2.5x
+build:asan --test_timeout=150,750,2250,9000  # 2.5x
 
-### ASan everything build. ###
+### ASan everything build. Clang only. ###
+build:asan_everything --build_tests_only
 build:asan_everything --define=WITH_GUROBI=ON
 build:asan_everything --define=WITH_MOSEK=ON
 build:asan_everything --define=WITH_SNOPT=ON
-build:asan_everything --copt -g
-build:asan_everything --copt -fsanitize=address
-build:asan_everything --copt -O1
-build:asan_everything --copt -fno-omit-frame-pointer
-build:asan_everything --linkopt -fsanitize=address
-
+build:asan_everything --copt=-g
+# https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
+build:asan_everything --copt=-fno-common
+build:asan_everything --copt=-fsanitize=address
+build:asan_everything --copt=-fsanitize-address-use-after-scope
+build:asan_everything --copt=-fstandalone-debug
+build:asan_everything --copt=-O0
+build:asan_everything --copt=-fno-omit-frame-pointer
+build:asan_everything --linkopt=-fsanitize=address
+build:asan_everything --linkopt=-fsanitize-address-use-after-scope
 # LSan is run with ASan by default
-test:asan_everything --test_tag_filters=-no_asan,-no_lsan
-test:asan_everything --run_under=//tools/dynamic_analysis:asan
-test:asan_everything --test_env=ASAN_OPTIONS
-test:asan_everything --test_env=LSAN_OPTIONS
-test:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
-test:asan_everything --test_lang_filters=-sh,-py
+build:asan_everything --test_tag_filters=-no_asan,-no_lsan
+build:asan_everything --run_under=//tools/dynamic_analysis:asan
+build:asan_everything --test_env=ASAN_OPTIONS
+build:asan_everything --test_env=LSAN_OPTIONS
+build:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
+build:asan_everything --test_env=LSAN_SYMBOLIZER_PATH
+build:asan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-test:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
+build:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
 
-### LSan build. ###
-build:lsan --copt -g
-build:lsan --copt -fsanitize=leak
-build:lsan --copt -O1
-build:lsan --copt -fno-omit-frame-pointer
-build:lsan --linkopt -fsanitize=leak
-test:lsan --run_under=//tools/dynamic_analysis:lsan
-test:lsan --test_env=LSAN_OPTIONS
-test:lsan --test_env=LSAN_SYMBOLIZER_PATH
-test:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
-test:lsan --test_lang_filters=-sh,-py
+### LSan build. Clang only. ###
+build:lsan --build_tests_only
+build:lsan --copt=-g
+build:lsan --copt=-fno-common
+build:lsan --copt=-fsanitize=leak
+build:lsan --copt=-fstandalone-debug
+build:lsan --copt=-O0
+build:lsan --copt=-fno-omit-frame-pointer
+build:lsan --linkopt=-fsanitize=leak
+build:lsan --run_under=//tools/dynamic_analysis:lsan
+build:lsan --test_env=LSAN_OPTIONS
+build:lsan --test_env=LSAN_SYMBOLIZER_PATH
+build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
+build:lsan --test_lang_filters=-sh,-py
 
-### LSan everything build. ###
+### LSan everything build. Clang only. ###
+build:lsan_everything --build_tests_only
 build:lsan_everything --define=WITH_GUROBI=ON
 build:lsan_everything --define=WITH_MOSEK=ON
 build:lsan_everything --define=WITH_SNOPT=ON
-build:lsan_everything --copt -g
-build:lsan_everything --copt -fsanitize=leak
-build:lsan_everything --copt -O1
-build:lsan_everything --copt -fno-omit-frame-pointer
-build:lsan_everything --linkopt -fsanitize=leak
-
-test:lsan_everything --test_tag_filters=-no_lsan
-test:lsan_everything --run_under=//tools/dynamic_analysis:lsan
-test:lsan_everything --test_env=LSAN_OPTIONS
-test:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
-test:lsan_everything --test_lang_filters=-sh,-py
-
-### MSan build. ###
-build:msan --copt -g
-build:msan --copt -fsanitize=memory
-build:msan --copt -fsanitize-memory-track-origins
-build:msan --copt -O1
-build:msan --copt -fno-omit-frame-pointer
-build:msan --linkopt -fsanitize=memory
-test:msan --run_under=//tools/dynamic_analysis:msan
-test:msan --test_tag_filters=-gurobi,-mosek,-snopt,-no_msan
-test:msan --test_lang_filters=-sh,-py
-test:msan --test_env=MSAN_OPTIONS
-test:msan --test_env=MSAN_SYMBOLIZER_PATH
-# Typical slowdown introduced by MemorySanitizer is 3x.
-# See https://clang.llvm.org/docs/MemorySanitizer.html
-test:msan --test_timeout=180,900,2700,10800
-
-### MSan everything build. ###
-build:msan_everything --define=WITH_GUROBI=ON
-build:msan_everything --define=WITH_MOSEK=ON
-build:msan_everything --define=WITH_SNOPT=ON
-build:msan_everything --copt -g
-build:msan_everything --copt -fsanitize=memory
-build:msan_everything --copt -fsanitize-memory-track-origins
-build:msan_everything --copt -O1
-build:msan_everything --copt -fno-omit-frame-pointer
-build:msan_everything --linkopt -fsanitize=memory
-
-test:msan_everything --test_tag_filters=-no_msan
-test:msan_everything --run_under=//tools/dynamic_analysis:msan
-test:msan_everything --test_lang_filters=-sh,-py
-test:msan_everything --test_env=MSAN_OPTIONS
-test:msan_everything --test_env=MSAN_SYMBOLIZER_PATH
-# Typical slowdown introduced by MemorySanitizer is 3x.
-# See https://clang.llvm.org/docs/MemorySanitizer.html
-test:msan_everything --test_timeout=180,900,2700,10800
+build:lsan_everything --copt=-g
+build:lsan_everything --copt=-fno-common
+build:lsan_everything --copt=-fsanitize=leak
+build:lsan_everything --copt=-fstandalone-debug
+build:lsan_everything --copt=-O0
+build:lsan_everything --copt=-fno-omit-frame-pointer
+build:lsan_everything --linkopt=-fsanitize=leak
+build:lsan_everything --test_tag_filters=-no_lsan
+build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
+build:lsan_everything --test_env=LSAN_OPTIONS
+build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
+build:lsan_everything --test_lang_filters=-sh,-py
 
 ### TSan build. ###
+build:tsan --build_tests_only
 build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
@@ -144,15 +128,16 @@ build:tsan --copt -fno-omit-frame-pointer
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
 build:tsan --noforce_pic
 build:tsan --linkopt -fsanitize=thread
-test:tsan --run_under=//tools/dynamic_analysis:tsan
-test:tsan --test_env=TSAN_OPTIONS
-test:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
-test:tsan --test_lang_filters=-sh,-py
+build:tsan --run_under=//tools/dynamic_analysis:tsan
+build:tsan --test_env=TSAN_OPTIONS
+build:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
+build:tsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
-test:tsan --test_timeout=300,1500,5400,18000
+build:tsan --test_timeout=300,1500,5400,18000
 
 ### TSan everything build. ###
+build:tsan_everything --build_tests_only
 build:tsan_everything --define=WITH_GUROBI=ON
 build:tsan_everything --define=WITH_MOSEK=ON
 build:tsan_everything --define=WITH_SNOPT=ON
@@ -167,16 +152,16 @@ build:tsan_everything --copt -fno-omit-frame-pointer
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
 build:tsan_everything --noforce_pic
 build:tsan_everything --linkopt -fsanitize=thread
-
-test:tsan_everything --test_tag_filters=-no_tsan
-test:tsan_everything --run_under=//tools/dynamic_analysis:tsan
-test:tsan_everything --test_env=TSAN_OPTIONS
-test:tsan_everything --test_lang_filters=-sh,-py
+build:tsan_everything --test_tag_filters=-no_tsan
+build:tsan_everything --run_under=//tools/dynamic_analysis:tsan
+build:tsan_everything --test_env=TSAN_OPTIONS
+build:tsan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
-test:tsan_everything --test_timeout=300,1500,5400,18000
+build:tsan_everything --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
+build:ubsan --build_tests_only
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=vptr would
@@ -188,15 +173,16 @@ build:ubsan --copt -fno-omit-frame-pointer
 # autogenerated toolchain.
 # build:ubsan --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
 build:ubsan --linkopt -fsanitize=undefined
-test:ubsan --run_under=//tools/dynamic_analysis:ubsan
-test:ubsan --test_env=UBSAN_OPTIONS
-test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
-test:ubsan --test_lang_filters=-sh,-py
+build:ubsan --run_under=//tools/dynamic_analysis:ubsan
+build:ubsan --test_env=UBSAN_OPTIONS
+build:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
+build:ubsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
-test:ubsan --test_timeout=120,600,1800,7200
+build:ubsan --test_timeout=120,600,1800,7200
 
 ### UBSan everything build. ###
+build:ubsan_everything --build_tests_only
 build:ubsan_everything --define=WITH_GUROBI=ON
 build:ubsan_everything --define=WITH_MOSEK=ON
 build:ubsan_everything --define=WITH_SNOPT=ON
@@ -212,39 +198,41 @@ build:ubsan_everything --copt -fno-omit-frame-pointer
 # autogenerated toolchain.
 # build:ubsan_everything --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
 build:ubsan_everything --linkopt -fsanitize=undefined
-test:ubsan_everything --test_tag_filters=-no_ubsan
-test:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
-test:ubsan_everything --test_env=UBSAN_OPTIONS
-test:ubsan_everything --test_lang_filters=-sh,-py
+build:ubsan_everything --test_tag_filters=-no_ubsan
+build:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
+build:ubsan_everything --test_env=UBSAN_OPTIONS
+build:ubsan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
-test:ubsan_everything --test_timeout=120,600,1800,7200
+build:ubsan_everything --test_timeout=120,600,1800,7200
 
 ### Memcheck build. ###
+build:memcheck --build_tests_only
 build:memcheck --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck --copt -O2
-test:memcheck --run_under=//tools/dynamic_analysis:valgrind
-test:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-no_memcheck
-test:memcheck --test_lang_filters=-sh,-py
+build:memcheck --run_under=//tools/dynamic_analysis:valgrind
+build:memcheck --test_lang_filters=-py
+build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_valgrind_tools
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck --test_timeout=1500,7500,22500,90000  # 25x
+build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
+test:memcheck --test_env=VALGRIND_OPTS
 
 ### Memcheck everything build. ###
+build:memcheck_everything --build_tests_only
 build:memcheck_everything --define=WITH_GUROBI=ON
 build:memcheck_everything --define=WITH_MOSEK=ON
 build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck_everything --copt -O2
-
-test:memcheck_everything --test_tag_filters=-no_memcheck
-test:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
-test:memcheck_everything --test_lang_filters=-sh,-py
+build:memcheck_everything --test_tag_filters=-no_memcheck,-no_valgrind_tools
+build:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
+build:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
+build:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
 
 # Fast memcheck.
 #
@@ -255,8 +243,46 @@ test:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
 # when errors are found, try `-c dbg --config fastmemcheck` or `--config
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
-test:fastmemcheck --run_under=//tools/dynamic_analysis:valgrind
-test:fastmemcheck --test_lang_filters=-sh,-py
+build:fastmemcheck --run_under=//tools/dynamic_analysis:valgrind
+build:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
+build:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
+
+### DRD: A Valgrind thread error detector ###
+# Not tested in continuous integration so may fail, even on master.
+build:_drd --build_tests_only=yes
+build:_drd --copt=-fno-omit-frame-pointer
+build:_drd --copt=-g
+build:_drd --copt=-O1
+build:_drd --run_under=//tools/dynamic_analysis:drd
+build:_drd --test_env=VALGRIND_OPTS
+build:_drd --test_timeout=600,3000,10800,36000  # 10x
+
+build:drd --config=_drd
+build:drd --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_drd,-no_valgrind_tools
+
+build:drd_everything --config=_drd
+build:drd_everything --define=WITH_GUROBI=ON
+build:drd_everything --define=WITH_MOSEK=ON
+build:drd_everything --define=WITH_SNOPT=ON
+build:drd_everything --test_tag_filters=-lint,-no_drd,-no_valgrind_tools
+
+### Helgrind: A Valgrind thread error detector ###
+# Not tested in continuous integration so may fail, even on master.
+build:_helgrind --build_tests_only=yes
+build:_helgrind --copt=-fno-omit-frame-pointer
+build:_helgrind --copt=-g
+build:_helgrind --copt=-O1
+build:_helgrind --run_under=//tools/dynamic_analysis:helgrind
+build:_helgrind --test_env=VALGRIND_OPTS
+build:_helgrind --test_timeout=600,3000,10800,36000  # 10x
+
+build:helgrind --config=_helgrind
+build:helgrind --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_helgrind,-no_valgrind_tools
+
+build:helgrind_everything --config=_helgrind
+build:helgrind_everything --define=WITH_GUROBI=ON
+build:helgrind_everything --define=WITH_MOSEK=ON
+build:helgrind_everything --define=WITH_SNOPT=ON
+build:helgrind_everything --test_tag_filters=-lint,-no_helgrind,-no_valgrind_tools

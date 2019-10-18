@@ -32,23 +32,38 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    *   denoted as θ_lower in the class documentation.
    * @param angle_upper The upper bound on the angle between `a` and `b`. it is
    *   denoted as θ_upper in the class documentation.
-   * @param context The Context that has been allocated for this `plant`. We
-   *   will update the context when evaluating the constraint. `context` should
-   *   be alive during the lifetime of this constraint.
+   * @param plant_context The Context that has been allocated for this
+   *   `plant`.  We will update the context when evaluating the constraint.
+   *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `a_A` is close to zero.
    * @throws std::invalid_argument if `b_B` is close to zero.
    * @throws std::invalid_argument if `angle_lower` is negative.
    * @throws std::invalid_argument if `angle_upper` ∉ [`angle_lower`, π].
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
-  AngleBetweenVectorsConstraint(
-      const MultibodyPlant<double>* const plant,
-      const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& a_A,
-      const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& b_B,
-      double angle_lower, double angle_upper,
-      systems::Context<double>* context);
+  AngleBetweenVectorsConstraint(const MultibodyPlant<double>* plant,
+                                const Frame<double>& frameA,
+                                const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                                const Frame<double>& frameB,
+                                const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                                double angle_lower, double angle_upper,
+                                systems::Context<double>* plant_context);
+
+  /**
+   * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
+   * MultibodyPlant<double>.
+   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+   * Documentation string is manually recreated in Python.}
+   */
+  AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant,
+                                const Frame<AutoDiffXd>& frameA,
+                                const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                                const Frame<AutoDiffXd>& frameB,
+                                const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                                double angle_lower, double angle_upper,
+                                systems::Context<AutoDiffXd>* plant_context);
 
   ~AngleBetweenVectorsConstraint() override {}
 
@@ -65,12 +80,18 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
         "AngleBetweenVectorsConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
-  const MultibodyPlant<double>& plant_;
+
+  bool use_autodiff() const { return plant_autodiff_; }
+
+  const MultibodyPlant<double>* plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d a_unit_A_;
   const Eigen::Vector3d b_unit_B_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* plant_autodiff_;
+  systems::Context<AutoDiffXd>* const context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

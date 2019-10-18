@@ -1,9 +1,13 @@
 #include "drake/solvers/mathematical_program_result.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/solvers/cost.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -36,6 +40,10 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
 TEST_F(MathematicalProgramResultTest, Setters) {
   MathematicalProgramResult result;
   result.set_decision_variable_index(decision_variable_index_);
+  EXPECT_TRUE(CompareMatrices(
+      result.get_x_val(),
+      Eigen::VectorXd::Constant(decision_variable_index_.size(),
+                                std::numeric_limits<double>::quiet_NaN())));
   result.set_solution_result(SolutionResult::kSolutionFound);
   const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
@@ -106,26 +114,41 @@ TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   EXPECT_EQ(result.get_solver_details<DummySolver>().data, data);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(MathematicalProgramResultTest, ConvertToSolverResult) {
+TEST_F(MathematicalProgramResultTest, EvalBinding) {
   MathematicalProgramResult result;
   result.set_decision_variable_index(decision_variable_index_);
-  result.set_solver_id(SolverId("foo"));
-  result.set_optimal_cost(2);
-  // The x_val is not set. So solver_result.decision_variable_values should be
-  // empty.
-  SolverResult solver_result = result.ConvertToSolverResult();
-  EXPECT_FALSE(solver_result.decision_variable_values());
-  // Now set x_val.
-  result.set_x_val(Eigen::Vector2d::Ones());
-  solver_result = result.ConvertToSolverResult();
-  EXPECT_EQ(result.get_solver_id(), solver_result.solver_id());
-  EXPECT_TRUE(CompareMatrices(
-      result.get_x_val(), solver_result.decision_variable_values().value()));
-  EXPECT_EQ(result.get_optimal_cost(), solver_result.optimal_cost());
+  const Eigen::Vector2d x_val(0, 1);
+  result.set_x_val(x_val);
+  const Binding<LinearCost> cost{std::make_shared<LinearCost>(Vector1d(2), 0),
+                                 Vector1<symbolic::Variable>(x1_)};
+  EXPECT_TRUE(CompareMatrices(result.EvalBinding(cost), Vector1d(2)));
 }
-#pragma GCC diagnostic pop
+
+GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
+  // Test if we can query the information in the result when the problem is
+  // infeasible.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+  prog.AddLinearConstraint(x(0) >= 1);
+  prog.AddLinearConstraint(x(1) >= 1);
+  prog.AddQuadraticCost(x.dot(x.cast<symbolic::Expression>()));
+
+  MathematicalProgramResult result;
+  OsqpSolver osqp_solver;
+  if (osqp_solver.available()) {
+    const Eigen::VectorXd x_guess = Eigen::Vector2d::Zero();
+    osqp_solver.Solve(prog, x_guess, {}, &result);
+    EXPECT_TRUE(CompareMatrices(
+        result.GetSolution(x),
+        Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+    EXPECT_TRUE(std::isnan(result.GetSolution(x(0))));
+    EXPECT_TRUE(std::isnan(result.GetSolution(x(1))));
+    EXPECT_EQ(result.get_optimal_cost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
+  }
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

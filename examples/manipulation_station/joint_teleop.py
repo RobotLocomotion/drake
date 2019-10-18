@@ -12,12 +12,13 @@ from pydrake.examples.manipulation_station import \
     (ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -48,7 +49,10 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.SetupDefaultStation()
+    station.SetupManipulationClassStation()
+    station.AddManipulandFromFile(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+        RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
@@ -80,6 +84,9 @@ builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
 diagram = builder.Build()
 simulator = Simulator(diagram)
 
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
+
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
@@ -87,14 +94,12 @@ station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
 # Eval the output port once to read the initial positions of the IIWA.
+simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context)
 teleop.set_position(q0)
 filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
     filter, simulator.get_mutable_context()), q0)
 
-# This is important to avoid duplicate publishes to the hardware interface:
-simulator.set_publish_every_time_step(False)
-
 simulator.set_target_realtime_rate(args.target_realtime_rate)
-simulator.StepTo(args.duration)
+simulator.AdvanceTo(args.duration)

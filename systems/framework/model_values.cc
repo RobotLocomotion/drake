@@ -5,7 +5,7 @@
 
 namespace drake {
 namespace systems {
-namespace detail {
+namespace internal {
 
 int ModelValues::size() const {
   return static_cast<int>(values_.size());
@@ -32,6 +32,6 @@ std::unique_ptr<AbstractValue> ModelValues::CloneModel(int index) const {
 }
 
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace systems
 }  // namespace drake

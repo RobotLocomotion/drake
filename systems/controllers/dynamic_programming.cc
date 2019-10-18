@@ -46,10 +46,10 @@ FittedValueIteration(
 
   // TODO(russt): handle discrete state.
   DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(context.get_continuous_state().size() == state_size);
+  DRAKE_DEMAND(context.num_continuous_states() == state_size);
 
-  DRAKE_DEMAND(context.get_num_input_ports() == 1);
-  DRAKE_DEMAND(system.get_num_total_inputs() == input_size);
+  DRAKE_DEMAND(context.num_input_ports() == 1);
+  DRAKE_DEMAND(system.num_total_inputs() == input_size);
 
   DRAKE_DEMAND(timestep > 0.);
 
@@ -89,12 +89,12 @@ FittedValueIteration(
     context.FixInputPort(0, input_vec);
 
     for (int state = 0; state < num_states; state++) {
-      context.set_time(0.0);
+      context.SetTime(0.0);
       sim_state.SetFromVector(state_mesh.get_mesh_point(state));
 
       cost[input](state) = timestep * cost_function(context);
 
-      simulator->StepTo(timestep);
+      simulator->AdvanceTo(timestep);
       state_vec = sim_state.CopyToVector();
 
       for (const auto& b : options.periodic_boundary_conditions) {
@@ -180,10 +180,10 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
 
   // TODO(russt): handle discrete state.
   DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(context.get_continuous_state().size() == state_size);
+  DRAKE_DEMAND(context.num_continuous_states() == state_size);
 
-  DRAKE_DEMAND(context.get_num_input_ports() == 1);
-  DRAKE_DEMAND(system.get_num_total_inputs() == input_size);
+  DRAKE_DEMAND(context.num_input_ports() == 1);
+  DRAKE_DEMAND(system.num_total_inputs() == input_size);
 
   DRAKE_DEMAND(timestep > 0.);
 
@@ -218,13 +218,13 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
   for (int input = 0; input < num_inputs; input++) {
     context.FixInputPort(0, input_samples.col(input));
     for (int state = 0; state < num_states; state++) {
-      context.set_time(0.0);
+      context.SetTime(0.0);
       state_vec = state_samples.col(state);
       sim_state.SetFromVector(state_vec);
 
       const double cost = timestep * cost_function(context);
 
-      simulator->StepTo(timestep);
+      simulator->AdvanceTo(timestep);
       next_state_vec = sim_state.CopyToVector();
 
       for (const auto& b : options.periodic_boundary_conditions) {

@@ -63,7 +63,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
   Accelerometer dut(kSensorName, *sensor_frame, *tree);
 
   unique_ptr<Context<double>> dut_context = dut.CreateDefaultContext();
-  EXPECT_EQ(dut_context->get_num_input_ports(), 2);
+  EXPECT_EQ(dut_context->num_input_ports(), 2);
   EXPECT_EQ(dut_context->get_continuous_state_vector().size(), 0);
 
   const int num_positions = tree->get_num_positions();
@@ -86,14 +86,14 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
 
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
-  ASSERT_EQ(output->get_num_ports(), 1);
+  ASSERT_EQ(output->num_ports(), 1);
   dut.CalcOutput(*dut_context, output.get());
 
   // The frame of the RigidBody to which the sensor is attached is coincident
   // with the world frame (the default RotationMatrix constructor is identity).
   const math::RotationMatrix<double> R_BW;
   const math::RotationMatrix<double> R_AB = R_BA.inverse();
-  const Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
+  const Vector3d expected_measurement = R_AB * R_BW * (-tree->a_grav.tail<3>());
   EXPECT_TRUE(CompareMatrices(output->get_vector_data(0)->get_value(),
                               expected_measurement, 1e-10,
                               MatrixCompareType::absolute));
@@ -148,14 +148,14 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   Simulator<double> simulator(diagram, std::move(context));
   // Decrease the step size to get x_dot(0) to be closer to x(1).
   const double stepSize = 1e-4;
-  simulator.get_mutable_integrator()->set_maximum_step_size(stepSize);
+  simulator.get_mutable_integrator().set_maximum_step_size(stepSize);
   simulator.Initialize();
 
   const AccelerometerTestLogger& logger = diagram.get_logger();
   const RigidBodyTree<double>& tree = diagram.get_tree();
 
   const double kStepToTime = 0.01;
-  simulator.StepTo(kStepToTime);
+  simulator.AdvanceTo(kStepToTime);
 
   const Context<double>& simulator_context = simulator.get_context();
   const Context<double>& logger_context =
@@ -212,7 +212,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
 
   Vector3d v_dot_in_world_frame = w_dot_cross_r + w_cross_r_dot;
   if (diagram.get_accelerometer().get_include_gravity()) {
-     v_dot_in_world_frame += diagram.get_tree().a_grav.tail<3>();
+     v_dot_in_world_frame -= diagram.get_tree().a_grav.tail<3>();
   }
   const Vector3d v_dot = r.linear().transpose() * v_dot_in_world_frame;
 

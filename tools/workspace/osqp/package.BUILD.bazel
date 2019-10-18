@@ -23,9 +23,9 @@ cmake_configure_file(
     defines = [
         "PRINTING",
         "PROFILING",
-        # Keep this in sync with 'INT_TYPE' from //tools/workspace/qdldl.
-        "DLONG",
-        # Don't define 'DFLOAT' unless //tools/workspace/qdldl is also changed.
+        # Keep the default primitive size of `double` and `int`.  Don't define
+        # 'DFLOAT' nor 'DLONG' unless @qdldl and @scs are also changed to use
+        # those primitive sizes.  See drake/tools/workspace/qdldl/README.md.
     ] + select({
         "@drake//tools/cc_toolchain:apple": [
             "IS_MAC",
@@ -35,80 +35,77 @@ cmake_configure_file(
         ],
         "//conditions:default": [],
     }),
+    undefines = [
+        "OSQP_CUSTOM_MEMORY",
+    ],
     visibility = ["//visibility:private"],
 )
 
 cc_library(
     name = "osqp",
+    # Our hdrs match OSQP's ./include/CMakeLists.txt variable `osqp_headers`.
     hdrs = [
-        # From ./CMakeLists.txt at `osqp_headers`.
+        # These headers are always enabled in CMakeLists.
         "include/auxil.h",
         "include/constants.h",
-        "include/cs.h",
-        "include/ctrlc.h",
+        "include/error.h",
         "include/glob_opts.h",
-        "include/kkt.h",
         "include/lin_alg.h",
-        "include/lin_sys.h",
         "include/osqp.h",
         "include/osqp_configure.h",
-        "include/types.h",
-        "include/polish.h",
         "include/proj.h",
         "include/scaling.h",
+        "include/types.h",
         "include/util.h",
+        # These headers are enabled in CMakeLists only when building in normal
+        # mode.
+        "include/kkt.h",
+        # These headers are enabled in CMakeLists only when building in
+        # non-embedded mode.
+        "include/cs.h",
+        "include/polish.h",
+        "include/lin_sys.h",
     ],
     srcs = [
-        # From ./lin_sys/direct/qdldl/CMakeLists.txt at `amd_sources`.
-        "lin_sys/direct/qdldl/amd/include/amd.h",
-        "lin_sys/direct/qdldl/amd/include/amd_internal.h",
-        "lin_sys/direct/qdldl/amd/include/SuiteSparse_config.h",
-        "lin_sys/direct/qdldl/amd/src/amd_1.c",
-        "lin_sys/direct/qdldl/amd/src/amd_2.c",
-        "lin_sys/direct/qdldl/amd/src/amd_aat.c",
-        "lin_sys/direct/qdldl/amd/src/amd_control.c",
-        "lin_sys/direct/qdldl/amd/src/amd_defaults.c",
-        "lin_sys/direct/qdldl/amd/src/amd_info.c",
-        "lin_sys/direct/qdldl/amd/src/amd_order.c",
-        "lin_sys/direct/qdldl/amd/src/amd_post_tree.c",
-        "lin_sys/direct/qdldl/amd/src/amd_postorder.c",
-        "lin_sys/direct/qdldl/amd/src/amd_preprocess.c",
-        "lin_sys/direct/qdldl/amd/src/amd_valid.c",
-        "lin_sys/direct/qdldl/amd/src/SuiteSparse_config.c",
         # From ./lin_sys/direct/qdldl/CMakeLists.txt at `qdldl_interface_src`.
         "lin_sys/direct/qdldl/qdldl_interface.h",
         "lin_sys/direct/qdldl/qdldl_interface.c",
-        # From ./CMakeLists.txt at `osqp_src`.
+        # From ./src/CMakeLists.txt at `osqp_src`.
+        # These sources are always enabled in CMakeLists.
         "src/auxil.c",
-        "src/cs.c",
-        "src/ctrlc.c",
-        "src/kkt.c",
+        "src/error.c",
         "src/lin_alg.c",
-        "src/lin_sys.c",
         "src/osqp.c",
-        "src/polish.c",
         "src/proj.c",
         "src/scaling.c",
         "src/util.c",
+        # These sources are enabled in CMakeLists only when building in normal
+        # mode.
+        "src/kkt.c",
+        # These sources are enabled in CMakeLists only when building in
+        # non-embedded mode.
+        "src/cs.c",
+        "src/polish.c",
+        "src/lin_sys.c",
     ],
     includes = [
         "include",
         "lin_sys/direct/qdldl",
-        "lin_sys/direct/qdldl/amd/include",
     ],
     copts = [
+        "-fvisibility=hidden",
         "-w",
+        "-Werror=incompatible-pointer-types",
     ],
+    linkstatic = 1,
     deps = [
         "@qdldl",
+        "@suitesparse//:amd",
     ],
 )
 
 install(
     name = "install",
-    docs = [
-        "LICENSE",
-        "lin_sys/direct/qdldl/amd/LICENSE",
-    ],
+    docs = ["LICENSE"],
     doc_strip_prefix = ["lin_sys/direct/qdldl"],
 )

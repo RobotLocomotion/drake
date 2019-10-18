@@ -17,7 +17,7 @@ namespace systems {
 // Don't want anonymous here because the type name test would then depend on
 // exactly how anonymous namespaces are rendered by NiceTypeName, which is
 // a "don't care" here.
-namespace system_base_test_detail {
+namespace system_base_test_internal {
 
 // A minimal concrete ContextBase object suitable for some simple tests.
 class MyContextBase final : public ContextBase {
@@ -59,6 +59,10 @@ class MySystemBase final : public SystemBase {
       InputPortIndex) const override {
     return {};
   }
+
+  std::multimap<int, int> GetDirectFeedthroughs() const final {
+    throw std::logic_error("GetDirectFeedthroughs is not implemented");
+  }
 };
 
 // Verify that system name methods work properly. Can't fully test the
@@ -76,7 +80,7 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   EXPECT_EQ(system.GetSystemPathname(), "::any_name_will_do");
 
   EXPECT_EQ(system.GetSystemType(),
-            "drake::systems::system_base_test_detail::MySystemBase");
+            "drake::systems::system_base_test_internal::MySystemBase");
 
   auto context = system.AllocateContext();
   EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
@@ -87,6 +91,6 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
                               ".*Context.*unacceptable.*");
 }
 
-}  // namespace system_base_test_detail
+}  // namespace system_base_test_internal
 }  // namespace systems
 }  // namespace drake

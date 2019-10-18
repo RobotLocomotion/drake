@@ -17,7 +17,6 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -34,9 +33,12 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -56,6 +58,7 @@ using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::util::WorldSimTreeBuilder;
 using manipulation::util::ModelInstanceInfo;
 using systems::Context;
+using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
@@ -64,6 +67,7 @@ using systems::OutputPort;
 using systems::RigidBodyPlant;
 using systems::RungeKutta2Integrator;
 using systems::Simulator;
+using systems::StateInterpolatorWithDiscreteDerivative;
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
@@ -152,8 +156,8 @@ int DoMain() {
 
   const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
-  drake::lcm::DrakeLcm lcm;
-  DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
+  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
+  DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, lcm);
   visualizer->set_name("visualizer");
   builder.Connect(model->get_output_port_plant_state(),
                   visualizer->get_input_port(0));
@@ -161,18 +165,24 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      MakeIiwaCommandLcmSubscriberSystem(
-          kIiwaArmNumJoints, "IIWA_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+          "IIWA_COMMAND", lcm));
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
   iiwa_command_receiver->set_name("iwwa_command_receiver");
+  auto desired_state_from_position = builder.AddSystem<
+      StateInterpolatorWithDiscreteDerivative>(
+          kIiwaArmNumJoints, kIiwaLcmStatusPeriod);
+  desired_state_from_position->set_name("desired_state_from_position");
 
   auto iiwa_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
-          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
+          "IIWA_STATUS", lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_status_pub->set_name("iiwa_status_publisher");
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
   iiwa_status_sender->set_name("iiwa_status_sender");
+  auto iiwa_state_demux = builder.AddSystem<Demultiplexer>(
+      2 * kIiwaArmNumJoints, kIiwaArmNumJoints);
 
   std::vector<int> instance_ids = {iiwa_instance.instance_id};
   auto external_torque_converter =
@@ -183,28 +193,23 @@ int DoMain() {
   // reference acceleration.
   auto iiwa_zero_acceleration_source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
-          Eigen::VectorXd::Zero(7));
+          Eigen::VectorXd::Zero(kIiwaArmNumJoints));
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(),
-                  iiwa_command_receiver->GetInputPort("command_message"));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
-  // we should add commanded velocity estimation into the estimator, not use
-  // the state ports on the LCM systems (the KUKA doesn't use velocities).
-  builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
+                  iiwa_command_receiver->get_input_port());
+  builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
+                  desired_state_from_position->get_input_port());
+  builder.Connect(desired_state_from_position->get_output_port(),
                   model->get_input_port_iiwa_state_command());
-#pragma GCC diagnostic pop
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
                   model->get_input_port_iiwa_acceleration_command());
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) The state estimator should have a velocity port.
   builder.Connect(model->get_output_port_iiwa_state(),
-                  iiwa_status_sender->get_state_input_port());
-#pragma GCC diagnostic pop
+                  iiwa_state_demux->get_input_port(0));
+  builder.Connect(iiwa_state_demux->get_output_port(0),
+                  iiwa_status_sender->get_position_measured_input_port());
+  builder.Connect(iiwa_state_demux->get_output_port(1),
+                  iiwa_status_sender->get_velocity_estimated_input_port());
   builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
                   iiwa_status_sender->get_position_commanded_input_port());
   builder.Connect(model->get_output_port_computed_torque(),
@@ -219,14 +224,14 @@ int DoMain() {
                   iiwa_status_pub->get_input_port());
 
   auto wsg_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::MakeFixedSize(
-          lcmt_schunk_wsg_command{}, "SCHUNK_WSG_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
+          "SCHUNK_WSG_COMMAND", lcm));
   wsg_command_sub->set_name("wsg_command_subscriber");
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
-          "SCHUNK_WSG_STATUS", &lcm,
+          "SCHUNK_WSG_STATUS", lcm,
           manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod
           /* publish period */));
   wsg_status_pub->set_name("wsg_status_publisher");
@@ -256,7 +261,7 @@ int DoMain() {
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "EST_ROBOT_STATE", &lcm, kIiwaLcmStatusPeriod /* publish period */));
+          "EST_ROBOT_STATE", lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_state_pub->set_name("iiwa_state_publisher");
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
@@ -264,7 +269,7 @@ int DoMain() {
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "OBJECT_STATE_EST", &lcm, kIiwaLcmStatusPeriod /* publish period */));
+          "OBJECT_STATE_EST", lcm, kIiwaLcmStatusPeriod /* publish period */));
   box_state_pub->set_name("box_state_publisher");
 
   builder.Connect(model->get_output_port_object_robot_state_msg(),
@@ -273,7 +278,6 @@ int DoMain() {
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
 
-  lcm.StartReceiveThread();
   simulator.Initialize();
   // When using the default RK3 integrator, the simulation stops
   // advancing once the gripper grasps the box.  Grasping makes the
@@ -282,9 +286,8 @@ int DoMain() {
   simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
       FLAGS_dt, &simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
-  lcm.StopReceiveThread();
   return 0;
 }
 

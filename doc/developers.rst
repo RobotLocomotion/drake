@@ -15,12 +15,12 @@ Introduction
 
 If you have improvements to Drake, send us your pull requests!
 
-Our standard workflow is to fork `Drake's official Github repository
+Our standard workflow is to fork `Drake's official GitHub repository
 <https://github.com/RobotLocomotion/drake/>`_ into your
-own Github account and then push your changes into a branch on your fork. Once
+own GitHub account and then push your changes into a branch on your fork. Once
 you believe your code is ready to be merged into Drake's primary repository,
 open a `pull request <https://help.github.com/articles/using-pull-requests/>`_
-via the Github website. Your code will then undergo an interactive review
+via the GitHub website. Your code will then undergo an interactive review
 process and :ref:`Continuous Integration (CI) <continuous_integration_notes>`
 tests before it is merged into
 `Drake's primary repository <https://github.com/RobotLocomotion/drake>`_.
@@ -73,33 +73,31 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
-Drake requires a compiler running in C++14 mode or greater. MATLAB is only
-supported for CMake builds using the "Unix Makefiles" generator.
+Drake requires a compiler running in C++14 mode or greater.
 
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Operating System                 | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
-+==================================+=================+=================+============+===================+========+
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.23    | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
-|                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.23    | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
-|                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   | 3.6.7  |
-+----------------------------------+-----------------+-----------------+------------+                   +--------+
-| macOS High Sierra (10.13)        | | Bazel 0.23    | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
-+----------------------------------+ | CMake 3.13.2  |                 |            |                   | 3.7.2  |
-| macOS Mojave (10.14)             |                 |                 |            |                   |        |
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
+| Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python          |
++==================================+=======+=======+=====================+===================+=================+
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
+| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.29  | 3.5   | | Clang 6.0         | OpenJDK 8         | 2.7             |
+|                                  |       |       | | GCC 5.4 (default) |                   |                 |
++----------------------------------+       +-------+---------------------+-------------------+-----------------+
+| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11        | | 2.7           |
+|                                  |       |       | | GCC 7.4 (default) |                   | | 3.6 (default) |
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
+| macOS Mojave (10.14)             | 1.0   | 3.15  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 13 | 3.7             |
+|                                  |       |       | | (Xcode 11.1)      | | (HotSpot JVM)   |                 |
++----------------------------------+       |       |                     |                   |                 |
+| macOS Catalina (10.15)           |       |       |                     |                   |                 |
+|                                  |       |       |                     |                   |                 |
++----------------------------------+-------+-------+---------------------+-------------------+-----------------+
 
+CPython is the only Python implementation supported. On Ubuntu, amd64
+(i.e., x86_64) is the only supported architecture.
 
-CPython is the only Python implementation supported. On all platforms, Python 2
-is the default version. On Ubuntu, amd64 (i.e., x86_64) is the only supported
-architecture.
+Please review the following issue for the current support roadmap:
 
-The following configurations are presently untested in continuous integration:
-
--   macOS Mojave: C++, Python
--   macOS, Ubuntu Bionic: MATLAB
+-   `#10606 <https://github.com/RobotLocomotion/drake/issues/10606>`_
 
 .. _configuration-management-non-determinism:
 
@@ -128,8 +126,8 @@ to :ref:`ask for help <getting_help>`.
 Binary Packages
 ---------------
 
-The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial, GCC 7.3
-on Ubuntu Bionic, and Apple LLVM 10.0 on macOS High Sierra.
+The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial, GCC 7.4
+on Ubuntu Bionic, and Apple LLVM 11.0.0 on macOS Mojave.
 
 The links for these packages are listed in :ref:`binary-installation`.
 
@@ -144,6 +142,8 @@ Issue Tracking
 
 Code Review
 ===========
+
+.. _review_process:
 
 Review Process
 --------------
@@ -332,3 +332,4 @@ Version Control
     :maxdepth: 1
 
     no_push_to_origin
+    model_version_control

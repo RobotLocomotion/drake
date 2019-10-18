@@ -52,8 +52,10 @@ using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
 using internal::SymbolicError;
 
+#if  __cplusplus < 201703L
 constexpr double MathematicalProgram::kGlobalInfeasibleCost;
 constexpr double MathematicalProgram::kUnboundedCost;
+#endif
 
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(0),
@@ -89,6 +91,7 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
       positive_semidefinite_constraint_;
   new_prog->linear_matrix_inequality_constraint_ =
       linear_matrix_inequality_constraint_;
+  new_prog->exponential_cone_constraints_ = exponential_cone_constraints_;
   new_prog->linear_complementarity_constraints_ =
       linear_complementarity_constraints_;
 
@@ -173,34 +176,45 @@ MathematicalProgram::NewNonnegativePolynomial(
     NonnegativePolynomial type) {
   const MatrixXDecisionVariable Q =
       NewSymmetricContinuousVariables(monomial_basis.size());
+  const symbolic::Polynomial p =
+      NewNonnegativePolynomial(Q, monomial_basis, type);
+  return std::make_pair(p, Q);
+}
+
+symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  DRAKE_ASSERT(grammian.rows() == grammian.cols());
+  DRAKE_ASSERT(grammian.rows() == monomial_basis.rows());
   // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
-  // monomial_basis.dot(Q * monomial_basis). But as explained in #10200, this
-  // one line version is too slow, so we use this double for loop to compute
-  // the matrix product by hand. I will revert to the one line version when it
-  // is fast.
+  // monomial_basis.dot(grammian * monomial_basis). But as explained in #10200,
+  // this one line version is too slow, so we use this double for loop to
+  // compute the matrix product by hand. I will revert to the one line version
+  // when it is fast.
   symbolic::Polynomial p{};
-  for (int i = 0; i < Q.rows(); ++i) {
-    p.AddProduct(Q(i, i), pow(monomial_basis(i), 2));
-    for (int j = i + 1; j < Q.cols(); ++j) {
-      p.AddProduct(2 * Q(i, j), monomial_basis(i) * monomial_basis(j));
+  for (int i = 0; i < grammian.rows(); ++i) {
+    p.AddProduct(grammian(i, i), pow(monomial_basis(i), 2));
+    for (int j = i + 1; j < grammian.cols(); ++j) {
+      p.AddProduct(2 * grammian(i, j), monomial_basis(i) * monomial_basis(j));
     }
   }
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
-      AddPositiveSemidefiniteConstraint(Q);
+      AddPositiveSemidefiniteConstraint(grammian);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(Q);
+      AddScaledDiagonallyDominantMatrixConstraint(grammian);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
       AddPositiveDiagonallyDominantMatrixConstraint(
-          Q.cast<symbolic::Expression>());
+          grammian.cast<symbolic::Expression>());
       break;
     }
   }
-  return std::make_pair(p, Q);
+  return p;
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
@@ -378,6 +392,150 @@ Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
 
 Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
   return AddCost(internal::ParseCost(e));
+}
+
+void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  DRAKE_DEMAND(X.rows() == X.cols());
+  const int X_rows = X.rows();
+  auto Z_lower = NewContinuousVariables(X_rows * (X_rows + 1) / 2);
+  MatrixX<symbolic::Expression> Z(X_rows, X_rows);
+  Z.setZero();
+  // diag_Z is the diagonal matrix that only contains the diagonal entries of Z.
+  MatrixX<symbolic::Expression> diag_Z(X_rows, X_rows);
+  diag_Z.setZero();
+  int Z_lower_index = 0;
+  for (int j = 0; j < X_rows; ++j) {
+    for (int i = j; i < X_rows; ++i) {
+      Z(i, j) = Z_lower(Z_lower_index++);
+    }
+    diag_Z(j, j) = Z(j, j);
+  }
+
+  MatrixX<symbolic::Expression> psd_mat(2 * X_rows, 2 * X_rows);
+  // clang-format off
+  psd_mat << X,             Z,
+             Z.transpose(), diag_Z;
+  // clang-format on
+  AddPositiveSemidefiniteConstraint(psd_mat);
+  // Now introduce the slack variable t.
+  auto t = NewContinuousVariables(X_rows);
+  // Introduce the constraint log(Z(i, i)) >= t(i).
+  for (int i = 0; i < X_rows; ++i) {
+    AddExponentialConeConstraint(
+        Vector3<symbolic::Expression>(Z(i, i), 1, t(i)));
+  }
+
+  AddLinearCost(-t.cast<symbolic::Expression>().sum());
+}
+
+void MathematicalProgram::AddMaximizeGeometricMeanCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
+  if (A.rows() != b.rows() || A.cols() != x.rows()) {
+    throw std::invalid_argument(
+        "MathematicalProgram::AddMaximizeGeometricMeanCost: the argument A, b "
+        "and x don't have consistent size.");
+  }
+  if (A.rows() <= 1) {
+    throw std::runtime_error(
+        "MathematicalProgram::AddMaximizeGeometricMeanCost: the size of A*x+b "
+        "should be at least 2.");
+  }
+  // We will impose the constraint w(i)² ≤ (A.row(2i) * x + b(2i)) *
+  // (A.row(2i+1) * x + b(2i+1)). This could be reformulated as the vector
+  // C * [x;w(i)] + d is in the rotated Lorentz cone, where
+  // C = [A.row(2i)   0]
+  //     [A.row(2i+1) 0]
+  //     [0, 0, ...,0 1]
+  // d = [b(2i)  ]
+  //     [b(2i+1)]
+  //     [0      ]
+  // The special case is that if A.rows() is an odd number, then for the last
+  // entry of w, we will impose (w((A.rows() - 1)/2)² ≤ A.row(A.rows() - 1) * x
+  // + b(b.rows() - 1)
+  auto w = NewContinuousVariables((A.rows() + 1) / 2);
+  DRAKE_ASSERT(w.rows() >= 1);
+
+  VectorX<symbolic::Variable> xw(x.rows() + 1);
+  xw.head(x.rows()) = x;
+  Eigen::Matrix3Xd C(3, x.rows() + 1);
+  for (int i = 0; i < w.size(); ++i) {
+    C.setZero();
+    C.row(0) << A.row(2 * i), 0;
+    Eigen::Vector3d d;
+    d(0) = b(2 * i);
+    if (2 * i + 1 == A.rows()) {
+      // The special case, C.row(1) * x + d(1) = 1.
+      C.row(1).setZero();
+      d(1) = 1;
+    } else {
+      // The normal case, C.row(1) * x + d(1) = A.row(2i+1) * x + b(2i+1)
+      C.row(1) << A.row(2 * i + 1), 0;
+      d(1) = b(2 * i + 1);
+    }
+    C.row(2).setZero();
+    C(2, C.cols() - 1) = 1;
+    d(2) = 0;
+    xw(x.rows()) = w(i);
+    AddRotatedLorentzConeConstraint(C, d, xw);
+  }
+  if (w.rows() == 1) {
+    AddLinearCost(-w(0));
+    return;
+  }
+  AddMaximizeGeometricMeanCost(w, 1);
+}
+
+void MathematicalProgram::AddMaximizeGeometricMeanCost(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x, double c) {
+  if (c <= 0) {
+    throw std::invalid_argument(
+        "MathematicalProgram::AddMaximizeGeometricMeanCost(): c should be "
+        "positive.");
+  }
+  // We maximize the geometric mean through a recursive procedure. If we assume
+  // that the size of x is 2ᵏ, then in each iteration, we introduce new slack
+  // variables w of size 2ᵏ⁻¹, with the constraint
+  // w(i)² ≤ x(2i) * x(2i+1)
+  // we then call AddMaximizeGeometricMeanCost(w). This recusion ends until
+  // w.size() == 2. We then add the constraint z(0)² ≤ w(0) * w(1), and maximize
+  // the cost z(0).
+  if (x.rows() <= 1) {
+    throw std::invalid_argument(
+        "MathematicalProgram::AddMaximizeGeometricMeanCost(): x should have "
+        "more than one entry.");
+  }
+  // We will impose the constraint w(i)² ≤ x(2i) * x(2i+1). Namely the vector
+  // [x(2i); x(2i+1); w(i)] is in the rotated Lorentz cone.
+  // The special case is when x.rows() = 2n+1, then for the last
+  // entry of w, we impose the constraint w(n)² ≤ x(2n), namely the vector
+  // [x(2n); 1; w(n)] is in the rotated Lorentz cone.
+  auto w = NewContinuousVariables((x.rows() + 1) / 2);
+  DRAKE_ASSERT(w.rows() >= 1);
+  for (int i = 0; i < w.rows() - 1; ++i) {
+    AddRotatedLorentzConeConstraint(
+        Vector3<symbolic::Variable>(x(2 * i), x(2 * i + 1), w(i)));
+  }
+  if (2 * w.rows() == x.rows()) {
+    // x has even number of rows.
+    AddRotatedLorentzConeConstraint(Vector3<symbolic::Variable>(
+        x(x.rows() - 2), x(x.rows() - 1), w(w.rows() - 1)));
+  } else {
+    // x has odd number of rows.
+    // C * xw + d = [x(2n); 1; w(n)], where xw = [x(2n); w(n)].
+    Eigen::Matrix<double, 3, 2> C;
+    C << 1, 0, 0, 0, 0, 1;
+    const Eigen::Vector3d d(0, 1, 0);
+    AddRotatedLorentzConeConstraint(
+        C, d, Vector2<symbolic::Variable>(x(x.rows() - 1), w(w.rows() - 1)));
+  }
+  if (x.rows() == 2) {
+    AddLinearCost(-c * w(0));
+    return;
+  }
+  AddMaximizeGeometricMeanCost(w);
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
@@ -880,6 +1038,32 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   return M;
 }
 
+Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(
+    const Binding<ExponentialConeConstraint>& binding) {
+  CheckBinding(binding);
+  required_capabilities_.insert(ProgramAttribute::kExponentialConeConstraint);
+  exponential_cone_constraints_.push_back(binding);
+  return exponential_cone_constraints_.back();
+}
+
+Binding<ExponentialConeConstraint>
+MathematicalProgram::AddExponentialConeConstraint(
+    const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+    const Eigen::Ref<const Eigen::Vector3d>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto constraint = std::make_shared<ExponentialConeConstraint>(A, b);
+  return AddConstraint(constraint, vars);
+}
+
+Binding<ExponentialConeConstraint>
+MathematicalProgram::AddExponentialConeConstraint(
+    const Eigen::Ref<const Vector3<symbolic::Expression>>& z) {
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(3);
+  VectorXDecisionVariable vars{};
+  internal::DecomposeLinearExpression(z, &A, &b, &vars);
+  return AddExponentialConeConstraint(A.sparseView(), Eigen::Vector3d(b), vars);
+}
 
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
@@ -948,6 +1132,14 @@ MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});
 }
 
+void MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
+    const symbolic::Polynomial& p1, const symbolic::Polynomial& p2) {
+  const symbolic::Polynomial poly_diff = p1 - p2;
+  for (const auto& item : poly_diff.monomial_to_coefficient_map()) {
+    AddLinearEqualityConstraint(item.second, 0);
+  }
+}
+
 double MathematicalProgram::GetInitialGuess(
     const symbolic::Variable& decision_variable) const {
   return x_initial_guess_[FindDecisionVariableIndex(decision_variable)];
@@ -987,40 +1179,10 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void MathematicalProgram::SetSolverResult(
-    const internal::SolverResult& solver_result) {
-  this->solver_id_ = solver_result.solver_id();
-  if (solver_result.decision_variable_values()) {
-    DRAKE_DEMAND(solver_result.decision_variable_values()->rows() ==
-                 num_vars());
-    x_values_ = *(solver_result.decision_variable_values());
-  } else {
-    x_values_ = Eigen::VectorXd::Constant(
-        num_vars(), std::numeric_limits<double>::quiet_NaN());
-  }
-  if (solver_result.optimal_cost()) {
-    optimal_cost_ = *(solver_result.optimal_cost());
-  } else {
-    optimal_cost_ = std::numeric_limits<double>::quiet_NaN();
-  }
-  if (solver_result.optimal_cost_lower_bound()) {
-    lower_bound_cost_ = *(solver_result.optimal_cost_lower_bound());
-  } else {
-    lower_bound_cost_ = optimal_cost_;
-  }
-}
-#pragma GCC diagnostic pop
-
 void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->conservativeResize(v->rows() + new_var_size);
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
 }
-
-// Note that in order to break the dependency cycle between Programs and
-// Solvers, the MathematicalProgram::Solve(MathematicalProgram&) method is
-// implemented in mathematical_program_deprecated.cc instead of this file,
 
 }  // namespace solvers
 }  // namespace drake

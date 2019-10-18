@@ -135,8 +135,9 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(v.subscribers()[0], &xc);
   EXPECT_EQ(v.subscribers()[1], &kinematics);
   EXPECT_EQ(z.prerequisites().size(), 0);
-  ASSERT_EQ(z.subscribers().size(), 1);
+  ASSERT_EQ(z.subscribers().size(), 2);
   EXPECT_EQ(z.subscribers()[0], &xc);
+  EXPECT_EQ(z.subscribers()[1], &configuration);
 
   // xc depends on q, v, and z and x subscribes.
   ASSERT_EQ(xc.prerequisites().size(), 3);
@@ -169,14 +170,15 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(x.subscribers()[0], &all_sources);
 
   // Until #9171 is resolved, we don't know which states and parameters affect
-  // configuration so we have to assume they all do (except v and z).
+  // configuration so we have to assume they all do (except v).
   // TODO(sherm1) Revise after #9171 is resolved.
-  ASSERT_EQ(configuration.prerequisites().size(), 5);
+  ASSERT_EQ(configuration.prerequisites().size(), 6);
   EXPECT_EQ(configuration.prerequisites()[0], &accuracy);
   EXPECT_EQ(configuration.prerequisites()[1], &q);
-  EXPECT_EQ(configuration.prerequisites()[2], &xd);
-  EXPECT_EQ(configuration.prerequisites()[3], &xa);
-  EXPECT_EQ(configuration.prerequisites()[4], &p);
+  EXPECT_EQ(configuration.prerequisites()[2], &z);
+  EXPECT_EQ(configuration.prerequisites()[3], &xd);
+  EXPECT_EQ(configuration.prerequisites()[4], &xa);
+  EXPECT_EQ(configuration.prerequisites()[5], &p);
   ASSERT_EQ(configuration.subscribers().size(), 1);
   EXPECT_EQ(configuration.subscribers()[0], &kinematics);
 

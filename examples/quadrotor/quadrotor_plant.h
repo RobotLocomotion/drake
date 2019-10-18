@@ -4,7 +4,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/affine_system.h"
@@ -19,7 +18,7 @@ namespace quadrotor {
 ///
 /// @system{QuadrotorPlant,
 ///    @input_port{propellor_force},
-///    @output_port{state} @output_port{geometry_pose}
+///    @output_port{state}
 /// }
 template <typename T>
 class QuadrotorPlant final : public systems::LeafSystem<T> {
@@ -37,22 +36,6 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   double m() const { return m_; }
   double g() const { return g_; }
 
-  /// Registers this system as a source for the SceneGraph, adds the
-  /// quadrotor geometry, and creates the geometry_pose_output_port for this
-  /// system.  This must be called before the a SceneGraph's Context is
-  /// allocated.  It can only be called once.
-  // TODO(russt): this call only accepts doubles (not T) until SceneGraph
-  // supports symbolic.
-  void RegisterGeometry(geometry::SceneGraph<double>* scene_graph);
-
-  /// Returns the port to output the pose to SceneGraph.  Users must call
-  /// RegisterGeometry() first to enable this port.
-  const systems::OutputPort<T>& get_geometry_pose_output_port() const {
-    return systems::System<T>::get_output_port(geometry_pose_port_);
-  }
-
-  geometry::SourceId source_id() const { return source_id_; }
-
  private:
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
@@ -60,23 +43,6 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
 
   void CopyStateOut(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const;
-
-  systems::OutputPortIndex AllocateGeometryPoseOutputPort();
-
-  // Calculator method for the pose output port.
-  void CopyPoseOut(const systems::Context<T>& context,
-                   geometry::FramePoseVector<T>* poses) const;
-
-  /// Declares that the system has no direct feedthrough from any input to any
-  /// output.
-  ///
-  /// The QuadrotorPlant is incompatible with the symbolic::Expression scalar
-  /// type because it invokes the Cholesky LDLT decomposition, which uses
-  /// conditionals in its implementation. Therefore, we must specify sparsity
-  /// by hand.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
 
   // Allow different specializations to access each other's private data.
   template <typename> friend class QuadrotorPlant;
@@ -88,15 +54,6 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   const double kF_;          // Force input constant.
   const double kM_;          // Moment input constant.
   const Eigen::Matrix3d I_;  // Moment of Inertia about the Center of Mass
-
-  // Port handles.
-  int state_port_{-1};
-  int geometry_pose_port_{-1};
-
-  // Geometry source identifier for this system to interact with SceneGraph.
-  geometry::SourceId source_id_{};
-  // The id for the quadrotor body.
-  geometry::FrameId frame_id_{};
 };
 
 /// Generates an LQR controller to move to @p nominal_position. Internally

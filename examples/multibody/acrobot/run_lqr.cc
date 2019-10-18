@@ -11,7 +11,6 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -28,7 +27,6 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::JointActuator;
 using multibody::RevoluteJoint;
-using multibody::UniformGravityFieldElement;
 using systems::Context;
 using Eigen::Vector2d;
 
@@ -61,8 +59,6 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   MultibodyPlant<double> acrobot;
   Parser parser(&acrobot);
   parser.AddModelFromFile(full_name);
-  // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>();
   // We are done defining the model.
   acrobot.Finalize();
 
@@ -117,9 +113,6 @@ int do_main() {
   Parser parser(&acrobot, &scene_graph);
   parser.AddModelFromFile(full_name);
 
-  // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>();
-
   // We are done defining the model.
   acrobot.Finalize();
 
@@ -142,7 +135,7 @@ int do_main() {
   auto controller = builder.AddSystem(
       MakeBalancingLQRController(relative_name));
   controller->set_name("controller");
-  builder.Connect(acrobot.get_continuous_state_output_port(),
+  builder.Connect(acrobot.get_state_output_port(),
                   controller->get_input_port());
   builder.Connect(controller->get_output_port(),
                   acrobot.get_actuation_input_port());
@@ -168,12 +161,12 @@ int do_main() {
   elbow.set_random_angle_distribution(0.05*gaussian(generator));
 
   for (int i = 0; i < 5; i++) {
-    simulator.get_mutable_context().set_time(0.0);
+    simulator.get_mutable_context().SetTime(0.0);
     simulator.get_system().SetRandomContext(&simulator.get_mutable_context(),
                                             &generator);
 
     simulator.Initialize();
-    simulator.StepTo(FLAGS_simulation_time);
+    simulator.AdvanceTo(FLAGS_simulation_time);
   }
 
   return 0;

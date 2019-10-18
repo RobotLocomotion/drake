@@ -7,9 +7,7 @@
 
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody Multibody Dynamics
-@{
-    @ingroup algorithms
+/** @addtogroup multibody_notation
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -19,7 +17,8 @@ these observations:
 - Good abstractions lead to good code.
 - You can't reason properly about spatial algorithms if you treat translation
 and rotation separately.
-- Coded algorithms should be comparable line-by-line against the typeset
+- Disciplined notation is essential to prevent coordinate frame errors.
+- Coded algorithms should be comparable equation-by-equation against the typeset
 literature sources from which they are derived.
 - We need a shared, unambiguous notation in code that can employ programmers'
 awesome pattern-matching skills to make errors visible.
@@ -34,37 +33,6 @@ source code used to generate it (for example, ASCII drawings instead of image
 files, simple Markdown tables rather than fancy-but-unreadable html ones).
 However, much of this can be useful to users of the Drake API also so it
 is included in the external documentation.
-
-@warning Drake is under development and these concepts have not yet been
-adopted consistently throughout the code. New code uses these concepts and
-older code will be retrofitted over time. The documentation here applies to
-the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
-@ref drake::multibody::MultibodyPlant "MultibodyPlant"
-family of classes; there are some differences from the earlier `RigidBodyTree`
-family.
-
-<em><b>Developers</b>: you can link directly to specific discussion topics here
-from your Doxygen comments; instructions are at the top of the source file used
-to generate them.</em>
-
-Next topic: @ref multibody_notation
-
-  @defgroup multibody_notation Terminology and Notation
-  @defgroup multibody_spatial_algebra Spatial Algebra
-  @defgroup constraint_overview Multibody dynamics constraints
-@}
-*/
-
-
-//------------------------------------------------------------------------------
-/** @addtogroup multibody_notation
-@ingroup multibody
-
-Drake uses consistent terminology and notation for multibody mechanics
-- for clear communication among Drake programmers and users,
-- to reduce the likelihood of errors in translating mathematical algorithms
-  into code, and
-- to facilitate verification of the code's correctness.
 
 Where possible, we refer to published literature to supplement our code
 documentation. That literature can provide clear, concise, and unambiguous
@@ -104,6 +72,10 @@ decide to format a complicated equation in LaTeX, where it will appear in
 a typeset font like @f$A@f$ (which appears in the source as @c \@f\$A\@f\$),
 but then refer in the text to A (source: just @c A) using the
 default font that is much easier to write and to read in the source.
+
+<em><b>Developers</b>: you can link directly to specific discussion topics here
+from your Doxygen comments; instructions are at the top of the source file used
+to generate them.</em>
 
 Next topic: @ref multibody_notation_basics
 */
@@ -309,17 +281,19 @@ case, the assumed expressed-in frame is frame F's basis. Alternately, to use a
 different expressed-in frame, say W, typeset with the bracket notation:
 @f$[^Fv^P]_W@f$.
 
+Kane/monogram notation was developed decades ago for kinematics and dynamics.
+It explicitly communicates the quantity being measured and how it is expressed.
 The typeset symbol @f$^Fv^P@f$ is translated to monogram notation as `v_FP`.
 The quantity type always comes first, then an underscore, then left and right
-superscripts.  The symbol `v_FP` implies the vector is expressed in frame F.
-Alternately, to express in frame W, we typeset as @f$[^Fv^P]_W@f$ and use the
-monogram notation `v_FP_W` (adding a final underscore and expressed-in frame W).
+superscripts.  By default, the symbol `v_FP` implies the vector is expressed in
+frame F. Alternately, to express in frame W, use the typeset @f$[^Fv^P]_W@f$ and
+monogram notation `v_FP_W` (add a final underscore and expressed-in frame W).
 We adhere to this pattern for all quantities and it is quite useful once you get
 familiar with it. As a second example, consider the position vector of point Bcm
 (body B's center of mass) from point Bo (the origin of frame B), expressed in B.
-In full typeset, this is @f$[^{B_o}p^{B_{cm}}]_B @f$ whereas in implicit typeset
-this can be abbreviated @f$^Bp^{B_{cm}}@f$ (where the left-superscript B denotes
-Bo and the expressed-in frame is implied to be B). The corresponding
+In explicit typeset, this is @f$[^{B_o}p^{B_{cm}}]_B @f$ whereas in implicit
+typeset this is abbreviated @f$^Bp^{B_{cm}}@f$ (where the left-superscript B
+denotes Bo and the expressed-in frame is implied to be B). The corresponding
 monogram equivalents are `p_BoBcm_B` and `p_BBcm`, respectively.
 
 Here are some more useful multibody quantities.
@@ -329,7 +303,7 @@ source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
 reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity             |Symbol|     Typeset              |   Code     | Meaning †
+Quantity             |Symbol|     Typeset              | Monogram   | Meaning †
 ---------------------|:----:|:------------------------:|:----------:|----------------------------
 Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
 Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
@@ -347,6 +321,7 @@ Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's in
 Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Bo †
 Jacobian wrt q †††   | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
 Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
+Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |Q's translational velocity Jacobian in B wrt v
 Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
@@ -384,7 +359,19 @@ B and when there are no motion constraints (no relationships between q̇₁ ... 
 @f$\;[J_{q}^{{}^{Bo}p^Q}]_B = [J_{q̇}^{{}^Bv^Q}]_B\;@f$ i.e.,
 `(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
 
-Next topic: @ref Dt_multibody_quantities
+Monogram notation addresses frequently used kinematics.  In a context-sensible
+way (and in collaboration with reviewers), extend notation to related concepts.
+Some examples are shown below.
+Extended notation         || Description (herein E is the vectors' expressed-in-frame)
+:------------------------:||---------------------------------------------
+p_PQset_E  | p_PQlist_E   |  Set of position vectors from a point P to each of the points in the set Q = {Q₀, Q₁, Q₂, ...}
+v_BQset_E  | v_BQlist_E   |  Set of translational velocities in frame B for the set of points Q = {Q₀, Q₁, Q₂, ...}
+w_BCset_E  | w_BClist_E   |  Set of angular velocities in frame B for the frames in the set C = {C₀, C₁, C₂, ...}
+vset_E     | vlist_E      |  Set of generic vectors v = {v₀,  v₁,  v₂} expressed in frame E
+mesh_B                    || A mesh whose underlying vertices' positions are from Bo (frame B's origin), expressed in frame B
+point_cloud_B             || A point cloud whose underlying points' positions are from Bo (frame B's origin), expressed in frame B
+
+ Next topic: @ref Dt_multibody_quantities
 */
 
 //------------------------------------------------------------------------------
@@ -439,8 +426,8 @@ Next topic: @ref multibody_spatial_algebra
 */
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody_spatial_algebra
-@ingroup multibody
+/** @defgroup multibody_spatial_algebra Spatial Algebra
+@ingroup multibody_notation
 
 Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group
@@ -532,15 +519,14 @@ matrix, and use the Eigen::Quaternion class to represent them. Conceptually,
 a quaternion `q_GF` has the same meaning and can be used in the same way as
 the equivalent rotation matrix `R_GF`.
 
-<h3>Transforms</h3>
+<h3>Rigid transforms</h3>
 
-A transform combines position and orientation so contains a pose as defined
-above. We use the quantity symbol @f$X@f$ for transforms, so they appear as
-@f$^AX^B@f$ when typeset and `X_AB` in code. Drake uses the `Isometry3` variant
-of the Eigen::Transform class to represent transforms. ("Isometry" indicates
-that the transform preserves lengths, that is, it does not scale or shear but
-only translates and rotates.) Conceptually, a transform is a 4×4 matrix
-structured as follows: <pre>
+A rigid transform combines position and orientation as defined above. We use the
+quantity symbol @f$X@f$ for rigid transforms, so they appear as @f$^AX^B@f$ when
+typeset and as `X_AB` in code using our monogram notation. We often say that
+`X_AB` is the "pose" of frame B in frame A. In Drake this concept is provided by
+the RigidTransform class. Conceptually, a transform is a 4×4 matrix structured
+as follows: <pre>
           --------- ----     ---- ---- ---- ----
          |         |    |   |    |    |    |    |
          |  R_GF   |p_GF|   |Fx_G|Fy_G|Fz_G|p_GF|
@@ -551,8 +537,8 @@ structured as follows: <pre>
 There is a rotation matrix in the upper left 3×3 block (see above), and a
 position vector in the first 3×1 elements of the rightmost column. Then the
 bottom row is `[0 0 0 1]`. The rightmost column can also be viewed as the
-homogenous form of the position vector, `[x y z 1]ᵀ`. See %Eigen's documentation
-for Eigen::Transform for a detailed discussion.
+homogenous form of the position vector, `[x y z 1]ᵀ`. See Drake's documentation
+for RigidTransform for a detailed discussion.
 
 A transform may be applied to position vectors to translate the measured-from
 point to a different frame origin, and to re-express the vector in that frame's

@@ -1,0 +1,9 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# On macOS, no targets should depend on @libblas.
+cc_library(
+    name = "blas",
+    srcs = ["missing-macos.cc"],
+)

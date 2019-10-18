@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile and shell scripts are used
+# by the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
+
+set -euxo pipefail
+
+mkdir -p embree-build /opt/vtk
+pushd embree-build
+cmake \
+  -DBUILD_TESTING:BOOL=OFF \
+  -DCMAKE_BUILD_TYPE:STRING=Release \
+  -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2' \
+  -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2' \
+  -DCMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+  -DCMAKE_INSTALL_PREFIX:PATH=/opt/vtk \
+  -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+  -DEMBREE_IGNORE_CMAKE_CXX_FLAGS:BOOL=OFF \
+  -DEMBREE_MAX_ISA:STRING=SSE4.2 \
+  -DEMBREE_STACK_PROTECTOR:BOOL=ON \
+  -DEMBREE_TUTORIALS:BOOL=OFF \
+  -GNinja \
+  -Wno-dev \
+  ../embree
+ninja install/strip
+popd
+rm -rf embree-build

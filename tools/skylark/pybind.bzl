@@ -17,6 +17,7 @@ def pybind_py_library(
         name,
         cc_srcs = [],
         cc_deps = [],
+        cc_copts = [],
         cc_so_name = None,
         cc_binary_rule = native.cc_binary,
         py_srcs = [],
@@ -63,7 +64,7 @@ def pybind_py_library(
             # GCC and Clang don't always agree / succeed when inferring storage
             # duration (#9600). Workaround it for now.
             "-Wno-unused-lambda-capture",
-        ],
+        ] + cc_copts,
         # Always link to pybind11.
         deps = [
             "@pybind11",
@@ -96,6 +97,7 @@ def drake_pybind_library(
         name,
         cc_srcs = [],
         cc_deps = [],
+        cc_copts = [],
         cc_so_name = None,
         package_info = None,
         py_srcs = [],
@@ -141,6 +143,7 @@ def drake_pybind_library(
             "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
         ],
+        cc_copts = cc_copts,
         cc_binary_rule = drake_cc_binary,
         py_srcs = py_srcs,
         py_deps = py_deps,
@@ -236,8 +239,9 @@ def _get_package_info(base_package, sub_package = None):
 def drake_pybind_cc_googletest(
         name,
         cc_srcs = [],
-        py_deps = [],
         cc_deps = [],
+        py_srcs = [],
+        py_deps = [],
         args = [],
         visibility = None,
         tags = []):
@@ -266,6 +270,7 @@ def drake_pybind_cc_googletest(
     # external tools.
     drake_py_library(
         name = py_name,
+        srcs = py_srcs,
         deps = py_deps,
         testonly = 1,
         visibility = visibility,
@@ -293,21 +298,30 @@ def _generate_pybind_documentation_header_impl(ctx):
     transitive_headers_depsets = []
     package_headers_depsets = []
     for target in ctx.attr.targets:
-        if hasattr(target, "cc"):
-            # Note that target.cc.compile_flags does not include copts added
-            # to the target or on the command line (including via rc file).
-            compile_flags += [
-                compile_flag.replace(" ", "")
-                for compile_flag in target.cc.compile_flags
-            ]
-            transitive_headers_depsets.append(target.cc.transitive_headers)
+        if CcInfo in target:
+            compilation_context = target[CcInfo].compilation_context
+
+            for define in compilation_context.defines.to_list():
+                compile_flags.append("-D{}".format(define))
+            for system_include in compilation_context.system_includes.to_list():  # noqa
+                system_include = system_include or "."
+                compile_flags.append("-isystem{}".format(system_include))
+            for include in compilation_context.includes.to_list():
+                include = include or "."
+                compile_flags.append("-I{}".format(include))
+            for quote_include in compilation_context.quote_includes.to_list():
+                quote_include = quote_include or "."
+                compile_flags.append("-iquote{}".format(quote_include))
+
+            transitive_headers_depset = compilation_context.headers
+            transitive_headers_depsets.append(transitive_headers_depset)
 
             # Find all headers provided by the drake_cc_package_library,
             # i.e., the set of transitively-available headers that exist in
             # the same Bazel package as the target.
             package_headers_depsets.append(depset(direct = [
                 transitive_header
-                for transitive_header in target.cc.transitive_headers.to_list()
+                for transitive_header in transitive_headers_depset.to_list()
                 if (target.label.package == transitive_header.owner.package and
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))
@@ -324,9 +338,7 @@ def _generate_pybind_documentation_header_impl(ctx):
     args.add("-root-name=" + ctx.attr.root_name)
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
-
-    # Replace with ctx.fragments.cpp.cxxopts in Bazel 0.17+.
-    args.add("-std=c++14")
+    args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
     args.add("-w")
     args.add_all(package_headers)
 

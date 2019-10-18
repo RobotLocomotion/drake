@@ -19,7 +19,6 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -32,7 +31,6 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
-using drake::multibody::UniformGravityFieldElement;
 
 namespace drake {
 namespace examples {
@@ -58,7 +56,6 @@ int DoMain() {
                         kuka_plant.GetFrameByName("base"));
 
   // Add gravity to the model.
-  kuka_plant.AddForceElement<UniformGravityFieldElement>();
 
   // Now the model is complete.
   kuka_plant.Finalize();
@@ -76,7 +73,7 @@ int DoMain() {
       false /* no feedforward acceleration */);
 
   // Wire up Kuka plant to controller.
-  builder.Connect(kuka_plant.get_continuous_state_output_port(),
+  builder.Connect(kuka_plant.get_state_output_port(),
                   controller->get_input_port_estimated_state());
   builder.Connect(controller->get_output_port_control(),
                   kuka_plant.get_actuation_input_port());
@@ -101,9 +98,9 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
+  simulator.get_mutable_integrator().set_target_accuracy(1e-3);
 
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
   return 0;
 }
 

@@ -1,20 +1,21 @@
+"""
+Test math overloads.
+"""
+
 from __future__ import print_function
 
 import math
-import subprocess
-import sys
 import unittest
 
-# N.B. Do not import modules here, as we want to test the order in which
-# they're imported (if they're imported at all).
+import numpy as np
 
 # Change this to inspect output.
-verbose = False
+VERBOSE = False
 
 
 def debug_print(*args):
-    # Prints only if `verbose` is true.
-    if verbose:
+    # Prints only if `VERBOSE` is true.
+    if VERBOSE:
         print(*args)
 
 
@@ -40,8 +41,8 @@ class Overloads(object):
 class FloatOverloads(Overloads):
     # Imports `math` and provides support for testing `float` overloads.
     def __init__(self):
-        from pydrake import math as drake_math
-        self.m = drake_math
+        import pydrake.math as m
+        self.m = m
         self.T = float
 
     def supports(self, func):
@@ -58,9 +59,9 @@ class AutoDiffOverloads(Overloads):
     # Imports `pydrake.autodiffutils` and provides support for testing its
     # overloads.
     def __init__(self):
-        from pydrake import autodiffutils
-        self.m = autodiffutils
-        self.T = self.m.AutoDiffXd
+        import pydrake.autodiffutils as m
+        self.m = m
+        self.T = m.AutoDiffXd
 
     def supports(self, func):
         backwards_compat = [
@@ -70,6 +71,7 @@ class AutoDiffOverloads(Overloads):
             "log",
             "tan", "asin", "acos", "atan2",
             "sinh", "cosh", "tanh",
+            "inv",
         ]
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
@@ -87,9 +89,9 @@ class SymbolicOverloads(Overloads):
     # Imports `pydrake.symbolic` and provides support for testing its
     # overloads.
     def __init__(self):
-        from pydrake import symbolic
-        self.m = symbolic
-        self.T = self.m.Expression
+        import pydrake.symbolic as m
+        self.m = m
+        self.T = m.Expression
 
     def supports(self, func):
         backwards_compat = [
@@ -97,6 +99,7 @@ class SymbolicOverloads(Overloads):
             "sin", "cos", "tan", "asin", "acos", "atan",
             "sinh", "cosh", "tanh", "ceil", "floor",
             "min", "max", "pow", "atan2",
+            "inv",
         ]
         supported = backwards_compat
         if func.__name__ in backwards_compat:
@@ -111,11 +114,15 @@ class SymbolicOverloads(Overloads):
         return self.T(y_float)
 
 
-class TestMathOverloads(unittest.TestCase):
-    """Tests overloads of math functions, specifically ensuring that we will be
-    robust against import order."""
+class MathOverloadsTest(unittest.TestCase):
+    """Tests overloads of math functions."""
 
-    def _check_overload(self, overload):
+    def test_overloads(self):
+        self.check_overload(FloatOverloads())
+        self.check_overload(SymbolicOverloads())
+        self.check_overload(AutoDiffOverloads())
+
+    def check_overload(self, overload):
         # TODO(eric.cousineau): Consider comparing against `numpy` ufunc
         # methods.
         import pydrake.math as drake_math
@@ -177,32 +184,17 @@ class TestMathOverloads(unittest.TestCase):
         debug_print("Binary:")
         check_eval(binary, 2)
 
-    def _check_overloads(self, order):
-        for overload_cls in order:
-            self._check_overload(overload_cls())
-
-    def test_overloads(self):
-        # Each of these orders implies the relevant module is imported in this
-        # test, in the order specified. This is done to guarantee that the
-        # cross-module overloading does not affect functionality.
-        orders = [
-            (FloatOverloads,),
-            (SymbolicOverloads,),
-            (AutoDiffOverloads,),
-            (AutoDiffOverloads, SymbolicOverloads),
-            (SymbolicOverloads, AutoDiffOverloads),
-        ]
-        # At present, the `pybind11` modules appear not to be destroyed, even
-        # when we try to completely dergister them and garbage collect.
-        # To keep this test self-contained, we will just reinvoke this test
-        # with the desired order so we can control which modules get imported.
-        if len(sys.argv) == 1:
-            # We have arrived here from a direct call. Call the specified
-            # ordering.
-            for i in range(len(orders)):
-                args = [sys.executable, sys.argv[0], str(i)]
-                subprocess.check_call(args)
-        else:
-            self.assertEqual(len(sys.argv), 2)
-            i = int(sys.argv[1])
-            self._check_overloads(orders[i])
+        # Check specialized linear / array algebra.
+        if overload.supports(drake_math.inv):
+            f_drake, f_builtin = drake_math.inv, np.linalg.inv
+            X_float = np.eye(2)
+            Y_builtin = f_builtin(X_float)
+            Y_float = f_drake(X_float)
+            self.assertIsInstance(Y_float[0, 0].item(), float)
+            np.testing.assert_equal(Y_builtin, Y_float)
+            to_type_array = np.vectorize(overload.to_type)
+            to_float_array = np.vectorize(overload.to_float)
+            X_T = to_type_array(X_float)
+            Y_T = drake_math.inv(X_T)
+            self.assertIsInstance(Y_T[0, 0], overload.T)
+            np.testing.assert_equal(to_float_array(Y_T), Y_float)

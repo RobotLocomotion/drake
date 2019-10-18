@@ -27,17 +27,13 @@ Arguments:
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
+load("@drake//tools/workspace/python:repository.bzl", "repository_python_info")  # noqa
 
 def _impl(repository_ctx):
-    python = which(repository_ctx, "python{}".format(
-        repository_ctx.attr.python_version,
-    ))
-
-    if not python:
-        fail("Could NOT find python{}".format(repository_ctx.attr.version))
+    python_info = repository_python_info(repository_ctx)
 
     result = repository_ctx.execute([
-        python,
+        python_info.python,
         "-c",
         "; ".join([
             "from __future__ import print_function",
@@ -78,6 +74,6 @@ cc_library(
 
 numpy_repository = repository_rule(
     _impl,
-    attrs = {"python_version": attr.string(default = "2")},
+    environ = ["DRAKE_PYTHON_BIN_PATH"],
     local = True,
 )

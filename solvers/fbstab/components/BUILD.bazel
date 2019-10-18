@@ -1,0 +1,165 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//solvers/fbstab:__pkg__"])
+
+drake_cc_library(
+    name = "dense_data",
+    srcs = ["dense_data.cc"],
+    hdrs = ["dense_data.h"],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_variable",
+    srcs = ["dense_variable.cc"],
+    hdrs = ["dense_variable.h"],
+    deps = [
+        ":dense_data",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_residual",
+    srcs = [
+        "dense_residual.cc",
+    ],
+    hdrs = ["dense_residual.h"],
+    deps = [
+        ":dense_data",
+        ":dense_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_feasibility",
+    srcs = [
+        "dense_feasibility.cc",
+    ],
+    hdrs = ["dense_feasibility.h"],
+    deps = [
+        ":dense_data",
+        ":dense_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_linear_solver",
+    srcs = [
+        "dense_linear_solver.cc",
+    ],
+    hdrs = ["dense_linear_solver.h"],
+    deps = [
+        ":dense_data",
+        ":dense_residual",
+        ":dense_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dense_component_unit_tests",
+    srcs = [
+        "test/dense_component_unit_tests.cc",
+        "test/dense_component_unit_tests.h",
+    ],
+    deps = [
+        ":dense_data",
+        ":dense_feasibility",
+        ":dense_linear_solver",
+        ":dense_residual",
+        ":dense_variable",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_data",
+    srcs = ["mpc_data.cc"],
+    hdrs = ["mpc_data.h"],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_variable",
+    srcs = ["mpc_variable.cc"],
+    hdrs = ["mpc_variable.h"],
+    deps = [
+        ":mpc_data",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_residual",
+    srcs = ["mpc_residual.cc"],
+    hdrs = ["mpc_residual.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_feasibility",
+    srcs = ["mpc_feasibility.cc"],
+    hdrs = ["mpc_feasibility.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "riccati_linear_solver",
+    srcs = ["riccati_linear_solver.cc"],
+    hdrs = ["riccati_linear_solver.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_residual",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mpc_component_unit_tests",
+    srcs = [
+        "test/mpc_component_unit_tests.cc",
+        "test/mpc_component_unit_tests.h",
+    ],
+    deps = [
+        ":mpc_data",
+        ":mpc_feasibility",
+        ":mpc_residual",
+        ":mpc_variable",
+        ":riccati_linear_solver",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+add_lint_tests()

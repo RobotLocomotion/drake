@@ -46,20 +46,20 @@ class InverseDynamicsTest : public ::testing::Test {
     // Checks that the number of input ports in the Gravity Compensator system
     // and the Context are consistent.
     if (mode == InverseDynamics<double>::kGravityCompensation) {
-      EXPECT_EQ(inverse_dynamics_->get_num_input_ports(), 1);
-      EXPECT_EQ(inverse_dynamics_context_->get_num_input_ports(), 1);
+      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 1);
+      EXPECT_EQ(inverse_dynamics_context_->num_input_ports(), 1);
     } else {
-      EXPECT_EQ(inverse_dynamics_->get_num_input_ports(), 2);
-      EXPECT_EQ(inverse_dynamics_context_->get_num_input_ports(), 2);
+      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 2);
+      EXPECT_EQ(inverse_dynamics_context_->num_input_ports(), 2);
     }
 
     // Checks that no state variables are allocated in the context.
-    EXPECT_EQ(inverse_dynamics_context_->get_continuous_state().size(), 0);
+    EXPECT_EQ(inverse_dynamics_context_->num_continuous_states(), 0);
 
     // Checks that the number of output ports in the Gravity Compensator system
     // and the SystemOutput are consistent.
-    EXPECT_EQ(output_->get_num_ports(), 1);
-    EXPECT_EQ(inverse_dynamics_->get_num_output_ports(), 1);
+    EXPECT_EQ(output_->num_ports(), 1);
+    EXPECT_EQ(inverse_dynamics_->num_output_ports(), 1);
   }
 
   void CheckGravityTorque(const Eigen::VectorXd& position) {
@@ -149,6 +149,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
+  mbp->mutable_gravity_field().set_gravity_vector(Vector3<double>::Zero());
+
   // Finalize the model and transfer ownership.
   mbp->Finalize();
   Init(std::move(mbp),
@@ -168,8 +170,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
                   mbp->GetFrameByName("iiwa_link_0"));
 
   // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
+  mbp->mutable_gravity_field().set_gravity_vector(
+      -9.8 * Vector3<double>::UnitZ());
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
@@ -191,8 +193,8 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
                   mbp->GetFrameByName("iiwa_link_0"));
 
   // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
+  mbp->mutable_gravity_field().set_gravity_vector(
+      -9.8 * Vector3<double>::UnitZ());
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);

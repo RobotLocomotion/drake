@@ -49,7 +49,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create the integrator
   RungeKutta2Integrator<double> integrator(spring_mass, dt, context.get());
-  integrator.get_mutable_context()->set_time(3.);
+  integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);
 }
@@ -191,9 +191,9 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   rk2.set_maximum_step_size(t_final);
   rk2.set_fixed_step_mode(true);
   rk2.Initialize();
-  rk2.IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(t_final));
 
-  const double expected_result = t_final * (4 * t_final + 4);
+  const double expected_result = t_final * (4 * t_final + 4) + C;
   EXPECT_NEAR(
       quadratic_context->get_continuous_state_vector()[0], expected_result,
       10 * std::numeric_limits<double>::epsilon());

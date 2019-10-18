@@ -99,10 +99,6 @@ class PassThrough final : public LeafSystem<T> {
       const Context<T>& context,
       AbstractValue* output) const;
 
-  // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
-  optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const final;
-
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
   const std::unique_ptr<const AbstractValue> abstract_model_value_;
@@ -166,16 +162,6 @@ void PassThrough<T>::DoCalcAbstractOutput(const Context<T>& context,
                                           AbstractValue* output) const {
   DRAKE_ASSERT(is_abstract());
   output->SetFrom(this->get_input_port().template Eval<AbstractValue>(context));
-}
-
-template <typename T>
-optional<bool> PassThrough<T>::DoHasDirectFeedthrough(
-    int input_port, int output_port) const {
-  DRAKE_DEMAND(input_port == 0);
-  DRAKE_DEMAND(output_port == 0);
-  // By definition, a pass-through will have direct feedthrough, as the
-  // output depends directly on the input.
-  return true;
 }
 
 }  // namespace systems

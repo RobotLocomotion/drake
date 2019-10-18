@@ -9,14 +9,14 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateDefaultYcbObjectList)
+    CreateClutterClearingYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.multibody.parsing import Parser
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
@@ -24,9 +24,9 @@ from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 
-from differential_ik import DifferentialIK
+from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
 from robotlocomotion import image_array_t
 
@@ -35,12 +35,12 @@ from robotlocomotion import image_array_t
 class EndEffectorTeleop(LeafSystem):
     def __init__(self):
         LeafSystem.__init__(self)
-        self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
-                                      self._DoCalcOutput)
+        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+                                     self.DoCalcOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self._DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicPublish(0.01, 0.0)
 
         self.window = tk.Tk()
         self.window.title("End-Effector TeleOp")
@@ -134,11 +134,11 @@ class EndEffectorTeleop(LeafSystem):
         self.y.set(xyz[1])
         self.z.set(xyz[2])
 
-    def _DoPublish(self, context, event):
+    def DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
 
-    def _DoCalcOutput(self, context, output):
+    def DoCalcOutput(self, context, output):
         output.SetAtIndex(0, self.roll.get())
         output.SetAtIndex(1, self.pitch.get())
         output.SetAtIndex(2, self.yaw.get())
@@ -174,9 +174,9 @@ parser.add_argument(
          "Note: The pre-defined velocity limits are specified by "
          "iiwa14_velocity_limits, found in this python file.")
 parser.add_argument(
-    '--setup', type=str, default='default',
+    '--setup', type=str, default='manipulation_class',
     help="The manipulation station setup to simulate. ",
-    choices=['default', 'clutter_clearing'])
+    choices=['manipulation_class', 'clutter_clearing'])
 
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
@@ -190,11 +190,14 @@ else:
     station = builder.AddSystem(ManipulationStation())
 
     # Initializes the chosen station type.
-    if args.setup == 'default':
-        station.SetupDefaultStation()
+    if args.setup == 'manipulation_class':
+        station.SetupManipulationClassStation()
+        station.AddManipulandFromFile(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
     elif args.setup == 'clutter_clearing':
         station.SetupClutterClearingStation()
-        ycb_objects = CreateDefaultYcbObjectList()
+        ycb_objects = CreateClutterClearingYcbObjectList()
         for model_file, X_WObject in ycb_objects:
             station.AddManipulandFromFile(model_file, X_WObject)
 
@@ -273,12 +276,16 @@ builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
 diagram = builder.Build()
 simulator = Simulator(diagram)
 
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
+
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
 station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
+simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context)
 differential_ik.parameters.set_nominal_joint_position(q0)
@@ -292,8 +299,5 @@ filter.set_initial_output_value(
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
 
-# This is important to avoid duplicate publishes to the hardware interface:
-simulator.set_publish_every_time_step(False)
-
 simulator.set_target_realtime_rate(args.target_realtime_rate)
-simulator.StepTo(args.duration)
+simulator.AdvanceTo(args.duration)

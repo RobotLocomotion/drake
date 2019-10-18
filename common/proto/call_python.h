@@ -3,14 +3,18 @@
 #include <string>
 #include <vector>
 
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/proto/python_remote_message.pb.h"
 
 /// @file
 /// @brief Utilities for calling Python from C++
 ///
-/// Provides functionality similar to `call_matlab` (i.e., one-directional RPC),
-/// leveraging an API similar to `pybind11`.
+/// Provides one-directional RPC, leveraging an API similar to `pybind11`.
 ///
 /// For command-line examples, see the documentation in `call_python_client.py`.
 /// For C++ examples, see `call_python_test.cc`.
@@ -23,10 +27,6 @@ namespace common {
 
 class PythonRemoteVariable;
 
-// TODO(eric.cousineau): Generalize RPC marshaling so that we do not need to
-// overload a function named `ToMatlabArray`.
-void ToMatlabArray(const PythonRemoteVariable& var, MatlabArray* matlab_array);
-
 template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
                                 Types... args);
@@ -36,6 +36,45 @@ PythonRemoteVariable ToPythonTuple(Types... args);
 
 template <typename T>
 PythonRemoteVariable NewPythonVariable(T value);
+
+void ToPythonRemoteData(const PythonRemoteVariable& variable,
+                        PythonRemoteData* data);
+
+template <typename Derived>
+void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
+                        PythonRemoteData* data);
+
+void ToPythonRemoteData(double scalar, PythonRemoteData* data);
+
+void ToPythonRemoteData(int scalar, PythonRemoteData* data);
+
+void ToPythonRemoteData(const std::string& str, PythonRemoteData* data);
+
+using MatlabRPC
+    DRAKE_DEPRECATED("2019-12-01", "Use PythonRemoteMessage instead.")
+    = PythonRemoteMessage;
+
+using MatlabArray
+    DRAKE_DEPRECATED("2019-12-01", "Use PythonRemoteData instead.")
+    = PythonRemoteData;
+
+DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
+void ToMatlabArray(const PythonRemoteVariable& variable,
+                   PythonRemoteData* data);
+
+template <typename Derived>
+DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
+void ToMatlabArray(const Eigen::MatrixBase<Derived>& mat,
+                   PythonRemoteData* data);
+
+DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
+void ToMatlabArray(double scalar, PythonRemoteData* data);
+
+DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
+void ToMatlabArray(int scalar, PythonRemoteData* data);
+
+DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
+void ToMatlabArray(const std::string& str, PythonRemoteData* data);
 
 namespace internal {
 
@@ -191,7 +230,28 @@ PythonItemAccessor PythonApi<Derived>::slice(Types... args) const {
   return {derived(), CallPython("make_slice_arg", args...)};
 }
 
-void PublishCallPython(const MatlabRPC& msg);
+inline void AssembleRemoteMessage(PythonRemoteMessage*) {
+  // Intentionally left blank.  Base case for template recursion.
+}
+
+template <typename T, typename... Types>
+void AssembleRemoteMessage(PythonRemoteMessage* message, T first,
+                           Types... args) {
+  ToPythonRemoteData(first, message->add_rhs());
+  AssembleRemoteMessage(message, args...);
+}
+
+void ToPythonRemoteDataMatrix(
+    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
+        mat, PythonRemoteData* data, bool is_vector);
+
+void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXd>& mat,
+                              PythonRemoteData* data, bool is_vector);
+
+void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXi>& mat,
+                              PythonRemoteData* data, bool is_vector);
+
+void PublishCallPython(const PythonRemoteMessage& message);
 
 }  // namespace internal
 
@@ -207,11 +267,11 @@ template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
                                 Types... args) {
   PythonRemoteVariable output;
-  MatlabRPC msg;
-  msg.add_lhs(output.unique_id());
-  internal::AssembleCallMatlabMsg(&msg, args...);
-  msg.set_function_name(function_name);
-  internal::PublishCallPython(msg);
+  PythonRemoteMessage message;
+  message.add_lhs(output.unique_id());
+  internal::AssembleRemoteMessage(&message, args...);
+  message.set_function_name(function_name);
+  internal::PublishCallPython(message);
   return output;
 }
 
@@ -232,6 +292,20 @@ PythonRemoteVariable ToPythonKwargs(Types... args) {
 template <typename T>
 PythonRemoteVariable NewPythonVariable(T value) {
   return CallPython("pass_through", value);
+}
+
+template <typename Derived>
+void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
+                        PythonRemoteData* data) {
+  const bool is_vector = (Derived::ColsAtCompileTime == 1);
+  return internal::ToPythonRemoteDataMatrix(mat, data, is_vector);
+}
+
+template <typename Derived>
+DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
+void ToMatlabArray(const Eigen::MatrixBase<Derived>& mat,
+                   PythonRemoteData* data) {
+  ToPythonRemoteData(mat, data);
 }
 
 }  // namespace common

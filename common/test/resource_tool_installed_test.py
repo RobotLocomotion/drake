@@ -3,6 +3,7 @@
 
 import os
 import unittest
+import subprocess
 import sys
 
 import install_test_helper
@@ -58,18 +59,22 @@ class TestResourceTool(unittest.TestCase):
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), resource_data)
 
-        # Use --add_resource_search_path instead of environment variable
-        # to find resources.
-        absolute_path = install_test_helper.check_output(
+        # Use the installed resource_tool to find a resource, but with a bogus
+        # DRAKE_RESOURCE_ROOT that should be ignored.
+        tool_env[env_name] = os.path.join(tmp_dir, "share", "drake")
+        full_text = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_path",
-             "drake/common/test/tmp_resource",
-             "--add_resource_search_path",
-             os.path.join(tmp_dir, "share"),
+             "drake/examples/pendulum/Pendulum.urdf",
              ],
+            env=tool_env,
+            stderr=subprocess.STDOUT,
             ).strip()
-        with open(absolute_path, 'r') as data:
-            self.assertEqual(data.read(), resource_data)
+        warning = full_text.splitlines()[0]
+        absolute_path = full_text.splitlines()[-1]
+        self.assertIn("FindResource ignoring DRAKE_RESOURCE_ROOT", warning)
+        self.assertTrue(os.path.exists(absolute_path),
+                        absolute_path + " does not exist")
 
 
 if __name__ == '__main__':

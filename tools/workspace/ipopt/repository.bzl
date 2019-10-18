@@ -12,7 +12,10 @@ def ipopt_repository(
             "unencumbered",  # Public-Domain
         ],
         modname = "ipopt",
-        pkg_config_paths = ["/usr/local/opt/ipopt/lib/pkgconfig"],
+        pkg_config_paths = [
+            "/usr/local/opt/ipopt/lib/pkgconfig",
+            "/usr/local/opt/ipopt@3.12/lib/pkgconfig",
+        ],
         **kwargs):
     pkg_config_repository(
         name = name,

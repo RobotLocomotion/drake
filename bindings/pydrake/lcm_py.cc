@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -25,8 +26,8 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = DrakeLcmInterface;
-
-    py::class_<Class>(m, "DrakeLcmInterface", doc.DrakeLcmInterface.doc)
+    constexpr auto& cls_doc = doc.DrakeLcmInterface;
+    py::class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
         // N.B. We do not bind `Subscribe` as multi-threading from C++ may
         // wreak havoc on the Python GIL with a callback.
         .def("Publish",
@@ -38,55 +39,40 @@ PYBIND11_MODULE(lcm, m) {
               self->Publish(channel, str.data(), str.size(), time_sec);
             },
             py::arg("channel"), py::arg("buffer"),
-            py::arg("time_sec") = py::none(),
-            doc.DrakeLcmInterface.Publish.doc);
+            py::arg("time_sec") = py::none(), cls_doc.Publish.doc)
+        .def("HandleSubscriptions", &DrakeLcmInterface::HandleSubscriptions,
+            py::arg("timeout_millis"), cls_doc.HandleSubscriptions.doc);
   }
 
   {
     using Class = DrakeLcm;
-    py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", doc.DrakeLcm.doc)
-        .def(py::init<>(), doc.DrakeLcm.ctor.doc_0args)
+    constexpr auto& cls_doc = doc.DrakeLcm;
+    py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string>(), py::arg("lcm_url"),
-            doc.DrakeLcm.ctor.doc_1args)
-        .def("StartReceiveThread", &Class::StartReceiveThread,
-            doc.DrakeLcm.StartReceiveThread.doc)
-        .def("StopReceiveThread", &Class::StopReceiveThread,
-            doc.DrakeLcm.StopReceiveThread.doc);
+            cls_doc.ctor.doc_1args);
     // TODO(eric.cousineau): Add remaining methods.
   }
 
   {
     using Class = DrakeMockLcm;
-    py::class_<Class, DrakeLcmInterface>(
-        m, "DrakeMockLcm", doc.DrakeMockLcm.doc)
-        .def(py::init<>(), doc.DrakeMockLcm.ctor.doc)
+    constexpr auto& cls_doc = doc.DrakeMockLcm;
+    py::class_<Class, DrakeLcmInterface>(m, "DrakeMockLcm", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
         .def("Subscribe",
             [](Class* self, const std::string& channel,
                 PyHandlerFunction handler) {
-              self->Subscribe(channel, [handler](const void* data, int size) {
-                handler(py::bytes(static_cast<const char*>(data), size));
-              });
+              auto subscription = self->Subscribe(
+                  channel, [handler](const void* data, int size) {
+                    handler(py::bytes(static_cast<const char*>(data), size));
+                  });
+              // Unsubscribe is not supported by the mock.
+              DRAKE_DEMAND(subscription == nullptr);
             },
-            py::arg("channel"), py::arg("handler"),
-            doc.DrakeMockLcm.Subscribe.doc)
-        .def("InduceSubscriberCallback",
-            [](Class* self, const std::string& channel, py::bytes buffer) {
-              std::string str = buffer;
-              self->InduceSubscriberCallback(channel, str.data(), str.size());
-            },
-            py::arg("channel"), py::arg("buffer"),
-            doc.DrakeMockLcm.InduceSubscriberCallback.doc)
-        .def("get_last_published_message",
-            [](const Class* self, const std::string& channel) {
-              const std::vector<uint8_t>& bytes =
-                  self->get_last_published_message(channel);
-              return py::bytes(
-                  reinterpret_cast<const char*>(bytes.data()), bytes.size());
-            },
-            py::arg("channel"),
-            doc.DrakeMockLcm.get_last_published_message.doc);
-    // TODO(eric.cousineau): Add remaining methods.
+            py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc);
   }
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

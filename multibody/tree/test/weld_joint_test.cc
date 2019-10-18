@@ -11,7 +11,7 @@ namespace drake {
 namespace multibody {
 namespace {
 
-using Eigen::Isometry3d;
+using math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using systems::Context;
@@ -34,9 +34,9 @@ class WeldJointTest : public ::testing::Test {
     // Add a prismatic joint between the world and the body.
     joint_ = &model->AddJoint<WeldJoint>(
         "Welder",
-        model->world_body(), {},  // X_PF
-        *body_, {},               // X_BM
-        X_FM_);                   // X_FM
+        model->world_body(), nullopt,  // X_PF
+        *body_, nullopt,               // X_BM
+        X_FM_);                        // X_FM
 
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
@@ -53,8 +53,13 @@ class WeldJointTest : public ::testing::Test {
 
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
-  const Isometry3d X_FM_{Translation3d(0, 0.5, 0)};
+  const Translation3d X_FM_{0, 0.5, 0};
 };
+
+TEST_F(WeldJointTest, Type) {
+  const Joint<double>& base = *joint_;
+  EXPECT_EQ(base.type_name(), WeldJoint<double>::kTypeName);
+}
 
 // Verify the expected number of dofs.
 TEST_F(WeldJointTest, NumDOFs) {
@@ -70,7 +75,7 @@ TEST_F(WeldJointTest, NumDOFs) {
 
 // Verify we can retrieve the fixed posed between the welded frames.
 TEST_F(WeldJointTest, GetX_PC) {
-  EXPECT_EQ(joint_->X_PC().matrix(), X_FM_.matrix());
+  EXPECT_TRUE(joint_->X_PC().IsExactlyEqualTo(X_FM_));
 }
 
 TEST_F(WeldJointTest, GetJointLimits) {

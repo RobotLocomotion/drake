@@ -106,7 +106,6 @@ class Sinusoid : public systems::LeafSystem<double> {
 // stepping approach.
 class SchunkWsgLiftTest : public ::testing::TestWithParam<bool> {
  protected:
-
   // Finds the single end-effector from a RigidBodyTree and returns it. Aborts
   // if there is more than one end-effector or more than one base link.
   RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
@@ -422,7 +421,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
 
   // Simulation in two pieces -- see notes below on the test for details.
-  simulator.StepTo(kLiftStart);
+  simulator.AdvanceTo(kLiftStart);
 
   // Capture the "initial" positions of the box and the gripper finger as
   // discussed in the test notes below.
@@ -439,21 +438,12 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
       interim_kinematics_results.get_body_position(finger_index);
 
   // Now run to the end of the simulation.
-  simulator.StepTo(kSimDuration);
+  simulator.AdvanceTo(kSimDuration);
 
   // Extract and log the state of the robot.
   model->CalcOutput(simulator.get_context(), state_output.get());
   const auto final_output_data =
       state_output->get_vector_data(plant_output_port)->get_value();
-
-  drake::log()->debug("Final state:");
-  const int num_movable_links = plant->get_num_positions();
-  for (int link_index = 0; link_index < num_movable_links; link_index++) {
-    drake::log()->debug("  {} {}: {} (v={})",
-                        link_index, tree.get_position_name(link_index),
-                        final_output_data[link_index],
-                        final_output_data[link_index + num_movable_links]);
-  }
 
   // Expect that the gripper is open (even though clamping force is
   // being applied).

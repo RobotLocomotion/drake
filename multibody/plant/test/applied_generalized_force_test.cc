@@ -43,7 +43,6 @@ class MultibodyPlantGeneralizedAppliedForceTest
                        plant_->GetFrameByName("iiwa_link_0", iiwa1));
     plant_->WeldFrames(plant_->world_frame(),
                        plant_->GetFrameByName("iiwa_link_0", iiwa2));
-    plant_->AddForceElement<UniformGravityFieldElement>();
     plant_->Finalize();
 
     // Set feedback gains to zero - we won't need feedback control.
@@ -59,9 +58,9 @@ class MultibodyPlantGeneralizedAppliedForceTest
     // Connect the ID controller to the MBP.
     builder.Connect(id_controller->get_output_port_control(),
                     plant_->get_applied_generalized_force_input_port());
-    builder.Connect(plant_->get_continuous_state_output_port(),
+    builder.Connect(plant_->get_state_output_port(),
                     id_controller->get_input_port_estimated_state());
-    builder.Connect(plant_->get_continuous_state_output_port(),
+    builder.Connect(plant_->get_state_output_port(),
                     id_controller->get_input_port_desired_state());
 
     // Plug the actuator inputs.

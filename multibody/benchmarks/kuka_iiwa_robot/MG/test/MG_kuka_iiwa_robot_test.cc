@@ -15,6 +15,7 @@ namespace MG {
 namespace {
 
 using Vector7d = Eigen::Matrix<double, 7, 1>;
+using SpatialForced = SpatialForce<double>;
 
 // Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
 // position, angular velocity, velocity in World (frame N) to expected solution.
@@ -37,12 +38,13 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
     const Eigen::Vector3d &alpha_NG_N_expected,
     const Eigen::Vector3d &a_NGo_N_expected) {
   MGKukaIIwaRobot<double> MG_kuka_robot(0);
-  const SpatialKinematicsPVA<double> kinematics =
+  const test_utilities::SpatialKinematicsPVA<double> kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Compare actual results with expected results.
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(kinematics.rotation_matrix().isApprox(R_NG_expected, kEpsilon));
+  EXPECT_TRUE(
+      kinematics.rotation_matrix().matrix().isApprox(R_NG_expected, kEpsilon));
   EXPECT_TRUE(kinematics.position_vector().isApprox(p_No_Go_N_expected,
       kEpsilon));
   EXPECT_TRUE(kinematics.angular_velocity().isApprox(w_NG_N_expected,

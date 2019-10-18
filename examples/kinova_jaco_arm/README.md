@@ -32,31 +32,33 @@ bazel-bin/tools/drake_visualizer
 
 The following examples of a simulated jaco are present:
 
-```
-bazel-bin/examples/kinova_jaco_arm/run_passive_jaco_demo
-```
-
-Simulates a Jaco arm with no control or gravity compensation.
 
 ```
-bazel-bin/examples/kinova_jaco_arm/run_setpose_jaco_demo
+bazel-bin/examples/kinova_jaco_arm/jaco_simulation
 ```
 
-Simulates a Jaco arm holding a set pose.
+Simulates a Jaco arm with an inverse dynamics controller,
+communicating via LCM.
 
-```
-bazel-bin/examples/kinova_jaco_arm/run_controlled_jaco_demo
-```
-
-Demonstrates planning a trajectory for a Jaco arm using inverse
-kinematics and simulating an arm following that trajectory.
 
 ## Control
+
+```
+bazel-bin/examples/kinova_jaco_arm/move_jaco_ee
+```
+
+Controls a Jaco arm over LCM, using DifferentialInverseKinematics to
+move the end effector position.  Requires a suitable LCM based
+simulator (such as the example in this directory) or driver listening
+for ```lcmt_jaco_command``` messages and publishing ```lcmt_jaco_status```.
+
 
 ```
 bazel-bin/examples/kinova_jaco_arm/jaco_controller
 ```
 
 Controls a Jaco arm over LCM using joint velocities.  Requires a
-suitable LCM based controller listening for ```lcmt_jaco_command```
-messages and publishing ```lcmt_jaco_status```.
+suitable LCM based simulator (such as the example in this directory)
+or driver listening for ```lcmt_jaco_command``` messages and
+publishing ```lcmt_jaco_status```, along with a planner sending robot
+plan messages.

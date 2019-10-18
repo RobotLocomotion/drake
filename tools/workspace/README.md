@@ -180,4 +180,18 @@ a library from the host.
 
 ## When downloading a library or tool as source code
 
-TODO(jwnimmer-tri) Write this section.
+For choosing the version or commit to use in `repository.bzl`:
+
+* When upstream provides numbered releases, pin Drake to use the most recent
+stable release. Drake maintainers will automatically upgrade to a more recent
+stable release on a monthly basis.
+* Otherwise, pin Drake to use the most recent commit of the upstream mainline
+branch. Drake maintainers will automatically upgrade to a more recent mainline
+commit on a monthly basis.
+* If the pin policy is unsatisfactory for the case of some specific external,
+consult Drake's build system maintainers for advice.
+
+For Git, the mainline branch is typically `master`, whereas for Mercurial it is
+`default`.
+
+TODO(jwnimmer-tri) Write the remainder of this section.

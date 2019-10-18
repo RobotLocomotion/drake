@@ -66,18 +66,19 @@ int DoMain() {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>& rw_context = diagram->GetMutableSubsystemContext(
+  systems::Context<double>& cg_context = diagram->GetMutableSubsystemContext(
       *compass_gait, &simulator.get_mutable_context());
   CompassGaitContinuousState<double>& state =
-      compass_gait->get_mutable_continuous_state(&rw_context);
+      compass_gait->get_mutable_continuous_state(&cg_context);
   state.set_stance(0.0);
   state.set_swing(0.0);
   state.set_stancedot(0.4);
   state.set_swingdot(-2.0);
+  compass_gait->get_input_port(0).FixValue(&cg_context, Vector1d(0.0));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.get_mutable_context().set_accuracy(1e-4);
-  simulator.StepTo(10);
+  simulator.get_mutable_context().SetAccuracy(1e-4);
+  simulator.AdvanceTo(10);
 
   return 0;
 }

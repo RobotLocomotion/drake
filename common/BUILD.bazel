@@ -31,11 +31,14 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
+        ":filesystem",
         ":find_resource",
+        ":find_runfiles",
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
+        ":name_value",
         ":nice_type_name",
         ":pointer_cast",
         ":polynomial",
@@ -68,6 +71,7 @@ drake_cc_library(
         "drake_assertion_error.h",
         "drake_copyable.h",
         "drake_deprecated.h",
+        "drake_nodiscard.h",
         "drake_optional.h",
         "drake_throw.h",
         "drake_variant.h",
@@ -223,7 +227,6 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         ":random",
-        "//math:matrix_util",
     ],
 )
 
@@ -299,6 +302,31 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "filesystem",
+    srcs = ["filesystem.cc"],
+    hdrs = ["filesystem.h"],
+    copts = [
+        # The drake::filesystem support is intended ONLY for use within Drake's
+        # *.cc files -- it is not a public dependency of Drake.
+        "-fvisibility=hidden",
+    ],
+    deps = [
+        "@ghc_filesystem",
+    ],
+)
+
+drake_cc_library(
+    name = "find_runfiles",
+    srcs = ["find_runfiles.cc"],
+    hdrs = ["find_runfiles.h"],
+    deps = [
+        ":essential",
+        ":filesystem",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+drake_cc_library(
     name = "find_resource",
     srcs = [
         "find_loaded_library.cc",
@@ -319,7 +347,8 @@ drake_cc_library(
     deps = [
         ":drake_marker_shared_library",
         ":essential",
-        "@spruce",
+        ":filesystem",
+        ":find_runfiles",
     ],
 )
 
@@ -333,14 +362,22 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
     deps = [
         ":essential",
+        ":filesystem",
         ":find_resource",
-        "@spruce",
     ],
 )
 
 drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "name_value",
+    hdrs = ["name_value.h"],
     deps = [
         ":essential",
     ],
@@ -406,7 +443,7 @@ drake_cc_library(
     hdrs = ["temp_directory.h"],
     deps = [
         ":essential",
-        "@spruce",
+        ":filesystem",
     ],
 )
 
@@ -517,6 +554,11 @@ drake_py_binary(
 )
 
 install(
+    name = "install_drake_marker",
+    targets = [":libdrake_marker.so"],
+)
+
+install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
@@ -530,6 +572,9 @@ install(
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
+    deps = [
+        ":install_drake_marker",
+    ],
 )
 
 # === test/ ===
@@ -547,6 +592,7 @@ drake_cc_googletest(
         "test/autodiffxd_addition_test.cc",
         "test/autodiffxd_asin_test.cc",
         "test/autodiffxd_atan2_test.cc",
+        "test/autodiffxd_atan_test.cc",
         "test/autodiffxd_cos_test.cc",
         "test/autodiffxd_cosh_test.cc",
         "test/autodiffxd_division_test.cc",
@@ -566,6 +612,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -692,6 +739,8 @@ sh_test(
         "//tools/cc_toolchain:capture_cc.env",
         "//tools/cc_toolchain:toolchain_deps",
     ],
+    # Fails when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 # TODO(eric.cousineau): Remove this alias and update `issue_template.md` to
@@ -723,6 +772,14 @@ drake_cc_googletest(
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_nodiscard_test",
+    deps = [
+        ":essential",
+        ":unused",
     ],
 )
 
@@ -799,6 +856,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "filesystem_test",
+    deps = [
+        ":filesystem",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "find_resource_test",
     data = [
         "test/find_resource_test_data.txt",
@@ -832,10 +897,52 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "find_runfiles_test",
+    data = [
+        "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":find_runfiles",
+        ":temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_runfiles_fail_test",
+    deps = [
+        ":find_runfiles",
+    ],
+)
+
+drake_py_unittest(
+    name = "find_runfiles_subprocess_test",
+    data = [
+        ":find_runfiles_test",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_runfiles_stub_test",
+    srcs = [
+        "find_runfiles.h",
+        "find_runfiles_stub.cc",
+        "test/find_runfiles_stub_test.cc",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "name_value_test",
+    deps = [
+        ":name_value",
     ],
 )
 
@@ -929,6 +1036,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:limit_malloc",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -939,6 +1047,15 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         "//common/test_utilities:is_memcpy_movable",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_cell_test",
+    deps = [
+        ":essential",
+        ":symbolic",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -975,6 +1092,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
@@ -1099,9 +1217,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "temp_directory_test",
+    # Run each test case in a different process, to avoid environment variable
+    # changes from one accidentally polluting the others.
+    shard_count = 3,
     deps = [
+        ":filesystem",
         ":temp_directory",
-        "@spruce",
     ],
 )
 
@@ -1151,6 +1272,7 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+        "//common:sorted_pair",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1190,6 +1312,8 @@ drake_py_unittest(
         ":cpplint_wrapper",
         ":eigen_types.h",
     ],
+    # Exceeds timeout when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_py_unittest(
@@ -1202,6 +1326,10 @@ drake_py_unittest(
         ":resource_tool",
         "//examples/pendulum:models",
     ],
+    # Fails when run under Valgrind tools due to stdout/stderr mixing.
+    # TODO(jwnimmer-tri): Amend the test to stream stderr separately and then
+    # re-enable Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(

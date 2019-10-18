@@ -55,7 +55,8 @@ import six
 from six import text_type as unicode
 from six.moves.queue import Queue
 
-from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+from drake.common.proto.python_remote_message_pb2 import (
+    PythonRemoteData, PythonRemoteMessage)
 
 
 def _ensure_sigint_handler():
@@ -212,6 +213,36 @@ def default_globals():
         """
         plt.pause(interval)
 
+    def box(bmin, bmax, rstride=1, cstride=1, **kwargs):
+        """Plots a box bmin[i] <= x[i] <= bmax[i] for i < 3."""
+        fig = plt.gcf()
+        ax = fig.gca(projection='3d')
+        u = np.linspace(1, 9, 5) * np.pi / 4
+        U, V = np.meshgrid(u, u)
+        cx, cy, cz = (bmax + bmin) / 2
+        dx, dy, dz = bmax - bmin
+        X = cx + dx * np.cos(U) * np.sin(V)
+        Y = cy + dy * np.sin(U) * np.sin(V)
+        Z = cz + dz * np.cos(V) / np.sqrt(2)
+        ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
+
+    def plot3(x, y, z, **kwargs):
+        """Plots a 3d line plot."""
+        fig = plt.gcf()
+        ax = fig.gca(projection='3d')
+        ax.plot(x, y, z, **kwargs)
+
+    def sphere(n, rstride=1, cstride=1, **kwargs):
+        """Plots a sphere."""
+        fig = plt.gcf()
+        ax = fig.gca(projection='3d')
+        u = np.linspace(0, np.pi, n)
+        v = np.linspace(0, 2 * np.pi, n)
+        X = np.outer(np.sin(u), np.sin(v))
+        Y = np.outer(np.sin(u), np.cos(v))
+        Z = np.outer(np.cos(u), np.ones_like(v))
+        ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
+
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
         """Plots a 3d surface."""
         fig = plt.gcf()
@@ -309,13 +340,14 @@ class CallPythonClient(object):
         # Converts a protobuf argument to the appropriate NumPy array (or
         # scalar).
         np_raw = np.frombuffer(arg.data, dtype=dtype)
-        if arg.shape_type == MatlabArray.SCALAR:
+        if arg.shape_type == PythonRemoteData.SCALAR:
             assert arg.cols == 1 and arg.rows == 1
             return np_raw[0]
-        elif arg.shape_type == MatlabArray.VECTOR:
+        elif arg.shape_type == PythonRemoteData.VECTOR:
             assert arg.cols == 1
             return np_raw.reshape(arg.rows)
-        elif arg.shape_type is None or arg.shape_type == MatlabArray.MATRIX:
+        elif arg.shape_type is None or \
+                arg.shape_type == PythonRemoteData.MATRIX:
             # TODO(eric.cousineau): Figure out how to ensure `np.frombuffer`
             # creates a column-major array?
             return np_raw.reshape(arg.cols, arg.rows).T
@@ -343,20 +375,20 @@ class CallPythonClient(object):
         for i, arg in enumerate(args):
             arg_raw = arg.data
             value = None
-            if arg.type == MatlabArray.REMOTE_VARIABLE_REFERENCE:
+            if arg.type == PythonRemoteData.REMOTE_VARIABLE_REFERENCE:
                 id = np.frombuffer(arg_raw, dtype=np.uint64).reshape(1)[0]
                 if id not in self._client_vars:
                     raise RuntimeError("Unknown local variable. " +
                                        "Dropping message.")
                 value = self._client_vars[id]
-            elif arg.type == MatlabArray.DOUBLE:
+            elif arg.type == PythonRemoteData.DOUBLE:
                 value = self._to_array(arg, np.double)
-            elif arg.type == MatlabArray.CHAR:
+            elif arg.type == PythonRemoteData.CHAR:
                 assert arg.rows == 1
                 value = arg_raw.decode('utf8')
-            elif arg.type == MatlabArray.LOGICAL:
+            elif arg.type == PythonRemoteData.LOGICAL:
                 value = self._to_array(arg, np.bool)
-            elif arg.type == MatlabArray.INT:
+            elif arg.type == PythonRemoteData.INT:
                 value = self._to_array(arg, np.int32)
             else:
                 assert False
@@ -497,7 +529,7 @@ class CallPythonClient(object):
         while not self._done:
             f = self._get_file()
             while not self._done:
-                msg = MatlabRPC()
+                msg = PythonRemoteMessage()
                 status = _read_next(f, msg)
                 if status == _READ_GOOD:
                     yield msg

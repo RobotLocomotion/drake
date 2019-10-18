@@ -45,8 +45,8 @@ class PoseSmootherTest : public ::testing::Test {
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput();
 
-    EXPECT_EQ(dut_->get_num_input_ports(), 1);
-    EXPECT_EQ(dut_->get_num_output_ports(), 2);
+    EXPECT_EQ(dut_->num_input_ports(), 1);
+    EXPECT_EQ(dut_->num_output_ports(), 2);
   }
 
   CombinedState UpdateStateCalcOutput(
@@ -55,7 +55,7 @@ class PoseSmootherTest : public ::testing::Test {
         AbstractValue::Make(Isometry3<double>::Identity()));
     input->set_value(input_pose);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
-    context_->set_time(input_time);
+    context_->SetTime(input_time);
 
     dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());
@@ -177,11 +177,12 @@ TEST_F(PoseSmootherTest, SmootherTest) {
 
   expected_output_state_1.pose.translation() << 0.01, -5, 10.1;
   expected_output_state_1.pose.linear() =
-      (Eigen::MatrixXd(3, 3) << 1, 0, 0, 0, 0.67319401200771101,
-       -0.73922055347988902, 0, 0.73922055347988902, 0.67319401200771101)
-          .finished();
+      (Eigen::MatrixXd(3, 3) <<
+        1, 0, 0,
+        0,  0.67301251350977331, -0.73963109497860968,
+        0,  0.73963109497860968,  0.67301251350977331).finished();
 
-  expected_output_state_1.velocity << 0, 0, 0, 4.670903542103451, 0, 0;
+  expected_output_state_1.velocity << 0, 0, 0, 4.7123889803846719, 0, 0;
   EXPECT_TRUE(CompareTransforms(output_state_1.pose,
                                 expected_output_state_1.pose,
                                 kPoseComparisonTolerance));
@@ -200,11 +201,12 @@ TEST_F(PoseSmootherTest, SmootherTest) {
 
   expected_output_state_2.pose.translation() << 0.01, -5, 10.1;
   expected_output_state_2.pose.linear() =
-      (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.66147703270805791,
-       -0.74974268135601596, 0, 0.74974268135601596, 0.66147703270805791)
-          .finished();
+      (MatrixX<double>(3, 3) <<
+        1,  0,  0,
+        0,  0.66130992678343126,  -0.75011277867910831,
+        0,  0.75011277867910831,   0.66130992678343126).finished();
 
-  expected_output_state_2.velocity << 0, 0, 0, 1.5751117688894509, 0, 0;
+  expected_output_state_2.velocity << 0, 0, 0, 1.571054760257719, 0, 0;
   EXPECT_TRUE(CompareTransforms(output_state_2.pose,
                                 expected_output_state_2.pose,
                                 kPoseComparisonTolerance));
@@ -231,7 +233,7 @@ TEST_F(PoseSmootherTest, SmootherTest) {
        -0.77051324277578903, 0, 0.77051324277578903, 0.63742398974868997)
           .finished();
   expected_output_state_3.pose.makeAffine();
-  expected_output_state_3.velocity << 1.0, 0, 0, 3.1786156325620212, 0, 0;
+  expected_output_state_3.velocity << 1.0, 0, 0, 3.1413342201269292, 0, 0;
 
   EXPECT_TRUE(
       (CompareTransforms(output_state_3.pose, expected_output_state_3.pose,

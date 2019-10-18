@@ -44,13 +44,13 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
 
   // Replaces default integrator.
   const double kMaximumStep = 0.1;
-  const IntegratorBase<double>* default_integrator =
+  const IntegratorBase<double>& default_integrator =
       antiderivative_function.get_integrator();
   using RK2 = RungeKutta2Integrator<double>;
   IntegratorBase<double>* configured_integrator =
       antiderivative_function.reset_integrator<RK2>(kMaximumStep);
-  EXPECT_NE(configured_integrator, default_integrator);
-  EXPECT_EQ(configured_integrator, antiderivative_function.get_integrator());
+  EXPECT_NE(configured_integrator, &default_integrator);
+  EXPECT_EQ(configured_integrator, &antiderivative_function.get_integrator());
 
   // Specifies a different parameter vector, but leaves the default
   // integration lower bound.
@@ -171,9 +171,9 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
         return std::pow(x, n);
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       antiderivative_function.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const int kLowestOrder = 0;
   const int kHighestOrder = 3;
@@ -228,9 +228,9 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
         return std::tanh(a * x);
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       antiderivative_function.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kParamIntervalLBound = -4.5;
   const double kParamIntervalUBound = 4.5;
@@ -288,9 +288,9 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
         return 1. / ((x + a) * (x + b));
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       antiderivative_function.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(GetParam());
+  inner_integrator.set_target_accuracy(GetParam());
 
   const double k1stPoleIntervalLBound = 20.0;
   const double k1stPoleIntervalUBound = 25.0;
@@ -355,9 +355,9 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
         return x * std::exp(n * x);
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       antiderivative_function.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kParamIntervalLBound = -4.5;
   const double kParamIntervalUBound = 4.5;
@@ -415,9 +415,9 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
         return x * std::sin(a * x);
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       antiderivative_function.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kParamIntervalLBound = -4.5;
   const double kParamIntervalUBound = 4.5;

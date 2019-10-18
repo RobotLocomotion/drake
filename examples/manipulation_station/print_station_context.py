@@ -6,7 +6,7 @@ contents of its (default) Context.
 from pydrake.examples.manipulation_station import ManipulationStation
 
 station = ManipulationStation()
-station.SetupDefaultStation()
+station.SetupManipulationClassStation()
 station.Finalize()
 
 context = station.CreateDefaultContext()

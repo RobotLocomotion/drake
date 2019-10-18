@@ -143,7 +143,7 @@ class DoublePendulumModel {
         *world_body_,
         {},      /* Default to Identity; frame Si IS the world frame W. */
         *link1_,
-        X_L1So.GetAsIsometry3(),  /* Pose of So in link 1's frame L1. */
+        X_L1So,  /* Pose of So in link 1's frame L1. */
         Vector3d::UnitZ()  /* revolute axis */);
 
     // The elbow is the joint that connects links 1 and 2.
@@ -159,16 +159,16 @@ class DoublePendulumModel {
     elbow_ = &model->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
         *link1_,
-        X_L1Ei.GetAsIsometry3(),  /* Pose of Ei in L1. */
+        X_L1Ei,  /* Pose of Ei in L1. */
         *link2_,
         {},      /* Default to Identity; frame Eo IS frame L2. */
         Vector3d::UnitZ() /* revolute axis */);
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
-    gravity_element_ =
-        &model->template AddForceElement<UniformGravityFieldElement>(
-            Vector3d(0.0, -acceleration_of_gravity_, 0.0));
+    gravity_element_ = &model->mutable_gravity_field();
+    gravity_element_->set_gravity_vector(
+        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
 
     // We are done adding modeling elements.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
@@ -214,7 +214,7 @@ class DoublePendulumModel {
   const RevoluteJoint<T>* elbow_{nullptr};
 
   // Force elements:
-  const UniformGravityFieldElement<T>* gravity_element_{nullptr};
+  UniformGravityFieldElement<T>* gravity_element_{nullptr};
 
   // Pendulum parameters:
   const double length1_ = 1.0;
@@ -340,7 +340,7 @@ class PendulumTests : public ::testing::Test {
     // With vdot = 0, this computes:
     //   rhs = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
     tree().CalcInverseDynamics(
-        *context_, pc, vc, vdot,
+        *context_, vdot,
         F_BBo_W_array, tau_array,
         &A_WB_array,
         &F_BMo_W, &tau  /* Output forces */);

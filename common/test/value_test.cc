@@ -197,18 +197,6 @@ GTEST_TEST(ValueTest, MaybeGetValue) {
 
   ASSERT_NE(string_value->maybe_get_value<std::string>(), nullptr);
   EXPECT_EQ(*string_value->maybe_get_value<std::string>(), "hello");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(double_value->MaybeGetValue<std::string>(), nullptr);
-  EXPECT_EQ(string_value->MaybeGetValue<double>(), nullptr);
-
-  ASSERT_NE(double_value->MaybeGetValue<double>(), nullptr);
-  EXPECT_EQ(*double_value->MaybeGetValue<double>(), 3.);
-
-  ASSERT_NE(string_value->MaybeGetValue<std::string>(), nullptr);
-  EXPECT_EQ(*string_value->MaybeGetValue<std::string>(), "hello");
-#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, Access) {
@@ -219,14 +207,6 @@ TYPED_TEST(TypedValueTest, Access) {
   EXPECT_EQ(3, erased.get_value<T>());
   ASSERT_NE(erased.maybe_get_value<T>(), nullptr);
   EXPECT_EQ(3, *erased.maybe_get_value<T>());
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(3, erased.GetValue<T>());
-  EXPECT_EQ(3, erased.GetValueOrThrow<T>());
-  ASSERT_NE(erased.MaybeGetValue<T>(), nullptr);
-  EXPECT_EQ(3, *erased.MaybeGetValue<T>());
-#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, Clone) {
@@ -248,18 +228,6 @@ TYPED_TEST(TypedValueTest, Mutation) {
   EXPECT_EQ(5, erased.get_value<T>());
   erased.SetFrom(Value<T>(6));
   EXPECT_EQ(6, erased.get_value<T>());
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  erased.SetValue<T>(T{7});
-  EXPECT_EQ(7, erased.GetValue<T>());
-  erased.SetValueOrThrow<T>(T{8});
-  EXPECT_EQ(8, erased.GetValue<T>());
-  erased.SetFrom(Value<T>(9));
-  EXPECT_EQ(9, erased.GetValue<T>());
-  erased.SetFromOrThrow(Value<T>(10));
-  EXPECT_EQ(10, erased.GetValue<T>());
-#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, BadCast) {
@@ -271,14 +239,6 @@ TYPED_TEST(TypedValueTest, BadCast) {
   EXPECT_THROW(erased.get_mutable_value<T>(), std::logic_error);
   EXPECT_THROW(erased.set_value<T>(T{3}), std::logic_error);
   EXPECT_THROW(erased.SetFrom(Value<T>(2)), std::logic_error);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_THROW(erased.GetValueOrThrow<T>(), std::logic_error);
-  EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::logic_error);
-  EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::logic_error);
-  EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::logic_error);
-#pragma GCC diagnostic pop
 }
 
 class PrintInterface {
@@ -403,16 +363,33 @@ void CheckHash(const std::string& name) {
 }
 
 namespace {
+
 struct AnonStruct {};
 class AnonClass {};
 enum class AnonEnum { kFoo, kBar };
-template <AnonEnum K> class AnonEnumTemplate {};
+
+// A class with a non-type template argument is not hashable.
+template <AnonEnum K>
+class UnadornedAnonEnumTemplate {};
+
+// To enable hashing, the user can add a `using` statement like this.
+template <AnonEnum K>
+class NiceAnonEnumTemplate {
+ public:
+  using NonTypeTemplateParameter = std::integral_constant<AnonEnum, K>;
+};
+
 }  // namespace
 
 #ifdef __APPLE__
 constexpr bool kApple = true;
 #else
 constexpr bool kApple = false;
+#endif
+#ifdef __clang__
+constexpr bool kClang = true;
+#else
+constexpr bool kClang = false;
 #endif
 
 GTEST_TEST(TypeHashTest, WellKnownValues) {
@@ -451,16 +428,21 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
       fmt::arg("std", stdcc)));
 
   // Eigen classes.
-  CheckHash<Eigen::VectorXd>("Eigen::Matrix<double,-1,1,0,-1,1>");
-  CheckHash<Eigen::MatrixXd>("Eigen::Matrix<double,-1,-1,0,-1,-1>");
-  CheckHash<Eigen::Vector3d>("Eigen::Matrix<double,3,1,0,3,1>");
-  CheckHash<Eigen::Matrix3d>("Eigen::Matrix<double,3,3,0,3,3>");
+  CheckHash<Eigen::VectorXd>(
+      "Eigen::Matrix<double,int=-1,int=1,int=0,int=-1,int=1>");
+  CheckHash<Eigen::MatrixXd>(
+      "Eigen::Matrix<double,int=-1,int=-1,int=0,int=-1,int=-1>");
+  CheckHash<Eigen::Vector3d>(
+      "Eigen::Matrix<double,int=3,int=1,int=0,int=3,int=1>");
+  CheckHash<Eigen::Matrix3d>(
+      "Eigen::Matrix<double,int=3,int=3,int=0,int=3,int=3>");
 
   // Vectors of Eigens.
   CheckHash<std::vector<Eigen::VectorXd>>(fmt::format(
       "{std}::vector<{eigen},{std}::allocator<{eigen}>>",
       fmt::arg("std", stdcc),
-      fmt::arg("eigen", "Eigen::Matrix<double,-1,1,0,-1,1>")));
+      fmt::arg("eigen",
+          "Eigen::Matrix<double,int=-1,int=1,int=0,int=-1,int=1>")));
 
   // Everything together at once works.
   using BigType = std::vector<std::pair<
@@ -469,28 +451,42 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
       "{std}::vector<"
         "{std}::pair<"
           "const double,"
-          "{std}::shared_ptr<Eigen::Matrix<double,3,3,0,3,3>>>,"
+          "{std}::shared_ptr<{eigen}>>,"
         "{std}::allocator<{std}::pair<"
           "const double,"
-          "{std}::shared_ptr<Eigen::Matrix<double,3,3,0,3,3>>>>>",
-      fmt::arg("std", stdcc)));
+          "{std}::shared_ptr<{eigen}>>>>",
+      fmt::arg("std", stdcc),
+      fmt::arg("eigen",
+          "Eigen::Matrix<double,int=3,int=3,int=0,int=3,int=3>")));
 
-  // Templated on a value (instead of a typename).  We cannot (yet) compute a
-  // compile-time typename hash for this case.
-  EXPECT_EQ(internal::TypeHash<AnonEnumTemplate<AnonEnum::kFoo>>::value, 0);
+  // Templated on a value, but with the 'using NonTypeTemplateParameter'
+  // decoration so that the hash works.
+  const std::string kfoo =
+      kClang ? "drake::test::{anonymous}::AnonEnum::kFoo" : "0";
+  CheckHash<NiceAnonEnumTemplate<AnonEnum::kFoo>>(
+      "drake::test::{anonymous}::NiceAnonEnumTemplate<"
+        "drake::test::{anonymous}::AnonEnum=" + kfoo + ">");
 }
 
 // Tests that a type mismatched is detected for a mismatched non-type template
 // parameter, even in Release builds.  When the TypeHash fails (is zero), it's
 // important that AbstractValue fall back to using typeinfo comparison instead.
 GTEST_TEST(ValueTest, NonTypeTemplateParameter) {
-  using T1 = AnonEnumTemplate<AnonEnum::kFoo>;
-  using T2 = AnonEnumTemplate<AnonEnum::kBar>;
+  // We cannot compute hashes for non-type template parameters when the user
+  // hasn't added a `using` statement to guide us.
+  using T1 = UnadornedAnonEnumTemplate<AnonEnum::kFoo>;
+  using T2 = UnadornedAnonEnumTemplate<AnonEnum::kBar>;
+  ASSERT_EQ(internal::TypeHash<T1>::value, 0);
+  ASSERT_EQ(internal::TypeHash<T2>::value, 0);
+
+  // However, our getters and setters still catch type mismatches (by using the
+  // std::typeinfo comparison).
   Value<T1> foo_value;
   Value<T2> bar_value;
   AbstractValue& foo = foo_value;
   EXPECT_NO_THROW(foo.get_value<T1>());
   EXPECT_THROW(foo.get_value<T2>(), std::exception);
+  EXPECT_THROW(foo.get_value<int>(), std::exception);
   EXPECT_THROW(foo.SetFrom(bar_value), std::exception);
 }
 

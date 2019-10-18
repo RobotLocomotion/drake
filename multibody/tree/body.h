@@ -18,6 +18,12 @@
 namespace drake {
 namespace multibody {
 
+/// @cond
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_BODY_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
+/// @endcond
+
 // Forward declaration for BodyFrame<T>.
 template<typename T> class Body;
 
@@ -61,23 +67,23 @@ class BodyFrame final : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
-  Isometry3<T> CalcPoseInBodyFrame(
+  math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>&) const override {
-    return Isometry3<T>::Identity();
+    return math::RigidTransform<T>::Identity();
   }
 
-  Isometry3<T> CalcOffsetPoseInBody(
+  math::RigidTransform<T> CalcOffsetPoseInBody(
       const systems::Context<T>&,
-      const Isometry3<T>& X_FQ) const override {
+      const math::RigidTransform<T>& X_FQ) const override {
     return X_FQ;
   }
 
-  Isometry3<T> GetFixedPoseInBodyFrame() const override {
-    return Isometry3<T>::Identity();
+  math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
+    return math::RigidTransform<T>::Identity();
   }
 
-  Isometry3<T> GetFixedOffsetPoseInBody(
-      const Isometry3<T>& X_FQ) const override {
+  math::RigidTransform<T> GetFixedOffsetPoseInBody(
+      const math::RigidTransform<T>& X_FQ) const override {
     return X_FQ;
   }
 
@@ -188,6 +194,54 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.body_node;
   }
 
+  /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
+  /// @note A floating body is not necessarily modeled with a quaternion
+  /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
+  /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
+  /// @throws std::exception if called pre-finalize, see
+  /// MultibodyPlant::Finalize().
+  bool is_floating() const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    return topology_.is_floating;
+  }
+
+  /// (Advanced) If `true`, this body is a floating body modeled with a
+  /// quaternion floating mobilizer. By implication, is_floating() is also
+  /// `true`.
+  /// @see floating_positions_start(), floating_velocities_start().
+  /// @throws std::exception if called pre-finalize, see
+  /// MultibodyPlant::Finalize().
+  bool has_quaternion_dofs() const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    return topology_.has_quaternion_dofs;
+  }
+
+  /// (Advanced) For floating bodies (see is_floating()) this method returns the
+  /// index of the first generalized position in the state vector for a
+  /// MultibodyPlant model.
+  /// Positions for this body are then contiguous starting at this index.
+  /// When a floating body is modeled with a quaternion mobilizer (see
+  /// has_quaternion_dofs()), the four consecutive entries in the state starting
+  /// at this index correspond to the quaternion that parametrizes this body's
+  /// orientation.
+  /// @throws std::exception if called pre-finalize, see
+  /// MultibodyPlant::Finalize().
+  int floating_positions_start() const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    return topology_.floating_positions_start;
+  }
+
+  /// (Advanced) For floating bodies (see is_floating()) this method returns the
+  /// index of the first generalized velocity in the state vector for a
+  /// MultibodyPlant model.
+  /// Velocities for this body are then contiguous starting at this index.
+  /// @throws std::exception if called pre-finalize, see
+  /// MultibodyPlant::Finalize().
+  int floating_velocities_start() const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    return topology_.floating_velocities_start;
+  }
+
   /// Returns the default mass (not Context dependent) for `this` body.
   /// In general, the mass for a body can be a parameter of the model that can
   /// be retrieved with the method get_mass(). When the mass of a body is a
@@ -218,7 +272,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.
-  const Isometry3<T>& EvalPoseInWorld(
+  const math::RigidTransform<T>& EvalPoseInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
   }
@@ -231,15 +285,24 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
         context, *this);
   }
 
+  /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
+  /// applied at body B's origin Bo and expressed in world world frame W.
+  const SpatialForce<T>& GetForceInWorld(
+      const systems::Context<T>&, const MultibodyForces<T>& forces) const {
+    DRAKE_THROW_UNLESS(
+        forces.CheckHasRightSizeForModel(this->get_parent_tree()));
+    return forces.body_forces()[node_index()];
+  }
+
   /// Adds the spatial force on `this` body B, applied at body B's origin Bo and
   /// expressed in the world frame W into `forces`.
-  void AddInForceInWorld(const systems::Context<T>& context,
+  void AddInForceInWorld(const systems::Context<T>&,
                          const SpatialForce<T>& F_Bo_W,
                          MultibodyForces<T>* forces) const {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    forces->mutable_body_forces()[node_index()] = F_Bo_W;
+    forces->mutable_body_forces()[node_index()] += F_Bo_W;
   }
 
   /// Adds the spatial force on `this` body B, applied at point P and
@@ -264,9 +327,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    const Isometry3<T> X_WE = frame_E.CalcPoseInWorld(context);
-    const Matrix3<T>& R_WE = X_WE.linear();
-    const Vector3<T> p_PB_W = -R_WE * p_BP_E;
+    const math::RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
+    const math::RotationMatrix<T>& R_WE = X_WE.rotation();
+    const Vector3<T> p_PB_W = -(R_WE * p_BP_E);
     const SpatialForce<T> F_Bo_W = (R_WE * F_Bp_E).Shift(p_PB_W);
     AddInForceInWorld(context, F_Bo_W, forces);
   }
@@ -318,6 +381,18 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // set of private Body methods.
   friend class internal::BodyAttorney<T>;
 
+  // Helper method for throwing an exception within public methods that should
+  // not be called pre-finalize. The invoking method should pass its name so
+  // that the error message can include that detail.
+  void ThrowIfNotFinalized(const char* source_method) const {
+    if (!this->get_parent_tree().topology_is_valid()) {
+      throw std::runtime_error(
+          "From '" + std::string(source_method) + "'. "
+          "The model to which this body belongs must be finalized. See "
+          "MultibodyPlant::Finalize().");
+    }
+  }
+
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
@@ -349,6 +424,14 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::BodyTopology topology_;
 };
+
+/// @cond
+// Undef macros defined at the top of the file. From the GSG:
+// "Exporting macros from headers (i.e. defining them in a header without
+// #undefing them before the end of the header) is extremely strongly
+// discouraged."
+#undef DRAKE_BODY_THROW_IF_NOT_FINALIZED
+/// @endcond
 
 }  // namespace multibody
 }  // namespace drake

@@ -1,3 +1,6 @@
+# -*- mode: dockerfile -*-
+# vi: set ft=dockerfile :
+
 FROM ubuntu:bionic
 WORKDIR /drake
 COPY setup/ubuntu setup/ubuntu
@@ -6,6 +9,4 @@ RUN set -eux \
   && yes | setup/ubuntu/install_prereqs.sh \
   && rm -rf /var/lib/apt/lists/*
 COPY . .
-RUN set -eux \
-  && bazel build //tools:drake_visualizer //examples/acrobot:run_passive
 ENTRYPOINT ["./setup/ubuntu/docker/entrypoint.sh"]

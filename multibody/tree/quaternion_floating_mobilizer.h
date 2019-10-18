@@ -54,6 +54,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
+  bool is_floating() const override { return true; }
+
+  bool has_quaternion_dofs() const override { return true; }
+
   /// @name Methods to get and set the state for a QuaternionFloatingMobilizer
   /// @{
 
@@ -185,7 +189,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @name Mobilizer overrides
   /// Refer to the Mobilizer class documentation for details.
   /// @{
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(

@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
@@ -29,6 +30,11 @@ PYBIND11_MODULE(_module_py, m) {
 
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
+
+  // TODO(eric.cousineau): Provide a Pythonic spdlog sink that connects to
+  // Python's `logging` module; possibly use `pyspdlog`.
+  m.def("set_log_level", &logging::set_log_level, py::arg("level"),
+      doc.logging.set_log_level.doc);
 
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
@@ -60,20 +66,10 @@ PYBIND11_MODULE(_module_py, m) {
       if (p) {
         std::rethrow_exception(p);
       }
-    } catch (const drake::detail::assertion_error& e) {
+    } catch (const drake::internal::assertion_error& e) {
       PyErr_SetString(PyExc_SystemExit, e.what());
     }
   });
-  // Convenient wrapper to add a resource search path.
-  m.def("AddResourceSearchPath", &AddResourceSearchPath,
-      "Adds a path in which to search for resource files. "
-      "The path refers to the relative path within the Drake repository, ",
-      py::arg("search_path"), doc.AddResourceSearchPath.doc);
-  // Convenient wrapper to get the list of resource search paths.
-  m.def("GetResourceSearchPaths", &GetResourceSearchPaths,
-      "Gets a copy of the list of paths set programmatically in which "
-      "resource files are searched.",
-      doc.GetResourceSearchPaths.doc);
   // Convenient wrapper for querying FindResource(resource_path).
   m.def("FindResourceOrThrow", &FindResourceOrThrow,
       "Attempts to locate a Drake resource named by the given path string. "
@@ -88,11 +84,19 @@ PYBIND11_MODULE(_module_py, m) {
       "is replaced by a character from the portable filename character set. "
       "Any trailing / will be stripped from the output.",
       doc.temp_directory.doc);
-// Returns the fully-qualified path to the root of the `drake` source tree.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetDrakePath", &GetDrakePath, "Get Drake path", doc.GetDrakePath.doc);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  // The pydrake function named GetDrakePath is residue from when there used to
+  // be a C++ method named drake::GetDrakePath(). For backward compatibility,
+  // we'll keep the pydrake function name intact even though there's no
+  // matching C++ method anymore.
+  m.def("GetDrakePath",
+      []() {
+        py::object result;
+        if (auto optional_result = MaybeGetDrakePath()) {
+          result = py::str(*optional_result);
+        }
+        return result;
+      },
+      doc.MaybeGetDrakePath.doc);
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",
       &drake_set_assertion_failure_to_throw_exception,

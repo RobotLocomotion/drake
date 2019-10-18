@@ -4,6 +4,7 @@
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
 namespace drake {
@@ -95,7 +96,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * coordinates, corresponding to the RigidBodyTree on which the inverse
    * kinematics problem is solved.
    */
-  Eigen::VectorXd ReconstructGeneralizedPositionSolution() const;
+  Eigen::VectorXd ReconstructGeneralizedPositionSolution(
+      const solvers::MathematicalProgramResult& result) const;
 
   /**
    * Adds the constraint that the position of a point `Q` on a body `B`
@@ -335,7 +337,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   // index body_idx. Note that the orientation of the parent link of the body
   // body_idx should have been reconstructed, in reconstruct_R_WB.
   void ReconstructGeneralizedPositionSolutionForBody(
-      int body_idx, Eigen::Ref<Eigen::VectorXd> q,
+      const solvers::MathematicalProgramResult& result, int body_idx,
+      Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 
   const RigidBodyTree<double>* robot_;

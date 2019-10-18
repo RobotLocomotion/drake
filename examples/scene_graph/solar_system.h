@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -114,12 +115,6 @@ class SolarSystem : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>&,
                        systems::State<T>*) const override;
 
- protected:
-  // No inputs implies no feedthrough; this makes it explicit.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
-
  private:
   // Allocate all of the geometry.
   void AllocateGeometry(geometry::SceneGraph<T>* scene_graph);
@@ -157,7 +152,7 @@ class SolarSystem : public systems::LeafSystem<T> {
   // The axes around each body revolves (expressed in its parent's frame)
   std::vector<Vector3<double>> axes_;
   // The translational offset of each body from its parent frame
-  std::vector<Isometry3<double>> body_offset_;
+  std::vector<math::RigidTransformd> body_offset_;
 };
 
 }  // namespace solar_system

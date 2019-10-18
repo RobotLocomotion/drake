@@ -4,9 +4,10 @@
 #include <iostream>
 #include <regex>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
@@ -18,6 +19,17 @@
 namespace drake {
 namespace solvers {
 namespace test {
+
+// SNOPT 7.6 has a known bug where it mis-handles the NIL terminator byte
+// when setting an debug log filename.  This is fixed in newer releases.
+// Ideally we would add this function to the asan blacklist, but SNOPT
+// doesn't have symbols so we'll just disable any test code that uses the
+// "Print file" option.
+#if __has_feature(address_sanitizer) or defined(__SANITIZE_ADDRESS__)
+constexpr bool kUsingAsan = true;
+#else
+constexpr bool kUsingAsan = false;
+#endif
 
 TEST_P(LinearProgramTest, TestLP) {
   SnoptSolver solver;
@@ -69,6 +81,12 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(SnoptTest, NameTest) {
+  EXPECT_THAT(
+      SnoptSolver::id().name(),
+      testing::StartsWith("SNOPT/"));
+}
+
 GTEST_TEST(SnoptTest, TestSetOption) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();
@@ -109,16 +127,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
 }
 
 GTEST_TEST(SnoptTest, TestPrintFile) {
-  // SNOPT 7.6 has a known bug where it mis-handles the NIL terminator byte
-  // when setting an debug log filename.  This is fixed in newer releases.
-  // Ideally we would add this function to the asan blacklist, but SNOPT
-  // doesn't have symbols so we'll just disable this test case instead.
-#if __has_feature(address_sanitizer) or defined(__SANITIZE_ADDRESS__)
-  constexpr bool using_asan = true;
-#else
-  constexpr bool using_asan = false;
-#endif
-  if (using_asan) {
+  if (kUsingAsan) {
     std::cerr << "Skipping TestPrintFile under ASAN\n";
     return;
   }
@@ -130,12 +139,12 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
   // This is to verify we can set the print out file.
   const std::string print_file = temp_directory() + "/snopt.out";
   std::cout << print_file << std::endl;
-  EXPECT_FALSE(spruce::path(print_file).exists());
+  EXPECT_FALSE(filesystem::exists({print_file}));
   prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
   const SnoptSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_TRUE(result.is_success());
-  EXPECT_TRUE(spruce::path(print_file).exists());
+  EXPECT_TRUE(filesystem::exists({print_file}));
 }
 
 GTEST_TEST(SnoptTest, TestSparseCost) {
@@ -254,11 +263,18 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
         "{}/snopt_multi_thread_{}.out", temp_dir, i);
   }
 
+  if (kUsingAsan) {
+    std::cerr << "Not checking 'Print file' option under ASAN\n";
+  }
+
   // Create a functor that solves the problem.
   const SnoptSolver snopt_solver;
   auto run_solver = [&snopt_solver, &const_prog](PerThreadData* thread_data) {
     SolverOptions options;
-    options.SetOption(SnoptSolver::id(), "Print file", thread_data->print_file);
+    if (!kUsingAsan) {
+      options.SetOption(
+          SnoptSolver::id(), "Print file", thread_data->print_file);
+    }
     snopt_solver.Solve(const_prog, {thread_data->x_init}, options,
                        &thread_data->result);
   };
@@ -290,32 +306,34 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
                 1);
     }
 
-    // The print file contents should be the same for single vs multi.
-    std::string contents_single;
-    {
-      std::ifstream input(single_threaded[i].print_file, std::ios::binary);
-      ASSERT_TRUE(input);
-      std::stringstream buffer;
-      buffer << input.rdbuf();
-      contents_single = buffer.str();
+    if (!kUsingAsan) {
+      // The print file contents should be the same for single vs multi.
+      std::string contents_single;
+      {
+        std::ifstream input(single_threaded[i].print_file, std::ios::binary);
+        ASSERT_TRUE(input);
+        std::stringstream buffer;
+        buffer << input.rdbuf();
+        contents_single = buffer.str();
+      }
+      std::string contents_multi;
+      {
+        std::ifstream input(multi_threaded[i].print_file, std::ios::binary);
+        ASSERT_TRUE(input);
+        std::stringstream buffer;
+        buffer << input.rdbuf();
+        contents_multi = buffer.str();
+      }
+      for (auto* contents : {&contents_single, &contents_multi}) {
+        // Scrub some volatile text output.
+        *contents = std::regex_replace(
+            *contents, std::regex("..... seconds"), "##### seconds");
+        *contents = std::regex_replace(
+            *contents, std::regex(".Printer........................\\d"),
+            "(Printer)..............      ####");
+      }
+      EXPECT_EQ(contents_single, contents_multi);
     }
-    std::string contents_multi;
-    {
-      std::ifstream input(multi_threaded[i].print_file, std::ios::binary);
-      ASSERT_TRUE(input);
-      std::stringstream buffer;
-      buffer << input.rdbuf();
-      contents_multi = buffer.str();
-    }
-    for (auto* contents : {&contents_single, &contents_multi}) {
-      // Scrub some volatile text output.
-      *contents = std::regex_replace(
-          *contents, std::regex("..... seconds"), "##### seconds");
-      *contents = std::regex_replace(
-          *contents, std::regex(".Printer........................\\d"),
-          "(Printer)..............      ####");
-    }
-    EXPECT_EQ(contents_single, contents_multi);
   }
 }
 

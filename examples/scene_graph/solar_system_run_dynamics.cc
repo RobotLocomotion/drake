@@ -36,11 +36,11 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram);
 
-  simulator.get_mutable_integrator()->set_maximum_step_size(0.002);
+  simulator.get_mutable_integrator().set_maximum_step_size(0.002);
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(1);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
 }

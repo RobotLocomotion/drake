@@ -47,9 +47,8 @@ GTEST_TEST(ValkyrieSimulationTest, TestIfRuns) {
   // TODO(tkoolen): make it easy to specify a different initial configuration.
   VectorX<double> initial_state = RPYValkyrieFixedPointState();
   plant->set_state_vector(&plant_context, initial_state);
-  lcm.StartReceiveThread();
 
-  simulator.StepTo(0.01);
+  simulator.AdvanceTo(0.01);
 }
 
 }  // namespace valkyrie

@@ -205,6 +205,13 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // all. Consider also removing MultibodyTreeElement altogether.
   mobilizer->set_parent_tree(this, mobilizer_index);
 
+  // Mark free bodies as needed.
+  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
+  topology_.get_mutable_body(outboard_body_index).is_floating =
+      mobilizer->is_floating();
+  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+      mobilizer->has_quaternion_dofs();
+
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   owned_mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
@@ -235,6 +242,18 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
   if (force_element == nullptr) {
     throw std::logic_error("Input force element is a nullptr.");
   }
+
+  auto gravity_element = dynamic_cast<UniformGravityFieldElement<T>*>(
+      force_element.get());
+  if (gravity_element) {
+    if (gravity_field_) {
+      throw std::runtime_error(
+          "This model already contains a gravity field element. "
+          "Only one gravity field element is allowed per model.");
+    }
+    gravity_field_ = gravity_element;
+  }
+
   ForceElementIndex force_element_index = topology_.add_force_element();
   // This test MUST be performed BEFORE owned_force_elements_.push_back()
   // below. Do not move it around!
@@ -249,37 +268,13 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
 
 template <typename T>
 template<template<typename Scalar> class ForceElementType, typename... Args>
-#ifdef DRAKE_DOXYGEN_CXX
 const ForceElementType<T>&
-#else
-typename std::enable_if<!std::is_same<
-    ForceElementType<T>,
-    UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-#endif
 MultibodyTree<T>::AddForceElement(Args&&... args) {
   static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
                 "ForceElementType<T> must be a sub-class of "
                 "ForceElement<T>.");
   return AddForceElement(
       std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-}
-
-template <typename T>
-template<template<typename Scalar> class ForceElementType, typename... Args>
-typename std::enable_if<std::is_same<
-    ForceElementType<T>,
-    UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-MultibodyTree<T>::AddForceElement(Args&&... args) {
-  if (gravity_field_.has_value()) {
-    throw std::runtime_error(
-        "This model already contains a gravity field element. "
-        "Only one gravity field element is allowed per model.");
-  }
-  // We save the force element so that we can grant users access to it for
-  // gravity field specific queries.
-  gravity_field_ = &AddForceElement(
-      std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-  return *gravity_field_.value();
 }
 
 template <typename T>
@@ -317,20 +312,20 @@ template <typename T>
 template<template<typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::string& name,
-    const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
-    const Body<T>& child, const optional<Isometry3<double>>& X_BM,
+    const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
+    const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
     Args&&... args) {
   static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                 "JointType<T> must be a sub-class of Joint<T>.");
 
-  const Frame<T>* frame_on_parent;
+  const Frame<T>* frame_on_parent{nullptr};
   if (X_PF) {
     frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
   } else {
     frame_on_parent = &parent.body_frame();
   }
 
-  const Frame<T>* frame_on_child;
+  const Frame<T>* frame_on_child{nullptr};
   if (X_BM) {
     frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
   } else {
@@ -347,7 +342,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 
 template <typename T>
 const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
-    const std::string& name, const Joint<T>& joint) {
+    const std::string& name, const Joint<T>& joint, double effort_limit) {
   if (HasJointActuatorNamed(name, joint.model_instance())) {
     throw std::logic_error(
         "Model instance '" +
@@ -364,7 +359,8 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
 
   const JointActuatorIndex actuator_index =
       topology_.add_joint_actuator(joint.num_velocities());
-  owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
+  owned_actuators_.push_back(
+      std::make_unique<JointActuator<T>>(name, joint, effort_limit));
   JointActuator<T>* actuator = owned_actuators_.back().get();
   actuator->set_parent_tree(this, actuator_index);
   actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
@@ -580,7 +576,7 @@ Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_discrete_state_vector(
     const systems::Context<T>& context) const {
   DRAKE_ASSERT(is_state_discrete());
-  DRAKE_ASSERT(context.get_num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context.num_discrete_state_groups() == 1);
   const systems::BasicVector<T>& discrete_state_vector =
       context.get_discrete_state(0);  // Only q and v.
   DRAKE_ASSERT(discrete_state_vector.size() ==
@@ -594,7 +590,7 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
     systems::Context<T>* context) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(is_state_discrete());
-  DRAKE_ASSERT(context->get_num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context->num_discrete_state_groups() == 1);
   systems::BasicVector<T>& discrete_state_vector =
       context->get_mutable_discrete_state(0);  // Only q and v.
   DRAKE_ASSERT(discrete_state_vector.size() ==
@@ -638,4 +634,3 @@ Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::extract_qv_from_continuous(
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

@@ -39,22 +39,39 @@ class GazeTargetConstraint : public solvers::Constraint {
    *   frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
    *   class documentation. `cone_half_angle` is in radians.
-   * @param context The Context that has been allocated for this `plant`. We
-   *   will update the context when evaluating the constraint. `context` should
-   *   be alive during the lifetime of this constraint.
+   * @param plant_context The Context that has been allocated for this
+   *   `plant`.  We will update the context when evaluating the constraint.
+   *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `n_A` is close to zero.
    * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π/2].
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
-  GazeTargetConstraint(
-      const MultibodyPlant<double>* const plant,
-      const Frame<double>& frameA,
-      const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-      const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
-      const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
-      systems::Context<double>* context);
+  GazeTargetConstraint(const MultibodyPlant<double>* plant,
+                       const Frame<double>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                       const Frame<double>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                       double cone_half_angle,
+                       systems::Context<double>* plant_context);
+
+  /**
+   * Overloaded constructor.
+   * Construct from MultibodyPlant<AutoDiffXd> instead of
+   * MultibodyPlant<double>.
+   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+   * Documentation string is manually recreated in Python.}
+   */
+  GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant,
+                       const Frame<AutoDiffXd>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                       const Frame<AutoDiffXd>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                       double cone_half_angle,
+                       systems::Context<AutoDiffXd>* plant_context);
 
   ~GazeTargetConstraint() override{};
 
@@ -70,7 +87,10 @@ class GazeTargetConstraint : public solvers::Constraint {
     throw std::logic_error(
         "GazeTargetConstraint::DoEval() does not work for symbolic variables.");
   }
-  const MultibodyPlant<double>& plant_;
+
+  bool use_autodiff() const { return plant_autodiff_; }
+
+  const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d p_AS_;
@@ -78,7 +98,10 @@ class GazeTargetConstraint : public solvers::Constraint {
   const Eigen::Vector3d p_BT_;
   const double cone_half_angle_;
   const double cos_cone_half_angle_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* const context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

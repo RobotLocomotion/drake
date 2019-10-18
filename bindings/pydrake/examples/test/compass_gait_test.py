@@ -44,7 +44,10 @@ class TestCompassGait(unittest.TestCase):
         # Create the simulator.
         simulator = Simulator(compass_gait)
         context = simulator.get_mutable_context()
-        context.set_accuracy(1e-8)
+        context.SetAccuracy(1e-8)
+
+        # Zero the input
+        compass_gait.get_input_port(0).FixValue(context, 0.0)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()
@@ -55,5 +58,5 @@ class TestCompassGait(unittest.TestCase):
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
         self.assertFalse((state.CopyToVector() == initial_state).any())

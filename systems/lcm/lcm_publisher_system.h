@@ -12,8 +12,6 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/serializer.h"
 
 namespace drake {
@@ -180,30 +178,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
       const TriggerTypeSet& publish_triggers,
       double publish_period = 0.0);
 
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmPublisherSystem(
-      const std::string&, const LcmAndVectorBaseTranslator&,
-      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
-
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmPublisherSystem(
-      const std::string&, std::unique_ptr<const LcmAndVectorBaseTranslator>,
-      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmPublisherSystem(
-      const std::string&, const LcmTranslatorDictionary&,
-      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
-#pragma GCC diagnostic pop
-
   ~LcmPublisherSystem() override;
 
   /**
@@ -236,25 +210,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   static std::string make_name(const std::string& channel);
 
-  DRAKE_DEPRECATED("2019-04-14",
-      "Pass publish period to constructor instead.")
-  void set_publish_period(double period) {
-    if (disable_internal_per_step_publish_events_) {
-      drake::log()->info("LcmPublisherSystem publish period set "
-          "multiple times. Multiple publish periods now registered "
-          "(did you mean to do this?)");
-    }
-    disable_internal_per_step_publish_events_ = true;
-    const double offset = 0.0;
-    this->DeclarePeriodicPublishEvent(period, offset,
-        &LcmPublisherSystem::PublishInputAsLcmMessage);
-  }
-
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  const LcmAndVectorBaseTranslator& get_translator() const;
-
   /**
    * Returns a mutable reference to the LCM object in use by this publisher.
    * This may have been supplied in the constructor or may be an
@@ -269,7 +224,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * Returns the sole input port.
    */
   const InputPort<double>& get_input_port() const {
-    DRAKE_THROW_UNLESS(this->get_num_input_ports() == 1);
+    DRAKE_THROW_UNLESS(this->num_input_ports() == 1);
     return LeafSystem<double>::get_input_port(0);
   }
 
@@ -282,41 +237,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
-  // All constructors delegate to here. If the lcm pointer is null, we'll
-  // allocate and maintain a DrakeLcm object internally.
-  LcmPublisherSystem(const std::string& channel,
-                     const LcmAndVectorBaseTranslator* translator,
-                     std::unique_ptr<const LcmAndVectorBaseTranslator>
-                         owned_translator,
-                     std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm,
-                     const TriggerTypeSet& publish_triggers,
-                     double publish_period);
-
-  // Constructors which do not specify publish_triggers delegate to here.
-  // This will generate the default publish_triggers before calling
-  // the more general constructor.
-  LcmPublisherSystem(const std::string& channel,
-                     const LcmAndVectorBaseTranslator* translator,
-                     std::unique_ptr<const LcmAndVectorBaseTranslator>
-                         owned_translator,
-                     std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm,
-                     double publish_period);
-
   // The channel on which to publish LCM messages.
   const std::string channel_;
 
   // Optionally, the method to call during initialization (empty if none).
   InitializationPublisher initialization_publisher_;
-
-  // Converts VectorBase objects into LCM message bytes.
-  // Will be non-null iff our input port is vector-valued.
-  const LcmAndVectorBaseTranslator* const translator_{};
-
-  // This will be non-null iff the unique_ptr constructor was called.
-  // Internal users should only use translator_.
-  std::unique_ptr<const LcmAndVectorBaseTranslator> const owned_translator_;
 
   // Converts Value<LcmMessage> objects into LCM message bytes.
   // Will be non-null iff our input port is abstract-valued.

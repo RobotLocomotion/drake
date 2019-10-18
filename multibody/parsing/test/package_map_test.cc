@@ -3,8 +3,8 @@
 #include <algorithm>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 
 using std::map;
@@ -39,8 +39,8 @@ void VerifyMatch(const PackageMap& package_map,
 
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
-  spruce::dir::mkdir(spruce::path("package_foo"));
-  spruce::dir::mkdir(spruce::path("package_bar"));
+  filesystem::create_directory("package_foo");
+  filesystem::create_directory("package_bar");
   map<string, string> expected_packages = {
     {"package_foo", "package_foo"},
     {"my_package", "package_bar"}
@@ -51,6 +51,21 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
     package_map.Add(it.first, it.second);
   }
 
+  VerifyMatch(package_map, expected_packages);
+}
+
+// Tests that PackageMap can be populated by a package.xml.
+GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
+  const string xml_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+      "package_map_test_packages/package_map_test_package_a/package.xml");
+  const string xml_dirname = filesystem::path(xml_filename).parent_path();
+  PackageMap package_map;
+  package_map.AddPackageXml(xml_filename);
+
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", xml_dirname},
+  };
   VerifyMatch(package_map, expected_packages);
 }
 
@@ -126,8 +141,8 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 
 // Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
-  spruce::dir::mkdir(spruce::path("package_foo"));
-  spruce::dir::mkdir(spruce::path("package_bar"));
+  filesystem::create_directory("package_foo");
+  filesystem::create_directory("package_bar");
   map<string, string> expected_packages = {
     {"package_foo", "package_foo"},
     {"my_package", "package_bar"}
