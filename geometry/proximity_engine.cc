@@ -603,7 +603,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
         &data, collisions_exist::Callback);
-    return data.exist;
+    return data.collisions_exist;
   }
 
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()

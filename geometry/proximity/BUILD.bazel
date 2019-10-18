@@ -60,6 +60,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "collisions_exist_callback",
+    srcs = ["collisions_exist_callback.cc"],
     hdrs = ["collisions_exist_callback.h"],
     deps = [
         ":collision_filter_legacy",

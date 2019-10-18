@@ -151,8 +151,7 @@ class QueryObject {
   //@{
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
-   world.
-   @returns A boolean of whether any collisions exist. */
+   world.  */
   bool CollisionsExist() const;
 
   /** Computes the penetrations across all pairs of geometries in the world
