@@ -29,7 +29,7 @@ class DummyIntegrator : public IntegratorBase<T> {
   bool DoStep(const T&) override { DRAKE_UNREACHABLE(); }
 };
 
-// Tests that resetting the integrator with a null pointer throws.
+// Tests that CalcStateChangeNorm() propagates NaNs in state.
 GTEST_TEST(IntegratorBaseTest, DoubleStateChangeNormPropagatesNaN) {
   // We need a system with q, v, and z variables. Constants and absence of
   // forcing are arbitrary (irrelevant for this test).
@@ -39,6 +39,7 @@ GTEST_TEST(IntegratorBaseTest, DoubleStateChangeNormPropagatesNaN) {
   integrator.Initialize();
 
   // Set q = v = z = 0 and verify that the state change norm is zero.
+  ASSERT_EQ(context->get_continuous_state().size(), 3);
   context->get_mutable_continuous_state()[0] = 0;
   context->get_mutable_continuous_state()[1] = 0;
   context->get_mutable_continuous_state()[2] = 0;
@@ -66,14 +67,14 @@ GTEST_TEST(IntegratorBaseTest, DoubleStateChangeNormPropagatesNaN) {
   // Set v to NaN, and q = z = 0 and verify that NaN is returned from
   // CalcStateChangeNorm().
   context->get_mutable_continuous_state()[0] = 0;
-  context->get_mutable_continuous_state()[1] =
+  context->get_mutable_continuous_state()[1] = 0;
+  context->get_mutable_continuous_state()[2] =
       std::numeric_limits<double>::quiet_NaN();
-  context->get_mutable_continuous_state()[2] = 0;
   EXPECT_TRUE(
       isnan(integrator.CalcStateChangeNorm(context->get_continuous_state())));
 }
 
-// Tests that resetting the integrator with a null pointer throws.
+// Tests that CalcStateChangeNorm() propagates NaNs in state.
 GTEST_TEST(IntegratorBaseTest, AutoDiffXdStateChangeNormPropagatesNaN) {
   // We need a system with q, v, and z variables. Constants and absence of
   // forcing are arbitrary (irrelevant for this test).
@@ -84,6 +85,7 @@ GTEST_TEST(IntegratorBaseTest, AutoDiffXdStateChangeNormPropagatesNaN) {
   integrator.Initialize();
 
   // Set q = v = z = 0 and verify that the state change norm is zero.
+  ASSERT_EQ(context->get_continuous_state().size(), 3);
   context->get_mutable_continuous_state()[0] = 0;
   context->get_mutable_continuous_state()[1] = 0;
   context->get_mutable_continuous_state()[2] = 0;
@@ -111,9 +113,9 @@ GTEST_TEST(IntegratorBaseTest, AutoDiffXdStateChangeNormPropagatesNaN) {
   // Set v to NaN, and q = z = 0 and verify that NaN is returned from
   // CalcStateChangeNorm().
   context->get_mutable_continuous_state()[0] = 0;
-  context->get_mutable_continuous_state()[1] =
+  context->get_mutable_continuous_state()[1] = 0;
+  context->get_mutable_continuous_state()[2] =
       std::numeric_limits<double>::quiet_NaN();
-  context->get_mutable_continuous_state()[2] = 0;
   EXPECT_TRUE(
       isnan(integrator.CalcStateChangeNorm(context->get_continuous_state())));
 }

@@ -285,10 +285,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       eps = 10 * std::numeric_limits<double>::epsilon();
 
     for (int i = 0; i < xc.size(); ++i) {
-      // Use a relative or absolute tolerance, as appropriate given the
-      // magnitude of xc[i]. Note that the parameter ordering below ensures
-      // that NaN's are propagated (see
-      // https://stackoverflow.com/questions/1632145/use-of-min-and-max-functions-in-c).
+      // Indicate the update is not zero if a NaN is detected.
+      using std::isnan;
+      if (isnan(dxc[i])) return false;
+
       const T tol = max(abs(xc[i]), T(1)) * eps;
       if (abs(dxc[i]) > tol)
         return false;
