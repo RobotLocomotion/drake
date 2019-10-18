@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":mesh_half_space_intersection",
         ":mesh_intersection",
         ":obj_to_surface_mesh",
+        ":penetration_as_point_pair_callback",
         ":proximity_utilities",
         ":sorted_triplet",
         ":surface_mesh",
@@ -141,6 +142,18 @@ drake_cc_library(
         ":mesh_intersection",
         ":surface_mesh",
         "//common",
+    ],
+)
+
+drake_cc_library(
+    name = "penetration_as_point_pair_callback",
+    srcs = ["penetration_as_point_pair_callback.cc"],
+    hdrs = ["penetration_as_point_pair_callback.h"],
+    deps = [
+        ":collision_filter_legacy",
+        ":proximity_utilities",
+        "//geometry/query_results:penetration_as_point_pair",
+        "@fcl",
     ],
 )
 
@@ -415,6 +428,14 @@ drake_cc_googletest(
         ":obj_to_surface_mesh",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "penetration_as_point_pair_callback_test",
+    deps = [
+        ":penetration_as_point_pair_callback",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
