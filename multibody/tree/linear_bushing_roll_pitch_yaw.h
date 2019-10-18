@@ -37,7 +37,8 @@ template <typename T> class Body;
 /// and Bᴀx, Bᴀy, Bᴀz are orthogonal unit vectors fixed in frame Bᴀ.
 /// The set of forces on body A from the bushing is equivalent to a torque -τ on
 /// frame Aʙ and a force -f applied to a point Ac of A.  Point Ac of A and point
-/// Bc of B are coincident and located halfway between origin points Aʙₒ and Bᴀₒ.
+/// Bc of B are coincident and located halfway between Aʙₒ (the origin of
+/// frame Aʙ) and Bᴀₒ (the origin of frame Bᴀ).
 ///
 /// The bushing torque τ and force f are modeled as having a potential energy 𝖀
 /// and a dissipation function 𝕱 of <pre>
@@ -49,9 +50,12 @@ template <typename T> class Body;
 /// Fx = (kx x + bx ẋ)
 /// Fy = (ky y + by ẏ)
 /// Fz = (kz z + bz ż)
-/// Tx = (k₀q₀ + b₀q̇₀)
-/// Ty = (k₁q₁ + b₁q̇₁)
-/// Tz = (k₂q₂ + b₂q̇₂)
+/// M₀ = (k₀ q₀ + b₀ q̇₀)
+/// M₁ = (k₁ q₁ + b₁ q̇₁)
+/// M₂ = (k₂ q₂ + b₂ q̇₂)
+/// Tx = cos(q₂)/cos(q₁)*M₀ - sin(q2)*M₁ + cos(q₂)*tan(q₁)*M₂ + y*Fz - z*Fy
+/// Ty = sin(q₂)/cos(q₁)*M₀ + cos(q2)*M₁ + sin(q₂)*tan(q₁)*M₂ + z*Fx - x*Fz
+/// Tz =                                                   M₂ + x*Fy - y*Fx
 /// </pre>
 /// where kx, ky, kz and bx, by, bz are force stiffness and damping constants,
 /// k₀, k₁, k₂ and b₀, b₁, b₂, are torque stiffness and damping constants,
@@ -67,14 +71,18 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// Constructor for a RollPitchYaw bushing that connects bodies `A` and `B`.
   /// @param[in] frameAb the frame Aʙ of body `A` that connects to the bushing.
   /// @param[in] frameBa the frame Bᴀ of body `B` that connects to the bushing.
-  /// @param[in] torque_stiffness_constants For torque τ, the stiffness
-  /// constants `[k₀, k₁, k₂]` associated with angles `[q₀, q₁, q₂]`.
-  /// @param[in] torque_damping_constants For torque τ, the damping
-  /// constants `[b₀, b₁, b₂]` associated with angular rates `[q̇₀, q̇₁, q̇₂]`.
-  /// @param[in] force_stiffness_constants For force f, the stiffness constants
-  /// `[kx, ky, kz]` associated with translational displacement `[x, y, z]`
-  /// @param[in] force_damping_constants For force f, the damping constants
-  /// `[bx, by, bz]` associated with translational rates `[ẋ, ẏ, ż]`.
+  /// @param[in] torque_stiffness_constants  the constants `[k₀, k₁, k₂]`
+  /// associated with the rotational part `1/2 (k₀q₀² + k₁q₁² + k₂q₂²)` of the
+  /// potential energy where `[q₀, q₁, q₂]` are the roll, pitch, yaw angles.
+  /// @param[in] torque_damping_constants the constants `[b₀, b₁, b₂]`
+  /// associated with the rotational part `1/2 (b₀q̇₀² + b₁q̇₁² + b₂q̇₂²)`
+  /// of the dissipation function.
+  /// @param[in] force_stiffness_constants the constants `[kx, ky, kz]`
+  /// associated with the translational part `1/2 (kx x² + ky y² + kz z²)` of
+  /// the potential energy, where `[x, y, z]` are the bushing's displacements.
+  /// @param[in] force_damping_constants the constants `[bx, by, bz]`
+  /// associated with the translational part `1/2 (bx ẋ² + by ẏ² + bz ż²)`
+  /// of the dissipation function.
   /// @note Refer to this class's documentation for details about τ, f, q₀, etc.
   /// @note The stiffness and damping parameters are usually non-negative.
   LinearBushingRollPitchYaw(const Frame<T>& frameAb,
