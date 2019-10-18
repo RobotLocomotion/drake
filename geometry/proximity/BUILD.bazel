@@ -184,7 +184,9 @@ drake_cc_library(
     name = "make_cylinder_mesh",
     hdrs = ["make_cylinder_mesh.h"],
     deps = [
+        ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],

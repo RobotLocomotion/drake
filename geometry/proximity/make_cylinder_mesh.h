@@ -9,7 +9,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -440,8 +442,9 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 ///    The positive characteristic edge length for the mesh. The coarsest
 ///    possible mesh (a rectangular prism) is guaranteed for any value of
 ///    `resolution_hint` greater than √2 times the radius of the cylinder.
-///
-/// @throws std::exception if refinement_level is negative.
+/// @tparam T
+///    The Eigen-compatible scalar for representing the mesh vertex positions.
+/// @pre resolution_hint is positive.
 ///
 /// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
 /// generator. Geophysical Journal International, 130(1), pp.193-200.
@@ -537,6 +540,32 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
   }
 
   return mesh;
+}
+
+/// Creates a surface mesh for the given `cylinder`; the level of
+/// tessellation is guided by the `resolution_hint` parameter in the same way
+/// as MakeCylinderVolumeMesh.
+///
+/// @param[in] cylinder
+///    Specification of the parameterized cylinder the output surface mesh
+///    should approximate.
+/// @param[in] resolution_hint
+///    The positive characteristic edge length for the mesh. The coarsest
+///    possible mesh (a rectangular prism) is guaranteed for any value of
+///    `resolution_hint` greater than √2 times the radius of the cylinder.
+///    For any cylinder, there is a `resolution_hint` value that serves as the
+///    smallest value that will produce more triangles -- values smaller than
+///    that will have no effect.
+/// @returns The triangulated surface mesh for the given cylinder.
+/// @pre resolution_hint is positive.
+/// @tparam T
+///    The Eigen-compatible scalar for representing the mesh vertex positions.
+template <typename T>
+SurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
+                                       double resolution_hint) {
+  DRAKE_DEMAND(resolution_hint > 0.0);
+  return ConvertVolumeToSurfaceMesh<T>(
+      MakeCylinderVolumeMesh<T>(cylinder, resolution_hint));
 }
 
 }  // namespace internal

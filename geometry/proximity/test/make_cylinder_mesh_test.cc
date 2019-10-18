@@ -204,6 +204,57 @@ GTEST_TEST(MakeCylinderVolumeMesh, EulerCharacteristic) {
   }
 }
 
+// Smoke test only. Assume correctness of MakeCylinderVolumeMesh() and
+// ConvertVolumeToSurfaceMesh(). The resolution_hint larger than √2 times the
+// radius of the cylinder produces a rectangular prism with 24 triangles and
+// 14 vertices, which is the coarsest surface mesh that our algorithm can
+// produce. The positions (● in the picture below) of the 14 vertices look
+// like this:
+//
+//                +Z   -X
+//                 |   /
+//                 |  ●
+//                 | /
+//                 |/
+//  -Y-----●-------●-------●---+Y
+//                /|
+//               / |
+//              ●  |
+//             /   |
+//           +X    |   -X
+//                 |   /
+//                 |  ●
+//                 | /
+//                 |/
+//  -Y-----●-------+-------●---+Y
+//                /|
+//               / |
+//              ●  |
+//             /   |
+//           +X    |    -X
+//                 |   /
+//                 |  ●
+//                 | /
+//                 |/
+//  -Y-----●-------●-------●---+Y
+//                /|
+//               / |
+//              ●  |
+//             /   |
+//           +X    |
+//                -Z
+//
+GTEST_TEST(MakeCylinderSurfaceMesh, GenerateSurface) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  const double resolution_hint = 1.5;
+  const Cylinder cylinder(radius, length);
+  SurfaceMesh<double> surface_mesh =
+      MakeCylinderSurfaceMesh<double>(cylinder, resolution_hint);
+  EXPECT_EQ(surface_mesh.num_faces(), 24);
+  EXPECT_EQ(surface_mesh.num_vertices(), 14);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
