@@ -1828,6 +1828,7 @@ T IntegratorBase<T>::CalcStateChangeNorm(
 
   // Return NaN if one of the values is NaN (whether std::max does this is
   // dependent upon ordering!)
+  using std::isnan;
   if (isnan(q_nrm) || isnan(v_nrm) || isnan(z_nrm))
     return std::numeric_limits<T>::quiet_NaN();
 
