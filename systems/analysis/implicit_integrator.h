@@ -286,8 +286,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
     for (int i = 0; i < xc.size(); ++i) {
       // Use a relative or absolute tolerance, as appropriate given the
-      // magnitude of xc[i].
-      const T tol = max(T(1), abs(xc[i])) * eps;
+      // magnitude of xc[i]. Note that the parameter ordering below ensures
+      // that NaN's are propagated (see
+      // https://stackoverflow.com/questions/1632145/use-of-min-and-max-functions-in-c).
+      const T tol = max(abs(xc[i]), T(1)) * eps;
       if (abs(dxc[i]) > tol)
         return false;
     }
