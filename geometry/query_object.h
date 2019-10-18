@@ -204,7 +204,7 @@ class QueryObject {
        consistent with being a medium rubber).
      - The sphere's pressure function is is simply: p_0(e) = Ee. Where
        E = 1e8 N/m^2.
-     - The tesselation of the corresponding meshes will be coarse.
+     - The tessellation of the corresponding meshes will be coarse.
      - Attempting to invoke this method with T = AutoDiffXd will throw an
        exception if there are *any* geometry pairs that couldn't be culled.
 
