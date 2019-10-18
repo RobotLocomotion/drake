@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
         ":hydroelastic_internal",
+        ":make_box_field",
         ":make_box_mesh",
         ":make_cylinder_mesh",
         ":make_sphere_mesh",
@@ -232,6 +233,17 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_box_field",
+    hdrs = ["make_box_field.h"],
+    deps = [
+        ":distance_to_point_callback",
+        ":volume_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -456,6 +468,15 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_mesh",
         ":sorted_triplet",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_box_field_test",
+    deps = [
+        ":make_box_field",
+        ":make_box_mesh",
+        ":volume_to_surface_mesh",
     ],
 )
 
