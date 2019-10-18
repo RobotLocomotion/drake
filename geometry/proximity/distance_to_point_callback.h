@@ -376,7 +376,7 @@ class DistanceToPoint {
                    feature.
    @tparam dim     The dimension, must be 2 or 3.  */
   template <int dim>
-  std::tuple<Vector<T, dim>, Vector<T, dim>, bool> ComputeDistanceToBox(
+  static std::tuple<Vector<T, dim>, Vector<T, dim>, bool> ComputeDistanceToBox(
       const Vector<double, dim>& h, const Vector<T, dim>& p_GQ_G) {
     using std::abs;
 
@@ -453,7 +453,7 @@ class DistanceToPoint {
       // In 2D (3D), the nearest point N is the axis-aligned projection of Q
       // onto one of the edge (faces) of the box.  The gradient vector is along
       // that direction.
-      int axis = this->ExtremalAxis(p_GQ_G, h);
+      int axis = ExtremalAxis(p_GQ_G, h);
       // NOTE: This will do funny things to the derivatives; this functionally
       // treats it as constant w.r.t. all derivatives. However, as the point
       // rolls from one Voronoi region to another, it goes funny.
