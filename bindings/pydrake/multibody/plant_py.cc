@@ -151,10 +151,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
             py::arg("dynamic_friction"), cls_doc.ctor.doc_2args)
-        .def("static_friction", &Class::static_friction, py_reference_internal,
+        .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
-            py_reference_internal, cls_doc.dynamic_friction.doc);
+            cls_doc.dynamic_friction.doc);
   }
 
   {
