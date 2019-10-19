@@ -188,10 +188,10 @@ void MultibodyTreeSystem<T>::Finalize() {
        this->cache_entry_ticket(cache_indexes_.velocity_kinematics)});
   cache_indexes_.dynamic_bias = dynamic_bias_cache_entry.cache_index();
 
-  // Declare cache entry for Hv_PB_W(q).
+  // Declare cache entry for H_PB_W(q).
   // The type of this cache value is std::vector<Vector6<T>>.
-  auto& Hv_PB_W_cache_entry = this->DeclareCacheEntry(
-      std::string("Hv_PB_W(q)"),
+  auto& H_PB_W_cache_entry = this->DeclareCacheEntry(
+      std::string("H_PB_W(q)"),
       [tree = tree_.get()]() {
         return AbstractValue::Make(
             std::vector<Vector6<T>>(tree->num_velocities()));
@@ -199,13 +199,13 @@ void MultibodyTreeSystem<T>::Finalize() {
       [tree = tree_.get()](const systems::ContextBase& context_base,
                            AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& Hv_PB_W_cache =
+        auto& H_PB_W_cache =
             cache_value->get_mutable_value<std::vector<Vector6<T>>>();
         tree->CalcAcrossNodeJacobianWrtVExpressedInWorld(
-            context, tree->EvalPositionKinematics(context), &Hv_PB_W_cache);
+            context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },
       {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
-  cache_indexes_.across_node_jacobians = Hv_PB_W_cache_entry.cache_index();
+  cache_indexes_.across_node_jacobians = H_PB_W_cache_entry.cache_index();
 
   // TODO(sherm1) Allocate articulated body inertia cache.
 

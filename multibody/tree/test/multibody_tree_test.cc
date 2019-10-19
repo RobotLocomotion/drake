@@ -823,7 +823,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
   MatrixX<AutoDiffXd> Jv_WHp_autodiff(3 * kNumPoints, kNumPositions);
 
-  // Compute J̇v_WHp using AutoDiffXd.
+  // Compute J̇v_v_WHp using AutoDiffXd.
   CalcPointsOnFrameHTranslationalVelocityJacobianWrtV(
       tree_autodiff(), *context_autodiff_, p_HPi_autodiff,
       &p_WPi_autodiff, &Jv_WHp_autodiff);
@@ -927,9 +927,10 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
   MatrixX<double> p_WPi(3, kNumPoints);
   MatrixX<double> Jq_WPi(3 * kNumPoints, kNumPositions);
 
-  // For the Kuka iiwa arm q̇ = v, so `Jq_Wpi = Jv_Wpi` i.e., the Jacobian with
-  // respect to q̇ (time-derivative of generalized positions) is equal to the
-  // Jacobian with respect to v (generalized velocities).
+  // For the Kuka iiwa arm q̇ = v, so `Jq_v_Wpi = Jv_v_Wpi` i.e., Pi's
+  // translational Jacobian in world W with respect to q̇ (time-derivative of
+  // generalized positions) is equal to Pi's translational Jacobian in W with
+  // respect to v (generalized velocities).
   CalcPointsOnEndEffectorTranslationalVelocityJacobianWrtV(
       tree(), *context_, p_EPi, &p_WPi, &Jq_WPi);
 
@@ -1137,7 +1138,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   const Vector3<AutoDiffXd> p_HPo_autodiff = p_HPo;
   MatrixX<AutoDiffXd> Jv_WHp_autodiff(6, kNumVelocities);
 
-  // Compute J̇v_WHp using AutoDiffXd.
+  // Compute J̇v_V_WHp using AutoDiffXd.
   CalcFrameHpJacobianSpatialVelocityInWorld(
       tree_autodiff(), *context_autodiff_, p_HPo_autodiff, &Jv_WHp_autodiff);
 

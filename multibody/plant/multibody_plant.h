@@ -1590,7 +1590,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_F
   ///   The position vector `p_FoFp` is expressed in this frame F.
   /// @param[in] p_FoFp
-  ///   The position vector from Po (frame P's origin) to Fp, expressed in F.
+  ///   The position vector from Fo (frame F's origin) to Fp, expressed in F.
   /// @param[out] Jv_V_WFp
   ///   Fp's spatial velocity Jacobian with respect to generalized velocities v.
   ///   `V_WFp`, Fp's spatial velocity in world frame W, can be written <pre>
@@ -1856,9 +1856,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the transpose of `Jv_V_WB(q)` (B's spatial velocity Jacobian in W).
-  /// B's spatial velocity can be written in terms of the Jacobian `Jv_V_WB` and
-  /// the generalized velocities v as `V_WB = J_WB(q)v`.
+  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
+  /// velocity Jacobian in W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -1932,14 +1932,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and
   /// gyroscopic effects in the multibody equations of motion: <pre>
-  ///   M(q)v̇ + C(q, v)v = tau_app + ∑ J_WBᵀ(q) * Fapp_Bo_W
+  ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
   /// where `M(q)` is the multibody model's mass matrix and `tau_app` is a
   /// vector of generalized forces. The last term is a summation over all bodies
-  /// where `Fapp_Bo_W` is an applied spatial force on body B at `Bo` which gets
-  /// projected into the space of generalized forces via B's spatial Jacobian
-  /// `Jv_V_WB(q)`.  Note: This Jacobian maps generalized velocities into B's
-  /// spatial velocity as `V_WB = Jv_V_WB(q) * v`.
+  /// of the dot-product of `Fapp_Bo_W` (applied spatial force on body B at Bo)
+  /// with `Jv_V_WB(q)` (B's spatial Jacobian in world W with respect to
+  /// generalized velocities v).
+  /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the

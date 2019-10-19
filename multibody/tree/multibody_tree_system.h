@@ -113,15 +113,14 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   /** For a body B connected to its parent P, returns a reference to the up to
-  date cached value for Hv_PB_W, B's across-mobilizer spatial velocity Jacobian
-  with respect to generalized velocities v.  As needed, Hv_PB_W is recalculated
-  from the context and the PositionKinematicsCache may also be recalculated
-  (since it stores H_FM(q) for each mobilizer and X_WB(q) for each body).
-  The Jacobian `Hv_PB_W` allows B's spatial velocity in P to be written as
-  `V_PB_W = Hv_PB_W(q) * v_B`, where `v_B` denotes the generalized velocities
-  associated with body B. `H_PB_W` has size `6 x nm` with `nm` the number of
-  mobilities associated with body B.  The returned `std::vector` stores the
-  Jacobian matrices for all nodes in the tree as a vector of the columns of
+  date cached value for H_PB_W, where H_PB_W is the `6 x nm` body-node hinge
+  matrix that relates `V_PB_W` (body B's spatial velocity in its parent body P,
+  expressed in world W) to this node's `nm` generalized velocities
+  (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  As needed, H_PB_W is recalculated from the context and the
+  PositionKinematicsCache may also be recalculated (since it stores H_FM(q) for
+  each mobilizer and X_WB(q) for each body). The returned `std::vector` stores
+  all the body-node hinge matrices in the tree as a vector of the columns of
   these matrices. Therefore the returned `std::vector` of columns has as many
   entries as number of generalized velocities in the tree. */
   const std::vector<Vector6<T>>&

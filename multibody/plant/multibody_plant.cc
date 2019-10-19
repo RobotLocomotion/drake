@@ -835,7 +835,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // midpoint (or any other point between Ac and Bc for that matter) since,
     // in the limit to rigid contact, Ac = Bc.
 
-    // For contact point Ac of (fixed to) body A, calculate Jv_v_WAc (Ac's
+    // For contact point Ac of (fixed to) body A, calculate `Jv_v_WAc` (Ac's
     // translational velocity Jacobian in the world frame W with respect to
     // generalized velocities v).  Note: Ac's translational velocity in W can
     // be written in terms of this Jacobian as `v_WAc = Jv_v_WAc * v`.
@@ -849,10 +849,8 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
                                                       frame_W,
                                                       &Jv_WAc);
 
-    // For contact point Bc of (fixed to) body B, calculate Jv_v_WBc (Bc's
-    // translational velocity Jacobian in the world frame W with respect to
-    // generalized velocities v).  Note: Bc's translational velocity in W can
-    // be written in terms of this Jacobian as `v_WBc = Jv_v_WBc * v`.
+    // Similarly, for contact point Bc of body B, calculate `Jv_v_WBc
+    // (Bc's translational velocity Jacobian in W with respect to v)
     Matrix3X<T> Jv_WBc(3, this->num_velocities());
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,

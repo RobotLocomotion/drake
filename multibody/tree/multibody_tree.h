@@ -1377,7 +1377,7 @@ class MultibodyTree {
   ///   body B.
   /// - Pose `X_WB` of each body B in the model as measured and expressed in
   ///   the world frame W.
-  /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
+  /// - Across-mobilizer and across-node hinge matrices `H_FM` and `H_PB_W`.
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
   /// Aborts if `pc` is nullptr.
@@ -1493,8 +1493,9 @@ class MultibodyTree {
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the Jacobian `J_WB(q)` with respect to generalized velocities v which
-  /// allows B's spatial velocity in world W to be written `V_WB = J_WB(q) * v`.
+  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
+  /// velocity Jacobian in W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -2079,18 +2080,17 @@ class MultibodyTree {
   }
 
   /// (Internal) For a body B, calculates the cache entry associated with
-  /// Hv_PB_W for each node, where Hv_PB_W is the Jacobian with respect to
-  /// generalized velocities v that allows B's spatial velocity in its parent P
-  /// to be written as `V_PB_W = Hv_PB_W(q) ⋅ v_B`, where `v_B` denotes the
-  /// generalized velocities associated with body B's node. `Hv_PB_W` has size
-  /// `6 x nm` with `nm` the number of mobilities associated with body B's node.
-  /// `Hv_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as
-  /// a vector of the columns of these matrices. Therefore `Hv_PB_W_cache` has
+  /// H_PB_W for each node, where H_PB_W is
+  /// the `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  /// velocity in its parent body P, expressed in world W) to this node's `nm`
+  /// generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  /// `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as
+  /// a vector of the columns of these matrices. Therefore `H_PB_W_cache` has
   /// as many entries as number of generalized velocities in the tree.
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      std::vector<Vector6<T>>* Hv_PB_W_cache) const;
+      std::vector<Vector6<T>>* H_PB_W_cache) const;
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
