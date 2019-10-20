@@ -37,6 +37,7 @@ from pydrake.multibody.math import (
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+    CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactResults_,
     ContactResultsToLcmSystem,
@@ -158,6 +159,11 @@ class TestPlant(unittest.TestCase):
                                         dynamic_friction=0.5)
         self.assertEqual(body_friction.static_friction(), 0.6)
         self.assertEqual(body_friction.dynamic_friction(), 0.5)
+        body_friction2 = CoulombFriction(static_friction=0.2,
+                                         dynamic_friction=0.1)
+        combined_friction = CalcContactFrictionFromSurfaceProperties(
+            body_friction, body_friction2)
+
         if T == float:
             plant.RegisterVisualGeometry(
                 body=body, X_BG=body_X_BG, shape=box, name="new_body_visual",

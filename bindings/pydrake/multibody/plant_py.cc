@@ -155,6 +155,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
             cls_doc.dynamic_friction.doc);
+
+    m.def("CalcContactFrictionFromSurfaceProperties",
+        [](const multibody::CoulombFriction<T>& surface_properties1,
+            const multibody::CoulombFriction<T>& surface_properties2) {
+          return drake::multibody::CalcContactFrictionFromSurfaceProperties(
+              surface_properties1, surface_properties2);
+        },
+        py::arg("surface_properties1"), py::arg("surface_properties1"),
+        py_reference, doc.CalcContactFrictionFromSurfaceProperties.doc);
   }
 
   {
