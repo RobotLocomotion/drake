@@ -162,7 +162,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
           return drake::multibody::CalcContactFrictionFromSurfaceProperties(
               surface_properties1, surface_properties2);
         },
-        py::arg("surface_properties1"), py::arg("surface_properties1"),
+        py::arg("surface_properties1"), py::arg("surface_properties2"),
         py_reference, doc.CalcContactFrictionFromSurfaceProperties.doc);
   }
 
