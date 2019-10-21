@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -264,14 +265,17 @@ std::tuple<double, double, double> ParseJointLimits(
 // specification object.
 void AddJointFromSpecification(
     const sdf::Model& model_spec, const sdf::Joint& joint_spec,
-    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
+    std::set<std::string>* attached_link_names) {
   // Pose of the model frame M in the world frame W.
   const RigidTransformd X_WM = ToRigidTransform(model_spec.Pose());
 
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
+  attached_link_names->insert(joint_spec.ParentLinkName());
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
+  attached_link_names->insert(joint_spec.ChildLinkName());
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
@@ -386,15 +390,21 @@ std::string LoadSdf(
   return root_dir;
 }
 
+struct LinkInfo {
+  const RigidBody<double>* body{};
+  RigidTransformd X_WL;
+};
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-void AddLinksFromSpecification(
+std::vector<LinkInfo> AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     const RigidTransformd& X_WM,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
+  std::vector<LinkInfo> link_infos;
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
@@ -421,11 +431,15 @@ void AddLinksFromSpecification(
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
+    // Register information.
+    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
+    const RigidTransformd X_WL = X_WM * X_ML;
+    link_infos.push_back(LinkInfo{&body, X_WL});
+
     // N.B. If a body is completely disconnected (no inboard / outboard
     // joints), then we lose information from the SDFormat spec. This hack is
     // one way to preserve this information.
-    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
-    plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
+    plant->InternalSetFreeBodyOnlyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -470,6 +484,7 @@ void AddLinksFromSpecification(
       }
     }
   }
+  return link_infos;
 }
 
 template <typename T>
@@ -524,13 +539,6 @@ ModelInstanceIndex AddModelFromSpecification(
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
-  // TODO(eric.cousineau): Support this.
-  if (model.Static()) {
-    throw std::runtime_error(
-        "Drake's parsing of sdformat does not currently support "
-        "//model/static.");
-  }
-
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
 
@@ -556,16 +564,18 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // TODO(eric.cousineau): Register and use frames from SDFormat once we have
   // the libsdformat-provided pose graph.
-  AddLinksFromSpecification(
+  std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
   // Add all the joints
+  std::set<std::string> attached_link_names;
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    AddJointFromSpecification(model, joint, model_instance, plant);
+    AddJointFromSpecification(
+        model, joint, model_instance, plant, &attached_link_names);
   }
 
   // Add frames at root-level of <model>.
@@ -576,6 +586,21 @@ ModelInstanceIndex AddModelFromSpecification(
   // See: https://bitbucket.org/osrf/sdformat/issues/200
   AddFramesFromSpecification(
       model_instance, model.Element(), sdf_model_frame, plant);
+
+  if (model.Static()) {
+    // Weld all links that have been added, but did not get attached to
+    // anything.
+    // N.B. This implementation prevents "reposturing" a static model after
+    // parsing. See #12227 for a more concrete example.
+    // TODO(eric.cousineau): Should this throw an error if any non-weld joints
+    // get added? Or should it replace them?
+    for (const LinkInfo& link_info : added_link_infos) {
+      if (attached_link_names.count(link_info.body->name()) == 0) {
+        plant->WeldFrames(
+            plant->world_frame(), link_info.body->body_frame(), link_info.X_WL);
+      }
+    }
+  }
 
   return model_instance;
 }
