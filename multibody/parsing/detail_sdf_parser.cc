@@ -298,8 +298,6 @@ void AddJointFromSpecification(
       joint_spec, joint_spec.ChildLinkName());
 
   // Get the pose of the child link C in the model frame M.
-  // TODO(eric.cousineau): Figure out how to use link poses when they are NOT
-  // connected to a joint.
   const RigidTransformd X_MC = ResolveRigidTransform(
       *model_spec.LinkByName(joint_spec.ChildLinkName()));
 
