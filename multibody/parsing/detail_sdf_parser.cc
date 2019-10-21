@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -280,11 +281,16 @@ std::tuple<double, double, double> ParseJointLimits(
 void AddJointFromSpecification(
     const sdf::Model& model_spec, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
-    MultibodyPlant<double>* plant) {
+    MultibodyPlant<double>* plant,
+    std::set<std::string>* attached_link_names,
+    std::set<sdf::JointType>* joint_types) {
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
+  // N.B. Do not record parent link in `attached_link_names` to ensure the
+  // "base" link is welded.
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
+  attached_link_names->insert(joint_spec.ChildLinkName());
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
@@ -365,6 +371,7 @@ void AddJointFromSpecification(
           "Joint type not supported for joint '" + joint_spec.Name() + "'.");
     }
   }
+  joint_types->insert(joint_spec.Type());
 }
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
@@ -389,15 +396,21 @@ std::string LoadSdf(
   return root_dir;
 }
 
+struct LinkInfo {
+  const RigidBody<double>* body{};
+  RigidTransformd X_WL;
+};
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-void AddLinksFromSpecification(
+std::vector<LinkInfo> AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     const RigidTransformd& X_WM,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
+  std::vector<LinkInfo> link_infos;
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
@@ -421,26 +434,30 @@ void AddLinksFromSpecification(
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
+    // Register information.
+    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
+    const RigidTransformd X_WL = X_WM * X_ML;
+    link_infos.push_back(LinkInfo{&body, X_WL});
+
     // N.B. If a body is completely disconnected (no inboard / outboard
     // joints), then we lose information from the SDFormat spec. This hack is
     // one way to preserve this information.
-    const RigidTransformd X_ML = ResolveRigidTransform(link);
-    plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
-
-    ResolveFilename resolve_filename =
-      [&package_map, &root_dir](std::string uri) {
-        const std::string resolved_name =
-            ResolveUri(uri, package_map, root_dir);
-        if (resolved_name.empty()) {
-          throw std::runtime_error(
-              std::string(__FILE__) + ": " + __func__ +
-              ": ERROR: Mesh file name could not be resolved from the "
-              "provided uri \"" + uri + "\".");
-        }
-        return resolved_name;
-      };
+    plant->InternalSetFreeBodyOnlyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
+      ResolveFilename resolve_filename =
+        [&package_map, &root_dir](std::string uri) {
+          const std::string resolved_name =
+              ResolveUri(uri, package_map, root_dir);
+          if (resolved_name.empty()) {
+            throw std::runtime_error(
+                std::string(__FILE__) + ": " + __func__ +
+                ": ERROR: Mesh file name could not be resolved from the "
+                "provided uri \"" + uri + "\".");
+          }
+          return resolved_name;
+      };
+
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
@@ -486,6 +503,7 @@ void AddLinksFromSpecification(
       }
     }
   }
+  return link_infos;
 }
 
 // TODO(eric.cousineau): Handle backwards compatibility.
@@ -518,8 +536,6 @@ ModelInstanceIndex AddModelFromSpecification(
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
-  // TODO(eric.cousineau): Support this.
-  DRAKE_DEMAND(!model.Static());
   // Pose of the model frame M in the world frame W.
   const RigidTransformd X_WM = ToRigidTransform(model.Pose());
 
@@ -532,7 +548,7 @@ ModelInstanceIndex AddModelFromSpecification(
   ThrowIfPoseFrameSpecified(model.Element());
 
   drake::log()->trace("sdf_parser: Add links");
-  AddLinksFromSpecification(
+  std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
   drake::log()->trace("sdf_parser: Resolve canonical link");
@@ -564,11 +580,16 @@ ModelInstanceIndex AddModelFromSpecification(
 
   drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
+  std::set<std::string> attached_link_names;
+  std::set<sdf::JointType> joint_types;
+  // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    AddJointFromSpecification(model, X_WM, joint, model_instance, plant);
+    AddJointFromSpecification(
+        model, X_WM, joint, model_instance, plant,
+        &attached_link_names, &joint_types);
   }
 
   drake::log()->trace("sdf_parser: Add explicit frames");
@@ -577,6 +598,28 @@ ModelInstanceIndex AddModelFromSpecification(
       ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+  }
+
+  if (model.Static()) {
+    // Only weld / fixed joints are permissible.
+    // TODO(eric.cousineau): Consider "freezing" non-weld joints, as is
+    // permissible in Bullet and DART via Gazebo (#12227).
+    for (sdf::JointType joint_type : joint_types) {
+      if (joint_type != sdf::JointType::FIXED) {
+        throw std::runtime_error(
+            "Only fixed joints are permitted in static models.");
+      }
+    }
+    // Weld all links that have been added, but did not get attached to
+    // anything.
+    // N.B. This implementation prevents "reposturing" a static model after
+    // parsing. See #12227 for a more concrete example.
+    for (const LinkInfo& link_info : added_link_infos) {
+      if (attached_link_names.count(link_info.body->name()) == 0) {
+        plant->WeldFrames(
+            plant->world_frame(), link_info.body->body_frame(), link_info.X_WL);
+      }
+    }
   }
 
   return model_instance;

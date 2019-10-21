@@ -274,13 +274,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
-    for (const auto& X_WB : other.X_WB_free_body_only_list_) {
-      if (!X_WB) {
-        X_WB_free_body_only_list_.emplace_back();
-      } else {
-        X_WB_free_body_only_list_.emplace_back(
-            ExtractDoubleOrThrow(*X_WB).template cast<T>());
+    for (const optional<math::RigidTransform<U>>& X_WB_other :
+         other.X_WB_free_body_only_list_) {
+      // N.B. `double` is used as an intermediary when converting
+      // `RigidTransform`s from U to T.
+      optional<math::RigidTransform<T>> X_WB_this;
+      if (X_WB_other) {
+        X_WB_this = ExtractDoubleOrThrow(*X_WB_other).template cast<T>();
       }
+      X_WB_free_body_only_list_.push_back(X_WB_this);
     }
     contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
@@ -3136,7 +3138,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
     for (const auto* body : GetFreeBodies()) {
-      auto X_WB = X_WB_free_body_only_list_[body->index()];
+      const auto& X_WB = X_WB_free_body_only_list_[body->index()];
       if (X_WB) {
         SetFreeBodyPose(context, state, *body, *X_WB);
       }
