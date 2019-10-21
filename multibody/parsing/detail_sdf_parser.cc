@@ -165,7 +165,11 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   }
 
   // Joint axis in the joint frame J.
+  drake::log()->info(
+      "//joint[@name='{}']/axis/xyz[@expressed_in='{}']",
+      joint_spec.Name(), axis->XyzExpressedIn());
   Vector3d axis_J = ResolveAxisXyz(*axis);
+  drake::log()->info("  axis_J = {}", axis_J.transpose());
   return axis_J;
 }
 
