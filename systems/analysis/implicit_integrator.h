@@ -285,9 +285,14 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       eps = 10 * std::numeric_limits<double>::epsilon();
 
     for (int i = 0; i < xc.size(); ++i) {
-      // Use a relative or absolute tolerance, as appropriate given the
-      // magnitude of xc[i].
-      const T tol = max(T(1), abs(xc[i])) * eps;
+      // We do not want the presence of a NaN to cause this function to
+      // spuriously return `true`, so indicate the update is not zero when a NaN
+      // is detected. This will make the Newton-Raphson process in the caller
+      // continue iterating until its inevitable failure.
+      using std::isnan;
+      if (isnan(dxc[i])) return false;
+
+      const T tol = max(abs(xc[i]), T(1)) * eps;
       if (abs(dxc[i]) > tol)
         return false;
     }

@@ -359,6 +359,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "integrator_base_test",
+    deps = [
+        ":integrator_base",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "radau_integrator_test",
     # Note: if memcheck takes too long with Valgrind, disable
     # memcheck (per Drake issue #9621).
