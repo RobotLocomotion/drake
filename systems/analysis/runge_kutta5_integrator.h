@@ -40,6 +40,9 @@ namespace systems {
  where the second to last row is the 5th-order (propagated) solution and
  the last row gives a 2nd-order accurate solution used for error control.
 
+ - [Dormand, 1980] J. Dormand and P. Prince. "A family of embedded
+   Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
+   1980, 6(1): 19–26.
  - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
    rev. ed. Springer, 1993. p. 166.
  */
@@ -68,7 +71,7 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
    */
   bool supports_error_estimation() const override { return true; }
 
-  /// This integrator provides fourth order error estimates.
+  /// The order of the asymptotic term in the error estimate.
   int get_error_estimate_order() const override { return 4; }
 
  private:
@@ -281,7 +284,6 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // Evaluate the derivative (denoted k7) at t₀ + c6 * h,
   //   xc₀ + a71 * h * k1 + a72 * h * k2 + a73 * h * k3 + a74 * h * k4 +
   //       a75 * h * k5 + a76 * h * k6.
-  // This will be used to compute the fourth order solution.
   xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{a71 * h, k1},
                    {a73 * h, k3},
@@ -298,10 +300,11 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // provides.
 
   // Calculate the 4th-order solution that will be used for the error
-  // estimate and then the error estimate itself. The first part of this
-  // formula (the part that uses the d coefficients) computes the fourth order
-  // solution. The last part subtracts the fifth order propagated solution
-  // from that fourth order solution, thereby yielding the error estimate.
+  // estimate and then the error estimate itself. The part of this
+  // formula that uses the "a" coefficients (re)-computes the fifth order
+  // solution. The part of this formula that uses the "d" coefficients computes
+  // the fourth order solution. The subtraction (and negation) operations
+  // yield the error estimate.
   // Note: d2 is 0.0; it has been removed from the formula below.
   const double d1 = 5179.0 / 57600;
   const double d3 = 7571.0 / 16695;

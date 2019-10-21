@@ -67,9 +67,9 @@ class RK5IntegratorTest : public ::testing::Test {
 // Tests accuracy for integrating the quintic system (with the state at time t
 // corresponding to f(t) ≡ t⁵ + 2t⁴ + 3t³ + 4t² + 5t + C) over t ∈ [0, 1].
 // RK5 is a fifth order integrator, meaning that it uses the Taylor Series
-// expansion: f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + ⅙h³f'''(t) + ... + O(h⁶) The
-// formula above indicates that the approximation error will be zero if
-// f''''''(t) = 0, which is true for the quintic equation.
+// expansion: f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + ⅙h³f'''(t) + ... + h⁵/120
+// f'''''(t) + O(h⁶). The formula above indicates that the approximation error
+// will be zero if d⁶f/dt⁶ = 0, which is true for the quintic equation.
 GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuinticTest) {
   QuinticScalarSystem quintic;
   auto quintic_context = quintic.CreateDefaultContext();
@@ -118,7 +118,7 @@ GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuinticTest) {
   // K*32 times larger than then 4th-order error estimate for 2 half-steps;
   // K is a constant term that subsumes the asymptotic error and is dependent
   // upon both the system being integrated and the particular integrator.
-  const double K = 256;
+  const double K = 128;
   const double allowable_4th_order_error =
       K * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(err_est_h, 32 * err_est_2h_2, allowable_4th_order_error);
@@ -128,9 +128,10 @@ GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuinticTest) {
 // corresponding to f(t) ≡ t⁴ + 2t³ + 3t² + 4t + C, where C is the initial
 // state) over t ∈ [0, 1]. The error estimator from RK5 is fourth order, meaning
 // that it uses the Taylor Series expansion: f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t)
-// + ... + O(h⁵). This formula indicates that the approximation error will be
-// zero if f'''''(t) = 0, which is true for the quartic equation. We check that
-// the error estimator gives a perfect error estimate for this function.
+// + ... + h⁴/24 f''''(t) + O(h⁵). This formula indicates that the approximation
+// error will be zero if d⁵f/dt⁵ = 0, which is true for the quartic equation. We
+// check that the error estimator gives a perfect error estimate for this
+// function.
 GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuarticTest) {
   QuarticScalarSystem quartic;
   auto quartic_context = quartic.CreateDefaultContext();
@@ -170,8 +171,8 @@ TEST_F(RK5IntegratorTest, DenseOutputAccuracy) {
   // steps taken by the integrator. Otherwise, dense output accuracy
   // would not be checked.
   const double dt = 0.01;
-  const int n_steps = t_final / dt;
-  for (int i = 1; i < n_steps; ++i) {
+  const int n_steps = (t_final / dt);
+  for (int i = 1; i <= n_steps; ++i) {
     // Integrate the whole step.
     rk5.IntegrateWithMultipleStepsToTime(i * dt);
 
@@ -189,7 +190,7 @@ TEST_F(RK5IntegratorTest, DenseOutputAccuracy) {
   EXPECT_FALSE(rk5.get_dense_output());
 
   // Integrate one more step.
-  rk5.IntegrateWithMultipleStepsToTime(t_final);
+  rk5.IntegrateWithMultipleStepsToTime(t_final + dt);
 
   // Verify that the dense output was not updated.
   EXPECT_LT(rk5_dense_output->end_time(), context->get_time());
