@@ -269,7 +269,8 @@ class DifferentialInverseKinematicsParameters {
  * @param v_current The current generalized position.
  * @param V Desired spatial velocity. It must have the same number of rows as
  * @p J.
- * @param J Geometric Jacobian. It must have the same number of rows as @p V.
+ * @param J Jacobian with respect to generalized velocities v.
+ * It must have the same number of rows as @p V.
  * J * v need to represent the same spatial velocity as @p V.
  * @param parameters Collection of various problem specific constraints and
  * constants.

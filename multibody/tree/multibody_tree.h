@@ -1315,8 +1315,8 @@ class MultibodyTree {
   /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
   /// j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
   /// For each point Bi of (fixed to) a frame B whose translational velocity
-  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's velocity Jacobian
-  /// in A with respect to 𝑠 is defined as
+  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's translational
+  /// velocity Jacobian in A with respect to 𝑠 is defined as
   /// <pre>
   ///      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
@@ -1377,7 +1377,7 @@ class MultibodyTree {
   ///   body B.
   /// - Pose `X_WB` of each body B in the model as measured and expressed in
   ///   the world frame W.
-  /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
+  /// - Across-mobilizer and across-node hinge matrices `H_FM` and `H_PB_W`.
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
   /// Aborts if `pc` is nullptr.
@@ -1493,8 +1493,9 @@ class MultibodyTree {
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
+  /// velocity Jacobian in W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -2078,17 +2079,15 @@ class MultibodyTree {
     tree_system_ = tree_system;
   }
 
-  /// (Internal) Computes the cache entry associated with the geometric Jacobian
-  /// H_PB_W for each node.
-  /// The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
-  /// by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
-  /// velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
-  /// number of mobilities associated with body B.
-  /// `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as a
-  /// vector of the columns of these matrices. Therefore `H_PB_W_cache` has as
-  /// many entries as number of generalized velocities in the tree.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
-  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+  /// (Internal) For a body B, calculates the cache entry associated with
+  /// H_PB_W for each node, where H_PB_W is
+  /// the `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  /// velocity in its parent body P, expressed in world W) to this node's `nm`
+  /// generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  /// `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as
+  /// a vector of the columns of these matrices. Therefore `H_PB_W_cache` has
+  /// as many entries as number of generalized velocities in the tree.
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const;

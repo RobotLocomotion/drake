@@ -1608,35 +1608,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
-  /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `P`, this method computes the geometric Jacobian `Jv_WFp`
-  /// for frame `Fp`. The new origin `P` is specified by the position vector
-  /// `p_FP` in frame F. The frame geometric Jacobian `Jv_WFp` is defined by:
-  /// <pre>
-  ///   V_WFp(q, v) = Jv_WFp(q)⋅v
-  /// </pre>
-  /// where `V_WFp(q, v)` is the spatial velocity of frame `Fp` measured and
-  /// expressed in the world frame W and q and v are the vectors of generalized
-  /// position and velocity, respectively.
-  /// The geometric Jacobian `Jv_WFp(q)` is a function of the generalized
-  /// coordinates q only.
-  ///
+  /// For a point Fp fixed/welded to a frame F, calculates `Jv_V_WFp`, Fp's
+  /// spatial velocity Jacobian with respect to generalized velocities v.
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   The position `p_FP` of frame `Fp` is measured and expressed in this
-  ///   frame F.
-  /// @param[in] p_FP
-  ///   The (fixed) position of the origin `P` of frame `Fp` as measured and
-  ///   expressed in frame F.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity `V_WFp`
-  ///   of frame `Fp` by: <pre>
-  ///     V_WFp(q, v) = Jv_WFp(q)⋅v
-  ///   </pre>
-  ///   Therefore `Jv_WFp` is a matrix of size `6 x nv`, with `nv`
+  ///   The position vector `p_FoFp` is expressed in this frame F.
+  /// @param[in] p_FoFp
+  ///   The position vector from Fo (frame F's origin) to Fp, expressed in F.
+  /// @param[out] Jv_V_WFp
+  ///   Fp's spatial velocity Jacobian with respect to generalized velocities v.
+  ///   `V_WFp`, Fp's spatial velocity in world frame W, can be written <pre>
+  ///   V_WFp(q, v) = Jv_V_WFp(q) * v
+  /// </pre>
+  ///   The Jacobian `Jv_V_WFp(q)` is a matrix of size `6 x nv`, with `nv`
   ///   the number of generalized velocities. On input, matrix `Jv_WFp` **must**
   ///   have size `6 x nv` or this method throws an exception. The top rows of
   ///   this matrix (which can be accessed with Jv_WFp.topRows<3>()) is the
@@ -1649,7 +1635,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   results in a valid spatial velocity: <pre>
   ///     SpatialVelocity<double> Jv_WFp_times_v(Jv_WFp * v);
   ///   </pre>
-  ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
   DRAKE_DEPRECATED("2020-02-01", "Use CalcJacobianSpatialVelocity().")
@@ -1658,10 +1643,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> J_WFp) const {
+    const Frame<T>& frame_W = world_frame();
     return CalcJacobianSpatialVelocity(context,
                                        JacobianWrtVariable::kV,
-                                       frame_F, p_FP,
-                                       world_frame(), world_frame(),
+                                       frame_F,
+                                       p_FP,
+                                       frame_W,
+                                       frame_W,
                                        J_WFp);
   }
 
@@ -1717,7 +1705,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
   }
 
-
   /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -1746,7 +1733,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
   /// @param[out] J𝑠_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// `J𝑠_V_ABi_E` is a `6*p x n` matrix, where p is the number of points Bi and
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
@@ -1895,8 +1882,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
+  /// velocity Jacobian in W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -1968,16 +1956,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcConservativePower(context);
   }
 
-  /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
-  /// effects of the multibody equations of motion: <pre>
-  ///   M(q)v̇ + C(q, v)v = tau_app + ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and
+  /// gyroscopic effects in the multibody equations of motion: <pre>
+  ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
-  /// where `M(q)` is the multibody model's mass matrix and `tau_app` consists
-  /// of a vector applied generalized forces. The last term is a summation over
-  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
-  /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// where `M(q)` is the multibody model's mass matrix and `tau_app` is a
+  /// vector of generalized forces. The last term is a summation over all bodies
+  /// of the dot-product of `Fapp_Bo_W` (applied spatial force on body B at Bo)
+  /// with `Jv_V_WB(q)` (B's spatial Jacobian in world W with respect to
+  /// generalized velocities v).
+  /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
