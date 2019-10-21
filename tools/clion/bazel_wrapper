@@ -1,20 +1,22 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import os
 import re
 import subprocess
 import sys
 
+
 # Always use stderr for diagnostics; somehow, stdout is silenced in CLion.
 # We avoid sys.stderr.write because we don't want line buffering, since we are
 # (more or less) just forwarding the output of our bazel subprocess.
-def _write_stderr(bytes):
-    os.write(2, bytes)
+def _write_stderr(data):
+    os.write(2, data.encode("utf-8"))
+
 
 def gdb_compatible_strings(args):
-    '''Examine the args and conditionally inject the compiler argument for the
+    """Examine the args and conditionally inject the compiler argument for the
     benefit of non-GCC compilers to to compile gdb-friendly STL symbols.
-    Modifies the args in place.'''
+    Modifies the args in place."""
     if 'dbg' in args:
         # Place the compiler argument after the dbg command.
         insert_point = args.index('dbg') + 1
@@ -73,7 +75,7 @@ def main(argv, execvp, write_stderr, popen):
 
     # Read until EOF.
     while True:
-        line = bazel.stderr.readline()
+        line = bazel.stderr.readline().decode("utf-8")
         if len(line) == 0:
             break
         match = prog1.match(line) or prog2.match(line)
