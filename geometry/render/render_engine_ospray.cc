@@ -169,7 +169,7 @@ void RenderEngineOspray::RenderLabelImage(const CameraProperties&, bool,
 void RenderEngineOspray::ImplementGeometry(const Sphere& sphere,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive sphere; find some way to
-  //  exercise *that* instead of needlessly tesselating.
+  //  exercise *that* instead of needlessly tessellating.
   vtkNew<vtkSphereSource> vtk_sphere;
   vtk_sphere->SetRadius(sphere.get_radius());
   // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
@@ -181,7 +181,7 @@ void RenderEngineOspray::ImplementGeometry(const Sphere& sphere,
 void RenderEngineOspray::ImplementGeometry(const Cylinder& cylinder,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive cylinder; find some way
-  //  to exercise *that* instead of needlessly tesselating.
+  //  to exercise *that* instead of needlessly tessellating.
   vtkNew<vtkCylinderSource> vtk_cylinder;
   vtk_cylinder->SetHeight(cylinder.get_length());
   vtk_cylinder->SetRadius(cylinder.get_radius());
