@@ -635,9 +635,10 @@ using RigidTransformd = RigidTransform<double>;
 
 }  // namespace math
 
+/// Extracts the double representation of a RigidTransform.
 template <typename T>
 math::RigidTransform<double>
-ExtractDoubleOrThrow(const math::RigidTransform<T> X) {
+ExtractDoubleOrThrow(const math::RigidTransform<T>& X) {
   return math::RigidTransform<double>(
       X.GetAsMatrix34().unaryExpr(
           [](T value) { return ExtractDoubleOrThrow(value); }));
