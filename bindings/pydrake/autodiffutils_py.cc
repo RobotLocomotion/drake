@@ -123,6 +123,13 @@ PYBIND11_MODULE(autodiffutils, m) {
       },
       py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
 
+  m.def("initializeAutoDiffGivenGradientMatrix",
+      [](const Eigen::MatrixXd& val, const Eigen::MatrixXd& gradient) {
+        return initializeAutoDiffGivenGradientMatrix(val, gradient);
+      },
+      py::arg("val"), py::arg("gradient"),
+      doc.initializeAutoDiffGivenGradientMatrix.doc_2args);
+
   ExecuteExtraPythonCode(m);
 }
 

@@ -8,6 +8,7 @@ from pydrake.autodiffutils import (
     autoDiffToValueMatrix,
     AutoDiffXd,
     initializeAutoDiff,
+    initializeAutoDiffGivenGradientMatrix,
     initializeAutoDiffTuple,
 )
 
@@ -236,3 +237,10 @@ class TestAutoDiffXd(unittest.TestCase):
                                       np.eye(1, 3))
         np.testing.assert_array_equal(autoDiffToGradientMatrix(b),
                                       np.hstack((np.zeros((2, 1)), np.eye(2))))
+
+        c_grad = [[2, 4, 5], [1, -1, 0]]
+        c = initializeAutoDiffGivenGradientMatrix([2, 3], c_grad)
+        np.testing.assert_array_equal(autoDiffToValueMatrix(c),
+                                      np.array([2, 3]).reshape((2, 1)))
+        np.testing.assert_array_equal(autoDiffToGradientMatrix(c),
+                                      np.array(c_grad))
