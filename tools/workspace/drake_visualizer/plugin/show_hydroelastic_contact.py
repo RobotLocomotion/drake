@@ -146,7 +146,7 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         self.show_contact_edges = QtGui.QCheckBox()
         self.show_contact_edges.setChecked(show_contact_edges_state)
         self.show_contact_edges.setToolTip('Renders the edges of the '
-                                             'contact surface.')
+                                           'contact surface.')
         layout.addWidget(self.show_contact_edges, row, 1)
         row += 1
 
