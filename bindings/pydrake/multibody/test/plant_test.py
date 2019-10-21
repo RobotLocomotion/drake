@@ -24,6 +24,7 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
     MultibodyForces_,
     RevoluteJoint_,
+    RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
@@ -36,6 +37,7 @@ from pydrake.multibody.math import (
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+    CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactResults_,
     ContactResultsToLcmSystem,
@@ -142,6 +144,11 @@ class TestPlant(unittest.TestCase):
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
+        body_mass = body.default_mass()
+        body_com = body.default_com()
+        body_default_unit_inertia = body.default_unit_inertia()
+        body_default_spatial_inertial = body.default_spatial_inertia()
+
         new_model_instance = plant.AddModelInstance("new_model_instance")
         body = plant.AddRigidBody(name="new_body_2",
                                   M_BBo_B=spatial_inertia,
@@ -150,6 +157,13 @@ class TestPlant(unittest.TestCase):
         body_X_BG = RigidTransform()
         body_friction = CoulombFriction(static_friction=0.6,
                                         dynamic_friction=0.5)
+        self.assertEqual(body_friction.static_friction(), 0.6)
+        self.assertEqual(body_friction.dynamic_friction(), 0.5)
+        body_friction2 = CoulombFriction(static_friction=0.2,
+                                         dynamic_friction=0.1)
+        combined_friction = CalcContactFrictionFromSurfaceProperties(
+            body_friction, body_friction2)
+
         if T == float:
             plant.RegisterVisualGeometry(
                 body=body, X_BG=body_X_BG, shape=box, name="new_body_visual",
@@ -157,6 +171,13 @@ class TestPlant(unittest.TestCase):
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
+            self.assertGreater(plant.num_collision_geometries(), 0)
+            self.assertEqual(plant.default_coulomb_friction(
+                plant.GetCollisionGeometriesForBody(body)[0]
+                ).static_friction(), 0.6)
+            self.assertEqual(plant.default_coulomb_friction(
+                plant.GetCollisionGeometriesForBody(body)[0]
+                ).dynamic_friction(), 0.5)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):

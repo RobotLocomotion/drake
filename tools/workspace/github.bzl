@@ -211,6 +211,7 @@ def github_download_and_extract(
         urls,
         output = output,
         sha256 = _sha256(sha256),
+        type = "tar.gz",
         stripPrefix = _strip_prefix(repository, commit, extra_strip_prefix),
     )
 

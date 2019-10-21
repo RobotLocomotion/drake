@@ -65,6 +65,32 @@ enum class ContactModel {
 /// collection of interconnected bodies.  See @ref multibody for an overview of
 /// concepts/notation.
 ///
+/// @system{MultibodyPlant,
+///   @input_port{{model_instance_name[0]}_actuation}
+///   @input_port{...}
+///   @input_port{{model_instance_name[N-1]}_actuation}
+///   @input_port{applied_generalized_force}
+///   @input_port{applied_spatial_force}
+///   @input_port{geometry_query},
+///   @output_port{continuous_state}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[0]}_continuous_state</b>}
+///   @output_port{...}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[N-1]}_continuous_state</b>}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[0]}_generalized_contact_forces</b>}
+///   @output_port{...}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[N-1]}_generalized_contact_forces</b>}
+///   @output_port{contact_results}
+///   @output_port{geometry_pose}
+/// }
+///
+/// Note that the outputs in <b style="color:orange">orange</b> are not
+/// allocated for model instances with no state (e.g. the world, or a welded
+/// model which isn't actuated (like a table)).
+///
 /// %MultibodyPlant provides a user-facing API to:
 ///
 /// - add bodies, joints, force elements, and constraints,

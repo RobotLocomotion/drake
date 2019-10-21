@@ -85,7 +85,10 @@ def _run_doxygen(drake_workspace, args):
                 os.makedirs(parent)
             shutil.copy2(abs_x, target)
         else:
-            assert os.path.isdir(abs_x)
+            if not os.path.isdir(abs_x):
+                print("error while collecting files to document:",
+                      "{} is neither a file nor a directory".format(abs_x))
+                sys.exit(1)
             # N.B. This won't work if the user redundantly requested both a
             # parent directory and one of its children.  For now, the answer is
             # just "don't do that".
