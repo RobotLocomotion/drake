@@ -165,11 +165,7 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   }
 
   // Joint axis in the joint frame J.
-  drake::log()->info(
-      "//joint[@name='{}']/axis/xyz[@expressed_in='{}']",
-      joint_spec.Name(), axis->XyzExpressedIn());
   Vector3d axis_J = ResolveAxisXyz(*axis);
-  drake::log()->info("  axis_J = {}", axis_J.transpose());
   return axis_J;
 }
 
@@ -522,6 +518,8 @@ ModelInstanceIndex AddModelFromSpecification(
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
+  // TODO(eric.cousineau): Support this.
+  DRAKE_DEMAND(!model.Static());
   // Pose of the model frame M in the world frame W.
   const RigidTransformd X_WM = ToRigidTransform(model.Pose());
 
