@@ -87,6 +87,14 @@ math::RigidTransformd ResolveRigidTransform(
   return ToRigidTransform(pose);
 }
 
+Eigen::Vector3d ResolveAxisXyz(const sdf::JointAxis& axis) {
+  ignition::math::Vector3d xyz;
+  ThrowAnyErrors(axis.ResolveXyz(xyz));
+  // N.B. This will be removed.
+  DRAKE_DEMAND(!axis.UseParentModelFrame());
+  return ToVector3(xyz);
+}
+
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
 // frame origin Bo and, expressed in body frame B, from an ignition::Inertial
 // object.
@@ -156,10 +164,8 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  // Joint axis, by default in the joint frame J.
-  Vector3d axis_J = ToVector3(axis->Xyz());
-  // N.B. This will be removed.
-  DRAKE_DEMAND(!axis->UseParentModelFrame());
+  // Joint axis in the joint frame J.
+  Vector3d axis_J = ResolveAxisXyz(*axis);
   return axis_J;
 }
 
