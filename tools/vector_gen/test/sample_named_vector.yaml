@@ -1,0 +1,23 @@
+namespace: drake::tools::test
+elements:
+  -
+    name: x
+    doc: Some coordinate
+    doc_units: m/s
+    min_value: 0.0
+    default_value: 42.0
+  -
+    name: two_word
+    doc: A very long documentation string that will certainly flow across multiple lines of C++
+    max_value: 2.0
+    default_value: 0.0
+  -
+    name: absone
+    doc: A signed, normalized value
+    min_value: -1.0
+    max_value: 1.0
+    default_value: 0.0
+  -
+    name: unset
+    doc: A value that is unset by default
+    default_value: dummy
