@@ -14,8 +14,8 @@ import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
-# TODO(drum) Convert the modal dialog to a mode-less dialog to allow continual
-# tweaking of the visualization.
+# TODO(seancurtis-TRI) Convert the modal dialog to a mode-less dialog to allow
+# continual tweaking of the visualization.
 
 
 class ColorMapModes:
@@ -39,19 +39,18 @@ class ColorMapModes:
     @staticmethod
     def get_mode_docstring(mode):
         if mode == ColorMapModes.kFlameMap:
-            return 'Color map that maps [min_val, max_val] -> black, blue, '\
-                   'magenta, orange, yellow, white linearly. Saturates to '\
-                   'black and white for values below min_val or above '\
-                   'max_val, respectively.'
+            return 'Color map that maps [min_val, max_val] -> black, blue, '
+            'magenta, orange, yellow, white linearly. Saturates to black and '
+            'white for values below min_val or above max_val, respectively.'
         elif mode == ColorMapModes.kTwoToneMap:
-            return 'Color map that maps [min_val, max_val] to a range of hues'\
-                   ' between two colors. Presently saturates to blue and hot'\
-                   'pink for values below min_val or above max_val, '\
-                   'respectively.'
+            return 'Maps [min_val, max_val] to a range of hues between color1 '
+            'and color2. Saturates to color1 and color2 for values '
+            'below min_val or above max_val, respectively. Presently,'
+            'color1 and color2 are blue and hot pink.'
         elif mode == ColorMapModes.kIntensityMap:
-            return 'Color map that maps [min_val, max_val] to black, red. '\
-                   'Presently saturates to black and red for values below '\
-                   'min_val or above max_val, respectively.'
+            return 'Maps [min_val, max_val] to colorx. Saturates to black and '
+            'colorx for values below min_val or above max_val, '
+            'respectively. Presently, colorx is red.'
         else:
             return 'unrecognized mode'
 
@@ -62,14 +61,13 @@ class ColorMapModes:
 
 class _ColorMapConfigurationDialog(QtGui.QDialog):
     '''A simple dialog for configuring the hydroelastic visualization'''
-    def __init__(self, visualizer, show_contact_surface_state,
+    def __init__(self, visualizer, show_contact_edges_state,
                  show_pressure_state, max_pressure_observed,
                  reset_max_pressure_observed_functor, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.setWindowTitle('Hydroelastic contact visualization settings')
         self.reset_max_pressure_observed_functor = \
             reset_max_pressure_observed_functor
-        self.visualizer = visualizer
         layout = QtGui.QGridLayout()
         layout.setColumnStretch(0, 0)
         layout.setColumnStretch(1, 1)
@@ -105,6 +103,12 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
             QtGui.QDoubleValidator.ScientificNotation)
         self.min_pressure.setValidator(self.min_pressure_validator)
         self.min_pressure.setText('{:.3g}'.format(visualizer.min_pressure))
+        # TODO(seancurtis-TRI) This is supposed to automatically update max
+        # pressure. However, changing min pressure to be larger and then
+        # tabbing out of the widget doesn't necessarily send the
+        # editingFinished signal (whether it is sent appears to be arbitrary).
+        # We need to figure this out before we make a modeless configuration
+        # panel.
         self.min_pressure.editingFinished.connect(self.update_max_validator)
         layout.addWidget(self.min_pressure, row, 1)
         row += 1
@@ -129,10 +133,7 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         layout.addWidget(QtGui.QLabel('Render contact surface with pressure'),
                          row, 0)
         self.show_pressure = QtGui.QCheckBox()
-        if show_pressure_state:
-            self.show_pressure.setCheckState(2)
-        else:
-            self.show_pressure.setCheckState(0)
+        self.show_pressure.setChecked(show_pressure_state)
         self.show_pressure.setToolTip('Renders filled-in polygons with '
                                       'interior coloring representing '
                                       'pressure using the given color map.')
@@ -142,14 +143,11 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         # Whether to show the contact surface as a wireframe.
         layout.addWidget(QtGui.QLabel('Render contact surface wireframe'),
                          row, 0)
-        self.show_contact_surface = QtGui.QCheckBox()
-        if show_contact_surface_state:
-            self.show_contact_surface.setCheckState(2)
-        else:
-            self.show_contact_surface.setCheckState(0)
-        self.show_contact_surface.setToolTip('Renders the edges of the '
+        self.show_contact_edges = QtGui.QCheckBox()
+        self.show_contact_edges.setChecked(show_contact_edges_state)
+        self.show_contact_edges.setToolTip('Renders the edges of the '
                                              'contact surface.')
-        layout.addWidget(self.show_contact_surface, row, 1)
+        layout.addWidget(self.show_contact_edges, row, 1)
         row += 1
 
         # The maximum pressure value recorded and a button to reset it.
@@ -173,12 +171,10 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         self.setLayout(layout)
 
     def update_max_validator(self):
-        self.min_pressure_validator.setTop(float(self.max_pressure.text))
         if float(self.max_pressure.text) < float(self.min_pressure.text):
             self.max_pressure.setText(self.min_pressure.text)
 
     def update_min_validator(self):
-        self.max_pressure_validator.setTop(float(self.min_pressure.text))
         if float(self.min_pressure.text) > float(self.max_pressure.text):
             self.min_pressure.setText(self.max_pressure.text)
 
@@ -337,7 +333,7 @@ class HydroelasticContactVisualizer(object):
         self.color_map_mode = ColorMapModes.kFlameMap
         self.min_pressure = 0
         self.max_pressure = 10
-        self.show_contact_surface = True
+        self.show_contact_edges = True
         self.show_pressure = True
         self.max_pressure_observed = 0
 
@@ -365,7 +361,7 @@ class HydroelasticContactVisualizer(object):
     def configure_via_dialog(self):
         '''Configures the visualization'''
         dlg = _ColorMapConfigurationDialog(self,
-                                           self.show_contact_surface,
+                                           self.show_contact_edges,
                                            self.show_pressure,
                                            self.max_pressure_observed,
                                            self.reset_max_pressure_observed)
@@ -375,9 +371,8 @@ class HydroelasticContactVisualizer(object):
             self.color_map_mode = dlg.color_map_mode.currentIndex
             self.min_pressure = float(dlg.min_pressure.text)
             self.max_pressure = float(dlg.max_pressure.text)
-            self.show_contact_surface =\
-                (dlg.show_contact_surface.checkState() > 0)
-            self.show_pressure = (dlg.show_pressure.checkState() > 0)
+            self.show_contact_edges = dlg.show_contact_edges.isChecked()
+            self.show_pressure = dlg.show_pressure.isChecked()
 
     def add_subscriber(self):
         if self._sub is not None:
@@ -436,12 +431,12 @@ class HydroelasticContactVisualizer(object):
                 vc = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
 
                 # Save the maximum pressure.
-                self.max_pressure_observed =\
-                    max(self.max_pressure_observed, tri.pressure_A)
-                self.max_pressure_observed =\
-                    max(self.max_pressure_observed, tri.pressure_B)
-                self.max_pressure_observed =\
-                    max(self.max_pressure_observed, tri.pressure_C)
+                self.max_pressure_observed = max(self.max_pressure_observed,
+                                                 tri.pressure_A)
+                self.max_pressure_observed = max(self.max_pressure_observed,
+                                                 tri.pressure_B)
+                self.max_pressure_observed = max(self.max_pressure_observed,
+                                                 tri.pressure_C)
 
                 # TODO(drum) Vertex color interpolation may be insufficiently
                 # granular if a single triangle spans too large a range of
@@ -450,9 +445,6 @@ class HydroelasticContactVisualizer(object):
                 color_a = color_map.get_color(tri.pressure_A)
                 color_b = color_map.get_color(tri.pressure_B)
                 color_c = color_map.get_color(tri.pressure_C)
-
-                # Get the inverted colors.
-                contrasting_color = color_map.get_contrasting_color()
 
                 if self.show_pressure:
                     # TODO(drum) Use a better method for this; the current
@@ -486,7 +478,8 @@ class HydroelasticContactVisualizer(object):
                                      color=[color_a, color_b, color_c])
 
                 # TODO(drum) Consider drawing shared edges just once.
-                if self.show_contact_surface:
+                if self.show_contact_edges:
+                    contrasting_color = color_map.get_contrasting_color()
                     d.addPolyLine(points=(va, vb, vc), isClosed=True,
                                   color=contrasting_color)
 
