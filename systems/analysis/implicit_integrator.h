@@ -285,7 +285,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       eps = 10 * std::numeric_limits<double>::epsilon();
 
     for (int i = 0; i < xc.size(); ++i) {
-      // Indicate the update is not zero if a NaN is detected.
+      // We do not want the presence of a NaN to cause this function to
+      // spuriously return `true`, so indicate the update is not zero when a NaN
+      // is detected. This will make the Newton-Raphson process in the caller
+      // continue iterating until its inevitable failure.
       using std::isnan;
       if (isnan(dxc[i])) return false;
 
