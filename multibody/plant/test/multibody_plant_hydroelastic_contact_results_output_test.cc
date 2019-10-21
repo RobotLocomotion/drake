@@ -102,87 +102,6 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     return contact_results.hydroelastic_contact_info(0);
   }
 
-  // TODO(drum) Move this function to SurfaceMesh where it can be fully
-  // documented and tested as well as synchronized more easily with SurfaceMesh
-  // itself. See issue #12173.
-  // Checks to see whether two SurfaceMesh objects are equal (all data match
-  // to bit-wise precision).
-  static bool Equal(const SurfaceMesh<double>& mesh1,
-                    const SurfaceMesh<double>& mesh2) {
-    if (mesh1.num_faces() != mesh2.num_faces()) return false;
-    if (mesh1.num_vertices() != mesh2.num_vertices()) return false;
-
-    // Check face indices.
-    for (SurfaceFaceIndex i(0); i < mesh1.num_faces(); ++i) {
-      const SurfaceFace& face1 = mesh1.element(i);
-      const SurfaceFace& face2 = mesh2.element(i);
-      for (int j = 0; j < 3; ++j)
-        if (face1.vertex(j) != face2.vertex(j)) return false;
-    }
-
-    // Check vertices.
-    for (SurfaceVertexIndex i(0); i < mesh1.num_vertices(); ++i) {
-      if (mesh1.vertex(i).r_MV() != mesh2.vertex(i).r_MV()) return false;
-    }
-
-    // All checks passed.
-    return true;
-  }
-
-  // TODO(drum) Move this function to MeshFieldLinear where it can be fully
-  // documented and tested as well as synchronized more easily with
-  // MeshFieldLinear itself. See issue #12173.
-  // Checks to see whether two MeshField objects are equal (all data
-  // match to bit-wise precision).
-  // Note: currently requires the objects to be of type MeshFieldLinear.
-  template <typename T>
-  static bool Equal(const MeshField<T, SurfaceMesh<double>>& field1,
-                    const MeshField<T, SurfaceMesh<double>>& field2) {
-    // If the objects are not of type MeshFieldLinear then the simple checking
-    // of equal values at vertices is insufficient.
-    const geometry::MeshFieldLinear<T, SurfaceMesh<double>>* linear_field1 =
-        dynamic_cast<const geometry::MeshFieldLinear<T, SurfaceMesh<double>>*>(
-            &field1);
-    const geometry::MeshFieldLinear<T, SurfaceMesh<double>>* linear_field2 =
-        dynamic_cast<const geometry::MeshFieldLinear<T, SurfaceMesh<double>>*>(
-            &field2);
-    DRAKE_DEMAND(linear_field1);
-    DRAKE_DEMAND(linear_field2);
-
-    if (field1.mesh().num_faces() != field2.mesh().num_faces()) return false;
-    if (field1.mesh().num_vertices() != field2.mesh().num_vertices())
-      return false;
-
-    for (SurfaceVertexIndex i(0); i < field1.mesh().num_vertices(); ++i) {
-      if (field1.EvaluateAtVertex(i) != field2.EvaluateAtVertex(i))
-        return false;
-    }
-
-    // All checks passed.
-    return true;
-  }
-
-  // TODO(drum) Move this function to ContactSurface where it can be fully
-  // documented and tested as well as synchronized more easily with
-  // ContactSurface itself. See issue #12173.
-  // Checks to see whether two ContactSurface objects are equal (all
-  // data match to bit-wise precision).
-  static bool Equal(const ContactSurface<double>& surface1,
-                    const ContactSurface<double>& surface2) {
-    // First check the meshes.
-    if (!Equal(surface1.mesh_W(), surface2.mesh_W())) return false;
-
-    // Now examine the pressure field.
-    if (!Equal<double>(surface1.e_MN(), surface2.e_MN())) return false;
-
-    // Now examine the grad_h field.
-    if (!Equal<Vector3d>(surface1.grad_h_MN_W(), surface2.grad_h_MN_W()))
-      return false;
-
-    // All checks passed.
-    return true;
-  }
-
   MultibodyPlant<double>* plant_{};
   systems::Context<double>* plant_context_{};
 
@@ -206,7 +125,7 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);
   EXPECT_TRUE(
-      Equal(contact_results().contact_surface(), contact_surfaces.front()));
+      contact_results().contact_surface().Equal(contact_surfaces.front()));
 }
 
 // Checks that the slip velocity field from the output port is consistent with
