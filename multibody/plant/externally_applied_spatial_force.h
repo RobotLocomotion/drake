@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/default_scalars.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -23,3 +24,6 @@ struct ExternallyAppliedSpatialForce {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::multibody::ExternallyAppliedSpatialForce)

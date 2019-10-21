@@ -42,3 +42,5 @@ ScalarType cond(const decltype(ScalarType() < ScalarType()) & f_cond,
 }
 ///@}
 }  // namespace drake
+
+extern template double ::drake::cond<double>(const double& e);

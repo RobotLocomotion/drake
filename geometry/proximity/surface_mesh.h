@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -437,6 +438,11 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
     p_MSc_ /= (3. * total_area_);
 }
 
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class SurfaceMesh)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class SurfaceVertex)
+
 }  // namespace geometry
 }  // namespace drake
-

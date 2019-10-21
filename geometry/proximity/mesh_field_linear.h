@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
@@ -170,6 +171,9 @@ template <typename FieldValue, typename T>
 using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;
 
 /**@}*/
+
+extern template class MeshFieldLinear<double, SurfaceMesh<double>>;
+extern template class MeshFieldLinear<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake

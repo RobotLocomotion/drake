@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
 #include "drake/common/reset_on_copy.h"
@@ -97,6 +98,8 @@ class MeshField {
 template <typename FieldValue, typename T>
 using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
 
+extern template class MeshField<double, SurfaceMesh<double>>;
+extern template class MeshField<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
+
 }  // namespace geometry
 }  // namespace drake
-

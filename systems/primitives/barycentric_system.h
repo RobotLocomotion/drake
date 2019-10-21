@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/math/barycentric.h"
 #include "drake/systems/framework/vector_system.h"
 
@@ -65,3 +66,6 @@ class BarycentricMeshSystem final : public VectorSystem<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::BarycentricMeshSystem)
