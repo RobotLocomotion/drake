@@ -21,7 +21,6 @@ CallbackData::CallbackData(const CollisionFilterLegacy* collision_filter_in)
 
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr,
-              // NOLINTNEXTLINE
               void* callback_data) {
   auto& data = *static_cast<CallbackData*>(callback_data);
 
@@ -32,7 +31,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       encoding_a.encoding(), encoding_b.encoding());
   if (!can_collide) return false;
 
-  // Unpack the callback data
+  // Unpack the callback data.
   const fcl::CollisionRequestd& request = data.request;
 
   // This callback only works for a single contact, this confirms a request
@@ -40,7 +39,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   DRAKE_ASSERT(request.num_max_contacts == 1);
   fcl::CollisionResultd result;
 
-  // Perform nearphase collision detection
+  // Perform nearphase collision detection.
   fcl::collide(object_A_ptr, object_B_ptr, request, result);
 
   data.collisions_exist = result.isCollision();

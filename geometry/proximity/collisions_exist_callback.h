@@ -46,7 +46,6 @@ struct CallbackData {
   */
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr,
-              // NOLINTNEXTLINE
               void* callback_data);
 
 }  // namespace collisions_exist
