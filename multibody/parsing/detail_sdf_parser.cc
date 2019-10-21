@@ -517,6 +517,13 @@ ModelInstanceIndex AddModelFromSpecification(
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
+  // TODO(eric.cousineau): Support this.
+  if (model.Static()) {
+    throw std::runtime_error(
+        "Drake's parsing of sdformat does not currently support "
+        "//model/static.");
+  }
+  DRAKE_DEMAND(!model.Static());
 
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
