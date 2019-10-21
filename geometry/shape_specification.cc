@@ -96,5 +96,10 @@ Convex::Convex(const std::string& absolute_filename, double scale)
   }
 }
 
+std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
+  out << name.string();
+  return out;
+}
+
 }  // namespace geometry
 }  // namespace drake

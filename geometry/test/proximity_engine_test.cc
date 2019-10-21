@@ -11,6 +11,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -55,12 +57,19 @@ class ProximityEngineTester {
                                    const ProximityEngine<T>& engine) {
     return engine.GetX_WG(id, is_dynamic).translation();
   }
+
+  template <typename T>
+  static hydroelastic::HydroelasticType hydroelastic_type(
+      GeometryId id, const ProximityEngine<T>& engine) {
+    return engine.hydroelastic_geometries().hydroelastic_type(id);
+  }
 };
 
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+using hydroelastic::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -72,6 +81,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 using std::make_shared;
+using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unordered_map;
@@ -87,6 +97,81 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
   EXPECT_EQ(engine.num_geometries(), 1);
   EXPECT_EQ(engine.num_anchored(), 0);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// "Processing" hydroelastic geometry is simply a case of invoking a method
+// on hydroelastic::Geometries. All error handling is done there. So, it is
+// sufficient to confirm that it is being properly invoked. We'll simply attempt
+// to instantiate every shape and assert its classification based on whether
+// it's supported or not (note: this test doesn't depend on the choice of
+// rigid/soft -- we pick the compliance supported by the code).
+GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible.
+  const double edge_length = 0.5;
+  const double E = 1e8;
+  ProximityProperties soft_properties;
+  soft_properties.AddProperty(kMaterialGroup, kElastic, E);
+  AddSoftHydroelasticProperties(edge_length, &soft_properties);
+  ProximityProperties rigid_properties;
+  rigid_properties.AddProperty(kMaterialGroup, kElastic,
+                              std::numeric_limits<double>::infinity());
+  AddRigidHydroelasticProperties(edge_length, &rigid_properties);
+
+  // Case: soft sphere.
+  {
+    Sphere sphere{edge_length};
+    const GeometryId sphere_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(sphere, sphere_id, soft_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere_id, engine),
+              HydroelasticType::kSoft);
+  }
+
+  // Case: rigid cylinder (unsupported).
+  {
+    Cylinder cylinder{edge_length, edge_length};
+    const GeometryId cylinder_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(cylinder, cylinder_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(cylinder_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid half_space (unsupported).
+  {
+    HalfSpace half_space;
+    const GeometryId half_space_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(half_space, half_space_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(half_space_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid box.
+  {
+    Box box{edge_length, edge_length, edge_length};
+    const GeometryId box_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(box, box_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
+              HydroelasticType::kRigid);
+  }
+
+  // TODO(SeanCurtis-TRI): Add test for rigid mesh when ProximityEngine no
+  //  longer blindly throws. See note in proximity_engine.cc:
+  //  ImplementGeometry(Mesh).
+
+  // Case: meshes. Not tested because currently, proximity engine throws at
+  // any attempt to add one.
+
+  // Case: rigid convex (unsupported)
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+        edge_length};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, convex_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kUndefined);
+  }
 }
 
 // Tests simple addition of anchored geometry.
