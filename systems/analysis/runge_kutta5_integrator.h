@@ -31,11 +31,11 @@ namespace systems {
  3/10 |       3/40         9/40
   4/5 |      44/45       -56/15         32/9
   8/9 | 19372/6561   −25360/2187   64448/6561   −212/729
-    1 |  9017/3168      −355/33   46732/5247     49/176     −5103/18656
-    1 |     35/384            0     500/1113    125/192      −2187/6784      11/84
- ---------------------------------------------------------------------------------
-            35/384            0     500/1113    125/192      −2187/6784      11/84      0
-        5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40
+    1 |  9017/3168      −355/33   46732/5247     49/176     −5103/18656                    // NOLINT
+    1 |     35/384            0     500/1113    125/192      −2187/6784      11/84         // NOLINT
+ ---------------------------------------------------------------------------------         // NOLINT
+            35/384            0     500/1113    125/192      −2187/6784      11/84      0  // NOLINT
+        5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40  // NOLINT
  </pre>
  where the second to last row is the 5th-order (propagated) solution and
  the last row gives a 2nd-order accurate solution used for error control.
@@ -59,7 +59,6 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
     derivs4_ = system.AllocateTimeDerivatives();
     derivs5_ = system.AllocateTimeDerivatives();
     derivs6_ = system.AllocateTimeDerivatives();
-    derivs7_ = system.AllocateTimeDerivatives();
     err_est_vec_ = std::make_unique<BasicVector<T>>(derivs1_->size());
     save_xc0_.resize(derivs1_->size());
   }
@@ -86,7 +85,7 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
   // the derivatives computed at various points within the integration
   // interval.
   std::unique_ptr<ContinuousState<T>> derivs1_, derivs2_, derivs3_, derivs4_,
-      derivs5_, derivs6_, derivs7_;
+      derivs5_, derivs6_;
 };
 
 /**
@@ -145,12 +144,12 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // 1/5  (c2) |        1/5 (a21)
   // 3/10 (c3) |       3/40 (a31)          9/40 (a32)
   // 4/5  (c4) |      44/45 (a41)        -56/15 (a42)         32/9 (a43)
-  // 8/9  (c5) | 19372/6561 (a51)   −25360/2187 (a52)   64448/6561 (a53)   −212/729 (a54)
-  // 1    (c6) |  9017/3168 (a61)       −355/33 (a62)   46732/5247 (a63)     49/176 (a64)    −5103/18656 (a65)
-  // 1    (c7) |     35/384 (a71)             0 (a72)     500/1113 (a73)    125/192 (a74)     −2187/6784 (a75)     11/84 (a76)
-  // ------------------------------------------------------------------------------------------------------------------------------------
-  //                 35/384  (b1)             0 (b2)      500/1113 (b3)     125/192 (b4)      −2187/6784 (b5)      11/84 (b6)      0 (b7)
-  //             5179/57600  (d1)             0 (d2)    7571/16695 (d3)     393/640 (d4)   −92097/339200 (d5)   187/2100 (d6)   1/40 (d7)
+  // 8/9  (c5) | 19372/6561 (a51)   −25360/2187 (a52)   64448/6561 (a53)   −212/729 (a54)                                                    // NOLINT
+  // 1    (c6) |  9017/3168 (a61)       −355/33 (a62)   46732/5247 (a63)     49/176 (a64)    −5103/18656 (a65)                               // NOLINT
+  // 1    (c7) |     35/384 (a71)             0 (a72)     500/1113 (a73)    125/192 (a74)     −2187/6784 (a75)     11/84 (a76)               // NOLINT
+  // ------------------------------------------------------------------------------------------------------------------------------------    // NOLINT
+  //                 35/384  (b1)             0 (b2)      500/1113 (b3)     125/192 (b4)      −2187/6784 (b5)      11/84 (b6)      0 (b7)    // NOLINT
+  //             5179/57600  (d1)             0 (d2)    7571/16695 (d3)     393/640 (d4)   −92097/339200 (d5)   187/2100 (d6)   1/40 (d7)    // NOLINT
 
   // Save the continuous state at t₀.
   context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
@@ -310,49 +309,19 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   const double d5 = -92097.0 / 339200;
   const double d6 = 187.0 / 2100;
   const double d7 = 1.0 / 40;
-  xc.SetFromVector(save_xc0_);
-  xc.PlusEqScaled({{d1 * h, k1},
-                   {d3 * h, k3},
-                   {d4 * h, k4},
-                   {d5 * h, k5},
-                   {d6 * h, k6},
-                   {(-d7) * h, k7}});
+  err_est_vec_->SetZero();
+  err_est_vec_->PlusEqScaled({{(a71 - d1) * h, k1},
+                              {(a73 - d3) * h, k3},
+                              {(a74 - d4) * h, k4},
+                              {(a75 - d5) * h, k5},
+                              {(a76 - d6) * h, k6},
+                              {(-d7) * h, k7}});
 
   // If the size of the system has changed, the error estimate will no longer
   // be sized correctly. Verify that the error estimate is the correct size.
   DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
   this->get_mutable_error_estimate()->SetFromVector(
       err_est_vec_->CopyToVector().cwiseAbs());
-
-  /*
-
-    // The error estimator vector will be set to y5 - y4, where y4 is the fourth
-    // order solution and y5 is the fifth order solution that we calculate
-    below.
-    // Go ahead and set the error estimator vector to -y4.
-    err_est_vec_ = -xc.CopyToVector();
-
-    // If the size of the system has changed, the error estimate will no longer
-    // be sized correctly. Verify that the error estimate is the correct size.
-    DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
-
-    // Calculate the final O(h^5) state at t₁.
-    // Note: b2 and b7 are 0.0; they have been removed from the formula below.
-    const double b1 = 35.0 / 384;
-    const double b3 = 500.0 / 1113;
-    const double b4 = 125.0 / 192;
-    const double b5 = -2187.0 / 6784;
-    const double b6 = 11.0 / 84;
-    xc.SetFromVector(save_xc0_);
-    xc.PlusEqScaled(
-        {{b1 * h, k1}, {b3 * h, k3}, {b4 * h, k4}, {b5 * h, k5}, {b6 * h, k6}});
-
-    // Add y5 (defined above) to -y4 to yield the error estimator vector, which
-    // we then take the absolute value of.
-    err_est_vec_ += xc.CopyToVector();
-    err_est_vec_ = err_est_vec_.cwiseAbs();
-    this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
-  */
 
   // RK5 always succeeds in taking its desired step.
   return true;
