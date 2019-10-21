@@ -8,6 +8,12 @@ find .  # Get some debugging output.
 capture_cc_env="$1"
 drake_assert_test_compile_cc="$2"
 
+# TODO(jamiesnape): Determine this information from Bazel.
+if [[ "$(uname -s)" == Darwin ]]; then
+  export DEVELOPER_DIR="$(xcode-select --print-path)"
+  export SDKROOT="$(xcrun --show-sdk-path)"
+fi
+
 # Make sure we know what C++ compiler to use.
 source "$capture_cc_env"
 [[ ! -z "$BAZEL_CC" ]]
