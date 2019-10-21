@@ -391,6 +391,7 @@ std::string LoadSdf(
 void AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
+    const RigidTransformd& X_WM,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
@@ -419,6 +420,12 @@ void AddLinksFromSpecification(
     // Add a rigid body to model each link.
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
+
+    // N.B. If a body is completely disconnected (no inboard / outboard
+    // joints), then we lose information from the SDFormat spec. This hack is
+    // one way to preserve this information.
+    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
+    plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
 
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -523,7 +530,6 @@ ModelInstanceIndex AddModelFromSpecification(
         "Drake's parsing of sdformat does not currently support "
         "//model/static.");
   }
-  DRAKE_DEMAND(!model.Static());
 
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
@@ -548,9 +554,10 @@ ModelInstanceIndex AddModelFromSpecification(
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
 
-  // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
+  // TODO(eric.cousineau): Register and use frames from SDFormat once we have
+  // the libsdformat-provided pose graph.
   AddLinksFromSpecification(
-      model_instance, model, plant, package_map, root_dir);
+      model_instance, model, X_WM, plant, package_map, root_dir);
 
   // Add all the joints
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
