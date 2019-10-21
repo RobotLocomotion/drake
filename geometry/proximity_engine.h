@@ -10,6 +10,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -181,7 +182,8 @@ class ProximityEngine {
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
+      const std::unordered_map<GeometryId, InternalGeometry>& geometries)
       const;
 
   //@}
