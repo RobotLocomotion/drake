@@ -15,10 +15,10 @@
 	      </inertia>
 	    </inertial>
 
-      <pose>0 0 0 0 -0 0</pose>
+      <pose frame=''>0 0 0 0 -0 0</pose>
 
      <visual>
-	      <pose>0 0 0 0 1.5708 0</pose>
+	      <pose frame=''>0 0 0 0 1.5708 0</pose>
 				<geometry>
 	        <cylinder>
 	          <radius>0.015</radius>
@@ -32,7 +32,7 @@
 
 	    <!--
 	    <visual>
-	      <pose>0.02 0 0 0 -0 0</pose>
+	      <pose frame=''>0.02 0 0 0 -0 0</pose>
 				<geometry>
 	        <sphere>
 	          <radius>0.015</radius>
@@ -43,7 +43,7 @@
       	</material>
 	    </visual>
 	    <visual>
-	      <pose>-0.02 0 0 0 -0 0</pose>
+	      <pose frame=''>-0.02 0 0 0 -0 0</pose>
 	      <geometry>
 	        <sphere>
 	          <radius>0.015</radius>
@@ -56,7 +56,7 @@
 			-->
 
 	    <collision>
-	      <pose>-0.02 0 0 0 -0 0</pose>
+	      <pose frame=''>-0.02 0 0 0 -0 0</pose>
 	      <geometry>
 	        <sphere>
 	          <radius>0.015</radius>
@@ -65,7 +65,7 @@
 	    </collision>
 
 	    <collision>
-	      <pose>0.02 0 0 0 -0 0</pose>
+	      <pose frame=''>0.02 0 0 0 -0 0</pose>
 	      <geometry>
 	        <sphere>
 	          <radius>0.015</radius>

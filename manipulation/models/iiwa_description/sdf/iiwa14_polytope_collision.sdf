@@ -7,9 +7,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
 <sdf version='1.6'>
   <model name='iiwa14'>
     <link name='iiwa_link_0'>
-      <pose>0 0 0 0 -0 0</pose>
+      <pose frame=''>0 0 0 0 -0 0</pose>
       <inertial>
-        <pose>-0.1 0 0.07 0 -0 0</pose>
+        <pose frame=''>-0.1 0 0.07 0 -0 0</pose>
         <mass>5</mass>
         <inertia>
           <ixx>0.05</ixx>
@@ -21,7 +21,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_0_fixed_joint_lump__iiwa_link_0_visual'>
-        <pose>0 0 0 0 0 0</pose>
+        <pose frame=''>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -38,9 +38,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
     </link>
 
     <link name='iiwa_link_1'>
-      <pose>0 0 0.1575 0 -0 0</pose>
+      <pose frame=''>0 0 0.1575 0 -0 0</pose>
       <inertial>
-        <pose>0 -0.03 0.12 0 -0 0</pose>
+        <pose frame=''>0 -0.03 0.12 0 -0 0</pose>
         <mass>5.76</mass>
         <inertia>
           <ixx>0.033</ixx>
@@ -52,7 +52,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_1_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -88,9 +88,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <link name='iiwa_link_2'>
-      <pose>0 0 0.36 1.5708 -0 -3.14159</pose>
+      <pose frame=''>0 0 0.36 1.5708 -0 -3.14159</pose>
       <inertial>
-        <pose>0.0003 0.059 0.042 0 -0 0</pose>
+        <pose frame=''>0.0003 0.059 0.042 0 -0 0</pose>
         <mass>6.35</mass>
         <inertia>
           <ixx>0.0305</ixx>
@@ -102,7 +102,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_2_visual_grey'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -114,7 +114,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_2_visual_orange'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -150,9 +150,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <link name='iiwa_link_3'>
-      <pose>0 -0 0.5645 0 0 0</pose>
+      <pose frame=''>0 -0 0.5645 0 0 0</pose>
       <inertial>
-        <pose>0 0.03 0.13 0 -0 0</pose>
+        <pose frame=''>0 0.03 0.13 0 -0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.025</ixx>
@@ -164,7 +164,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_3_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -176,7 +176,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_3_visual_band'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -188,7 +188,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_3_visual_kuka'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -224,9 +224,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <link name='iiwa_link_4'>
-      <pose>0 -0 0.78 1.5708 0 0</pose>
+      <pose frame=''>0 -0 0.78 1.5708 0 0</pose>
       <inertial>
-        <pose>0 0.067 0.034 0 -0 0</pose>
+        <pose frame=''>0 0.067 0.034 0 -0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.017</ixx>
@@ -238,7 +238,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_4_visual_grey'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -250,7 +250,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_4_visual_orange'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -286,9 +286,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <link name='iiwa_link_5'>
-      <pose>0 -0 0.9645 0 -0 -3.14159</pose>
+      <pose frame=''>0 -0 0.9645 0 -0 -3.14159</pose>
       <inertial>
-        <pose>0.0001 0.021 0.076 0 -0 0</pose>
+        <pose frame=''>0.0001 0.021 0.076 0 -0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.01</ixx>
@@ -300,7 +300,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_5_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -312,7 +312,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_5_visual_band'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -324,7 +324,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_5_visual_kuka'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -360,9 +360,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <link name='iiwa_link_6'>
-      <pose>0 0 1.18 1.5708 -0 -3.14159</pose>
+      <pose frame=''>0 0 1.18 1.5708 -0 -3.14159</pose>
       <inertial>
-        <pose>0 0.0006 0.0004 0 -0 0</pose>
+        <pose frame=''>0 0.0006 0.0004 0 -0 0</pose>
         <mass>1.8</mass>
         <inertia>
           <ixx>0.0049</ixx>
@@ -374,7 +374,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_6_visual_grey'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -386,7 +386,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </material>
       </visual>
       <visual name='iiwa_link_6_visual_orange'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -422,9 +422,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <link name='iiwa_link_7'>
-      <pose>0 0 1.261 0 0 0</pose>
+      <pose frame=''>0 0 1.261 0 0 0</pose>
       <inertial>
-        <pose>0 0 0.02 0 -0 0</pose>
+        <pose frame=''>0 0 0.02 0 -0 0</pose>
         <mass>1.2</mass>
         <inertia>
           <ixx>0.001</ixx>
@@ -436,7 +436,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </inertia>
       </inertial>
       <collision name='iiwa_link_7_collision'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -456,7 +456,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         </surface>
       </collision>
       <visual name='iiwa_link_7_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>

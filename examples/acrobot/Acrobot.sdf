@@ -1,9 +1,9 @@
 <sdf version='1.5'>
   <model name='Acrobot'>
     <link name='base_link'>
-      <pose>0 0 0 0 0 0</pose>
+      <pose frame=''>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 0 0 0 0</pose>
+        <pose frame=''>0 0 0 0 0 0</pose>
         <mass>0</mass>
         <inertia>
           <ixx>0</ixx>
@@ -15,7 +15,7 @@
         </inertia>
       </inertial>
       <collision name='base_link_collision'>
-        <pose>0 0 0 0 0 0</pose>
+        <pose frame=''>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.2 0.2 0.2</size>
@@ -23,7 +23,7 @@
         </geometry>
       </collision>
       <visual name='base_link_visual'>
-        <pose>0 0 0 0 0 0</pose>
+        <pose frame=''>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.2 0.2 0.2</size>
@@ -32,9 +32,9 @@
       </visual>
     </link>
     <link name='upper_link'>
-      <pose>0 0.15 0 0 0 0</pose>
+      <pose frame=''>0 0.15 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.5 0 0 0</pose>
+        <pose frame=''>0 0 -0.5 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>1</ixx>
@@ -46,7 +46,7 @@
         </inertia>
       </inertial>
       <collision name='upper_link_collision'>
-        <pose>0 0 -0.5 0 0 0</pose>
+        <pose frame=''>0 0 -0.5 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>1.1</length>
@@ -55,7 +55,7 @@
         </geometry>
       </collision>
       <visual name='upper_link_visual'>
-        <pose>0 0 -0.5 0 0 0</pose>
+        <pose frame=''>0 0 -0.5 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>1.1</length>
@@ -82,9 +82,9 @@
       </axis>
     </joint>
     <link name='lower_link'>
-      <pose>0 0.25 -1 0 0 0</pose>
+      <pose frame=''>0 0.25 -1 0 0 0</pose>
       <inertial>
-        <pose>0 0 -1 0 0 0</pose>
+        <pose frame=''>0 0 -1 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>1</ixx>
@@ -96,7 +96,7 @@
         </inertia>
       </inertial>
       <collision name='lower_link_collision'>
-        <pose>0 0 -1 0 0 0</pose>
+        <pose frame=''>0 0 -1 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>2.1</length>
@@ -105,7 +105,7 @@
         </geometry>
       </collision>
       <visual name='lower_link_visual'>
-        <pose>0 0 -1 0 0 0</pose>
+        <pose frame=''>0 0 -1 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>2.1</length>

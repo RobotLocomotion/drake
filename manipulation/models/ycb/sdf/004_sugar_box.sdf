@@ -29,7 +29,7 @@
     </inertial>
 
     <visual name='base_link_sugar'>
-      <pose>-0.018  0.088  0.0039 -0.77 -1.52 2.36</pose>
+      <pose frame=''>-0.018  0.088  0.0039 -0.77 -1.52 2.36</pose>
       <geometry>
         <mesh>
           <uri>../meshes/004_sugar_box_textured.obj</uri>

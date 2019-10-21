@@ -3,7 +3,7 @@
   <model name='box_as_table'>
 
     <link name="box">
-      <pose>0 0 0.4 0 -0 0</pose>
+      <pose frame=''>0 0 0.4 0 -0 0</pose>
       <visual>
         <geometry>
           <box>
@@ -30,7 +30,7 @@
 
       <collision>
         <max_contacts>10</max_contacts>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.5 0.5 0.8</size>

@@ -29,7 +29,7 @@
     </inertial>
 
     <visual name='base_link_meat'>
-      <pose>0.034 0.039 0.025 1.57 0.052 0.0</pose>
+      <pose frame=''>0.034 0.039 0.025 1.57 0.052 0.0</pose>
       <geometry>
         <mesh>
           <uri>../meshes/010_potted_meat_can_textured.obj</uri>
