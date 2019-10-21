@@ -266,13 +266,15 @@ std::tuple<double, double, double> ParseJointLimits(
 void AddJointFromSpecification(
     const sdf::Model& model_spec, const sdf::Joint& joint_spec,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
-    std::set<std::string>* attached_link_names) {
+    std::set<std::string>* attached_link_names,
+    std::set<sdf::JointType>* joint_types) {
   // Pose of the model frame M in the world frame W.
   const RigidTransformd X_WM = ToRigidTransform(model_spec.Pose());
 
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
-  attached_link_names->insert(joint_spec.ParentLinkName());
+  // N.B. Do not record parent link in `attached_link_names` to ensure the
+  // "base" link is welded.
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
   attached_link_names->insert(joint_spec.ChildLinkName());
@@ -358,6 +360,7 @@ void AddJointFromSpecification(
           "Joint type not supported for joint '" + joint_spec.Name() + "'.");
     }
   }
+  joint_types->insert(joint_spec.Type());
 }
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
@@ -569,13 +572,15 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // Add all the joints
   std::set<std::string> attached_link_names;
+  std::set<sdf::JointType> joint_types;
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(
-        model, joint, model_instance, plant, &attached_link_names);
+        model, joint, model_instance, plant,
+        &attached_link_names, &joint_types);
   }
 
   // Add frames at root-level of <model>.
@@ -588,12 +593,19 @@ ModelInstanceIndex AddModelFromSpecification(
       model_instance, model.Element(), sdf_model_frame, plant);
 
   if (model.Static()) {
+    // Only weld / fixed joints are permissible.
+    // TODO(eric.cousineau): Consider "freezing" non-weld joints, as is
+    // permissible in Bullet and DART via Gazebo (#12227).
+    for (sdf::JointType joint_type : joint_types) {
+      if (joint_type != sdf::JointType::FIXED) {
+        throw std::runtime_error(
+            "Only fixed joints are permitted in static models.");
+      }
+    }
     // Weld all links that have been added, but did not get attached to
     // anything.
     // N.B. This implementation prevents "reposturing" a static model after
     // parsing. See #12227 for a more concrete example.
-    // TODO(eric.cousineau): Should this throw an error if any non-weld joints
-    // get added? Or should it replace them?
     for (const LinkInfo& link_info : added_link_infos) {
       if (attached_link_names.count(link_info.body->name()) == 0) {
         plant->WeldFrames(
