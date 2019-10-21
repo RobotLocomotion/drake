@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 """
 Try removing <visual> tags and turn <collision> tags into <visual> tags, for
 both URDF and SDF.

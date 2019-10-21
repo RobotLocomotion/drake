@@ -79,8 +79,8 @@ def _check_shebang(filename, disallow_executable):
         return 1
     shebang_whitelist = {
         "bash": "#!/bin/bash",
-        "python": "#!/usr/bin/env python2",
-        "python3": "#!/usr/bin/env python3",
+        "python": "#!/usr/bin/env python3",
+        "python2": "#!/usr/bin/env python2",  # DRAKE_DEPRECATED 2019-10-25
     }
     if has_shebang and shebang not in shebang_whitelist.values():
         print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "

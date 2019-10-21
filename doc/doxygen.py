@@ -1,11 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 """Command-line tool to generate Drake's Doxygen content.
 
 See drake/doc/documentation_instructions.rst for instructions and usage hints.
 """
 
-from __future__ import print_function
 
 import os
 import sys
