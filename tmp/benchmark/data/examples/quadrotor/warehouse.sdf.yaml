@@ -13,49 +13,49 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [-1.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::back_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [8.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::front_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, 1.75, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::left_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, -2.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::right_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.75, -1.0, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_2
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [5.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_3
   note: Zeros
   q:
@@ -74,49 +74,49 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [-1.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::back_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [8.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::front_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, 1.75, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::left_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, -2.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::right_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.75, -1.0, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_2
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [5.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_3
   note: Ones
   q:
@@ -135,49 +135,49 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [-1.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::back_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [8.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::front_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, 1.75, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::left_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, -2.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::right_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.75, -1.0, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_2
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [5.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_3
   note: Incrementing
   q:
@@ -196,49 +196,49 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [-1.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::back_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [8.25, -0.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::front_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, 1.75, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::left_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.5, -2.25, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::right_wall
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [3.75, -1.0, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_2
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [5.75, 0.5, 0.0]
+      translation: [0.0, 0.0, 0.0]
     name: room_w_lidar::slalom_3
   note: Pi/2
   q:
