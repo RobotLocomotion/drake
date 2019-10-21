@@ -1527,7 +1527,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
 
 // Tests if collisions exist between dynamic and anchored sphere. One case
 // colliding, one case *not* colliding.
-TEST_F(SimplePenetrationTest, CollisionsExistDynamicAndAnchored) {
+TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
   // Set up anchored geometry.
   const RigidTransformd pose = RigidTransformd::Identity();
   const GeometryId anchored_id = GeometryId::get_new_id();
@@ -1543,25 +1543,26 @@ TEST_F(SimplePenetrationTest, CollisionsExistDynamicAndAnchored) {
 
   // Non-colliding case.
   MoveDynamicSphere(dynamic_id, false /* not colliding */);
-  EXPECT_FALSE(engine_.CollisionsExist());
+  EXPECT_FALSE(engine_.HasCollisions());
 
   // Colliding case.
   MoveDynamicSphere(dynamic_id, true /* colliding */);
-  EXPECT_TRUE(engine_.CollisionsExist());
+  EXPECT_TRUE(engine_.HasCollisions());
 
   // Test colliding case on copy.
   ProximityEngine<double> copy_engine(engine_);
-  EXPECT_TRUE(copy_engine.CollisionsExist());
+  EXPECT_TRUE(copy_engine.HasCollisions());
 
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  EXPECT_TRUE(ad_engine->CollisionsExist());
+  EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
 // the same source.
-TEST_F(SimplePenetrationTest, CollisionsExistDynamicAndDynamicSingleSource) {
+TEST_F(SimplePenetrationTest,
+       HasCollisionsCollisionsExistDynamicAndDynamicSingleSource) {
   const GeometryId origin_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, origin_id);
 
@@ -1574,20 +1575,20 @@ TEST_F(SimplePenetrationTest, CollisionsExistDynamicAndDynamicSingleSource) {
 
   // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
-  EXPECT_FALSE(engine_.CollisionsExist());
+  EXPECT_FALSE(engine_.HasCollisions());
 
   // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
-  EXPECT_TRUE(engine_.CollisionsExist());
+  EXPECT_TRUE(engine_.HasCollisions());
 
   // Test colliding case on copy.
   ProximityEngine<double> copy_engine(engine_);
-  EXPECT_TRUE(copy_engine.CollisionsExist());
+  EXPECT_TRUE(copy_engine.HasCollisions());
 
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  EXPECT_TRUE(ad_engine->CollisionsExist());
+  EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
 // Invokes ExcludeCollisionsWithin in various scenarios which will and won't

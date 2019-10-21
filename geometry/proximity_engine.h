@@ -168,9 +168,6 @@ class ProximityEngine {
 
   //@{
 
-  /** Implementation of GeometryState::CollisionsExist().  */
-  bool CollisionsExist() const;
-
   // NOTE: This maps to Model::ComputeMaximumDepthCollisionPoints().
   // The definition that touching is not penetrating is due to an FCL issue
   // described in https://github.com/flexible-collision-library/fcl/issues/375
@@ -188,10 +185,13 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
-  //@}
-
   /** Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
+
+  /** Implementation of GeometryState::HasCollisions().  */
+  bool HasCollisions() const;
+
+  //@}
 
   /** @name               Collision filters
 

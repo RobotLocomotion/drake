@@ -588,24 +588,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  bool CollisionsExist() const {
-    // All these quantities are aliased in the callback data.
-    collisions_exist::CallbackData data{&collision_filter_};
-
-    // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&data, collisions_exist::Callback);
-
-    // Perform a query of the dynamic objects against the anchored. We don't do
-    // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, collisions_exist::Callback);
-    return data.collisions_exist;
-  }
-
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const {
     std::vector<PenetrationAsPointPair<double>> contacts;
@@ -653,6 +635,24 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             &anchored_tree_),
         &data, find_collision_candidates::Callback);
     return pairs;
+  }
+
+  bool HasCollisions() const {
+    // All these quantities are aliased in the callback data.
+    collisions_exist::CallbackData data{&collision_filter_};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, collisions_exist::Callback);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, collisions_exist::Callback);
+    return data.collisions_exist;
   }
 
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
@@ -1008,8 +1008,8 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
 }
 
 template <typename T>
-bool ProximityEngine<T>::CollisionsExist() const {
-  return impl_->CollisionsExist();
+bool ProximityEngine<T>::HasCollisions() const {
+  return impl_->HasCollisions();
 }
 
 template <typename T>

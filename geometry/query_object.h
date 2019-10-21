@@ -150,10 +150,6 @@ class QueryObject {
    geometry is penetrating.     */
   //@{
 
-  /** Reports true if there are _any_ collisions between unfiltered pairs in the
-   world.  */
-  bool CollisionsExist() const;
-
   /** Computes the penetrations across all pairs of geometries in the world
    with the penetrations characterized by pairs of points (see
    PenetrationAsPointPair), providing some measure of the penetration "depth" of
@@ -229,6 +225,10 @@ class QueryObject {
 
    @returns A vector populated with collision pair candidates. */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
+
+  /** Reports true if there are _any_ collisions between unfiltered pairs in the
+   world.  */
+  bool HasCollisions() const;
 
   //---------------------------------------------------------------------------
   // TODO(DamrongGuoy): Write a better documentation for Signed Distance

@@ -72,15 +72,6 @@ const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
 }
 
 template <typename T>
-bool QueryObject<T>::CollisionsExist() const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.CollisionsExist();
-}
-
-template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();
@@ -98,6 +89,15 @@ std::vector<SortedPair<GeometryId>> QueryObject<T>::FindCollisionCandidates()
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.FindCollisionCandidates();
+}
+
+template <typename T>
+bool QueryObject<T>::HasCollisions() const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.HasCollisions();
 }
 
 template <typename T>
