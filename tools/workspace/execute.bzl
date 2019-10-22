@@ -24,12 +24,16 @@ def which(repo_ctx, program, additional_search_paths = []):
         return None
     return repo_ctx.path(exec_result.stdout.strip())
 
-def execute_and_return(repo_ctx, command, additional_search_paths = []):
+def execute_and_return(
+        repo_ctx,
+        command,
+        additional_search_paths = [],
+        **kwargs):
     """Runs the `command` (list) and returns a status value.  The return value
     is a struct with a field `error` that will be None on success or else a
     detailed message on command failure.
     """
-    if "/" in command[0]:
+    if "/" in str(command[0]):
         program = command[0]
     else:
         program = which(repo_ctx, command[0], additional_search_paths)
@@ -38,7 +42,7 @@ def execute_and_return(repo_ctx, command, additional_search_paths = []):
                 command[0],
             )
             return struct(error = error)
-    exec_result = repo_ctx.execute([program] + command[1:])
+    exec_result = repo_ctx.execute([program] + command[1:], **kwargs)
     if exec_result.return_code == 0:
         error = None
     else:
@@ -54,10 +58,10 @@ def execute_and_return(repo_ctx, command, additional_search_paths = []):
         stdout = exec_result.stdout,
     )
 
-def execute_or_fail(repo_ctx, command):
+def execute_or_fail(repo_ctx, command, **kwargs):
     """Runs the `command` (list) and immediately fails on any error.
     Returns a struct with the stdout value."""
-    result = execute_and_return(repo_ctx, command)
+    result = execute_and_return(repo_ctx, command, **kwargs)
     if result.error:
         fail("Unable to complete setup for @{} repository: {}".format(
             repo_ctx.name,

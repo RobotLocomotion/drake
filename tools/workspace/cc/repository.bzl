@@ -32,6 +32,7 @@ Argument:
 """
 
 load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "find_cc")
+load("@drake//tools/workspace:execute.bzl", "execute_or_fail")
 
 def _impl(repository_ctx):
     file_content = """# -*- python -*-
@@ -48,37 +49,47 @@ def _impl(repository_ctx):
         executable = False,
     )
 
-    # https://github.com/bazelbuild/bazel/blob/0.14.1/tools/cpp/cc_configure.bzl
+    # https://github.com/bazelbuild/bazel/blob/1.1.0/tools/cpp/cc_configure.bzl
     if repository_ctx.os.environ.get("BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN", "0") == "1":  # noqa
         fail("Could NOT identify C/C++ compiler because CROSSTOOL is empty.")
 
     if repository_ctx.os.name == "mac os x" and repository_ctx.os.environ.get("BAZEL_USE_CPP_ONLY_TOOLCHAIN", "0") != "1":  # noqa
-        # https://github.com/bazelbuild/bazel/blob/0.14.1/tools/cpp/osx_cc_configure.bzl
-        cc = repository_ctx.path(Label("@local_config_cc//:cc_wrapper.sh"))
+        # https://github.com/bazelbuild/bazel/blob/1.1.0/tools/cpp/osx_cc_configure.bzl
+        cc = repository_ctx.path(Label("@local_config_cc//:wrapped_clang"))
+
+        result = execute_or_fail(repository_ctx, [
+            "xcode-select",
+            "--print-path",
+        ])
+        developer_dir = result.stdout.strip()
+
+        result = execute_or_fail(repository_ctx, [
+            "xcrun",
+            "--show-sdk-path",
+        ])
+        sdkroot = result.stdout.strip()
+
+        cc_environment = {
+            "DEVELOPER_DIR": developer_dir,
+            "SDKROOT": sdkroot,
+        }
 
     else:
-        # https://github.com/bazelbuild/bazel/blob/0.14.1/tools/cpp/unix_cc_configure.bzl
+        # https://github.com/bazelbuild/bazel/blob/1.1.0/tools/cpp/unix_cc_configure.bzl
         cc = find_cc(repository_ctx, overriden_tools = {})
+        cc_environment = {}
 
     executable = repository_ctx.path("identify_compiler")
-    result = repository_ctx.execute([
+    execute_or_fail(repository_ctx, [
         cc,
         repository_ctx.path(
             Label("@drake//tools/workspace/cc:identify_compiler.cc"),
         ),
         "-o",
         executable,
-    ])
-    if result.return_code != 0:
-        fail(
-            "Could NOT identify C/C++ compiler because compilation failed.",
-            result.stderr,
-        )
+    ], environment = cc_environment)
 
-    result = repository_ctx.execute([executable])
-    if result.return_code != 0:
-        fail("Could NOT identify C/C++ compiler.", result.stderr)
-
+    result = execute_or_fail(repository_ctx, [executable])
     output = result.stdout.strip().split(" ")
     if len(output) != 3:
         fail("Could NOT identify C/C++ compiler.")
