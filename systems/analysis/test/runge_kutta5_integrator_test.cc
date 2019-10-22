@@ -9,6 +9,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
+#include "drake/systems/analysis/test_utilities/generic_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/quartic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/quintic_scalar_system.h"
@@ -20,48 +21,7 @@ namespace analysis_test {
 typedef ::testing::Types<RungeKutta5Integrator<double>> Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
-
-// A testing fixture for RK5 integrators, providing a simple
-// free body plant with closed form solutions to test against.
-class RK5IntegratorTest : public ::testing::Test {
- protected:
-  void SetUp() {
-    plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
-
-    // Add a single free body to the world.
-    const double radius = 0.05;   // m
-    const double mass = 0.1;      // kg
-    auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-    multibody::SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(),
-                                            G_Bcm);
-    plant_->AddRigidBody("Ball", M_Bcm);
-    plant_->Finalize();
-  }
-
-  std::unique_ptr<Context<double>> MakePlantContext() const {
-    std::unique_ptr<Context<double>> context =
-        plant_->CreateDefaultContext();
-
-    // Set body linear and angular velocity.
-    Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
-    Vector3<double> w0(-4., 5., -6.);  // Angular velocity in body's frame.
-    VectorX<double> generalized_velocities(6);
-    generalized_velocities << w0, v0;
-    plant_->SetVelocities(context.get(), generalized_velocities);
-
-    // Set body position and orientation.
-    Vector3<double> p0(1., 2., 3.);  // Body's frame position in the world.
-    // Set body's frame orientation to 90 degree rotation about y-axis.
-    Vector4<double> q0(std::sqrt(2.)/2., 0., std::sqrt(2.)/2., 0.);
-    VectorX<double> generalized_positions(7);
-    generalized_positions << q0, p0;
-    plant_->SetPositions(context.get(), generalized_positions);
-
-    return context;
-  }
-
-  std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
-};
+INSTANTIATE_TYPED_TEST_CASE_P(My, GenericIntegratorTest, Types);
 
 // Tests accuracy for integrating the quintic system (with the state at time t
 // corresponding to f(t) ≡ t⁵ + 2t⁴ + 3t³ + 4t² + 5t + C) over t ∈ [0, 1].
@@ -144,49 +104,6 @@ GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuarticTest) {
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
   EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
-}
-
-// Tests accuracy of integrator's dense output.
-TEST_F(RK5IntegratorTest, DenseOutputAccuracy) {
-  std::unique_ptr<Context<double>> context = MakePlantContext();
-
-  RungeKutta5Integrator<double> rk5(*plant_, context.get());
-  rk5.set_maximum_step_size(0.1);
-  rk5.set_target_accuracy(1e-6);
-  rk5.Initialize();
-
-  // Start a dense integration i.e. one that generates a dense
-  // output for the state function.
-  rk5.StartDenseIntegration();
-
-  const double t_final = 1.0;
-  // Arbitrary step, valid as long as it doesn't match the same
-  // steps taken by the integrator. Otherwise, dense output accuracy
-  // would not be checked.
-  const double dt = 0.01;
-  const int n_steps = (t_final / dt);
-  for (int i = 1; i <= n_steps; ++i) {
-    // Integrate the whole step.
-    rk5.IntegrateWithMultipleStepsToTime(i * dt);
-
-    // Check solution.
-    EXPECT_TRUE(CompareMatrices(
-        rk5.get_dense_output()->Evaluate(context->get_time()),
-        plant_->GetPositionsAndVelocities(*context),
-        rk5.get_accuracy_in_use(),
-        MatrixCompareType::relative));
-  }
-
-  // Stop undergoing dense integration.
-  std::unique_ptr<DenseOutput<double>> rk5_dense_output =
-      rk5.StopDenseIntegration();
-  EXPECT_FALSE(rk5.get_dense_output());
-
-  // Integrate one more step.
-  rk5.IntegrateWithMultipleStepsToTime(t_final + dt);
-
-  // Verify that the dense output was not updated.
-  EXPECT_LT(rk5_dense_output->end_time(), context->get_time());
 }
 
 }  // namespace analysis_test
