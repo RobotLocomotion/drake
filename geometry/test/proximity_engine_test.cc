@@ -199,6 +199,9 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   Box box{0.1, 0.2, 0.3};
   ref_engine.AddDynamicGeometry(box, GeometryId::get_new_id());
 
+  Capsule capsule{0.1, 1.0};
+  ref_engine.AddDynamicGeometry(capsule, GeometryId::get_new_id());
+
   HalfSpace half_space{};
   ref_engine.AddDynamicGeometry(half_space, GeometryId::get_new_id());
 

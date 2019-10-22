@@ -15,6 +15,7 @@
 #include "drake/multibody/hydroelastics/hydroelastic_field_sphere.h"
 
 using drake::geometry::Box;
+using drake::geometry::Capsule;
 using drake::geometry::ContactSurface;
 using drake::geometry::Convex;
 using drake::geometry::Cylinder;
@@ -288,6 +289,13 @@ void HydroelasticEngine<T>::ImplementGeometry(const Box&, void*) {
   drake::log()->warn(
       "HydroelasticEngine. The current hydroelastic model implementation "
       "does not support box geometries. Geometry ignored.");
+}
+
+template <typename T>
+void HydroelasticEngine<T>::ImplementGeometry(const Capsule&, void*) {
+  drake::log()->warn(
+      "HydroelasticEngine. The current hydroelastic model implementation "
+      "does not support capsule geometries. Geometry ignored.");
 }
 
 template <typename T>

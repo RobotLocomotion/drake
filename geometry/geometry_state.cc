@@ -667,6 +667,7 @@ class MeshIdentifier final : public ShapeReifier {
   void ImplementGeometry(const Cylinder&, void*) final {}
   void ImplementGeometry(const HalfSpace&, void*) final {}
   void ImplementGeometry(const Box&, void*) final {}
+  void ImplementGeometry(const Capsule&, void*) final {}
   void ImplementGeometry(const Mesh& mesh, void*) final {
     is_mesh_ = true;
     drake::log()->warn("Meshes are _not_ supported for proximity: ({})",

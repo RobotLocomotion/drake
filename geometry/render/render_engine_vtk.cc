@@ -266,6 +266,10 @@ void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
   ImplementGeometry(cube.GetPointer(), user_data);
 }
 
+void RenderEngineVtk::ImplementGeometry(const Capsule&, void*) {
+  // TODO(tehbelinda - #10153): Add capsule support.
+}
+
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
   ImplementObj(mesh.filename(), mesh.scale(), user_data);
 }
