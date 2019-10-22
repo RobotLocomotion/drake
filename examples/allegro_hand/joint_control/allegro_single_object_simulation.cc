@@ -212,6 +212,8 @@ void DoMain() {
     integrator =
         simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
+    integrator->set_target_accuracy(FLAGS_accuracy);
+    integrator->set_fixed_step_mode(true);
   } else if (FLAGS_integration_scheme == "runge_kutta2") {
     integrator =
         simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
