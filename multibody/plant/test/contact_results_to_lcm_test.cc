@@ -218,10 +218,10 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   auto mesh = CreateSurfaceMesh();
 
   // Create the "e" field values (i.e., "hydroelastic pressure") using
-  // negated "z" values.
+  // the absolute value of the sum of the "x" and "y" values.
   std::vector<double> e_MN(mesh->num_vertices());
   for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    e_MN[i] = -mesh->vertex(i).r_MV()[2];
+    e_MN[i] = std::abs(mesh->vertex(i).r_MV()[0] + mesh->vertex(i).r_MV()[1]);
 
   // Create the gradient of the "h" field, pointing toward what will be
   // geometry "M" (the halfspace).
@@ -382,9 +382,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   const systems::InputPortIndex contact_results_input_port_index =
       builder.ExportInput(
           contact_results_to_lcm_system.get_contact_result_input_port());
-  const systems::OutputPortIndex
-      lcm_hydroelastic_contact_surface_output_port_index = builder.ExportOutput(
-          contact_results_to_lcm_system.get_lcm_message_output_port());
 
   // Finish constructing the diagram; note that we use the default pose for
   // the box, which will make the bottom of the box's surface lie at z=-0.5.
@@ -401,14 +398,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   // visualizer.
   geometry::DispatchLoadMessage(*scene_graph, &lcm);
   diagram->Publish(*diagram_context);
-
-  // Get the LCM message that corresponds to the contact results.
-  Value<lcmt_contact_results_for_viz> lcm_message_value;
-  diagram->get_output_port(
-      lcm_hydroelastic_contact_surface_output_port_index).Calc(
-          *diagram_context, &lcm_message_value);
-  const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.get_value();
 }
 #endif
 
@@ -480,6 +469,19 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
           surface_msg.triangles[i].p_WC, contact_surface->mesh_W(),
           10 * std::numeric_limits<double>::epsilon());
     }
+  }
+
+  // Verify that the pressure values match those set.
+  for (int i = 0; i < surface_msg.num_triangles; ++i) {
+    EXPECT_EQ(surface_msg.triangles[i].pressure_A,
+              std::abs(surface_msg.triangles[i].p_WA[0] +
+                       surface_msg.triangles[i].p_WA[1]));
+    EXPECT_EQ(surface_msg.triangles[i].pressure_B,
+              std::abs(surface_msg.triangles[i].p_WB[0] +
+                       surface_msg.triangles[i].p_WB[1]));
+    EXPECT_EQ(surface_msg.triangles[i].pressure_C,
+              std::abs(surface_msg.triangles[i].p_WC[0] +
+                       surface_msg.triangles[i].p_WC[1]));
   }
 }
 

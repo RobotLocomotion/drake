@@ -220,6 +220,10 @@ class ContactResultMaker final : public LeafSystem<double> {
         write_double3(vA.r_MV(), tri_msg.p_WA);
         write_double3(vB.r_MV(), tri_msg.p_WB);
         write_double3(vC.r_MV(), tri_msg.p_WC);
+
+        tri_msg.pressure_A = contacts[i].EvaluateE_MN(face.vertex(0));
+        tri_msg.pressure_B = contacts[i].EvaluateE_MN(face.vertex(1));
+        tri_msg.pressure_C = contacts[i].EvaluateE_MN(face.vertex(2));
       }
     }
   }
