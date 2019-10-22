@@ -131,9 +131,9 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 
   // Get the number of continuous state variables xt.
   const ContinuousState<T>& cstate = context->get_continuous_state();
-  const int nq = cstate.num_q(); 
-  const int nv = cstate.num_v(); 
-  const int ny = nv + cstate.num_z(); 
+  const int nq = cstate.num_q();
+  const int nv = cstate.num_v();
+  const int ny = nv + cstate.num_z();
 
   SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute Forwarddiff "
                "{}-Jacobian t={}", ny, t);
@@ -150,7 +150,8 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   this->get_system().MapVelocityToQDot(*context, vt, &qdot);
   qt_plus_hNv = qt0 + h * qdot.get_value();
   // qt_plus_hNv should equal qt from xt. Don't assert if they're both infinite.
-  DRAKE_ASSERT(drake::ExtractDoubleOrThrow((qt_plus_hNv - qt).norm()) <= 10 * std::numeric_limits<double>::epsilon() || 
+  DRAKE_ASSERT(drake::ExtractDoubleOrThrow((qt_plus_hNv - qt).norm()) <=
+     10 * std::numeric_limits<double>::epsilon() ||
      (!qt.allFinite() && !qt_plus_hNv.allFinite() ));
 
   // Compute the Jacobian.
@@ -181,6 +182,8 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     yt_prime(i) = yt(i) + dxi;
     if (i < nv)
     {
+      // set context to the right qt
+      context->SetTimeAndContinuousState(t, xt);
       this->get_system().MapVelocityToQDot(*context, vt_prime, &qdot);
       qt_prime = qt0 + h * qdot.get_value();
     }
@@ -196,7 +199,7 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     // Compute f' and set the relevant column of the Jacobian matrix.
     // e.g. if i > nv, just use GetMutableVZVector(). (still need this for i = nv).
     context->SetTimeAndContinuousState(t, xt_prime);
-    // consider using eval_g ? 
+    // consider using eval_g ?
     Jv->col(i) = (this->EvalTimeDerivatives(*context).CopyToVector() - f).block(nq,0,ny,1) / dxi;
 
     // Reset yt' to yt.
@@ -225,7 +228,8 @@ const MatrixX<T>& SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   const T t_current = context->get_time();
   const ContinuousState<T>& cstate = context->get_continuous_state();
   const VectorX<T> x_current = cstate.CopyToVector();
-  //const VectorX<T>& y_current = x_current.block(cstate.num_q(),0,cstate.num_v() + cstate.num_z(),1);
+  //const VectorX<T>& y_current = x_current.block(cstate.num_q(),0,cstate.num_v()
+  //   + cstate.num_z(),1);
 
   // Update the time and state.
   context->SetTimeAndContinuousState(t, x);
@@ -426,7 +430,8 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   std::function<VectorX<T>()> velocity_residual_R =
       [&qt0, &yt0, h, context, &qk, this]() {
         const systems::ContinuousState<T>& cstate_res = context->get_continuous_state();
-        VectorX<T> y = cstate_res.CopyToVector().block(cstate_res.num_q(),0,cstate_res.num_v() + cstate_res.num_z(),1);
+        VectorX<T> y = cstate_res.CopyToVector().block(cstate_res.num_q(), 0,
+                                                       cstate_res.num_v() + cstate_res.num_z(),1);
         VectorX<T> g_of_y (cstate_res.num_v() + cstate_res.num_z());
         this->eval_g_with_y_from_context(qt0, h, qk, &g_of_y);
         return (y - yt0 - h * g_of_y).eval();
@@ -489,13 +494,13 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     dx << dy, qtplus - last_qtplus;
     last_qtplus = qtplus;
 
-    
+
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
     // update the context
     context->SetTimeAndContinuousState(tf, *xtplus);
-    
+
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
@@ -601,7 +606,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0,
   }
   Context<T>* context = this->get_mutable_context();
     context->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
-    
+
   return true;
 
 }
