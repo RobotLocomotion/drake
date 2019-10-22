@@ -107,6 +107,15 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(box.height()));
   }
 
+  void ImplementGeometry(const Capsule& capsule, void*) override {
+    geometry_data_.type = geometry_data_.CAPSULE;
+    geometry_data_.num_float_data = 2;
+    geometry_data_.float_data.push_back(
+        static_cast<float>(capsule.get_radius()));
+    geometry_data_.float_data.push_back(
+        static_cast<float>(capsule.get_length()));
+  }
+
   void ImplementGeometry(const Mesh& mesh, void*) override {
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
