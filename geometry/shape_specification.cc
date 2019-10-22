@@ -82,6 +82,16 @@ Box Box::MakeCube(double edge_size) {
   return Box(edge_size, edge_size, edge_size);
 }
 
+Capsule::Capsule(double radius, double length)
+    : Shape(ShapeTag<Capsule>()), radius_(radius), length_(length) {
+  if (radius <= 0 || length <= 0) {
+    throw std::logic_error(
+        fmt::format("Capsule radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
+  }
+}
+
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
   if (std::abs(scale) < 1e-8) {

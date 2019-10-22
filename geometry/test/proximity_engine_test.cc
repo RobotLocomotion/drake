@@ -3263,6 +3263,15 @@ TEST_F(BoxPenetrationTest, TangentConvex2) {
   TestCollision2(TangentConvex, 1e-3);
 }
 
+// Attempting to add a Capsule should cause an abort.
+GTEST_TEST(ProximityEngineTests, AddCapsule) {
+  ProximityEngine<double> engine;
+  Capsule capsule{0.2, 1.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.AddDynamicGeometry(capsule, GeometryId::get_new_id()),
+      std::exception, ".*The proximity engine does not support capsules yet.*");
+}
+
 // Attempting to add a dynamic Mesh should cause an abort.
 GTEST_TEST(ProximityEngineTests, AddDynamicMesh) {
   ProximityEngine<double> engine;
