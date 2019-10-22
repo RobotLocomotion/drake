@@ -42,6 +42,9 @@ class ShapeName final : public ShapeReifier {
   void ImplementGeometry(const Box&, void*) final {
     string_ = "Box";
   }
+  void ImplementGeometry(const Capsule&, void*) final {
+    string_ = "Capsule";
+  }
   void ImplementGeometry(const Mesh&, void*) final {
     string_ = "Mesh";
   }

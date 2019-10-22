@@ -169,6 +169,25 @@ class Box final : public Shape {
   Vector3<double> size_;
 };
 
+/** Definition of a capsule. It is centered in its canonical frame with the
+ length of the capsule parallel with the frame's z-axis. */
+class Capsule final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
+
+  /** Constructs a capsule with the given `radius` and `length`.
+   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   */
+  Capsule(double radius, double length);
+
+  double get_radius() const { return radius_; }
+  double get_length() const { return length_; }
+
+ private:
+  double radius_{};
+  double length_{};
+};
+
 /** Definition of a half space. In its canonical frame, the plane defining the
  boundary of the half space is that frame's z = 0 plane. By implication, the
  plane's normal points in the +z direction and the origin lies on the plane.
@@ -313,17 +332,20 @@ class ShapeReifier {
  public:
   virtual ~ShapeReifier() = default;
 
-  virtual void ImplementGeometry(const Sphere& sphere, void* user_data) = 0;
-  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
-  virtual void ImplementGeometry(const HalfSpace& half_space,
-                                 void* user_data) = 0;
-  virtual void ImplementGeometry(const Box& box, void* user_data) = 0;
-  virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
-  virtual void ImplementGeometry(const Convex& convex, void* user_data) = 0;
+  virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
+  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data);
+  virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
+  virtual void ImplementGeometry(const Box& box, void* user_data);
+  virtual void ImplementGeometry(const Capsule& capsule, void* user_data);
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
+  virtual void ImplementGeometry(const Convex& convex, void* user_data);
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
+
+ private:
+  void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
 template <typename S>

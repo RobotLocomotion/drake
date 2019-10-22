@@ -290,6 +290,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_box, user_data);
   }
 
+  void ImplementGeometry(const Capsule&, void*) override {
+    // TODO(tehbelinda - #10153): Add capsule support.
+    throw std::domain_error(
+        "The proximity engine does not support capsules yet");
+  }
+
   void ImplementGeometry(const Mesh&, void*) override {
     throw std::domain_error("The proximity engine does not support meshes yet");
   }

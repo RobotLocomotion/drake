@@ -33,6 +33,13 @@ GTEST_TEST(ShapeToStringTest, Box) {
   EXPECT_EQ(reifier.string(), "Box(w: 1.5, d: 2.5, h: 3.5)");
 }
 
+GTEST_TEST(ShapeToStringTest, Capsule) {
+  ShapeToString reifier;
+  Capsule c(1.25, 2.5);
+  c.Reify(&reifier);
+  EXPECT_EQ(reifier.string(), "Capsule(r: 1.25, l: 2.5)");
+}
+
 GTEST_TEST(ShapeToStringTest, Mesh) {
   ShapeToString reifier;
   Mesh m("path/to/file", 1.5);
