@@ -396,6 +396,33 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcJacobianSpatialVelocity.doc)
+        .def("CalcJacobianAngularVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              Matrix3X<T> Js_w_AB_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianAngularVelocity(context, with_respect_to,
+                  frame_B, frame_A, frame_E, &Js_w_AB_E);
+              return Js_w_AB_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianAngularVelocity.doc)
+        .def("CalcJacobianTranslationalVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              Matrix3X<T> Js_v_ABi_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianTranslationalVelocity(context, with_respect_to,
+                  frame_B, p_BoBi_B, frame_A, frame_E, &Js_v_ABi_E);
+              return Js_v_ABi_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBi_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianTranslationalVelocity.doc)
         .def("CalcSpatialAccelerationsFromVdot",
             [](const Class* self, const Context<T>& context,
                 const VectorX<T>& known_vdot) {
