@@ -112,7 +112,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   EXPECT_NEAR(err_est_2h_2, 1.0 / 8 * err_est_h,
-              10 * std::numeric_limits<double>::epsilon());
+              25 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
