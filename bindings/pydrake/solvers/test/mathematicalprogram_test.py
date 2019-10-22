@@ -480,20 +480,16 @@ class TestMathematicalProgram(unittest.TestCase):
 
         cost_binding = prog.AddCost(cost, vars=x)
         constraint_binding = prog.AddConstraint(constraint, [0], [1], vars=x)
-        self.assertIsNone(cost_binding.evaluator().gradient_sparsity_pattern())
-        self.assertIsNone(
-            constraint_binding.evaluator().gradient_sparsity_pattern())
+        cost_evaluator = cost_binding.evaluator()
+        constraint_evaluator = constraint_binding.evaluator()
+        self.assertIsNone(cost_evaluator.gradient_sparsity_pattern())
+        self.assertIsNone(constraint_evaluator.gradient_sparsity_pattern())
         # Now set the sparsity
-        cost_binding.evaluator().SetGradientSparsityPattern([(0, 0)])
-        self.assertIsNotNone(
-            cost_binding.evaluator().gradient_sparsity_pattern())
-        self.assertEqual(cost_binding.evaluator().gradient_sparsity_pattern(),
-                         [(0, 0)])
+        cost_evaluator.SetGradientSparsityPattern([(0, 0)])
+        self.assertEqual(cost_evaluator.gradient_sparsity_pattern(), [(0, 0)])
         constraint_binding.evaluator().SetGradientSparsityPattern([(0, 1)])
-        self.assertIsNotNone(
-            constraint_binding.evaluator().gradient_sparsity_pattern())
         self.assertEqual(
-            constraint_binding.evaluator().gradient_sparsity_pattern(),
+            constraint_evaluator.gradient_sparsity_pattern(),
             [(0, 1)])
 
     def test_pycost_and_pyconstraint(self):
