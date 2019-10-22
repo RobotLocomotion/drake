@@ -73,7 +73,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         .def("q", &Class::q, cls_doc.q.doc)
         .def("prog", &Class::prog, py_reference_internal, cls_doc.prog.doc)
         .def("get_mutable_prog", &Class::get_mutable_prog,
-            py_reference_internal, cls_doc.get_mutable_prog.doc);
+            py_reference_internal, cls_doc.get_mutable_prog.doc)
+        .def("context", &Class::context, py_reference_internal,
+            cls_doc.context.doc)
+        .def("get_mutable_context", &Class::get_mutable_context,
+            py_reference_internal, cls_doc.get_mutable_context.doc);
   }
   {
     using Class = AngleBetweenVectorsConstraint;

@@ -99,6 +99,9 @@ class TestInverseKinematics(unittest.TestCase):
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
+        np.testing.assert_array_equal(self.plant.GetPositions(
+            self.ik_two_bodies.context()), q_val)
+        self.assertIsNotNone(self.ik_two_bodies.get_mutable_context())
 
     def test_AddOrientationConstraint(self):
         theta_bound = 0.2 * math.pi
