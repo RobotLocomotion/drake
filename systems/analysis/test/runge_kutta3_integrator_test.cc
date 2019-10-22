@@ -42,7 +42,6 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<Context<double>> MakePlantContext() const {
     std::unique_ptr<Context<double>> context =
         plant_->CreateDefaultContext();
-    context->EnableCaching();
 
     // Set body linear and angular velocity.
     Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
@@ -95,10 +94,9 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
 
   // This integrator calculates error by subtracting a 2nd-order integration
   // result from a 3rd-order integration result. Since the 2nd-order integrator
-  // has a Taylor series that is accurate to O(h³), halving the step size is
-  // associated with an error that reduces by a factor of 2³ = 8.
-  // So we verify that the error associated with a half-step is nearly 1/8 the
-  // error associated with a full step.
+  // has a Taylor series that is accurate to O(h³) and since we have no terms
+  // beyond order h³, halving the step size should improve the error estimate
+  // by a factor of 2³ = 8. We verify this.
 
   // First obtain the error estimate using a single step of h.
   const double err_est_h =
@@ -113,14 +111,8 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   const double err_est_2h_2 =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
-  // Check that the 2nd-order error estimate for a full-step is less than
-  // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
-  // K is a constant term that subsumes the asymptotic error and is dependent
-  // upon both the system being integrated and the particular integrator.
-  const double K = 256;
-  const double allowable_2nd_order_error = K *
-      std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(err_est_h, 8 * err_est_2h_2, allowable_2nd_order_error);
+  EXPECT_NEAR(err_est_2h_2, 1.0 / 8 * err_est_h,
+              10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t

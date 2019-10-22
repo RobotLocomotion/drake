@@ -32,8 +32,8 @@ class RK5IntegratorTest : public ::testing::Test {
     const double radius = 0.05;   // m
     const double mass = 0.1;      // kg
     auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-    multibody::SpatialInertia<double> M_Bcm(
-      mass, Vector3<double>::Zero(), G_Bcm);
+    multibody::SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(),
+                                            G_Bcm);
     plant_->AddRigidBody("Ball", M_Bcm);
     plant_->Finalize();
   }
@@ -41,7 +41,6 @@ class RK5IntegratorTest : public ::testing::Test {
   std::unique_ptr<Context<double>> MakePlantContext() const {
     std::unique_ptr<Context<double>> context =
         plant_->CreateDefaultContext();
-    context->EnableCaching();
 
     // Set body linear and angular velocity.
     Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
@@ -97,12 +96,12 @@ GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuinticTest) {
 
   // This integrator calculates error by subtracting a 4th-order integration
   // result from a 5th-order integration result. Since the 4th-order integrator
-  // has a Taylor series that is accurate to O(h⁵), halving the step size is
-  // associated with an error that reduces by a factor of 2⁵ = 32.
-  // So we verify that the error associated with a half-step is nearly 1/32 the
-  // error associated with a full step.
+  // has a Taylor series that is accurate to O(h⁵) and since we have no terms
+  // beyond order h⁵, halving the step size should improve the error estimate
+  // by a factor of 2⁵ = 32. We verify this.
 
-  // First obtain the error estimate using a single step of h.
+  // First obtain the error estimate using a single step of h. Note that the
+  // actual integration error is essentially zero, per the check above.
   const double err_est_h = rk5.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Now obtain the error estimate using two half steps of h/2.
@@ -114,14 +113,8 @@ GTEST_TEST(RK5IntegratorErrorEstimatorTest, QuinticTest) {
   const double err_est_2h_2 =
       rk5.get_error_estimate()->get_vector().GetAtIndex(0);
 
-  // Check that the 4th-order error estimate for a full-step is less than
-  // K*32 times larger than then 4th-order error estimate for 2 half-steps;
-  // K is a constant term that subsumes the asymptotic error and is dependent
-  // upon both the system being integrated and the particular integrator.
-  const double K = 128;
-  const double allowable_4th_order_error =
-      K * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(err_est_h, 32 * err_est_2h_2, allowable_4th_order_error);
+  EXPECT_NEAR(err_est_2h_2, 1.0 / 32 * err_est_h,
+              10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quartic system (with the state at time t

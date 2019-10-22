@@ -13,8 +13,6 @@ namespace systems {
  A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
  with a fourth order error estimate.
  @tparam T A double or autodiff type.
- This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
- this class, please refer to https://drake.mit.edu/cxx_inl.html.
 
  Instantiated templates for the following kinds of T's are provided:
 
@@ -24,18 +22,18 @@ namespace systems {
  For a discussion of this Runge-Kutta method, see [Hairer, 1993]. The
  embedded error estimate was derived using the method mentioned in
  [Hairer, 1993].
-  The Butcher tableaux for this integrator follows:
+  The Butcher tableau for this integrator follows:
  <pre>
     0 |
   1/5 |        1/5
  3/10 |       3/40         9/40
   4/5 |      44/45       -56/15         32/9
   8/9 | 19372/6561   −25360/2187   64448/6561   −212/729
-    1 |  9017/3168      −355/33   46732/5247     49/176     −5103/18656                    // NOLINT
-    1 |     35/384            0     500/1113    125/192      −2187/6784      11/84         // NOLINT
- ---------------------------------------------------------------------------------         // NOLINT
-            35/384            0     500/1113    125/192      −2187/6784      11/84      0  // NOLINT
-        5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40  // NOLINT
+    1 |  9017/3168      −355/33   46732/5247     49/176     −5103/18656
+    1 |     35/384            0     500/1113    125/192      −2187/6784      11/84
+ ---------------------------------------------------------------------------------
+            35/384            0     500/1113    125/192      −2187/6784      11/84      0
+        5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40
  </pre>
  where the second to last row is the 5th-order (propagated) solution and
  the last row gives a 2nd-order accurate solution used for error control.
@@ -94,7 +92,7 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
 /**
  * RK5-specific initialization function.
  * @throws std::logic_error if *neither* the initial step size target nor the
- *           maximum step size have been set before calling.
+ *           maximum step size has been set before calling.
  */
 template <typename T>
 void RungeKutta5Integrator<T>::DoInitialize() {
@@ -142,22 +140,24 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // cache invalidation. Be careful not to insert calls to methods that could
   // invalidate any of these references before they are used.
 
-  // We use Butcher tableaux notation with labels for each coefficient:
-  // 0    (c1) |
-  // 1/5  (c2) |        1/5 (a21)
-  // 3/10 (c3) |       3/40 (a31)          9/40 (a32)
-  // 4/5  (c4) |      44/45 (a41)        -56/15 (a42)         32/9 (a43)
-  // 8/9  (c5) | 19372/6561 (a51)   −25360/2187 (a52)   64448/6561 (a53)   −212/729 (a54)                                                    // NOLINT
-  // 1    (c6) |  9017/3168 (a61)       −355/33 (a62)   46732/5247 (a63)     49/176 (a64)    −5103/18656 (a65)                               // NOLINT
-  // 1    (c7) |     35/384 (a71)             0 (a72)     500/1113 (a73)    125/192 (a74)     −2187/6784 (a75)     11/84 (a76)               // NOLINT
-  // ------------------------------------------------------------------------------------------------------------------------------------    // NOLINT
-  //                 35/384  (b1)             0 (b2)      500/1113 (b3)     125/192 (b4)      −2187/6784 (b5)      11/84 (b6)      0 (b7)    // NOLINT
-  //             5179/57600  (d1)             0 (d2)    7571/16695 (d3)     393/640 (d4)   −92097/339200 (d5)   187/2100 (d6)   1/40 (d7)    // NOLINT
+  // We use Butcher tableau notation with labels for each coefficient:
+  /*
+   0    (c1) |
+   1/5  (c2) |        1/5 (a21)
+   3/10 (c3) |       3/40 (a31)          9/40 (a32)
+   4/5  (c4) |      44/45 (a41)        -56/15 (a42)         32/9 (a43)
+   8/9  (c5) | 19372/6561 (a51)   −25360/2187 (a52)   64448/6561 (a53)   −212/729 (a54)
+   1    (c6) |  9017/3168 (a61)       −355/33 (a62)   46732/5247 (a63)     49/176 (a64)    −5103/18656 (a65)
+   1    (c7) |     35/384 (a71)             0 (a72)     500/1113 (a73)    125/192 (a74)     −2187/6784 (a75)     11/84 (a76)
+   ------------------------------------------------------------------------------------------------------------------------------------
+                   35/384  (b1)             0 (b2)      500/1113 (b3)     125/192 (b4)      −2187/6784 (b5)      11/84 (b6)      0 (b7)
+               5179/57600  (d1)             0 (d2)    7571/16695 (d3)     393/640 (d4)   −92097/339200 (d5)   187/2100 (d6)   1/40 (d7)
+  */
 
   // Save the continuous state at t₀.
   context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
 
-  // Evaluate the derivative at t₀, xc₀.
+  // Evaluate the derivative at t₀, xc₀ and copy the result into a temporary.
   derivs1_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k1 = derivs1_->get_vector();
@@ -179,7 +179,7 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // Evaluate the derivative (denoted k2) at t₀ + c2 * h, xc₀ + a21 * h * k1.
   derivs2_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
-  const VectorBase<T>& k2 = derivs2_->get_vector();  // xcdot⁽ᵃ⁾
+  const VectorBase<T>& k2 = derivs2_->get_vector();
 
   // Cache: k2 references a *copy* of the derivative result so is immune
   // to subsequent evaluations.
@@ -263,14 +263,12 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   const VectorBase<T>& k6 = derivs6_->get_vector();
 
   // Cache: we're about to write through the xc reference again, so need to
-  // mark xc-dependent cache entries out of date, including xcdot_b; time
-  // doesn't change here.
+  // mark xc-dependent cache entries out of date; time doesn't change here.
   context.NoteContinuousStateChange();
 
   // Compute the propagated solution (we're able to do this because b1 = a71,
   // b2 = a72, b3 = a73, b4 = a74, b5 = a75, and b6 = a76).
   // Note that a72 is 0.0, so we leave that term out below.
-  const double c7 = 1.0;
   const double a71 = 35.0 / 384;
   const double a73 = 500.0 / 1113;
   const double a74 = 125.0 / 192;
@@ -279,9 +277,10 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t0 + c7 * h);
+  // Note that we use the simplification t1 = t0 + h * c7 = t0 + h * 1.
+  context.SetTimeAndNoteContinuousStateChange(t1);
 
-  // Evaluate the derivative (denoted k7) at t₀ + c6 * h,
+  // Evaluate the derivative (denoted k7) at t₀ + c7 * h,
   //   xc₀ + a71 * h * k1 + a72 * h * k2 + a73 * h * k3 + a74 * h * k4 +
   //       a75 * h * k5 + a76 * h * k6.
   xc.SetFromVector(save_xc0_);

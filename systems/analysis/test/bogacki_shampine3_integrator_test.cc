@@ -91,6 +91,27 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
       std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];
   EXPECT_NEAR(actual_answer, expected_answer, allowable_3rd_order_error);
+
+  // This integrator calculates error by subtracting a 2nd-order integration
+  // result from a 3rd-order integration result. Since the 2nd-order integrator
+  // has a Taylor series that is accurate to O(h³) and since we have no terms
+  // beyond order h³, halving the step size should improve the error estimate
+  // by a factor of 2³ = 8. We verify this.
+
+  // First obtain the error estimate using a single step of h.
+  const double err_est_h = bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  // Now obtain the error estimate using two half steps of h/2.
+  cubic_context->SetTime(0.0);
+  cubic_context->get_mutable_continuous_state_vector()[0] = C;
+  bs3.Initialize();
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final / 2));
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
+  const double err_est_2h_2 =
+      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  EXPECT_NEAR(err_est_2h_2, 1.0 / 8 * err_est_h,
+              10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t

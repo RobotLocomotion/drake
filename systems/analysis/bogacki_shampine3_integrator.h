@@ -20,7 +20,7 @@ namespace systems {
  - AutoDiffXd
 
  For a discussion of this Runge-Kutta method, see [Hairer, 1993].
- The Butcher tableaux for this integrator follows:
+ The Butcher tableau for this integrator follows:
  <pre>
  0    |
  1/2  | 1/2
@@ -124,7 +124,7 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // cache invalidation. Be careful not to insert calls to methods that could
   // invalidate any of these references before they are used.
 
-  // We use Butcher tableaux notation with labels for each coefficient:
+  // We use Butcher tableau notation with labels for each coefficient:
   // 0   (c1)  |
   // 1/2 (c2)  |  1/2  (a21)
   // 3/4 (c3)  |  0    (a31)      3/4 (a32)
