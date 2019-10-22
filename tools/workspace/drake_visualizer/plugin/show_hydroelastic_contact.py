@@ -48,9 +48,9 @@ class ColorMapModes:
             'below min_val or above max_val, respectively. Presently,'
             'color1 and color2 are blue and hot pink.'
         elif mode == ColorMapModes.kIntensityMap:
-            return 'Maps [min_val, max_val] to colorx. Saturates to black and '
-            'colorx for values below min_val or above max_val, '
-            'respectively. Presently, colorx is red.'
+            return 'Maps [min_val, max_val] to some color. Saturates to black '
+            'and that color for values below min_val or above max_val, '
+            'respectively. Presently, the color is red.'
         else:
             return 'unrecognized mode'
 
