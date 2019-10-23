@@ -37,7 +37,7 @@ Its source lives in
 Python Style
 ============
 
-Drake Python code uses Python 2.7.
+Drake Python code uses Python 3.
 
 Drake strictly follows `PEP 8 -- Style Guide for Python Code
 <https://www.python.org/dev/peps/pep-0008/>`_ except for the specific
@@ -45,6 +45,11 @@ clarifications, exceptions, and additional rules noted below. Since PEP 8
 incorporates `PEP 257 -- Docstring Conventions
 <https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
 recommendations as well.
+
+Drake generally follows `Section 3.8. Comments and Docstrings <https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings>`_
+of the Google Python Style Guide, except license boilerplate is not included
+in individual files, and (at present) class attributes are not always
+documented in class docstrings.
 
 See :ref:`tools for complying with coding style <code-style-tools>` for details
 about the automated style checks.
