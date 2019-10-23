@@ -24,48 +24,6 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, GenericIntegratorTest, Types);
 
-// A testing fixture for RK3 integrators, providing a simple
-// free body plant with closed form solutions to test against.
-class RK3IntegratorTest : public ::testing::Test {
- protected:
-  void SetUp() {
-    plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
-
-    // Add a single free body to the world.
-    const double radius = 0.05;   // m
-    const double mass = 0.1;      // kg
-    auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-    multibody::SpatialInertia<double> M_Bcm(
-      mass, Vector3<double>::Zero(), G_Bcm);
-    plant_->AddRigidBody("Ball", M_Bcm);
-    plant_->Finalize();
-  }
-
-  std::unique_ptr<Context<double>> MakePlantContext() const {
-    std::unique_ptr<Context<double>> context =
-        plant_->CreateDefaultContext();
-
-    // Set body linear and angular velocity.
-    Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
-    Vector3<double> w0(-4., 5., -6.);  // Angular velocity in body's frame.
-    VectorX<double> generalized_velocities(6);
-    generalized_velocities << w0, v0;
-    plant_->SetVelocities(context.get(), generalized_velocities);
-
-    // Set body position and orientation.
-    Vector3<double> p0(1., 2., 3.);  // Body's frame position in the world.
-    // Set body's frame orientation to 90 degree rotation about y-axis.
-    Vector4<double> q0(std::sqrt(2.)/2., 0., std::sqrt(2.)/2., 0.);
-    VectorX<double> generalized_positions(7);
-    generalized_positions << q0, p0;
-    plant_->SetPositions(context.get(), generalized_positions);
-
-    return context;
-  }
-
-  std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
-};
-
 // Tests accuracy for integrating the cubic system (with the state at time t
 // corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. RK3 is a third
 // order integrator, meaning that it uses the Taylor Series expansion:
