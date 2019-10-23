@@ -15,54 +15,55 @@ template <typename T> class Body;
 
 /// This %ForceElement models a massless bushing that connects a frame Aʙ of a
 /// body A to a frame Bᴀ of a body B.  The bushing can apply both a torque and
-/// force due to stiffness and dissipation (spring/damper) properties.
-///
-/// The bushing's torque depends on roll-pitch-yaw angles q₀, q₁, q₂ and their
-/// time derivatives q̇₀, q̇₁, q̇₂.  The roll-pitch-yaw angles q₀, q₁, q₂ are
-/// calculated from the orientation between frames Aʙ and Bᴀ and have the range
-/// `-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`.
-///
-/// The bushing's force depends on displacements x, y, z and their time
-/// derivatives ẋ, ẏ, ż.  The displacements x, y, z are defined so the position
-/// vector from Aʙₒ (frame Aʙ's origin) to Bᴀₒ (frame Bᴀ's origin) expressed
-/// in frame Aʙ is `[x, y, z]`.
+/// force due to stiffness (spring) and dissipation (damper) properties.
 ///
 /// The set of forces on body B from the bushing is equivalent to a torque τ
-/// on frame Bᴀ and a force f applied to a point Bc of B, as
-/// <pre>
-/// f = Fx Aʙx + Fy Aʙy + Fz Aʙz
-/// τ = Tx Bᴀx + Ty Aʙy + Tz Aʙz
-/// </pre>
-/// where Aʙx, Aʙy, Aʙz are orthogonal unit vectors fixed in frame Aʙ,
-/// and Bᴀx, Bᴀy, Bᴀz are orthogonal unit vectors fixed in frame Bᴀ.
-/// The set of forces on body A from the bushing is equivalent to a torque -τ on
-/// frame Aʙ and a force -f applied to a point Ac of A.  Point Ac of A and point
-/// Bc of B are coincident and located halfway between Aʙₒ (the origin of
-/// frame Aʙ) and Bᴀₒ (the origin of frame Bᴀ).
+/// on body B and a force f applied to a point Bc of B.  The set of forces on
+/// body A from the bushing is equivalent to a torque -τ on body A and a force
+/// -f applied to the point Ac of A.  Point Ac and point Bc are coincident and
+/// located halfway between Aʙₒ (frame Aʙ's origin) and Bᴀₒ (frame Bᴀ's origin).
 ///
-/// The bushing torque τ and force f are modeled as having a potential energy 𝖀
-/// and a dissipation function 𝕱 of <pre>
-/// `𝖀 = 1/2 (kx x² + ky y² + kz z²) + 1/2 (k₀q₀² + k₁q₁² + k₂q₂²)`
-/// `𝕱 = 1/2 (bx ẋ² + by ẏ² + bz ż²) + 1/2 (b₀q̇₀² + b₁q̇₁² + b₂q̇₂²)`
+/// The bushing torque τ and force f are expressed in terms of orthogonal unit
+/// vectors Aʙx, Aʙy, Aʙz fixed in frame Aʙ as <pre>
+/// τ = Tx Aʙx + Ty Aʙy + Tz Aʙz
+/// f = Fx Aʙx + Fy Aʙy + Fz Aʙz
 /// </pre>
-/// By equating the generalized forces associated with 𝖀 and 𝕱 with the
-/// generalized forces produced by f and τ, one can show <pre>
-/// Fx = (kx x + bx ẋ)
-/// Fy = (ky y + by ẏ)
-/// Fz = (kz z + bz ż)
-/// M₀ = (k₀ q₀ + b₀ q̇₀)
-/// M₁ = (k₁ q₁ + b₁ q̇₁)
-/// M₂ = (k₂ q₂ + b₂ q̇₂)
-/// Tx = cos(q₂)/cos(q₁)*M₀ - sin(q2)*M₁ + cos(q₂)*tan(q₁)*M₂ + y*Fz - z*Fy
-/// Ty = sin(q₂)/cos(q₁)*M₀ + cos(q2)*M₁ + sin(q₂)*tan(q₁)*M₂ + z*Fx - x*Fz
-/// Tz =                                                   M₂ + x*Fy - y*Fx
+///
+/// The bushing's potential energy 𝖀 is modeled as a function of the bushing's
+/// roll-pitch-yaw angles q₀, q₁, q₂ and the bushing's displacements x, y, z.
+/// Angles q₀, q₁, q₂ are determined from the orientation between frames Aʙ and
+/// Bᴀ and have the range `-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`.
+/// Displacements x, y, z are determined from the position vector from Aʙₒ
+/// to Bᴀₒ expressed in frame Aʙ.  The bushing's dissipation function 𝕱 depends
+/// on q̇₀, q̇₁, q̇₂ and ẋ, ẏ, ż (time-derivatives of q₀, q₁, q₂ and x, y, z).<pre>
+/// `𝖀 = 1/2 (k₀ q₀² + k₁ q₁² + k₂ q₂²) + 1/2 (kx x² + ky y² + kz z²)`
+/// `𝕱 = 1/2 (b₀ q̇₀² + b₁ q̇₁² + b₂ q̇₂²) + 1/2 (bx ẋ² + by ẏ² + bz ż²)`
 /// </pre>
-/// where kx, ky, kz and bx, by, bz are force stiffness and damping constants,
-/// k₀, k₁, k₂ and b₀, b₁, b₂, are torque stiffness and damping constants,
+/// @note k₀, k₁, k₂ and b₀, b₁, b₂ are torque stiffness and damping constants
+/// and kx, ky, kz and bx, by, bz are force stiffness and damping constants.
+///
+/// By equating the generalized forces produced by 𝖀 and 𝕱 to the generalized
+/// forces produced by τ and f, one can show [Mitiguy 2016, §26.9] <pre>
+/// Fx = kx x + bx ẋ
+/// Fy = ky y + by ẏ
+/// Fz = kz z + bz ż
+/// M₀ = k₀ q₀ + b₀ q̇₀
+/// M₁ = k₁ q₁ + b₁ q̇₁
+/// M₂ = k₂ q₂ + b₂ q̇₂
+/// Mx = (y*Fz - z*Fy) / 2
+/// My = (z*Fx - x*Fz) / 2
+/// Mz = (x*Fy - y*Fx) / 2
+/// Tx = cos(q₂)/cos(q₁)*M₀ - sin(q2)*M₁ + cos(q₂)*tan(q₁)*M₂ + Mx
+/// Ty = sin(q₂)/cos(q₁)*M₀ + cos(q2)*M₁ + sin(q₂)*tan(q₁)*M₂ + My
+/// Tz =                                                   M₂ + Mz
+/// </pre>
+///
+/// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
 /// @see @ref RollPitchYaw for definitions of roll, pitch, yaw = `[q₀, q₁, q₂]`.
+// TODO(Mitiguy) Improve efficiency with caching and references.
 template <typename T>
 class LinearBushingRollPitchYaw final : public ForceElement<T> {
  public:
@@ -73,18 +74,19 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @param[in] frameBa the frame Bᴀ of body `B` that connects to the bushing.
   /// @param[in] torque_stiffness_constants  the constants `[k₀, k₁, k₂]`
   /// associated with the rotational part `1/2 (k₀q₀² + k₁q₁² + k₂q₂²)` of the
-  /// potential energy where `[q₀, q₁, q₂]` are the roll, pitch, yaw angles.
+  /// potential energy 𝖀 where `[q₀, q₁, q₂]` are the roll, pitch, yaw angles.
   /// @param[in] torque_damping_constants the constants `[b₀, b₁, b₂]`
   /// associated with the rotational part `1/2 (b₀q̇₀² + b₁q̇₁² + b₂q̇₂²)`
-  /// of the dissipation function.
+  /// of the dissipation function 𝕱.
   /// @param[in] force_stiffness_constants the constants `[kx, ky, kz]`
   /// associated with the translational part `1/2 (kx x² + ky y² + kz z²)` of
-  /// the potential energy, where `[x, y, z]` are the bushing's displacements.
+  /// the potential energy 𝖀, where [x, y, z] are the bushing's displacements.
   /// @param[in] force_damping_constants the constants `[bx, by, bz]`
   /// associated with the translational part `1/2 (bx ẋ² + by ẏ² + bz ż²)`
-  /// of the dissipation function.
-  /// @note Refer to this class's documentation for details about τ, f, q₀, etc.
-  /// @note The stiffness and damping parameters are usually non-negative.
+  /// of the dissipation function 𝕱.
+  /// @note Refer to the class documentation for details about 𝖀, 𝕱, q₀, etc.
+  /// @note The stiffness constants `[k₀, k₁, k₂]`, `[kx, ky, kz]` and the
+  /// damping constants `[b₀, b₁, b₂]`, `[bx, by, bz]` are usually non-negative.
   LinearBushingRollPitchYaw(const Frame<T>& frameAb,
                             const Frame<T>& frameBa,
                             const Vector3<double>& torque_stiffness_constants,
@@ -135,7 +137,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @param[in] context The state of the multibody system.
   /// @note: `X_AʙBᴀ.rotation()` is the rotation matrix R_AʙBᴀ that relates
   /// frames Aʙ and Bᴀ whereas `X_AʙBᴀ.translation()` is `p_AʙBᴀ = [x, y, z]`
-  /// (the position from Aʙₒ to Bᴀₒ expressed in Aʙ).
+  /// (the position vector from Aʙₒ to Bᴀₒ, expressed in Aʙ).
   math::RigidTransform<T> CalcBushingRigidTransform(
       const systems::Context<T>& context) const {
     return frameBa().CalcPose(context, frameAb());
@@ -154,41 +156,47 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @retval [ṙoll, ṗitch, ẏaw] = [q̇₀, q̇₁, q̇₂].
   Vector3<T> CalcBushingRollPitchYawAngleRates(
       const systems::Context<T>& context) const {
-    const math::RollPitchYaw<T>& rpy = CalcBushingRollPitchYawAngles(context);
+    const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
     return CalcBushingRollPitchYawAngleRates(context, rpy);
+  }
+
+  /// Calculates the bushing's displacement `p_AʙBᴀ_Aʙ = [x, y, z]` which is the
+  /// position vector from point Aʙₒ to point Bᴀₒ, expressed in frame Aʙ.
+  /// @param[in] context The state of the multibody system.
+  Vector3<T> CalcBushingDisplacement(
+      const systems::Context<T>& context) const {
+    return CalcBushingRigidTransform(context).translation();
+  }
+
+  /// Calculates the bushing's displacement rate `v_AʙBᴀₒ_Aʙ = [ẋ, ẏ, ż]`,
+  /// which is point Bᴀₒ's velocity in frame Aʙ, expressed in frame Aʙ.
+  /// @param[in] context The state of the multibody system.
+  Vector3<T> CalcBushingDisplacementRate(
+      const systems::Context<T>& context) const {
+    return CalcBushingSpatialVelocity(context).translational();
   }
 
   /// Returns V_AʙBᴀ, frame Bᴀ's spatial velocity in frame Aʙ expressed in Aʙ.
   /// @param[in] context The state of the multibody system.
-  /// @note: `V_AʙBᴀ.rotational()` is w_AʙBᴀ (Bᴀ's angular velocity in frame Aʙ
-  /// expressed in Aʙ) whereas `V_AʙBᴀ.translational()` is `v_AʙBᴀₒ = [ẋ, ẏ, ż]`
-  /// (point Bᴀₒ's translational velocity in Aʙ, expressed in frame Aʙ).
-  /// Note: w_AʙBᴀ is not equal to `[q̇₀, q̇₁, q̇₂]`.
+  /// @note: V_AʙBᴀ.rotational() is w_AʙBᴀ_Aʙ (Bᴀ's angular velocity in Aʙ,
+  /// expressed in Aʙ) whereas V_AʙBᴀ.translational() is v_AʙBᴀₒ_Aʙ = [ẋ, ẏ, ż]
+  /// (point Bᴀₒ's translational velocity in frame Aʙ, expressed in frame Aʙ).
+  /// Note: w_AʙBᴀ_Aʙ ≠ `[q̇₀, q̇₁, q̇₂]`.
   /// @see CalcBushingRollPitchYawAngleRates() for `[q̇₀, q̇₁, q̇₂]`.
   SpatialVelocity<T> CalcBushingSpatialVelocity(
       const systems::Context<T>& context) const {
     return frameBa().CalcSpatialVelocity(context, frameAb(), frameAb());
   }
 
-  /// Returns F_Ab_Ab, the spatial force on frame Aʙ expressed in frame Aʙ.
+  /// Calculates F_Aʙ_Aʙ, the spatial force on point Aʙₒ of body A expressed in
+  /// frame Aʙ (due to the bushing forces exerted on A).
   /// @param[in] context The state of the multibody system.
-  /// @note F_Ab_Ab is a force/torque representation of the set of all bushing
-  /// forces exerted on body A. In other words, the bushing forces on body A
-  /// are replaced by the set's resultant force f_Aʙₒ applied to point Aʙₒ
-  /// and a torque t_Aʙ equal to the moment of the set about point Aʙₒ.
-  /// F_Ab_Ab.rotational() is t_Aʙ whereas F_Ab_Ab.translational() is f_Aʙₒ.
-  SpatialForce<T> CalcBushingResultantSpatialForceOnAbo(
+  SpatialForce<T> CalcBushingSpatialForceOnAb(
       const systems::Context<T>& context) const {
-    // Form the torque that is equal to the moment of the bushing forces on
-    // body A about point Aʙₒ expressed in frame Aʙ.
-    const Vector3<T> t_Ab_Ab = CalcBushingTorqueStiffnessOnAb(context, true)
-                             + CalcBushingTorqueDampingOnAb(context, true);
-
-    // Form the bushing's resultant force on point Aʙₒ expressed in frame Aʙ.
-    const Vector3<T> f_Abo_Ab = CalcBushingForceStiffnessOnAbo(context)
-                              + CalcBushingForceDampingOnAbo(context);
-
-    return SpatialForce<T>(t_Ab_Ab, f_Abo_Ab);
+    const SpatialForce<T> F_Bc_Ab = CalcBushingSpatialForceOnBc(context);
+    const Vector3<T> p_BcAbo_Ab = -0.5 * CalcBushingDisplacement(context);
+    const SpatialForce<T> F_Ab_Ab = F_Bc_Ab.Shift(p_BcAbo_Ab);
+    return F_Ab_Ab;
   }
 
  protected:
@@ -218,80 +226,62 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return rpy.CalcRpyDtFromAngularVelocityInParent(w_AbBa);
   }
 
-  // Convert a torque τ from a non-orthogonal basis related to RollPitchYaw of
-  // τ = τ₀ Bᴀx + τ₁  Iy + τ₂ Aʙz  to an orthogonal basis of the form
-  // τ = τx Aʙx + τy Aʙy + τz Aʙz  where
-  // Aʙx, Aʙy, Aʙz are orthogonal unit vectors fixed in frame Aʙ,
-  // Bᴀx, Bᴀy, Bᴀz are orthogonal unit vectors fixed in frame Bᴀ, and
-  // Iy = -sin(q₂)*Aʙx + cos(q₂)*Aʙy.  Note: The non-orthogonal basis is related
-  // to a Space-fixed XYZ (intrinsic) RollPitchYaw sequence with angles
-  // `[roll = q₀, pitch = q₁, yaw = q₂]`.
-  Vector3<T> ConvertTorqueFromNonOrthogonalBasisToFrameAb(
-      const Vector3<T>& t_nonOrthogonal_basis,
-      const math::RollPitchYaw<T>& rpy) const {
-    const T t0 = t_nonOrthogonal_basis(0);
-    const T t1 = t_nonOrthogonal_basis(1);
-    const T t2 = t_nonOrthogonal_basis(2);
-    const T q1 = rpy.pitch_angle();
-    const T q2 = rpy.yaw_angle();
-    const T cos1 = cos(q1), sin1 = sin(q1);
-    const T cos2 = cos(q2), sin2 = sin(q2);
-    const T tx = cos1 * cos2 * t0 - sin2 * t1;
-    const T ty = cos2 * t1 + sin2 * cos1 * t0;
-    const T tz = t2 - sin1 * t0;
-    return Vector3<T>(tx, ty, tz);
-  }
-
-  // Use the bushing's torque stiffness constants and its roll-pitch-yaw angles
-  // to form the bushing's stiffness torque τₛ on frame Aʙ.
+  // Returns [k₀q₀, k₁q₁, k₂q₂], element-wise multiplication of the torque
+  // stiffness constants [k₀, k₁, k₂] and roll-pitch-yaw angles [q₀, q₁, q₂].
   // @param[in] context The state of the multibody system.
-  // param[in] is_express_in_frameAb is `true` if this method is to return τₛ
-  // expressed in frame Aʙ whereas `false` returns `[k₀q₀, k₁q₁, k₂q₂]`.
-  // @see ConvertTorqueFromNonOrthogonalBasisToFrameAb() for more information.
-  Vector3<T> CalcBushingTorqueStiffnessOnAb(
-      const systems::Context<T>& context,
-      const bool is_express_in_frameAb) const {
-    const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
-    const Vector3<T> ki_qi =
-        torque_stiffness_constants().cwiseProduct(rpy.vector());
-    return is_express_in_frameAb == false ? ki_qi :
-           ConvertTorqueFromNonOrthogonalBasisToFrameAb(ki_qi, rpy);
-  }
-
-  // Use the bushing's torque damping constants and its roll-pitch-yaw rates
-  // to form the bushing's damping torque τᵣ on frame Aʙ.
-  // @param[in] context The state of the multibody system.
-  // param[in] is_express_in_frameAb is `true` if this method is to return τᵣ
-  // expressed in frame Aʙ whereas `false` returns `[b₀q̇₀, b₁q̇₁, b₂q̇₂]`.
-  // @see ConvertTorqueFromNonOrthogonalBasisToFrameAb() for more information.
-  Vector3<T> CalcBushingTorqueDampingOnAb(
-      const systems::Context<T>& context,
-      const bool is_express_in_frameAb) const {
-    const math::RollPitchYaw<T>& rpy = CalcBushingRollPitchYawAngles(context);
-    const Vector3<T> rpyDt = CalcBushingRollPitchYawAngleRates(context, rpy);
-    const Vector3<T> bi_qiDt = torque_damping_constants().cwiseProduct(rpyDt);
-    return is_express_in_frameAb == false ? bi_qiDt :
-           ConvertTorqueFromNonOrthogonalBasisToFrameAb(bi_qiDt, rpy);
-  }
-
-  // Returns [kx*x, ky*y, kz*z], the bushing's stiffness force on point Aʙₒ
-  // expressed in frame Aʙ.
-  // @param[in] context The state of the multibody system.
-  Vector3<T> CalcBushingForceStiffnessOnAbo(
+  Vector3<T> TorqueStiffnessConstantsTimesAngles(
       const systems::Context<T>& context) const {
-    const Vector3<T> xyz = CalcBushingRigidTransform(context).translation();
+    const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
+    return torque_stiffness_constants().cwiseProduct(rpy.vector());
+  }
+
+  // Returns [b₀q̇₀, b₁q̇₁, b₂q̇₂], element-wise multiplication of the torque
+  // damping constants [b₀, b₁, b₂] and roll-pitch-yaw rates [q̇₀, q̇₁, q̇₂].
+  // @param[in] context The state of the multibody system.
+  Vector3<T> TorqueDampingConstantsTimesAngleRates(
+      const systems::Context<T>& context) const {
+    const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
+    const Vector3<T> rpyDt = CalcBushingRollPitchYawAngleRates(context, rpy);
+    return torque_damping_constants().cwiseProduct(rpyDt);
+  }
+
+  // Returns [kx x, ky y, kz z], element-wise multiplication of the force
+  // stiffness constants [kx, ky, kz] and displacements [x, y, z].
+  // @param[in] context The state of the multibody system.
+  Vector3<T> ForceStiffnessConstantsTimesDisplacement(
+      const systems::Context<T>& context) const {
+    const Vector3<T> xyz = CalcBushingDisplacement(context);
     return force_stiffness_constants().cwiseProduct(xyz);
   }
 
-  // Returns [bx*ẋ, by*ẏ, bz*ż], the bushing's damping force on point Aʙₒ
-  // expressed in frame Aʙ.
+  // Returns [bx ẋ, by ẏ, bz ż], element-wise multiplication of the force
+  // damping constants [bx, by, bz] and displacement rates [ẋ, ẏ, ż].
   // @param[in] context The state of the multibody system.
-  Vector3<T> CalcBushingForceDampingOnAbo(
+  Vector3<T> ForceDampingConstantsTimesDisplacementRate(
       const systems::Context<T>& context) const {
-    const Vector3<T> xyzDt =
-        CalcBushingSpatialVelocity(context).translational();
+    const Vector3<T> xyzDt = CalcBushingDisplacementRate(context);
     return force_damping_constants().cwiseProduct(xyzDt);
   }
+
+  // Calculates the resultant force f exerted by the bushing on body B.
+  // @param[in] context The state of the multibody system.
+  Vector3<T> CalcBushingResultantForceOnB(
+      const systems::Context<T>& context) const {
+    // Calculate force `f = Fx Aʙx + Fy Aʙy + Fz Aʙz`.
+    // Fx = (kx x + bx ẋ)
+    // Fy = (ky y + by ẏ)
+    // Fz = (kz z + bz ż)
+    return ForceStiffnessConstantsTimesDisplacement(context) +
+           ForceDampingConstantsTimesDisplacementRate(context);
+  }
+
+  // Calculates F_Bc_Ab, the spatial force on point Bc of body B expressed in
+  // frame Aʙ, equivalent to the set of forces exerted by the bushing on B.
+  // @param[in] context The state of the multibody system.
+  // @note F_Bc_Ab is equivalent to a torque τ applied to body B and a force f
+  // applied to point Bc of B (Bc is located at the midpoint of Aʙₒ and Bᴀₒ).
+  SpatialForce<T> CalcBushingSpatialForceOnBc(
+      const systems::Context<T>& context) const;
 
  private:
   // Helper method to make a clone templated on ToScalar.
