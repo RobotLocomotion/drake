@@ -24,7 +24,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder)
         Parser(plant=cart_pole).AddModelFromFile(file_name)
         cart_pole.Finalize()
-        assert cart_pole.geometry_source_is_registered()
+        self.assertTrue(cart_pole.geometry_source_is_registered())
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
@@ -58,9 +58,9 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         kuka.Finalize()
 
         # Make sure that the frames to visualize exist.
-        kuka.GetModelInstanceByName("iiwa14")
-        kuka.GetFrameByName("iiwa_link_7")
-        kuka.GetFrameByName("iiwa_link_6")
+        iiwa = kuka.GetModelInstanceByName("iiwa14")
+        kuka.GetFrameByName("iiwa_link_7", iiwa)
+        kuka.GetFrameByName("iiwa_link_6", iiwa)
 
         frames_to_draw = {"iiwa14": {"iiwa_link_7", "iiwa_link_6"}}
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))

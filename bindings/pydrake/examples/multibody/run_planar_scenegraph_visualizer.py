@@ -12,7 +12,7 @@ from pydrake.systems.planar_scenegraph_visualizer import (
     PlanarSceneGraphVisualizer)
 
 
-def runPendulumExample(args):
+def run_pendulum_example(args):
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
     parser = Parser(plant)
@@ -45,7 +45,7 @@ def runPendulumExample(args):
     simulator.AdvanceTo(args.duration)
 
 
-def runManipulationExample(args):
+def run_manipulation_example(args):
     builder = DiagramBuilder()
     station = builder.AddSystem(ManipulationStation(time_step=0.005))
     station.SetupManipulationClassStation()
@@ -84,7 +84,7 @@ def runManipulationExample(args):
     simulator.AdvanceTo(args.duration)
 
 
-if __name__ == "__main__":
+def main():
     # Usage demo: load a URDF, rig it up with a constant torque input, and
     # draw it.
 
@@ -103,10 +103,14 @@ if __name__ == "__main__":
 
     for model in args.models:
         if model == "pend":
-            runPendulumExample(args)
+            run_pendulum_example(args)
         elif model == "manip":
-            runManipulationExample(args)
+            run_manipulation_example(args)
         else:
             print("Unrecognized model %s." % model)
             parser.print_usage()
             exit(1)
+
+
+if __name__ == "__main__":
+    main()

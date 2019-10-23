@@ -1,9 +1,9 @@
 import math
-import numpy as np
+
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy as sp
-
 from scipy import spatial
 
 from drake import lcmt_viewer_load_robot
@@ -17,8 +17,7 @@ from pydrake.systems.rendering import PoseBundle
 
 
 class PlanarSceneGraphVisualizer(PyPlotVisualizer):
-
-    '''
+    """
     Given a SceneGraph and a view plane, provides a view of the robot by
     projecting all geometry onto the view plane.
 
@@ -31,16 +30,6 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     and finally that chull is drawn as a patch. Nonconvex geometry will thus be
     drawn incorrectly, and geometry with many vertices will slow down the
     visualizer.
-
-    Params:
-    - Tview, xlim, and ylim set up view into scene.
-    - facecolor is passed through to figure() and sets background color. Both
-    color name strings and RGB triplets are allowed. Defaults to white.
-    - use_random_colors, if set to True, will render each body with a different
-    color. (Multiple visual elements on the same body will be the same color.)
-    - if ax is supplied, the visualizer will draw onto those axes instead of
-    creating a new set of axes. The visualizer will still change the view range
-    and figure size of those axes.
 
      Specifics on view setup:
 
@@ -65,11 +54,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     xlim and ylim don't technically provide extra functionality, but I think
     it's easier to keep handle scaling with xlim and ylim and view plane
     selection and *maybe* offsetting with the projection matrix.
-    '''
+    """
 
     def __init__(self,
                  scene_graph,
-                 draw_period=0.033333,
+                 draw_period=1./30,
                  Tview=np.array([[1., 0., 0., 0.],
                                  [0., 0., 1., 0.],
                                  [0., 0., 0., 1.]]),
@@ -78,7 +67,24 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                  facecolor=[1, 1, 1],
                  use_random_colors=False,
                  ax=None):
-
+        """
+        Args:
+            scene_graph: A SceneGraph object.
+            draw_period: The rate at which this class publishes to the
+                visualizer.
+            Tview: The view projection matrix.
+            xlim: View limit into the scene.
+            ylim: View limit into the scene.
+            facecolor: Passed through to figure() and sets background color.
+                Both color name strings and RGB triplets are allowed. Defaults
+                to white.
+            use_random_colors: If set to True, will render each body with a
+                different color. (Multiple visual elements on the same body
+                will be the same color.)
+            ax: If supplied, the visualizer will draw onto those axes instead
+                of creating a new set of axes. The visualizer will still change
+                the view range and figure size of those axes.
+        """
         default_size = matplotlib.rcParams['figure.figsize']
         scalefactor = (ylim[1]-ylim[0])/(xlim[1]-xlim[0])
         figsize = (default_size[0], default_size[0]*scalefactor)
@@ -88,8 +94,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self.set_name('planar_multibody_visualizer')
 
         self._scene_graph = scene_graph
-        self.Tview = Tview
-        self.Tview_pinv = np.linalg.pinv(self.Tview)
+        self._Tview = Tview
 
         # Pose bundle (from SceneGraph) input port.
         self.DeclareAbstractInputPort("lcm_visualization",
@@ -98,7 +103,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self.ax.axis('equal')
         self.ax.axis('off')
 
-        # Achieve the desired view limits
+        # Achieve the desired view limits.
         self.ax.set_xlim(xlim)
         self.ax.set_ylim(ylim)
         default_size = self.fig.get_size_inches()
@@ -106,39 +111,39 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self.fig.set_size_inches(default_size[0],
                                  default_size[0]*scalefactor)
 
-        # Populate body patches
-        self.buildViewPatches(use_random_colors)
+        # Populate body patches.
+        self._build_view_patches(use_random_colors)
 
-        # Populate the body fill list -- which requires doing most of
-        # a draw pass, but with an ax.fill() command rather than
-        # an in-place replacement of vertex positions to initialize
-        # the draw patches.
-        # The body fill list stores the ax patch objects in the
-        # order they were spawned (i.e. by body, and then by
-        # order of viewPatches). Drawing the tree should update them
-        # by iterating over bodies and patches in the same order.
-        self.body_fill_dict = {}
-        n_bodies = len(self.viewPatches.keys())
+        # Populate the body fill list -- which requires doing most of a draw
+        # pass, but with an ax.fill() command rather than an in-place
+        # replacement of vertex positions to initialize the draw patches. The
+        # body fill list stores the ax patch objects in the order they were
+        # spawned (i.e. by body, and then by order of view_patches). Drawing
+        # the tree should update them by iterating over bodies and patches in
+        # the same order.
+        self._body_fill_dict = {}
+        n_bodies = len(self._view_patches.keys())
         tf = np.eye(4)
-        for full_name in self.viewPatches.keys():
-            viewPatches, viewColors = self.getViewPatches(full_name, tf)
-            self.body_fill_dict[full_name] = []
-            for patch, color in zip(viewPatches, viewColors):
-                # Project the full patch the first time, to initialize
-                # a vertex list with enough space for any possible
-                # convex hull of this vertex set.
-                patch_proj = np.dot(self.Tview, patch)
-                self.body_fill_dict[full_name] += self.ax.fill(
+        for full_name in self._view_patches.keys():
+            view_patches, view_colors = self._get_view_patches(full_name, tf)
+            self._body_fill_dict[full_name] = []
+            for patch, color in zip(view_patches, view_colors):
+                # Project the full patch the first time, to initialize a vertex
+                # list with enough space for any possible convex hull of this
+                # vertex set.
+                patch_proj = np.dot(self._Tview, patch)
+                self._body_fill_dict[full_name] += self.ax.fill(
                     patch_proj[0, :], patch_proj[1, :], zorder=0,
                     edgecolor='k', facecolor=color, closed=True)
 
-    def buildViewPatches(self, use_random_colors):
-        ''' Generates view patches. self.viewPatches stores a list of
-        viewPatches for each body (starting at body id 1). A viewPatch is a
-        list of all 3D vertices of a piece of visual geometry. '''
-
-        self.viewPatches = {}
-        self.viewPatchColors = {}
+    def _build_view_patches(self, use_random_colors):
+        """
+        Generates view patches. self._view_patches stores a list of
+        view patches for each body (starting at body id 1). A view patch is a
+        list of all 3D vertices of a piece of visual geometry.
+        """
+        self._view_patches = {}
+        self._view_patch_colors = {}
 
         mock_lcm = DrakeMockLcm()
         mock_lcm_subscriber = Subscriber(lcm=mock_lcm,
@@ -149,10 +154,10 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         assert mock_lcm_subscriber.count > 0
         load_robot_msg = mock_lcm_subscriber.message
 
-        # Spawn a random color generator, in case we need to pick
-        # random colors for some bodies. Each body will be given
-        # a unique color when using this random generator, with
-        # each visual element of the body colored the same.
+        # Spawn a random color generator, in case we need to pick random colors
+        # for some bodies. Each body will be given a unique color when using
+        # this random generator, with each visual element of the body colored
+        # the same.
         color = iter(plt.cm.rainbow(np.linspace(0, 1,
                                                 load_robot_msg.num_links)))
 
@@ -226,7 +231,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 patch = np.vstack((patch, np.ones((1, patch.shape[1]))))
                 patch = np.dot(element_local_tf.GetAsMatrix4(), patch)
 
-                # Close path if not closed
+                # Close path if not closed.
                 if (patch[:, -1] != patch[:, 0]).any():
                     patch = np.hstack((patch, patch[:, 0][np.newaxis].T))
 
@@ -236,24 +241,26 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 else:
                     this_body_colors.append(geom.color)
 
-            self.viewPatches[link.name] = this_body_patches
-            self.viewPatchColors[link.name] = this_body_colors
+            self._view_patches[link.name] = this_body_patches
+            self._view_patch_colors[link.name] = this_body_colors
 
-    def getViewPatches(self, full_name, tf):
-        ''' Pulls out the view patch verts for the given body index after
-            applying the appropriate TF '''
+    def _get_view_patches(self, full_name, tf):
+        """
+        Pulls out the view patch verts for the given body index after applying
+        the appropriate TF.
+        """
         transformed_patches = [np.dot(tf, patch)
-                               for patch in self.viewPatches[full_name]]
-        colors = self.viewPatchColors[full_name]
+                               for patch in self._view_patches[full_name]]
+        colors = self._view_patch_colors[full_name]
         return (transformed_patches, colors)
 
     def draw(self, context):
-        ''' Evaluates the robot state and draws it.
-            Can be passed either a raw state vector, or
-            an input context.'''
-
+        """
+        Evaluates the robot state and draws it. Can be passed either a raw
+        state vector, or an input context.
+        """
         pose_bundle = self.EvalAbstractInput(context, 0).get_value()
-        view_dir = np.cross(self.Tview[0, :3], self.Tview[1, :3])
+        view_dir = np.cross(self._Tview[0, :3], self._Tview[1, :3])
         for frame_i in range(pose_bundle.get_num_poses()):
             # SceneGraph currently sets the name in PoseBundle as
             #    "get_source_name::frame_name".
@@ -261,10 +268,10 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             model_id = pose_bundle.get_model_instance_id(frame_i)
 
             pose = pose_bundle.get_pose(frame_i).matrix()
-            viewPatches, _ = self.getViewPatches(full_name, pose)
-            for i, patch in enumerate(viewPatches):
+            view_patches, _ = self._get_view_patches(full_name, pose)
+            for i, patch in enumerate(view_patches):
                 # Project the object vertices to 2d.
-                patch_proj = np.dot(self.Tview, patch)
+                patch_proj = np.dot(self._Tview, patch)
                 # Applies normalization in the perspective transformation
                 # to make each projected point have z = 1. If the bottom row
                 # of Tview is [0, 0, 0, 1], this will result in an
@@ -279,14 +286,14 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     hull = spatial.ConvexHull(np.transpose(patch_proj))
                     patch_proj = np.transpose(
                         np.vstack([patch_proj[:, v] for v in hull.vertices]))
-                n_verts = self.body_fill_dict[full_name][i].get_path().\
+                n_verts = self._body_fill_dict[full_name][i].get_path().\
                     vertices.shape[0]
                 # Update the verts, padding out to the appropriate full # of
                 # verts by replicating the final vertex.
                 patch_proj = np.pad(
                     patch_proj, ((0, 0), (0, n_verts - patch_proj.shape[1])),
                     mode="edge")
-                self.body_fill_dict[full_name][i].get_path().vertices[:, :] = np.transpose(patch_proj)  # noqa
-                self.body_fill_dict[full_name][i].zorder = np.dot(
+                self._body_fill_dict[full_name][i].get_path().vertices[:, :] = np.transpose(patch_proj)  # noqa
+                self._body_fill_dict[full_name][i].zorder = np.dot(
                     pose[:3, 3], view_dir)
         self.ax.set_title('t = {:.1f}'.format(context.get_time()))
