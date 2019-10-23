@@ -11,12 +11,6 @@ exports_files(
 )
 
 exports_files(
-    glob(["com_kitware_gitlab_cmake_cmake/**"]),
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = ["//tools/workspace/find_protobuf_cmake:__pkg__"],
-)
-
-exports_files(
     glob(["josephdavisco_spruce/**"]),
     licenses = ["notice"],  # BSD-3-Clause
     visibility = ["@spruce//:__pkg__"],

@@ -114,6 +114,6 @@
     }
   },
   "X-CMake-Variables-Init": {
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }
