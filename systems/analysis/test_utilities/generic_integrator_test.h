@@ -58,6 +58,7 @@ struct GenericIntegratorTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(GenericIntegratorTest);
 
+// Verifies that the dense output is working for an integrator.
 TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
   this->integrator_->set_maximum_step_size(0.1);
 
