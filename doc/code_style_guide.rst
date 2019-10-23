@@ -44,6 +44,13 @@ incorporates `PEP 257 -- Docstring Conventions
 <https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
 recommendations as well.
 
+For API documentation, Drake generally follows
+`Section 3.8. Comments and Docstrings
+<https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings>`_
+of the Google Python Style Guide, except that license boilerplate is not included
+in individual files, and (at present) class attributes are not always
+documented in class docstrings.
+
 See :ref:`tools for complying with coding style <code-style-tools>` for details
 about the automated style checks.
 
