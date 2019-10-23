@@ -4,16 +4,21 @@
   <model name='planar_gripper'>
 
     <xacro:property name="base_dim" value=".08" />
-    <xacro:property name="l1_length" value="0.07" />
+    <xacro:property name="l1_length" value="0.085" />
     <xacro:property name="l1_radius" value="0.011" />
     <xacro:property name="l1_mass" value="0.1" />
     <xacro:property name="l1_inertia" value="0.0083" />
-    <xacro:property name="l2_length" value="0.07" />
+    <xacro:property name="l2_length" value="0.0403" />
     <xacro:property name="l2_radius" value="0.011" />
     <xacro:property name="l2_mass" value="0.1" />
     <xacro:property name="l2_inertia" value="0.0083" />
-    <xacro:property name="sensor_stack_len" value="0.001" />
-    <xacro:property name="tip_radius" value="0.015" />
+    <xacro:property name="sensor_length" value="0.0085" />
+    <xacro:property name="sensor_width" value="0.02" />
+    <xacro:property name="tip_adapter_length" value="0.0075" />
+    <xacro:property name="tip_adapter_radius" value="0.0145" />
+    <xacro:property name="tip_cylinder_length" value="0.0035" />
+    <xacro:property name="tip_cylinder_radius" value="0.01" />
+    <xacro:property name="tip_sphere_radius" value="0.015" />
 
     <xacro:macro name="finger" params="fnum">
       <link name="finger${fnum}_base">
@@ -108,48 +113,76 @@
             <diffuse>1 0 0 1</diffuse>
           </material>
         </visual>
-        <visual name='link2_sensor'>
-          <pose>0 0 -${l2_length + sensor_stack_len} 0 0 0</pose>
+        <!--The link 2 collision element extends up to the sphere fingertip-->
+        <collision name='link2_collision'>
+          <pose>0 0 -${(l2_length + sensor_length + tip_adapter_length + tip_cylinder_length)/2} 0 0 0</pose>
           <geometry>
-            <sphere>
+            <cylinder>
+              <length>${l2_length + sensor_length + tip_adapter_length + tip_cylinder_length}</length>
               <radius>${l2_radius}</radius>
-            </sphere>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>1 0 1 1</diffuse>
+          </material>
+        </collision>
+        <visual name='link2_sensor_visual'>
+          <pose>0 0 -${l2_length + sensor_length/2.0} 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>${sensor_width} ${sensor_width} ${sensor_length}</size>
+            </box>
           </geometry>
           <material>
             <diffuse>.1 .1 .1 1</diffuse>
           </material>
         </visual>
-        <collision name='link2_collision'>
-          <pose>0 0 -${l2_length/2} 0 0 0</pose>
+        <visual name="tip_adapter_visual">
+          <pose>0 0 -${l2_length + sensor_length + tip_adapter_length/2} 0 0 0</pose>
           <geometry>
             <cylinder>
-              <length>${l2_length}</length>
-              <radius>${l2_radius}</radius>
+              <length>${tip_adapter_length}</length>
+              <radius>${tip_adapter_radius}</radius>
             </cylinder>
           </geometry>
           <material>
-            <diffuse>1 0 0 1</diffuse>
+            <diffuse>.1 .1 .1 1</diffuse>
           </material>
-        </collision>
-        <collision name='link2_pad_collision'>
-          <pose>0 0 -${l2_length + sensor_stack_len + tip_radius} 0 0 0</pose>
+        </visual>
+        <visual name="tip_cylinder_visual">
+          <pose>0 0 -${l2_length + sensor_length + tip_adapter_length + tip_cylinder_length/2} 0 0 0</pose>
           <geometry>
-            <sphere>
-              <radius>${tip_radius}</radius>
-            </sphere>
+            <cylinder>
+              <length>${tip_cylinder_length}</length>
+              <radius>${tip_cylinder_radius}</radius>
+            </cylinder>
           </geometry>
-        </collision>
-        <visual name='link2_pad_visual'>
-          <pose>0 0 -${l2_length + sensor_stack_len + tip_radius} 0 0 0</pose>
+          <material>
+            <diffuse>.1 .1 .1 1</diffuse>
+          </material>
+        </visual>
+        <visual name='tip_sphere_visual'>
+          <pose>0 0 -${l2_length + sensor_length + tip_adapter_length + tip_sphere_radius} 0 0 0</pose>
           <geometry>
             <sphere>
-              <radius>${tip_radius}</radius>
+              <radius>${tip_sphere_radius}</radius>
             </sphere>
           </geometry>
           <material>
             <diffuse>1 1 1 1</diffuse>
           </material>
         </visual>
+        <collision name='tip_sphere_collision'>
+          <pose>0 0 -${l2_length + sensor_length + tip_adapter_length + tip_sphere_radius} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${tip_sphere_radius}</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+          </material>
+        </collision>
       </link>
       <joint name='finger${fnum}_MidJoint' type='revolute'>
         <parent>finger${fnum}_link1</parent>
