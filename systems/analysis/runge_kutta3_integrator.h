@@ -25,7 +25,7 @@ namespace systems {
  * embedded error estimate was derived using the method mentioned in
  * [Hairer, 1993].
  *
- * The Butcher tableaux for this integrator follows:
+ * The Butcher tableau for this integrator follows:
  * <pre>
  *        |
  * 0      |
