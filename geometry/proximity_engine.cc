@@ -65,10 +65,6 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
       const auto& box = dynamic_cast<const fcl::Boxd&>(geometry);
       return make_shared<fcl::Boxd>(box.side);
     }
-    case fcl::GEOM_CAPSULE: {
-      const auto& capsule = dynamic_cast<const fcl::Capsuled&>(geometry);
-      return make_shared<fcl::Capsuled>(capsule.radius, capsule.lz);
-    }
     case fcl::GEOM_CONVEX: {
       const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
       // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
@@ -81,6 +77,7 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
           make_shared<const std::vector<int>>(convex.getFaces()));
     }
     case fcl::GEOM_ELLIPSOID:
+    case fcl::GEOM_CAPSULE:
     case fcl::GEOM_CONE:
     case fcl::GEOM_PLANE:
     case fcl::GEOM_TRIANGLE:
@@ -293,10 +290,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_box, user_data);
   }
 
-  void ImplementGeometry(const Capsule& capsule, void* user_data) override {
-    auto fcl_capsule = make_shared<fcl::Capsuled>(capsule.get_radius(),
-                                                  capsule.get_length());
-    TakeShapeOwnership(fcl_capsule, user_data);
+  void ImplementGeometry(const Capsule&, void*) override {
+    // TODO(tehbelinda - #10153): Add capsule support.
+    throw std::domain_error(
+        "The proximity engine does not support capsules yet");
   }
 
   void ImplementGeometry(const Mesh&, void*) override {

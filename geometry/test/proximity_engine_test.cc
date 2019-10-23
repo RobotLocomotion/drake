@@ -199,9 +199,6 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   Box box{0.1, 0.2, 0.3};
   ref_engine.AddDynamicGeometry(box, GeometryId::get_new_id());
 
-  Capsule capsule{0.1, 1.0};
-  ref_engine.AddDynamicGeometry(capsule, GeometryId::get_new_id());
-
   HalfSpace half_space{};
   ref_engine.AddDynamicGeometry(half_space, GeometryId::get_new_id());
 
@@ -3264,6 +3261,15 @@ TEST_F(BoxPenetrationTest, TangentConvex1) {
 TEST_F(BoxPenetrationTest, TangentConvex2) {
   // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
   TestCollision2(TangentConvex, 1e-3);
+}
+
+// Attempting to add a Capsule should cause an abort.
+GTEST_TEST(ProximityEngineTests, AddCapsule) {
+  ProximityEngine<double> engine;
+  Capsule capsule{0.2, 1.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.AddDynamicGeometry(capsule, GeometryId::get_new_id()),
+      std::exception, ".*The proximity engine does not support capsules yet.*");
 }
 
 // Attempting to add a dynamic Mesh should cause an abort.
