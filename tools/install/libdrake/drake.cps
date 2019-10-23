@@ -22,9 +22,9 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "GFlags": {
-      "Version": "2.1",
+      "Version": "2.2",
       "X-CMake-Find-Args": [
-          "MODULE",
+          "CONFIG",
           "COMPONENTS",
           "shared"
       ]
@@ -44,7 +44,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "Protobuf": {
-      "Version": "2.6",
+      "Version": "3.0",
       "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {

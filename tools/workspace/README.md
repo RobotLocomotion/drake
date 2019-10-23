@@ -167,9 +167,9 @@ See `glib` for an example.
 
 Update the package setup lists to mention the new package:
 
-- `setup/ubuntu/16.04/binary_distribution/packages.txt` with the `libfoo0`
+- `setup/ubuntu/binary_distribution/packages-bionic.txt` with the `libfoo0`
   runtime library;
-- `setup/ubuntu/16.04/source_distribution/packages.txt` with the `libfoo-dev`
+- `setup/ubuntu/source_distribution/packages-bionic.txt` with the `libfoo-dev`
   library;
 - `setup/mac/binary_distribution/Brewfile` if used in Drake's installed copy;
 - `setup/mac/source_distribution/Brewfile` if only used during development (not

@@ -68,7 +68,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "stx",
     "tinydir",
     "tinyobjloader",
-    "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "cds",

@@ -134,9 +134,9 @@ def _impl(repository_ctx):
             ))
 
     elif compiler_id == "GNU":
-        if compiler_version_major < 5 or (compiler_version_major == 5 and
+        if compiler_version_major < 7 or (compiler_version_major == 7 and
                                           compiler_version_minor < 4):
-            fail("GNU compiler version {}.{} is less than 5.4.".format(
+            fail("GNU compiler version {}.{} is less than 7.4.".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))

@@ -73,10 +73,10 @@ else()
 
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|xenial)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
      message(FATAL_ERROR
        "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-       "Ubuntu 16.04 (Xenial) or Ubuntu 18.04 (Bionic)."
+       "Ubuntu 18.04 (Bionic)."
      )
   endif()
 endif()
@@ -102,7 +102,7 @@ endif()
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 10)
 set(MINIMUM_CLANG_VERSION 6)
-set(MINIMUM_GNU_VERSION 5.4)
+set(MINIMUM_GNU_VERSION 7.4)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})

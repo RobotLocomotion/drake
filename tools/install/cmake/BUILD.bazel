@@ -9,7 +9,6 @@ install_files(
     name = "install",
     dest = "lib/cmake/drake/modules",
     files = [
-        "FindGFlags.cmake",
         "FindTinyXML2.cmake",
     ],
 )
