@@ -439,10 +439,9 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     const RigidTransformd X_WL = X_WM * X_ML;
     link_infos.push_back(LinkInfo{&body, X_WL});
 
-    // N.B. If a body is completely disconnected (no inboard / outboard
-    // joints), then we lose information from the SDFormat spec. This hack is
-    // one way to preserve this information.
-    plant->InternalSetFreeBodyOnlyPose(body, X_WL);
+    // Set the initial pose of the free body (only use if the body is indeed
+    // floating).
+    plant->SetDefaultFreeBodyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();

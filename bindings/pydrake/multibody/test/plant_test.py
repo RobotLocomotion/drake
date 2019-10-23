@@ -438,6 +438,7 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_multibody_state_access(self, T):
         MultibodyPlant = MultibodyPlant_[T]
+        RigidTransform = RigidTransform_[T]
 
         plant_f = MultibodyPlant_[float]()
         file_name = FindResourceOrThrow(
@@ -509,6 +510,10 @@ class TestPlant(unittest.TestCase):
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+        # Test existence of default free body pose setting.
+        body = plant.GetBodyByName("Link1")
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=RigidTransform())
 
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))

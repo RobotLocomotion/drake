@@ -227,20 +227,22 @@ GTEST_TEST(SdfParser, FloatingBodyPose) {
   PlantAndSceneGraph pair = ParseTestString(R"""(
 <model name='good'>
   <link name='a'>
-    <pose>1 2 3  0 0 0</pose>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
   </link>
   <link name='b'>
-    <pose>4 5 6  0 0 0</pose>
+    <pose>4 5 6  0.4 0.5 0.6</pose>
   </link>
 </model>)""");
   pair.plant->Finalize();
   EXPECT_GT(pair.plant->num_positions(), 0);
   auto context = pair.plant->CreateDefaultContext();
-  const RigidTransformd X_WA_expected(Vector3d(1, 2, 3));
+  const RigidTransformd X_WA_expected(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
-  const RigidTransformd X_WB_expected(Vector3d(4, 5, 6));
+  const RigidTransformd X_WB_expected(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
   const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
@@ -252,20 +254,22 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 <model name='good'>
   <static>true</static>
   <link name='a'>
-    <pose>1 2 3  0 0 0</pose>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
   </link>
   <link name='b'>
-    <pose>4 5 6  0 0 0</pose>
+    <pose>4 5 6  0.4 0.5 0.6</pose>
   </link>
 </model>)""");
   pair.plant->Finalize();
   EXPECT_EQ(pair.plant->num_positions(), 0);
   auto context = pair.plant->CreateDefaultContext();
-  const RigidTransformd X_WA_expected(Vector3d(1, 2, 3));
+  const RigidTransformd X_WA_expected(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
-  const RigidTransformd X_WB_expected(Vector3d(4, 5, 6));
+  const RigidTransformd X_WB_expected(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
   const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
@@ -274,7 +278,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
   // Specifying redundant welds in the model yields no errors, either to the
   // world or between links.
-  /*EXPECT_NO_THROW*/(ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='good'>
   <static>true</static>
   <link name='a'/>
@@ -287,7 +291,7 @@ GTEST_TEST(SdfParser, StaticModelWithJoints) {
     <parent>a</parent>
     <child>b</child>
   </joint>
-</model>)"""));
+</model>)""");
 
   // Attempting to weld should fail fast, either during the welding or when
   // finalizing (due to loop).
