@@ -26,6 +26,7 @@ drake_cc_package_library(
     deps = [
         ":eigen_geometry_compare",
         ":eigen_matrix_compare",
+        ":expect_no_throw",
         ":expect_throws_message",
         ":is_dynamic_castable",
         ":is_memcpy_movable",
@@ -54,6 +55,15 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "expect_no_throw",
+    testonly = 1,
+    hdrs = ["expect_no_throw.h"],
+    deps = [
+        "//common:nice_type_name",
     ],
 )
 
@@ -198,6 +208,13 @@ drake_py_library(
     name = "disable_python_unittest",
     srcs = ["disable_python_unittest/unittest/__init__.py"],
     imports = ["disable_python_unittest"],
+)
+
+drake_cc_googletest(
+    name = "expect_no_throw_test",
+    deps = [
+        ":expect_no_throw",
+    ],
 )
 
 add_lint_tests()
