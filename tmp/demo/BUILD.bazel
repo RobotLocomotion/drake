@@ -3,6 +3,8 @@ load(
     "drake_cc_binary",
 )
 
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
+
 
 drake_cc_binary(
     name = "iiwa_visualize",
@@ -17,4 +19,12 @@ drake_cc_binary(
         "//multibody/plant",
         "//systems/analysis",
     ],
+)
+
+drake_jupyter_py_binary(
+    name = "iiwa_demo",
+    add_test_rule = 0,
+    testonly = 1,
+    data = ["//tools:drake_visualizer"],
+    deps = ["//tmp/benchmark:model_benchmark"],
 )

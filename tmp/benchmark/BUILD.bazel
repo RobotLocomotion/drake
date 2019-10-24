@@ -13,6 +13,7 @@ drake_py_binary(
         "//bindings/pydrake",
     ],
     imports = ["."],  # HACK
+    visibility = ["//visibility:public"],
 )
 
 drake_py_unittest(
