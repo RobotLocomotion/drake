@@ -3131,7 +3131,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     for (const BodyIndex index : GetFloatingBaseBodies()) {
       SetFreeBodyPose(
           context, state, internal_tree().get_body(index),
-          X_WB_default_list_[index].cast<T>());
+          X_WB_default_list_[index].template cast<T>());
     }
   }
 
