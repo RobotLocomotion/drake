@@ -16,5 +16,10 @@
         <color rgba="0 1 0 1" />
       </material>
     </visual>
+    <visual>
+      <geometry>
+        <capsule length="0.5" radius="0.2"/>
+      </geometry>
+    </visual>
   </link>
 </robot>

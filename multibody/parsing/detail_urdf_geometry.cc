@@ -165,6 +165,19 @@ std::unique_ptr<geometry::Shape> ParseCylinder(const XMLElement* shape_node) {
   return std::make_unique<geometry::Cylinder>(r, l);
 }
 
+std::unique_ptr<geometry::Shape> ParseCapsule(const XMLElement* shape_node) {
+  double r = 0;
+  if (!ParseScalarAttribute(shape_node, "radius", &r)) {
+    throw std::runtime_error("Missing capsule attribute radius");
+  }
+
+  double l = 0;
+  if (!ParseScalarAttribute(shape_node, "length", &l)) {
+    throw std::runtime_error("Missing capsule attribute length");
+  }
+  return std::make_unique<geometry::Capsule>(r, l);
+}
+
 std::unique_ptr<geometry::Shape> ParseMesh(
     const XMLElement* shape_node, const PackageMap& package_map,
     const std::string& root_dir) {
@@ -217,8 +230,7 @@ std::unique_ptr<geometry::Shape> ParseGeometry(
     return ParseCylinder(node->FirstChildElement("cylinder"));
   }
   if (node->FirstChildElement("capsule")) {
-    throw std::runtime_error(
-        "capsule geometry is not supported");
+    return ParseCapsule(node->FirstChildElement("capsule"));
   }
   if (node->FirstChildElement("mesh")) {
     return ParseMesh(node->FirstChildElement("mesh"), package_map,

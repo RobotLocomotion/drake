@@ -114,7 +114,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   Vector4d green(0, 1, 0, 1);
   EXPECT_TRUE(CompareMatrices(materials_.at("green"), green, 1e-10));
 
-  ASSERT_EQ(visual_instances_.size(), 1);
+  ASSERT_EQ(visual_instances_.size(), 2);
   const auto& visual = visual_instances_.front();
   const std::string name_base = "non_conflicting_materials_1";
   EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
@@ -126,6 +126,13 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
       dynamic_cast<const geometry::Box*>(&visual.shape());
   ASSERT_TRUE(box);
   EXPECT_TRUE(CompareMatrices(box->size(), Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  const auto& capsule_visual = visual_instances_.back();
+  const geometry::Capsule* capsule =
+      dynamic_cast<const geometry::Capsule*>(&capsule_visual.shape());
+  ASSERT_TRUE(capsule);
+  EXPECT_EQ(capsule->get_radius(), 0.2);
+  EXPECT_EQ(capsule->get_length(), 0.5);
 
   const geometry::IllustrationProperties* properties =
       visual.illustration_properties();
