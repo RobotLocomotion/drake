@@ -48,8 +48,8 @@ class ContactResults {
 
   /** Add a new hydroelastic contact to `this`. */
   void AddContactInfo(
-      HydroelasticContactInfo<T>&& hydroelastic_contact_info) {
-    hydroelastic_contact_info_.push_back(std::move(hydroelastic_contact_info));
+      const HydroelasticContactInfo<T>* hydroelastic_contact_info) {
+    hydroelastic_contact_info_.push_back(hydroelastic_contact_info);
   }
 
   /** Retrieves the ith PointPairContactInfo instance. The input index i
@@ -64,7 +64,7 @@ class ContactResults {
 
  private:
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
-  std::vector<HydroelasticContactInfo<T>> hydroelastic_contact_info_;
+  std::vector<const HydroelasticContactInfo<T>*> hydroelastic_contact_info_;
 };
 
 // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which

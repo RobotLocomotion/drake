@@ -3139,7 +3139,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
-    systems::CacheIndex hydro_contact_forces;
+    systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
@@ -3486,19 +3486,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // hydroelastic model.
   void MakeHydroelasticModels();
 
+  // TODO(drum) Document this.
+  struct HydroelasticContactInfoAndBodySpatialForces {
+    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
+      F_BBo_W_array.resize(num_bodies);
+    }
+    std::vector<SpatialForce<T>> F_BBo_W_array;
+    std::vector<HydroelasticContactInfo<T>> contact_info;
+  };
+
   // Helper method to compute contact forces using the hydroelastic model.
   // F_BBo_W_array is indexed by BodyNodeIndex and it gets overwritten on
   // output. F_BBo_W_array must be of size num_bodies() or an exception is
   // thrown.
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      HydroelasticContactInfoAndBodySpatialForces* F_BBo_W_array) const;
 
   // Eval version of CalcHydroelasticContactForces().
-  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
-        .template Eval<std::vector<SpatialForce<T>>>(context);
+  const HydroelasticContactInfoAndBodySpatialForces&
+  EvalHydroelasticContactForces(const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.contact_info_and_body_spatial_forces)
+        .template Eval<HydroelasticContactInfoAndBodySpatialForces>(context);
   }
 
   // Helper method to add the contribution of external actuation forces to the
@@ -3936,7 +3946,7 @@ void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
-    std::vector<SpatialForce<symbolic::Expression>>*) const;
+    HydroelasticContactInfoAndBodySpatialForces*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(

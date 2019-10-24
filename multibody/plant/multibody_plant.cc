@@ -1079,53 +1079,12 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
-  const std::vector<ContactSurface<T>>& all_surfaces =
-      EvalContactSurfaces(context);
-
-  internal::HydroelasticTractionCalculator<T> traction_calculator(
-      friction_model_.stiction_tolerance());
-
-  for (const ContactSurface<T>& surface : all_surfaces) {
-    const GeometryId geometryM_id = surface.id_M();
-    const GeometryId geometryN_id = surface.id_N();
-    const int collision_indexM =
-        geometry_id_to_collision_index_.at(geometryM_id);
-    const int collision_indexN =
-        geometry_id_to_collision_index_.at(geometryN_id);
-    const CoulombFriction<double>& geometryM_friction =
-        default_coulomb_friction_[collision_indexM];
-    const CoulombFriction<double>& geometryN_friction =
-        default_coulomb_friction_[collision_indexN];
-
-    // Compute combined friction coefficient.
-    const CoulombFriction<double> combined_friction =
-        CalcContactFrictionFromSurfaceProperties(geometryM_friction,
-                                                 geometryN_friction);
-    const double dynamic_friction = combined_friction.dynamic_friction();
-
-    // Get the bodies that the two geometries are affixed to. We'll call these
-    // A and B.
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryN_id);
-    const Body<T>& bodyA = internal_tree().get_body(bodyA_index);
-    const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
-
-    // The poses and spatial velocities of bodies A and B.
-    const RigidTransform<T>& X_WA = bodyA.EvalPoseInWorld(context);
-    const RigidTransform<T>& X_WB = bodyB.EvalPoseInWorld(context);
-    const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
-    const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
-
-    // Pack everything the calculator needs.
-    typename internal::HydroelasticTractionCalculator<T>::Data data(
-        X_WA, X_WB, V_WA, V_WB, &surface);
-
-    // Combined Hunt & Crossley dissipation.
-    const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
-        geometryM_id, geometryN_id);
-
-    contact_results->AddContactInfo(traction_calculator.ComputeContactInfo(
-       data, dissipation, dynamic_friction));
+  const HydroelasticContactInfoAndBodySpatialForces&
+      contact_info_and_spatial_body_forces =
+          EvalHydroelasticContactForces(context);
+  for (const HydroelasticContactInfo<T>& contact_info :
+       contact_info_and_spatial_body_forces.contact_info) {
+    contact_results->AddContactInfo(&contact_info);
   }
 }
 
@@ -1360,7 +1319,7 @@ void MultibodyPlant<T>::MakeHydroelasticModels() {
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const Context<symbolic::Expression>&,
-    std::vector<SpatialForce<symbolic::Expression>>*) const {
+    HydroelasticContactInfoAndBodySpatialForces*) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
@@ -1368,15 +1327,27 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
-    std::vector<SpatialForce<T>>* F_BBo_W_array) const {
-  DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
-  // Initialize to zero.
-  F_BBo_W_array->assign(num_bodies(), SpatialForce<T>::Zero());
+    HydroelasticContactInfoAndBodySpatialForces* contact_info_and_body_forces)
+    const {
+  DRAKE_DEMAND(contact_info_and_body_forces != nullptr);
+
+  std::vector<SpatialForce<T>>& F_BBo_W_array =
+      contact_info_and_body_forces->F_BBo_W_array;
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array.size()) == num_bodies());
+  std::vector<HydroelasticContactInfo<T>>& contact_info =
+      contact_info_and_body_forces->contact_info;
+
+  // Initialize the body forces to zero.
+  F_BBo_W_array.assign(num_bodies(), SpatialForce<T>::Zero());
   if (num_collision_geometries() == 0) return;
 
   const std::vector<ContactSurface<T>>& all_surfaces =
       EvalContactSurfaces(context);
+
+  // Reserve memory here to keep from repeatedly allocating heap storage in the
+  // loop below.
+  contact_info.clear();
+  contact_info.reserve(all_surfaces.size());
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
@@ -1421,17 +1392,26 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         geometryM_id, geometryN_id);
 
     // Integrate the hydroelastic traction field over the contact surface.
+    std::vector<HydroelasticQuadraturePointData<T>> traction_output;
+    SpatialForce<T> F_Ac_W;
+    traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
+        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
+
+    // Transform the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
-    traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        data, dissipation, dynamic_friction, &F_Ao_W, &F_Bo_W);
+    traction_calculator.TransformSpatialForcesAtCentroidToBodyOrigins(
+        data, F_Ac_W, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
-      F_BBo_W_array->at(bodyA.node_index()) += F_Ao_W;
+      F_BBo_W_array.at(bodyA.node_index()) += F_Ao_W;
     }
 
     if (bodyB_index != world_index()) {
-      F_BBo_W_array->at(bodyB.node_index()) += F_Bo_W;
+      F_BBo_W_array.at(bodyB.node_index()) += F_Bo_W;
     }
+
+    // Add the information for contact reporting.
+    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
   }
 }
 
@@ -1887,7 +1867,7 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
       break;
 
     case ContactModel::kHydroelasticsOnly:
-      *F_BBo_W_array = EvalHydroelasticContactForces(context);
+      *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
       break;
   }
 }
@@ -2299,24 +2279,28 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache entry for spatial forces due to hydroelastic contact.
   if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-    auto& hydro_forces_cache_entry = this->DeclareCacheEntry(
-        std::string("Hydroelastic spatial forces (F_Bo_W)."),
-        [this]() {
-          return AbstractValue::Make(
-              std::vector<SpatialForce<T>>(this->num_bodies()));
-        },
-        [this](const systems::ContextBase& context_base,
-               AbstractValue* cache_value) {
-          auto& context = dynamic_cast<const Context<T>&>(context_base);
-          auto& hydro_forces_cache =
-              cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
-          this->CalcHydroelasticContactForces(context, &hydro_forces_cache);
-        },
-        // Compliant contact forces due to hydroelastics with Hunt & Crosseley
-        // are function of the kinematic variables q & v only.
-        {this->kinematics_ticket()});
-    cache_indexes_.hydro_contact_forces =
-        hydro_forces_cache_entry.cache_index();
+    auto& contact_info_and_body_spatial_forces_cache_entry =
+        this->DeclareCacheEntry(
+            std::string("Hydroelastic contact info and body spatial forces."),
+            [this]() {
+              return AbstractValue::Make(
+                  HydroelasticContactInfoAndBodySpatialForces(
+                      this->num_bodies()));
+            },
+            [this](const systems::ContextBase& context_base,
+                   AbstractValue* cache_value) {
+              auto& context = dynamic_cast<const Context<T>&>(context_base);
+              auto& contact_info_and_body_spatial_forces_cache =
+                  cache_value->get_mutable_value<
+                      HydroelasticContactInfoAndBodySpatialForces>();
+              this->CalcHydroelasticContactForces(
+                  context, &contact_info_and_body_spatial_forces_cache);
+            },
+            // Compliant contact forces due to hydroelastics with Hunt &
+            // Crosseley are function of the kinematic variables q & v only.
+            {this->kinematics_ticket()});
+    cache_indexes_.contact_info_and_body_spatial_forces =
+        contact_info_and_body_spatial_forces_cache_entry.cache_index();
   }
 
   // Cache generalized accelerations.

@@ -9,6 +9,8 @@
 #include "drake/common/drake_variant.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 
 namespace drake {
 namespace multibody {
@@ -20,8 +22,10 @@ namespace multibody {
 
     - The shared contact surface between the two geometries, which includes
       the virtual pressure acting at every point on the contact surface.
-    - The traction acting at every point on the contact surface.
-    - The slip speed at every point on the contact surface.
+    - The traction acting at the quadrature points on the contact surface.
+    - The slip speed at the quadrature points on the contact surface.
+    - The spatial force from the integrated tractions that is applied at the
+      centroid of the contact surface.
 
  The two geometries, denoted M and N (and obtainable via
  `contact_surface().id_M()` and `contact_surface().id_N()`) are attached to
@@ -42,34 +46,29 @@ class HydroelasticContactInfo {
    */
   HydroelasticContactInfo(
       const geometry::ContactSurface<T>* contact_surface,
-      std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
-      std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
-      contact_surface_(contact_surface),
-      traction_A_W_(std::move(traction_A_W)),
-      vslip_AB_W_(std::move(vslip_AB_W)) {
+      const SpatialForce<T>& F_Ac_W,
+      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
+      : contact_surface_(contact_surface),
+        F_Ac_W_(F_Ac_W),
+        quadrature_point_data_(std::move(quadrature_point_data)) {
     DRAKE_DEMAND(contact_surface);
-    DRAKE_DEMAND(traction_A_W_.get());
-    DRAKE_DEMAND(vslip_AB_W_.get());
   }
 
   /**
    Constructs this structure using the given contact surface, traction field,
    and slip field.  This constructor takes ownership of the ContactSurface.
    @see contact_surface()
-   @see traction_A_W()
-   @see vslip_AB_W()
    */
   HydroelasticContactInfo(
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
-      std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
-      std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
-      contact_surface_(std::move(contact_surface)),
-      traction_A_W_(std::move(traction_A_W)),
-      vslip_AB_W_(std::move(vslip_AB_W)) {
+      const SpatialForce<T>& F_Ac_W,
+      std::vector<HydroelasticQuadraturePointData<T>>&& quadrature_point_data)
+      : contact_surface_(std::move(contact_surface)),
+        F_Ac_W_(F_Ac_W),
+        quadrature_point_data_(std::move(quadrature_point_data)) {
     DRAKE_DEMAND(drake::get<std::unique_ptr<geometry::ContactSurface<T>>>(
-                     contact_surface_).get());
-    DRAKE_DEMAND(traction_A_W_.get());
-    DRAKE_DEMAND(vslip_AB_W_.get());
+                     contact_surface_)
+                     .get());
   }
 
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
@@ -91,9 +90,8 @@ class HydroelasticContactInfo {
   HydroelasticContactInfo& operator=(const HydroelasticContactInfo& info) {
     contact_surface_ =
         std::make_unique<geometry::ContactSurface<T>>(info.contact_surface());
-    const geometry::SurfaceMesh<T>& mesh = contact_surface().mesh_W();
-    traction_A_W_ = info.traction_A_W_->CloneAndSetMesh(&mesh);
-    vslip_AB_W_ = info.vslip_AB_W_->CloneAndSetMesh(&mesh);
+    F_Ac_W_ = info.F_Ac_W_;
+    quadrature_point_data_ = info.quadrature_point_data_;
     return *this;
   }
 
@@ -114,6 +112,12 @@ class HydroelasticContactInfo {
     }
   }
 
+  // TODO(edrumwri): Fix this.
+  const std::vector<HydroelasticQuadraturePointData<T>>& quadrature_point_data()
+      const {
+    return quadrature_point_data_;
+  }
+  /*
   /// Returns the field giving the traction acting on Body A, expressed in the
   /// world frame. At each point Q on the contact surface, `traction_A_W` gives
   /// the traction `traction_Aq_W`, where `Aq` is a frame attached to Body A and
@@ -135,15 +139,18 @@ class HydroelasticContactInfo {
       const {
     return *vslip_AB_W_;
   }
-
+*/
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
   drake::variant<const geometry::ContactSurface<T>*,
                  std::unique_ptr<geometry::ContactSurface<T>>> contact_surface_;
-  std::unique_ptr<geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>>
-      traction_A_W_;
-  std::unique_ptr<geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>>
-      vslip_AB_W_;
+
+  // The spatial force applied at the centroid (Point C) of the surface mesh.
+  SpatialForce<T> F_Ac_W_;
+
+  // The traction and slip velocity evaluated at each quadrature point.
+  std::vector<HydroelasticQuadraturePointData<T>>
+      quadrature_point_data_;
 };
 
 // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
