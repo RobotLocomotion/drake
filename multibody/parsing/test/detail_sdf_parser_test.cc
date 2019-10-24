@@ -277,9 +277,8 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
   // Specifying redundant welds in the model yields no errors, either to the
-  // world or between links. We test this by simply parsing it, and expecting
-  // no errors.
-  ParseTestString(R"""(
+  // world or between links.
+  EXPECT_NO_THROW(ParseTestString(R"""(
 <model name='good'>
   <static>true</static>
   <link name='a'/>
@@ -292,7 +291,7 @@ GTEST_TEST(SdfParser, StaticModelWithJoints) {
     <parent>a</parent>
     <child>b</child>
   </joint>
-</model>)""");
+</model>)"""));
 
   // Attempting to weld should fail fast, either during the welding or when
   // finalizing (due to loop).
