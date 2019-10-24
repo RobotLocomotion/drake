@@ -296,6 +296,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc_iso3_deprecation)
+        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
+            py::arg("body"), py::arg("X_WB"),
+            cls_doc.SetDefaultFreeBodyPose.doc)
         .def("SetActuationInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> u_instance,
@@ -766,9 +769,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
             py::arg("q_v"), cls_doc.SetPositionsAndVelocities.doc_3args)
-        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
-            py::arg("body"), py::arg("X_WB"),
-            cls_doc.SetDefaultFreeBodyPose.doc)
         .def("SetDefaultState",
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);

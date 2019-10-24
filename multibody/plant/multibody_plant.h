@@ -274,14 +274,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
-    for (const math::RigidTransform<U>& X_WB_other :
-         other.X_WB_default_list_) {
-      // N.B. `double` is used as an intermediary when converting
-      // `RigidTransform`s from U to T.
-      math::RigidTransform<T> X_WB_this =
-          ExtractDoubleOrThrow(X_WB_other).template cast<T>();
-      X_WB_default_list_.push_back(X_WB_this);
-    }
+    X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
@@ -483,6 +476,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
     CheckValidState(state);
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
+  }
+
+  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
+  /// will affect subsequent calls to SetDefaultState(); otherwise, this value
+  /// is effectively ignored.
+  /// @param[in] body
+  ///   Body whose default pose will be set.
+  /// @param[in] X_WB
+  ///   Default pose of the body.
+  void SetDefaultFreeBodyPose(
+      const Body<T>& body, const math::RigidTransform<double>& X_WB) {
+    X_WB_default_list_[body.index()] = X_WB;
   }
 
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
@@ -3115,18 +3120,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// Sets the default pose of a free (floating) body. This affects subsequent
-  /// calls to SetDefaultState() for bodies that are floating. This value is
-  /// ignored for bodies that are not floating.
-  /// @param[in] body
-  ///   Body whose initial pose will be set.
-  /// @param[in] X_WB
-  ///   Initial pose of the body.
-  void SetDefaultFreeBodyPose(
-      const Body<T>& body, const math::RigidTransform<T>& X_WB) {
-    X_WB_default_list_[body.index()] = X_WB;
-  }
-
   /// Sets the `state` so that generalized positions (modulo explicitly
   /// specified body poses) and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
@@ -3138,7 +3131,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     for (const BodyIndex index : GetFloatingBaseBodies()) {
       SetFreeBodyPose(
           context, state, internal_tree().get_body(index),
-          X_WB_default_list_[index]);
+          X_WB_default_list_[index].cast<T>());
     }
   }
 
@@ -3841,9 +3834,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
 
-  // List of default poses for each body (initially identity). This is only
-  // used if the body is floating.
-  std::vector<math::RigidTransform<T>> X_WB_default_list_;
+  // Vector (with size num_bodies()) of default poses for each body. This is
+  // only used if Body::is_floating() is true.
+  std::vector<math::RigidTransform<double>> X_WB_default_list_;
 };
 
 /// @cond

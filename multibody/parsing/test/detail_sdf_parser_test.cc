@@ -277,7 +277,8 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
   // Specifying redundant welds in the model yields no errors, either to the
-  // world or between links.
+  // world or between links. We test this by simply parsing it, and expecting
+  // no errors.
   ParseTestString(R"""(
 <model name='good'>
   <static>true</static>
