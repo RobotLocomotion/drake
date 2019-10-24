@@ -438,7 +438,6 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_multibody_state_access(self, T):
         MultibodyPlant = MultibodyPlant_[T]
-        RigidTransform = RigidTransform_[T]
 
         plant_f = MultibodyPlant_[float]()
         file_name = FindResourceOrThrow(
