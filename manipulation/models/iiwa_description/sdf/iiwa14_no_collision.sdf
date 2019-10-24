@@ -425,7 +425,6 @@ Later edited by hand to:
       </axis>
     </joint>
     <link name='iiwa_link_7'>
-      <pose>0 0 1.261 0 0 0</pose>
       <pose relative_to="iiwa_joint_7"/>
       <inertial>
         <pose>0 0 0.02 0 -0 0</pose>
