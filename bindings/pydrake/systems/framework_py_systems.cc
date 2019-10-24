@@ -397,8 +397,8 @@ struct Impl {
               // calling the Python function (`str_py`) does.
               return str_py(self->GetGraphvizString(max_depth));
             },
-            doc.System.GetGraphvizString.doc,
-            py::arg("max_depth") = std::numeric_limits<int>::max())
+            py::arg("max_depth") = std::numeric_limits<int>::max(),
+            doc.System.GetGraphvizString.doc)
         // Events.
         .def("Publish",
             overload_cast_explicit<void, const Context<T>&>(
