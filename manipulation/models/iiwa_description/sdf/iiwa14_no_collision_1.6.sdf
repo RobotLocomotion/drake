@@ -87,6 +87,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
+    <!-- SDFormat 1.6 -->
     <link name='iiwa_link_2'>
       <pose frame=''>0 0 0.36 1.5708 -0 -3.14159</pose>
       <inertial>
