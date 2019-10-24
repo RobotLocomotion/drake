@@ -22,7 +22,7 @@ bool Callback(CollisionObjectd* fcl_object_A_ptr,
               void* callback_data) {
   // NOTE: Although this function *takes* non-const pointers to satisfy the
   // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We insure this by immediately assigning to a const version and
+  // objects. We ensure this by immediately assigning to a const version and
   // not directly using the provided parameters.
   const CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
   const CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;

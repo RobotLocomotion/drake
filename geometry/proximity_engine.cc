@@ -12,6 +12,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
@@ -522,11 +523,31 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return pairs;
   }
 
+  bool HasCollisions() const {
+    // All these quantities are aliased in the callback data.
+    has_collisions::CallbackData data{&collision_filter_};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, has_collisions::Callback);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, has_collisions::Callback);
+    return data.collisions_exist;
+  }
+
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      const unordered_map<GeometryId, InternalGeometry>& geometries) const {
     std::vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &surfaces};
+    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &geometries,
+                                       &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
@@ -875,6 +896,11 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
 }
 
 template <typename T>
+bool ProximityEngine<T>::HasCollisions() const {
+  return impl_->HasCollisions();
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 ProximityEngine<T>::ComputePointPairPenetration() const {
   return impl_->ComputePointPairPenetration();
@@ -882,8 +908,9 @@ ProximityEngine<T>::ComputePointPairPenetration() const {
 
 template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
-    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputeContactSurfaces(X_WGs);
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    const std::unordered_map<GeometryId, InternalGeometry>& geometries) const {
+  return impl_->ComputeContactSurfaces(X_WGs, geometries);
 }
 
 template <typename T>

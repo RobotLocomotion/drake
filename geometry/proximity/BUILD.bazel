@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "proximity",
     deps = [
         ":collision_filter_legacy",
+        ":collisions_exist_callback",
         ":distance_to_point_callback",
         ":distance_to_point_with_gradient",
         ":distance_to_shape_callback",
@@ -55,6 +56,17 @@ drake_cc_library(
         ":proximity_utilities",
         "//common:essential",
         "//common:sorted_vectors_have_intersection",
+    ],
+)
+
+drake_cc_library(
+    name = "collisions_exist_callback",
+    srcs = ["collisions_exist_callback.cc"],
+    hdrs = ["collisions_exist_callback.h"],
+    deps = [
+        ":collision_filter_legacy",
+        "//geometry:geometry_ids",
+        "@fcl",
     ],
 )
 
@@ -110,6 +122,9 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "//common:hash",
+        "//geometry:geometry_roles",
+        "//geometry:internal_geometry",
+        "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
         "@fcl",
@@ -285,6 +300,13 @@ drake_cc_library(
         "//geometry/proximity:sorted_triplet",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collisions_exist_callback_test",
+    deps = [
+        ":collisions_exist_callback",
     ],
 )
 

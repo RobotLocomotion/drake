@@ -18,12 +18,15 @@ drake_cc_package_library(
         ":cubic_scalar_system",
         ":discontinuous_spring_mass_damper_system",
         ":explicit_error_controlled_integrator_test",
+        ":generic_integrator_test",
         ":implicit_integrator_test",
         ":linear_scalar_system",
         ":logistic_system",
         ":my_spring_mass_system",
         ":pleides_system",
         ":quadratic_scalar_system",
+        ":quartic_scalar_system",
+        ":quintic_scalar_system",
         ":robertson_system",
         ":spring_mass_damper_system",
         ":stateless_system",
@@ -77,6 +80,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "generic_integrator_test",
+    testonly = 1,
+    hdrs = ["generic_integrator_test.h"],
+    deps = [
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "implicit_integrator_test",
     testonly = 1,
     hdrs = ["implicit_integrator_test.h"],
@@ -125,6 +137,24 @@ drake_cc_library(
     name = "quadratic_scalar_system",
     testonly = 1,
     hdrs = ["quadratic_scalar_system.h"],
+    deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "quartic_scalar_system",
+    testonly = 1,
+    hdrs = ["quartic_scalar_system.h"],
+    deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "quintic_scalar_system",
+    testonly = 1,
+    hdrs = ["quintic_scalar_system.h"],
     deps = [
         "//systems/framework",
     ],

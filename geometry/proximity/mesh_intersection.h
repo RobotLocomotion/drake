@@ -434,7 +434,7 @@ void AddPolygonToMeshData(
   const int num_original_vertices = static_cast<int>(vertices_F->size());
 
   // Triangulate the polygon by creating a fan around the polygon's centroid.
-  // This is important because it gives us a smoothly changing tesselation as
+  // This is important because it gives us a smoothly changing tessellation as
   // the polygon itself smoothly changes. Even if the polygon is already a
   // triangle, we still add its centroid because the triangular polygon can
   // smoothly change to a quadrilateral polygon. Therefore, an intersection

@@ -10,6 +10,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -167,6 +168,7 @@ class ProximityEngine {
   See @ref collision_queries "Collision Queries" for more details.  */
 
   //@{
+
   // NOTE: This maps to Model::ComputeMaximumDepthCollisionPoints().
   // The definition that touching is not penetrating is due to an FCL issue
   // described in https://github.com/flexible-collision-library/fcl/issues/375
@@ -181,13 +183,17 @@ class ProximityEngine {
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
+      const std::unordered_map<GeometryId, InternalGeometry>& geometries)
       const;
-
-  //@}
 
   /** Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
+
+  /** Implementation of GeometryState::HasCollisions().  */
+  bool HasCollisions() const;
+
+  //@}
 
   /** @name               Collision filters
 

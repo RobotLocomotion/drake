@@ -148,6 +148,29 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   const std::vector<FieldValue>& values() const { return values_; }
   std::vector<FieldValue>& mutable_values() { return values_; }
 
+  // TODO(#12173): Consider NaN==NaN to be true in equality tests.
+  // TODO(#12173): Support the VolumeMesh MeshType by implementing the Equal
+  //               function in VolumeMesh.
+  /** Checks to see whether the given MeshFieldLinear object is equal via deep
+   exact comparison. The name of the objects are exempt from this comparison.
+   NaNs are treated as not equal as per the IEEE standard.
+   @note Using a MeshType of VolumeMesh is not yet supported.
+   @param field The field for comparison.
+   @returns `true` if the given field is equal.
+   */
+  bool Equal(const MeshField<FieldValue, MeshType>& field) const {
+    if (!this->mesh().Equal(field.mesh())) return false;
+
+    for (typename MeshType::VertexIndex i(0); i < this->mesh().num_vertices();
+         ++i) {
+      if (this->EvaluateAtVertex(i) != field.EvaluateAtVertex(i))
+        return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.

@@ -236,6 +236,40 @@ class ContactSurface {
     return *grad_h_MN_W_;
   }
 
+  // TODO(#12173): Consider NaN==NaN to be true in equality tests.
+  /** Checks to see whether the given ContactSurface object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   @note Currently requires the fields of the objects to be of type
+   MeshFieldLinear, otherwise the current simple checking of equal values at
+   vertices is insufficient.
+   @param surface The contact surface for comparison.
+   @returns `true` if the given contact surface is equal.
+   */
+  bool Equal(const ContactSurface<T>& surface) const {
+    // First check the meshes.
+    if (!this->mesh_W().Equal(surface.mesh_W()))
+      return false;
+
+    // Now examine the pressure field.
+    const auto* pressure_field =
+        dynamic_cast<const MeshFieldLinear<T, SurfaceMesh<T>>*>(
+            &(this->e_MN()));
+    DRAKE_DEMAND(pressure_field);
+    if (!pressure_field->Equal(surface.e_MN()))
+      return false;
+
+    // Now examine the grad_h field.
+    const auto* grad_h_field =
+        dynamic_cast<const MeshFieldLinear<Vector3<T>, SurfaceMesh<T>>*>(
+            &(this->grad_h_MN_W()));;
+    DRAKE_DEMAND(grad_h_field);
+    if (!grad_h_field->Equal(surface.grad_h_MN_W()))
+      return false;
+
+    // All checks passed.
+    return true;
+  }
+
  private:
   // Swaps M and N (modifying the data in place to reflect the change).
   void SwapMAndN() {
