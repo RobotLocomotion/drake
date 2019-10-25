@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/rigid_transform.h"
@@ -133,7 +134,7 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
     const double d = i;
     pose.set_translation({d, d, d});
     recorded_poses.push_back(pose);
-    EXPECT_NO_THROW(poses.set_value(ids[i], pose));
+    DRAKE_EXPECT_NO_THROW(poses.set_value(ids[i], pose));
   }
 
   // Confirm that poses get recorded properly.
@@ -152,7 +153,7 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
   // Confirm that poses get re-established properly.
   std::reverse(recorded_poses.begin(), recorded_poses.end());
   for (int i = 0; i < kPoseCount; ++i) {
-    EXPECT_NO_THROW(poses.set_value(ids[i], recorded_poses[i]));
+    DRAKE_EXPECT_NO_THROW(poses.set_value(ids[i], recorded_poses[i]));
   }
   for (int i = 0; i < kPoseCount; ++i) {
     EXPECT_TRUE(poses.has_id(ids[i]));
@@ -180,7 +181,7 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValuesDeprecated) {
     Isometry3<double> pose = Isometry3<double>::Identity();
     pose.translation() << i, i, i;
     recorded_poses.push_back(pose);
-    EXPECT_NO_THROW(poses.set_value(ids[i], pose));
+    DRAKE_EXPECT_NO_THROW(poses.set_value(ids[i], pose));
   }
 
   // Confirm that poses get recorded properly.
@@ -198,7 +199,7 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValuesDeprecated) {
   // Confirm that poses get re-established properly.
   std::reverse(recorded_poses.begin(), recorded_poses.end());
   for (int i = 0; i < kPoseCount; ++i) {
-    EXPECT_NO_THROW(poses.set_value(ids[i], recorded_poses[i]));
+    DRAKE_EXPECT_NO_THROW(poses.set_value(ids[i], recorded_poses[i]));
   }
   for (int i = 0; i < kPoseCount; ++i) {
     EXPECT_TRUE(poses.has_id(ids[i]));

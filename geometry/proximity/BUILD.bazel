@@ -349,7 +349,6 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape_callback",
         "//common/test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",
         "//geometry:utilities",
         "//math:gradient",
@@ -360,8 +359,7 @@ drake_cc_googletest(
     name = "hydroelastic_callback_test",
     deps = [
         ":hydroelastic_callback",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 

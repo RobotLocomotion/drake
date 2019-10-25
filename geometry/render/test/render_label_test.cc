@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
@@ -47,8 +48,8 @@ TEST_F(RenderLabelTests, Construction) {
   }
 
   // Range of good values.
-  EXPECT_NO_THROW(RenderLabel{0});
-  EXPECT_NO_THROW(RenderLabel{RenderLabel::kMaxUnreserved});
+  DRAKE_EXPECT_NO_THROW(RenderLabel{0});
+  DRAKE_EXPECT_NO_THROW(RenderLabel{RenderLabel::kMaxUnreserved});
 }
 
 // Confirms that the reserved labels report correctly, and that generated labels

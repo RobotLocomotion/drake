@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/multibody/plant/test/tamsi_solver_test_util.h"
 
 namespace drake {
@@ -1089,7 +1090,7 @@ GTEST_TEST(EmptyWorld, Solve) {
   VectorX<double> p_star, mu_vector, x0, stiffness, dissipation;
   MatrixX<double> M, Jn, Jt;
 
-  EXPECT_NO_THROW(solver.SetTwoWayCoupledProblemData(
+  DRAKE_EXPECT_NO_THROW(solver.SetTwoWayCoupledProblemData(
       &M, &Jn, &Jt, &p_star, &x0, &stiffness, &dissipation, &mu_vector));
 }
 

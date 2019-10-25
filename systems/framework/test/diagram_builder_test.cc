@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
@@ -120,7 +121,7 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
   auto echo = builder.AddSystem<ConstAndEcho>();
   echo->set_name("echo");
   builder.Connect(echo->get_const_output_port(), echo->get_vec_input_port());
-  EXPECT_NO_THROW(builder.Build());
+  DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
 // Contrasts with CycleButNoLoopPortLevel. In this case, the cycle *does*
@@ -178,7 +179,7 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoopSystemLevel) {
   builder.Connect(integrator->get_output_port(), adder->get_input_port(1));
 
   // There is no algebraic loop, so we should not throw.
-  EXPECT_NO_THROW(builder.Build());
+  DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
 // Tests that multiple cascaded elements that are not direct-feedthrough
@@ -195,7 +196,7 @@ GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
                   integrator2->get_input_port());
 
   // There is no algebraic loop, so we should not throw.
-  EXPECT_NO_THROW(builder.Build());
+  DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
 // Tests that an exception is thrown when building an empty diagram.
@@ -318,7 +319,7 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
       Value<Trajectoryd>(PiecewisePolynomiald{}));
   auto sys2 = builder.AddSystem<PassThrough<double>>(
       Value<Trajectoryd>(ExponentialPlusPiecewisePolynomiald{}));
-  EXPECT_NO_THROW(builder.Connect(*sys1, *sys2));
+  DRAKE_EXPECT_NO_THROW(builder.Connect(*sys1, *sys2));
   builder.ExportInput(sys1->get_input_port());
   builder.ExportOutput(sys2->get_output_port());
   auto diagram = builder.Build();
@@ -374,7 +375,7 @@ GTEST_TEST(DiagramBuilderTest, DefaultInputPortNamesAreUniqueTest) {
   builder.ExportInput(sink2->get_input_port(0));
 
   // If the port names were not unique, then the build step would throw.
-  EXPECT_NO_THROW(builder.Build());
+  DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
 GTEST_TEST(DiagramBuilderTest, DefaultOutputPortNamesAreUniqueTest) {
@@ -387,7 +388,7 @@ GTEST_TEST(DiagramBuilderTest, DefaultOutputPortNamesAreUniqueTest) {
   builder.ExportOutput(source2->get_output_port(0));
 
   // If the port names were not unique, then the build step would throw.
-  EXPECT_NO_THROW(builder.Build());
+  DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
 GTEST_TEST(DiagramBuilderTest, DefaultPortNamesAreUniqueTest2) {
@@ -493,16 +494,16 @@ class DiagramBuilderSolePortsTest : public ::testing::Test {
 
 // A diagram of Source->Gain->Sink is successful.
 TEST_F(DiagramBuilderSolePortsTest, SourceGainSink) {
-  EXPECT_NO_THROW(builder_.Connect(*out1_, *in1out1_));
-  EXPECT_NO_THROW(builder_.Connect(*in1out1_, *in1_));
-  EXPECT_NO_THROW(builder_.Build());
+  DRAKE_EXPECT_NO_THROW(builder_.Connect(*out1_, *in1out1_));
+  DRAKE_EXPECT_NO_THROW(builder_.Connect(*in1out1_, *in1_));
+  DRAKE_EXPECT_NO_THROW(builder_.Build());
 }
 
 // The cascade synonym also works.
 TEST_F(DiagramBuilderSolePortsTest, SourceGainSinkCascade) {
-  EXPECT_NO_THROW(builder_.Cascade(*out1_, *in1out1_));
-  EXPECT_NO_THROW(builder_.Cascade(*in1out1_, *in1_));
-  EXPECT_NO_THROW(builder_.Build());
+  DRAKE_EXPECT_NO_THROW(builder_.Cascade(*out1_, *in1out1_));
+  DRAKE_EXPECT_NO_THROW(builder_.Cascade(*in1out1_, *in1_));
+  DRAKE_EXPECT_NO_THROW(builder_.Build());
 }
 
 // A diagram of Gain->Source is has too few dest inputs.

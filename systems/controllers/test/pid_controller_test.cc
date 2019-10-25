@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
@@ -66,9 +67,9 @@ TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(ki_, controller_.get_Ki_vector());
   ASSERT_EQ(kd_, controller_.get_Kd_vector());
 
-  EXPECT_NO_THROW(controller_.get_Kp_singleton());
-  EXPECT_NO_THROW(controller_.get_Ki_singleton());
-  EXPECT_NO_THROW(controller_.get_Kd_singleton());
+  DRAKE_EXPECT_NO_THROW(controller_.get_Kp_singleton());
+  DRAKE_EXPECT_NO_THROW(controller_.get_Ki_singleton());
+  DRAKE_EXPECT_NO_THROW(controller_.get_Kd_singleton());
 }
 
 TEST_F(PidControllerTest, GetterVectors) {
@@ -77,9 +78,9 @@ TEST_F(PidControllerTest, GetterVectors) {
   const Eigen::Vector2d kd{1.0, 2.0};
   PidController<double> controller{kp, ki, kd};
 
-  EXPECT_NO_THROW(controller.get_Kp_vector());
-  EXPECT_NO_THROW(controller.get_Ki_vector());
-  EXPECT_NO_THROW(controller.get_Kd_vector());
+  DRAKE_EXPECT_NO_THROW(controller.get_Kp_vector());
+  DRAKE_EXPECT_NO_THROW(controller.get_Ki_vector());
+  DRAKE_EXPECT_NO_THROW(controller.get_Kd_vector());
 
   ASSERT_EQ(kp, controller.get_Kp_vector());
   ASSERT_EQ(ki, controller.get_Ki_vector());

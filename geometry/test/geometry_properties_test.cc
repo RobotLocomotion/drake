@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
@@ -53,7 +54,8 @@ GTEST_TEST(GeometryProperties, AddProperty) {
 
   // Add the property.
   const int int_value{7};
-  EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, int_value));
+  DRAKE_EXPECT_NO_THROW(
+      properties.AddProperty(group_name, prop_name, int_value));
 
   // Confirm existence.
   ASSERT_TRUE(properties.HasProperty(group_name, prop_name));
@@ -81,8 +83,8 @@ GTEST_TEST(GeometryProperties, AddPropertyStruct) {
 
   const std::string prop_name("test data");
   TestData data{1, 2., "3"};
-  EXPECT_NO_THROW(properties.AddProperty(TestProperties::default_group_name(),
-                                         prop_name, data));
+  DRAKE_EXPECT_NO_THROW(properties.AddProperty(
+      TestProperties::default_group_name(), prop_name, data));
 
   const TestData& read = properties.GetProperty<TestData>(
       TestProperties::default_group_name(), prop_name);
@@ -99,7 +101,8 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
   const double double_value{7};
   const double default_value = double_value - 1;
   const std::string prop_name("some_property");
-  EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, double_value));
+  DRAKE_EXPECT_NO_THROW(
+      properties.AddProperty(group_name, prop_name, double_value));
 
   // Case: default value that can be *implicitly* converted to the desired
   // type requires explicit template declaration.
@@ -108,8 +111,8 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
       std::logic_error,
       ".*The property '.*' in group '.*' exists, but is of a different type. "
       "Requested 'int', but found 'double'");
-  EXPECT_NO_THROW(properties.GetPropertyOrDefault<double>(group_name,
-                                                          prop_name, 3));
+  DRAKE_EXPECT_NO_THROW(
+      properties.GetPropertyOrDefault<double>(group_name, prop_name, 3));
 
   // Case: read an existing property.
   int read_value = properties.GetPropertyOrDefault(group_name, prop_name,
@@ -165,7 +168,7 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
       ".*There is no property .* in group .*.");
 
   // Case: Group and property exists, but property is of different type.
-  EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, 7.0));
+  DRAKE_EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, 7.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
       ".*The property '" + prop_name + "' in group '" + group_name + "' exists"

@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -128,7 +129,7 @@ GTEST_TEST(TestSignalLogger, SetForcedPublishOnly) {
   EXPECT_EQ(logger->num_samples(), 1);
 
   // Harmless to call this again.
-  EXPECT_NO_THROW(logger->set_forced_publish_only());
+  DRAKE_EXPECT_NO_THROW(logger->set_forced_publish_only());
   diagram->Publish(*context);
   EXPECT_EQ(logger->num_samples(), 2);
 

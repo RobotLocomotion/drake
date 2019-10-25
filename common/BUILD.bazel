@@ -794,6 +794,7 @@ drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":essential",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -823,6 +824,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":nice_type_name",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -871,6 +873,7 @@ drake_cc_googletest(
     deps = [
         ":drake_path",
         ":find_resource",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -993,6 +996,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:random_polynomial_matrix",
     ],
 )
@@ -1114,6 +1118,7 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -1129,6 +1134,7 @@ drake_cc_googletest(
     name = "symbolic_polynomial_test",
     deps = [
         ":symbolic",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1174,6 +1180,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1273,6 +1280,7 @@ drake_cc_googletest(
         ":type_safe_index",
         ":unused",
         "//common:sorted_pair",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1337,6 +1345,7 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//common:essential",
+        "//common/test_utilities:expect_no_throw",
         "//systems/framework/test_utilities:my_vector",
     ],
 )

@@ -76,6 +76,7 @@ drake_cc_library(
     hdrs = ["explicit_error_controlled_integrator_test.h"],
     deps = [
         ":my_spring_mass_system",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -94,6 +95,7 @@ drake_cc_library(
     hdrs = ["implicit_integrator_test.h"],
     deps = [
         ":my_spring_mass_system",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

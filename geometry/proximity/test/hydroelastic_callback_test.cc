@@ -8,6 +8,7 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 
@@ -153,7 +154,7 @@ TYPED_TEST(HydroelasticCallbackTyped, ValidPairProducesResult) {
 
   CallbackData<T> data(&this->collision_filter_, &this->X_WGs_, &geometries,
                        &surfaces);
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       Callback<T>(this->sphere_.get(), this->box_.get(), &data));
   EXPECT_EQ(surfaces.size(), 1u);
 }

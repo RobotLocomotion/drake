@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
@@ -706,8 +707,9 @@ TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   Integrator integrator(this->spring(), &this->context());
 
   EXPECT_EQ(integrator.supports_error_estimation(), true);
-  EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
-  EXPECT_NO_THROW(integrator.request_initial_step_size_target(this->dt()));
+  DRAKE_EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
+  DRAKE_EXPECT_NO_THROW(
+      integrator.request_initial_step_size_target(this->dt()));
 }
 
 

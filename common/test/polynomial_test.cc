@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/random_polynomial_matrix.h"
 
 using Eigen::VectorXd;
@@ -235,9 +236,9 @@ GTEST_TEST(PolynomialTest, VariableIdGeneration) {
   // succeeds and above which it fails.
   static const int kMaxId = 2325;
 
-  EXPECT_NO_THROW(Polynomial<double>("x", kMaxId));
-  EXPECT_NO_THROW(Polynomial<double>("zzzz", 1));
-  EXPECT_NO_THROW(Polynomial<double>("zzzz", kMaxId));
+  DRAKE_EXPECT_NO_THROW(Polynomial<double>("x", kMaxId));
+  DRAKE_EXPECT_NO_THROW(Polynomial<double>("zzzz", 1));
+  DRAKE_EXPECT_NO_THROW(Polynomial<double>("zzzz", kMaxId));
   EXPECT_THROW(Polynomial<double>("!"),
                std::runtime_error);  // Illegal character.
   EXPECT_THROW(Polynomial<double>("zzzz@"),

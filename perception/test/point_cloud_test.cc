@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 using Eigen::Matrix3Xf;
 using Eigen::Matrix4Xf;
@@ -209,7 +210,7 @@ GTEST_TEST(PointCloudTest, Fields) {
     PointCloud cloud(1, pc_flags::kXYZs);
     EXPECT_TRUE(cloud.has_xyzs());
     EXPECT_TRUE(cloud.HasFields(pc_flags::kXYZs));
-    EXPECT_NO_THROW(cloud.RequireFields(pc_flags::kXYZs));
+    DRAKE_EXPECT_NO_THROW(cloud.RequireFields(pc_flags::kXYZs));
     EXPECT_FALSE(cloud.HasFields(pc_flags::kDescriptorFPFH));
     EXPECT_THROW(cloud.RequireFields(pc_flags::kDescriptorFPFH),
                  std::runtime_error);
@@ -218,10 +219,10 @@ GTEST_TEST(PointCloudTest, Fields) {
   // Check with exact fields.
   {
     auto fields = pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs |
-                 pc_flags::kDescriptorCurvature;
+                  pc_flags::kDescriptorCurvature;
     PointCloud cloud(1, fields);
     EXPECT_TRUE(cloud.HasExactFields(fields));
-    EXPECT_NO_THROW(cloud.RequireExactFields(fields));
+    DRAKE_EXPECT_NO_THROW(cloud.RequireExactFields(fields));
     EXPECT_FALSE(cloud.HasExactFields(pc_flags::kXYZs));
     EXPECT_THROW(cloud.RequireExactFields(pc_flags::kXYZs),
                  std::runtime_error);
