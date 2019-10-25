@@ -16,7 +16,7 @@ def _check_invalid_line_endings(filename):
     otherwise.
     """
     # Ask Python to read the file and determine the newlines convention.
-    with open(filename, 'rU') as file:
+    with open(filename, 'r') as file:
         if not file:
             print("ERROR: unable to open " + filename)
             return 1
@@ -40,7 +40,7 @@ def _check_includes(filename):
     try:
         tool = IncludeFormatter(filename)
     except Exception as e:
-        print("ERROR: " + filename + ":0: " + e.message)
+        print("ERROR: " + filename + ":0: " + str(e))
         return 1
     tool.format_includes()
     first_difference = tool.get_first_differing_original_index()
@@ -80,9 +80,8 @@ def _check_shebang(filename, disallow_executable):
     shebang_whitelist = {
         "bash": "#!/bin/bash",
         "python": "#!/usr/bin/env python3",
-        "python2": "#!/usr/bin/env python2",  # DRAKE_DEPRECATED 2019-10-25
     }
-    if has_shebang and shebang not in shebang_whitelist.values():
+    if has_shebang and shebang not in list(shebang_whitelist.values()):
         print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "
               "whitelist").format(shebang, filename))
         for hint, replacement_shebang in shebang_whitelist.iteritems():

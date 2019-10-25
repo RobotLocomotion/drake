@@ -1,4 +1,4 @@
-import imp
+from importlib.machinery import SourceFileLoader
 import io
 import os
 import shutil
@@ -8,8 +8,8 @@ import tempfile
 import unittest
 
 
-imp.load_source("bazel_wrapper", "tools/clion/bazel_wrapper")
-from bazel_wrapper import main as bazel_wrapper_main  # noqa
+bazel_wrapper = SourceFileLoader(
+    "bazel_wrapper", "tools/clion/bazel_wrapper").load_module("bazel_wrapper")
 
 
 class ExecDetail(Exception):
@@ -72,7 +72,7 @@ class TestBazelWrapper(unittest.TestCase):
         self._bazel_subprocess_actions.append("wait")
 
     def _do_main(self, argv):
-        bazel_wrapper_main(
+        bazel_wrapper.main(
             argv=argv,
             execvp=self._execvp,
             write_stderr=self._write_stderr,
