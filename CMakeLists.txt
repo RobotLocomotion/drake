@@ -196,42 +196,21 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(SUPPORTED_PYTHON_VERSIONS 3 3.7)
+  set(SUPPORTED_PYTHON_VERSIONS 3.7)
 else()
-  set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
+  set(SUPPORTED_PYTHON_VERSIONS 3.6)
 endif()
 
 if(PYTHON_EXECUTABLE)
   find_package(PythonInterp MODULE REQUIRED)
 else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL xenial)
-    set(DEFAULT_PYTHON_VERSION 2)
-  else()
-    set(DEFAULT_PYTHON_VERSION 3)
-  endif()
-
-  string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
-    "${SUPPORTED_PYTHON_VERSIONS}"
-  )
-  set(WITH_PYTHON_VERSION ${DEFAULT_PYTHON_VERSION} CACHE STRING
-    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
-  )
-  set_property(CACHE WITH_PYTHON_VERSION PROPERTY
-    STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
-  )
-
   if(APPLE)
     # Prefer python3 executable in /usr/local/bin.
     list(INSERT CMAKE_PROGRAM_PATH 0 /usr/local/bin)
-
-    string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
-    list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
-
-    find_program(PYTHON_EXECUTABLE NAMES python${WITH_PYTHON_VERSION_MAJOR})
+    find_program(PYTHON_EXECUTABLE NAMES python3)
     mark_as_advanced(PYTHON_EXECUTABLE)
   endif()
-
-  find_package(PythonInterp ${WITH_PYTHON_VERSION} EXACT MODULE REQUIRED)
+  find_package(PythonInterp 3 EXACT MODULE REQUIRED)
 endif()
 
 set(PYTHON_VERSION_MAJOR_MINOR

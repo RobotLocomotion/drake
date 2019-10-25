@@ -9,8 +9,6 @@ load(
 
 # Generate file, because we wish to bake the file directly in, and not require
 # it be passed as an argument.
-# TODO(eric.cousineau): Get rid of Python 2 fail-fast warnings once we remove
-# support (#10606).
 _JUPYTER_PY_TEMPLATE = """
 from __future__ import print_function
 import os
@@ -26,17 +24,7 @@ WARNING:
 '''
 
 def main():
-    try:
-        from drake.tools.jupyter.jupyter_bazel import (
-            _jupyter_bazel_notebook_main)
-    except ImportError as e:
-        if _is_unsupported:
-            traceback.print_exc()
-            print(_unsupported_warning, file=sys.stderr)
-            sys.exit(1)
-        else:
-            raise
-
+    from drake.tools.jupyter.jupyter_bazel import _jupyter_bazel_notebook_main
     cur_dir = os.path.dirname(__file__)
     notebook = {notebook}
     _jupyter_bazel_notebook_main(cur_dir, notebook, sys.argv[1:])

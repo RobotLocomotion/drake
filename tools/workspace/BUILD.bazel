@@ -21,8 +21,6 @@ drake_py_binary(
         "metadata.py",
         "mirror_to_s3.py",
     ],
-    python_version = "PY3",
-    srcs_version = "PY3",
     visibility = ["//visibility:private"],
     deps = [":module_py"],
 )

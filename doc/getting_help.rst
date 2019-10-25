@@ -45,7 +45,7 @@ When reporting an issue, please consider providing the following information
 *   Language (C++, :ref:`Python <python-bindings>`)
 
     -   C++ compiler (*GCC 7.4.0, Clang 6.0.0*)
-    -   Python version (*Python 2.7.15, Python 3.6.7*)
+    -   Python version (*Python 3.6.7*)
     -   Python distribution (*apt, homebrew*)
 
 *   If building from source:

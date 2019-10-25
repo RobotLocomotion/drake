@@ -329,8 +329,6 @@ def _generate_pybind_documentation_header_impl(ctx):
     transitive_headers = depset(transitive = transitive_headers_depsets)
     package_headers = depset(transitive = package_headers_depsets)
 
-    mkdoc = ctx.file._mkdoc
-
     args = ctx.actions.args()
     args.add_all(compile_flags, uniquify = True)
     args.add("-output=" + ctx.outputs.out.path)
@@ -342,12 +340,11 @@ def _generate_pybind_documentation_header_impl(ctx):
     args.add("-w")
     args.add_all(package_headers)
 
-    ctx.actions.run_shell(
-        outputs = [ctx.outputs.out],
+    ctx.actions.run(
         inputs = transitive_headers,
-        tools = [mkdoc],
+        outputs = [ctx.outputs.out],
         arguments = [args],
-        command = "{} $@".format(mkdoc.path),
+        executable = ctx.executable._mkdoc,
     )
 
 # Generates a header that defines variables containing a representation of the
@@ -365,7 +362,7 @@ generate_pybind_documentation_header = rule(
         ),
         "_mkdoc": attr.label(
             default = Label("//tools/workspace/pybind11:mkdoc"),
-            allow_single_file = True,
+            allow_files = True,
             cfg = "host",
             executable = True,
         ),

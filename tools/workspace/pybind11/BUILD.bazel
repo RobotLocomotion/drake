@@ -2,10 +2,6 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:drake_runfiles_binary.bzl",
-    "drake_runfiles_binary",
-)
-load(
     "@drake//tools/skylark:pybind.bzl",
     "generate_pybind_documentation_header",
 )
@@ -22,20 +18,12 @@ exports_files(
 )
 
 py_binary(
-    name = "run_mkdoc_with_python3",
+    name = "mkdoc",
     srcs = [
-        "run_mkdoc_with_python3.py",
         "//third_party:com_github_pybind_pybind11/mkdoc.py",
     ],
-    data = ["@python3"],
-    python_version = "PY2",
-    deps = ["@clang_cindex_python3//:clang"],
-)
-
-drake_runfiles_binary(
-    name = "mkdoc",
-    target = ":run_mkdoc_with_python3",
     visibility = ["//visibility:public"],
+    deps = ["@clang_cindex_python3//:clang"],
 )
 
 drake_cc_library(
