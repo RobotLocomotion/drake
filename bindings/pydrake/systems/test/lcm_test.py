@@ -25,7 +25,7 @@ def lcm_to_json(message):
         if type(thing) in (int, float, np.float64, str, unicode):
             return thing
         if type(thing) in (list,):
-            return map(helper, [x for x in thing])
+            return list(map(helper, [x for x in thing]))
         result = collections.OrderedDict()
         for field in thing.__slots__:
             value = getattr(thing, field)

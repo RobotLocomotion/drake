@@ -48,7 +48,7 @@ def summarize_cpplint(cmdline_and_files, args):
             errors.append(line)
     if not passed and not errors:
         # Our filtering failed, so report everything.
-        errors = [e.output or "NO OUTPUT"]
+        errors = [output or "NO OUTPUT"]
     return errors
 
 
