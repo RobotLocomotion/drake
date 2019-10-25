@@ -519,9 +519,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         body, V_WB, context, state);
   }
 
-  // TODO(sammy-tri) We should also be able to set the default pose of a free
-  // body.  See https://github.com/RobotLocomotion/drake/issues/10713
-
   /// Sets the distribution used by SetRandomState() to populate the
   /// x-y-z `position` component of the floating-base state.
   /// @throws std::exception if `body` is not a free body in the model.
@@ -3120,8 +3117,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// Sets the `state` so that generalized positions (modulo explicitly
-  /// specified body poses) and velocities are zero.
+  /// Sets `state` according to defaults set by the user for joints (e.g.
+  /// RevoluteJoint::set_default_angle()) and free bodies
+  /// (SetDefaultFreeBodyPose()). If the user does not specify defaults, the
+  /// state corresponds to zero generalized positions and velocities.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {

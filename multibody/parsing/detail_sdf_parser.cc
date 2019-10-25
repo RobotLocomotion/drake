@@ -266,18 +266,14 @@ std::tuple<double, double, double> ParseJointLimits(
 void AddJointFromSpecification(
     const sdf::Model& model_spec, const sdf::Joint& joint_spec,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
-    std::set<std::string>* attached_link_names,
     std::set<sdf::JointType>* joint_types) {
   // Pose of the model frame M in the world frame W.
   const RigidTransformd X_WM = ToRigidTransform(model_spec.Pose());
 
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
-  // N.B. Do not record parent link in `attached_link_names` to ensure the
-  // "base" link is welded.
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
-  attached_link_names->insert(joint_spec.ChildLinkName());
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
@@ -533,6 +529,18 @@ void AddFramesFromSpecification(
   }
 }
 
+// Helper to determine if two links are welded together.
+bool AreWelded(
+    const MultibodyPlant<double>& plant, const Body<double>& a,
+    const Body<double>& b) {
+  for (auto* body : plant.GetBodiesWeldedTo(a)) {
+    if (body == &b) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 ModelInstanceIndex AddModelFromSpecification(
@@ -570,7 +578,6 @@ ModelInstanceIndex AddModelFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
   // Add all the joints
-  std::set<std::string> attached_link_names;
   std::set<sdf::JointType> joint_types;
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
@@ -578,8 +585,7 @@ ModelInstanceIndex AddModelFromSpecification(
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(
-        model, joint, model_instance, plant,
-        &attached_link_names, &joint_types);
+        model, joint, model_instance, plant, &joint_types);
   }
 
   // Add frames at root-level of <model>.
@@ -601,12 +607,12 @@ ModelInstanceIndex AddModelFromSpecification(
             "Only fixed joints are permitted in static models.");
       }
     }
-    // Weld all links that have been added, but did not get attached to
-    // anything.
+    // Weld all links that have been added, but are not (yet) attached to the
+    // world.
     // N.B. This implementation prevents "reposturing" a static model after
     // parsing. See #12227 for a more concrete example.
     for (const LinkInfo& link_info : added_link_infos) {
-      if (attached_link_names.count(link_info.body->name()) == 0) {
+      if (!AreWelded(*plant, plant->world_body(), *link_info.body)) {
         plant->WeldFrames(
             plant->world_frame(), link_info.body->body_frame(), link_info.X_WL);
       }
