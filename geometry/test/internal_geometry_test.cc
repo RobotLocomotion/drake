@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
@@ -14,11 +15,11 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
   InternalGeometry geometry;
 
   EXPECT_FALSE(geometry.has_proximity_role());
-  EXPECT_NO_THROW(geometry.SetRole(ProximityProperties()));
+  DRAKE_EXPECT_NO_THROW(geometry.SetRole(ProximityProperties()));
   EXPECT_TRUE(geometry.has_proximity_role());
 
   EXPECT_FALSE(geometry.has_illustration_role());
-  EXPECT_NO_THROW(geometry.SetRole(IllustrationProperties()));
+  DRAKE_EXPECT_NO_THROW(geometry.SetRole(IllustrationProperties()));
   EXPECT_TRUE(geometry.has_illustration_role());
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry.SetRole(IllustrationProperties()), std::logic_error,
@@ -26,7 +27,7 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
   EXPECT_TRUE(geometry.has_illustration_role());
 
   EXPECT_FALSE(geometry.has_perception_role());
-  EXPECT_NO_THROW(geometry.SetRole(PerceptionProperties()));
+  DRAKE_EXPECT_NO_THROW(geometry.SetRole(PerceptionProperties()));
   EXPECT_TRUE(geometry.has_perception_role());
   DRAKE_EXPECT_THROWS_MESSAGE(geometry.SetRole(PerceptionProperties()),
                               std::logic_error,
@@ -53,37 +54,37 @@ GTEST_TEST(InternalGeometryTest, RemoveRole) {
   //     here is actually true.
 
   // Case: Remove proximity, other roles persist.
-  EXPECT_NO_THROW(geometry.RemoveProximityRole());
+  DRAKE_EXPECT_NO_THROW(geometry.RemoveProximityRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_TRUE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
   // Case: Redundant removal of role is a no-op.
-  EXPECT_NO_THROW(geometry.RemoveProximityRole());
+  DRAKE_EXPECT_NO_THROW(geometry.RemoveProximityRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_TRUE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
   // Case: Remove illustration, only perception remains.
-  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
+  DRAKE_EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
   // Case: Redundant removal of role is a no-op.
-  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
+  DRAKE_EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
   // Case: Remove perception, no roles exist.
-  EXPECT_NO_THROW(geometry.RemovePerceptionRole());
+  DRAKE_EXPECT_NO_THROW(geometry.RemovePerceptionRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
 
   // Case: Redundant removal of role is a no-op.
-  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
+  DRAKE_EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));

@@ -9,6 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
@@ -278,7 +279,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
   // Specifying redundant welds in the model yields no errors, either to the
   // world or between links.
-  EXPECT_NO_THROW(ParseTestString(R"""(
+  DRAKE_EXPECT_NO_THROW(ParseTestString(R"""(
 <model name='good'>
   <static>true</static>
   <link name='a'/>

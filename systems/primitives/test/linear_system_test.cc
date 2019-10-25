@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -57,7 +58,7 @@ GTEST_TEST(LinearSystemTestWithEmptyPort, EmptyPort) {
   auto context = dut.CreateDefaultContext();
   auto derivatives = dut.AllocateTimeDerivatives();
   context->FixInputPort(0, Vector1d(0));
-  EXPECT_NO_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()));
+  DRAKE_EXPECT_NO_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()));
 }
 
 class LinearSystemTest : public AffineLinearSystemTest {
@@ -418,16 +419,16 @@ GTEST_TEST(TestLinearize, LinearizingWithMixedInputs) {
 
   // First check without the vector-valued input port connected.
   DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
-      "InputPort.*is not connected");
+                              "InputPort.*is not connected");
 
   // Now check with the vector-valued input port connected but the abstract
   // input port not yet connected.
   context->FixInputPort(0, Vector1<double>(0.0));
-  EXPECT_NO_THROW(Linearize(system, *context));
+  DRAKE_EXPECT_NO_THROW(Linearize(system, *context));
 
   // Now check with the abstract input port connected.
   context->FixInputPort(1, Value<std::vector<double>>());
-  EXPECT_NO_THROW(Linearize(system, *context));
+  DRAKE_EXPECT_NO_THROW(Linearize(system, *context));
 }
 
 // Test that Linearize throws when called on a discrete but non-periodic system.

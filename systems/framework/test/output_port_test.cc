@@ -1,7 +1,8 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 /* clang-format off to disable clang-format-includes */
-#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_output_port.h"
+#include "drake/systems/framework/output_port.h"
 /* clang-format on */
 
 #include <memory>
@@ -57,8 +58,8 @@ class MyOutputPort : public OutputPort<double> {
   void DoCalc(const Context<double>& diagram_context,
               AbstractValue* value) const override {
     EXPECT_NE(value, nullptr);
-    EXPECT_NO_THROW(value->set_value<BasicVector<double>>(
-        MyVector2d(Vector2d(3., 4.))));
+    DRAKE_EXPECT_NO_THROW(
+        value->set_value<BasicVector<double>>(MyVector2d(Vector2d(3., 4.))));
   }
 
   const AbstractValue& DoEval(const Context<double>& context) const override {
@@ -141,7 +142,7 @@ GTEST_TEST(TestBaseClass, BadOutputType) {
   auto good_port_value = port.Allocate();
   auto bad_port_value = AbstractValue::Make<std::string>("hi there");
 
-  EXPECT_NO_THROW(port.Calc(*context, good_port_value.get()));
+  DRAKE_EXPECT_NO_THROW(port.Calc(*context, good_port_value.get()));
 
   // This message is thrown in Debug. In Release some other error may trigger
   // but not from OutputPort, so we can't use
@@ -310,7 +311,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   // The abstract port is a string; let's give it an int.
   auto good_out = absport_general_.Allocate();
   auto bad_out = AbstractValue::Make<int>(5);
-  EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
+  DRAKE_EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
       "OutputPort::Calc().*expected.*std::string.*got.*int.*");
@@ -318,7 +319,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   // The vector port is a MyVector3d, we'll give it a BasicVector.
   auto good_vec = vecport_general_.Allocate();
   auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
-  EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
+  DRAKE_EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       vecport_general_.Calc(*context_, bad_vec.get()), std::logic_error,
       "OutputPort::Calc().*expected.*MyVector.*got.*BasicVector.*");
@@ -383,8 +384,8 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   auto value1 = out1.Allocate();
   const int* int0{};
   const int* int1{};
-  EXPECT_NO_THROW(int0 = &value0->get_value<int>());
-  EXPECT_NO_THROW(int1 = &value1->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(int0 = &value0->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(int1 = &value1->get_value<int>());
   EXPECT_EQ(*int0, 0);  // Default value initialized.
   EXPECT_EQ(*int1, 0);
   out0.Calc(*context, value0.get());
@@ -405,9 +406,9 @@ GTEST_TEST(DiagramOutputPortTest, Nested) {
   const int* int0{};
   const int* int1{};
   const int* int2{};
-  EXPECT_NO_THROW(int0 = &value0->get_value<int>());
-  EXPECT_NO_THROW(int1 = &value1->get_value<int>());
-  EXPECT_NO_THROW(int2 = &value2->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(int0 = &value0->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(int1 = &value1->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(int2 = &value2->get_value<int>());
   EXPECT_EQ(*int0, 0);  // Default value initialized.
   EXPECT_EQ(*int1, 0);
   EXPECT_EQ(*int2, 0);

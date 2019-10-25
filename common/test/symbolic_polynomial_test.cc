@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
@@ -653,7 +654,7 @@ TEST_F(SymbolicPolynomialTest, ConstructNonPolynomialCoefficients) {
 TEST_F(SymbolicPolynomialTest, NegativeTestConstruction1) {
   // sin(a) * x is a polynomial.
   const Expression e1{sin(a_) * x_};
-  EXPECT_NO_THROW(Polynomial(e1, indeterminates_));
+  DRAKE_EXPECT_NO_THROW(Polynomial(e1, indeterminates_));
 
   // sin(x) * x is a not polynomial.
   const Expression e2{sin(x_) * x_};
@@ -687,7 +688,7 @@ TEST_F(SymbolicPolynomialTest, NegativeTestConstruction5) {
 TEST_F(SymbolicPolynomialTest, NegativeTestConstruction6) {
   // 1 / a is polynomial.
   const Expression e1{1 / a_};
-  EXPECT_NO_THROW(Polynomial(e1, indeterminates_));
+  DRAKE_EXPECT_NO_THROW(Polynomial(e1, indeterminates_));
 
   // However, 1 / x is not a polynomial.
   const Expression e2{1 / x_};

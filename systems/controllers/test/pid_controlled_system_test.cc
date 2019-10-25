@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -349,7 +350,7 @@ TEST_F(ConnectControllerTest, MultipleControllerTest) {
       feedback_selector_, Kp, Ki, Kd, &builder_);
 
   ConnectPidPorts(second_plant_pid_ports);
-  EXPECT_NO_THROW(builder_.Build());
+  DRAKE_EXPECT_NO_THROW(builder_.Build());
 }
 
 }  // namespace

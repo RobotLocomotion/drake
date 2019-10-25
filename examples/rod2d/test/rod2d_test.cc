@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/analysis/simulator.h"
@@ -265,10 +266,11 @@ class Rod2DDAETest : public ::testing::Test {
 
 // Verifies that the state vector functions throw no exceptions.
 TEST_F(Rod2DDAETest, NamedStateVectorsNoThrow) {
-  EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(context_.get()));
-  EXPECT_NO_THROW(Rod2D<double>::get_state(*context_));
-  EXPECT_NO_THROW(Rod2D<double>::get_state(context_->get_continuous_state()));
-  EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(
+  DRAKE_EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(context_.get()));
+  DRAKE_EXPECT_NO_THROW(Rod2D<double>::get_state(*context_));
+  DRAKE_EXPECT_NO_THROW(
+      Rod2D<double>::get_state(context_->get_continuous_state()));
+  DRAKE_EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(
       &context_->get_mutable_continuous_state()));
 }
 

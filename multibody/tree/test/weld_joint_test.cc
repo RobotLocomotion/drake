@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -69,8 +70,8 @@ TEST_F(WeldJointTest, NumDOFs) {
   EXPECT_EQ(joint_->num_velocities(), 0);
   // We just verify we can call these methods. However their return value is
   // irrelevant since joints of type WeldJoint have no state.
-  EXPECT_NO_THROW(joint_->position_start());
-  EXPECT_NO_THROW(joint_->velocity_start());
+  DRAKE_EXPECT_NO_THROW(joint_->position_start());
+  DRAKE_EXPECT_NO_THROW(joint_->velocity_start());
 }
 
 // Verify we can retrieve the fixed posed between the welded frames.
