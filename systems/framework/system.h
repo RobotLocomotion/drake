@@ -1021,19 +1021,91 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                    Subcontext access
+  /// Methods in this section locate the Context belonging to a particular
+  /// subsystem, from within the Context for a containing System (typically a
+  /// Diagram). There are two common circumstances where this is needed:
+  ///
+  /// 1. You are given a Diagram and its Context, and have a reference to a
+  ///    particular subsystem contained somewhere in that Diagram (that is,
+  ///    an immediate child or deeper descendent). You can ask the Diagram to
+  ///    find the subcontext of that subsystem, using GetSubsystemContext()
+  ///    or GetMutableSubsystemContext().
+  /// 2. You are given the root Context for a complete Diagram (typically by
+  ///    the Simulator as part of a generated trajectory). You don't have a
+  ///    reference to the Diagram, but you do have a reference to a subsystem
+  ///    of interest. You want to find its subcontext from within the root
+  ///    Context. Use GetMyContextFromRoot() or GetMyMutableContextFromRoot().
+  ///
+  /// The second case is particularly useful in monitor functions for the
+  /// Drake Simulator.
+  //@{
+
+  /// Returns a const reference to the subcontext that corresponds to the
+  /// contained %System `subsystem`.
+  /// @throws std::logic_error if `subsystem` not contained in `this` %System.
+  /// @pre The given `context` is valid for use with `this` %System.
+  const Context<T>& GetSubsystemContext(const System<T>& subsystem,
+                                        const Context<T>& context) const {
+    auto ret = DoGetTargetSystemContext(subsystem, &context);
+    if (ret != nullptr) return *ret;
+
+    throw std::logic_error(
+        fmt::format("GetSubsystemContext(): {} subsystem '{}' is not "
+                    "contained in {} System '{}'.",
+                    subsystem.GetSystemType(), subsystem.GetSystemPathname(),
+                    this->GetSystemType(), this->GetSystemPathname()));
+  }
+
+  /// Returns a mutable reference to the subcontext that corresponds to the
+  /// contained %System `subsystem`.
+  /// @throws std::logic_error if `subsystem` not contained in `this` %System.
+  /// @pre The given `context` is valid for use with `this` %System.
+  Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
+                                         Context<T>* context) const {
+    DRAKE_ASSERT(context != nullptr);
+    // Make use of the const method to avoid code duplication.
+    const Context<T>& subcontext = GetSubsystemContext(subsystem, *context);
+    return const_cast<Context<T>&>(subcontext);
+  }
+
+  /// Returns the const Context for `this` subsystem, given a root context. If
+  /// `this` %System is already the top level (root) %System, just returns
+  /// `root_context`. (A root Context is one that does not have a parent
+  /// Context.)
+  /// @throws std::logic_error if the given `root_context` is not actually
+  ///     a root context.
+  /// @see GetSubsystemContext()
+  const Context<T>& GetMyContextFromRoot(const Context<T>& root_context) const {
+    if (!root_context.is_root_context())
+      throw std::logic_error(
+          "GetMyContextFromRoot(): given context must be a root context.");
+    const internal::SystemParentServiceInterface* parent_service =
+        this->get_parent_service();
+    if (!parent_service)  // This is the root System.
+      return root_context;
+
+    return static_cast<const System<T>&>(parent_service->GetRootSystemBase())
+        .GetSubsystemContext(*this, root_context);
+  }
+
+  /// Returns the mutable subsystem context for `this` system, given a root
+  /// context.
+  /// @see GetMyContextFromRoot()
+  Context<T>& GetMyMutableContextFromRoot(Context<T>* root_context) const {
+    DRAKE_DEMAND(root_context != nullptr);
+    // Make use of the const method to avoid code duplication.
+    const Context<T>& subcontext = GetMyContextFromRoot(*root_context);
+    return const_cast<Context<T>&>(subcontext);
+  }
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @cond
   // Functions to avoid RTTI in Diagram. Conceptually, these should be protected
   // and should not be directly called, so they are hidden from doxygen.
 
   // TODO(siyuan): change all target_system to reference.
-
-  // Returns @p context if @p target_system equals `this`, nullptr otherwise.
-  // Should not be directly called.
-  virtual Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>& target_system, Context<T>* context) const {
-    if (&target_system == this) return context;
-    return nullptr;
-  }
 
   // Returns @p context if @p target_system equals `this`, nullptr otherwise.
   // Should not be directly called.

@@ -344,6 +344,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is context)
             check_output(context)
             simulator.AdvanceTo(1)
+            simulator.AdvancePendingEvents()
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
