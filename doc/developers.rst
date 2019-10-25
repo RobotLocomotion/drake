@@ -79,10 +79,7 @@ Drake requires a compiler running in C++14 mode or greater.
 | Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python          |
 +==================================+=======+=======+=====================+===================+=================+
 +----------------------------------+-------+-------+---------------------+-------------------+-----------------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | 1.1   | 3.5   | | Clang 6.0         | OpenJDK 8         | 2.7             |
-|                                  |       |       | | GCC 5.4 (default) |                   |                 |
-+----------------------------------+       +-------+---------------------+-------------------+-----------------+
-| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11        | | 2.7           |
+| Ubuntu 18.04 LTS (Bionic Beaver) | 1.1   | 3.10  | | Clang 6.0         | OpenJDK 11        | | 2.7           |
 |                                  |       |       | | GCC 7.4 (default) |                   | | 3.6 (default) |
 +----------------------------------+       +-------+---------------------+-------------------+-----------------+
 | macOS Mojave (10.14)             |       | 3.15  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 13 | 3.7             |
@@ -126,8 +123,8 @@ to :ref:`ask for help <getting_help>`.
 Binary Packages
 ---------------
 
-The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial, GCC 7.4
-on Ubuntu Bionic, and Apple LLVM 11.0.0 on macOS Mojave.
+The binary releases of Drake are built with GCC 7.4 on Ubuntu Bionic, and Apple
+LLVM 11.0.0 on macOS Mojave.
 
 The links for these packages are listed in :ref:`binary-installation`.
 
