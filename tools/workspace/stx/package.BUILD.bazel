@@ -1,43 +1,15 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "cmake_config",
-    "install",
-    "install_cmake_config",
-)
-
 licenses(["notice"])  # BSD-3-Clause AND BSL-1.0
 
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "stx",
+    deprecation = "@stx is deprecated and will be removed on 2020-02-01.",
     hdrs = [
         "include/stx/optional.hpp",
         "include/stx/variant.hpp",
     ],
     includes = ["include"],
-)
-
-CMAKE_PACKAGE = "stx"
-
-cmake_config(package = CMAKE_PACKAGE)
-
-install_cmake_config(
-    package = CMAKE_PACKAGE,
-    versioned = 0,
-)
-
-install(
-    name = "install",
-    targets = [":stx"],
-    hdr_dest = "include/" + CMAKE_PACKAGE,
-    hdr_strip_prefix = ["include"],
-    guess_hdrs = "PACKAGE",
-    docs = ["@drake//tools/workspace/stx:LICENSE"],
-    allowed_externals = ["@drake//tools/workspace/stx:LICENSE"],
-    deps = [
-        ":install_cmake_config",
-    ],
 )

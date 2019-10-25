@@ -62,7 +62,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["manipulation_station_py.cc"],
     package_info = PACKAGE_INFO,

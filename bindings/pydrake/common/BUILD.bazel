@@ -242,6 +242,11 @@ drake_cc_library(
     name = "drake_optional_pybind",
     hdrs = ["drake_optional_pybind.h"],
     declare_installed_headers = 0,
+    deprecation = " ".join([
+        "//bindings/pydrake/common:drake_optional_pybind is deprecated and",
+        "will be removed on 2020-02-01.",
+    ]),
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//:drake_shared_library"],
 )
@@ -250,6 +255,11 @@ drake_cc_library(
     name = "drake_variant_pybind",
     hdrs = ["drake_variant_pybind.h"],
     declare_installed_headers = 0,
+    deprecation = " ".join([
+        "//bindings/pydrake/common:drake_variant_pybind is deprecated and",
+        "will be removed on 2020-02-01.",
+    ]),
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//:drake_shared_library"],
 )
@@ -466,14 +476,6 @@ drake_pybind_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
-)
-
-drake_pybind_cc_googletest(
-    name = "drake_variant_pybind_test",
-    cc_deps = [
-        ":drake_variant_pybind",
-        "//bindings/pydrake:test_util_pybind",
-    ],
 )
 
 drake_pybind_library(

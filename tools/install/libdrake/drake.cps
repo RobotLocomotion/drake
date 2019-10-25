@@ -56,10 +56,6 @@
       "Hints": ["@prefix@/lib/cmake/spdlog"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "stx": {
-      "Hints": ["@prefix@/lib/cmake/stx"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "TinyXML2": {
       "Version": "2.2",
       "X-CMake-Find-Args": ["MODULE"]
@@ -84,7 +80,6 @@
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx",
         "tinyxml2:tinyxml2",
         "yaml-cpp"
       ]
