@@ -274,6 +274,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
@@ -477,6 +478,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
+  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
+  /// will affect subsequent calls to SetDefaultState(); otherwise, this value
+  /// is effectively ignored.
+  /// @param[in] body
+  ///   Body whose default pose will be set.
+  /// @param[in] X_WB
+  ///   Default pose of the body.
+  void SetDefaultFreeBodyPose(
+      const Body<T>& body, const math::RigidTransform<double>& X_WB) {
+    X_WB_default_list_[body.index()] = X_WB;
+  }
+
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -505,9 +518,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
   }
-
-  // TODO(sammy-tri) We should also be able to set the default pose of a free
-  // body.  See https://github.com/RobotLocomotion/drake/issues/10713
 
   /// Sets the distribution used by SetRandomState() to populate the
   /// x-y-z `position` component of the floating-base state.
@@ -818,6 +828,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     visual_geometries_.emplace_back();
     DRAKE_DEMAND(collision_geometries_.size() == body.index());
     collision_geometries_.emplace_back();
+    DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
+    X_WB_default_list_.emplace_back();
     return body;
   }
 
@@ -3093,13 +3105,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// Sets the `state` so that generalized positions and velocities are zero.
+  /// Sets `state` according to defaults set by the user for joints (e.g.
+  /// RevoluteJoint::set_default_angle()) and free bodies
+  /// (SetDefaultFreeBodyPose()). If the user does not specify defaults, the
+  /// state corresponds to zero generalized positions and velocities.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
+    for (const BodyIndex index : GetFloatingBaseBodies()) {
+      SetFreeBodyPose(
+          context, state, internal_tree().get_body(index),
+          X_WB_default_list_[index].template cast<T>());
+    }
   }
 
   /// Assigns random values to all elements of the state, by drawing samples
@@ -3800,6 +3820,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
+
+  // Vector (with size num_bodies()) of default poses for each body. This is
+  // only used if Body::is_floating() is true.
+  std::vector<math::RigidTransform<double>> X_WB_default_list_;
 };
 
 /// @cond

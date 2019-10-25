@@ -58,7 +58,7 @@ using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using math::RigidTransform;
 using math::RigidTransformd;
-using math::RollPitchYaw;
+using math::RollPitchYawd;
 using math::RotationMatrix;
 using math::RotationMatrixd;
 using multibody::benchmarks::Acrobot;
@@ -816,6 +816,23 @@ TEST_F(AcrobotPlantTests, SetDefaultState) {
   // Calling SetDefaultContext directly works, too.
   plant_->SetDefaultContext(plant_context_);
   EXPECT_EQ(shoulder_->get_angle(*plant_context_), 4.2);
+}
+
+GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
+  // We cannot use Acrobot for testing `SetDefaultFreeBodyPose` since it has no
+  // free bodies.
+  MultibodyPlant<double> plant;
+  const auto& body = plant.AddRigidBody("body", SpatialInertia<double>());
+  const RigidTransformd X_WB_default(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+  plant.SetDefaultFreeBodyPose(body, X_WB_default);
+  plant.Finalize();
+  EXPECT_GT(plant.num_positions(), 0);
+  auto context = plant.CreateDefaultContext();
+  const double kTolerance = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(
+      body.EvalPoseInWorld(*context).GetAsMatrix4(),
+      X_WB_default.GetAsMatrix4(), kTolerance));
 }
 
 TEST_F(AcrobotPlantTests, SetRandomState) {
@@ -2617,8 +2634,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   // Check that we can set the rotation to a specific distribution (in this
   // case it's just constant).
-  const math::RotationMatrix<double> X_WB_new(
-      math::RollPitchYaw<double>(0.3, 0.4, 0.5));
+  const math::RotationMatrix<double> X_WB_new(RollPitchYawd(0.3, 0.4, 0.5));
   plant.SetFreeBodyRandomRotationDistribution(
       body, X_WB_new.cast<symbolic::Expression>().ToQuaternion());
 

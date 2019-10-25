@@ -520,6 +520,10 @@ class TestPlant(unittest.TestCase):
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
 
+        # Test existence of default free body pose setting.
+        body = plant.GetBodyByName("Link1")
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=RigidTransform_[float]())
+
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
         self.assertEqual(plant.GetPositionUpperLimits().shape, (nq,))
