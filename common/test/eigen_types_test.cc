@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 using Eigen::MatrixXd;
 using Eigen::Matrix3d;
@@ -101,7 +102,7 @@ GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
   EXPECT_TRUE(ptr != nullptr);
   EXPECT_FALSE(!ptr);
   EXPECT_FALSE(ptr == nullptr);
-  EXPECT_NO_THROW(*ptr);
+  DRAKE_EXPECT_NO_THROW(*ptr);
 }
 
 bool ptr_optional_arg(EigenPtr<MatrixXd> arg = nullptr) {

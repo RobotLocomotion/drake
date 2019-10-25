@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 
@@ -165,15 +166,15 @@ GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       R = RotationMatrix<double>::MakeFromOrthonormalColumns(
           Vector3d(std::numeric_limits<double>::infinity(), 0, 0), Fy, Fz),
-          std::logic_error,
-        "Error: Rotation matrix contains an element that is infinity or NaN.*");
+      std::logic_error,
+      "Error: Rotation matrix contains an element that is infinity or NaN.*");
 
   if (kDrakeAssertIsDisarmed) {
     // In release builds, check for invalid matrix.
-    EXPECT_NO_THROW(
+    DRAKE_EXPECT_NO_THROW(
         R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz));
     EXPECT_FALSE(R.IsValid());
-    EXPECT_NO_THROW(
+    DRAKE_EXPECT_NO_THROW(
         R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz));
     EXPECT_FALSE(R.IsValid());
   }
@@ -194,13 +195,12 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
   // Bad matrix should throw exception.
-  m << 1, 9000*kEpsilon, 9000*kEpsilon,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
+  m << 1, 9000 * kEpsilon, 9000 * kEpsilon, 0, cos_theta, sin_theta, 0,
+      -sin_theta, cos_theta;
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(R.set(m), std::logic_error);
   } else {
-    EXPECT_NO_THROW(R.set(m));
+    DRAKE_EXPECT_NO_THROW(R.set(m));
   }
 }
 
@@ -405,27 +405,25 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
 
   // Test that setting R to an identity matrix does not throw an exception.
   Matrix3d m;
-  m << 1, 0, 0,
-       0, 1, 0,
-       0, 0, 1;
+  m << 1, 0, 0, 0, 1, 0, 0, 0, 1;
   R.set(m);
   EXPECT_TRUE(R.IsExactlyIdentity());
 
   // Test impact of absolute mininimum deviation from identity matrix.
   m(0, 2) = std::numeric_limits<double>::denorm_min();  // ≈ 4.94066e-324
-  EXPECT_NO_THROW(R.set(m));
+  DRAKE_EXPECT_NO_THROW(R.set(m));
   EXPECT_FALSE(R.IsExactlyIdentity());
 
   // Test that setting a RotationMatrix to a 3x3 matrix that is close to a valid
   // RotationMatrix does not throw an exception, whereas setting to a 3x3 matrix
   // that is slightly too-far from a valid RotationMatrix throws an exception.
   m(0, 2) = 127 * kEpsilon;
-  EXPECT_NO_THROW(R.set(m));
+  DRAKE_EXPECT_NO_THROW(R.set(m));
   m(0, 2) = 129 * kEpsilon;
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(R.set(m), std::logic_error);
   } else {
-    EXPECT_NO_THROW(R.set(m));
+    DRAKE_EXPECT_NO_THROW(R.set(m));
   }
 
   const double cos_theta = std::cos(0.5);
@@ -609,19 +607,18 @@ GTEST_TEST(RotationMatrix, SymbolicConstructionTest) {
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
   Matrix3<Expression> m_symbolic;
   m_symbolic << 1, 2, 3,  // This is an obviously invalid rotation matrix.
-                4, 5, 6,
-                7, 8, 9;
+      4, 5, 6, 7, 8, 9;
   // Note: The function under test in the next line is ThrowIfNotValid().
   // Since this function is private, it cannot be directly tested.
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
   RotationMatrix<Expression> R;
-  EXPECT_NO_THROW(R.set(m_symbolic));
+  DRAKE_EXPECT_NO_THROW(R.set(m_symbolic));
 
   // Set one of the matrix terms to a variable.  Still no throw.
   const symbolic::Variable x{"x"};
   m_symbolic(0, 0) = x;
-  EXPECT_NO_THROW(R.set(m_symbolic));
+  DRAKE_EXPECT_NO_THROW(R.set(m_symbolic));
 }
 
 // Verify RotationMatrix projection with symbolic::Expression behaves as

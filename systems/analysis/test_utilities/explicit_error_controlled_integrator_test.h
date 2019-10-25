@@ -1,3 +1,4 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 #pragma once
 
 #include <cmath>
@@ -55,8 +56,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ContextAccess) {
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
   EXPECT_GE(this->integrator->get_error_estimate_order(), 1);
   EXPECT_EQ(this->integrator->supports_error_estimation(), true);
-  EXPECT_NO_THROW(this->integrator->set_target_accuracy(1e-1));
-  EXPECT_NO_THROW(this->integrator->request_initial_step_size_target(
+  DRAKE_EXPECT_NO_THROW(this->integrator->set_target_accuracy(1e-1));
+  DRAKE_EXPECT_NO_THROW(this->integrator->request_initial_step_size_target(
       this->kDt));
 }
 
@@ -74,8 +75,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
   this->integrator->Initialize();
 
   // Attempt to take a variable step- should not throw an exception.
-  EXPECT_NO_THROW(
-    this->integrator->IntegrateWithMultipleStepsToTime(1e-40));
+  DRAKE_EXPECT_NO_THROW(
+      this->integrator->IntegrateWithMultipleStepsToTime(1e-40));
 }
 
 // Test scaling vectors

@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace math {
@@ -84,9 +85,9 @@ GTEST_TEST(RealDiscreteLyapunovEquation, ThrowEigenValuesATest) {
   Q << 1, 0, 0, 0, 1, 0, 0, 0, 1;
 
   EXPECT_ANY_THROW(RealDiscreteLyapunovEquation(A1, Q));
-  EXPECT_NO_THROW(RealDiscreteLyapunovEquation(A2, Q));
+  DRAKE_EXPECT_NO_THROW(RealDiscreteLyapunovEquation(A2, Q));
   EXPECT_ANY_THROW(RealDiscreteLyapunovEquation(A3, Q));
-  EXPECT_NO_THROW(RealDiscreteLyapunovEquation(A4, Q));
+  DRAKE_EXPECT_NO_THROW(RealDiscreteLyapunovEquation(A4, Q));
 }
 
 GTEST_TEST(RealDiscreteLyapunovEquation, Solve1by1Test) {

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
@@ -66,13 +67,12 @@ GTEST_TEST(IntegratorTest, InvalidDts) {
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
 
-  ExplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());
+  ExplicitEulerIntegrator<double> integrator(spring_mass, dt, context.get());
   integrator.Initialize();
 
   const double t_final = context->get_time() + dt;
-  EXPECT_NO_THROW(
-    integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final));
+  DRAKE_EXPECT_NO_THROW(
+      integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final));
   EXPECT_THROW(integrator.
       IntegrateNoFurtherThanTime(t_final, -1, t_final), std::logic_error);
   EXPECT_THROW(integrator.

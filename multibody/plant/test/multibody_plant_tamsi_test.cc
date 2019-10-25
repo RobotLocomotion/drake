@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
@@ -104,7 +105,7 @@ GTEST_TEST(MbpWithTamsiSolver, EmptyWorld) {
   EXPECT_EQ(new_discrete_state_vector.size(), 0);
 
   // Verify we can to do discrete updates even if we have zero DOFs.
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       diagram->CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
 }
 

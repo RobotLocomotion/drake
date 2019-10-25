@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/random.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -440,7 +441,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
           "test"));
   EXPECT_EQ(test_constraint, 0);
 
-  EXPECT_NO_THROW(system_.get_constraint(test_constraint));
+  DRAKE_EXPECT_NO_THROW(system_.get_constraint(test_constraint));
   EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
 
   const double tol = 1e-6;
@@ -704,7 +705,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   ASSERT_EQ(system_.num_input_ports(), 4);
 
   // Sanity check that this works with a good port number.
-  EXPECT_NO_THROW(system_.get_input_port(1));
+  DRAKE_EXPECT_NO_THROW(system_.get_input_port(1));
 
   // Try some illegal port numbers.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -753,13 +754,15 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   // Assign values to all ports. All but port 0 are BasicVector ports.
   system_.AllocateFixedInputs(context_.get());
 
-  EXPECT_NO_THROW(system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
+  DRAKE_EXPECT_NO_THROW(
+      system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput<WrongVector>(*context_, 2), std::logic_error,
       ".*EvalVectorInput.*expected.*WrongVector"
           ".*input port.*2.*actual.*MyVector.*");
 
-  EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
+  DRAKE_EXPECT_NO_THROW(
+      system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, 1), std::logic_error,
       ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*MyVector.*");
@@ -767,7 +770,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   // Now induce errors that only apply to abstract-valued input ports.
 
   EXPECT_EQ(*system_.EvalInputValue<std::string>(*context_, 0), "");
-  EXPECT_NO_THROW(system_.EvalAbstractInput(*context_, 0));
+  DRAKE_EXPECT_NO_THROW(system_.EvalAbstractInput(*context_, 0));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput(*context_, 0), std::logic_error,
       ".*EvalVectorInput.*vector port required.*input port.*0.*"

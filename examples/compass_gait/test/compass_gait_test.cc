@@ -4,6 +4,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -217,7 +218,7 @@ GTEST_TEST(CompassGaitTest, TestMinimalStateOutput) {
       cg.get_mutable_continuous_state(context.get());
 
   auto output = cg.get_minimal_state_output_port().Allocate();
-  EXPECT_NO_THROW(output->get_value<systems::BasicVector<double>>());
+  DRAKE_EXPECT_NO_THROW(output->get_value<systems::BasicVector<double>>());
   const systems::BasicVector<double>& minimal_state =
       output->get_value<systems::BasicVector<double>>();
 
@@ -241,7 +242,7 @@ GTEST_TEST(CompassGaitTest, TestFloatBaseOutput) {
   const CompassGaitParams<double>& params = cg.get_parameters(*context);
 
   auto output = cg.get_floating_base_state_output_port().Allocate();
-  EXPECT_NO_THROW(output->get_value<systems::BasicVector<double>>());
+  DRAKE_EXPECT_NO_THROW(output->get_value<systems::BasicVector<double>>());
   const systems::BasicVector<double>& floating_base_state =
       output->get_value<systems::BasicVector<double>>();
 

@@ -21,6 +21,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -2886,7 +2887,7 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   // If we add `b` to prog as decision variable, then the code throws no
   // exceptions.
   prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
-  EXPECT_NO_THROW(prog.AddEqualityConstraintBetweenPolynomials(
+  DRAKE_EXPECT_NO_THROW(prog.AddEqualityConstraintBetweenPolynomials(
       p1, symbolic::Polynomial(b * x, {x})));
 }
 }  // namespace test

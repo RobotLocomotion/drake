@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 // TODO(sherm1) As SystemBase gains more functionality, move type-agnostic
@@ -83,7 +84,7 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
             "drake::systems::system_base_test_internal::MySystemBase");
 
   auto context = system.AllocateContext();
-  EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
+  DRAKE_EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
 
   MyContextBase bad_context(false);
   DRAKE_EXPECT_THROWS_MESSAGE(system.ThrowIfContextNotCompatible(bad_context),

@@ -12,6 +12,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/shape_specification.h"
@@ -946,7 +947,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
     RenderEngineVtk renderer{{RenderLabel::kDontCare, {}}};
     InitializeRenderer(X_WC_, true /* no terrain */, &renderer);
 
-    EXPECT_NO_THROW(populate_default_sphere(&renderer));
+    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
     expected_label_ = RenderLabel::kDontCare;
     expected_color_ = RgbaColor(renderer.default_diffuse());
 

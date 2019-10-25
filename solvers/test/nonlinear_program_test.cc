@@ -13,6 +13,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -57,10 +58,10 @@ void RunNonlinearProgram(const MathematicalProgram& prog,
     if (!solver.second->available()) {
       continue;
     }
-    ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result))
+    DRAKE_ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result))
         << "Using solver: " << solver.first;
     EXPECT_TRUE(result->is_success()) << "Using solver: " << solver.first;
-    EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
+    DRAKE_EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
 
@@ -530,7 +531,7 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
     MathematicalProgramResult result;
 
     num_calls = 0;
-    ASSERT_NO_THROW(solver.second->Solve(prog, {}, {}, &result))
+    DRAKE_ASSERT_NO_THROW(solver.second->Solve(prog, {}, {}, &result))
         << "Using solver: " << solver.first;
     EXPECT_TRUE(result.is_success()) << "Using solver: " << solver.first;
     EXPECT_GT(num_calls, 0);

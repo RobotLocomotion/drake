@@ -267,6 +267,7 @@ drake_cc_googletest(
         ":autodiff",
         ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -335,6 +336,7 @@ drake_cc_googletest(
     deps = [
         ":discrete_lyapunov_equation",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

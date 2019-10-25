@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace math {
@@ -215,14 +216,13 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix4) {
   const RotationMatrixd R = GetRotationMatrixB();
   const Vector3<double> position(4, 5, 6);
   Matrix4<double> pose;
-  pose << R.matrix(), position,
-          0, 0, 0, 1;
+  pose << R.matrix(), position, 0, 0, 0, 1;
   const RigidTransformd X(pose);
   EXPECT_TRUE(CompareMatrices(X.GetAsMatrix4(), pose));
 
   // Ensure the 4x4 constructor fails if the last row differs from [0, 0, 0, 1].
   if (kDrakeAssertIsArmed) {
-    EXPECT_NO_THROW(RigidTransformd Xm(pose));
+    DRAKE_EXPECT_NO_THROW(RigidTransformd Xm(pose));
     pose(3, 0) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
     pose(3, 0) = 0;  pose(3, 1) = kEpsilon;
@@ -252,14 +252,13 @@ GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
 
   // Test constructor with a 4x4 matrix Eigen expression.
   Eigen::Matrix<double, 4, 4> pose4;
-  pose4 << R.matrix(), position,
-           0, 0, 0, 1;
+  pose4 << R.matrix(), position, 0, 0, 0, 1;
   const RigidTransform<double> X3(pose4 * pose4);
   EXPECT_TRUE(CompareMatrices(X3.GetAsMatrix4(), pose4 * pose4));
 
   // Ensure the 4x4 constructor fails if the last row differs from [0, 0, 0, 1].
   if (kDrakeAssertIsArmed) {
-    EXPECT_NO_THROW(RigidTransformd Xm(pose4 * pose4));
+    DRAKE_EXPECT_NO_THROW(RigidTransformd Xm(pose4 * pose4));
     pose4(3, 0) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
     pose4(3, 0) = 0;  pose4(3, 1) = kEpsilon;

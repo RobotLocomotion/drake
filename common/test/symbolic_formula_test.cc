@@ -16,6 +16,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/is_memcpy_movable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
@@ -1204,7 +1205,7 @@ TEST_F(SymbolicFormulaTest, Isinf) {
 
   // Note that constructing isinf with an expression including NaN does *not*
   // throw.
-  EXPECT_NO_THROW(isinf(Expression::NaN()));
+  DRAKE_EXPECT_NO_THROW(isinf(Expression::NaN()));
 
   // For NaN, symbolic::isinf will throw an exception when evaluated while
   // std::isfinite returns false.
@@ -1224,7 +1225,7 @@ TEST_F(SymbolicFormulaTest, Isfinite) {
 
   // Note that constructing isfinite with an expression including NaN does *not*
   // throw.
-  EXPECT_NO_THROW(isfinite(Expression::NaN()));
+  DRAKE_EXPECT_NO_THROW(isfinite(Expression::NaN()));
 
   // For NaN, symbolic::isfinite will throw an exception when evaluated while
   // std::isfinite returns false.
