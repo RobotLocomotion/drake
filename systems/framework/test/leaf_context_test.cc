@@ -11,6 +11,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -406,7 +407,7 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   EXPECT_TRUE(entry_value.is_out_of_date());  // Initial value isn't up to date.
   EXPECT_THROW(entry_value.GetValueOrThrow<int>(), std::logic_error);
   entry_value.mark_up_to_date();
-  EXPECT_NO_THROW(entry_value.GetValueOrThrow<int>());
+  DRAKE_EXPECT_NO_THROW(entry_value.GetValueOrThrow<int>());
 
   const AbstractValue& value = entry_value.GetAbstractValueOrThrow();
   EXPECT_EQ(42, UnpackIntValue(value));
@@ -417,7 +418,7 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   EXPECT_THROW(entry_value.SetValueOrThrow<int>(43), std::logic_error);
   entry_value.mark_out_of_date();
 
-  EXPECT_NO_THROW(entry_value.SetValueOrThrow<int>(43));
+  DRAKE_EXPECT_NO_THROW(entry_value.SetValueOrThrow<int>(43));
   EXPECT_FALSE(entry_value.is_out_of_date());  // Set marked it up to date.
   EXPECT_EQ(43, UnpackIntValue(entry_value.GetAbstractValueOrThrow()));
 

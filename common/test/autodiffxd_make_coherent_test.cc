@@ -5,6 +5,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace common {
@@ -29,13 +30,13 @@ GTEST_TEST(AutoDiffXdMakeCoherentTest, AutoDiffNonemptyDerivatives) {
 GTEST_TEST(AutoDiffXdMakeCoherentTest, Double) {
   const double donor(7.);
   double recipient(4.);
-  EXPECT_NO_THROW(autodiffxd_make_coherent(donor, &recipient));
+  DRAKE_EXPECT_NO_THROW(autodiffxd_make_coherent(donor, &recipient));
 }
 
 GTEST_TEST(AutoDiffXdMakeCoherentTest, Symbolic) {
   const symbolic::Expression donor(7.);
   symbolic::Expression recipient(4.);
-  EXPECT_NO_THROW(autodiffxd_make_coherent(donor, &recipient));
+  DRAKE_EXPECT_NO_THROW(autodiffxd_make_coherent(donor, &recipient));
 }
 
 }  // namespace

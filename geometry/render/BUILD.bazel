@@ -173,8 +173,7 @@ drake_cc_googletest(
     deps = [
         ":render_engine_vtk",
         "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
     ],
@@ -184,6 +183,7 @@ drake_cc_googletest(
     name = "render_label_test",
     deps = [
         ":render_label",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )

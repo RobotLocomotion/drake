@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 
@@ -170,10 +171,10 @@ GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
 
   if (kDrakeAssertIsDisarmed) {
     // In release builds, check for invalid matrix.
-    EXPECT_NO_THROW(
+    DRAKE_EXPECT_NO_THROW(
         R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz));
     EXPECT_FALSE(R.IsValid());
-    EXPECT_NO_THROW(
+    DRAKE_EXPECT_NO_THROW(
         R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz));
     EXPECT_FALSE(R.IsValid());
   }
@@ -200,7 +201,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(R.set(m), std::logic_error);
   } else {
-    EXPECT_NO_THROW(R.set(m));
+    DRAKE_EXPECT_NO_THROW(R.set(m));
   }
 }
 
@@ -413,19 +414,19 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
 
   // Test impact of absolute mininimum deviation from identity matrix.
   m(0, 2) = std::numeric_limits<double>::denorm_min();  // ≈ 4.94066e-324
-  EXPECT_NO_THROW(R.set(m));
+  DRAKE_EXPECT_NO_THROW(R.set(m));
   EXPECT_FALSE(R.IsExactlyIdentity());
 
   // Test that setting a RotationMatrix to a 3x3 matrix that is close to a valid
   // RotationMatrix does not throw an exception, whereas setting to a 3x3 matrix
   // that is slightly too-far from a valid RotationMatrix throws an exception.
   m(0, 2) = 127 * kEpsilon;
-  EXPECT_NO_THROW(R.set(m));
+  DRAKE_EXPECT_NO_THROW(R.set(m));
   m(0, 2) = 129 * kEpsilon;
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(R.set(m), std::logic_error);
   } else {
-    EXPECT_NO_THROW(R.set(m));
+    DRAKE_EXPECT_NO_THROW(R.set(m));
   }
 
   const double cos_theta = std::cos(0.5);
@@ -616,12 +617,12 @@ GTEST_TEST(RotationMatrix, SymbolicConstructionTest) {
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
   RotationMatrix<Expression> R;
-  EXPECT_NO_THROW(R.set(m_symbolic));
+  DRAKE_EXPECT_NO_THROW(R.set(m_symbolic));
 
   // Set one of the matrix terms to a variable.  Still no throw.
   const symbolic::Variable x{"x"};
   m_symbolic(0, 0) = x;
-  EXPECT_NO_THROW(R.set(m_symbolic));
+  DRAKE_EXPECT_NO_THROW(R.set(m_symbolic));
 }
 
 // Verify RotationMatrix projection with symbolic::Expression behaves as

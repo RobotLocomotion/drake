@@ -1,5 +1,7 @@
 #include "drake/systems/framework/cache_entry.h"
 
+#include "drake/common/test_utilities/expect_no_throw.h"
+
 // Tests the System (const) side of caching, which consists of a CacheEntry
 // objects that can be provided automatically or defined by users. When a
 // Context is created, each CacheEntry in a System is provided with a
@@ -202,10 +204,11 @@ GTEST_TEST(CacheEntryAllocTest, BadAllocGetsCaught) {
 // dependencies is `{nothing_ticket()}`.
 GTEST_TEST(CacheEntryAllocTest, EmptyPrerequisiteListForbidden) {
   MySystemBase system;
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       system.DeclareCacheEntry("default prerequisites", Alloc3, Calc99));
-  EXPECT_NO_THROW(system.DeclareCacheEntry("no prerequisites", Alloc3, Calc99,
-                                           {system.nothing_ticket()}));
+  DRAKE_EXPECT_NO_THROW(
+      system.DeclareCacheEntry(
+          "no prerequisites", Alloc3, Calc99, {system.nothing_ticket()}));
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.DeclareCacheEntry("empty prerequisites", Alloc3, Calc99, {}),
       std::logic_error,
@@ -404,7 +407,7 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   string_entry().Eval<string>(context_);
   ++expected_serial_num;
   EXPECT_FALSE(string_entry().is_out_of_date(context_));
-  EXPECT_NO_THROW(string_entry().GetKnownUpToDate<string>(context_));
+  DRAKE_EXPECT_NO_THROW(string_entry().GetKnownUpToDate<string>(context_));
   EXPECT_EQ(string_value.serial_number(), expected_serial_num);  // Updated.
 
   // The result reference was updated by the Eval().
@@ -568,9 +571,9 @@ TEST_F(CacheEntryTest, DisableCacheWorks) {
 
   // GetKnownUpToDate() should work even though caching is disabled, since the
   // entries are marked up to date.
-  EXPECT_NO_THROW(entry1().GetKnownUpToDate<int>(context_));
-  EXPECT_NO_THROW(string_entry().GetKnownUpToDate<string>(context_));
-  EXPECT_NO_THROW(vector_entry().GetKnownUpToDate<MyVector3d>(context_));
+  DRAKE_EXPECT_NO_THROW(entry1().GetKnownUpToDate<int>(context_));
+  DRAKE_EXPECT_NO_THROW(string_entry().GetKnownUpToDate<string>(context_));
+  DRAKE_EXPECT_NO_THROW(vector_entry().GetKnownUpToDate<MyVector3d>(context_));
 
   // Now re-enable caching and verify that it works.
   EXPECT_TRUE(entry1().is_cache_entry_disabled(context_));

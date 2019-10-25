@@ -8,6 +8,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/context_base.h"
 
 // Tests the DependencyTracker and DependencyGraph classes. These are intimately
@@ -78,7 +79,7 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
     ASSERT_TRUE(context.get_dependency_graph().has_tracker(ticket));
     auto& tracker = context.get_tracker(ticket);
     EXPECT_EQ(tracker.ticket(), ticket);
-    EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
+    DRAKE_EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
         &context, &CacheEntryValue::dummy()));
     EXPECT_THROW(tracker.ThrowIfBadDependencyTracker(&context2),
                  std::logic_error);
@@ -278,8 +279,8 @@ class HandBuiltDependencies : public ::testing::Test {
         {time_ticket_, middle1_->ticket(), downstream2_->ticket()}, &graph);
     entry0_->SetInitialValue(AbstractValue::Make<int>(3));
     // A new tracker should have been created.
-    EXPECT_NO_THROW(entry0_tracker_ =
-                        &graph.get_mutable_tracker(entry0_->ticket()));
+    DRAKE_EXPECT_NO_THROW(entry0_tracker_ =
+                              &graph.get_mutable_tracker(entry0_->ticket()));
 
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(time_ticket_);
