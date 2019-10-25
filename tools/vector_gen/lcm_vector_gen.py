@@ -537,7 +537,7 @@ def generate_code(
         assert flavor == 'yaml', flavor
         # Load the vector's details.
         with open(named_vector_filename, 'r') as f:
-            data = yaml.load(f)
+            data = yaml.safe_load(f)
         fields = [{
             'name': str(el['name']),
             'doc': str(el.get('doc', '')),
@@ -620,7 +620,7 @@ def generate_code(
         # settings file is problematic when formatting within bazel-genfiles,
         # so instead we pass its contents on the command line.
         with open(find_data(".clang-format"), "r") as f:
-            yaml_data = yaml.load(f, Loader=yaml.Loader)
+            yaml_data = yaml.safe_load(f)
             style = str(yaml_data)
             # For some reason, clang-format really wants lowercase booleans.
             style = style.replace("False", "false").replace("True", "true")
