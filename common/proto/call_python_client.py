@@ -40,6 +40,7 @@ Note:
 
 import argparse
 import os
+from queue import Queue
 import signal
 import stat
 import sys
@@ -51,9 +52,6 @@ import traceback
 # @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
 from google.protobuf.internal.decoder import _DecodeVarint32
 import numpy as np
-import six
-from six import text_type as unicode
-from six.moves.queue import Queue
 
 from drake.common.proto.python_remote_message_pb2 import (
     PythonRemoteData, PythonRemoteMessage)
@@ -114,7 +112,7 @@ def _get_required_helpers(scope_locals):
         """Create a scalar or tuple for accessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, unicode):
+            if isinstance(arg, str):
                 out[i] = _make_slice(arg)
             else:
                 out[i] = arg
@@ -401,7 +399,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
-        assert isinstance(function_name, unicode), type(function_name)
+        assert isinstance(function_name, str), type(function_name)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1
@@ -412,7 +410,7 @@ class CallPythonClient(object):
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            six.exec_(inputs[0], self.scope_globals, self.scope_locals)
+            exec(inputs[0], self.scope_globals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
