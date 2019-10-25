@@ -247,6 +247,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//math:autodiff",
         "//math:gradient",
         "//multibody/benchmarks/acrobot:analytical_acrobot",
@@ -296,12 +297,18 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_tree_creation_test",
-    deps = [":tree"],
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_no_throw",
+    ],
 )
 
 drake_cc_googletest(
     name = "multibody_tree_indexes_test",
-    deps = [":multibody_tree_indexes"],
+    deps = [
+        ":multibody_tree_indexes",
+        "//common/test_utilities:expect_no_throw",
+    ],
 )
 
 drake_cc_googletest(
@@ -310,6 +317,7 @@ drake_cc_googletest(
         ":rotational_inertia",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//math:gradient",
     ],
@@ -399,6 +407,7 @@ drake_cc_googletest(
     name = "articulated_body_inertia_test",
     deps = [
         ":tree",
+        "//common/test_utilities:expect_no_throw",
         "//math:autodiff",
         "//math:gradient",
     ],
@@ -448,6 +457,7 @@ drake_cc_googletest(
     name = "weld_joint_test",
     deps = [
         ":tree",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

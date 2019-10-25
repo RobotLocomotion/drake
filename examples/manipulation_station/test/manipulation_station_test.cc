@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -116,8 +117,8 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                   .isZero());
 
   // Check that the additional output ports exist and are spelled correctly.
-  EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
-  EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
+  DRAKE_EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
+  DRAKE_EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
 }
 
 // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
@@ -213,7 +214,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
                                   .get_value(),
                               Vector2d(q, v)));
 
-  EXPECT_NO_THROW(station.GetOutputPort("wsg_force_measured"));
+  DRAKE_EXPECT_NO_THROW(station.GetOutputPort("wsg_force_measured"));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {

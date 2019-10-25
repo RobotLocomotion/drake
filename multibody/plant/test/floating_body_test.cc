@@ -2,6 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -286,14 +287,13 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kEpsilon);
 
   const math::RigidTransformd X_WB(q_WB, p_WB);
-  EXPECT_NO_THROW(
-      model.SetFreeBodyPoseOrThrow(
-          free_body_plant.body(), X_WB, context.get()));
+  DRAKE_EXPECT_NO_THROW(model.SetFreeBodyPoseOrThrow(free_body_plant.body(),
+                                                     X_WB, context.get()));
 
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);
   const Vector3d v_WB(-1.0, 4.0, -0.5);
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       model.SetFreeBodySpatialVelocityOrThrow(
           free_body_plant.body(), {w_WB, v_WB}, context.get()));
 

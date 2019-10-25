@@ -95,6 +95,7 @@ drake_cc_googletest(
     deps = [
         ":piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

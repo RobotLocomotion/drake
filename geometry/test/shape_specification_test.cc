@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 
@@ -304,9 +305,9 @@ GTEST_TEST(BoxTest, Cube) {
 
 // Confirms that shape parameters are validated.
 GTEST_TEST(ShapeTest, NumericalValidation) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Sphere(-0.5), std::logic_error, "Sphere radius should be >= 0.+");
-  EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
+  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5), std::logic_error,
+                              "Sphere radius should be >= 0.+");
+  DRAKE_EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0, 1), std::logic_error, "Cylinder radius and length should "
@@ -321,17 +322,17 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Box(3, 1, -1), std::logic_error, "Box width, depth, and height should "
       "all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Box::MakeCube(0), std::logic_error, "Box width, depth, and height should "
-      "all be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Box::MakeCube(0), std::logic_error,
+                              "Box width, depth, and height should "
+                              "all be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9), std::logic_error,
                               "Mesh .scale. cannot be < 1e-8.");
-  EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0), std::logic_error,
                               "Convex .scale. cannot be < 1e-8.");
-  EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
 }
 
 }  // namespace

@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
@@ -1345,7 +1346,7 @@ GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
 GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
   FeedbackDiagram<double> diagram;
   auto context = diagram.CreateDefaultContext();
-  EXPECT_NO_THROW(context.reset());
+  DRAKE_EXPECT_NO_THROW(context.reset());
 }
 
 // If a SystemScalarConverter is passed into the Diagram constructor, then
@@ -2713,12 +2714,13 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
 
   // Time & accuracy changes are allowed at the root (diagram) level.
-  EXPECT_NO_THROW(diagram_context->SetTime(1.));
-  EXPECT_NO_THROW(diagram_context->SetTimeAndContinuousState(2., init_state));
+  DRAKE_EXPECT_NO_THROW(diagram_context->SetTime(1.));
+  DRAKE_EXPECT_NO_THROW(
+      diagram_context->SetTimeAndContinuousState(2., init_state));
   auto diagram_context_clone = diagram_context->Clone();
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       diagram_context->SetTimeStateAndParametersFrom(*diagram_context_clone));
-  EXPECT_NO_THROW(diagram_context->SetAccuracy(1e-6));
+  DRAKE_EXPECT_NO_THROW(diagram_context->SetAccuracy(1e-6));
 
   // Time & accuracy changes NOT allowed at child (leaf) level.
   DRAKE_EXPECT_THROWS_MESSAGE(context0.SetTime(3.), std::logic_error,
@@ -2754,7 +2756,7 @@ GTEST_TEST(NonUniqueNamesTest, DefaultEmptyNames) {
   const int kSize = 1;
   builder.AddSystem<Adder<double>>(kInputs, kSize);
   builder.AddSystem<Adder<double>>(kInputs, kSize);
-  EXPECT_NO_THROW(builder.Build());
+  DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
 // Tests that an exception is thrown if a system is reset to an empty name

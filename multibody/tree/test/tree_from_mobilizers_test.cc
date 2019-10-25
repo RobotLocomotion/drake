@@ -1,3 +1,4 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 // clang-format: off
 #include "drake/multibody/tree/multibody_tree-inl.h"
 // clang-format: on
@@ -367,7 +368,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // We need to Finalize() our model before testing the elbow mobilizer was
   // created correctly. Joint implementations are created at Finalize().
-  ASSERT_NO_THROW(model_->Finalize());
+  DRAKE_ASSERT_NO_THROW(model_->Finalize());
   elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
 
   EXPECT_EQ(model_->num_mobilizers(), 2);
@@ -423,7 +424,7 @@ TEST_F(PendulumTests, Finalize) {
   CreatePendulumModel();
   // Finalize() stage.
   EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
-  EXPECT_NO_THROW(model_->Finalize());
+  DRAKE_EXPECT_NO_THROW(model_->Finalize());
   EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
 
   // Asserts that no more multibody elements can be added after finalize.
@@ -476,13 +477,13 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_EQ(model_->num_bodies(), 3);
 
   // Finalize() stage.
-  EXPECT_NO_THROW(model_->Finalize());
+  DRAKE_EXPECT_NO_THROW(model_->Finalize());
   EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
 
   // Create Context.
   MultibodyTreeSystem<double> system(std::move(model_));
   std::unique_ptr<Context<double>> context;
-  EXPECT_NO_THROW(context = system.CreateDefaultContext());
+  DRAKE_EXPECT_NO_THROW(context = system.CreateDefaultContext());
 
   // Tests MultibodyTree state accessors.
   const auto& tree = GetInternalTree(system);

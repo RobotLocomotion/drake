@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -54,9 +55,9 @@ GTEST_TEST(GainTest, GainScalarTest) {
   const Eigen::Vector3d expected_output(kGain * input_vector);
 
   // Verifies the gain accessors are OK.
-  EXPECT_NO_THROW(gain_system->get_gain());
+  DRAKE_EXPECT_NO_THROW(gain_system->get_gain());
   EXPECT_EQ(gain_system->get_gain(), kGain);
-  EXPECT_NO_THROW(gain_system->get_gain_vector());
+  DRAKE_EXPECT_NO_THROW(gain_system->get_gain_vector());
   EXPECT_EQ(gain_system->get_gain_vector(),
             VectorX<double>::Ones(kSize) * kGain);
 
@@ -72,7 +73,7 @@ GTEST_TEST(GainTest, GainVectorTest) {
   const Eigen::Vector4d expected_output(gain_values.array() *
                                         input_vector.array());
 
-  EXPECT_NO_THROW(gain_system->get_gain_vector());
+  DRAKE_EXPECT_NO_THROW(gain_system->get_gain_vector());
   EXPECT_EQ(gain_system->get_gain_vector(), gain_values);
 
   // Tests ability to compute the gain of a vector.

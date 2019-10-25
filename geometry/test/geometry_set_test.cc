@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/test_utilities/geometry_set_tester.h"
 
 namespace drake {
@@ -144,7 +145,7 @@ GTEST_TEST(GeometrySetTests, SingleFrameAdd) {
   EXPECT_TRUE(tester.contains(f));
 
   // Adding a frame redundantly should not be a problem.
-  EXPECT_NO_THROW(geometry_set.Add(f));
+  DRAKE_EXPECT_NO_THROW(geometry_set.Add(f));
   // It should also not change the membership.
   EXPECT_EQ(tester.num_frames(), 1);
   EXPECT_TRUE(tester.contains(f));
@@ -161,7 +162,7 @@ GTEST_TEST(GeometrySetTests, SingleGeometryAdd) {
   EXPECT_TRUE(tester.contains(g));
 
   // Adding a geometry redundantly should not be a problem.
-  EXPECT_NO_THROW(geometry_set.Add(g));
+  DRAKE_EXPECT_NO_THROW(geometry_set.Add(g));
   // It should also not change the membership.
   EXPECT_EQ(tester.num_geometries(), 1);
   EXPECT_TRUE(tester.contains(g));

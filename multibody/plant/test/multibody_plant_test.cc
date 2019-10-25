@@ -14,6 +14,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
@@ -334,7 +335,7 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
   const systems::VectorBase<double>& new_discrete_state_vector =
       new_discrete_state->get_vector();
   EXPECT_EQ(new_discrete_state_vector.size(), 0);
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       plant.CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
 }
 
@@ -349,7 +350,7 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   EXPECT_EQ(continuous_state_vector.size(), 0);
   auto new_derivatives = plant.AllocateTimeDerivatives();
   EXPECT_EQ(new_derivatives->size(), 0);
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, new_derivatives.get()));
 }
 
@@ -379,9 +380,9 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
       plant.GetBodyByName("uniformSolidCylinder").has_quaternion_dofs());
 
   // Verify that we can get the actuation input ports.
-  EXPECT_NO_THROW(plant.get_actuation_input_port());
-  EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
-  EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
+  DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port());
+  DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
+  DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
 
   // Try to compute the derivatives without connecting the acrobot_instance
   // port.
@@ -398,14 +399,16 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   context->FixInputPort(
       plant.get_actuation_input_port(acrobot_instance).get_index(),
       Vector1d(0.0));
-  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
+  DRAKE_EXPECT_NO_THROW(
+      plant.CalcTimeDerivatives(*context, continuous_state.get()));
 
   // Verify that derivatives can be computed after fixing the cylinder actuation
   // input port with an empty vector.
   context->FixInputPort(
       plant.get_actuation_input_port(cylinder_instance).get_index(),
       VectorXd(0));
-  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
+  DRAKE_EXPECT_NO_THROW(
+      plant.CalcTimeDerivatives(*context, continuous_state.get()));
 }
 
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
@@ -435,8 +438,8 @@ class AcrobotPlantTests : public ::testing::Test {
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
     // Ensure that we can access the geometry ports pre-finalize.
-    EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
-    EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
+    DRAKE_EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
+    DRAKE_EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_state_output_port(),
@@ -745,7 +748,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 
   unique_ptr<AbstractValue> poses_value =
       plant_->get_geometry_poses_output_port().Allocate();
-  EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
+  DRAKE_EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->get_value<FramePoseVector<double>>();
 
@@ -874,14 +877,14 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
   // providing a scene graph -- no error.
   {
     MultibodyPlant<double> plant;
-    EXPECT_NO_THROW(plant.Finalize());
+    DRAKE_EXPECT_NO_THROW(plant.Finalize());
   }
 
   // Case: Registered as source, correct finalization.
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    EXPECT_NO_THROW(plant.Finalize());
+    DRAKE_EXPECT_NO_THROW(plant.Finalize());
   }
 }
 
@@ -1238,7 +1241,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   unique_ptr<AbstractValue> poses_value =
       plant.get_geometry_poses_output_port().Allocate();
-  EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
+  DRAKE_EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
       poses_value->get_value<FramePoseVector<double>>();
 
@@ -1327,7 +1330,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   unique_ptr<Context<double>> context = scene_graph.CreateDefaultContext();
   unique_ptr<AbstractValue> state_value =
       scene_graph.get_query_output_port().Allocate();
-  EXPECT_NO_THROW(state_value->get_value<QueryObject<double>>());
+  DRAKE_EXPECT_NO_THROW(state_value->get_value<QueryObject<double>>());
   const QueryObject<double>& query_object =
       state_value->get_value<QueryObject<double>>();
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
@@ -1378,8 +1381,8 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   auto autodiff_context = autodiff_pendulum->CreateDefaultContext();
 
   // This test case contains no collisions, and hence we should not throw.
-  EXPECT_NO_THROW(
-  autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
+  DRAKE_EXPECT_NO_THROW(
+      autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -1452,7 +1455,7 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
 
   unique_ptr<AbstractValue> state_value =
       plant_->get_state_output_port().Allocate();
-  EXPECT_NO_THROW(state_value->get_value<BasicVector<double>>());
+  DRAKE_EXPECT_NO_THROW(state_value->get_value<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->get_value<BasicVector<double>>();
   EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
@@ -1632,8 +1635,8 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   }
 
   // Make sure the geometry ports were included in the autodiffed plant.
-  EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
-  EXPECT_NO_THROW(plant_autodiff.get_geometry_poses_output_port());
+  DRAKE_EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
+  DRAKE_EXPECT_NO_THROW(plant_autodiff.get_geometry_poses_output_port());
 }
 
 // This test is used to verify the correctness of the methods to compute the
@@ -1988,7 +1991,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
   const std::string weld_name =
       plant.world_frame().name() + "_welds_to_" + base_link_frame.name();
   EXPECT_EQ(weld.name(), weld_name);
-  EXPECT_NO_THROW(plant.GetJointByName(weld_name));
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName(weld_name));
   EXPECT_EQ(plant.GetJointByName(weld_name).index(), weld.index());
   EXPECT_EQ(&plant.GetJointByName(weld_name), &weld);
 
