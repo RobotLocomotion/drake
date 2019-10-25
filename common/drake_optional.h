@@ -9,23 +9,19 @@
 // though STX would otherwise do so by default) because its API often differs
 // from std::optional.
 #define STX_NO_STD_OPTIONAL
-#if __cplusplus >= 201703L
 #if defined(__has_include)
 #if __has_include(<optional>)
 #include <optional>
 #undef STX_NO_STD_OPTIONAL
 #endif
 #endif
-#endif
 
 // If the current toolchain offers a working std::variant, then use it.
 #define STX_NO_STD_VARIANT
-#if __cplusplus >= 201703L
 #if defined(__has_include)
 #if __has_include(<variant>)
 #include <variant>
 #undef STX_NO_STD_VARIANT
-#endif
 #endif
 #endif
 

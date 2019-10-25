@@ -184,17 +184,6 @@ class Label {
     std::numeric_limits<int16_t>::max() - 1};
 };
 
-#if  __cplusplus < 201703L
-template <PixelType kPixelType>
-constexpr int Image<kPixelType>::kNumChannels;
-
-template <PixelType kPixelType>
-constexpr int Image<kPixelType>::kPixelSize;
-
-template <PixelType kPixelType>
-constexpr PixelFormat Image<kPixelType>::kPixelFormat;
-#endif
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake

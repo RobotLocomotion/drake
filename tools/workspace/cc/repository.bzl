@@ -103,7 +103,7 @@ def _impl(repository_ctx):
 
     # We do not fail outright here since even though we do not officially
     # support them, Drake may happily compile with new enough versions of
-    # compilers that are compatible with GNU flags such as -std=c++14.
+    # compilers that are compatible with GNU flags such as -std=c++17.
 
     if compiler_id not in supported_compilers:
         print("WARNING: {} is NOT a supported C/C++ compiler.".format(
@@ -120,8 +120,8 @@ def _impl(repository_ctx):
     # even if they happen to support the necessary compiler flags.
 
     if compiler_id == "AppleClang":
-        if compiler_version_major < 10:
-            fail("AppleClang compiler version {}.{} is less than 10.0.".format(
+        if compiler_version_major < 11:
+            fail("AppleClang compiler version {}.{} is less than 11.0.".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))

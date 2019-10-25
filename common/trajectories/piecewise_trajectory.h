@@ -76,9 +76,5 @@ class PiecewiseTrajectory : public Trajectory<T> {
   std::vector<double> breaks_;
 };
 
-#if  __cplusplus < 201703L
-  template <typename T>
-  constexpr double PiecewiseTrajectory<T>::kEpsilonTime;
-#endif
 }  // namespace trajectories
 }  // namespace drake

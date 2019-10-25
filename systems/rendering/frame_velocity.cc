@@ -6,10 +6,6 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-#if  __cplusplus < 201703L
-template <typename T> constexpr int FrameVelocity<T>::kSize;
-#endif
-
 template <typename T>
 FrameVelocity<T>::FrameVelocity()
     : FrameVelocity<T>::FrameVelocity(
