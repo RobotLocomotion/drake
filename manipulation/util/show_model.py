@@ -27,7 +27,6 @@ NOTE: If you use `bazel run`, it is highly encouraged that you use absolute
 paths, as certain models may not be prerequisites of this binary.
 """
 
-from __future__ import print_function
 import argparse
 import os
 import sys

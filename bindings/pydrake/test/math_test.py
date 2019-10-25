@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pydrake.math as mut
 import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)

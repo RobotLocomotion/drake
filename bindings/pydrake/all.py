@@ -24,7 +24,6 @@ Note:
 To see example usages, please see `doc/python_bindings.rst`.
 """
 
-from __future__ import absolute_import
 
 # Legacy symbols.
 from .attic.all import *

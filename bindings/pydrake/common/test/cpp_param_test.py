@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 """
 Tests the pure Python functionality of `cpp_param`: (a) idempotent mapping for
 unaliased types, and (b) correct mapping for aliased types (as the aliases
