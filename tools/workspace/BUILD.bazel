@@ -72,7 +72,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "cds",
     "dreal",
-    "find_protobuf_cmake",
     "net_sf_jchart2d",
     "optitrack_driver",
     "picosat",

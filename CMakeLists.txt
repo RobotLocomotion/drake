@@ -1,8 +1,11 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.5.1)
-project(drake)
+cmake_minimum_required(VERSION 3.10)
+project(drake
+  DESCRIPTION "Model-based design and verification for robotics"
+  LANGUAGES C CXX
+)
 
 list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -83,7 +86,7 @@ endif()
 
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 0.28)
+set(MINIMUM_BAZEL_VERSION 1.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
@@ -419,10 +422,28 @@ endif()
 if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL F2C OR WITH_SNOPT STREQUAL F2C)
     list(APPEND BAZEL_CONFIGS --config=snopt_f2c)
-  elseif(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
-    list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
   else()
-    list(APPEND BAZEL_CONFIGS --config=snopt)
+    enable_language(Fortran)
+
+    if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+      if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
+        message(FATAL_ERROR
+          "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
+          "supported"
+        )
+      endif()
+    else()
+      message(WARNING
+        "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
+        "Compilation of project drake_cxx_python may fail."
+      )
+    endif()
+
+    if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
+      list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
+    else()
+      list(APPEND BAZEL_CONFIGS --config=snopt)
+    endif()
   endif()
 
   if(WITH_ROBOTLOCOMOTION_SNOPT)
@@ -557,9 +578,6 @@ install(FILES "${PROJECT_BINARY_DIR}/VERSION.TXT" DESTINATION share/doc/drake)
 set(CPACK_GENERATOR TGZ)
 set(CPACK_INSTALLED_DIRECTORIES "${CMAKE_INSTALL_PREFIX}" .)
 set(CPACK_PACKAGE_CONTACT RobotLocomotion)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-  "Model-based design and verification for robotics"
-)
 set(CPACK_PACKAGE_VENDOR RobotLocomotion)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 0)
