@@ -1,5 +1,3 @@
-from __future__ import division
-
 import pydrake.systems.sensors as mut
 
 import unittest

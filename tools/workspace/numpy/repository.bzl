@@ -33,7 +33,6 @@ def _impl(repository_ctx):
         python_info.python,
         "-c",
         "; ".join([
-            "from __future__ import print_function",
             "import numpy",
             "print(numpy.get_include())",
         ]),
