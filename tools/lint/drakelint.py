@@ -1,14 +1,7 @@
 import os
 import sys
 
-import six
-
 from drake.tools.lint.formatter import IncludeFormatter
-
-if six.PY3:
-    _open = open
-
-    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 def _check_invalid_line_endings(filename):
@@ -16,7 +9,7 @@ def _check_invalid_line_endings(filename):
     otherwise.
     """
     # Ask Python to read the file and determine the newlines convention.
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         if not file:
             print("ERROR: unable to open " + filename)
             return 1
@@ -66,7 +59,7 @@ def _check_shebang(filename, disallow_executable):
         print("ERROR: {} is executable, but should not be".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
         return 1
-    with open(filename, 'r') as file:
+    with open(filename, mode='r', encoding='utf8') as file:
         shebang = file.readline().rstrip("\n")
         has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:
@@ -84,7 +77,7 @@ def _check_shebang(filename, disallow_executable):
     if has_shebang and shebang not in list(shebang_whitelist.values()):
         print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "
               "whitelist").format(shebang, filename))
-        for hint, replacement_shebang in shebang_whitelist.iteritems():
+        for hint, replacement_shebang in shebang_whitelist.items():
             if hint in shebang:
                 print(("note: fix by replacing the shebang with "
                       "'{}'").format(replacement_shebang))

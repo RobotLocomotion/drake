@@ -6,7 +6,6 @@ import time
 import unittest
 
 import numpy as np
-from six import text_type as unicode
 
 from robotlocomotion import header_t, quaternion_t
 
@@ -22,7 +21,7 @@ from pydrake.systems.primitives import ConstantVectorSource, LogOutput
 # code uses it.
 def lcm_to_json(message):
     def helper(thing):
-        if type(thing) in (int, float, np.float64, str, unicode):
+        if type(thing) in (int, float, np.float64, str):
             return thing
         if type(thing) in (list,):
             return list(map(helper, [x for x in thing]))
