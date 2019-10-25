@@ -207,21 +207,21 @@ GTEST_TEST(DiagramBuilderTest, FinalizeWhenEmpty) {
 GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
   DiagramBuilder<double> builder;
   Adder<double> adder(1 /* inputs */, 1 /* size */);
-  adder.set_name("x");
+  adder.set_name("adder");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Connect(adder, adder),
       std::logic_error,
-      "DiagramBuilder: Cannot operate on ports of System x "
+      "DiagramBuilder: Cannot operate on ports of System adder "
       "until it has been registered using AddSystem");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportInput(adder.get_input_port(0)),
       std::logic_error,
-      "DiagramBuilder: Cannot operate on ports of System x "
+      "DiagramBuilder: Cannot operate on ports of System adder "
       "until it has been registered using AddSystem");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportOutput(adder.get_output_port()),
       std::logic_error,
-      "DiagramBuilder: Cannot operate on ports of System x "
+      "DiagramBuilder: Cannot operate on ports of System adder "
       "until it has been registered using AddSystem");
 }
 

@@ -103,7 +103,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 10)
+set(MINIMUM_APPLE_CLANG_VERSION 11)
 set(MINIMUM_CLANG_VERSION 6)
 set(MINIMUM_GNU_VERSION 7.4)
 
@@ -153,12 +153,12 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
-  set(FLAG_STD_CXX14 -std=c++14)
-  check_cxx_compiler_flag(${FLAG_STD_CXX14} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
-  if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
+  set(FLAG_STD_CXX17 -std=c++17)
+  check_cxx_compiler_flag(${FLAG_STD_CXX17} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
+  if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
     message(FATAL_ERROR
       "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it "
-      "does not accept the ${FLAG_STD_CXX14} flag"
+      "does not accept the ${FLAG_STD_CXX17} flag"
     )
   endif()
   message(WARNING
@@ -189,32 +189,9 @@ else()
   endif()
 endif()
 
-set(MINIMUM_SUPPORTED_CXX_VERSION 14)
-set(MAXIMUM_SUPPORTED_CXX_VERSION 17)
-set(DEFAULT_CXX_VERSION 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${DEFAULT_CXX_VERSION})
-endif()
-if(CMAKE_CXX_STANDARD LESS MINIMUM_SUPPORTED_CXX_VERSION)
-  message(FATAL_ERROR
-    "Compilation with C++ standard ${CMAKE_CXX_STANDARD} is NOT supported"
-  )
-endif()
-if(CMAKE_CXX_STANDARD GREATER MAXIMUM_SUPPORTED_CXX_VERSION)
-  message(WARNING
-    "Compilation with C++ standard ${CMAKE_CXX_STANDARD} is NOT supported. "
-    "Compilation of project drake_cxx_python may fail."
-  )
-endif()
-if(CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION)
-  set(MAYBE_BAZEL_CXXOPT_STD
-    "build --cxxopt=${CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION} --host_cxxopt=${CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION}"
-  )
-else()
-  set(MAYBE_BAZEL_CXXOPT_STD)
-endif()
+set(CMAKE_CXX_STANDARD 17)
 
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.

@@ -71,7 +71,7 @@
       "Type": "dylib",
       "Location": "@prefix@/lib/libdrake.so",
       "Includes": ["@prefix@/include"],
-      "Compile-Features": ["c++14"],
+      "Compile-Features": ["c++17"],
       "Requires": [
         ":drake-lcmtypes-cpp",
         ":drake-marker",
@@ -92,7 +92,7 @@
     "drake-common-text-logging-gflags": {
       "Type": "interface",
       "Includes": ["@prefix@/include"],
-      "Compile-Features": ["c++14"],
+      "Compile-Features": ["c++17"],
       "Requires": [
           ":drake",
           "gflags:gflags_shared"
