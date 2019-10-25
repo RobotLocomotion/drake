@@ -73,7 +73,7 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
-Drake requires a compiler running in C++14 mode or greater.
+Drake requires a compiler running in C++17 mode.
 
 +----------------------------------+-------+-------+---------------------+-------------------+-----------------+
 | Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python          |
