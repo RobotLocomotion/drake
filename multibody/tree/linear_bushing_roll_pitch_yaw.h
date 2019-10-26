@@ -17,14 +17,13 @@ template <typename T> class Body;
 /// body A to a frame Bᴀ of a body B.  The bushing can apply both a torque and
 /// force due to stiffness (spring) and dissipation (damper) properties.
 ///
-/// The set of forces on body B from the bushing is equivalent to a torque τ
-/// on body B and a force f applied to a point Bc of B.  The set of forces on
-/// body A from the bushing is equivalent to a torque -τ on body A and a force
-/// -f applied to the point Ac of A.  Point Ac and point Bc are coincident and
-/// located halfway between Aʙₒ (frame Aʙ's origin) and Bᴀₒ (frame Bᴀ's origin).
+/// The set of forces on body B from the bushing is equivalent to a torque τ on
+/// body B and a force f applied to a point Bᴀₒ of B (Bᴀₒ is frame Bᴀ's origin).
+/// The set of forces on body A from the bushing is equivalent to a torque -τ on
+/// body A and a force -f applied to the point of A coincident with Bᴀₒ.
 ///
-/// The bushing torque τ and force f are expressed in terms of orthogonal unit
-/// vectors Aʙx, Aʙy, Aʙz fixed in frame Aʙ as <pre>
+/// The torque τ on B and force f applied to point Bᴀₒ of B are expressed in
+/// terms of orthogonal unit vectors Aʙx, Aʙy, Aʙz fixed in frame Aʙ as <pre>
 /// τ = Tx Aʙx + Ty Aʙy + Tz Aʙz
 /// f = Fx Aʙx + Fy Aʙy + Fz Aʙz
 /// </pre>
@@ -44,18 +43,15 @@ template <typename T> class Body;
 ///
 /// By equating the generalized forces produced by 𝖀 and 𝕱 to the generalized
 /// forces produced by τ and f, one can show [Mitiguy 2016, §26.9] <pre>
-/// Fx = kx x + bx ẋ
-/// Fy = ky y + by ẏ
-/// Fz = kz z + bz ż
-/// M₀ = k₀ q₀ + b₀ q̇₀
-/// M₁ = k₁ q₁ + b₁ q̇₁
-/// M₂ = k₂ q₂ + b₂ q̇₂
-/// Mx = (y*Fz - z*Fy) / 2
-/// My = (z*Fx - x*Fz) / 2
-/// Mz = (x*Fy - y*Fx) / 2
-/// Tx = cos(q₂)/cos(q₁)*M₀ - sin(q2)*M₁ + cos(q₂)*tan(q₁)*M₂ + Mx
-/// Ty = sin(q₂)/cos(q₁)*M₀ + cos(q2)*M₁ + sin(q₂)*tan(q₁)*M₂ + My
-/// Tz =                                                   M₂ + Mz
+/// Fx = -(kx x + bx ẋ)
+/// Fy = -(ky y + by ẏ)
+/// Fz = -(kz z + bz ż)
+/// T₀ = -(k₀ q₀ + b₀ q̇₀)
+/// T₁ = -(k₁ q₁ + b₁ q̇₁)
+/// T₂ = -(k₂ q₂ + b₂ q̇₂)
+/// Tx = cos(q₂)/cos(q₁) T₀ - sin(q2) T₁ + cos(q₂) tan(q₁) T₂
+/// Ty = sin(q₂)/cos(q₁) T₀ + cos(q2) T₁ + sin(q₂) tan(q₁) T₂
+/// Tz =                                                   T₂
 /// </pre>
 ///
 /// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
@@ -193,11 +189,19 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @param[in] context The state of the multibody system.
   SpatialForce<T> CalcBushingSpatialForceOnAb(
       const systems::Context<T>& context) const {
-    const SpatialForce<T> F_Bc_Ab = CalcBushingSpatialForceOnBc(context);
-    const Vector3<T> p_BcAbo_Ab = -0.5 * CalcBushingDisplacement(context);
-    const SpatialForce<T> F_Ab_Ab = F_Bc_Ab.Shift(p_BcAbo_Ab);
+    const SpatialForce<T> F_Ba_Ab = CalcBushingSpatialForceOnBa(context);
+    const Vector3<T> p_BaAb_Ab = -CalcBushingDisplacement(context);
+    const SpatialForce<T> F_Ab_Ab = -(F_Ba_Ab).Shift(p_BaAb_Ab);
     return F_Ab_Ab;
   }
+
+  // Calculates F_Bᴀₒ_Ab, the spatial force on point Bᴀₒ of body B expressed in
+  // frame Aʙ, equivalent to the set of forces exerted by the bushing on B.
+  // @param[in] context The state of the multibody system.
+  // @note F_Bᴀₒ_Ab is equivalent to a torque τ applied to body B and a force f
+  // applied to point Bᴀₒ of B (Bᴀₒ is the origin of frame Bᴀ).
+  SpatialForce<T> CalcBushingSpatialForceOnBa(
+      const systems::Context<T>& context) const;
 
  protected:
   void DoCalcAndAddForceContribution(
@@ -268,20 +272,12 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> CalcBushingResultantForceOnB(
       const systems::Context<T>& context) const {
     // Calculate force `f = Fx Aʙx + Fy Aʙy + Fz Aʙz`.
-    // Fx = (kx x + bx ẋ)
-    // Fy = (ky y + by ẏ)
-    // Fz = (kz z + bz ż)
-    return ForceStiffnessConstantsTimesDisplacement(context) +
-           ForceDampingConstantsTimesDisplacementRate(context);
+    // Fx = -(kx x + bx ẋ)
+    // Fy = -(ky y + by ẏ)
+    // Fz = -(kz z + bz ż)
+    return -(ForceStiffnessConstantsTimesDisplacement(context) +
+             ForceDampingConstantsTimesDisplacementRate(context));
   }
-
-  // Calculates F_Bc_Ab, the spatial force on point Bc of body B expressed in
-  // frame Aʙ, equivalent to the set of forces exerted by the bushing on B.
-  // @param[in] context The state of the multibody system.
-  // @note F_Bc_Ab is equivalent to a torque τ applied to body B and a force f
-  // applied to point Bc of B (Bc is located at the midpoint of Aʙₒ and Bᴀₒ).
-  SpatialForce<T> CalcBushingSpatialForceOnBc(
-      const systems::Context<T>& context) const;
 
  private:
   // Helper method to make a clone templated on ToScalar.
