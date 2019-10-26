@@ -140,42 +140,31 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
 }
 
 template <typename T>
-SpatialForce<T> LinearBushingRollPitchYaw<T>::CalcBushingSpatialForceOnBc(
+SpatialForce<T> LinearBushingRollPitchYaw<T>::CalcBushingSpatialForceOnBa(
     const systems::Context<T>& context) const {
-  // Calculate force `f = Fx Aʙx + Fy Aʙy + Fz Aʙz` applied to point Bc of B.
+  // Calculate force `f = Fx Aʙx + Fy Aʙy + Fz Aʙz` applied to point Bᴀₒ of B.
   const Vector3<T> f = CalcBushingResultantForceOnB(context);
 
   // Intermediate calculates in preparation for torque τ.
-  // M₀ = (k₀ q₀ + b₀ q̇₀)
-  // M₁ = (k₁ q₁ + b₁ q̇₁)
-  // M₂ = (k₂ q₂ + b₂ q̇₂)
-  const Vector3<T> M = TorqueStiffnessConstantsTimesAngles(context) +
-      TorqueDampingConstantsTimesAngleRates(context);
-
-  // Shift calculations in preparation for torque τ.
-  // Mx = (y*Fz - z*Fy) / 2
-  // My = (z*Fx - x*Fz) / 2
-  // Mz = (x*Fy - y*Fx) / 2
-  const Vector3<T> xyz = CalcBushingDisplacement(context);
-  const T x = xyz(0), y = xyz(1), z = xyz(2);
-  const T Fx = f(0), Fy = f(1), Fz = f(2);
-  const T Mx = 0.5 * (y * Fz - z * Fy);
-  const T My = 0.5 * (z * Fx - x * Fz);
-  const T Mz = 0.5 * (x * Fy - y * Fx);
+  // T₀ = -(k₀ q₀ + b₀ q̇₀)
+  // T₁ = -(k₁ q₁ + b₁ q̇₁)
+  // T₂ = -(k₂ q₂ + b₂ q̇₂)
+  const Vector3<T> M = -(TorqueStiffnessConstantsTimesAngles(context) +
+                         TorqueDampingConstantsTimesAngleRates(context));
 
   // Calculate torque `τ = Tx Aʙx + Ty Aʙy + Tz Aʙz` applied to body B.
-  // Tx = cos(q₂)/cos(q₁)*M₀ - sin(q2)*M₁ + cos(q₂)*tan(q₁)*M₂ + Mx
-  // Ty = sin(q₂)/cos(q₁)*M₀ + cos(q2)*M₁ + sin(q₂)*tan(q₁)*M₂ + My
-  // Tz =                                                   M₂ + Mz
+  // Tx = cos(q₂)/cos(q₁) T₀ - sin(q2) T₁ + cos(q₂)*tan(q₁) T₂
+  // Ty = sin(q₂)/cos(q₁) T₀ + cos(q2) T₁ + sin(q₂)*tan(q₁) T₂
+  // Tz =                                                   T₂
   const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
   const T q1 = rpy.pitch_angle();
   const T q2 = rpy.yaw_angle();
   const T c1 = cos(q1), s1 = sin(q1), oneOverc1 = 1/c1,  t1 = s1 * oneOverc1;
   const T c2 = cos(q2), s2 = sin(q2);
   const T c2c1 = c2 * oneOverc1, s2c1 = s2 * oneOverc1;
-  const T Tx = c2c1 * M(0) - s2 * M(1) + c2 * t1 * M(2) + Mx;
-  const T Ty = s2c1 * M(0) + c2 * M(1) + s2 * t1 * M(2) + My;
-  const T Tz =                                     M(2) + Mz;
+  const T Tx = c2c1 * M(0) - s2 * M(1) + c2 * t1 * M(2);
+  const T Ty = s2c1 * M(0) + c2 * M(1) + s2 * t1 * M(2);
+  const T Tz =                                     M(2);
   const Vector3<T> t(Tx, Ty, Tz);
 
   return SpatialForce<T>(t, f);
