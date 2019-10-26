@@ -186,8 +186,14 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
 }
 
-// TODO(edrumwri) Refactor these ContactSurface helper functions to be more
-// broadly available to unit tests that depend on ContactSurfaces.
+// TODO(edrumwri) Refactor these helper functions to be more
+// broadly available to unit tests that depend on them.
+
+// Returns a distinct spatial force.
+SpatialForce<double> GetSpatialForce() {
+  return SpatialForce<double>(Vector3<double>(1, 2, 3),
+                              Vector3<double>(4, 5, 6));
+}
 
 // Creates a surface mesh.
 std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
@@ -256,9 +262,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   *contact_surface =
       CreateContactSurface(world_geoms.front(), block_geoms.front());
 
-  // Create the HydroelasticContactInfo without any traction calculations.
-  multibody::SpatialForce<double> F_Ac_W;
-  F_Ac_W.SetZero();
+  multibody::SpatialForce<double> F_Ac_W = GetSpatialForce();
   std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
   ContactResults<double> output;
   *contact_info = std::make_unique<HydroelasticContactInfo<double>>(
@@ -378,6 +382,16 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       lcm_message.hydroelastic_contacts[0];
   EXPECT_EQ(surface_msg.body1_name, "WorldBody");
   EXPECT_EQ(surface_msg.body2_name, "BodyB");
+
+  // Verify that the spatial forces match.
+  const Vector3<double> force_C_W(surface_msg.force_C_W[0],
+                                  surface_msg.force_C_W[1],
+                                  surface_msg.force_C_W[2]);
+  const Vector3<double> moment_C_W(surface_msg.moment_C_W[0],
+                                   surface_msg.moment_C_W[1],
+                                   surface_msg.moment_C_W[2]);
+  EXPECT_EQ(force_C_W, GetSpatialForce().translational());
+  EXPECT_EQ(moment_C_W, GetSpatialForce().rotational());
 
   // Verify that the total number of triangles match.
   ASSERT_EQ(surface_msg.num_triangles, contact_surface->mesh_W().num_faces());

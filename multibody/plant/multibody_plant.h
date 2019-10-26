@@ -3486,12 +3486,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // hydroelastic model.
   void MakeHydroelasticModels();
 
-  // TODO(drum) Document this.
+  // Structure used in the calculation of hydroelastic contact forces (see
+  // method that follows).
   struct HydroelasticContactInfoAndBodySpatialForces {
     explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
       F_BBo_W_array.resize(num_bodies);
     }
+
+    // Forces from hydroelastic contact applied to the origin of each body
+    // in the MultibodyPlant.
     std::vector<SpatialForce<T>> F_BBo_W_array;
+
+    // Information used for contact reporting collected through the evaluation
+    // of the hydroelastic model.
     std::vector<HydroelasticContactInfo<T>> contact_info;
   };
 

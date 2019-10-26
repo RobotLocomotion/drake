@@ -86,34 +86,44 @@ class HydroelasticTractionCalculator {
    */
   double regularization_scalar() const { return vslip_regularizer_; }
 
-  // TODO(drum) Document me.
-  void ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-      const Data& data, double dissipation, double mu_coulomb,
-      std::vector<HydroelasticQuadraturePointData<T>>*
-          traction_at_quadrature_points,
-      multibody::SpatialForce<T>* F_Ac_W) const;
-
-  // TODO(drum) Document me.
-  void TransformSpatialForcesAtCentroidToBodyOrigins(
-      const Data& data, const SpatialForce<T>& F_Ac_W, SpatialForce<T>* F_Ao_W,
-      SpatialForce<T>* F_Bo_W) const;
-
   /**
    Applies the hydroelastic model to two geometries defined in `surface`,
-   resulting in a pair of spatial forces at the origins of two body frames.
+   resulting in a spatial force applied at the centroid of the contact surface.
+   This method also provides the data output by the quadrature routine.
    The body frames, A and B, are those to which `surface.M_id()` and
    `surface.N_id()` are affixed, respectively.
    @param data Relevant kinematic data.
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
           energy along the direction of the surface normals.
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
+   @param[out] quadrature_point_data the intermediate data computed by the
+               quadrature process.
+   @param[out] F_Ac_W the spatial force computed by the hydroelastic model that
+               acts on the body attached to geometry M in `data`'s
+               ContactSurface. This spatial force is applied at the centroid of
+               the contact surface.
+   */
+  void ComputeSpatialForcesAtCentroidFromHydroelasticModel(
+      const Data& data, double dissipation, double mu_coulomb,
+      std::vector<HydroelasticQuadraturePointData<T>>*
+          quadrature_point_data,
+      multibody::SpatialForce<T>* F_Ac_W) const;
+
+  /**
+   Transforms the spatial force applied at the centroid of the contact surface
+   to equivalent spatial forces applied at the center of the body frames of
+   the two interacting bodies. The body frames, A and B, are those to which
+   `surface.M_id()` and `surface.N_id()` are affixed, respectively.
+   @param data Relevant kinematic data.
+   @param F_Ac_W the spatial force computed by the hydroelastic model that acts
+          on the body attached to geometry M in `data`'s ContactSurface. This
+          spatial force is applied at the centroid of the contact surface.
    @param[output] F_Ao_W the spatial force on Body A, on return.
    @param[output] F_Bo_W the spatial force on Body B, on return.
    */
-  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      const Data& data, double dissipation, double mu_coulomb,
-      multibody::SpatialForce<T>* F_Ao_W,
-      multibody::SpatialForce<T>* F_Bo_W) const;
+  void TransformSpatialForcesAtCentroidToBodyOrigins(
+      const Data& data, const SpatialForce<T>& F_Ac_W, SpatialForce<T>* F_Ao_W,
+      SpatialForce<T>* F_Bo_W) const;
 
  private:
   // TODO(edrumwri): Consider methods that expose inner structures of

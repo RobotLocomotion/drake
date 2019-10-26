@@ -99,67 +99,6 @@ void HydroelasticTractionCalculator<T>::
   *F_Bo_W = -(F_Ac_W.Shift(p_CBo_W));
 }
 
-// TODO(drum) Remove this.
-template <class T>
-void HydroelasticTractionCalculator<T>::
-    ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        const Data& data, double dissipation, double mu_coulomb,
-        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
-  DRAKE_DEMAND(F_Ao_W && F_Bo_W);
-
-  // Use a second-order Gaussian quadrature rule. For linear pressure fields,
-  // the second-order rule allows exact computation (to floating point error)
-  // of the moment on the bodies from the integral of the contact tractions.
-  // The moment r × f is a quadratic function of the surface location, since it
-  // is a linear operation (r × f) applied to a (typically) linear function
-  // (i.e., the traction, f). Higher-order pressure fields and nonlinear
-  // tractions (from, e.g., incorporating the Stribeck curve into the friction
-  // model) might see benefit from a higher-order quadrature.
-  const GaussianTriangleQuadratureRule gaussian(2 /* order */);
-
-  // We'll be accumulating force on body A at the surface centroid C,
-  // triangle-by-triangle.
-  SpatialForce<T> F_Ac_W;
-  F_Ac_W.SetZero();
-
-  // Integrate the tractions over all triangles in the contact surface.
-  for (SurfaceFaceIndex i(0); i < data.surface.mesh_W().num_faces(); ++i) {
-    // Construct the function to be integrated over triangle i.
-    // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
-    //              create a new functor for every i).
-    std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
-        [this, &data, i, dissipation,
-         mu_coulomb](const Vector3<T>& Q_barycentric) {
-          HydroelasticQuadraturePointData<T> traction_output =
-              CalcTractionAtPoint(data, i, Q_barycentric, dissipation,
-                                  mu_coulomb);
-          return ComputeSpatialTractionAtAcFromTractionAtAq(
-              data, traction_output.p_WQ, traction_output.traction_Aq_W);
-        };
-
-    // Compute the integral over the triangle to get a force from the
-    // tractions (force/area) at the Gauss points (shifted to C).
-    const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
-        TriangleQuadrature<SpatialForce<T>, T>::Integrate(
-            traction_Ac_W, gaussian, data.surface.mesh_W().area(i));
-
-    // Update the spatial force at body A's origin.
-    F_Ac_W += Fi_Ac_W;
-  }
-
-  // The spatial force on body A was accumulated at the surface centroid C. We
-  // need to shift it to A's origin Ao. The force on body B is equal and
-  // opposite to the force on body A, but we want it as if applied at Bo.
-  const Vector3<T>& p_WC = data.p_WC;
-  const Vector3<T>& p_WAo = data.X_WA.translation();
-  const Vector3<T>& p_WBo = data.X_WB.translation();
-  const Vector3<T> p_CAo_W = p_WAo - p_WC;
-  const Vector3<T> p_CBo_W = p_WBo - p_WC;
-
-  *F_Ao_W = F_Ac_W.Shift(p_CAo_W);
-  *F_Bo_W = -(F_Ac_W.Shift(p_CBo_W));
-}
-
 // Computes the spatial force on body A acting at a point Ac coincident with
 // the surface centroid C, due to the traction on body A at the given contact
 // point Q.
@@ -189,8 +128,6 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
 }
 
 // Method for computing traction at a point on a face of the contact surface.
-// If the point is coincident with a vertex, CalcTractionAtVertex()
-// is more efficient.
 template <typename T>
 HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
@@ -216,7 +153,6 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
                                mu_coulomb, p_WQ);
 }
 
-// TODO(drum) Document face_index.
 /*
  Helper function for computing the traction at a point, irrespective of whether
  that point is coincident with a vertex or is located at an arbitrary

@@ -218,8 +218,14 @@ public ::testing::TestWithParam<RigidTransform<double>> {
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
     UpdateCalculatorData();
 
-    traction_calculator_.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        calculator_data(), dissipation, mu_coulomb, F_Ao_W, F_Bo_W);
+    SpatialForce<double> F_Ac_W;
+    std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
+    traction_calculator().ComputeSpatialForcesAtCentroidFromHydroelasticModel(
+        calculator_data(), dissipation, mu_coulomb, &quadrature_point_data,
+        &F_Ac_W);
+
+    traction_calculator().TransformSpatialForcesAtCentroidToBodyOrigins(
+        calculator_data(), F_Ac_W, F_Ao_W, F_Bo_W);
   }
 
  private:
@@ -626,138 +632,6 @@ public ::testing::TestWithParam<RigidTransform<double>> {
       calculator_data_;
 };
 
-// TODO(drum): Fix this.
-/*
-// Tests that the traction reporting is accurate. Note that this test only needs
-// to check whether the field is set correctly; tests for traction are handled
-// elsewhere in this file.
-TEST_P(HydroelasticReportingTests, LinearTraction) {
-  // Nonzero values for dissipation and Coulomb friction will only serve to make
-  // the traction harder to interpret. We only need to assess the normal
-  // traction to ensure that the field has been set correctly.
-  const double dissipation = 0.0;
-  const double mu_coulomb = 0.0;
-
-  // Create the fields.
-  HydroelasticTractionCalculator<double> calculator;
-  HydroelasticTractionCalculator<double>::ContactReportingFields fields =
-      calculator.CreateReportingFields(
-          calculator_data(), dissipation, mu_coulomb);
-
-  // Test the traction at the vertices of the contact surface.
-  for (SurfaceVertexIndex(i);
-      i < calculator_data().surface.mesh_W().num_vertices(); ++i) {
-    // Evaluate the traction at vertex i on Body A (the body to which geometry
-    // M is attached).
-    const Vector3<double> traction_Av_W =
-       fields.traction_A_W->EvaluateAtVertex(i);
-
-    // Get the normal to the contact surface at the point. The test below will
-    // rely upon the assumption (specified in the construction of the field)
-    // that this vector is normalized.
-    const Vector3<double> normal_W =
-        calculator_data().surface.EvaluateGrad_h_MN_W(i);
-    EXPECT_NEAR(normal_W.norm(), 1.0, tol());
-
-    // Check the pressure is evaluated in accordance with how we constructed it.
-    const Vector3<double>& r_WV =
-        calculator_data().surface.mesh_W().vertex(i).r_MV();
-    EXPECT_LT((traction_Av_W - normal_W * pressure(r_WV)).norm(), tol());
-  }
-
-  // Test the traction at the centroid of the contact surface. This should just
-  // be the mean of the tractions at the vertices since (a) the pressure field
-  // is linear and (b) there is no sliding velocity.
-  // 1. Compute the mean of the tractions at the vertices.
-  Vector3<double> expected_traction_A_W = Vector3<double>::Zero();
-  for (SurfaceVertexIndex(i);
-      i < calculator_data().surface.mesh_W().num_vertices(); ++i) {
-    expected_traction_A_W += fields.traction_A_W->EvaluateAtVertex(i);
-  }
-  expected_traction_A_W /= calculator_data().surface.mesh_W().num_vertices();
-  // 2. Compute the traction at the centroid of the contact surface. Note that
-  //    we use SurfaceFaceIndex zero arbitrarily- the centroid is located on
-  //    both faces in this particular instance.
-  const SurfaceMesh<double>::Barycentric b_WC =
-      calculator_data().surface.mesh_W().CalcBarycentric(
-          calculator_data().surface.mesh_W().centroid(), SurfaceFaceIndex(0));
-  const Vector3<double> traction_Ac_W = fields.traction_A_W->Evaluate(
-      SurfaceFaceIndex(0), b_WC);
-
-  // Check that the two are approximately equal.
-  for (int i = 0; i < 3; ++i)
-    EXPECT_NEAR(expected_traction_A_W[i], traction_Ac_W[i], tol());
-}
-
-// Tests that the slip velocity reporting is consistent with the values computed
-// by the HydroelasticTractionCalculator. Note that this test only needs to
-// check whether the field is set correctly; tests for traction are handled
-// elsewhere in this file.
-TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
-  // Dissipation and Coulomb friction will not even be used in this test. Set
-  // the values to NaN to prove it.
-  const double nan = std::numeric_limits<double>::quiet_NaN();
-  const double dissipation = nan;
-  const double mu_coulomb = nan;
-
-  // Create the fields.
-  HydroelasticTractionCalculator<double> calculator;
-  HydroelasticTractionCalculator<double>::ContactReportingFields fields =
-      calculator.CreateReportingFields(
-          calculator_data(), dissipation, mu_coulomb);
-
-  // Test the slip velocity at the vertices of the contact surface.
-  const SurfaceMesh<double>& mesh = calculator_data().surface.mesh_W();
-  for (SurfaceVertexIndex(i); i < mesh.num_vertices(); ++i) {
-    // Compute the vertex location (V) in the world frame.
-    const Vector3<double>& p_WV = mesh.vertex(i).r_MV();
-
-    // Get the normal from Geometry M to Geometry N, expressed in the world
-    // frame to the contact surface at Point Q. By extension, this means that
-    // the normal points from Body A to Body B.
-    const Vector3<double> grad_h_AB_W =
-        calculator_data().surface.EvaluateGrad_h_MN_W(i);
-    ASSERT_TRUE(grad_h_AB_W.norm() > std::numeric_limits<double>::epsilon());
-    const Vector3<double> nhat_W = grad_h_AB_W.normalized();
-
-    // First compute the spatial velocity of Body A at Av.
-    const Vector3<double> p_AoAv_W =
-        p_WV - calculator_data().X_WA.translation();
-    const SpatialVelocity<double> V_WAv =
-        calculator_data().V_WA.Shift(p_AoAv_W);
-
-    // Next compute the spatial velocity of Body B at Bq.
-    const Vector3<double> p_BoBv_W =
-        p_WV - calculator_data().X_WB.translation();
-    const SpatialVelocity<double> V_WBv =
-        calculator_data().V_WB.Shift(p_BoBv_W);
-
-    // Compute the relative velocity between the bodies at the vertex.
-    const multibody::SpatialVelocity<double> V_BvAv_W = V_WAv - V_WBv;
-    const Vector3<double>& v_BvAv_W = V_BvAv_W.translational();
-    const double vn_BvAv_W = v_BvAv_W.dot(nhat_W);
-
-    // Compute the slip velocity.
-    const Vector3<double> vt_BvAv_W = v_BvAv_W - nhat_W * vn_BvAv_W;
-
-    // Check against the reported slip velocity.
-    const Vector3<double> vt_BvAv_W_reported =
-        fields.vslip_AB_W->EvaluateAtVertex(i);
-    EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol());
-  }
-
-  // Test the slip velocity at the centroid of the contact surface. As long as
-  // the centroid lies directly below the body's center-of-mass, the slip
-  // velocity will be zero. The face index below is arbitrary; the centroid
-  // lies on the edge of both triangles.
-  const SurfaceMesh<double>::Barycentric b_WC =
-      mesh.CalcBarycentric(mesh.centroid(), SurfaceFaceIndex(0));
-  const Vector3<double> vt_BcAc_W = fields.vslip_AB_W->Evaluate(
-      SurfaceFaceIndex(0), b_WC);
-  EXPECT_LT(vt_BcAc_W.norm(), tol());
-}
-*/
-
 // These transformations, denoted X_WY, are passed as parameters to the tests
 // to allow changing the absolute (but not relative) poses of the two bodies.
 const RigidTransform<double> poses[] = {
@@ -773,6 +647,23 @@ INSTANTIATE_TEST_CASE_P(PoseInstantiations,
 
 // TODO(edrumwri) Break the tests below out into a separate file.
 
+// Returns a distinct spatial force.
+SpatialForce<double> GetSpatialForce() {
+  return SpatialForce<double>(Vector3<double>(1, 2, 3),
+                              Vector3<double>(4, 5, 6));
+}
+
+// Returns a distinct vector (containing a single element) of quadrature point
+// data.
+std::vector<HydroelasticQuadraturePointData<double>> GetQuadraturePointData() {
+  HydroelasticQuadraturePointData<double> data;
+  data.p_WQ = Vector3<double>(3.0, 5.0, 7.0);
+  data.face_index = SurfaceFaceIndex(1);
+  data.vt_BqAq_W = Vector3<double>(11.0, 13.0, 17.0);
+  data.traction_Aq_W = Vector3<double>(19.0, 23.0, 29.0);
+  return { data };
+}
+
 HydroelasticContactInfo<double> CreateContactInfo(
     std::unique_ptr<ContactSurface<double>>* contact_surface,
     std::unique_ptr<HydroelasticContactInfo<double>>* contact_info) {
@@ -782,12 +673,13 @@ HydroelasticContactInfo<double> CreateContactInfo(
   *contact_surface = CreateContactSurface(arbitrary_id, arbitrary_id,
           RigidTransform<double>::Identity());
 
-  // Create the HydroelasticContactInfo without any traction calculations.
-  multibody::SpatialForce<double> F_Ac_W;
-  F_Ac_W.SetZero();
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
-  return HydroelasticContactInfo<double>(
-      contact_surface->get(), F_Ac_W, std::move(quadrature_point_data));
+  // Create the HydroelasticContactInfo using particular spatial force and
+  // quadrature point data.
+  std::vector<HydroelasticQuadraturePointData<double>>
+      quadrature_point_data = GetQuadraturePointData();
+  return HydroelasticContactInfo<double>(contact_surface->get(),
+                                         GetSpatialForce(),
+                                         std::move(quadrature_point_data));
 }
 
 // Verifies that the HydroelasticContactInfo structure uses the raw pointer
@@ -804,6 +696,13 @@ GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
   // Copy it again and make sure that the surface is new.
   HydroelasticContactInfo<double> copy2 = copy;
   EXPECT_NE(contact_surface.get(), &copy2.contact_surface());
+
+  // Verify that the spatial force was copied.
+  EXPECT_EQ(copy.F_Ac_W().translational(), GetSpatialForce().translational());
+  EXPECT_EQ(copy.F_Ac_W().rotational(), GetSpatialForce().rotational());
+
+  // Verify that the quadrature point data was copied.
+  EXPECT_EQ(copy.quadrature_point_data(), GetQuadraturePointData());
 }
 
 // Verifies that the HydroelasticContactInfo structure transfers ownership of
@@ -817,6 +716,14 @@ GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
 
   // Verify that the move construction retained the raw pointer.
   EXPECT_EQ(contact_surface.get(), &moved_copy.contact_surface());
+
+  // Verify that the spatial force was copied.
+  EXPECT_EQ(moved_copy.F_Ac_W().translational(),
+            GetSpatialForce().translational());
+  EXPECT_EQ(moved_copy.F_Ac_W().rotational(), GetSpatialForce().rotational());
+
+  // Verify that the quadrature point data was copied.
+  EXPECT_EQ(moved_copy.quadrature_point_data(), GetQuadraturePointData());
 }
 
 }  // namespace internal

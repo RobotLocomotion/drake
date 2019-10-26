@@ -112,34 +112,17 @@ class HydroelasticContactInfo {
     }
   }
 
-  // TODO(edrumwri): Fix this.
+  /// Gets the intermediate data, including tractions, computed by the
+  /// quadrature process.
   const std::vector<HydroelasticQuadraturePointData<T>>& quadrature_point_data()
       const {
     return quadrature_point_data_;
   }
-  /*
-  /// Returns the field giving the traction acting on Body A, expressed in the
-  /// world frame. At each point Q on the contact surface, `traction_A_W` gives
-  /// the traction `traction_Aq_W`, where `Aq` is a frame attached to Body A and
-  /// shifted to Q.
-  const geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>&
-  traction_A_W() const {
-    return *traction_A_W_;
-  }
 
-  /// Returns the field giving the slip velocity of Body B relative to Body A,
-  /// expressed in the world frame. At each point Q on the contact surface,
-  /// `vslip_AB_W` gives the slip velocity `vslip_AqBq_W`, which is the
-  /// "tangential" velocity of Frame Bq (located at Q and attached Frame B)
-  /// relative to the tangential velocity of Frame Aq (also located at Q and
-  /// attached to Frame B). The tangential velocity at Q corresponds to the
-  /// components of velocity orthogonal to the normal to the contact surface at
-  /// Q.
-  const geometry::MeshField<Vector3<T>, geometry::SurfaceMesh<T>>& vslip_AB_W()
-      const {
-    return *vslip_AB_W_;
-  }
-*/
+  /// Gets the spatial force applied at the centroid (Point C) of the surface
+  /// mesh (C can be obtained through `contact_surface().mesh_W().`).
+  const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
+
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
   drake::variant<const geometry::ContactSurface<T>*,
