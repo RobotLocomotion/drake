@@ -103,6 +103,17 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY: {
+      // Check for custom geometry tags, e.g. drake:capsule.
+      if (sdf_geometry.Element()->HasElement("drake:capsule")) {
+        const sdf::ElementPtr capsule_element =
+            sdf_geometry.Element()->GetElement("drake:capsule");
+        const double radius =
+            GetChildElementValueOrThrow<double>(*capsule_element, "radius");
+        const double length =
+            GetChildElementValueOrThrow<double>(*capsule_element, "length");
+        return make_unique<geometry::Capsule>(radius, length);
+      }
+
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
     case sdf::GeometryType::BOX: {
@@ -169,8 +180,11 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
-    // The file specifies an EMPTY geometry.
-    return std::unique_ptr<GeometryInstance>(nullptr);
+    // Check for custom geometry tags, e.g. drake:capsule.
+    if (!sdf_geometry.Element()->HasElement("drake:capsule")) {
+      // The file specifies an EMPTY geometry.
+      return std::unique_ptr<GeometryInstance>(nullptr);
+    }
   }
 
   // Retrieve the pose of the visual frame G in the parent link L in which
