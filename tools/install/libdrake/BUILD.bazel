@@ -225,7 +225,6 @@ cc_library(
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
         "@spdlog",
-        "@stx",
     ],
 )
 

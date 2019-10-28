@@ -63,7 +63,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "pybind11",
     "sdformat",
     "spdlog",
-    "stx",
     "tinydir",
     "tinyobjloader",
     "vtk",
