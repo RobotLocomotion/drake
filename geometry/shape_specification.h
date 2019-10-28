@@ -188,6 +188,32 @@ class Capsule final : public Shape {
   double length_{};
 };
 
+/** Definition of an ellipsoid. It is centered on the origin of its canonical
+ frame with its dimensions aligned with the frame's axes. The standard
+ equation for the ellipsoid is:
+
+          x²/a² + y²/b² + z²/c² = 1,
+ where a,b,c are the lengths of the principal semi-axes of the ellipsoid.
+ The bounding box of the ellipsoid is [-a,a]x[-b,b]x[-c,c].
+*/
+class Ellipsoid final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
+
+  /** Constructs an ellipsoid with the given lengths of its principal
+   semi-axes.
+   @throws std::logic_error if `a`, `b`, or `c` are not strictly positive.
+   */
+  Ellipsoid(double a, double b, double c);
+
+  double get_a() const { return radii_(0); }
+  double get_b() const { return radii_(1); }
+  double get_c() const { return radii_(2); }
+
+ private:
+  Vector3<double> radii_;
+};
+
 /** Definition of a half space. In its canonical frame, the plane defining the
  boundary of the half space is that frame's z = 0 plane. By implication, the
  plane's normal points in the +z direction and the origin lies on the plane.
@@ -337,6 +363,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
   virtual void ImplementGeometry(const Box& box, void* user_data);
   virtual void ImplementGeometry(const Capsule& capsule, void* user_data);
+  virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
   virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
   virtual void ImplementGeometry(const Convex& convex, void* user_data);
 

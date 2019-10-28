@@ -191,6 +191,7 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
       const math::RigidTransform<T>& X_WR) const;
 
   // Implementation of ShapeReifier interface
+  using geometry::ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const geometry::Sphere& sphere,
                          void* user_data) override;
   void ImplementGeometry(const geometry::HalfSpace&, void* user_data) override;

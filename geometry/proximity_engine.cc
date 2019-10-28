@@ -265,6 +265,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   // Implementation of ShapeReifier interface
+  using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
