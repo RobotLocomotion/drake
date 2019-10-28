@@ -116,13 +116,11 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   /// Sets `context` so this mobilizer's generalized coordinates (space x-y-z
   /// angles θ₁, θ₂, θ₃) are consistent with the given `R_FM` rotation matrix.
-  ///
   /// @param[in] context
   ///   The context of the MultibodyTree that this mobilizer belongs to.
   /// @param[in] R_FM
   ///   The rotation matrix relating the orientation of frame F and frame M.
   /// @returns a constant reference to `this` mobilizer.
-  ///
   /// @note: This method assumes an orthonormal 3x3 rotation matrix R_FM.
   /// To create an orthonormal R_FM from an approximate 3x3 matrix m, use
   /// R_FM = math::RotationMatrix<T>::ProjectToRotationMatrix( m ).

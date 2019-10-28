@@ -127,17 +127,15 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   /// Sets `context` so this mobilizer's generalized coordinates (its quaternion
   /// q_FM) are consistent with the given `R_FM` rotation matrix.
-  ///
   /// @param[in] context
   ///   The context of the MultibodyTree that this mobilizer belongs to.
   /// @param[in] R_FM
   ///   The rotation matrix relating the orientation of frame F and frame M.
   /// @returns a constant reference to `this` mobilizer.
-  ///
   /// @note: This method assumes an orthonormal 3x3 rotation matrix R_FM.
   /// To create an orthonormal R_FM from an approximate 3x3 matrix m, use
   /// R_FM = math::RotationMatrix<T>::ProjectToRotationMatrix( m ).
-  /// Alternatively, use set_quaternion(context, q_FM), with quaternion `q_FM`.
+  /// Alternatively, use set_quaternion(context, q_FM).
   const QuaternionFloatingMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
     const Eigen::Quaternion<T> q_FM = R_FM.ToQuaternion();
