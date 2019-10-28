@@ -8,7 +8,6 @@ definitions of `drake::symbolic::Variable::get_next_id()`.
 @see #6465
 """
 
-from __future__ import absolute_import, division, print_function
 
 import unittest
 

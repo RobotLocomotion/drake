@@ -5,7 +5,6 @@ Ensures that `build --python_path=` and
 See `bazel_python_is_valid` in `repository.bzl` for usage.
 """
 
-from __future__ import print_function
 import os
 import sys
 import subprocess

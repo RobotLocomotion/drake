@@ -3,7 +3,6 @@ summarizing its output for cleanliness, and providing a --fast option
 to run multiple linters in parallel.
 """
 
-from __future__ import print_function
 
 import argparse
 import functools

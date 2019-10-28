@@ -37,7 +37,7 @@ Note:
     Occasionally, the plotting will not come through on the notebook. I (Eric)
     am unsure why.
 """
-from __future__ import print_function
+
 import argparse
 import os
 import signal
