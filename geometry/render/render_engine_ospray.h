@@ -87,6 +87,7 @@ class RenderEngineOspray final
 
   /** @name    Shape reification  */
   //@{
+  using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) final;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final;
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final;
