@@ -3,8 +3,6 @@
 
 import io
 import os
-from six import text_type as unicode
-from six.moves import xrange
 from subprocess import Popen, PIPE, CalledProcessError
 
 import drake.tools.lint.clang_format as clang_format_lib
@@ -43,7 +41,7 @@ class FormatterBase(object):
             with io.open(filename, "r", encoding="utf8") as opened:
                 self._original_lines = opened.readlines()
         else:
-            self._original_lines = [unicode(line) for line in readlines]
+            self._original_lines = [str(line) for line in readlines]
         self._working_lines = list(self._original_lines)
         if any(["\r" in line for line in self._working_lines]):
             raise Exception("DOS newlines are not supported")
@@ -54,10 +52,10 @@ class FormatterBase(object):
     def _check_rep(self):
         assert self._filename
         for line in self._original_lines:
-            assert isinstance(line, unicode), (type(line), line)
+            assert isinstance(line, str), (type(line), line)
             assert line.endswith("\n"), line
         for line in self._working_lines:
-            assert isinstance(line, unicode), (type(line), line)
+            assert isinstance(line, str), (type(line), line)
             assert line.endswith("\n"), line
 
     def is_same_as_original(self):
@@ -75,7 +73,7 @@ class FormatterBase(object):
             return None
         min_common_line_count = min(
             len(self._working_lines), len(self._original_lines))
-        for i in xrange(min_common_line_count):
+        for i in range(min_common_line_count):
             if self._working_lines[i] != self._original_lines[i]:
                 return i
         # One file is a prefix of the other.
@@ -108,16 +106,16 @@ class FormatterBase(object):
 
     def set_line(self, index, line):
         assert self.is_valid_index(index)
-        self._working_lines[index] = unicode(line)
+        self._working_lines[index] = str(line)
         self._check_rep()
 
     def set_all_lines(self, lines):
-        self._working_lines = [unicode(line) for line in lines]
+        self._working_lines = [str(line) for line in lines]
         self._check_rep()
 
     def insert_lines(self, index, lines):
         assert 0 <= index and index <= len(self._working_lines)
-        self._working_lines[index:0] = [unicode(line) for line in lines]
+        self._working_lines[index:0] = [str(line) for line in lines]
         self._check_rep()
 
     def remove_all(self, indices):
