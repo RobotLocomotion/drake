@@ -196,6 +196,7 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   void ImplementGeometry(const geometry::HalfSpace&, void* user_data) override;
   void ImplementGeometry(const geometry::Cylinder&, void*) override;
   void ImplementGeometry(const geometry::Box&, void*) override;
+  void ImplementGeometry(const geometry::Capsule&, void*) override;
   void ImplementGeometry(const geometry::Mesh&, void*) override;
   void ImplementGeometry(const geometry::Convex&, void*) override;
 

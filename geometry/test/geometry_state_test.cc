@@ -193,6 +193,12 @@ class ShapeMatcher final : public ShapeReifier {
     }
   }
 
+  void ImplementGeometry(const Capsule& capsule, void*) final {
+    if (IsExpectedType(capsule)) {
+      TestShapeParameters(capsule);
+    }
+  }
+
   void ImplementGeometry(const Mesh& mesh, void*) final {
     if (IsExpectedType(mesh)) {
       TestShapeParameters(mesh);
@@ -280,6 +286,19 @@ void ShapeMatcher<Box>::TestShapeParameters(const Box& test) {
   if (test.depth() != expected_.depth()) {
     error() << "\nExpected box depth " << expected_.depth()
             << ", received box depth " << test.depth();
+  }
+}
+
+template <>
+template <>
+void ShapeMatcher<Capsule>::TestShapeParameters(const Capsule& test) {
+  if (test.get_radius() != expected_.get_radius()) {
+    error() << "\nExpected capsule radius " << expected_.get_radius() << ", "
+            << "received capsule radius " << test.get_radius();
+  }
+  if (test.get_length() != expected_.get_length()) {
+    error() << "\nExpected capsule length " << expected_.get_length()
+            << ", received capsule length " << test.get_length();
   }
 }
 
@@ -627,6 +646,11 @@ TEST_F(GeometryStateTest, IntrospectShapes) {
   }
   {
     ShapeMatcher<Box> matcher(Box(0.25, 2.0, 32.0));
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
+    ShapeMatcher<Capsule> matcher(Capsule(0.25, 2.0));
     EXPECT_TRUE(
         matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
   }
