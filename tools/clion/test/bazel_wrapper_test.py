@@ -23,8 +23,6 @@ class Mock(object):
     pass
 
 
-@unittest.skipIf(sys.version_info[0] < 3,
-                 "Wrapper is only ever run under Python 3")
 class TestBazelWrapper(unittest.TestCase):
 
     def setUp(self):
