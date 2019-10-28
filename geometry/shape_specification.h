@@ -188,6 +188,26 @@ class Capsule final : public Shape {
   double length_{};
 };
 
+/** Definition of an ellipsoid. It is centered on the origin of its canonical
+ frame with its dimensions aligned with the frame's axes. The size of
+ the ellipsoid is given by three radii. */
+class Ellipsoid final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
+
+  /** Constructs a ellipsoid with the given `x`, `y`, and `z` radii.
+   @throws std::logic_error if `x`, `y`, or `z` are not strictly positive.
+   */
+  Ellipsoid(double x, double y, double z);
+
+  double get_x() const { return radii_(0); }
+  double get_y() const { return radii_(1); }
+  double get_z() const { return radii_(2); }
+
+ private:
+  Vector3<double> radii_;
+};
+
 /** Definition of a half space. In its canonical frame, the plane defining the
  boundary of the half space is that frame's z = 0 plane. By implication, the
  plane's normal points in the +z direction and the origin lies on the plane.
@@ -337,6 +357,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
   virtual void ImplementGeometry(const Box& box, void* user_data);
   virtual void ImplementGeometry(const Capsule& capsule, void* user_data);
+  virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
   virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
   virtual void ImplementGeometry(const Convex& convex, void* user_data);
 
