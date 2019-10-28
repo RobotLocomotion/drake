@@ -28,6 +28,11 @@ void ShapeToString::ImplementGeometry(const Capsule& capsule, void*) {
                         capsule.get_length());
 }
 
+void ShapeToString::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
+  string_ = fmt::format("Ellipsoid(x: {}, y: {}, z: {})", ellipsoid.get_x(),
+                        ellipsoid.get_y(), ellipsoid.get_z());
+}
+
 void ShapeToString::ImplementGeometry(const Mesh& mesh, void*) {
   string_ = fmt::format("Mesh(s: {}, path: {})", mesh.scale(), mesh.filename());
 }

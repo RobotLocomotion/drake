@@ -663,6 +663,7 @@ class MeshIdentifier final : public ShapeReifier {
   bool is_mesh() const { return is_mesh_; }
 
   // Implementation of ShapeReifier interface.
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere&, void*) final {}
   void ImplementGeometry(const Cylinder&, void*) final {}
   void ImplementGeometry(const HalfSpace&, void*) final {}
