@@ -93,7 +93,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       systems::Context<T>* context, const Quaternion<T>& q_FM) const;
 
   /// Alternative signature to set_quaternion(context, q_FM) to set `state` to
-  /// store the orientation of M in F given by the equaternion `q_FM`.
+  /// store the orientation of M in F given by the quaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
       const systems::Context<T>& context,
       const Quaternion<T>& q_FM, systems::State<T>* state) const;
@@ -125,6 +125,25 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void set_random_position_distribution(const Vector3<symbolic::Expression>&
       position);
 
+  /// Sets `context` so this mobilizer's generalized coordinates (its quaternion
+  /// q_FM) are consistent with the given `R_FM` rotation matrix.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree that this mobilizer belongs to.
+  /// @param[in] R_FM
+  ///   The rotation matrix relating the orientation of frame F and frame M.
+  /// @returns a constant reference to `this` mobilizer.
+  ///
+  /// @note: This method assumes an orthonormal 3x3 rotation matrix R_FM.
+  /// To create an orthonormal R_FM from an approximate 3x3 matrix m, use
+  /// R_FM = math::RotationMatrix<T>::ProjectToRotationMatrix( m ).
+  /// Alternatively, use set_quaternion(context, q_FM), with quaternion `q_FM`.
+  const QuaternionFloatingMobilizer<T>& SetFromRotationMatrix(
+      systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
+    const Eigen::Quaternion<T> q_FM = R_FM.ToQuaternion();
+    return set_quaternion(context, q_FM);
+  }
+
   /// Sets `context` to store the quaternion `q_FM` which represents the same
   /// orientation of M in F as given by the rotation matrix `R_FM`.
   /// @param[out] context
@@ -132,8 +151,17 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @param[in] R_FM
   ///   The desired orientation of M in F given as a rotation matrix.
   /// @returns a constant reference to `this` mobilizer.
+  DRAKE_DEPRECATED("2020-02-01",
+                   "Use SetFromRotationMatrix(context, R_FM), where R_FM is a "
+                   "RotationMatrix, not an arbitrary Matrix3.  Alternatively, "
+                   "use SetFromRotationMatrix(context, q_FM), where `q_FM` is "
+                   "a quaternion.")
   const QuaternionFloatingMobilizer<T>& SetFromRotationMatrix(
-      systems::Context<T>* context, const Matrix3<T>& R_FM) const;
+      systems::Context<T>* context, const Matrix3<T>& R_FM_approximate) const {
+    const Eigen::Quaternion<T> q_FM =
+        math::RotationMatrix<T>::ToQuaternion(R_FM_approximate);
+    return set_quaternion(context, q_FM);
+  }
 
   /// Returns the angular velocity `w_FM` of frame M in F stored in `context`.
   /// @param[in] context
