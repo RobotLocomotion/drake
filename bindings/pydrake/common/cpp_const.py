@@ -8,7 +8,6 @@ module to be robust against this situation.
 """
 
 import inspect
-import six
 from types import MethodType
 
 from pydrake.third_party.wrapt import ObjectProxy
@@ -32,10 +31,7 @@ class _ConstClassMeta(object):
         self._owned_properties = set(owned_properties or set())
         self.mutable_methods = set(mutable_methods or set())
         # Add any decorated mutable methods.
-        if six.PY2:
-            predicate = inspect.ismethod
-        else:
-            predicate = inspect.isfunction
+        predicate = inspect.isfunction
         methods = inspect.getmembers(cls, predicate=predicate)
         for name, method in methods:
             # TODO(eric.cousineau): Warn if there is a mix of mutable and
@@ -204,8 +200,6 @@ def _install_object_mutable_methods():
 _install_object_mutable_methods()
 
 _LITERAL_TYPES = {int, float, str, tuple, type(None)}
-if six.PY2:
-    _LITERAL_TYPES.add(unicode)
 
 
 def _is_immutable(obj):
@@ -213,21 +207,12 @@ def _is_immutable(obj):
     return type(obj) in _LITERAL_TYPES
 
 
-if six.PY2:
-    def _is_method_of(func, obj):
-        # Detects if `func` is a function bound to a given instance `obj`.
-        return inspect.ismethod(func) and func.im_self is obj
+def _is_method_of(func, obj):
+    return getattr(func, '__self__', None) is obj
 
-    def _rebind_method(bound, new_self):
-        # Rebinds `bound.im_self` to `new_self`.
-        # https://stackoverflow.com/a/14574713/7829525
-        return MethodType(bound.__func__, new_self, bound.im_class)
-else:
-    def _is_method_of(func, obj):
-        return getattr(func, '__self__', None) is obj
 
-    def _rebind_method(bound, new_self):
-        return MethodType(bound.__func__, new_self)
+def _rebind_method(bound, new_self):
+    return MethodType(bound.__func__, new_self)
 
 
 def to_const(obj):

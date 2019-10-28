@@ -4,8 +4,6 @@ import inspect
 import sys
 import types
 
-import six
-
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
 
 
@@ -209,7 +207,7 @@ class TemplateBase(object):
             A set of instantiations.
         """
         param_list = []
-        for param, check in six.iteritems(self._instantiation_map):
+        for param, check in self._instantiation_map.items():
             if check == instantiation:
                 param_list.append(param)
         return set(param_list)
@@ -340,7 +338,7 @@ def _rename_callable(f, scope, name, cls=None):
     if (f.__module__, f.__name__) == (module, name):
         # Short circuit.
         return f
-    if six.PY3 and cls is not None:
+    if cls is not None:
         qualname = cls.__qualname__ + "." + name
     else:
         qualname = name
@@ -357,8 +355,6 @@ def _rename_callable(f, scope, name, cls=None):
         f.__name__ = name
         f.__qualname__ = qualname
         f.__doc__ = orig.__doc__
-        if cls and six.PY2:
-            f = types.MethodType(f, None, cls)
     else:
         f.__module__ = module
         f.__name__ = name
@@ -415,10 +411,7 @@ class TemplateMethod(TemplateBase):
 
         def __getitem__(self, param):
             unbound = self._tpl[param]
-            if six.PY2:
-                bound = types.MethodType(unbound, self._obj, self._tpl._cls)
-            else:
-                bound = types.MethodType(unbound, self._obj)
+            bound = types.MethodType(unbound, self._obj)
             return bound
 
         def __str__(self):
