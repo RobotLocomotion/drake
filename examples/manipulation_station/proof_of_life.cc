@@ -42,7 +42,7 @@ int do_main(int argc, char* argv[]) {
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
   if (FLAGS_setup == "clutter_clearing") {
-    station->SetupClutterClearingStation(nullopt);
+    station->SetupClutterClearingStation(std::nullopt);
     station->AddManipulandFromFile(
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         RigidTransform<double>(RollPitchYaw<double>(-1.57, 0, 3),
