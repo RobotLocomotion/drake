@@ -31,7 +31,7 @@ namespace solvers {
  */
 double GetVariableValue(
     const symbolic::Variable& var,
-    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+    const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values);
 
@@ -46,7 +46,7 @@ typename std::enable_if_t<
                   Derived::ColsAtCompileTime>>
 GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
-    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+    const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
@@ -309,7 +309,7 @@ class MathematicalProgramResult final {
   //@}
 
  private:
-  optional<std::unordered_map<symbolic::Variable::Id, int>>
+  std::optional<std::unordered_map<symbolic::Variable::Id, int>>
       decision_variable_index_{};
   SolutionResult solution_result_{};
   Eigen::VectorXd x_val_;
