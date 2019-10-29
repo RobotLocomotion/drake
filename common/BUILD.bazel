@@ -803,6 +803,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_variant_test",
+    copts = ["-Wno-cpp"],
     deps = [
         ":essential",
     ],

@@ -1,7 +1,10 @@
 #pragma once
 
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning "drake/common/drake_variant.h" and drake::variant are deprecated and will be removed on or after 2020-02-01. Please use <variant> and std::variant instead.
+
 /// @file
-/// Provides drake::variant as an alias for std::variant.
+/// Provides drake::variant as a deprecated alias for std::variant.
 
 #include <variant>
 
