@@ -78,7 +78,7 @@ struct OptionalStruct {
     value = NAN;
   }
 
-  drake::optional<double> value;
+  std::optional<double> value;
 };
 
 using Variant3 = drake::variant<std::string, double, DoubleStruct>;
@@ -265,7 +265,7 @@ TEST_F(YamlReadArchiveTest, StdMap) {
 
 TEST_F(YamlReadArchiveTest, Optional) {
   const auto test = [](const std::string& doc,
-                       const drake::optional<double>& expected) {
+                       const std::optional<double>& expected) {
     const auto& x = AcceptNoThrow<OptionalStruct>(Load(doc));
     if (expected.has_value()) {
       ASSERT_TRUE(x.value.has_value()) << *expected;
@@ -275,8 +275,8 @@ TEST_F(YamlReadArchiveTest, Optional) {
     }
   };
 
-  test("doc:\n  foo: bar", drake::nullopt);
-  test("doc:\n  value:", drake::nullopt);
+  test("doc:\n  foo: bar", std::nullopt);
+  test("doc:\n  value:", std::nullopt);
   test("doc:\n  value: 1.0", 1.0);
 }
 
@@ -466,7 +466,8 @@ TEST_F(YamlReadArchiveTest, VisitOptionalScalarFoundSequence) {
       AcceptIntoDummy<OptionalStruct>(LoadSingleValue("[1.0]")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
-      " has non-Scalar \\(Sequence\\) entry for .*optional<double> value\\.");
+      " has non-Scalar \\(Sequence\\) entry for .*std::optional<double>"
+      " value\\.");
 }
 
 // This finds something untagged tag when a variant was wanted.
