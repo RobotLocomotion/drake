@@ -39,6 +39,7 @@ generate_pybind_documentation_header(
     name = "generate_sample_header",
     testonly = 1,
     out = "test/sample_header_documentation.h",
+    out_xml = "test/sample_header_documentation.xml",
     root_name = "sample_header_doc",
     targets = [
         ":sample_header",
