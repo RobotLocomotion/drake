@@ -2,15 +2,14 @@
 
 #include <tuple>
 #include <unordered_map>
-
-#include "drake/common/drake_variant.h"
+#include <variant>
 
 namespace drake {
 namespace systems {
 namespace internal {
 namespace {
 
-using EitherPortIndex = variant<InputPortIndex, OutputPortIndex>;
+using EitherPortIndex = std::variant<InputPortIndex, OutputPortIndex>;
 
 // The PortIdentifier must be appropriate to use in a sorted collection.  Thus,
 // we place its two integer indices first, because they form a unique key on
@@ -29,8 +28,8 @@ std::string to_string(const PortIdentifier& port_id) {
   const SystemBase* const system = std::get<2>(port_id);
   const EitherPortIndex& index = std::get<1>(port_id);
   return is_input_port(port_id) ?
-      system->get_input_port_base(drake::get<0>(index)).GetFullDescription() :
-      system->get_output_port_base(drake::get<1>(index)).GetFullDescription();
+      system->get_input_port_base(std::get<0>(index)).GetFullDescription() :
+      system->get_output_port_base(std::get<1>(index)).GetFullDescription();
 }
 
 // Helper to do the algebraic loop test. It recursively performs the

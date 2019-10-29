@@ -88,8 +88,8 @@ namespace {
 // Linearize.
 std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index,
+    std::variant<InputPortSelection, InputPortIndex> input_port_index,
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index,
     std::optional<double> equilibrium_check_tolerance = std::nullopt) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
@@ -245,8 +245,8 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index,
+    std::variant<InputPortSelection, InputPortIndex> input_port_index,
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index,
     double equilibrium_check_tolerance) {
   std::unique_ptr<AffineSystem<double>> affine =
       DoFirstOrderTaylorApproximation(
@@ -260,8 +260,8 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index) {
+    std::variant<InputPortSelection, InputPortIndex> input_port_index,
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index) {
   return DoFirstOrderTaylorApproximation(system, context,
                                          std::move(input_port_index),
                                          std::move(output_port_index));
