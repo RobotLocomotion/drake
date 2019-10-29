@@ -1,0 +1,8 @@
+ClassName,Coverage,Class,Class Template,Type Aliases,Functions,Function Template,Enums,Methods
+drake::solvers::MathematicalProgram,,,,,,,,
+drake::solvers::MathematicalProgramResult,,,,,,,,
+drake::solvers::OsqpSolver,1/5,,,0/1,,,,1/4
+drake::solvers::OsqpSolverDetails,8/8,,,,,,,
+drake::solvers::SolverId,,,,,,,,
+drake::solvers::SolverOptions,,,,,,,,
+drake::solvers::VectorXd,,,,,,,,
