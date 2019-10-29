@@ -9,16 +9,9 @@
 #include "drake/common/text_logging.h"
 
 // Declare the --spdlog_level gflags option.
-DEFINE_string(spdlog_level, "unchanged",
-              "sets the spdlog output threshold; possible values are "
-              "'unchanged', "
-              "'trace', "
-              "'debug', "
-              "'info', "
-              "'warn', "
-              "'err', "
-              "'critical', "
-              "'off'");
+DEFINE_string(spdlog_level,
+              drake::logging::kSetLogLevelUnchanged,
+              drake::logging::kSetLogLevelHelpMessage);
 
 namespace drake {
 namespace logging {
