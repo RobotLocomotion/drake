@@ -28,8 +28,8 @@ class SolverInterface {
   /// contains a different value for the same option on the same solver, then @p
   /// solver_options takes priority.
   virtual void Solve(const MathematicalProgram& prog,
-                     const optional<Eigen::VectorXd>& initial_guess,
-                     const optional<SolverOptions>& solver_options,
+                     const std::optional<Eigen::VectorXd>& initial_guess,
+                     const std::optional<SolverOptions>& solver_options,
                      MathematicalProgramResult* result) const = 0;
 
   /// Returns the identifier of this solver.

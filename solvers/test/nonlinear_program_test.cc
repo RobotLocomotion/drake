@@ -43,7 +43,7 @@ namespace drake {
 namespace solvers {
 namespace test {
 void RunNonlinearProgram(const MathematicalProgram& prog,
-                         const optional<Eigen::VectorXd>& x_init,
+                         const std::optional<Eigen::VectorXd>& x_init,
                          std::function<void(void)> test_func,
                          MathematicalProgramResult* result) {
   IpoptSolver ipopt_solver;

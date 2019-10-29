@@ -399,7 +399,7 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = ty(i).value();
     }
 
-    const optional<std::vector<std::pair<int, int>>>&
+    const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
@@ -614,7 +614,7 @@ void UpdateConstraintBoundsAndGradients(
     const std::vector<int> bound_var_indices_in_prog =
         prog.FindDecisionVariableIndices(binding.variables());
 
-    const optional<std::vector<std::pair<int, int>>>&
+    const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {

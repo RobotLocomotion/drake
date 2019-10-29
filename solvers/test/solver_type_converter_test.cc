@@ -10,8 +10,8 @@ namespace {
 
 // We use this as a way to ensure we hit all SolverTypes.  The switch statement
 // will complain if someone adds an enumeration value without an update here.
-optional<SolverType> successor(optional<SolverType> solver_type) {
-  if (solver_type == nullopt) {
+std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
+  if (solver_type == std::nullopt) {
     return SolverType::kCsdp;
   }
   switch (*solver_type) {
@@ -40,7 +40,7 @@ optional<SolverType> successor(optional<SolverType> solver_type) {
     case SolverType::kSnopt:
       return SolverType::kUnrevisedLemke;
     case SolverType::kUnrevisedLemke:
-      return nullopt;
+      return std::nullopt;
   }
   DRAKE_UNREACHABLE();
 }
@@ -48,15 +48,16 @@ optional<SolverType> successor(optional<SolverType> solver_type) {
 GTEST_TEST(SolverId, RoundTrip) {
   // Iterate over all known solver types.
   int iterations = 0;
-  for (auto solver_type = successor(nullopt);
-       solver_type != nullopt;
+  for (auto solver_type = successor(std::nullopt);
+       solver_type != std::nullopt;
        solver_type = successor(solver_type)) {
     ++iterations;
 
     // Convert type -> id -> type and check for equality.
     const SolverId id = SolverTypeConverter::TypeToId(*solver_type);
-    const optional<SolverType> round_trip = SolverTypeConverter::IdToType(id);
-    ASSERT_TRUE(round_trip != nullopt);
+    const std::optional<SolverType> round_trip =
+        SolverTypeConverter::IdToType(id);
+    ASSERT_TRUE(round_trip != std::nullopt);
     EXPECT_EQ(*round_trip, *solver_type);
 
     // Names of the well-known IDs shouldn't be empty.
