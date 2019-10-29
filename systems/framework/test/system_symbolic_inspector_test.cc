@@ -32,8 +32,8 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
                                     "equality constraint");
     this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint,
-                                      { Eigen::VectorXd::Zero(kSize), nullopt },
-                                      "inequality constraint");
+                                      { Eigen::VectorXd::Zero(kSize),
+                                      std::nullopt }, "inequality constraint");
   }
 
   void AddAbstractInputPort() {

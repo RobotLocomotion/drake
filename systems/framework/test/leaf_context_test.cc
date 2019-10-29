@@ -185,7 +185,7 @@ class LeafContextTest : public ::testing::Test {
       output_port_tickets_.push_back(next_ticket_);
       context->AddOutputPort(
           i, next_ticket_++,
-          {nullopt, DependencyTicket(internal::kAllSourcesTicket)});
+          {std::nullopt, DependencyTicket(internal::kAllSourcesTicket)});
     }
   }
 

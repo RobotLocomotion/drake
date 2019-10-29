@@ -122,7 +122,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
   context_symbolic->get_mutable_numeric_parameter(0).GetAtIndex(0) = b;
   context_symbolic->SetTime(t);
 
-  optional<solvers::Binding<solvers::Constraint>> binding =
+  std::optional<solvers::Binding<solvers::Constraint>> binding =
       adapter.MaybeCreateGenericConstraintSymbolically(
           system.constraint_index(), *context_symbolic);
   ASSERT_TRUE(binding.has_value());

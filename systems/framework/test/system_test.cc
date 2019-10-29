@@ -437,7 +437,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
   const double kInf = std::numeric_limits<double>::infinity();
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-          &system_, calc, SystemConstraintBounds(Vector1d(0), nullopt),
+          &system_, calc, SystemConstraintBounds(Vector1d(0), std::nullopt),
           "test"));
   EXPECT_EQ(test_constraint, 0);
 

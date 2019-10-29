@@ -2,12 +2,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/value.h"
@@ -293,7 +293,7 @@ enum BuiltInTicketNumbers {
 // of the child's parent Diagram. If the `child_subsystem` index is missing it
 // indicates that the prerequisite is internal.
 struct OutputPortPrerequisite {
-  optional<SubsystemIndex> child_subsystem;
+  std::optional<SubsystemIndex> child_subsystem;
   DependencyTicket dependency;
 };
 

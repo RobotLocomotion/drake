@@ -41,8 +41,8 @@ MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state, int num_time_samples,
     double fixed_timestep)
-    : MultipleShooting(input, state, num_time_samples, nullopt, fixed_timestep,
-                       fixed_timestep) {}
+    : MultipleShooting(input, state, num_time_samples, std::nullopt,
+                       fixed_timestep, fixed_timestep) {}
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
@@ -69,15 +69,15 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
           MakeVectorContinuousVariable(num_inputs, "u"),
           MakeVectorContinuousVariable(num_states, "x"), num_time_samples,
           timesteps_are_decision_variables
-              ? optional<solvers::DecisionVariable>{solvers::DecisionVariable{
-                    "t"}}
-              : nullopt,
+              ? std::optional<solvers::DecisionVariable>{
+                  solvers::DecisionVariable{"t"}}
+              : std::nullopt,
           minimum_timestep, maximum_timestep) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state, int num_time_samples,
-    const optional<solvers::DecisionVariable>& time_var,
+    const std::optional<solvers::DecisionVariable>& time_var,
     double minimum_timestep, double maximum_timestep)
     : MathematicalProgram(),
       num_inputs_(input.size()),

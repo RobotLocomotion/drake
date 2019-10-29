@@ -167,7 +167,7 @@ void CheckPeriodAndOffset(const PeriodicEventData& data) {
 // GetUniquePeriodicDiscreteUpdateAttribute().
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
   // Check diagrams with no recursion.
-  optional<PeriodicEventData> periodic_data;
+  std::optional<PeriodicEventData> periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
   EmptySystemDiagram d_sys1upd_zero(
@@ -3018,7 +3018,7 @@ class ConstraintTestSystem : public LeafSystem<T> {
                                     1, "x0");
     this->DeclareInequalityConstraint(
         &ConstraintTestSystem::CalcStateConstraint,
-        { Eigen::Vector2d::Zero(), nullopt }, "x");
+        { Eigen::Vector2d::Zero(), std::nullopt }, "x");
   }
 
   // Scalar-converting copy constructor.

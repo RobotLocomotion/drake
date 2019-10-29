@@ -5,6 +5,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -17,7 +18,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -870,15 +870,15 @@ class System : public SystemBase {
   /// times.
   /// @returns optional<PeriodicEventData> Contains the periodic trigger
   /// attributes if the unique periodic attribute exists, otherwise `nullopt`.
-  optional<PeriodicEventData>
+  std::optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const {
-    optional<PeriodicEventData> saved_attr;
+    std::optional<PeriodicEventData> saved_attr;
     auto periodic_events = GetPeriodicEvents();
     for (const auto& saved_attr_and_vector : periodic_events) {
       for (const auto& event : saved_attr_and_vector.second) {
         if (event->is_discrete_update()) {
           if (saved_attr)
-            return nullopt;
+            return std::nullopt;
           saved_attr = saved_attr_and_vector.first;
           break;
         }
@@ -1880,7 +1880,7 @@ class System : public SystemBase {
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
       variant<std::string, UseDefaultName> name, PortDataType type, int size,
-      optional<RandomDistribution> random_type = nullopt) {
+      std::optional<RandomDistribution> random_type = std::nullopt) {
     const InputPortIndex port_index(num_input_ports());
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
@@ -1908,7 +1908,7 @@ class System : public SystemBase {
   /// in #9447.
   const InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
-      optional<RandomDistribution> random_type = nullopt) {
+      std::optional<RandomDistribution> random_type = std::nullopt) {
     return DeclareInputPort(kUseDefaultName, type, size, random_type);
   }
   //@}

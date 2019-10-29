@@ -97,7 +97,7 @@ class LeafOutputPort final : public OutputPort<T> {
 
   // Returns the cache entry's ticket and no subsystem.
   internal::OutputPortPrerequisite DoGetPrerequisite() const final {
-    return {nullopt, cache_entry().ticket()};
+    return {std::nullopt, cache_entry().ticket()};
   };
 
   const CacheEntry* const cache_entry_;

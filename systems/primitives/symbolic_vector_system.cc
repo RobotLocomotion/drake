@@ -1,8 +1,8 @@
 #include "drake/systems/primitives/symbolic_vector_system.h"
 
 #include <algorithm>
+#include <optional>
 
-#include "drake/common/drake_optional.h"
 #include "drake/math/autodiff_gradient.h"
 
 namespace drake {
@@ -17,7 +17,8 @@ using symbolic::Variables;
 
 template <typename T>
 SymbolicVectorSystem<T>::SymbolicVectorSystem(
-    const optional<Variable>& time, const Ref<const VectorX<Variable>>& state,
+    const std::optional<Variable>& time,
+    const Ref<const VectorX<Variable>>& state,
     const Ref<const VectorX<Variable>>& input,
     const Ref<const VectorX<Variable>>& parameter,
     const Ref<const VectorX<Expression>>& dynamics,

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -9,7 +10,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
@@ -63,12 +63,12 @@ class SystemConstraintBounds final {
   /// The upper bounds are all positive infinity.
   SystemConstraintBounds(
       const Eigen::Ref<const Eigen::VectorXd>& lower,
-      nullopt_t);
+      std::nullopt_t);
 
   /// Creates an inequality constraint with the given upper bounds for `f(x)`.
   /// The lower bounds are all negative infinity.
   SystemConstraintBounds(
-      nullopt_t,
+      std::nullopt_t,
       const Eigen::Ref<const Eigen::VectorXd>& upper);
 
   int size() const { return size_; }
