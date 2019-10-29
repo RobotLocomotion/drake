@@ -1,12 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
@@ -199,9 +199,9 @@ class GeometryInstance {
   std::string name_;
 
   // Optional properties.
-  optional<ProximityProperties> proximity_properties_{};
-  optional<IllustrationProperties> illustration_properties_{};
-  optional<PerceptionProperties> perception_properties_{};
+  std::optional<ProximityProperties> proximity_properties_{};
+  std::optional<IllustrationProperties> illustration_properties_{};
+  std::optional<PerceptionProperties> perception_properties_{};
 };
 
 }  // namespace geometry

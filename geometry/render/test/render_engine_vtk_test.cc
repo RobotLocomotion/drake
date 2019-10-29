@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_engine_vtk.h"
 
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -9,7 +10,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
