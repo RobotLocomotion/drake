@@ -72,12 +72,12 @@ enum class ContactModel {
 ///   @input_port{applied_generalized_force}
 ///   @input_port{applied_spatial_force}
 ///   @input_port{geometry_query},
-///   @output_port{continuous_state}
+///   @output_port{state}
 ///   @output_port{<b style="color:orange">
-///     {model_instance_name[0]}_continuous_state</b>}
+///     {model_instance_name[0]}_state</b>}
 ///   @output_port{...}
 ///   @output_port{<b style="color:orange">
-///     {model_instance_name[N-1]}_continuous_state</b>}
+///     {model_instance_name[N-1]}_state</b>}
 ///   @output_port{<b style="color:orange">
 ///     {model_instance_name[0]}_generalized_contact_forces</b>}
 ///   @output_port{...}
@@ -88,8 +88,8 @@ enum class ContactModel {
 /// }
 ///
 /// Note that the outputs in <b style="color:orange">orange</b> are not
-/// allocated for model instances with no state (e.g. the world, or a welded
-/// model which isn't actuated (like a table)).
+/// allocated for @ref model_instances with no state (e.g. the world, or a
+/// welded model which isn't actuated (like a table)).
 ///
 /// %MultibodyPlant provides a user-facing API to:
 ///
@@ -97,6 +97,39 @@ enum class ContactModel {
 /// - register geometries to a provided SceneGraph instance,
 /// - create and manipulate its Context,
 /// - perform Context-dependent computational queries.
+///
+/// @section model_instances Model Instances
+///
+/// A MultiBodyPlant may contain a number of _model instances_, which are
+/// categories of (typically related) bodies. Model instances offer a
+/// straightforward mechanism for getting and setting the state of a subset
+/// of bodies in the plant (e.g., through GetPositionsAndVelocities() and
+/// SetPositionsAndVelocities()), connecting controllers to certain models
+/// in the plant (through get_state_output_port() and
+/// get_actuation_input_port()), and organizing duplicate models (read through
+/// a parser). In most cases, the allocation of model instances will be handled
+/// automatically by a parser.
+///
+/// There are two special multibody::ModelInstanceIndex values. There are two
+/// special multibody::ModelInstanceIndex values.  The world body is always
+/// multibody::ModelInstanceIndex 0, and multibody::ModelInstanceIndex 1 is
+/// reserved for all elements with no explicit model instance.  This is
+/// generally only relevant for elements created programmatically (and for which
+/// a model instance is not explicitly specified), as parsers should handle
+/// creating model elements as needed.
+///
+/// See num_model_instances(),
+/// num_positions(),
+/// num_velocities(), num_actuated_dofs(),
+/// AddModelInstance() GetPositionsAndVelocities(),
+/// GetPositions(), GetVelocities(),
+/// SetPositionsAndVelocities(),
+/// SetPositions(), SetVelocities(),
+/// GetPositionsFromArray(), GetVelocitiesFromArray(),
+/// SetPositionsInArray(), SetVelocitiesInArray(), SetActuationInArray(),
+/// HasModelInstanceNamed(), GetModelInstanceName(),
+/// get_state_output_port(),
+/// get_actuation_input_port().
 ///
 /// @section equations_of_motion System dynamics
 ///
