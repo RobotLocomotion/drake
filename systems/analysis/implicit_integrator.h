@@ -290,7 +290,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       // is detected. This will make the Newton-Raphson process in the caller
       // continue iterating until its inevitable failure.
       using std::isnan;
-      if (isnan(dxc[i])) return false;
+      if (isnan(dxc[i]) || isnan(xc[i])) return false;
 
       const T tol = max(abs(xc[i]), T(1)) * eps;
       if (abs(dxc[i]) > tol)
