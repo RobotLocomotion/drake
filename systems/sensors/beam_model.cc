@@ -50,7 +50,7 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
           };
   this->DeclareInequalityConstraint(
       calc_event_probabilities_constraint,
-      SystemConstraintBounds(Vector1d(0), nullopt),
+      SystemConstraintBounds(Vector1d(0), std::nullopt),
       "event probabilities sum to one");
 }
 

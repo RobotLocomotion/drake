@@ -67,7 +67,7 @@ class VectorSystem : public LeafSystem<T> {
   /// (For that, see @ref system_scalar_conversion at the example titled
   /// "Example using drake::systems::VectorSystem as the base class".)
   VectorSystem(int input_size, int output_size,
-               optional<bool> direct_feedthrough = nullopt)
+               std::optional<bool> direct_feedthrough = std::nullopt)
       : VectorSystem(SystemScalarConverter{}, input_size, output_size,
                      direct_feedthrough) {}
 
@@ -90,7 +90,7 @@ class VectorSystem : public LeafSystem<T> {
   /// related to scalar-type conversion support, especially the example titled
   /// "Example using drake::systems::VectorSystem as the base class".
   VectorSystem(SystemScalarConverter converter, int input_size, int output_size,
-               optional<bool> direct_feedthrough = nullopt)
+               std::optional<bool> direct_feedthrough = std::nullopt)
       : LeafSystem<T>(std::move(converter)) {
     if (input_size > 0) {
       this->DeclareInputPort(kVectorValued, input_size);

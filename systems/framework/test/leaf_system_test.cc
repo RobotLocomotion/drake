@@ -140,7 +140,7 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    optional<PeriodicEventData> periodic_attr =
+    std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);
@@ -150,7 +150,7 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    optional<PeriodicEventData> periodic_attr =
+    std::optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);
@@ -1715,7 +1715,7 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   }
 
   OutputPortIndex AddAbstractOutputPort(
-      optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
+      std::optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
     // Dummies.
     auto alloc = []() { return AbstractValue::Make<int>(0); };
     auto calc = [](const ContextBase&, AbstractValue*) {};
@@ -2240,7 +2240,7 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
           &ConstraintTestSystem::CalcStateConstraint,
-          { Eigen::Vector2d::Zero(), nullopt },
+          { Eigen::Vector2d::Zero(), std::nullopt },
           "x"),
       1);
   EXPECT_EQ(dut.num_constraints(), 2);
@@ -2281,7 +2281,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
     *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
-                                            { Vector1d::Zero(), nullopt },
+                                            { Vector1d::Zero(), std::nullopt },
                                             "x1_lower"),
             0);
   EXPECT_EQ(dut.num_constraints(), 1);
@@ -2293,9 +2293,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
                         context.get_continuous_state_vector()[0]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
-                                            { nullopt, Eigen::Vector2d(2, 3) },
-                                            "x_upper"),
-            1);
+      { std::nullopt, Eigen::Vector2d(2, 3) }, "x_upper"), 1);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(

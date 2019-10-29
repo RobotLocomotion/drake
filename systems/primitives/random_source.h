@@ -1,9 +1,9 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/random.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -89,11 +89,11 @@ class RandomSource final : public LeafSystem<double> {
 
   /// Gets this system's fixed random seed (or else nullopt when the seed is
   /// not fixed).  Refer to the class overview documentation for details.
-  optional<Seed> get_fixed_seed() const { return fixed_seed_; }
+  std::optional<Seed> get_fixed_seed() const { return fixed_seed_; }
 
   /// Sets (or clears) this system's fixed random seed.  Refer to the class
   /// overview documentation for details.
-  void set_fixed_seed(const optional<Seed>& seed) { fixed_seed_ = seed; }
+  void set_fixed_seed(const std::optional<Seed>& seed) { fixed_seed_ = seed; }
 
  private:
   void SetDefaultState(const Context<double>&, State<double>*) const final;
@@ -104,7 +104,7 @@ class RandomSource final : public LeafSystem<double> {
 
   const RandomDistribution distribution_;
   const Seed instance_seed_;
-  optional<Seed> fixed_seed_;
+  std::optional<Seed> fixed_seed_;
 };
 
 /// For each subsystem input port in @p builder that is (a) not yet connected

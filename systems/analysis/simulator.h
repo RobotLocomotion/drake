@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -13,7 +14,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -531,7 +531,7 @@ class Simulator {
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
-  optional<T> GetCurrentWitnessTimeIsolation() const;
+  std::optional<T> GetCurrentWitnessTimeIsolation() const;
 
   /// Gets a constant reference to the system.
   /// @note a mutable reference is not available.
@@ -1009,7 +1009,7 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
 }
 
 template <class T>
-optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
+std::optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   using std::max;
 
   // TODO(edrumwri): Add ability to disable witness time isolation through
@@ -1027,7 +1027,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   const double characteristic_time = 1.0;
 
   // Get the accuracy setting.
-  const optional<double>& accuracy = get_context().get_accuracy();
+  const std::optional<double>& accuracy = get_context().get_accuracy();
 
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
@@ -1037,7 +1037,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
                  T(iso_scale_factor * accuracy.value() *
                      integrator_->get_maximum_step_size()));
     } else {
-      return optional<T>();
+      return std::optional<T>();
     }
   }
 
@@ -1096,7 +1096,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   Context<T>& context = get_mutable_context();
 
   // Get the witness isolation interval length.
-  const optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
+  const std::optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
 
   // Check whether witness functions *are* to be isolated. If not, the witnesses
   // that were triggered on entry will be the set that is returned.

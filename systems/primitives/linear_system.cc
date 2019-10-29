@@ -90,7 +90,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
     variant<InputPortSelection, InputPortIndex> input_port_index,
     variant<OutputPortSelection, OutputPortIndex> output_port_index,
-    optional<double> equilibrium_check_tolerance = nullopt) {
+    std::optional<double> equilibrium_check_tolerance = std::nullopt) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
   const bool has_only_discrete_states_contained_in_one_group =
@@ -101,7 +101,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   double time_period = 0.0;
   if (has_only_discrete_states_contained_in_one_group) {
-    optional<PeriodicEventData> periodic_data =
+    std::optional<PeriodicEventData> periodic_data =
         system.GetUniquePeriodicDiscreteUpdateAttribute();
     DRAKE_THROW_UNLESS(static_cast<bool>(periodic_data));
     time_period = periodic_data->period_sec();
@@ -284,7 +284,7 @@ Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys) {
 
 /// Returns true iff the controllability matrix is full row rank.
 bool IsControllable(const LinearSystem<double>& sys,
-                    optional<double> threshold) {
+                    std::optional<double> threshold) {
   const auto R = ControllabilityMatrix(sys);
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(R);
   if (threshold) {
@@ -309,7 +309,8 @@ Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys) {
 }
 
 /// Returns true iff the observability matrix is full column rank.
-bool IsObservable(const LinearSystem<double>& sys, optional<double> threshold) {
+bool IsObservable(const LinearSystem<double>& sys,
+                  std::optional<double> threshold) {
   const auto O = ObservabilityMatrix(sys);
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(O);
   if (threshold) {
