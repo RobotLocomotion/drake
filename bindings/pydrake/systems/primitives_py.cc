@@ -107,17 +107,27 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<const AbstractValue&>(), py::arg("value"),
             doc.ConstantValueSource.ctor.doc);
 
-    DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(
-        m, "ConstantVectorSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
+    DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(m,
+        "ConstantVectorSource", GetPyParam<T>(), doc.ConstantVectorSource.doc)
         .def(py::init<VectorX<T>>(), py::arg("source_value"),
-            doc.ConstantValueSource.ctor.doc);
+            doc.ConstantVectorSource.ctor.doc)
+        .def("get_source_value", &ConstantVectorSource<T>::get_source_value,
+            py::arg("context"), py_reference_internal,
+            doc.ConstantVectorSource.get_source_value.doc)
+        .def("get_mutable_source_value",
+            &ConstantVectorSource<T>::get_mutable_source_value,
+            py::arg("context"), py_reference_internal,
+            doc.ConstantVectorSource.get_mutable_source_value.doc);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
         .def(py::init<int, int>(), py::arg("size"),
             py::arg("output_ports_size") = 1, doc.Demultiplexer.ctor.doc_2args)
         .def(py::init<const std::vector<int>&>(), py::arg("output_ports_sizes"),
-            doc.Demultiplexer.ctor.doc_1args);
+            doc.Demultiplexer.ctor.doc_1args)
+        .def("get_output_ports_sizes",
+            &Demultiplexer<T>::get_output_ports_sizes,
+            doc.Demultiplexer.get_output_ports_sizes.doc);
 
     DefineTemplateClassWithDefault<DiscreteTimeDelay<T>, LeafSystem<T>>(
         m, "DiscreteTimeDelay", GetPyParam<T>(), doc.DiscreteTimeDelay.doc)
