@@ -185,7 +185,7 @@ struct Impl {
     using Base = VectorSystem<T>;
 
     VectorSystemPublic(
-        int input_size, int output_size, optional<bool> direct_feedthrough)
+        int input_size, int output_size, std::optional<bool> direct_feedthrough)
         : Base(input_size, output_size, direct_feedthrough) {}
 
     using Base::EvalVectorInput;
@@ -295,16 +295,16 @@ struct Impl {
         .def("DeclareInputPort",
             overload_cast_explicit<const InputPort<T>&,
                 variant<std::string, UseDefaultName>, PortDataType, int,
-                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+                std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
-            py::arg("size"), py::arg("random_type") = nullopt,
+            py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.System.DeclareInputPort.doc_4args)
         .def("DeclareInputPort",
             overload_cast_explicit<  // BR
                 const InputPort<T>&, PortDataType, int,
-                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+                std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("type"), py::arg("size"),
-            py::arg("random_type") = nullopt)
+            py::arg("random_type") = std::nullopt)
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
             doc.System.HasAnyDirectFeedthrough.doc)
@@ -500,13 +500,13 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
-                optional<RandomDistribution> random_type)
+                std::optional<RandomDistribution> random_type)
                 -> const InputPort<T>& {
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
             py_reference_internal, py::arg("name"), py::arg("model_vector"),
-            py::arg("random_type") = nullopt,
+            py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
@@ -710,12 +710,12 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
         LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
         .def(py::init([](int input_size, int output_size,
-                          optional<bool> direct_feedthrough) {
+                          std::optional<bool> direct_feedthrough) {
           return new PyVectorSystem(
               input_size, output_size, direct_feedthrough);
         }),
             py::arg("input_size"), py::arg("output_size"),
-            py::arg("direct_feedthrough") = nullopt,
+            py::arg("direct_feedthrough") = std::nullopt,
             doc.VectorSystem.ctor.doc_3args);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.

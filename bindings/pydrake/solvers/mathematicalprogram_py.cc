@@ -179,8 +179,8 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
   }
 
   void Solve(const solvers::MathematicalProgram& prog,
-      const optional<Eigen::VectorXd>& initial_guess,
-      const optional<solvers::SolverOptions>& solver_options,
+      const std::optional<Eigen::VectorXd>& initial_guess,
+      const std::optional<solvers::SolverOptions>& solver_options,
       solvers::MathematicalProgramResult* result) const override {
     PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
         initial_guess, solver_options, result);
@@ -236,8 +236,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("Solve",
           [](const SolverInterface& self,
               const solvers::MathematicalProgram& prog,
-              const optional<Eigen::VectorXd>& initial_guess,
-              const optional<solvers::SolverOptions>& solver_options,
+              const std::optional<Eigen::VectorXd>& initial_guess,
+              const std::optional<solvers::SolverOptions>& solver_options,
               solvers::MathematicalProgramResult* result) {
             self.Solve(prog, initial_guess, solver_options, result);
           },
@@ -247,8 +247,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.
           [](const SolverInterface& self, const MathematicalProgram& prog,
-              const optional<Eigen::VectorXd>& initial_guess,
-              const optional<SolverOptions>& solver_options) {
+              const std::optional<Eigen::VectorXd>& initial_guess,
+              const std::optional<SolverOptions>& solver_options) {
             MathematicalProgramResult result;
             self.Solve(prog, initial_guess, solver_options, &result);
             return result;
@@ -1081,12 +1081,12 @@ top-level documentation for :py:mod:`pydrake.math`.
           "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
       .def("Solve",
           py::overload_cast<const MathematicalProgram&,
-              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
-              &solvers::Solve),
+              const std::optional<Eigen::VectorXd>&,
+              const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
-          py::arg("prog"), py::arg("result"), py::arg("tol") = nullopt,
+          py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
           doc.GetInfeasibleConstraints.doc);
 }  // NOLINT(readability/fn_size)
 
