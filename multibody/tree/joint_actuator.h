@@ -99,7 +99,7 @@ class JointActuator final
       MultibodyForces<T>* forces) const;
 
   /// Gets the actuation values u_instance for `this` actuator from the
-  /// actuation vector u for the entire MultibodyTree model.
+  /// actuation vector u for the entire model.
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
       const VectorX<T>& u) const {
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());

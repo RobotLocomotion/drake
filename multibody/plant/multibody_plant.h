@@ -1324,9 +1324,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns a vector of actuation values for `model_instance` from a
-  /// vector `u_array` of actuation values for the entire model. This method
-  /// throws an exception if `u` is not of size
-  /// MultibodyPlant::num_actuated_dofs().
+  /// vector `u` of actuation values for the entire model. This method throws an
+  /// exception if `u` is not of size MultibodyPlant::num_actuated_dofs().
   VectorX<T> GetActuationFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u) const {
