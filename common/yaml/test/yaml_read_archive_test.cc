@@ -81,15 +81,15 @@ struct OptionalStruct {
   drake::optional<double> value;
 };
 
-using Variant3 = drake::variant<std::string, double, DoubleStruct>;
+using Variant3 = std::variant<std::string, double, DoubleStruct>;
 
 std::ostream& operator<<(std::ostream& os, const Variant3& value) {
   if (value.index() == 0) {
-    os << "std::string{" << drake::get<0>(value) << "}";
+    os << "std::string{" << std::get<0>(value) << "}";
   } else if (value.index() == 1) {
-    os << "double{" << drake::get<1>(value) << "}";
+    os << "double{" << std::get<1>(value) << "}";
   } else {
-    os << "DoubleStruct{" << drake::get<2>(value).value << "}";
+    os << "DoubleStruct{" << std::get<2>(value).value << "}";
   }
   return os;
 }
