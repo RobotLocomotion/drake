@@ -352,6 +352,7 @@ def drake_cc_library(
         clang_copts = [],
         gcc_copts = [],
         linkstatic = 1,
+        alwayslink = 1,
         declare_installed_headers = 1,
         install_hdrs_exclude = [],
         **kwargs):
@@ -389,6 +390,7 @@ def drake_cc_library(
         deps = new_deps,
         copts = new_copts,
         linkstatic = linkstatic,
+        alwayslink = alwayslink,
         declare_installed_headers = declare_installed_headers,
         install_hdrs_exclude = install_hdrs_exclude,
         **kwargs
