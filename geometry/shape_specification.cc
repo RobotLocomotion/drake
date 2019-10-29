@@ -141,5 +141,10 @@ void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
                                        NiceTypeName::Get(*this), shape_name));
 }
 
+std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
+  out << name.string();
+  return out;
+}
+
 }  // namespace geometry
 }  // namespace drake
