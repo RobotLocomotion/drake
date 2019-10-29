@@ -19,7 +19,7 @@ namespace internal {
 void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
                           int variable_index, double val_expected) {
   const double val =
-      get<double>(sdpa_free_format.prog_var_in_sdpa()[variable_index]);
+      std::get<double>(sdpa_free_format.prog_var_in_sdpa()[variable_index]);
   EXPECT_EQ(val, val_expected);
 }
 
@@ -27,7 +27,7 @@ void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
                           int variable_index,
                           SdpaFreeFormat::FreeVariableIndex s_index_expected) {
   const SdpaFreeFormat::FreeVariableIndex s_index =
-      get<SdpaFreeFormat::FreeVariableIndex>(
+      std::get<SdpaFreeFormat::FreeVariableIndex>(
           sdpa_free_format.prog_var_in_sdpa()[variable_index]);
   EXPECT_EQ(s_index, s_index_expected);
 }
@@ -35,7 +35,7 @@ void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
 void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
                           int variable_index,
                           const DecisionVariableInSdpaX& val_expected) {
-  const auto val = get<DecisionVariableInSdpaX>(
+  const auto val = std::get<DecisionVariableInSdpaX>(
       sdpa_free_format.prog_var_in_sdpa()[variable_index]);
   EXPECT_EQ(val.coeff_sign, val_expected.coeff_sign);
   EXPECT_EQ(val.offset, val_expected.offset);

@@ -2,13 +2,13 @@
 
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -120,8 +120,8 @@ class SdpaFreeFormat {
 
   using FreeVariableIndex = TypeSafeIndex<class FreeVariableTag>;
 
-  const std::vector<variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
-                            std::nullptr_t>>&
+  const std::vector<std::variant<DecisionVariableInSdpaX, FreeVariableIndex,
+                                 double, std::nullptr_t>>&
   prog_var_in_sdpa() const {
     return prog_var_in_sdpa_;
   }
@@ -281,7 +281,7 @@ class SdpaFreeFormat {
    * We use std::nullptr_t to indicate that this variable hasn't been registered
    * into SDPA free format yet.
    */
-  std::vector<variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
+  std::vector<std::variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
                       std::nullptr_t>>
       prog_var_in_sdpa_;
 

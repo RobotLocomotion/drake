@@ -38,8 +38,9 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
         const symbolic::Variable& psd_ij_var =
             binding.variables()(psd_matrix_variable_index++);
         const int psd_ij_var_index = prog.FindDecisionVariableIndex(psd_ij_var);
-        const bool has_var_registered = !(holds_alternative<std::nullptr_t>(
-            prog_var_in_sdpa_[psd_ij_var_index]));
+        const bool has_var_registered =
+            !(std::holds_alternative<std::nullptr_t>(
+                prog_var_in_sdpa_[psd_ij_var_index]));
         const EntryInX psd_ij_entry_in_X(num_blocks, i, j, num_X_rows_);
         if (!has_var_registered) {
           // This variable has not been registered into X. Now register this
@@ -59,7 +60,7 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
             // There does not exist equality constraint on this variable yet.
             entries_in_X_for_same_decision_variable->emplace_hint(
                 it2, psd_ij_var.get_id(),
-                std::vector<EntryInX>({get<DecisionVariableInSdpaX>(
+                std::vector<EntryInX>({std::get<DecisionVariableInSdpaX>(
                                            prog_var_in_sdpa_[psd_ij_var_index])
                                            .entry_in_X,
                                        psd_ij_entry_in_X}));
@@ -114,26 +115,29 @@ void SdpaFreeFormat::AddLinearEqualityConstraint(
   for (int i = 0; i < static_cast<int>(coeff_prog_vars.size()); ++i) {
     if (coeff_prog_vars[i] != 0) {
       const int prog_var_index = prog_vars_indices[i];
-      if (holds_alternative<DecisionVariableInSdpaX>(
+      if (std::holds_alternative<DecisionVariableInSdpaX>(
               prog_var_in_sdpa_[prog_var_index])) {
         // This variable is an entry in X.
         const auto& decision_var_in_X =
-            get<DecisionVariableInSdpaX>(prog_var_in_sdpa_[prog_var_index]);
+            std::get<DecisionVariableInSdpaX>(
+                prog_var_in_sdpa_[prog_var_index]);
         g_(constraint_index) -= coeff_prog_vars[i] * decision_var_in_X.offset;
         const double coeff = decision_var_in_X.coeff_sign == Sign::kPositive
                                  ? coeff_prog_vars[i]
                                  : -coeff_prog_vars[i];
         AddTermToTriplets(decision_var_in_X.entry_in_X, coeff, &Ai_triplets);
-      } else if (holds_alternative<double>(prog_var_in_sdpa_[prog_var_index])) {
+      } else if (std::holds_alternative<double>(
+          prog_var_in_sdpa_[prog_var_index])) {
         // This variable has a constant value.
-        const double var_value = get<double>(prog_var_in_sdpa_[prog_var_index]);
+        const double var_value = std::get<double>(
+            prog_var_in_sdpa_[prog_var_index]);
         g_(constraint_index) -= coeff_prog_vars[i] * var_value;
-      } else if (holds_alternative<FreeVariableIndex>(
+      } else if (std::holds_alternative<FreeVariableIndex>(
                      prog_var_in_sdpa_[prog_var_index])) {
         // This variable is a free variable (no lower nor upper bound).
         B_triplets_.emplace_back(
             constraint_index,
-            get<FreeVariableIndex>(prog_var_in_sdpa_[prog_var_index]),
+            std::get<FreeVariableIndex>(prog_var_in_sdpa_[prog_var_index]),
             coeff_prog_vars[i]);
       } else {
         throw std::runtime_error(
@@ -220,7 +224,7 @@ void SdpaFreeFormat::AddBoundsOnRegisteredDecisionVariable(
     int* new_X_var_count) {
   // This variable has been registered as a variable in SDPA. It should have
   // been registered as an entry in X.
-  if (holds_alternative<DecisionVariableInSdpaX>(
+  if (std::holds_alternative<DecisionVariableInSdpaX>(
           prog_var_in_sdpa_[variable_index])) {
     if (std::isinf(lower_bound) && std::isinf(upper_bound)) {
       // no finite bounds.
@@ -299,7 +303,7 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariables(
     // The variable might have been registered when we go through the positive
     // semidefinite constraint.
     bool has_var_registered =
-        !holds_alternative<std::nullptr_t>(prog_var_in_sdpa_[i]);
+        !std::holds_alternative<std::nullptr_t>(prog_var_in_sdpa_[i]);
     // First check if this variable has either finite lower or upper bound. If
     // not, then the variable is a free variable in SDPA.
     if (!has_var_registered) {
@@ -330,22 +334,23 @@ void SdpaFreeFormat::AddLinearCostsFromProgram(
         // Only adds the cost if the cost coefficient is non-zero.
         const int var_index =
             prog.FindDecisionVariableIndex(linear_cost.variables()(i));
-        if (holds_alternative<DecisionVariableInSdpaX>(
+        if (std::holds_alternative<DecisionVariableInSdpaX>(
                 prog_var_in_sdpa_[var_index])) {
           const auto& decision_var_in_X =
-              get<DecisionVariableInSdpaX>(prog_var_in_sdpa_[var_index]);
+              std::get<DecisionVariableInSdpaX>(prog_var_in_sdpa_[var_index]);
           coeff =
               decision_var_in_X.coeff_sign == Sign::kPositive ? coeff : -coeff;
           constant_min_cost_term_ +=
               linear_cost.evaluator()->a()(i) * decision_var_in_X.offset;
           AddTermToTriplets(decision_var_in_X.entry_in_X, coeff, &C_triplets_);
-        } else if (holds_alternative<double>(prog_var_in_sdpa_[var_index])) {
-          const double val = get<double>(prog_var_in_sdpa_[var_index]);
+        } else if (std::holds_alternative<double>(
+            prog_var_in_sdpa_[var_index])) {
+          const double val = std::get<double>(prog_var_in_sdpa_[var_index]);
           constant_min_cost_term_ += linear_cost.evaluator()->a()(i) * val;
-        } else if (holds_alternative<FreeVariableIndex>(
+        } else if (std::holds_alternative<FreeVariableIndex>(
                        prog_var_in_sdpa_[var_index])) {
           const FreeVariableIndex& s_index =
-              get<FreeVariableIndex>(prog_var_in_sdpa_[var_index]);
+              std::get<FreeVariableIndex>(prog_var_in_sdpa_[var_index]);
           d_triplets_.emplace_back(s_index, 0, coeff);
         } else {
           throw std::runtime_error(
