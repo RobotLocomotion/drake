@@ -100,9 +100,9 @@ TEST_F(SymbolicDifferentiationTest, SymbolicBaseCases) {
   // ∂/∂x tanh(x) = 1 / (pow(cosh(x), 2))
   check_list.emplace_back(tanh(x), var_x_, 1 / (pow(cosh(x), 2)));
   for (const tuple<Expression, Variable, Expression>& item : check_list) {
-    const Expression& expr{get<0>(item)};
-    const Variable& var{get<1>(item)};
-    const Expression& diff_result{get<2>(item)};
+    const Expression& expr{std::get<0>(item)};
+    const Variable& var{std::get<1>(item)};
+    const Expression& diff_result{std::get<2>(item)};
     EXPECT_PRED2(ExprEqual, expr.Differentiate(var), diff_result);
   }
 }
@@ -200,9 +200,9 @@ TEST_F(SymbolicDifferentiationTest, SymbolicCompoundCases) {
                           3 / (pow(cosh(2 * x + 3 * y), 2)));
 
   for (const tuple<Expression, Variable, Expression>& item : check_list) {
-    const Expression& expr{get<0>(item)};
-    const Variable& var{get<1>(item)};
-    const Expression& diff_result{get<2>(item)};
+    const Expression& expr{std::get<0>(item)};
+    const Variable& var{std::get<1>(item)};
+    const Expression& diff_result{std::get<2>(item)};
     EXPECT_PRED2(ExprEqual, expr.Differentiate(var).Expand(),
                  diff_result.Expand());
   }
