@@ -26,18 +26,12 @@ drake_py_binary(
     name = "get_pybind_coverage",
     srcs = [
         "get_pybind_coverage.py",
-        "pybind_coverage",
-    ],
-    main = "get_pybind_coverage.py",
-    visibility = ["//visibility:public"],
-)
-
-drake_py_library(
-    name = "pybind_coverage",
-    srcs = [
         "libclang_parser.py",
         "parse_pybind_xml_docstrings.py",
     ],
+    main = "get_pybind_coverage.py",
+    visibility = ["//visibility:public"],
+    deps = ["@clang_cindex_python3//:clang"],
 )
 
 drake_cc_library(
@@ -90,7 +84,7 @@ drake_py_unittest(
         ":file_coverage_test.csv",
     ],
     deps = [
-        ":pybind_coverage",
+        ":get_pybind_coverage",
     ],
 )
 
