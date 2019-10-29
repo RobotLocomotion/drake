@@ -5,10 +5,10 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/value.h"
 
@@ -90,9 +90,9 @@ constexpr UseDefaultName kUseDefaultName = {};
 
 /** (Advanced.) Sugar that compares a variant against kUseDefaultName. */
 inline bool operator==(
-    const variant<std::string, UseDefaultName>& value,
+    const std::variant<std::string, UseDefaultName>& value,
     const UseDefaultName&) {
-  return holds_alternative<UseDefaultName>(value);
+  return std::holds_alternative<UseDefaultName>(value);
 }
 
 /** Intended for use in e.g. variant<InputPortSelection, InputPortIndex> for
