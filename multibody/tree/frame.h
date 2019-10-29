@@ -178,7 +178,7 @@ class Frame : public FrameBase<T> {
   /// instance.
   explicit Frame(
       const std::string& name, const Body<T>& body,
-      optional<ModelInstanceIndex> model_instance = {})
+      std::optional<ModelInstanceIndex> model_instance = {})
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(name), body_(body) {}
 

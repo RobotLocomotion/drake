@@ -2,10 +2,10 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/query_object.h"
@@ -184,7 +184,7 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   // Helper method to compute the contact surface betwen a soft model S and a
   // rigid model R given the poses of both R and S in the world frame.
   // Returns nullopt if soft_model_S and rigid_model_R do not intersect.
-  optional<geometry::ContactSurface<T>> CalcContactSurface(
+  std::optional<geometry::ContactSurface<T>> CalcContactSurface(
       geometry::GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
       const math::RigidTransform<T>& X_WS,
       geometry::GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,

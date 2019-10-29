@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
-#include "drake/common/drake_optional.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -48,7 +48,7 @@ namespace inclined_plane {
 /// @see @ref inclined_plane_parameters "Description of parameters"
 void AddInclinedPlaneAndGravityToPlant(
     double gravity, double inclined_plane_angle,
-    const optional<Vector3<double>>& inclined_plane_dimensions,
+    const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant);
 
@@ -63,7 +63,7 @@ void AddInclinedPlaneAndGravityToPlant(
 /// @see @ref inclined_plane_parameters "Description of other parameters"
 void AddInclinedPlaneWithBlockToPlant(
     double gravity, double inclined_plane_angle,
-    const optional<Vector3<double>>& inclined_plane_dimensions,
+    const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     const CoulombFriction<double>& coefficient_friction_bodyB,
     double massB, const Vector3<double>& block_dimensions,
@@ -77,7 +77,7 @@ void AddInclinedPlaneWithBlockToPlant(
 /// visualizing the sphere's rotation.
 void AddInclinedPlaneWithSphereToPlant(
     double gravity, double inclined_plane_angle,
-    const optional<Vector3<double>>& inclined_plane_dimensions,
+    const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     const CoulombFriction<double>& coefficient_friction_bodyB,
     double massB, double radiusB, MultibodyPlant<double>* plant);

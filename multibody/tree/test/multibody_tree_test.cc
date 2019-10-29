@@ -216,8 +216,8 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
-          model->world_body(), nullopt,
-          model->GetBodyByName("iiwa_link_5"), nullopt,
+          model->world_body(), std::nullopt,
+          model->GetBodyByName("iiwa_link_5"), std::nullopt,
           Vector3<double>::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
