@@ -121,8 +121,8 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[in] R_FM
   ///   The rotation matrix relating the orientation of frame F and frame M.
   /// @returns a constant reference to `this` mobilizer.
-  /// @note: This method assumes an orthonormal 3x3 rotation matrix R_FM.
-  /// To create an orthonormal R_FM from an approximate 3x3 matrix m, use
+  /// @note: To create a RotationMatrix R_FM (which is inherently orthonormal)
+  /// from a non-orthonormal Matrix3<T> m (e.g., m is approximate data), use
   /// R_FM = math::RotationMatrix<T>::ProjectToRotationMatrix( m ).
   /// See @ref RotationMatrix<T>::ProjectToRotationMatrix().
   const SpaceXYZMobilizer<T>& SetFromRotationMatrix(
