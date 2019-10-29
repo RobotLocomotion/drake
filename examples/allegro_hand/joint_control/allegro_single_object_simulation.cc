@@ -68,6 +68,7 @@ DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
 DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
     "discrete system with periodic updates of period 'max_time_step'."
     "If 'false', the plant is modeled as a continuous system.");
+DEFINE_bool(error_control, false, "If 'true', integrator uses error control.");
 
 void DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
@@ -213,7 +214,7 @@ void DoMain() {
         simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
     integrator->set_target_accuracy(FLAGS_accuracy);
-    integrator->set_fixed_step_mode(true);
+    integrator->set_fixed_step_mode(!FLAGS_error_control);
   } else if (FLAGS_integration_scheme == "runge_kutta2") {
     integrator =
         simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
@@ -227,7 +228,7 @@ void DoMain() {
         simulator.reset_integrator<systems::SecondOrderImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
     integrator->set_target_accuracy(FLAGS_accuracy);
-    integrator->set_fixed_step_mode(true);
+    integrator->set_fixed_step_mode(!FLAGS_error_control);
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
         simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
@@ -241,7 +242,7 @@ void DoMain() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(FLAGS_accuracy);
   
-  integrator->set_fixed_step_mode(true);
+  integrator->set_fixed_step_mode(!FLAGS_error_control);
 
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);

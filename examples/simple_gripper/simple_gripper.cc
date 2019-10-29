@@ -75,6 +75,7 @@ DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
 DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
     "discrete system with periodic updates of period 'max_time_step'."
     "If 'false', the plant is modeled as a continuous system.");
+DEFINE_bool(error_control, false, "If 'true', integrator uses error control.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -361,7 +362,7 @@ int do_main() {
         simulator.reset_integrator<systems::SecondOrderImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
     integrator->set_target_accuracy(FLAGS_accuracy);
-    integrator->set_fixed_step_mode(true);
+    integrator->set_fixed_step_mode(!FLAGS_error_control);
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
         simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
@@ -375,7 +376,7 @@ int do_main() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(FLAGS_accuracy);
   
-  integrator->set_fixed_step_mode(true);
+  integrator->set_fixed_step_mode(!FLAGS_error_control);
 
   // The error controlled integrators might need to take very small time steps
   // to compute a solution to the desired accuracy. Therefore, to visualize

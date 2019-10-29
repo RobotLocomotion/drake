@@ -6,6 +6,8 @@
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
+#include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
+#include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/robertson_system.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/stationary_system.h"
@@ -17,6 +19,8 @@ namespace systems {
 namespace {
 
 using analysis_test::LinearScalarSystem;
+using analysis_test::QuadraticScalarSystem;
+using analysis_test::CubicScalarSystem;
 using analysis_test::StationarySystem;
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
@@ -360,12 +364,61 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 }
 
+// Tests accuracy for integrating the quadratic system (with the state at time t
+// corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
+// t ∈ [0, 1]. Since the error estimate has a Taylor series that is
+// accurate to O(h2) and since we have no terms beyond this order,
+// halving the step size should improve the error estimate by a factor of 4
+GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, QuadraticTest) {
+  QuadraticScalarSystem quadratic(7);
+  auto quadratic_context = quadratic.CreateDefaultContext();
+  const double C = quadratic.Evaluate(0);
+  quadratic_context->SetTime(0.0);
+  quadratic_context->get_mutable_continuous_state_vector()[0] = C;
+
+  SecondOrderImplicitEulerIntegrator<double> ie2(quadratic, quadratic_context.get());
+  
+  // Per the description in IntegratorBase::get_error_estimate_order(), this
+  // should return "2", in accordance with the order of the polynomial in the
+  // Big-Oh term.
+  ASSERT_EQ(ie2.get_error_estimate_order(), 2);
+  
+  const double t_final = 1.5;
+  ie2.set_maximum_step_size(t_final);
+  ie2.set_fixed_step_mode(true);
+  ie2.Initialize();
+  ASSERT_TRUE(ie2.IntegrateWithSingleFixedStepToTime(t_final));
+
+
+  const double err_est_h =
+      ie2.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double expected_answer = quadratic.Evaluate(t_final);
+  const double actual_answer = quadratic_context->get_continuous_state_vector()[0];
+  // antequ: I have no idea why this works. But it works.
+  EXPECT_NEAR(err_est_h, actual_answer - expected_answer, 10 * std::numeric_limits<double>::epsilon());
+  // Now obtain the error estimate using two half steps of h/2.
+  quadratic_context->SetTime(0.0);
+  quadratic_context->get_mutable_continuous_state_vector()[0] = C;
+  ie2.Initialize();
+  ASSERT_TRUE(ie2.IntegrateWithSingleFixedStepToTime(t_final / 2));
+  ASSERT_TRUE(ie2.IntegrateWithSingleFixedStepToTime(t_final ));
+
+  const double err_est_2h_2 =
+      ie2.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  EXPECT_NEAR(err_est_2h_2, 1.0 / 4 * err_est_h,
+              10 * std::numeric_limits<double>::epsilon());
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  
+}
+
+
 // Checks the validity of general integrator statistics and resets statistics.
 void CheckGeneralStatsValidity(SecondOrderImplicitEulerIntegrator<double>*
                                integrator) {
   EXPECT_GT(integrator->get_num_newton_raphson_iterations(), 0);
-  // TODO antequ 10/15/2019: uncomment this after error estimation is back
-  //EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_iterations(), 0);
+  EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_iterations(), 0);
   EXPECT_GT(integrator->get_previous_integration_step_size(), 0.0);
   EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator->get_num_steps_taken(), 0);
@@ -395,7 +448,8 @@ TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamper) {
   std::unique_ptr<State<double>> state_copy = dspring_context_->CloneState();
 
   // Designate the solution tolerance.
-  double sol_tol = 2e-2;
+  // loosened slightly because our error estimate has a different coefficient.
+  double sol_tol = 7e-2;
 
   // Set integrator parameters.
   SecondOrderImplicitEulerIntegrator<double> integrator(*stiff_double_system_,
@@ -404,10 +458,10 @@ TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamper) {
   integrator.request_initial_step_size_target(large_dt_);
   // TODO (antequ) 10/15/19: remove these four lines once error control is up and running
   // Since error control doesn't work yet, just use a small step size and larger tol
-  const double step_size = 1e-4;
-  sol_tol = 1e-1;
-  integrator.set_maximum_step_size(step_size);
-  integrator.request_initial_step_size_target(step_size);
+  //const double step_size = 1e-4;
+  //sol_tol = 1e-1;
+  //integrator.set_maximum_step_size(step_size);
+  //integrator.request_initial_step_size_target(step_size);
   integrator.set_target_accuracy(1e-5);
   integrator.set_reuse(GetParam());
 
@@ -558,9 +612,9 @@ TEST_P(ImplicitIntegratorTest, SpringMassStep) {
 
     // TODO (antequ) 10/15/19: remove these three lines once error control is up and running
   // Since error control doesn't work yet, just use a small step size and larger tol
-  const double step_size = 1e-4;
-  integrator.set_maximum_step_size(step_size);
-  integrator.request_initial_step_size_target(step_size);
+  //const double step_size = 1e-4;
+  //integrator.set_maximum_step_size(step_size);
+  //integrator.request_initial_step_size_target(step_size);
 
   integrator.set_target_accuracy(5e-5);
   integrator.set_requested_minimum_step_size(1e-6);
@@ -776,7 +830,6 @@ TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   // Integrate exactly one step.
   integrator.IntegrateWithMultipleStepsToTime(context_->get_time() + large_dt_);
 
-/* TODO antequ 10/15/2019: enable this once error control is enabled.
   // Get the positional error.
   const double pos_err = std::abs(x_final_true -
       context_->get_continuous_state_vector().GetAtIndex(0));
@@ -791,7 +844,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   spring_mass.set_velocity(context_.get(), initial_velocity);
   integrator.IntegrateWithMultipleStepsToTime(context_->get_time() + large_dt_);
   EXPECT_GT(std::abs(x_final_true -
-      context_->get_continuous_state_vector().GetAtIndex(0)), pos_err); */
+      context_->get_continuous_state_vector().GetAtIndex(0)), pos_err); 
 }
 
 // Integrate the modified mass-spring-damping system, which exhibits a
@@ -803,9 +856,10 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   integrator.set_maximum_step_size(dt_);
   integrator.set_throw_on_minimum_step_size_violation(false);
   integrator.set_reuse(GetParam());
+  //integrator.set_target_accuracy(1e-5);
   // TODO antequ 10/15/2019: remove this once error control is implemented
-  const double step_size = 1e-4;
-  integrator.set_maximum_step_size(step_size);
+  //const double step_size = 1e-4;
+  //integrator.set_maximum_step_size(step_size);
 
   // Setting the minimum step size speeds the unit test without (in this case)
   // affecting solution accuracy.
@@ -881,7 +935,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
       context_->get_continuous_state().get_vector().GetAtIndex(0);
   EXPECT_NEAR(context_->get_time(), t_final, ttol);
   EXPECT_NEAR(0.0, x_final, sol_tol);
-  CheckGeneralStatsValidity(&integrator);*/
+  CheckGeneralStatsValidity(&integrator);*/ 
 }
 
 INSTANTIATE_TEST_CASE_P(test, ImplicitIntegratorTest,
