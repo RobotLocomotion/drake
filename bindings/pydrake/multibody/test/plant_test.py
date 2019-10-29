@@ -1135,8 +1135,7 @@ class TestPlant(unittest.TestCase):
 
         # ContactResults
         contact_results = ContactResults()
-        contact_results.AddContactInfo(contact_info)
-        self.assertTrue(contact_results.num_point_pair_contacts() == 1)
+        self.assertTrue(contact_results.num_point_pair_contacts() == 0)
         self.assertTrue(
             isinstance(contact_results.point_pair_contact_info(0),
                        PointPairContactInfo))

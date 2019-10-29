@@ -120,12 +120,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 .c_str())
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
-        .def("AddContactInfo",
-            [](Class* self, const PointPairContactInfo<T>& contact_info) {
-              self->AddContactInfo(contact_info);
-            },
-            py::arg("point_pair_info"),
-            cls_doc.AddContactInfo.doc_1args_point_pair_info)
         .def("contact_info",
             [](Class* self, int i) {
               WarnDeprecated(
