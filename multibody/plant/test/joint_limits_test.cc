@@ -75,7 +75,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
         mass * UnitInertia<double>::SolidBox(box_size, box_size, box_size));
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
     const PrismaticJoint<double>& slider = plant.AddJoint<PrismaticJoint>(
-        "Slider", plant.world_body(), nullopt, body, nullopt,
+        "Slider", plant.world_body(), std::nullopt, body, std::nullopt,
         Vector3<double>::UnitZ(), 0.0 /* lower limit */, 0.1 /* upper limit */,
         0.0 /* damping */);
     plant.AddJointActuator("ForceAlongZ", slider);
@@ -151,7 +151,7 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
             rod_radius, rod_length, Vector3<double>::UnitX()));
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
     const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
-        "Pin", plant.world_body(), nullopt, body, nullopt,
+        "Pin", plant.world_body(), std::nullopt, body, std::nullopt,
         Vector3<double>::UnitZ(), -M_PI / 5.0 /* lower limit */,
         M_PI / 3.0 /* upper limit */, 0.0 /* damping */);
     plant.AddJointActuator("TorqueAboutZ", pin);

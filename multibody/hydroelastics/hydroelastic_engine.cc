@@ -177,7 +177,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     const HydroelasticGeometry<T>& model_R =
         model_M->is_soft() ? *model_N : *model_M;
 
-    optional<ContactSurface<T>> surface =
+    std::optional<ContactSurface<T>> surface =
         CalcContactSurface(id_S, model_S, X_WS, id_R, model_R, X_WR);
     if (surface) all_contact_surfaces.emplace_back(std::move(*surface));
   }
@@ -186,7 +186,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
 }
 
 template <typename T>
-optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
+std::optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
     GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
     const RigidTransform<T>& X_WS,
     GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
@@ -204,7 +204,7 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
       soft_field_S.scalar_field().values(), &e_s_surface,
       &grad_level_set_R_surface);
-  if (surface_W->num_vertices() == 0) return nullopt;
+  if (surface_W->num_vertices() == 0) return std::nullopt;
   // Transform with vertices measured and expressed in frame W.
   surface_W->TransformVertices(X_WR);
 

@@ -3,6 +3,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -13,7 +14,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -969,8 +969,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
-      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
+      const Body<T>& parent,
+      const std::optional<math::RigidTransform<double>>& X_PF,
+      const Body<T>& child,
+      const std::optional<math::RigidTransform<double>>& X_BM,
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
@@ -1268,7 +1270,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) const {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     return internal_tree().template GetJointByName<JointType>(
         name, model_instance);
   }
@@ -1278,7 +1280,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   JointType<T>& GetMutableJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) {
     return this->mutable_tree().template GetMutableJointByName<JointType>(
         name, model_instance);
   }
@@ -2635,7 +2637,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// only assigned once at the first call of any of this plant's geometry
   /// registration methods, and it does not change after that.
   /// Post-finalize calls will always return the same value.
-  optional<geometry::SourceId> get_source_id() const {
+  std::optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
 
@@ -2681,7 +2683,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
-  optional<geometry::FrameId> GetBodyFrameIdIfExists(
+  std::optional<geometry::FrameId> GetBodyFrameIdIfExists(
       BodyIndex body_index) const {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
@@ -3623,7 +3625,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
-  optional<geometry::SourceId> source_id_{nullopt};
+  std::optional<geometry::SourceId> source_id_{std::nullopt};
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
@@ -3648,7 +3650,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     double time_scale{-1.0};
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
-    optional<double> gravity;
+    std::optional<double> gravity;
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 

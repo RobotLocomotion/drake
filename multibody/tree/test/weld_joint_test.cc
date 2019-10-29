@@ -35,9 +35,9 @@ class WeldJointTest : public ::testing::Test {
     // Add a prismatic joint between the world and the body.
     joint_ = &model->AddJoint<WeldJoint>(
         "Welder",
-        model->world_body(), nullopt,  // X_PF
-        *body_, nullopt,               // X_BM
-        X_FM_);                        // X_FM
+        model->world_body(), std::nullopt,  // X_PF
+        *body_, std::nullopt,               // X_BM
+        X_FM_);                             // X_FM
 
     // We are done adding modeling elements. Transfer tree to system for
     // computation.

@@ -292,7 +292,7 @@ void AddJointFromSpecification(
   const RigidTransformd X_MJ = X_MC * X_CJ;
 
   // Pose of the frame J in the parent body frame P.
-  optional<RigidTransformd> X_PJ;
+  std::optional<RigidTransformd> X_PJ;
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
@@ -307,7 +307,7 @@ void AddJointFromSpecification(
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
   // P directly. We indicate that by passing a nullopt.
-  if (X_PJ.value().IsExactlyIdentity()) X_PJ = nullopt;
+  if (X_PJ.value().IsExactlyIdentity()) X_PJ = std::nullopt;
 
   // These will only be populated for prismatic and revolute joints.
   double lower_limit = 0;

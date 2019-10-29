@@ -650,7 +650,7 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   auto AddWeldJoint = [&model](const std::string& name,
                                const Body<double>& parent,
                                const Body<double>& child) {
-    model.AddJoint<WeldJoint>(name, parent, nullopt, child, nullopt,
+    model.AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
                               math::RigidTransformd::Identity());
   };
 

@@ -29,7 +29,7 @@ struct SphereSpecification {
 struct BoxSpecification {
   BoxSpecification(Eigen::Vector3d size_in, double density,
                    CoulombFriction<double> friction_in,
-                   optional<math::RigidTransformd> X_WB_in)
+                   std::optional<math::RigidTransformd> X_WB_in)
       : size(std::move(size_in)),
         friction{std::move(friction_in)},
         X_WB(std::move(X_WB_in)) {
@@ -44,7 +44,7 @@ struct BoxSpecification {
   Eigen::Vector3d size;
   SpatialInertia<double> inertia;
   CoulombFriction<double> friction;
-  optional<math::RigidTransform<double>> X_WB;
+  std::optional<math::RigidTransform<double>> X_WB;
 };
 
 template <typename T>

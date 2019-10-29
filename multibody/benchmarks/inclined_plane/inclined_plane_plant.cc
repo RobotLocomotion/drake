@@ -15,7 +15,7 @@ using math::RotationMatrix;
 
 void AddInclinedPlaneAndGravityToPlant(
     double gravity, double inclined_plane_angle,
-    const optional<Vector3<double>>& inclined_plane_dimensions,
+    const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -26,7 +26,7 @@ void AddInclinedPlaneAndGravityToPlant(
 
   // The inclined plane A is either a half-space or a box.
   const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
-  if (inclined_plane_dimensions == nullopt) {
+  if (inclined_plane_dimensions == std::nullopt) {
     // Set A's geometry so its top surface passes through world origin Wo.
     const Vector3<double> p_WoAo_W = Vector3<double>::Zero();
     const RigidTransform<double> X_WA(R_WA, p_WoAo_W);
@@ -68,7 +68,7 @@ void AddInclinedPlaneAndGravityToPlant(
 
 void AddInclinedPlaneWithBlockToPlant(
     double gravity, double inclined_plane_angle,
-    const optional<Vector3<double>>& inclined_plane_dimensions,
+    const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     const CoulombFriction<double>& coefficient_friction_bodyB,
     double massB, const Vector3<double>& block_dimensions,
@@ -138,7 +138,7 @@ void AddInclinedPlaneWithBlockToPlant(
 
 void AddInclinedPlaneWithSphereToPlant(
     double gravity, double inclined_plane_angle,
-    const optional<Vector3<double>>& inclined_plane_dimensions,
+    const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     const CoulombFriction<double>& coefficient_friction_bodyB,
     double massB, double radiusB, MultibodyPlant<double>* plant) {

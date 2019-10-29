@@ -130,7 +130,7 @@ class SphereVsPlaneTest : public ::testing::Test {
     diagram_ = builder.Build();
     // Sanity check on the availability of the optional source id before using
     // it.
-    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
+    DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
 
     MakeNewContext();
 
@@ -195,10 +195,10 @@ TEST_F(SphereVsPlaneTest, RespectsCollisionFilter) {
   EXPECT_EQ(engine_->ComputeContactSurfaces(*query_object_).size(), 1u);
 
   // Add filter to exclude collisions between the ground and the sphere.
-  optional<geometry::FrameId> ground_id =
+  std::optional<geometry::FrameId> ground_id =
       plant_->GetBodyFrameIdIfExists(ground_->index());
   ASSERT_TRUE(ground_id.has_value());
-  optional<geometry::FrameId> sphere_id =
+  std::optional<geometry::FrameId> sphere_id =
       plant_->GetBodyFrameIdIfExists(sphere_->index());
   ASSERT_TRUE(sphere_id.has_value());
   scene_graph_->ExcludeCollisionsBetween(context_.get(),

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -11,7 +12,6 @@
 #include <tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
@@ -71,13 +71,13 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
 namespace {
 
 // Returns the package.xml file in the given directory, if any.
-optional<filesystem::path> GetPackageXmlFile(const string& directory) {
+std::optional<filesystem::path> GetPackageXmlFile(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
   filesystem::path filename = filesystem::path(directory) / "package.xml";
   if (filesystem::is_regular_file(filename)) {
     return filename;
   }
-  return nullopt;
+  return std::nullopt;
 }
 
 // Returns the parent directory of @p directory.
@@ -170,7 +170,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   const string model_dir = filesystem::path(model_file).parent_path();
 
   // Bail out if the model file is not part of Drake.
-  const optional<string> maybe_drake_path = MaybeGetDrakePath();
+  const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
   if (!maybe_drake_path) {
     return;
   }

@@ -42,7 +42,7 @@ class PrismaticJointTest : public ::testing::Test {
 
     // Add a prismatic joint between the world and body1:
     joint1_ = &model->AddJoint<PrismaticJoint>(
-        "Joint1", model->world_body(), nullopt, *body1_, nullopt,
+        "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
         Vector3d::UnitZ(), kPositionLowerLimit, kPositionUpperLimit, kDamping);
     Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
     mutable_joint1_ = dynamic_cast<PrismaticJoint<double>*>(&mutable_joint);

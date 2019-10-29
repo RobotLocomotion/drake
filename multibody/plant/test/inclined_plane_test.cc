@@ -90,7 +90,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
   benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
-      gravity, inclined_plane_angle, nullopt,
+      gravity, inclined_plane_angle, std::nullopt,
       coefficient_friction_inclined_plane, coefficient_friction_sphere,
       mass, radius, &plant);
 
