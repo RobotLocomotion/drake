@@ -1,0 +1,97 @@
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+    "drake_py_unittest",
+)
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "generate_pybind_documentation_header",
+)
+load(
+    "@drake//tools/pybind11_coverage:transitive_rule.bzl",
+    "add_for_pybind_coverage",
+    "files_globber",
+    "generate_pybind_coverage",
+)
+
+drake_py_binary(
+    name = "get_pybind_coverage",
+    srcs = [
+        "get_pybind_coverage.py",
+        "pybind_coverage",
+    ],
+    main = "get_pybind_coverage.py",
+    visibility = ["//visibility:public"],
+)
+
+drake_py_library(
+    name = "pybind_coverage",
+    srcs = [
+        "libclang_parser.py",
+        "parse_pybind_xml_docstrings.py",
+    ],
+)
+
+drake_cc_library(
+    name = "pybind_coverage_test",
+    srcs = ["test/test.h"],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_pybind_documentation_header_test",
+    testonly = 1,
+    out = "documentation_pybind_test.h",
+    out_xml = "documentation_pybind_test.xml",
+    root_name = "pydrake_doc",
+    targets = [":pybind_coverage_test"],
+)
+
+files_globber(
+    name = "cc_glob",
+    files = glob(["test/*.cc"]),
+)
+
+generate_pybind_coverage(
+    name = "generate_pybind_coverage",
+    class_coverage = ":class_coverage_test.csv",
+    file_coverage = ":file_coverage_test.csv",
+    script = "//tools/pybind11_coverage:get_pybind_coverage",
+    xml_docstrings = ":documentation_pybind_test.xml",
+    deps = [
+        ":cc_glob",
+    ],
+)
+
+filegroup(
+    name = "data_for_pybind_coverage_test",
+    data = [
+        "test/class_coverage.csv",
+        "test/documentation_pybind.xml",
+        "test/file_coverage.csv",
+        "test/test_py.cc",
+    ],
+)
+
+drake_py_unittest(
+    name = "generate_pybind_coverage_test",
+    data = [
+        "libclang_parser.py",
+        ":class_coverage_test.csv",
+        ":data_for_pybind_coverage_test",
+        ":documentation_pybind_test.xml",
+        ":file_coverage_test.csv",
+    ],
+    deps = [
+        ":pybind_coverage",
+    ],
+)
+
+add_lint_tests()

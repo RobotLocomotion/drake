@@ -22,6 +22,11 @@ load(
     "get_pybind_package_info",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "@drake//tools/pybind11_coverage:transitive_rule.bzl",
+    "add_for_pybind_coverage",
+    "generate_pybind_coverage",
+)
 
 package(default_visibility = [
     "//bindings:__subpackages__",
@@ -61,6 +66,7 @@ generate_pybind_documentation_header(
         # docstrings.
         "drake/lcmtypes/**",
     ],
+    out_xml = "documentation_pybind.xml",
     root_name = "pydrake_doc",
     targets = [
         "//:drake_shared_library",
@@ -511,3 +517,22 @@ add_lint_tests_pydrake(
         ":test/common_install_test.py",
     ],
 )
+
+generate_pybind_coverage(
+    name = "generate_pybind_coverage",
+    class_coverage = ":class_coverage.csv",
+    file_coverage = ":file_coverage.csv",
+    script = "//tools/pybind11_coverage:get_pybind_coverage",
+    xml_docstrings = ":documentation_pybind.xml",
+    deps = [
+        ":cc_glob",
+        "//bindings/pydrake/common:cc_glob",
+        "//bindings/pydrake/examples:cc_glob",
+        "//bindings/pydrake/manipulation:cc_glob",
+        "//bindings/pydrake/multibody:cc_glob",
+        "//bindings/pydrake/solvers:cc_glob",
+        "//bindings/pydrake/systems:cc_glob",
+    ],
+)
+
+add_for_pybind_coverage()
