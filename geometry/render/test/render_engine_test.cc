@@ -1,11 +1,11 @@
 #include "drake/geometry/render/render_engine.h"
 
+#include <optional>
 #include <set>
 #include <unordered_map>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"

@@ -1106,7 +1106,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // remove itself from its possible parent geometry. If called recursively,
     // it is because the parent geometry is being deleted anyways and removal
     // is implicit in the deletion of that parent geometry.
-    if (optional<GeometryId> parent_id = geometry.parent_id()) {
+    if (std::optional<GeometryId> parent_id = geometry.parent_id()) {
       auto& parent_geometry =
           GetMutableValueOrThrow(*parent_id, &geometries_);
       parent_geometry.remove_child(geometry_id);

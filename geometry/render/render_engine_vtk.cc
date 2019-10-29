@@ -102,7 +102,7 @@ struct RegistrationData {
   const RigidTransformd& X_FG;
   const GeometryId id;
   // The file name if the shape being registered is a mesh.
-  optional<std::string> mesh_filename;
+  std::optional<std::string> mesh_filename;
 };
 
 std::string RemoveFileExtension(const std::string& filepath) {
