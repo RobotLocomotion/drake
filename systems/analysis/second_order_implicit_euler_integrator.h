@@ -141,11 +141,12 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       VectorX<T>* xtplus, typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv, int trial = 1);
   bool StepHalfImplicitEulers(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, VectorX<T>* xtplus, 
+       VectorX<T>* xtplus, 
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv);
   // Jacobian computation
-  MatrixX<T>& get_mutable_velocity_jacobian() { return Jv_; }
-  const MatrixX<T>& CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus, const VectorX<T>& qt0, MatrixX<T>* Jv);
+  MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
+  MatrixX<T>& get_mutable_velocity_jacobian_half_implicit_euler() { return Jv_hie_; }
+  void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus, const VectorX<T>& qt0, MatrixX<T>* Jv);
   void ComputeForwardDiffVelocityJacobian(const T& t, const T& h, 
       const VectorX<T>& xt, const VectorX<T>& qt0, Context<T>* context, MatrixX<T>* Jv);
 

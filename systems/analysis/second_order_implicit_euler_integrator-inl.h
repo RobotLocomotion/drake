@@ -68,7 +68,8 @@ void SecondOrderImplicitEulerIntegrator<T>::DoInitialize() {
   this->set_accuracy_in_use(working_accuracy);
 
   // Reset the Jacobian matrix (so that recomputation is forced).
-  this->get_mutable_velocity_jacobian().resize(0, 0);
+  this->get_mutable_velocity_jacobian_implicit_euler().resize(0, 0);
+  this->get_mutable_velocity_jacobian_half_implicit_euler().resize(0, 0);
 
   // Initialize the embedded second order Runge-Kutta integrator. The maximum
   // step size will be set to infinity because we will explicitly request the
@@ -219,8 +220,8 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 // @post the context's time and continuous state will be temporarily set during
 //       this call (and then reset to their original values) on return.
 template <class T>
-const MatrixX<T>& SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
-    const T& t, const T& h, const VectorX<T>& x, const VectorX<T>& qt0) {
+void SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
+    const T& t, const T& h, const VectorX<T>& x, const VectorX<T>& qt0, MatrixX<T>* Jv) {
   // We change the context but will change it back.
   Context<T>* context = this->get_mutable_context();
 
@@ -244,7 +245,7 @@ const MatrixX<T>& SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   switch (this->get_jacobian_computation_scheme())
   {
     case SecondOrderImplicitEulerIntegrator<T>::JacobianComputationScheme::kForwardDifference:
-      ComputeForwardDiffVelocityJacobian(t, h, x, qt0, &*context, &Jv_);
+      ComputeForwardDiffVelocityJacobian(t, h, x, qt0, &*context, Jv);
       break;
     case SecondOrderImplicitEulerIntegrator<T>::JacobianComputationScheme::kCentralDifference:
       throw std::runtime_error("Central difference not supported yet!");
@@ -259,7 +260,7 @@ const MatrixX<T>& SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   /*[this, context, &system, &t, &x]() {
     switch (jacobian_scheme_) {
       case JacobianComputationScheme::kForwardDifference:
-        ComputeForwardDiffVelocityJacobian(system, t, h, x, qt0, &*context, &Jv_);
+        ComputeForwardDiffVelocityJacobian(system, t, h, x, qt0, &*context, Jv);
         break;
 
       default:
@@ -275,7 +276,7 @@ const MatrixX<T>& SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   // Reset the time and state.
   context->SetTimeAndContinuousState(t_current, x_current);
 
-  return Jv_;
+  //return *Jv;
 }
 
 
@@ -286,14 +287,16 @@ bool SecondOrderImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
     const std::function<void(const MatrixX<T>&, const T&,
         typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
-    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv) {
+  
+  DRAKE_DEMAND( Jv != nullptr );
   // Compute the initial Jacobian and iteration matrices and factor them, if
   // necessary.
-  MatrixX<T>& Jv = get_mutable_velocity_jacobian();
-  if (!this->get_reuse() || Jv.rows() == 0 || this->IsBadJacobian(Jv)) {
-    Jv = CalcVelocityJacobian(t, h, xt, qt0);
+
+  if (!this->get_reuse() || Jv->rows() == 0 || this->IsBadJacobian(*Jv)) {
+    CalcVelocityJacobian(t, h, xt, qt0, Jv);
     this->increment_num_iter_factorizations();
-    compute_and_factor_iteration_matrix(Jv, h, iteration_matrix);
+    compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
     return true;  // Indicate success.
   }
 
@@ -301,7 +304,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
   // If the iteration matrix has not been set and factored, do only that.
   if (!iteration_matrix->matrix_factored()) {
     this->increment_num_iter_factorizations();
-    compute_and_factor_iteration_matrix(Jv, h, iteration_matrix);
+    compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
     return true;  // Indicate success.
   }
 
@@ -316,7 +319,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
       // For the second trial, we perform the (likely) next least expensive
       // operation, re-constructing and factoring the iteration matrix.
       this->increment_num_iter_factorizations();
-      compute_and_factor_iteration_matrix(Jv, h, iteration_matrix);
+      compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
       return true;
     }
 
@@ -329,9 +332,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
         //return false;
 
       // Reform the Jacobian matrix and refactor the iteration matrix.
-      Jv = CalcVelocityJacobian(t, h, xt, qt0);
+      CalcVelocityJacobian(t, h, xt, qt0, Jv);
       this->increment_num_iter_factorizations();
-      compute_and_factor_iteration_matrix(Jv, h, iteration_matrix);
+      compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
       return true;
 
       case 4: {
@@ -406,7 +409,9 @@ void SecondOrderImplicitEulerIntegrator<T>::eval_g_with_y_from_context(
 //       exit.
 template <class T>
 bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
-    const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
+    const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus,
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, 
+    MatrixX<T>* Jv, int trial) {
   using std::abs;
 
   // Verify the trial number is valid.
@@ -415,11 +420,8 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
 
   const System<T>& system = this->get_system();
   // Verify xtplus
-  DRAKE_ASSERT(xtplus && xtplus->size() == xt0.size());
+  DRAKE_ASSERT(xtplus != nullptr && xtplus->size() == xt0.size());
 
-  // Use the current state as the candidate value for the next state.
-  // [Hairer 1996] validates this choice (p. 120).
-  *xtplus = xt0;
   // set a residual evaluator
   Context<T>* context = this->get_mutable_context();
   const systems::ContinuousState<T>& cstate = context->get_continuous_state();
@@ -464,7 +466,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     trial = 3;
 #endif
   if (!this->MaybeFreshenVelocityMatrices(tf, *xtplus, qt0, h, trial,
-      ComputeAndFactorImplicitEulerIterationMatrix, &iteration_matrix_)) {
+      ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix, Jv)) {
     return false;
   }
 
@@ -478,7 +480,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     // Compute the state update using the equation A*x = -g(), where A is the
     // iteration matrix.
     // TODO(edrumwri): Allow caller to provide their own solver.
-    VectorX<T> dy = iteration_matrix_.Solve(-residual);
+    VectorX<T> dy = iteration_matrix->Solve(-residual);
     //DRAKE_ASSERT(dy.allFinite());
     //if (!dy.allFinite())
     //  return false;
@@ -536,7 +538,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
 #ifdef FULL_NEWTON
     // update the Jacobian for full newton
     if (!this->MaybeFreshenVelocityMatrices(tf, *xtplus, qt0, h, 3,
-        ComputeAndFactorImplicitEulerIterationMatrix, &iteration_matrix_)) {
+        ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix, Jv)) {
       return false;
     }
 #endif
@@ -552,33 +554,64 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   // Try StepImplicitEuler again, first resetting xtplus to xt0. That method will
   // freshen Jacobians and iteration matrix factorizations as necessary.
   *xtplus = xt0;
-  return StepImplicitEuler(t0, h, xt0, xtplus, trial + 1);
+  return StepImplicitEuler(t0, h, xt0, xtplus, iteration_matrix, Jv, trial + 1);
 }
 
-// Steps forward by a single step of `h` using the implicit trapezoid
-// method, if possible.
-// @param t0 the time at the left end of the integration interval.
-// @param h the maximum time increment to step forward.
-// @param dx0 the time derivatives computed at time and state (t0, xt0).
-// @param [in,out] xtplus the continuous state at the right end of the
-//                 integration (i.e., x(t0+h)) computed by implicit Euler
-//                 on entry; x(t0+h) computed by the implicit trapezoid method
-//                 on successful return.
-// @returns `true` if the step was successful and `false` otherwise.
-// @note The time and continuous state in the context are indeterminate upon
-//       exit.
+// Steps forward by two half implicit euler steps, if possible
 template <class T>
-bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0,
-    const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
-    VectorX<T>* xtplus) {
-      unused(t0);
-      unused(h);
-      unused(xt0);
-      unused(dx0);
-      unused(xtplus);
-      throw std::logic_error("Should not be running Implicit Trapezoid!");
-  return true;
-}
+bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(const T& t0, const T& h, const VectorX<T>& xt0,
+      VectorX<T>* xtplus, 
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv)
+      {
+
+
+  // Store statistics before error control. The difference between
+  // the modified statistics and the stored statistics will be used to compute
+  // the trapezoid method-specific statistics.
+  int stored_num_jacobian_evaluations = this->get_num_jacobian_evaluations();
+  int stored_num_iter_factorizations =
+      this->get_num_iteration_matrix_factorizations();
+  int64_t stored_num_function_evaluations =
+      this->get_num_derivative_evaluations();
+  int64_t stored_num_jacobian_function_evaluations =
+      this->get_num_derivative_evaluations_for_jacobian();
+  int stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
+
+        // todo: work out logic for each failure. Save xt0, initial xtplus, etc.
+        // step first time
+        bool success = StepImplicitEuler(t0, 0.5 * h, xt0, xtplus, iteration_matrix, Jv);
+        if (!success)
+        {
+          SPDLOG_DEBUG(drake::log(), "First Half SOIE convergence failed");
+        }
+        else
+        {
+          // set new xt0 to xthalf
+          VectorX<T> xthalf = *xtplus;
+          success = StepImplicitEuler(t0 + 0.5 * h, 0.5 * h, xthalf, xtplus, iteration_matrix, Jv);
+          if( !success )
+          {
+            SPDLOG_DEBUG(drake::log(), "Second Half SOIE convergence failed");
+          }
+        }
+          // Move statistics to error estimate-specific.
+          num_err_est_jacobian_reforms_ +=
+              this->get_num_jacobian_evaluations() - stored_num_jacobian_evaluations;
+          num_err_est_iter_factorizations_ +=
+              this->get_num_iteration_matrix_factorizations() -
+              stored_num_iter_factorizations;
+          num_err_est_function_evaluations_ +=
+              this->get_num_derivative_evaluations() - stored_num_function_evaluations;
+          num_err_est_jacobian_function_evaluations_ +=
+              this->get_num_derivative_evaluations_for_jacobian() -
+              stored_num_jacobian_function_evaluations;
+          num_err_est_nr_iterations_ += this->get_num_newton_raphson_iterations() -
+              stored_num_nr_iterations;
+
+        return success;
+
+      }
+
 
 // Steps both implicit Euler and implicit trapezoid forward by h, if possible.
 // @param t0 the time at the left end of the integration interval.
@@ -591,23 +624,38 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0,
 template <class T>
 bool SecondOrderImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0,
     const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus_ie,
-    VectorX<T>* xtplus_itr) {
+    VectorX<T>* xtplus_hie) {
   using std::abs;
   DRAKE_ASSERT(xtplus_ie);
-  //DRAKE_ASSERT(xtplus_itr);
-  unused(xtplus_itr);
+  DRAKE_ASSERT(xtplus_hie);
 
 
+  // Use the current state as the candidate value for the next state.
+  // [Hairer 1996] validates this choice (p. 120).
+  *xtplus_ie = xt0;
   // Do the Euler step.
-  if (!StepImplicitEuler(t0, h, xt0, xtplus_ie)) {
-    SPDLOG_DEBUG(drake::log(), "Implicit Euler approach did not converge for "
+  if (!StepImplicitEuler(t0, h, xt0, xtplus_ie, &iteration_matrix_ie_, &Jv_ie_)) {
+    SPDLOG_DEBUG(drake::log(), "SO Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
   }
-  Context<T>* context = this->get_mutable_context();
-    context->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
+  *xtplus_hie = *xtplus_ie;
+  // DO THE HALF IMPLICIT EULER STEPS
+  //if (this->get_fixed_step_mode() || StepHalfImplicitEulers(t0, h, xt0, xtplus_hie, 
+  // todo antequ: consider turning this off for fixed step mode
+  if (StepHalfImplicitEulers(t0, h, xt0, xtplus_hie, 
+      &iteration_matrix_hie_, &Jv_hie_)) {
+    Context<T>* context = this->get_mutable_context();
+    // propagate the full step
+    // todo antequ: consider propagating the full step result
+    context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
 
-  return true;
+    return true;
+  } else {
+    SPDLOG_DEBUG(drake::log(), "SO Implicit Euler half-step approach failed with a step size "
+        "that succeeded for the normal approach {}", h);
+    return false;
+  }
 
 }
 
@@ -626,7 +674,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::
 
   xt0_ = context->get_continuous_state().CopyToVector();
   xtplus_ie_.resize(xt0_.size());
-  xtplus_tr_.resize(0);
+  xtplus_hie_.resize(xt0_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
@@ -657,7 +705,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::
     }
 
     const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
-    xtplus_tr_ = context->get_continuous_state().CopyToVector();
+    xtplus_hie_ = context->get_continuous_state().CopyToVector();
 
     // Update the error estimation ODE counts.
     num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
@@ -666,7 +714,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::
     context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_tr_);
+    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_hie_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
@@ -674,13 +722,13 @@ bool SecondOrderImplicitEulerIntegrator<T>::
       return false;
     }
   }
-/*
+
   // Compute and update the error estimate.
-  err_est_vec_ = xtplus_ie_ - xtplus_tr_;
+  err_est_vec_ =  (xtplus_ie_ - xtplus_hie_);
 
   // Update the caller-accessible error estimate.
   this->get_mutable_error_estimate()->get_mutable_vector().
-      SetFromVector(err_est_vec_);*/
+      SetFromVector(err_est_vec_);
 
   return true;
 }
