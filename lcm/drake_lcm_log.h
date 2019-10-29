@@ -61,7 +61,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * mode.
    */
   void Publish(const std::string& channel, const void* data, int data_size,
-               optional<double> time_sec) override;
+               std::optional<double> time_sec) override;
 
   /**
    * Subscribes @p handler to @p channel. Multiple handlers can subscribe to the

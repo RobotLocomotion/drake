@@ -64,7 +64,7 @@ GTEST_TEST(DrakeMockLcmTest, AcceptanceTest) {
   for (int i = 0; i < kMessageSize; ++i) {
     message_bytes[i] = i;
   }
-  dut.Publish(kChannelName, &message_bytes[0], kMessageSize, nullopt);
+  dut.Publish(kChannelName, &message_bytes[0], kMessageSize, std::nullopt);
 
   // Verifies that the message was not yet received.
   EXPECT_EQ(handler.get_buffer().size(), 0);

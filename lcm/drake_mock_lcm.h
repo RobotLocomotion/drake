@@ -2,11 +2,11 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/lcm/drake_lcm_interface.h"
 
 namespace drake {
@@ -28,7 +28,8 @@ class DrakeMockLcm : public DrakeLcmInterface {
    */
   DrakeMockLcm();
 
-  void Publish(const std::string&, const void*, int, optional<double>) override;
+  void Publish(const std::string&, const void*, int,
+               std::optional<double>) override;
   std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string&, HandlerFunction) override;
   int HandleSubscriptions(int) override;
