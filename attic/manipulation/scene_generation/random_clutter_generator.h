@@ -1,11 +1,11 @@
 #pragma once
 
+#include <optional>
 #include <random>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -71,8 +71,8 @@ class RandomClutterGenerator {
    * configuration.
    */
   VectorX<double> GenerateFloatingClutter(const VectorX<double>& q_nominal,
-                                          std::default_random_engine* generator,
-                                          optional<double> z_height_cost = {});
+      std::default_random_engine* generator,
+      std::optional<double> z_height_cost = {});
 
  private:
   int ComputeIK(VectorX<double>* q_result,
@@ -80,7 +80,7 @@ class RandomClutterGenerator {
                 const VectorX<double>& q_initial,
                 const VectorX<double>& q_nominal,
                 const std::vector<int>& z_indices,
-                optional<double> z_height_cost = {});
+                std::optional<double> z_height_cost = {});
 
   void AddBodyToOrientationConstraint(const RigidBody<double>& body,
                                       VectorX<double>* linear_posture_lb,
