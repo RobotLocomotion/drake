@@ -10,7 +10,7 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
     def test_find_package_drake(self):
         cmake_source_dir = install_test_helper.create_temporary_dir("src")
 
-        cc_content = """
+        cc_content_1 = """
             #include <drake/common/symbolic.h>
             int main() {
               drake::symbolic::Environment environment;
@@ -18,10 +18,23 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
             }
         """
 
-        cc_filename = os.path.join(cmake_source_dir, "main.cc")
+        cc_filename_1 = os.path.join(cmake_source_dir, "main_1.cc")
 
-        with open(cc_filename, "w") as f:
-            f.write(textwrap.dedent(cc_content))
+        with open(cc_filename_1, "w") as f:
+            f.write(textwrap.dedent(cc_content_1))
+
+        cc_content_2 = """
+            #include <drake/common/text_logging_gflags.h>
+            int main() {
+              drake::logging::HandleSpdlogGflags();
+              return 0;
+            }
+        """
+
+        cc_filename_2 = os.path.join(cmake_source_dir, "main_2.cc")
+
+        with open(cc_filename_2, "w") as f:
+            f.write(textwrap.dedent(cc_content_2))
 
         cmake_prefix_path = install_test_helper.get_install_dir()
 
@@ -30,8 +43,11 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
             project(find_package_drake_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
-            add_executable(main main.cc)
-            target_link_libraries(main drake::drake)
+            add_executable(main_1 main_1.cc)
+            target_link_libraries(main_1 drake::drake)
+            add_executable(main_2 main_2.cc)
+            target_link_libraries(main_2
+              drake::drake-common-text-logging-gflags)
         """.format(cmake_prefix_path=cmake_prefix_path)
 
         cmake_filename = os.path.join(cmake_source_dir, "CMakeLists.txt")
