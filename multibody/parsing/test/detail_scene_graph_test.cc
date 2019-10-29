@@ -23,6 +23,7 @@ namespace {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::Box;
+using geometry::Capsule;
 using geometry::Convex;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
@@ -167,6 +168,38 @@ GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
   const Box* box = dynamic_cast<const Box*>(shape.get());
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
+}
+
+// Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<drake:capsule>"
+      "  <radius>0.5</radius>"
+      "  <length>1.2</length>"
+      "</drake:capsule>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_EQ(capsule->get_radius(), 0.5);
+  EXPECT_EQ(capsule->get_length(), 1.2);
+}
+
+// Verify MakeShapeFromSdfGeometry checks for invalid capsules.
+GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
+  unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
+      "<drake:capsule>"
+      "  <length>1.2</length>"
+      "</drake:capsule>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeShapeFromSdfGeometry(*no_radius_geometry), std::runtime_error,
+      "Element <radius> is required within element <drake:capsule>.");
+  unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
+      "<drake:capsule>"
+      "  <radius>0.5</radius>"
+      "</drake:capsule>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeShapeFromSdfGeometry(*no_length_geometry), std::runtime_error,
+      "Element <length> is required within element <drake:capsule>.");
 }
 
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
