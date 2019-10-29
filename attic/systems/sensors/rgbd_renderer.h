@@ -1,11 +1,11 @@
 #pragma once
 
 #include <limits>
+#include <optional>
 
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/multibody/shapes/visual_element.h"
 #include "drake/systems/sensors/color_palette.h"
@@ -117,7 +117,7 @@ class RgbdRenderer {
   /// `nullopt` will be returned if `visual` contains an unsupported shape.
   /// We assume `visual_id` will be used together with `body_id` when you call
   /// UpdateVisualPose() later.
-  optional<VisualIndex> RegisterVisual(
+  std::optional<VisualIndex> RegisterVisual(
       const DrakeShapes::VisualElement& visual, int body_id);
 
   /// Updates the pose of a visual with given pose X_WV.
@@ -168,7 +168,7 @@ class RgbdRenderer {
  private:
   virtual void ImplAddFlatTerrain() = 0;
 
-  virtual optional<VisualIndex> ImplRegisterVisual(
+  virtual std::optional<VisualIndex> ImplRegisterVisual(
       const DrakeShapes::VisualElement& visual, int body_id) = 0;
 
   virtual void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,

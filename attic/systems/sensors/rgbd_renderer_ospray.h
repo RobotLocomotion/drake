@@ -29,7 +29,7 @@ class RgbdRendererOSPRay final : public RgbdRenderer {
  private:
   void ImplAddFlatTerrain() override;
 
-  optional<VisualIndex> ImplRegisterVisual(
+  std::optional<VisualIndex> ImplRegisterVisual(
       const DrakeShapes::VisualElement& visual, int body_id) override;
 
   void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV,
