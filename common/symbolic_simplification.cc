@@ -1,10 +1,10 @@
 #include "drake/common/symbolic_simplification.h"
 
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace symbolic {
@@ -45,12 +45,13 @@ class UnificationVisitor {
   //
   // In this case, there is no way to match `e` with `p` because `a + b` is not
   // matched with `x * y`.  Therefore, `Unify(p, e)` returns `nullopt`.
-  optional<Substitution> Unify(const Pattern& p, const Expression& e) const {
+  std::optional<Substitution> Unify(const Pattern& p,
+                                    const Expression& e) const {
     Substitution subst;
     if (Unify(p, e, &subst)) {
       return subst;
     } else {
-      return nullopt;
+      return std::nullopt;
     }
   }
 
@@ -767,14 +768,14 @@ class UnificationVisitor {
 };
 
 // Unifies the expression `e` with the pattern `p`.
-optional<Substitution> Unify(const Pattern& p, const Expression& e) {
+std::optional<Substitution> Unify(const Pattern& p, const Expression& e) {
   return UnificationVisitor{}.Unify(p, e);
 }
 }  // namespace
 
 Rewriter MakeRuleRewriter(const RewritingRule& rule) {
   return [rule](const Expression& e) {
-    const optional<Substitution> subst{Unify(rule.lhs(), e)};
+    const std::optional<Substitution> subst{Unify(rule.lhs(), e)};
     if (subst) {
       return rule.rhs().Substitute(*subst);
     } else {

@@ -1,9 +1,9 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 
@@ -15,6 +15,6 @@ namespace drake {
 /// Most users should prefer FindResource() or FindResourceOrThrow() to locate
 /// Drake resources for a specific resource filename.  This method only exists
 /// for legacy compatibility reasons, and might eventually be removed.
-optional<std::string> MaybeGetDrakePath();
+std::optional<std::string> MaybeGetDrakePath();
 
 }  // namespace drake

@@ -27,8 +27,8 @@ GTEST_TEST(HashTest, HashAppendOptional) {
   // Test basic functionality:  ensure two equal values get hashed the same way,
   // and that an empty value and non-empty value are hashed differently
   // (regardless of whether or not the hashes turn out the same).
-  drake::optional<int> nonempty1(99);
-  drake::optional<int> nonempty2(99);
+  std::optional<int> nonempty1(99);
+  std::optional<int> nonempty2(99);
   MockHasher hash_nonempty1;
   MockHasher hash_nonempty2;
   hash_append(hash_nonempty1, nonempty1);
@@ -36,8 +36,8 @@ GTEST_TEST(HashTest, HashAppendOptional) {
   EXPECT_EQ(hash_nonempty1.record(), hash_nonempty2.record());
   EXPECT_EQ(hash_nonempty1.record().size(), 2);
 
-  drake::optional<int> empty1;
-  drake::optional<int> empty2;
+  std::optional<int> empty1;
+  std::optional<int> empty2;
   MockHasher hash_empty1;
   MockHasher hash_empty2;
   hash_append(hash_empty1, empty1);

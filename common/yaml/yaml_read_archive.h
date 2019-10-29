@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <map>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -13,7 +14,6 @@
 #include "yaml-cpp/yaml.h"
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/name_value.h"
@@ -172,9 +172,9 @@ class YamlReadArchive final {
     this->VisitMap<K, V>(nvp);
   }
 
-  // For drake::optional (which is std::optional iff we have new enough C++).
+  // For std::optional.
   template <typename NVP, typename T>
-  void DoVisit(const NVP& nvp, const drake::optional<T>&, int32_t) {
+  void DoVisit(const NVP& nvp, const std::optional<T>&, int32_t) {
     this->VisitOptional(nvp);
   }
 
@@ -234,13 +234,13 @@ class YamlReadArchive final {
     // and empty is denoted by IsNull().
     const auto& sub_node = root_[nvp.name()];
     if (!sub_node.IsDefined() || sub_node.IsNull()) {
-      *nvp.value() = drake::nullopt;
+      *nvp.value() = std::nullopt;
       return;
     }
 
     // Visit the unpacked optional as if it weren't wrapped in optional<>.
     using T = typename NVP::value_type::value_type;
-    drake::optional<T>& storage = *nvp.value();
+    std::optional<T>& storage = *nvp.value();
     if (!storage) { storage = T{}; }
     this->Visit(drake::MakeNameValue(nvp.name(), &storage.value()),
                 VisitShouldMemorizeType::kNo);

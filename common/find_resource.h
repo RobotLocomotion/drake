@@ -1,11 +1,11 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 
@@ -23,7 +23,7 @@ class FindResourceResult {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FindResourceResult);
 
   /// Returns the absolute path to the resource, iff the resource was found.
-  optional<std::string> get_absolute_path() const;
+  std::optional<std::string> get_absolute_path() const;
 
   /// Either returns the get_absolute_path() iff the resource was found,
   /// or else throws std::runtime_error.
@@ -31,7 +31,7 @@ class FindResourceResult {
 
   /// Returns the error message, iff the resource was not found.
   /// The string will never be empty; only the optional can be empty.
-  optional<std::string> get_error_message() const;
+  std::optional<std::string> get_error_message() const;
 
   /// Returns the resource_path asked of FindResource.
   /// (This may be empty only in the make_empty() case.)
@@ -61,7 +61,7 @@ class FindResourceResult {
   std::string resource_path_;
 
   // The absolute path where resource_path was found, if success.
-  optional<std::string> absolute_path_;
+  std::optional<std::string> absolute_path_;
 
   // An error message, permitted to be present only when base_path is empty.
   //
@@ -69,7 +69,7 @@ class FindResourceResult {
   // (e.g., a default-constructed and/or moved-from object), which represents
   // resource-not-found along with an unspecified non-empty default error
   // message from get_error_message().
-  optional<std::string> error_message_;
+  std::optional<std::string> error_message_;
 };
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
