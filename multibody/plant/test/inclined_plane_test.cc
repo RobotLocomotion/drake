@@ -214,7 +214,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 }
 
 // Instantiate the tests.
-INSTANTIATE_TEST_CASE_P(ContinuousAndTimeSteppingTest, InclinedPlaneTest,
+INSTANTIATE_TEST_SUITE_P(ContinuousAndTimeSteppingTest, InclinedPlaneTest,
                         ::testing::Bool());
 
 }  // namespace

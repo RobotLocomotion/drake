@@ -166,7 +166,7 @@ TEST_P(DiscreteTimeDelayTest, ToSymbolic) {
 }
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
-INSTANTIATE_TEST_CASE_P(test, DiscreteTimeDelayTest,
+INSTANTIATE_TEST_SUITE_P(test, DiscreteTimeDelayTest,
                         ::testing::Values(false, true));
 
 // Create a simple Diagram to simulate:

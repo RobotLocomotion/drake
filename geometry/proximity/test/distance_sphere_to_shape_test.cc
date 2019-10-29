@@ -372,7 +372,7 @@ TEST_F(DistancePairGeometryTest, SphereCylinderAutoDiffXd) {
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 template <typename T>
 class ComputeNarrowHalfspaceTest : public ::testing::Test {};
-TYPED_TEST_CASE(ComputeNarrowHalfspaceTest, ScalarTypes);
+TYPED_TEST_SUITE(ComputeNarrowHalfspaceTest, ScalarTypes);
 
 // Confirms that the distance fallback is *not* invoked for (sphere-X) pairs
 // where X is in {Sphere, Box, Cylinder}. Note the use of the `float` scalar.
@@ -664,7 +664,7 @@ CallbackScalarSupport<AutoDiffXd>::unsupported_pairs() {
   };
 }
 
-TYPED_TEST_CASE(CallbackScalarSupport, ScalarTypes);
+TYPED_TEST_SUITE(CallbackScalarSupport, ScalarTypes);
 
 // Tests that the pairs that are reported supported, run normally. The pairs
 // that are marked *unsupported* throw.
@@ -802,7 +802,7 @@ GTEST_TEST(Callback, ABOrdering) {
 // set.)
 template <typename T>
 class CallbackMaxDistanceTest : public ::testing::Test {};
-TYPED_TEST_CASE(CallbackMaxDistanceTest, ScalarTypes);
+TYPED_TEST_SUITE(CallbackMaxDistanceTest, ScalarTypes);
 
 TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   using T = TypeParam;

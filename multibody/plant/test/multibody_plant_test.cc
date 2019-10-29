@@ -2238,7 +2238,7 @@ TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
   EXPECT_EQ(!plant_->is_discrete(), this->GetParam() == 0);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     Blank, KukaArmTest,
     testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 

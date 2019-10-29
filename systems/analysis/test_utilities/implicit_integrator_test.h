@@ -646,7 +646,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   /// that the system is overdamped.
   const double stiff_damping_b_ = 1e8;
 };
-TYPED_TEST_CASE_P(ImplicitIntegratorTest);
+TYPED_TEST_SUITE_P(ImplicitIntegratorTest);
 
 TYPED_TEST_P(ImplicitIntegratorTest, MiscAPINoReuse) {
   this->MiscAPITest(kNoReuse);
@@ -761,7 +761,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffectsReuse) {
   this->SpringMassStepAccuracyEffectsTest(kReuse);
 }
 
-REGISTER_TYPED_TEST_CASE_P(
+REGISTER_TYPED_TEST_SUITE_P(
     ImplicitIntegratorTest, MiscAPINoReuse, MiscAPIReuse,
     FixedStepThrowsOnMultiStep, ContextAccess, AccuracyEstAndErrorControl,
     DoubleSpringMassDamperNoReuse, DoubleSpringMassDamperReuse,

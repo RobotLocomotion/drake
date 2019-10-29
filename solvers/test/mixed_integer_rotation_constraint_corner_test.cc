@@ -177,7 +177,7 @@ TEST_P(TestBoxSphereCorner, TestOrthogonal) {
 
 // It takes too long time to run the test under debug mode.
 #ifdef DRAKE_ASSERT_IS_ARMED
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestBoxSphereCorner,
     ::testing::Combine(
         ::testing::ValuesIn<std::vector<int>>({0}),      // Orthant
@@ -186,7 +186,7 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<RotationMatrixIntervalBinning>>(
             {RotationMatrixIntervalBinning::kPosNegLinear})));
 #else
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestBoxSphereCorner,
     ::testing::Combine(
         ::testing::ValuesIn<std::vector<int>>({0, 1, 2, 3, 4, 5, 6,

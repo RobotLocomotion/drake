@@ -84,7 +84,7 @@ typedef ::testing::Types<
     SpatialForce<Expression>,
     SpatialAcceleration<Expression>,
     SpatialMomentum<Expression>> SpatialQuantityTypes;
-TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
+TYPED_TEST_SUITE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
 TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
@@ -360,7 +360,7 @@ class SpatialVelocityTest : public ::testing::Test {
   // Spatial velocity of a frame Y measured in X and expressed in A.
   SpatialVelocity<ScalarType> V_XY_A_{w_XY_A_, v_XY_A_};
 };
-TYPED_TEST_CASE(SpatialVelocityTest, ScalarTypes);
+TYPED_TEST_SUITE(SpatialVelocityTest, ScalarTypes);
 
 // Unit tests for the composition of spatial velocities:
 // - Shift(): shift of a spatial velocity between two moving frames rigidly
@@ -504,7 +504,7 @@ typedef ::testing::Types<
     SpatialMomentum<AutoDiffXd>,
     SpatialForce<Expression>,
     SpatialMomentum<Expression>> ElementsInF6Types;
-TYPED_TEST_CASE(ElementsInF6Test, ElementsInF6Types);
+TYPED_TEST_SUITE(ElementsInF6Test, ElementsInF6Types);
 
 // Tests the shifting of a spatial force between two moving frames rigidly
 // attached to each other.
@@ -550,7 +550,7 @@ class SpatialAccelerationTest : public ::testing::Test {
   // Useful typedefs when witting unit tests to access types.
   typedef T ScalarType;
 };
-TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
+TYPED_TEST_SUITE(SpatialAccelerationTest, ScalarTypes);
 
 // Unit test for the method SpatialAcceleration::Shift().
 // Case 1:
@@ -750,7 +750,7 @@ typedef ::testing::Types<
     SpatialForce<Expression>,
     SpatialAcceleration<Expression>,
     SpatialMomentum<Expression>> SymbolicSpatialQuantityTypes;
-TYPED_TEST_CASE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
+TYPED_TEST_SUITE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
 
 TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
   std::stringstream V_stream;
@@ -775,7 +775,7 @@ class MomentumDotVelocityTest : public ::testing::Test {
   SpatialVelocity<T> V_WBp_{Vector3<T>{7, 8, 9}, Vector3<T>{-1, -2, -3}};
   Vector3<T> p_PQ_{7, -3, 5};
 };
-TYPED_TEST_CASE(MomentumDotVelocityTest, ScalarTypes);
+TYPED_TEST_SUITE(MomentumDotVelocityTest, ScalarTypes);
 
 // Verifies the result of the dot product of a spatial momentum L_WBp (of a body
 // B in a frame W about a point P) with the spatial velocity V_WBp of frame Bp

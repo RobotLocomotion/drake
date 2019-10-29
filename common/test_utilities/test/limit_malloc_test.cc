@@ -105,9 +105,9 @@ TEST_P(LimitMallocDeathTest, LimitTest) {
     }, expected_message);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     All, LimitMallocTest, ::testing::Range(0, 3));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     All, LimitMallocDeathTest, ::testing::Range(0, 3));
 
 // When the user whitelists no-op reallocs, a call to realloc() that does not

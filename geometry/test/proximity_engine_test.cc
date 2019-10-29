@@ -1173,50 +1173,50 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
 // GenDistanceTestDataSphere() with the function
 // TEST_P(SignedDistanceToPointTest, SingleQueryPoint).
 // Sphere
-INSTANTIATE_TEST_CASE_P(Sphere, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(Sphere, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataSphere()));
 
-INSTANTIATE_TEST_CASE_P(TransformSphere, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TransformSphere, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestTransformSphere()));
 
 // Box
-INSTANTIATE_TEST_CASE_P(OutsideBox, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(OutsideBox, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataOutsideBox()));
-INSTANTIATE_TEST_CASE_P(BoxBoundary, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(BoxBoundary, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataBoxBoundary()));
-INSTANTIATE_TEST_CASE_P(InsideBoxUnique, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(InsideBoxUnique, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestDataInsideBoxUnique()));
-INSTANTIATE_TEST_CASE_P(InsideBoxNonUnique, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(InsideBoxNonUnique, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestDataInsideBoxNonUnique()));
-INSTANTIATE_TEST_CASE_P(TranslateBox, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TranslateBox, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataTranslateBox()));
-INSTANTIATE_TEST_CASE_P(TransformOutsideBox, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TransformOutsideBox, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestTransformOutsideBox()));
-INSTANTIATE_TEST_CASE_P(TransformBoxBoundary, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TransformBoxBoundary, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestTransformBoxBoundary()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TransformInsideBoxUnique, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
 
 // Cylinder
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CylinderBoundary, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataCylinderBoundary()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OutsideCylinder, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataOutsideCylinder()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InsideCylinder, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataInsideCylinder()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CenterCylinder, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataCylinderCenter()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CylinderTransform, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataCylinderTransform()));
 
 // Half space
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     Halfspace, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataHalfSpace()));
 
@@ -1833,7 +1833,7 @@ GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
 //    ComputeSignedDistancePairwiseClosestPoints() from here.
 //    See TEST_P(SignedDistancePairTest, SinglePair), for example.
 // 4. Initiate all the tests by specifying the test fixture and the test data.
-//    See INSTANTIATE_TEST_CASE_P() below.
+//    See INSTANTIATE_TEST_SUITE_P() below.
 class SignedDistancePairTestData {
  public:
   SignedDistancePairTestData(shared_ptr<const Shape> a,
@@ -2522,46 +2522,46 @@ TEST_P(SignedDistancePairTest, SinglePair) {
     << "Distance between witness points do not equal the signed distance.";
 }
 
-INSTANTIATE_TEST_CASE_P(SphereSphere, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphere, SignedDistancePairTest,
     testing::ValuesIn(GenDistancePairTestSphereSphere()));
-INSTANTIATE_TEST_CASE_P(SphereSphereTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereTransform()));
-INSTANTIATE_TEST_CASE_P(SphereSphereGimbalLock, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphereGimbalLock, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereGimbalLock()));
 
-INSTANTIATE_TEST_CASE_P(SphereSphreNonAligned, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphreNonAligned, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAligned()));
-INSTANTIATE_TEST_CASE_P(SphereSphreNonAlignedTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphreNonAlignedTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAlignedTransform()));
 
-INSTANTIATE_TEST_CASE_P(SphereBox, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBox, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBox()));
-INSTANTIATE_TEST_CASE_P(SphereBoxTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxTransform()));
-INSTANTIATE_TEST_CASE_P(SphereBoxGimbalLock, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxGimbalLock, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxGimbalLock()));
 
-INSTANTIATE_TEST_CASE_P(BoxSphere, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(BoxSphere, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphere()));
-INSTANTIATE_TEST_CASE_P(BoxSphereTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(BoxSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphereTransform()));
 
-INSTANTIATE_TEST_CASE_P(SphereBoxBoundary, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxBoundary, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundary()));
-INSTANTIATE_TEST_CASE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundaryTransform()));
 
-INSTANTIATE_TEST_CASE_P(SphereCylinder, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereCylinder, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinder()));
-INSTANTIATE_TEST_CASE_P(SphereCylinderTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereCylinderTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderTransform()));
-INSTANTIATE_TEST_CASE_P(SphereCylinderBoundary, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereCylinderBoundary, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderBoundary()));
-INSTANTIATE_TEST_CASE_P(SphereCylinderBoundaryTransform,
+INSTANTIATE_TEST_SUITE_P(SphereCylinderBoundaryTransform,
     SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderBoundaryTransform()));
 
-INSTANTIATE_TEST_CASE_P(HalfspaceSphere,
+INSTANTIATE_TEST_SUITE_P(HalfspaceSphere,
                         SignedDistancePairTest,
                         testing::ValuesIn(GenDistPairTestHalfspaceSphere()));
 
@@ -2739,20 +2739,20 @@ GenDistPairTestSphereBoxConcentricTransform() {
       RotationMatrixd(RollPitchYawd(M_PI, M_PI/6., M_PI)));
 }
 
-INSTANTIATE_TEST_CASE_P(SphereSphereConcentric,
+INSTANTIATE_TEST_SUITE_P(SphereSphereConcentric,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentric()));
-INSTANTIATE_TEST_CASE_P(SphereSphereConcentricTransform,
+INSTANTIATE_TEST_SUITE_P(SphereSphereConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricTransform()));
-INSTANTIATE_TEST_CASE_P(SphereSphereConcentricGimbalLock,
+INSTANTIATE_TEST_SUITE_P(SphereSphereConcentricGimbalLock,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricGimbalLock()));
 
-INSTANTIATE_TEST_CASE_P(SphereBoxConcentric,
+INSTANTIATE_TEST_SUITE_P(SphereBoxConcentric,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentric()));
-INSTANTIATE_TEST_CASE_P(SphereBoxConcentricTransform,
+INSTANTIATE_TEST_SUITE_P(SphereBoxConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentricTransform()));
 

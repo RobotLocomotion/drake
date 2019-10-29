@@ -159,7 +159,7 @@ TEST_P(TrajectoryAffineSystemTest, ScalarTypeConversion) {
   EXPECT_FALSE(is_symbolic_convertible(*dut_));
 }
 
-INSTANTIATE_TEST_CASE_P(Constructor, TrajectoryAffineSystemTest,
+INSTANTIATE_TEST_SUITE_P(Constructor, TrajectoryAffineSystemTest,
                         testing::Values(ConstructorType::FromContinuous,
                                         ConstructorType::FromDiscrete));
 

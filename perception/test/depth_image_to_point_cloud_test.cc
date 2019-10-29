@@ -217,7 +217,7 @@ class DepthImageToPointCloudTest : public ::testing::Test {
                                           Vector3d(1.1, -1.2, 1.3)};
   const RigidTransformd z_translation_{Vector3d(0.0, 0.0, 1.3)};
 };
-TYPED_TEST_CASE(DepthImageToPointCloudTest, AllConfigs);
+TYPED_TEST_SUITE(DepthImageToPointCloudTest, AllConfigs);
 
 // Verifies computed point cloud when pixel values are valid.
 TYPED_TEST(DepthImageToPointCloudTest, Basic) {
