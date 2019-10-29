@@ -187,7 +187,7 @@ void ManipulationStation<T>::AddManipulandFromFile(
 
 template <typename T>
 void ManipulationStation<T>::SetupClutterClearingStation(
-    const optional<const math::RigidTransform<double>>& X_WCameraBody,
+    const std::optional<const math::RigidTransform<double>>& X_WCameraBody,
     IiwaCollisionModel collision_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kClutterClearing;
@@ -618,7 +618,7 @@ void ManipulationStation<T>::Finalize(
       std::string camera_name = "camera_" + info_pair.first;
       const CameraInformation& info = info_pair.second;
 
-      const optional<geometry::FrameId> parent_body_id =
+      const std::optional<geometry::FrameId> parent_body_id =
           plant_->GetBodyFrameIdIfExists(info.parent_frame->body().index());
       DRAKE_THROW_UNLESS(parent_body_id.has_value());
       const RigidTransform<double> X_PC =
