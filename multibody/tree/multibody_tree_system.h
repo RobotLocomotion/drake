@@ -112,21 +112,19 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /** Returns a reference to the up to date cached value for the
-  across-mobilizer geometric Jacobian H_PB_W in the given Context, recalculating
-  it first if necessary. Also if necessary, the PositionKinematicsCache will be
-  recalculated as well (since it stores H_FM(q) for each mobilizer and X_WB(q)
-  for each body).
-  The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
-  by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
-  velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
-  number of mobilities associated with body B.
-  The returned `std::vector` stores the Jacobian matrices for all nodes in the
-  tree  as a vector of the columns of these matrices. Therefore
-  the returned `std::vector` of columns  has as many entries as number of
-  generalized velocities in the tree. */
+  /** For a body B connected to its parent P, returns a reference to the up to
+  date cached value for H_PB_W, where H_PB_W is the `6 x nm` body-node hinge
+  matrix that relates `V_PB_W` (body B's spatial velocity in its parent body P,
+  expressed in world W) to this node's `nm` generalized velocities
+  (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  As needed, H_PB_W is recalculated from the context and the
+  PositionKinematicsCache may also be recalculated (since it stores H_FM(q) for
+  each mobilizer and X_WB(q) for each body). The returned `std::vector` stores
+  all the body-node hinge matrices in the tree as a vector of the columns of
+  these matrices. Therefore the returned `std::vector` of columns has as many
+  entries as number of generalized velocities in the tree. */
   const std::vector<Vector6<T>>&
-  EvalAcrossNodeGeometricJacobianExpressedInWorld(
+  EvalAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.across_node_jacobians)
         .template Eval<std::vector<Vector6<T>>>(context);

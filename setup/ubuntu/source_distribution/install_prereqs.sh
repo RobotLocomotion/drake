@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 16.04 (Xenial) or 18.04 (Bionic).
+# Ubuntu 18.04 (Bionic).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -71,6 +71,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 0.29.0 \
-  https://github.com/bazelbuild/bazel/releases/download/0.29.0/bazel_0.29.0-linux-x86_64.deb \
-  509c9ed0ee197a0cc613b187f00810d35c5d8716dbfe574616b3e1206d8ea01f
+  bazel 1.1.0 \
+  https://releases.bazel.build/1.1.0/release/bazel_1.1.0-linux-x86_64.deb \
+  138b47ffd54924e3c0264c65d31d3927803fb9025db4d5b18107df79ee3bda95

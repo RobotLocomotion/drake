@@ -9,8 +9,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
-#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -367,6 +365,30 @@ struct Impl {
                 &System<T>::CalcDiscreteVariableUpdates),
             py::arg("context"), py::arg("discrete_state"),
             doc.System.CalcDiscreteVariableUpdates.doc_2args)
+        .def("GetSubsystemContext",
+            overload_cast_explicit<const Context<T>&, const System<T>&,
+                const Context<T>&>(&System<T>::GetSubsystemContext),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
+        .def("GetMutableSubsystemContext",
+            overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
+                &System<T>::GetMutableSubsystemContext),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
+        .def("GetMyContextFromRoot",
+            overload_cast_explicit<const Context<T>&, const Context<T>&>(
+                &System<T>::GetMyContextFromRoot),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
+        .def("GetMyMutableContextFromRoot",
+            overload_cast_explicit<Context<T>&, Context<T>*>(
+                &System<T>::GetMyMutableContextFromRoot),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Sugar.
         .def("GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {
@@ -677,18 +699,6 @@ Note: The above is for the C++ documentation. For Python, use
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 3>(),
             doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
-        .def("GetSubsystemContext",
-            overload_cast_explicit<const Context<T>&, const System<T>&,
-                const Context<T>&>(&Diagram<T>::GetSubsystemContext),
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
-        .def("GetMutableSubsystemContext",
-            overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
-                &Diagram<T>::GetMutableSubsystemContext),
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_reference_internal,
             doc.Diagram.GetSubsystemByName.doc);

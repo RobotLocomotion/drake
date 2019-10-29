@@ -384,6 +384,18 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
   EXPECT_TRUE(CompareMatrices(p_FSc_test, p_FSc_ref));
 }
 
+// Checks the equality calculations.
+GTEST_TEST(SurfaceMeshTest, TestEqual) {
+  const auto empty_mesh = GenerateEmptyMesh();
+  const auto zero_area_mesh = GenerateZeroAreaMesh();
+  const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
+  SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
+  EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
+  EXPECT_FALSE(empty_mesh->Equal(*zero_area_mesh));
+  EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
+  EXPECT_FALSE(triangle_mesh->Equal(*empty_mesh));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

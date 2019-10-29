@@ -7,6 +7,9 @@
 
 #include "drake/common/find_resource.h"
 
+// TODO(jwnimmer-tri) Remove this entire file when the header it's testing is
+// also removed (on or after 2020-02-01).
+
 namespace drake {
 namespace {
 

@@ -48,6 +48,7 @@ drake_cc_googletest(
     deps = [
         ":optitrack_pose_extractor",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//systems/framework",
     ],
 )

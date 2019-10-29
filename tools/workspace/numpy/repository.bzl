@@ -10,7 +10,6 @@ Example:
         load("@drake//tools/workspace/numpy:repo.bzl", "numpy_repository")
         numpy_repository(
             name = "foo",
-            python_version = "2",
         )
 
     BUILD:
@@ -22,8 +21,6 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
-    python_version: The major or major.minor version of Python for which NumPy
-                    headers are to be found.
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
@@ -36,7 +33,6 @@ def _impl(repository_ctx):
         python_info.python,
         "-c",
         "; ".join([
-            "from __future__ import print_function",
             "import numpy",
             "print(numpy.get_include())",
         ]),

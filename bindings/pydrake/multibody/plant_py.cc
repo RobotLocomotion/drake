@@ -1,11 +1,11 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 #include "pybind11/stl_bind.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -150,7 +150,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "CoulombFriction", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
-            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args);
+            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args)
+        .def("static_friction", &Class::static_friction,
+            cls_doc.static_friction.doc)
+        .def("dynamic_friction", &Class::dynamic_friction,
+            cls_doc.dynamic_friction.doc);
+
+    m.def("CalcContactFrictionFromSurfaceProperties",
+        [](const multibody::CoulombFriction<T>& surface_properties1,
+            const multibody::CoulombFriction<T>& surface_properties2) {
+          return drake::multibody::CalcContactFrictionFromSurfaceProperties(
+              surface_properties1, surface_properties2);
+        },
+        py::arg("surface_properties1"), py::arg("surface_properties2"),
+        py_reference, doc.CalcContactFrictionFromSurfaceProperties.doc);
   }
 
   {
@@ -283,6 +296,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc_iso3_deprecation)
+        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
+            py::arg("body"), py::arg("X_WB"),
+            cls_doc.SetDefaultFreeBodyPose.doc)
         .def("SetActuationInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> u_instance,
@@ -383,6 +399,33 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcJacobianSpatialVelocity.doc)
+        .def("CalcJacobianAngularVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              Matrix3X<T> Js_w_AB_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianAngularVelocity(context, with_respect_to,
+                  frame_B, frame_A, frame_E, &Js_w_AB_E);
+              return Js_w_AB_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianAngularVelocity.doc)
+        .def("CalcJacobianTranslationalVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              Matrix3X<T> Js_v_ABi_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianTranslationalVelocity(context, with_respect_to,
+                  frame_B, p_BoBi_B, frame_A, frame_E, &Js_v_ABi_E);
+              return Js_v_ABi_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBi_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianTranslationalVelocity.doc)
         .def("CalcSpatialAccelerationsFromVdot",
             [](const Class* self, const Context<T>& context,
                 const VectorX<T>& known_vdot) {
@@ -596,7 +639,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetBodyFrameIdIfExists.doc)
         .def("GetCollisionGeometriesForBody",
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
-            cls_doc.GetCollisionGeometriesForBody.doc);
+            py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
+        .def("num_collision_geometries", &Class::num_collision_geometries,
+            cls_doc.num_collision_geometries.doc)
+        .def("default_coulomb_friction", &Class::default_coulomb_friction,
+            py::arg("geometry_id"), py_reference_internal,
+            cls_doc.default_coulomb_friction.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",

@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -91,8 +92,8 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   EncodedData(id_b, true).write_to(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
-  EXPECT_NO_THROW(CalcDistanceFallback<double>(obj_a, obj_b, request,
-                                               &distance_pair_d));
+  DRAKE_EXPECT_NO_THROW(
+      CalcDistanceFallback<double>(obj_a, obj_b, request, &distance_pair_d));
   EXPECT_TRUE(distance_pair_d.id_A.is_valid());
   EXPECT_TRUE(distance_pair_d.id_B.is_valid());
   ASSERT_LT(id_a, id_b);  // Confirm assumption that the next two tests require.
@@ -395,8 +396,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
   // These scenarios should *not* invoke the fallback; they will be exercised
   // by primitives.
 
-  EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-      sphere, X_WA, sphere, X_WB, request, &result));
+  DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(sphere, X_WA, sphere,
+                                                      X_WB, request, &result));
 
   std::vector<std::shared_ptr<fcl::CollisionGeometry<double>>> supported{
       make_shared<Boxd>(1, 1, 1), make_shared<Cylinderd>(1, 1)};
@@ -404,9 +405,9 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
     CollisionObjectd other(other_geo);
     EncodedData(other_id, true).write_to(&other);
 
-    EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
+    DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
         other, X_WA, sphere, X_WB, request, &result));
-    EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
+    DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
         sphere, X_WA, other, X_WB, request, &result));
   }
 }
@@ -715,7 +716,7 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   std::vector<SignedDistancePair<T>> results;
   CallbackData<T> data(&collision_filter, &X_WGs, kInf, &results);
   double threshold = kInf;
-  EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
+  DRAKE_EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
   EXPECT_EQ(results.size(), 0u);
 }
 
@@ -838,7 +839,7 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
     CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
-    EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    DRAKE_EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
     EXPECT_EQ(results.size(), 1u);
     EXPECT_EQ(threshold, kMaxDistance);
   }
@@ -852,7 +853,7 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
     CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
-    EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    DRAKE_EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
     EXPECT_EQ(results.size(), 0u);
     EXPECT_EQ(threshold, kMaxDistance);
   }

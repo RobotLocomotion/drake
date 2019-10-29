@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 
@@ -24,7 +25,7 @@ GTEST_TEST(MoseklmLicenseFileTest, MoseklmLicenseFileSet) {
   MosekSolver solver;
 
   MathematicalProgramResult result;
-  EXPECT_NO_THROW(solver.Solve(program, {}, {}, &result));
+  DRAKE_EXPECT_NO_THROW(solver.Solve(program, {}, {}, &result));
 }
 
 GTEST_TEST(MoseklmLicenseFileTest, MoseklmLicenseFileUnset) {

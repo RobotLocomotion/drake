@@ -96,8 +96,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_msg.body2_name = geometry_id_to_body_name_map_.at(
             hydroelastic_contact_info.contact_surface().id_N());
 
-    const geometry::SurfaceMesh<T>& mesh_W =
-        hydroelastic_contact_info.contact_surface().mesh_W();
+    const geometry::ContactSurface<T>& contact_surface =
+        hydroelastic_contact_info.contact_surface();
+    const geometry::SurfaceMesh<T>& mesh_W = contact_surface.mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
 
@@ -115,6 +116,14 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       write_double3(vA.r_MV(), tri_msg.p_WA);
       write_double3(vB.r_MV(), tri_msg.p_WB);
       write_double3(vC.r_MV(), tri_msg.p_WC);
+
+      // Record the pressures.
+      tri_msg.pressure_A =
+          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(0)));
+      tri_msg.pressure_B =
+          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(1)));
+      tri_msg.pressure_C =
+          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(2)));
     }
   }
 }

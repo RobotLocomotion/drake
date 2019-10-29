@@ -12,6 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -192,6 +193,12 @@ class ShapeMatcher final : public ShapeReifier {
     }
   }
 
+  void ImplementGeometry(const Capsule& capsule, void*) final {
+    if (IsExpectedType(capsule)) {
+      TestShapeParameters(capsule);
+    }
+  }
+
   void ImplementGeometry(const Mesh& mesh, void*) final {
     if (IsExpectedType(mesh)) {
       TestShapeParameters(mesh);
@@ -279,6 +286,19 @@ void ShapeMatcher<Box>::TestShapeParameters(const Box& test) {
   if (test.depth() != expected_.depth()) {
     error() << "\nExpected box depth " << expected_.depth()
             << ", received box depth " << test.depth();
+  }
+}
+
+template <>
+template <>
+void ShapeMatcher<Capsule>::TestShapeParameters(const Capsule& test) {
+  if (test.get_radius() != expected_.get_radius()) {
+    error() << "\nExpected capsule radius " << expected_.get_radius() << ", "
+            << "received capsule radius " << test.get_radius();
+  }
+  if (test.get_length() != expected_.get_length()) {
+    error() << "\nExpected capsule length " << expected_.get_length()
+            << ", received capsule length " << test.get_length();
   }
 }
 
@@ -630,6 +650,11 @@ TEST_F(GeometryStateTest, IntrospectShapes) {
         matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
   }
   {
+    ShapeMatcher<Capsule> matcher(Capsule(0.25, 2.0));
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
     ShapeMatcher<HalfSpace> matcher(HalfSpace{});
     EXPECT_TRUE(
         matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
@@ -661,7 +686,7 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
   // Case: Successful registration of unique source id and name.
   SourceId s_id;
   const string name = "Unique";
-  EXPECT_NO_THROW((s_id = geometry_state_.RegisterNewSource(name)));
+  DRAKE_EXPECT_NO_THROW((s_id = geometry_state_.RegisterNewSource(name)));
   EXPECT_TRUE(geometry_state_.source_is_registered(s_id));
   EXPECT_EQ(geometry_state_.get_source_name(s_id), name);
 
@@ -1329,12 +1354,12 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
 
   // Confirm that, post removal, updating poses still works.
-  EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
+  DRAKE_EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 
   // Adding a new geometry; various operations should still "work" (in the sense
   // that nothing explodes).
   GeometryId added_id;
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       added_id = geometry_state_.RegisterGeometry(
           source_id_, frames_[0],
           make_unique<GeometryInstance>(RigidTransformd::Identity(),
@@ -1342,14 +1367,14 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
 
   // Adding proximity role to the new geometry brings the total number of
   // dynamic geometries with proximity roles back up to the original value.
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       geometry_state_.AssignRole(source_id_, added_id, ProximityProperties()));
 
   // Now remove the *final* geometry, it should still keep things valid -- in
   // other words, we should still be able to finalized poses.
-  EXPECT_NO_THROW(geometry_state_.RemoveGeometry(s_id, added_id));
+  DRAKE_EXPECT_NO_THROW(geometry_state_.RemoveGeometry(s_id, added_id));
   // Confirm that, post removal, updating poses still works.
-  EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
+  DRAKE_EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 }
 
 // Tests the RemoveGeometry functionality in which the geometry removed has
@@ -1622,7 +1647,7 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
     frame_set.set_value(frame_id, RigidTransformd::Identity());
   }
   // Case: frame ids are valid.
-  EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(s_id, frame_set));
+  DRAKE_EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(s_id, frame_set));
 
   // Case: Right number, wrong frames.
   FramePoseVector<double> frame_set_2;
@@ -2419,8 +2444,8 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
   EXPECT_EQ(props->GetProperty<int>("prop1", "value"),
             props1.GetProperty<int>("prop1", "value"));
 
-  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0], props2,
-                                             RoleAssign::kReplace));
+  DRAKE_EXPECT_NO_THROW(geometry_state_.AssignRole(
+      source_id_, geometries_[0], props2, RoleAssign::kReplace));
   // Confirm modification doesn't introduce duplicates; should still be one.
   EXPECT_EQ(gs_tester_.proximity_engine().num_geometries(), 1);
 
@@ -2664,8 +2689,8 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
 
   // Redefinition of role - test each role individually to make sure it has
   // the right error message.
-  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
-                                             ProximityProperties()));
+  DRAKE_EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
+                                                   ProximityProperties()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  ProximityProperties()),
@@ -2673,7 +2698,7 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
       "Trying to assign the 'proximity' role to geometry id \\d+ for the first "
       "time.*");
 
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       geometry_state_.AssignRole(source_id_, geometries_[0], perception_props));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0], perception_props),
@@ -2681,8 +2706,8 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
       "Trying to assign the 'perception' role to geometry id \\d+ for the "
       "first time.*");
 
-  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
-                                             IllustrationProperties()));
+  DRAKE_EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
+                                                   IllustrationProperties()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  IllustrationProperties()),
@@ -3062,7 +3087,7 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
 // This merely tests the error conditions.
 TEST_F(GeometryStateTest, AddRendererError) {
   const string kName = "unique";
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       geometry_state_.AddRenderer(kName, make_unique<DummyRenderEngine>()));
 
   // Non-unique name.

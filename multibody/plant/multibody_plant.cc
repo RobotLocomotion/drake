@@ -259,8 +259,11 @@ MultibodyPlant<T>::MultibodyPlant(
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
+  // TODO(eric.cousineau): Combine all of these elements into one struct, make
+  // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
@@ -835,9 +838,10 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // midpoint (or any other point between Ac and Bc for that matter) since,
     // in the limit to rigid contact, Ac = Bc.
 
-    // Geometric Jacobian for the velocity of the contact point C as moving with
-    // body A, s.t.: v_WAc = Jv_WAc * v
-    // where v is the vector of generalized velocities.
+    // For contact point Ac of (fixed to) body A, calculate `Jv_v_WAc` (Ac's
+    // translational velocity Jacobian in the world frame W with respect to
+    // generalized velocities v).  Note: Ac's translational velocity in W can
+    // be written in terms of this Jacobian as `v_WAc = Jv_v_WAc * v`.
     Matrix3X<T> Jv_WAc(3, this->num_velocities());
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,
@@ -848,8 +852,8 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
                                                       frame_W,
                                                       &Jv_WAc);
 
-    // Geometric Jacobian for the velocity of the contact point C as moving with
-    // body B, s.t.: v_WBc = Jv_WBc * v.
+    // Similarly, for contact point Bc of body B, calculate `Jv_v_WBc
+    // (Bc's translational velocity Jacobian in W with respect to v)
     Matrix3X<T> Jv_WBc(3, this->num_velocities());
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,

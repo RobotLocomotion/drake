@@ -9,14 +9,16 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
-// Helper methods for MakeCylinderMesh().
+// Helper methods for MakeCylinderVolumeMesh().
 #ifndef DRAKE_DOXYGEN_CXX
 
 // TODO(DamrongGuoy): Consider removing the classification of vertex types.
@@ -393,10 +395,26 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 }
 
 #endif
+
 /// Generates a tetrahedral volume mesh of a cylinder whose bounding box is
-/// [-radius, radius]x[-radius,radius]x[-height/2, height/2], i.e., the center
+/// [-radius, radius]x[-radius,radius]x[-length/2, length/2], i.e., the center
 /// line of the cylinder is the z-axis, and the center of the cylinder is at
 /// the origin.
+///
+/// The level of tessellation is guided by the `resolution_hint` parameter.
+/// Smaller values create higher-resolution meshes with smaller tetrahedra.
+/// The resolution hint is interpreted as an edge length, and the cylinder is
+/// subdivided to guarantee that edge lengths along the boundary circle of
+/// the top and bottom caps will be less than or equal to that edge length.
+///
+/// The resolution of the final mesh will change discontinuously. Small
+/// changes to `resolution_hint` will likely produce the same mesh.
+/// However, cutting `resolution_hint` in half will likely increase the
+/// number of tetrahedra.
+///
+/// Ultimately, successively smaller values of `resolution_hint` will no
+/// longer change the output mesh. This algorithm will not produce more than
+/// 100 million tetrahedra.
 ///
 /// This method implements a variant of the generator described in
 /// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
@@ -420,27 +438,100 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 /// @param[in] cylinder
 ///    Specification of the parameterized cylinder the output mesh should
 ///    approximate.
-/// @param[in] refinement_level
-///    The number of subdivision steps to take. If the original mesh contains
-///    N tetrahedra, the resulting mesh with refinement_level = L will contain
-///    N·8ᴸ tetrahedra.
-///
-/// @throws std::exception if refinement_level is negative.
+/// @param[in] resolution_hint
+///    The positive characteristic edge length for the mesh. The coarsest
+///    possible mesh (a rectangular prism) is guaranteed for any value of
+///    `resolution_hint` greater than √2 times the radius of the cylinder.
+/// @tparam T
+///    The Eigen-compatible scalar for representing the mesh vertex positions.
+/// @pre resolution_hint is positive.
 ///
 /// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
 /// generator. Geophysical Journal International, 130(1), pp.193-200.
 template <typename T>
-VolumeMesh<T> MakeCylinderMesh(const Cylinder& cylinder, int refinement_level) {
-  const double height = cylinder.get_length();
+VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
+                                     double resolution_hint) {
+  const double length = cylinder.get_length();
   const double radius = cylinder.get_radius();
-
-  DRAKE_THROW_UNLESS(refinement_level >= 0);
-
   std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> pair =
-      MakeCylinderMeshLevel0<T>(height, radius);
+      MakeCylinderMeshLevel0<T>(length, radius);
   VolumeMesh<T>& mesh = pair.first;
   std::vector<CylinderVertexType>& vertex_type = pair.second;
 
+  /*
+    Calculate the refinement level `L` to satisfy the resolution hint, which
+    bounds the length `e` of mesh edges on the boundary circle of the top
+    and bottom caps.
+        The volume mesh is formed by successively refining a rectangular
+    prism.  At the boundary circle of the top and bottom caps, we go from 4
+    edges, to 8 edges, to 16 edges, etc., doubling at each level of
+    refinement. These edges are simply chords across fixed-length arcs of the
+    circle. Based on that we can easily compute the length `e` of the chord
+    and bound it by resolution_hint.
+        We can calculate `e` from the radius r of the cylinder and the central
+    angle θ supported by the chord in this picture:
+
+                    x x x x x
+                 x      | \    x
+               x        |   \    x
+             x          |     \    x
+           x            |       \    x
+          x    radius r |       e \   x
+         x              |           \  x
+        x               |             \ x
+        x               | θ             \
+        x               +---------------x
+        x                   radius r    x
+        x                               x
+         x                             x
+          x                           x
+           x                         x
+             x                     x
+               x                 x
+                 x             x
+                    x x x x x
+
+    The chord length e = 2⋅r⋅sin(θ/2). Solving for θ we get: θ = 2⋅sin⁻¹(e/2⋅r).
+
+    We can relate θ with the refinement level L.
+
+       θ = 2π / 4⋅2ᴸ
+         = π / 2⋅2ᴸ
+         = π / 2ᴸ⁺¹
+
+     Substituting for θ, we get:
+
+       π / 2ᴸ⁺¹ = 2⋅sin⁻¹(e/2⋅r)
+       2ᴸ⁺¹ = π / 2⋅sin⁻¹(e/2⋅r)
+       L + 1 = log₂(π / 2⋅sin⁻¹(e/2⋅r))
+       L = log₂(π / 2⋅sin⁻¹(e/2⋅r)) - 1
+       L = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
+   */
+  DRAKE_DEMAND(resolution_hint > 0.0);
+  // Make sure the arcsin doesn't blow up.
+  const double e = std::min(resolution_hint, 2.0 * radius);
+  const int L = std::max(
+      0, static_cast<int>(
+             std::ceil(std::log2(M_PI / std::asin(e / (2.0 * radius)))) - 2));
+
+  // TODO(DamrongGuoy): Reconsider the limit of 100 million tetrahedra.
+  //  Should it be smaller like 1 million? It will depend on how the system
+  //  perform in practice.
+
+  // Limit refinement_level to 100 million tetrahedra. Each refinement level
+  // increases the number of tetrahedra by a factor of 8. Let N₀ be the
+  // number of initial tetrahedra. The number of tetrahedra N with refinement
+  // level L would be:
+  //   N = N₀ * 8ᴸ
+  //   L = log₈(N/N₀)
+  // We can limit N to 100 million by:
+  //   L ≤ log₈(1e8/N₀) = log₂(1e8/N₀)/3
+  const int refinement_level = std::min(
+      L,
+      static_cast<int>(std::floor(std::log2(1.e8 / mesh.num_elements()) / 3.)));
+
+  // If the original mesh contains N tetrahedra, the resulting mesh with
+  // refinement_level = L will contain N·8ᴸ tetrahedra.
   for (int level = 1; level <= refinement_level; ++level) {
     auto split_pair = RefineCylinderMesh<T>(mesh, vertex_type, radius);
     mesh = split_pair.first;
@@ -448,7 +539,33 @@ VolumeMesh<T> MakeCylinderMesh(const Cylinder& cylinder, int refinement_level) {
     DRAKE_DEMAND(mesh.vertices().size() == vertex_type.size());
   }
 
-  return std::move(mesh);
+  return mesh;
+}
+
+/// Creates a surface mesh for the given `cylinder`; the level of
+/// tessellation is guided by the `resolution_hint` parameter in the same way
+/// as MakeCylinderVolumeMesh.
+///
+/// @param[in] cylinder
+///    Specification of the parameterized cylinder the output surface mesh
+///    should approximate.
+/// @param[in] resolution_hint
+///    The positive characteristic edge length for the mesh. The coarsest
+///    possible mesh (a rectangular prism) is guaranteed for any value of
+///    `resolution_hint` greater than √2 times the radius of the cylinder.
+///    For any cylinder, there is a `resolution_hint` value that serves as the
+///    smallest value that will produce more triangles -- values smaller than
+///    that will have no effect.
+/// @returns The triangulated surface mesh for the given cylinder.
+/// @pre resolution_hint is positive.
+/// @tparam T
+///    The Eigen-compatible scalar for representing the mesh vertex positions.
+template <typename T>
+SurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
+                                       double resolution_hint) {
+  DRAKE_DEMAND(resolution_hint > 0.0);
+  return ConvertVolumeToSurfaceMesh<T>(
+      MakeCylinderVolumeMesh<T>(cylinder, resolution_hint));
 }
 
 }  // namespace internal

@@ -42,6 +42,9 @@ class ShapeName final : public ShapeReifier {
   void ImplementGeometry(const Box&, void*) final {
     string_ = "Box";
   }
+  void ImplementGeometry(const Capsule&, void*) final {
+    string_ = "Capsule";
+  }
   void ImplementGeometry(const Mesh&, void*) final {
     string_ = "Mesh";
   }
@@ -120,7 +123,7 @@ class EncodedData {
   void set_anchored() { data_ &= ~kIsDynamicMask; }
 
   /** Writes the encoded data into the collision object's user data.  */
-  void write_to(fcl::CollisionObject<double>* object) {
+  void write_to(fcl::CollisionObject<double>* object) const {
     object->setUserData(reinterpret_cast<void*>(data_));
   }
 

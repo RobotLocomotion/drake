@@ -6,6 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
@@ -144,18 +145,18 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
 GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   // Test the double case:
   Eigen::Matrix2d test = Eigen::Matrix2d::Identity();
-  EXPECT_NO_THROW(DiscardZeroGradient(test));
+  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test));
   EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test), test));
 
   Eigen::MatrixXd test2 = Eigen::Vector3d{1., 2., 3.};
-  EXPECT_NO_THROW(DiscardZeroGradient(test2));
+  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test2));
   EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test2), test2));
   // Check that the returned value is a reference to the original data.
   EXPECT_EQ(&DiscardZeroGradient(test2), &test2);
 
   // Test the AutoDiff case
   Eigen::Matrix<AutoDiffXd, 3, 1> test3 = test2;
-  EXPECT_NO_THROW(DiscardZeroGradient(test3));
+  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3));
   // Note:  Neither of these would compile:
   //   Eigen::Vector3d test3out = test3;
   //   Eigen::Vector3d test3out = test3.cast<double>();
@@ -168,10 +169,10 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   test3 =
       initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Ones(3, 2));
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
-  EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
+  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
 
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
-  EXPECT_NO_THROW(DiscardZeroGradient(test5));
+  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test5));
   EXPECT_TRUE(
       CompareMatrices(DiscardZeroGradient(test5).linear(), test5.linear()));
   EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test5).translation(),
@@ -181,7 +182,7 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
 
   Isometry3<AutoDiffXd> test6 = Isometry3<AutoDiffXd>::Identity();
   test6.translate(Vector3<AutoDiffXd>{3., 2., 1.});
-  EXPECT_NO_THROW(DiscardZeroGradient(test5));
+  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test5));
   Eigen::Isometry3d test6b = DiscardZeroGradient(test6);
   EXPECT_TRUE(CompareMatrices(test6b.linear(), Eigen::Matrix3d::Identity()));
   EXPECT_TRUE(

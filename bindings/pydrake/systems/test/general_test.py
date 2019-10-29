@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import pydrake.systems.framework as mut
 
 import copy
@@ -344,6 +342,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is context)
             check_output(context)
             simulator.AdvanceTo(1)
+            simulator.AdvancePendingEvents()
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.

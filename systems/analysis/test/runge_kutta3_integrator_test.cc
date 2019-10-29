@@ -11,6 +11,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
+#include "drake/systems/analysis/test_utilities/generic_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 
@@ -21,49 +22,7 @@ namespace analysis_test {
 typedef ::testing::Types<RungeKutta3Integrator<double>> Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
-
-// A testing fixture for RK3 integrators, providing a simple
-// free body plant with closed form solutions to test against.
-class RK3IntegratorTest : public ::testing::Test {
- protected:
-  void SetUp() {
-    plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
-
-    // Add a single free body to the world.
-    const double radius = 0.05;   // m
-    const double mass = 0.1;      // kg
-    auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-    multibody::SpatialInertia<double> M_Bcm(
-      mass, Vector3<double>::Zero(), G_Bcm);
-    plant_->AddRigidBody("Ball", M_Bcm);
-    plant_->Finalize();
-  }
-
-  std::unique_ptr<Context<double>> MakePlantContext() const {
-    std::unique_ptr<Context<double>> context =
-        plant_->CreateDefaultContext();
-    context->EnableCaching();
-
-    // Set body linear and angular velocity.
-    Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
-    Vector3<double> w0(-4., 5., -6.);  // Angular velocity in body's frame.
-    VectorX<double> generalized_velocities(6);
-    generalized_velocities << w0, v0;
-    plant_->SetVelocities(context.get(), generalized_velocities);
-
-    // Set body position and orientation.
-    Vector3<double> p0(1., 2., 3.);  // Body's frame position in the world.
-    // Set body's frame orientation to 90 degree rotation about y-axis.
-    Vector4<double> q0(std::sqrt(2.)/2., 0., std::sqrt(2.)/2., 0.);
-    VectorX<double> generalized_positions(7);
-    generalized_positions << q0, p0;
-    plant_->SetPositions(context.get(), generalized_positions);
-
-    return context;
-  }
-
-  std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
-};
+INSTANTIATE_TYPED_TEST_CASE_P(My, GenericIntegratorTest, Types);
 
 // Tests accuracy for integrating the cubic system (with the state at time t
 // corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. RK3 is a third
@@ -95,10 +54,9 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
 
   // This integrator calculates error by subtracting a 2nd-order integration
   // result from a 3rd-order integration result. Since the 2nd-order integrator
-  // has a Taylor series that is accurate to O(h³), halving the step size is
-  // associated with an error that reduces by a factor of 2³ = 8.
-  // So we verify that the error associated with a half-step is nearly 1/8 the
-  // error associated with a full step.
+  // has a Taylor series that is accurate to O(h³) and since we have no terms
+  // beyond order h³, halving the step size should improve the error estimate
+  // by a factor of 2³ = 8. We verify this.
 
   // First obtain the error estimate using a single step of h.
   const double err_est_h =
@@ -113,14 +71,8 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   const double err_est_2h_2 =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
-  // Check that the 2nd-order error estimate for a full-step is less than
-  // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
-  // K is a constant term that subsumes the asymptotic error and is dependent
-  // upon both the system being integrated and the particular integrator.
-  const double K = 256;
-  const double allowable_2nd_order_error = K *
-      std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(err_est_h, 8 * err_est_2h_2, allowable_2nd_order_error);
+  EXPECT_NEAR(err_est_2h_2, 1.0 / 8 * err_est_h,
+              25 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
@@ -151,49 +103,6 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
   EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
-}
-
-// Tests accuracy of integrator's dense output.
-TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
-  std::unique_ptr<Context<double>> context = MakePlantContext();
-
-  RungeKutta3Integrator<double> rk3(*plant_, context.get());
-  rk3.set_maximum_step_size(0.1);
-  rk3.set_target_accuracy(1e-6);
-  rk3.Initialize();
-
-  // Start a dense integration i.e. one that generates a dense
-  // output for the state function.
-  rk3.StartDenseIntegration();
-
-  const double t_final = 1.0;
-  // Arbitrary step, valid as long as it doesn't match the same
-  // steps taken by the integrator. Otherwise, dense output accuracy
-  // would not be checked.
-  const double dt = 0.01;
-  const int n_steps = t_final / dt;
-  for (int i = 1; i < n_steps; ++i) {
-    // Integrate the whole step.
-    rk3.IntegrateWithMultipleStepsToTime(i * dt);
-
-    // Check solution.
-    EXPECT_TRUE(CompareMatrices(
-        rk3.get_dense_output()->Evaluate(context->get_time()),
-        plant_->GetPositionsAndVelocities(*context),
-        rk3.get_accuracy_in_use(),
-        MatrixCompareType::relative));
-  }
-
-  // Stop undergoing dense integration.
-  std::unique_ptr<DenseOutput<double>> rk3_dense_output =
-      rk3.StopDenseIntegration();
-  EXPECT_FALSE(rk3.get_dense_output());
-
-  // Integrate one more step.
-  rk3.IntegrateWithMultipleStepsToTime(t_final);
-
-  // Verify that the dense output was not updated.
-  EXPECT_LT(rk3_dense_output->end_time(), context->get_time());
 }
 
 }  // namespace analysis_test

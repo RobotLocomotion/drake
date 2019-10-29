@@ -3,7 +3,6 @@ summarizing its output for cleanliness, and providing a --fast option
 to run multiple linters in parallel.
 """
 
-from __future__ import print_function
 
 import argparse
 import functools
@@ -12,8 +11,6 @@ import os
 import re
 import subprocess
 import sys
-
-from six.moves import xrange
 
 
 def summarize_cpplint(cmdline_and_files, args):
@@ -48,7 +45,7 @@ def summarize_cpplint(cmdline_and_files, args):
             errors.append(line)
     if not passed and not errors:
         # Our filtering failed, so report everything.
-        errors = [e.output or "NO OUTPUT"]
+        errors = [output or "NO OUTPUT"]
     return errors
 
 
@@ -73,7 +70,7 @@ def multiprocess_cpplint(cmdline, files, args):
 
     # Lint the files N at a time, to amortize interpreter start-up.
     N = 10
-    files_groups = [files[i:i + N] for i in xrange(0, len(files), N)]
+    files_groups = [files[i:i + N] for i in range(0, len(files), N)]
     cmdlines = [cmdline + some_files for some_files in files_groups]
 
     # Farm out each chunk to a process in a Pool.

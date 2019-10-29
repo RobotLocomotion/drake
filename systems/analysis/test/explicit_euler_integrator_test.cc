@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
@@ -21,9 +22,6 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   // Create a context.
   auto context_dbl = spring_mass_dbl.CreateDefaultContext();
   auto context_ad = spring_mass_ad.CreateDefaultContext();
-
-  context_dbl->EnableCaching();
-  context_ad->EnableCaching();
 
   // Create the integrator as a double and as an autodiff type
   ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
@@ -47,7 +45,6 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
@@ -69,15 +66,14 @@ GTEST_TEST(IntegratorTest, InvalidDts) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   ExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());
   integrator.Initialize();
 
   const double t_final = context->get_time() + dt;
-  EXPECT_NO_THROW(
-    integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final));
+  DRAKE_EXPECT_NO_THROW(
+      integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final));
   EXPECT_THROW(integrator.
       IntegrateNoFurtherThanTime(t_final, -1, t_final), std::logic_error);
   EXPECT_THROW(integrator.
@@ -92,7 +88,6 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   ExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());
@@ -115,7 +110,6 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   // Set a large magnitude time.
   context->SetTime(1e10);
@@ -150,7 +144,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   // Setup the integration size and infinity.
   const double dt = 1e-6;
@@ -208,7 +201,6 @@ GTEST_TEST(IntegratorTest, StepSize) {
   const double max_dt = .01;
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
   context->SetTime(0.0);
   double t = 0.0;
   // Create the integrator.

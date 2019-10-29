@@ -1463,12 +1463,12 @@ class SimplePenetrationTest : public ::testing::Test {
 // Tests collision between dynamic and anchored sphere. One case colliding, one
 // case *not* colliding.
 TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
-  // Set up anchored geometry
+  // Set up anchored geometry.
   RigidTransformd pose = RigidTransformd::Identity();
   const GeometryId anchored_id = GeometryId::get_new_id();
   engine_.AddAnchoredGeometry(sphere_, pose, anchored_id);
 
-  // Set up dynamic geometry
+  // Set up dynamic geometry.
   const GeometryId dynamic_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, dynamic_id);
   EXPECT_EQ(engine_.num_geometries(), 2);
@@ -1476,11 +1476,11 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   X_WGs_[anchored_id] = pose;
   X_WGs_[dynamic_id] = RigidTransformd::Identity();
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(dynamic_id, false /* not colliding */);
   ExpectNoPenetration(anchored_id, dynamic_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(dynamic_id, true /* colliding */);
   ExpectPenetration(anchored_id, dynamic_id, &engine_);
 
@@ -1488,14 +1488,14 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(anchored_id, dynamic_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
-// the same source
+// the same source.
 TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   const GeometryId origin_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, origin_id);
@@ -1507,11 +1507,11 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   X_WGs_[origin_id] = RigidTransformd::Identity();
   X_WGs_[collide_id] = RigidTransformd::Identity();
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
   ExpectNoPenetration(origin_id, collide_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
   ExpectPenetration(origin_id, collide_id, &engine_);
 
@@ -1519,10 +1519,75 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
+}
+
+// Tests if collisions exist between dynamic and anchored sphere. One case
+// colliding, one case *not* colliding.
+TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
+  // Set up anchored geometry.
+  const RigidTransformd pose = RigidTransformd::Identity();
+  const GeometryId anchored_id = GeometryId::get_new_id();
+  engine_.AddAnchoredGeometry(sphere_, pose, anchored_id);
+
+  // Set up dynamic geometry.
+  const GeometryId dynamic_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, dynamic_id);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  X_WGs_[anchored_id] = pose;
+  X_WGs_[dynamic_id] = RigidTransformd::Identity();
+
+  // Non-colliding case.
+  MoveDynamicSphere(dynamic_id, false /* not colliding */);
+  EXPECT_FALSE(engine_.HasCollisions());
+
+  // Colliding case.
+  MoveDynamicSphere(dynamic_id, true /* colliding */);
+  EXPECT_TRUE(engine_.HasCollisions());
+
+  // Test colliding case on copy.
+  ProximityEngine<double> copy_engine(engine_);
+  EXPECT_TRUE(copy_engine.HasCollisions());
+
+  // Test AutoDiffXd converted engine.
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
+  EXPECT_TRUE(ad_engine->HasCollisions());
+}
+
+// Performs the same collision test between two dynamic spheres which belong to
+// the same source.
+TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
+  const GeometryId origin_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, origin_id);
+
+  GeometryId collide_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, collide_id);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  X_WGs_[origin_id] = RigidTransformd::Identity();
+  X_WGs_[collide_id] = RigidTransformd::Identity();
+
+  // Non-colliding case.
+  MoveDynamicSphere(collide_id, false /* not colliding */);
+  EXPECT_FALSE(engine_.HasCollisions());
+
+  // Colliding case.
+  MoveDynamicSphere(collide_id, true /* colliding */);
+  EXPECT_TRUE(engine_.HasCollisions());
+
+  // Test colliding case on copy.
+  ProximityEngine<double> copy_engine(engine_);
+  EXPECT_TRUE(copy_engine.HasCollisions());
+
+  // Test AutoDiffXd converted engine.
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
+  EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
 // Invokes ExcludeCollisionsWithin in various scenarios which will and won't
@@ -1598,11 +1663,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   engine_.ExcludeCollisionsWithin({origin_id, collide_id}, {});
   EXPECT_TRUE(engine_.CollisionFiltered(origin_id, true, collide_id, true));
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
@@ -1610,7 +1675,7 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
@@ -1694,11 +1759,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   X_WGs_[origin_id] = RigidTransformd::Identity();
   X_WGs_[collide_id] = RigidTransformd::Identity();
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
@@ -1706,7 +1771,7 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
@@ -2814,9 +2879,34 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
   }
 }
 
+// TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
+//  testing in proximity engine. They should only test the following:
+//  Successful evaluation between two dynamic shapes and between a dynamic
+//  and anchored shape. Those simple tests confirm ProximityEngine handles its
+//  responsibilty correctly; it calls the appropriate broadphase methods on FCL.
+//  Unit tests on ProximityEngine for the FCL-based query methods should *not*
+//  be concerned with the correctness of the results' values -- that lies in the
+//  responsibility of the callback and underlying geometric algorithms. They
+//  were originally created here because FCL wasn't completely trusted. So,
+//  create a set of tests that can be evaluated on each of the FCL-based queries
+//  that performs those two tests.
+
+// TODO(SeanCurtis-TRI): Remove these geometric tests from here and put them
+//  in their own test. We're keeping them, ultimately, so that we can use these
+//  tests for our own implementation of shape-shape point-intersection
+//  algorithms. In the short-term, these tests should be expressed directly
+//  in terms of the penetration_as_point_pair::Callback and moved to that set
+//  of tests.
+
 // Robust Box-Primitive tests. Tests collision of the box with other primitives
 // in a uniform framework. These tests parallel tests located in fcl.
-
+//
+// All of the tests below here are using the callback to exercise the black box.
+// They exist because of FCL; FCL's unit tests were sporadic at best and these
+// tests revealed errors/properties of FCL that weren't otherwise apparent.
+// Ultimately, these tests don't belong here. But they can be re-used when we
+// replace FCL with Drake's own implementations.
+//
 // This performs a very specific test. It collides a rotated box with a
 // surface that is tangent to the z = 0 plane. The box is a cube with unit size.
 // The goal is to transform the box such that:
@@ -3171,6 +3261,15 @@ TEST_F(BoxPenetrationTest, TangentConvex1) {
 TEST_F(BoxPenetrationTest, TangentConvex2) {
   // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
   TestCollision2(TangentConvex, 1e-3);
+}
+
+// Attempting to add a Capsule should cause an abort.
+GTEST_TEST(ProximityEngineTests, AddCapsule) {
+  ProximityEngine<double> engine;
+  Capsule capsule{0.2, 1.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.AddDynamicGeometry(capsule, GeometryId::get_new_id()),
+      std::exception, ".*The proximity engine does not support capsules yet.*");
 }
 
 // Attempting to add a dynamic Mesh should cause an abort.

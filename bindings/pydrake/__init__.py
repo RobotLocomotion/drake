@@ -1,12 +1,9 @@
 """Python bindings for Drake.
 """
 
-from __future__ import absolute_import, division, print_function
 import os
 import sys
 import warnings
-
-import six
 
 # When importing `pydrake` as an external under Bazel, Bazel will use a shared
 # library whose relative RPATHs are incorrect for `libdrake.so`, and thus will
@@ -57,12 +54,9 @@ def _execute_extra_python_code(m):
     extra_path = [top_module_dir] + module_path[1:-1] + [
         "_{}_extra.py".format(module_path[-1])]
     extra_filename = os.path.join(*extra_path)
-    if six.PY2:
-        execfile(extra_filename, m.__dict__)
-    else:
-        with open(extra_filename) as f:
-            _code = compile(f.read(), extra_filename, 'exec')
-            exec(_code, m.__dict__, m.__dict__)
+    with open(extra_filename) as f:
+        _code = compile(f.read(), extra_filename, 'exec')
+        exec(_code, m.__dict__, m.__dict__)
 
 
 def _setattr_kwargs(obj, kwargs):

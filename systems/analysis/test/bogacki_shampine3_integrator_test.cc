@@ -11,6 +11,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
+#include "drake/systems/analysis/test_utilities/generic_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 
@@ -21,48 +22,7 @@ namespace analysis_test {
 typedef ::testing::Types<BogackiShampine3Integrator<double>> Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
-
-// A testing fixture for the BS3 integrator, providing a simple
-// free body plant with closed form solutions to test against.
-class BS3IntegratorTest : public ::testing::Test {
- protected:
-  void SetUp() {
-    plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
-
-    // Add a single free body to the world.
-    const double radius = 0.05;   // m
-    const double mass = 0.1;      // kg
-    auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-    multibody::SpatialInertia<double> M_Bcm(
-      mass, Vector3<double>::Zero(), G_Bcm);
-    plant_->AddRigidBody("Ball", M_Bcm);
-    plant_->Finalize();
-  }
-
-  std::unique_ptr<Context<double>> MakePlantContext() const {
-    std::unique_ptr<Context<double>> context =
-        plant_->CreateDefaultContext();
-
-    // Set body linear and angular velocity.
-    Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
-    Vector3<double> w0(-4., 5., -6.);  // Angular velocity in body's frame.
-    VectorX<double> generalized_velocities(6);
-    generalized_velocities << w0, v0;
-    plant_->SetVelocities(context.get(), generalized_velocities);
-
-    // Set body position and orientation.
-    Vector3<double> p0(1., 2., 3.);  // Body's frame position in the world.
-    // Set body's frame orientation to 90 degree rotation about y-axis.
-    Vector4<double> q0(std::sqrt(2.)/2., 0., std::sqrt(2.)/2., 0.);
-    VectorX<double> generalized_positions(7);
-    generalized_positions << q0, p0;
-    plant_->SetPositions(context.get(), generalized_positions);
-
-    return context;
-  }
-
-  std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
-};
+INSTANTIATE_TYPED_TEST_CASE_P(My, GenericIntegratorTest, Types);
 
 // Tests accuracy for integrating the cubic system (with the state at time t
 // corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. BS3 is a third
@@ -91,6 +51,27 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
       std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];
   EXPECT_NEAR(actual_answer, expected_answer, allowable_3rd_order_error);
+
+  // This integrator calculates error by subtracting a 2nd-order integration
+  // result from a 3rd-order integration result. Since the 2nd-order integrator
+  // has a Taylor series that is accurate to O(h³) and since we have no terms
+  // beyond order h³, halving the step size should improve the error estimate
+  // by a factor of 2³ = 8. We verify this.
+
+  // First obtain the error estimate using a single step of h.
+  const double err_est_h = bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  // Now obtain the error estimate using two half steps of h/2.
+  cubic_context->SetTime(0.0);
+  cubic_context->get_mutable_continuous_state_vector()[0] = C;
+  bs3.Initialize();
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final / 2));
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
+  const double err_est_2h_2 =
+      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  EXPECT_NEAR(err_est_2h_2, 1.0 / 8 * err_est_h,
+              10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t

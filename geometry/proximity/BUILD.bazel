@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "proximity",
     deps = [
         ":collision_filter_legacy",
+        ":collisions_exist_callback",
         ":distance_to_point_callback",
         ":distance_to_point_with_gradient",
         ":distance_to_shape_callback",
@@ -26,6 +27,7 @@ drake_cc_package_library(
         ":mesh_half_space_intersection",
         ":mesh_intersection",
         ":obj_to_surface_mesh",
+        ":penetration_as_point_pair_callback",
         ":proximity_utilities",
         ":sorted_triplet",
         ":surface_mesh",
@@ -54,6 +56,17 @@ drake_cc_library(
         ":proximity_utilities",
         "//common:essential",
         "//common:sorted_vectors_have_intersection",
+    ],
+)
+
+drake_cc_library(
+    name = "collisions_exist_callback",
+    srcs = ["collisions_exist_callback.cc"],
+    hdrs = ["collisions_exist_callback.h"],
+    deps = [
+        ":collision_filter_legacy",
+        "//geometry:geometry_ids",
+        "@fcl",
     ],
 )
 
@@ -109,6 +122,9 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "//common:hash",
+        "//geometry:geometry_roles",
+        "//geometry:internal_geometry",
+        "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
         "@fcl",
@@ -141,6 +157,18 @@ drake_cc_library(
         ":mesh_intersection",
         ":surface_mesh",
         "//common",
+    ],
+)
+
+drake_cc_library(
+    name = "penetration_as_point_pair_callback",
+    srcs = ["penetration_as_point_pair_callback.cc"],
+    hdrs = ["penetration_as_point_pair_callback.h"],
+    deps = [
+        ":collision_filter_legacy",
+        ":proximity_utilities",
+        "//geometry/query_results:penetration_as_point_pair",
+        "@fcl",
     ],
 )
 
@@ -184,7 +212,9 @@ drake_cc_library(
     name = "make_cylinder_mesh",
     hdrs = ["make_cylinder_mesh.h"],
     deps = [
+        ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -274,6 +304,13 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "collisions_exist_callback_test",
+    deps = [
+        ":collisions_exist_callback",
+    ],
+)
+
+drake_cc_googletest(
     name = "find_collision_candidates_callback_test",
     deps = [
         ":find_collision_candidates_callback",
@@ -312,7 +349,6 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape_callback",
         "//common/test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",
         "//geometry:utilities",
         "//math:gradient",
@@ -323,8 +359,7 @@ drake_cc_googletest(
     name = "hydroelastic_callback_test",
     deps = [
         ":hydroelastic_callback",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 
@@ -385,6 +420,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "make_cylinder_mesh_test",
+    # This test includes generating the finest mesh allowed for a particular
+    # cylinder. The test size is increased to "medium" so that debug builds
+    # are successful in CI.
+    size = "medium",
     deps = [
         ":make_cylinder_mesh",
         ":sorted_triplet",
@@ -409,6 +448,14 @@ drake_cc_googletest(
         ":obj_to_surface_mesh",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "penetration_as_point_pair_callback_test",
+    deps = [
+        ":penetration_as_point_pair_callback",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

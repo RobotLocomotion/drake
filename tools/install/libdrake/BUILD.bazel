@@ -63,6 +63,7 @@ drake_transitive_installed_hdrs_filegroup(
 install(
     name = "install",
     install_tests = [
+        "test/find_package_drake_install_test.py",
         "test/snopt_visibility_install_test.py",
     ],
     targets = ["libdrake.so"],
@@ -224,7 +225,6 @@ cc_library(
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
         "@spdlog",
-        "@stx",
     ],
 )
 

@@ -104,10 +104,7 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_VERSION,
         ), "include")
     elif os_result.is_ubuntu:
-        if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64.tar.gz"  # noqa
-            sha256 = "c0b27f3b0e9e4212190702afdfe49f2c5f0f41ee89354e94b4417bbc840cb2f6"  # noqa
-        elif os_result.ubuntu_release == "18.04":
+        if os_result.ubuntu_release == "18.04":
             archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-2.7.15-python-3.6.7-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
             sha256 = "bcf01f7968a9c3d7d5ed6297bcb5dd7a9d753c2ccabbc4120747b97ae3502c76"  # noqa
         else:
@@ -119,7 +116,12 @@ def _impl(repository_ctx):
         ]
         root_path = repository_ctx.path("")
 
-        repository_ctx.download_and_extract(urls, root_path, sha256 = sha256)
+        repository_ctx.download_and_extract(
+            urls,
+            output = root_path,
+            sha256 = sha256,
+            type = "tar.gz",
+        )
 
     else:
         fail("Operating system is NOT supported", attr = os_result)

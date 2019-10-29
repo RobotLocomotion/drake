@@ -11,7 +11,7 @@ py_library(
     name = "plugin",
     srcs = [
         "show_frame.py",
-        "show_hydroelastic_contact_surface.py",
+        "show_hydroelastic_contact.py",
         "show_image.py",
         "show_point_pair_contact.py",
         "show_time.py",

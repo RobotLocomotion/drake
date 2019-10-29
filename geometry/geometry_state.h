@@ -389,12 +389,17 @@ class GeometryState {
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const {
-    return geometry_engine_->ComputeContactSurfaces(X_WGs_);
+    return geometry_engine_->ComputeContactSurfaces(X_WGs_, geometries_);
   }
 
   /** Implementation of QueryObject::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
     return geometry_engine_->FindCollisionCandidates();
+  }
+
+  /** Implementation of QueryObject::HasCollisions().  */
+  bool HasCollisions() const {
+    return geometry_engine_->HasCollisions();
   }
 
   //@}

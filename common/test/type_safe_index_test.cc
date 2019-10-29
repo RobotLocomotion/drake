@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/sorted_pair.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
@@ -45,7 +46,8 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       AIndex(-1), std::runtime_error,
       "Explicitly constructing an invalid index.+");
-  EXPECT_NO_THROW(unused(AIndex(invalid)));  // Copy construct invalid index.
+  DRAKE_EXPECT_NO_THROW(
+      unused(AIndex(invalid)));  // Copy construct invalid index.
 }
 
 // Verifies the constructor behavior -- in debug and release modes.
@@ -72,7 +74,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   {
     AIndex source(3);
     AIndex starts_invalid;
-    EXPECT_NO_THROW(starts_invalid = source);
+    DRAKE_EXPECT_NO_THROW(starts_invalid = source);
     EXPECT_EQ(source, 3);
     EXPECT_EQ(starts_invalid, source);
   }
@@ -81,7 +83,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   {
     AIndex invalid;
     AIndex target(3);
-    EXPECT_NO_THROW(target = invalid);
+    DRAKE_EXPECT_NO_THROW(target = invalid);
     EXPECT_FALSE(target.is_valid());
   }
 
@@ -90,7 +92,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
     AIndex invalid;
     AIndex target(2);
     EXPECT_TRUE(target.is_valid());
-    EXPECT_NO_THROW(invalid = move(target));
+    DRAKE_EXPECT_NO_THROW(invalid = move(target));
     EXPECT_FALSE(target.is_valid());
     EXPECT_EQ(invalid, 2);
   }
@@ -99,7 +101,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   {
     AIndex invalid;
     AIndex target(3);
-    EXPECT_NO_THROW(target = move(invalid));
+    DRAKE_EXPECT_NO_THROW(target = move(invalid));
     EXPECT_FALSE(target.is_valid());
     EXPECT_FALSE(invalid.is_valid());
   }
@@ -374,16 +376,16 @@ GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {
 // merely the canary in the coal mine.
 GTEST_TEST(TypeSafeIndex, UseInStl) {
   std::vector<AIndex> indices;
-  EXPECT_NO_THROW(indices.resize(3));
+  DRAKE_EXPECT_NO_THROW(indices.resize(3));
   EXPECT_FALSE(indices[0].is_valid());
-  EXPECT_NO_THROW(indices[1] = AIndex(1));
-  EXPECT_NO_THROW(indices[2] = AIndex());  // Valid for *move* assignment.
+  DRAKE_EXPECT_NO_THROW(indices[1] = AIndex(1));
+  DRAKE_EXPECT_NO_THROW(indices[2] = AIndex());  // Valid for *move* assignment.
   AIndex invalid;
-  EXPECT_NO_THROW(indices[2] = invalid);
-  EXPECT_NO_THROW(indices.emplace_back(3));
-  EXPECT_NO_THROW(indices.emplace_back(AIndex(4)));
-  EXPECT_NO_THROW(indices.emplace_back());
-  EXPECT_NO_THROW(indices.emplace_back(AIndex()));
+  DRAKE_EXPECT_NO_THROW(indices[2] = invalid);
+  DRAKE_EXPECT_NO_THROW(indices.emplace_back(3));
+  DRAKE_EXPECT_NO_THROW(indices.emplace_back(AIndex(4)));
+  DRAKE_EXPECT_NO_THROW(indices.emplace_back());
+  DRAKE_EXPECT_NO_THROW(indices.emplace_back(AIndex()));
 }
 
 //-------------------------------------------------------------------

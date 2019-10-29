@@ -2,6 +2,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace symbolic {
@@ -44,7 +45,7 @@ GTEST_TEST(SymbolicLdlt, DynamicSize) {
 GTEST_TEST(SymbolicLdlt, Exception) {
   MatrixXE dut(1, 1);
   dut(0, 0) = 0;
-  EXPECT_NO_THROW(dut.ldlt());
+  DRAKE_EXPECT_NO_THROW(dut.ldlt());
   dut(0, 0) = Variable("a(0,0)");
   EXPECT_THROW(dut.ldlt(), std::exception);
 }
@@ -52,7 +53,7 @@ GTEST_TEST(SymbolicLdlt, Exception) {
 GTEST_TEST(SymbolicLdlt, SizeUpTo6) {
   drake::MatrixUpTo6<Expression> dut(1, 1);
   dut.setZero();
-  EXPECT_NO_THROW(dut.ldlt());
+  DRAKE_EXPECT_NO_THROW(dut.ldlt());
 }
 
 }  // namespace

@@ -262,6 +262,9 @@ class ContextBase : public internal::ContextMessageInterface {
     return ++context->current_change_event_;
   }
 
+  /** Returns true if this context has no parent. */
+  bool is_root_context() const { return parent_ == nullptr; }
+
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
@@ -436,9 +439,6 @@ class ContextBase : public internal::ContextMessageInterface {
       get_tracker(ticket).NoteValueChange(change_event);
   }
   //@}
-
-  /** Returns true if this context has no parent. */
-  bool is_root_context() const { return parent_ == nullptr; }
 
   /** (Internal use only) Returns true if this context provides resources for
   its own individual state variables or parameters. That means those variables

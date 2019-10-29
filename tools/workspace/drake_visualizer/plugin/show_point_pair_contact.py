@@ -112,6 +112,14 @@ class _ContactConfigDialog(QtGui.QDialog):
         self.setLayout(layout)
 
 
+# TODO(SeanCurtis): This would be better extracted out of *this* plugin
+def get_sub_menu_or_make(menu, menu_name):
+    for a in menu.actions():
+        if a.text == menu_name:
+            return a.menu()
+    return menu.addMenu(menu_name)
+
+
 class ContactVisualizer(object):
     def __init__(self):
         self._folder_name = 'Point Pair Contact Results'
@@ -128,22 +136,8 @@ class ContactVisualizer(object):
         self.min_magnitude = 1e-4
 
         menu_bar = applogic.getMainWindow().menuBar()
-        # TODO(SeanCurtis): This would be better extracted out of *this* plugin
-        #  and into some common plugin repository so that all plugins can place
-        #  their menu functionality into a common menu.
-        plugin_name = '&Plugins'
-        plugin_menu = None
-        for a in menu_bar.actions():
-            if a.text == plugin_name:
-                plugin_menu = a
-                break
-        if plugin_menu is None:
-            plugin_menu = menu_bar.addMenu(plugin_name)
-        # TODO: I should probably test for the existence of this sub-menu and
-        #  the action -- otherwise they'll stomp on each other (the new submenu
-        #  implicitly replacing the old). More generally, we need a safe way
-        #  to dynamically modify the menu based on arbitrary plugins.
-        contact_menu = plugin_menu.addMenu('&Contacts')
+        plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
+        contact_menu = get_sub_menu_or_make(plugin_menu, '&Contacts')
         self.configure_action = contact_menu.addAction(
             "&Configure Force Vector for Point Contacts")
         self.configure_action.connect('triggered()', self.configure_via_dialog)

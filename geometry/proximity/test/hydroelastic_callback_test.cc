@@ -8,7 +8,9 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -22,8 +24,10 @@ using fcl::CollisionObjectd;
 using fcl::Halfspaced;
 using fcl::Sphered;
 using math::RigidTransform;
+using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
+using std::move;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
@@ -48,10 +52,11 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
   CollisionFilterLegacy collision_filter;
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
+  RigidTransformd X_WA;
+  RigidTransformd X_WB(Vector3d{0, 0, 0.9 * (radius + cube_size / 2)});
   unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id_A, RigidTransform<AutoDiffXd>::Identity()},
-      {id_B, RigidTransform<AutoDiffXd>(
-                 Vector3<AutoDiffXd>{0, 0, 0.9 * (radius + cube_size / 2)})}};
+      {id_A, X_WA.cast<AutoDiffXd>()},
+      {id_B, X_WB.cast<AutoDiffXd>()}};
 
   CollisionObjectd object_A(make_shared<Sphered>(radius));
   data_A.write_to(&object_A);
@@ -59,7 +64,21 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
   data_B.write_to(&object_B);
 
   vector<ContactSurface<AutoDiffXd>> surfaces;
-  CallbackData<AutoDiffXd> data(&collision_filter, &X_WGs, &surfaces);
+  // Populate some dummy geometries with empty properties so that the code can
+  // get as far as failing to evaluate the contact.
+  unordered_map<GeometryId, InternalGeometry> geometries;
+  const SourceId source_id = SourceId::get_new_id();
+  InternalGeometry sphere_geo(source_id, make_unique<Sphere>(radius),
+                              FrameId::get_new_id(), id_A, "sphere", X_WA);
+  sphere_geo.SetRole(ProximityProperties());
+  geometries.insert({sphere_geo.id(), move(sphere_geo)});
+  InternalGeometry box_geo(source_id,
+                           make_unique<Box>(cube_size, cube_size, cube_size),
+                           FrameId::get_new_id(), id_B, "box", X_WB);
+  box_geo.SetRole(ProximityProperties());
+  geometries.insert({box_geo.id(), move(box_geo)});
+  CallbackData<AutoDiffXd> data(&collision_filter, &X_WGs, &geometries,
+                                &surfaces);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<AutoDiffXd>(&object_A, &object_B, &data), std::logic_error,
       "AutoDiff-valued ContactSurface calculation between meshes is not"
@@ -107,7 +126,7 @@ class HydroelasticCallbackTyped : public ::testing::Test {
 
 // TODO(SeanCurtis-TRI): This test relies on the hackiness of the code when it
 //  it was introduced -- I.e., the *only* support that exists is for a soft
-//  sphere and rigid box. Update/replace this test when the geneeral support
+//  sphere and rigid box. Update/replace this test when the general support
 //  for evaluating hydroelastic contact is introduced.
 
 // Confirms that a colliding collision pair (with supported hydroelastic
@@ -118,8 +137,24 @@ TYPED_TEST(HydroelasticCallbackTyped, ValidPairProducesResult) {
   using T = TypeParam;
 
   vector<ContactSurface<T>> surfaces;
-  CallbackData<T> data(&this->collision_filter_, &this->X_WGs_, &surfaces);
-  EXPECT_NO_THROW(
+  unordered_map<GeometryId, InternalGeometry> geometries;
+  const SourceId source_id = SourceId::get_new_id();
+  InternalGeometry sphere_geo(source_id, make_unique<Sphere>(this->radius_),
+                              FrameId::get_new_id(), this->id_sphere_, "sphere",
+                              this->X_WGs_.at(this->id_sphere_));
+  sphere_geo.SetRole(ProximityProperties());
+  geometries.insert({sphere_geo.id(), move(sphere_geo)});
+  InternalGeometry box_geo(
+      source_id,
+      make_unique<Box>(this->cube_size_, this->cube_size_, this->cube_size_),
+      FrameId::get_new_id(), this->id_box_, "box",
+      this->X_WGs_.at(this->id_box_));
+  box_geo.SetRole(ProximityProperties());
+  geometries.insert({box_geo.id(), move(box_geo)});
+
+  CallbackData<T> data(&this->collision_filter_, &this->X_WGs_, &geometries,
+                       &surfaces);
+  DRAKE_EXPECT_NO_THROW(
       Callback<T>(this->sphere_.get(), this->box_.get(), &data));
   EXPECT_EQ(surfaces.size(), 1u);
 }

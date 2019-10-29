@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":radau_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":runge_kutta5_integrator",
         ":scalar_dense_output",
         ":scalar_initial_value_problem",
         ":scalar_view_dense_output",
@@ -150,6 +151,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "runge_kutta3_integrator",
+    srcs = ["runge_kutta3_integrator.cc"],
+    hdrs = [
+        "runge_kutta3_integrator.h",
+        "runge_kutta3_integrator-inl.h",
+    ],
+    deps = [
+        ":integrator_base",
+        ":runge_kutta2_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "runge_kutta5_integrator",
+    srcs = ["runge_kutta5_integrator.cc"],
+    hdrs = ["runge_kutta5_integrator.h"],
+    deps = [
+        ":integrator_base",
+    ],
+)
+
+drake_cc_library(
     name = "implicit_euler_integrator",
     srcs = ["implicit_euler_integrator.cc"],
     hdrs = [
@@ -184,19 +207,6 @@ drake_cc_library(
     deps = [
         ":bogacki_shampine3_integrator",
         ":implicit_integrator",
-        ":runge_kutta2_integrator",
-    ],
-)
-
-drake_cc_library(
-    name = "runge_kutta3_integrator",
-    srcs = ["runge_kutta3_integrator.cc"],
-    hdrs = [
-        "runge_kutta3_integrator.h",
-        "runge_kutta3_integrator-inl.h",
-    ],
-    deps = [
-        ":integrator_base",
         ":runge_kutta2_integrator",
     ],
 )
@@ -329,6 +339,7 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
+        "//common/test_utilities:expect_no_throw",
         "//systems/analysis/test_utilities",
     ],
 )
@@ -354,6 +365,15 @@ drake_cc_googletest(
     name = "implicit_integrator_test",
     deps = [
         ":implicit_integrator",
+        "//common/test_utilities:expect_no_throw",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "integrator_base_test",
+    deps = [
+        ":integrator_base",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -415,6 +435,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "runge_kutta5_integrator_test",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
+    deps = [
+        ":runge_kutta5_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
     timeout = "moderate",
     deps = [
@@ -461,6 +496,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//common/trajectories:piecewise_polynomial",
     ],

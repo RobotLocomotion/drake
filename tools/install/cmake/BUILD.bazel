@@ -8,7 +8,9 @@ package(default_visibility = ["//visibility:public"])
 install_files(
     name = "install",
     dest = "lib/cmake/drake/modules",
-    files = ["FindTinyXML2.cmake"],
+    files = [
+        "FindTinyXML2.cmake",
+    ],
 )
 
 add_lint_tests()

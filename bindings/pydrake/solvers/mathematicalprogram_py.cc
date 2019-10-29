@@ -7,7 +7,6 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -911,7 +910,12 @@ top-level documentation for :py:mod:`pydrake.math`.
         .def("get_description", &Class::get_description,
             cls_doc.get_description.doc)
         .def("set_description", &Class::set_description,
-            cls_doc.set_description.doc);
+            cls_doc.set_description.doc)
+        .def("SetGradientSparsityPattern", &Class::SetGradientSparsityPattern,
+            py::arg("gradient_sparsity_pattern"),
+            cls_doc.SetGradientSparsityPattern.doc)
+        .def("gradient_sparsity_pattern", &Class::gradient_sparsity_pattern,
+            cls_doc.gradient_sparsity_pattern.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);

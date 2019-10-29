@@ -65,6 +65,32 @@ enum class ContactModel {
 /// collection of interconnected bodies.  See @ref multibody for an overview of
 /// concepts/notation.
 ///
+/// @system{MultibodyPlant,
+///   @input_port{{model_instance_name[0]}_actuation}
+///   @input_port{...}
+///   @input_port{{model_instance_name[N-1]}_actuation}
+///   @input_port{applied_generalized_force}
+///   @input_port{applied_spatial_force}
+///   @input_port{geometry_query},
+///   @output_port{continuous_state}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[0]}_continuous_state</b>}
+///   @output_port{...}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[N-1]}_continuous_state</b>}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[0]}_generalized_contact_forces</b>}
+///   @output_port{...}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[N-1]}_generalized_contact_forces</b>}
+///   @output_port{contact_results}
+///   @output_port{geometry_pose}
+/// }
+///
+/// Note that the outputs in <b style="color:orange">orange</b> are not
+/// allocated for model instances with no state (e.g. the world, or a welded
+/// model which isn't actuated (like a table)).
+///
 /// %MultibodyPlant provides a user-facing API to:
 ///
 /// - add bodies, joints, force elements, and constraints,
@@ -248,6 +274,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
@@ -451,6 +478,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
+  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
+  /// will affect subsequent calls to SetDefaultState(); otherwise, this value
+  /// is effectively ignored.
+  /// @param[in] body
+  ///   Body whose default pose will be set.
+  /// @param[in] X_WB
+  ///   Default pose of the body.
+  void SetDefaultFreeBodyPose(
+      const Body<T>& body, const math::RigidTransform<double>& X_WB) {
+    X_WB_default_list_[body.index()] = X_WB;
+  }
+
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -479,9 +518,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
   }
-
-  // TODO(sammy-tri) We should also be able to set the default pose of a free
-  // body.  See https://github.com/RobotLocomotion/drake/issues/10713
 
   /// Sets the distribution used by SetRandomState() to populate the
   /// x-y-z `position` component of the floating-base state.
@@ -792,6 +828,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     visual_geometries_.emplace_back();
     DRAKE_DEMAND(collision_geometries_.size() == body.index());
     collision_geometries_.emplace_back();
+    DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
+    X_WB_default_list_.emplace_back();
     return body;
   }
 
@@ -1592,35 +1630,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
-  /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `P`, this method computes the geometric Jacobian `Jv_WFp`
-  /// for frame `Fp`. The new origin `P` is specified by the position vector
-  /// `p_FP` in frame F. The frame geometric Jacobian `Jv_WFp` is defined by:
-  /// <pre>
-  ///   V_WFp(q, v) = Jv_WFp(q)⋅v
-  /// </pre>
-  /// where `V_WFp(q, v)` is the spatial velocity of frame `Fp` measured and
-  /// expressed in the world frame W and q and v are the vectors of generalized
-  /// position and velocity, respectively.
-  /// The geometric Jacobian `Jv_WFp(q)` is a function of the generalized
-  /// coordinates q only.
-  ///
+  /// For a point Fp fixed/welded to a frame F, calculates `Jv_V_WFp`, Fp's
+  /// spatial velocity Jacobian with respect to generalized velocities v.
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   The position `p_FP` of frame `Fp` is measured and expressed in this
-  ///   frame F.
-  /// @param[in] p_FP
-  ///   The (fixed) position of the origin `P` of frame `Fp` as measured and
-  ///   expressed in frame F.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity `V_WFp`
-  ///   of frame `Fp` by: <pre>
-  ///     V_WFp(q, v) = Jv_WFp(q)⋅v
-  ///   </pre>
-  ///   Therefore `Jv_WFp` is a matrix of size `6 x nv`, with `nv`
+  ///   The position vector `p_FoFp` is expressed in this frame F.
+  /// @param[in] p_FoFp
+  ///   The position vector from Fo (frame F's origin) to Fp, expressed in F.
+  /// @param[out] Jv_V_WFp
+  ///   Fp's spatial velocity Jacobian with respect to generalized velocities v.
+  ///   `V_WFp`, Fp's spatial velocity in world frame W, can be written <pre>
+  ///   V_WFp(q, v) = Jv_V_WFp(q) * v
+  /// </pre>
+  ///   The Jacobian `Jv_V_WFp(q)` is a matrix of size `6 x nv`, with `nv`
   ///   the number of generalized velocities. On input, matrix `Jv_WFp` **must**
   ///   have size `6 x nv` or this method throws an exception. The top rows of
   ///   this matrix (which can be accessed with Jv_WFp.topRows<3>()) is the
@@ -1633,7 +1657,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   results in a valid spatial velocity: <pre>
   ///     SpatialVelocity<double> Jv_WFp_times_v(Jv_WFp * v);
   ///   </pre>
-  ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
   DRAKE_DEPRECATED("2020-02-01", "Use CalcJacobianSpatialVelocity().")
@@ -1642,10 +1665,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> J_WFp) const {
+    const Frame<T>& frame_W = world_frame();
     return CalcJacobianSpatialVelocity(context,
                                        JacobianWrtVariable::kV,
-                                       frame_F, p_FP,
-                                       world_frame(), world_frame(),
+                                       frame_F,
+                                       p_FP,
+                                       frame_W,
+                                       frame_W,
                                        J_WFp);
   }
 
@@ -1701,7 +1727,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
   }
 
-
   /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -1730,7 +1755,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
   /// @param[out] J𝑠_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// `J𝑠_V_ABi_E` is a `6*p x n` matrix, where p is the number of points Bi and
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
@@ -1879,8 +1904,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
+  /// velocity Jacobian in W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -1952,16 +1978,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcConservativePower(context);
   }
 
-  /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
-  /// effects of the multibody equations of motion: <pre>
-  ///   M(q)v̇ + C(q, v)v = tau_app + ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and
+  /// gyroscopic effects in the multibody equations of motion: <pre>
+  ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
-  /// where `M(q)` is the multibody model's mass matrix and `tau_app` consists
-  /// of a vector applied generalized forces. The last term is a summation over
-  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
-  /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// where `M(q)` is the multibody model's mass matrix and `tau_app` is a
+  /// vector of generalized forces. The last term is a summation over all bodies
+  /// of the dot-product of `Fapp_Bo_W` (applied spatial force on body B at Bo)
+  /// with `Jv_V_WB(q)` (B's spatial Jacobian in world W with respect to
+  /// generalized velocities v).
+  /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
@@ -3089,13 +3115,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// Sets the `state` so that generalized positions and velocities are zero.
+  /// Sets `state` according to defaults set by the user for joints (e.g.
+  /// RevoluteJoint::set_default_angle()) and free bodies
+  /// (SetDefaultFreeBodyPose()). If the user does not specify defaults, the
+  /// state corresponds to zero generalized positions and velocities.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
+    for (const BodyIndex index : GetFloatingBaseBodies()) {
+      SetFreeBodyPose(
+          context, state, internal_tree().get_body(index),
+          X_WB_default_list_[index].template cast<T>());
+    }
   }
 
   /// Assigns random values to all elements of the state, by drawing samples
@@ -3796,6 +3830,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
+
+  // Vector (with size num_bodies()) of default poses for each body. This is
+  // only used if Body::is_floating() is true.
+  std::vector<math::RigidTransform<double>> X_WB_default_list_;
 };
 
 /// @cond

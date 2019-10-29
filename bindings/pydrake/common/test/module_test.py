@@ -1,18 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import unittest
-
-import six
-from six import text_type as unicode
 
 import pydrake.common
 
 
 class TestCommon(unittest.TestCase):
-    if six.PY2:
-        assertRegex = unittest.TestCase.assertRegexpMatches
-
     def test_drake_demand_throws(self):
         # Drake's assertion errors should turn into SystemExit by default,
         # without the user needing to do anything special.  Here, we trigger a
@@ -49,7 +41,7 @@ class TestCommon(unittest.TestCase):
     def test_logging(self):
         self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
         self.assertIsInstance(
-            pydrake.common.set_log_level(level="unchanged"), unicode)
+            pydrake.common.set_log_level(level="unchanged"), str)
 
     def test_random_generator(self):
         g1 = pydrake.common.RandomGenerator()

@@ -5,7 +5,6 @@ Ensures that `build --python_path=` and
 See `bazel_python_is_valid` in `repository.bzl` for usage.
 """
 
-from __future__ import print_function
 import os
 import sys
 import subprocess
@@ -18,8 +17,8 @@ def indent(indent, text):
 
 
 def get_interpreter_info(python):
-    # Do not compare paths, as we may get something like `/usr/bin/python` and
-    # `/usr/bin/python2.7`. Instead, ensure we have the same version
+    # Do not compare paths, as we may get something like `/usr/bin/python3` and
+    # `/usr/bin/python3.6`. Instead, ensure we have the same version
     # information and prefix (which should be invariant of symlink aliases and
     # shell forwarding scripts).
     return subprocess.check_output([
