@@ -199,5 +199,11 @@ struct Warn {
 /// then this returns an empty string.
 std::string set_log_level(const std::string& level);
 
+/// The "unchanged" string to pass to set_log_level() so as to achieve a no-op.
+extern const char* const kSetLogLevelUnchanged;
+
+/// An end-user help string suitable to describe the effects of set_log_level().
+extern const char* const kSetLogLevelHelpMessage;
+
 }  // namespace logging
 }  // namespace drake
