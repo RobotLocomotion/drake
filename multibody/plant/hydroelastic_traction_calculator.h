@@ -99,9 +99,9 @@ class HydroelasticTractionCalculator {
    @param[out] quadrature_point_data the intermediate data computed by the
                quadrature process.
    @param[out] F_Ac_W the spatial force computed by the hydroelastic model that
-               acts on the body attached to geometry M in `data`'s
-               ContactSurface. This spatial force is applied at the centroid of
-               the contact surface.
+               acts on the body attached to geometry M (which is affixed to Body
+               A) in `data`'s ContactSurface. This spatial force is applied at
+               the centroid (Point c) of the contact surface.
    */
   void ComputeSpatialForcesAtCentroidFromHydroelasticModel(
       const Data& data, double dissipation, double mu_coulomb,
@@ -116,10 +116,13 @@ class HydroelasticTractionCalculator {
    `surface.M_id()` and `surface.N_id()` are affixed, respectively.
    @param data Relevant kinematic data.
    @param F_Ac_W the spatial force computed by the hydroelastic model that acts
-          on the body attached to geometry M in `data`'s ContactSurface. This
-          spatial force is applied at the centroid of the contact surface.
-   @param[output] F_Ao_W the spatial force on Body A, on return.
-   @param[output] F_Bo_W the spatial force on Body B, on return.
+          on the body (A) attached to geometry M in `data`'s ContactSurface.
+          This spatial force is applied at the centroid (point c) of the contact
+          surface.
+   @param[output] F_Ao_W the spatial force on Body A, applied at the origin of
+                  A's frame, on return.
+   @param[output] F_Bo_W the spatial force on Body B, applied at the origin of
+                  B's frame, on return.
    */
   void TransformSpatialForcesAtCentroidToBodyOrigins(
       const Data& data, const SpatialForce<T>& F_Ac_W, SpatialForce<T>* F_Ao_W,

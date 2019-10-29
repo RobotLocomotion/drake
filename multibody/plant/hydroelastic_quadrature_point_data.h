@@ -13,11 +13,11 @@ namespace multibody {
 */
 template <typename T>
 struct HydroelasticQuadraturePointData {
-  // Q, the point at which the traction is computed, as an offset vector
-  // expressed in the world frame.
+  // Q, the point at which quantities (traction, slip velocity) are computed, as
+  // an offset vector expressed in the world frame.
   Vector3<T> p_WQ;
 
-  // The triangle (from the quadrature computation) that contains Q.
+  // The triangle on the ContactSurface that contains Q.
   geometry::SurfaceFaceIndex face_index;
 
   // The slip velocity between Bodies A and B at Point Q, expressed in the

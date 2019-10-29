@@ -7,7 +7,8 @@ namespace multibody {
 
 template <typename T>
 ContactResults<T>::ContactResults() {
-  // Make this hold pointers.
+  // Make this hold pointers at first (see comment on
+  // hydroelastic_contact_info_).
   hydroelastic_contact_info_ =
       std::vector<const HydroelasticContactInfo<T>*>();
 }

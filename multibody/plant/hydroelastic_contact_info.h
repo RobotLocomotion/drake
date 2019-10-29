@@ -21,9 +21,9 @@ namespace multibody {
  from the Hydroelastic contact model and includes:
 
     - The shared contact surface between the two geometries, which includes
-      the virtual pressure acting at every point on the contact surface.
-    - The traction acting at the quadrature points on the contact surface.
-    - The slip speed at the quadrature points on the contact surface.
+      the virtual pressures acting at every point on the contact surface.
+    - The tractions acting at the quadrature points on the contact surface.
+    - The slip speeds at the quadrature points on the contact surface.
     - The spatial force from the integrated tractions that is applied at the
       centroid of the contact surface.
 

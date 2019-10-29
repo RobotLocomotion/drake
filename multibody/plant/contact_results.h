@@ -16,7 +16,9 @@ namespace multibody {
 
 /**
  A container class storing the contact results information for each contact
- pair for a given state of the simulation.
+ pair for a given state of the simulation. Note that copying this data structure
+ is expensive when `num_hydroelastic_contacts() > 0` because a deep copy is
+ performed.
 
  @tparam T Must be one of drake's default scalar types.
  */
@@ -60,7 +62,8 @@ class ContactResults {
   }
 
   /* Add a new hydroelastic contact to `this`, assuming that `this` is not the
-   result of a copy operation (AddContactInfo() asserts that is the case). */
+   result of a copy operation (AddContactInfo() asserts that is the case). The
+   pointer must remain valid for the lifetime of this object. */
   void AddContactInfo(
       const HydroelasticContactInfo<T>* hydroelastic_contact_info);
   #endif
@@ -97,12 +100,22 @@ class ContactResults {
   }
 
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
+
+  /* We use a variant type to keep from copying the HydroelasticContactInfo
+   into this data structure, if possible. By default, the variant stores the
+   first type, i.e., std::vector<const HydroelasticContactInfo<T>*>. If this
+   data structure is copied, however, the variant changes to instead store the
+   second type, a vector of unique pointers. In that case, all of the underlying
+   HydroelasticContactInfo objects are copied and
+   AddContactInfo(const HydroelasticContactInfo*) can no longer be called on the
+   copy (see assertion in AddContactInfo).
+   */
   drake::variant<std::vector<const HydroelasticContactInfo<T>*>,
                  std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
       hydroelastic_contact_info_;
 };
 
-// Workarounds for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
 // should be moved back into the class definition once we no longer need to
 // support GCC versions prior to 6.3.
 template <typename T>
