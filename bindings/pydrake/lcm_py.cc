@@ -31,7 +31,7 @@ PYBIND11_MODULE(lcm, m) {
         // wreak havoc on the Python GIL with a callback.
         .def("Publish",
             [](Class* self, const std::string& channel, py::bytes buffer,
-                optional<double> time_sec) {
+                std::optional<double> time_sec) {
               // TODO(eric.cousineau): See if there is a way to extra the raw
               // bytes from `buffer` without copying.
               std::string str = buffer;

@@ -224,18 +224,21 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
         "SymbolicVectorSystem", GetPyParam<T>(), doc.SymbolicVectorSystem.doc)
-        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
-                 VectorX<Expression>, VectorX<Expression>, double>(),
-            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+        .def(py::init<std::optional<Variable>, VectorX<Variable>,
+                 VectorX<Variable>, VectorX<Expression>, VectorX<Expression>,
+                 double>(),
+            py::arg("time") = std::nullopt,
+            py::arg("state") = Vector0<Variable>{},
             py::arg("input") = Vector0<Variable>{},
             py::arg("dynamics") = Vector0<Expression>{},
             py::arg("output") = Vector0<Expression>{},
             py::arg("time_period") = 0.0,
             doc.SymbolicVectorSystem.ctor.doc_6args)
-        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
-                 VectorX<Variable>, VectorX<Expression>, VectorX<Expression>,
-                 double>(),
-            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+        .def(py::init<std::optional<Variable>, VectorX<Variable>,
+                 VectorX<Variable>, VectorX<Variable>, VectorX<Expression>,
+                 VectorX<Expression>, double>(),
+            py::arg("time") = std::nullopt,
+            py::arg("state") = Vector0<Variable>{},
             py::arg("input") = Vector0<Variable>{},
             py::arg("parameter") = Vector0<Variable>{},
             py::arg("dynamics") = Vector0<Expression>{},
@@ -306,13 +309,13 @@ PYBIND11_MODULE(primitives, m) {
       doc.ControllabilityMatrix.doc);
 
   m.def("IsControllable", &IsControllable, py::arg("sys"),
-      py::arg("threshold") = nullopt, doc.IsControllable.doc);
+      py::arg("threshold") = std::nullopt, doc.IsControllable.doc);
 
   m.def(
       "ObservabilityMatrix", &ObservabilityMatrix, doc.ObservabilityMatrix.doc);
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
-      py::arg("threshold") = nullopt, doc.IsObservable.doc);
+      py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
 
   m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
       // Keep alive, ownership: `return` keeps `builder` alive.
