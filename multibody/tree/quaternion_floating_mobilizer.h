@@ -154,8 +154,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   DRAKE_DEPRECATED("2020-02-01",
                    "Use SetFromRotationMatrix(context, R_FM), where R_FM is a "
                    "RotationMatrix, not an arbitrary Matrix3.  Alternatively, "
-                   "use SetFromRotationMatrix(context, q_FM), where `q_FM` is "
-                   "a quaternion.")
+                   "use set_quaternion(context, q_FM), where `q_FM` is a "
+                   "quaternion.")
   const QuaternionFloatingMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const Matrix3<T>& R_FM_approximate) const {
     const Eigen::Quaternion<T> q_FM =
