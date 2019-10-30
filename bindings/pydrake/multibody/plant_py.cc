@@ -562,17 +562,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
         .def("GetJointByName",
             [](const Class* self, const string& name,
-                optional<ModelInstanceIndex> model_instance) -> auto& {
+                std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
-            py::arg("name"), py::arg("model_instance") = nullopt,
+            py::arg("name"), py::arg("model_instance") = std::nullopt,
             py_reference_internal, cls_doc.GetJointByName.doc)
         .def("GetMutableJointByName",
             [](Class * self, const string& name,
-                optional<ModelInstanceIndex> model_instance) -> auto& {
+                std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetMutableJointByName(name, model_instance);
             },
-            py::arg("name"), py::arg("model_instance") = nullopt,
+            py::arg("name"), py::arg("model_instance") = std::nullopt,
             py_reference_internal, cls_doc.GetJointByName.doc)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(

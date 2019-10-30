@@ -161,7 +161,7 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   void ImplAddFlatTerrain();
 
-  optional<VisualIndex> ImplRegisterVisual(
+  std::optional<VisualIndex> ImplRegisterVisual(
       const DrakeShapes::VisualElement& visual, int body_id);
 
   void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
@@ -417,8 +417,9 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
       static_cast<float>(parent_->config().z_far));
 }
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
-    const DrakeShapes::VisualElement& visual, int body_id) {
+std::optional<RgbdRenderer::VisualIndex>
+    RgbdRendererVTK::Impl::ImplRegisterVisual(
+        const DrakeShapes::VisualElement& visual, int body_id) {
   std::array<vtkNew<vtkActor>, 3> actors;
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, 3> mappers;
   // Sets vertex and fragment shaders only to the depth mapper.
@@ -561,11 +562,11 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       actor_collections[i].push_back(actors[i].GetPointer());
     }
 
-    return optional<VisualIndex>(VisualIndex(static_cast<int>(
+    return std::optional<VisualIndex>(VisualIndex(static_cast<int>(
         id_object_maps_[body_id][ImageType::kColor].size() - 1)));
   }
 
-  return nullopt;
+  return std::nullopt;
 }
 
 RgbdRendererVTK::RgbdRendererVTK(const RenderingConfig& config,
@@ -575,7 +576,7 @@ RgbdRendererVTK::RgbdRendererVTK(const RenderingConfig& config,
 
 RgbdRendererVTK::~RgbdRendererVTK() {}
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::ImplRegisterVisual(
+std::optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   return impl_->ImplRegisterVisual(visual, body_id);
 }

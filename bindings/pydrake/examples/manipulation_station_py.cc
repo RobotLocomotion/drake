@@ -47,7 +47,7 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStation.SetupManipulationClassStation.doc)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
-          py::arg("X_WCameraBody") = nullopt,
+          py::arg("X_WCameraBody") = std::nullopt,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupClutterClearingStation.doc)
       .def("AddManipulandFromFile",

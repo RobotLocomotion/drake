@@ -121,7 +121,7 @@ class RgbdRendererOSPRay::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   void ImplAddFlatTerrain();
 
-  optional<VisualIndex> ImplRegisterVisual(
+  std::optional<VisualIndex> ImplRegisterVisual(
       const DrakeShapes::VisualElement& visual, int body_id);
 
   void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
@@ -309,7 +309,7 @@ RgbdRendererOSPRay::Impl::Impl(RgbdRendererOSPRay* parent,
   cp->renderer->AddLight(light_);
 }
 
-optional<RgbdRenderer::VisualIndex>
+std::optional<RgbdRenderer::VisualIndex>
 RgbdRendererOSPRay::Impl::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   bool shape_matched = true;
@@ -431,11 +431,11 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
       actor_collections[i].push_back(actors_[i].GetPointer());
     }
 
-    return optional<VisualIndex>(VisualIndex(static_cast<int>(
+    return std::optional<VisualIndex>(VisualIndex(static_cast<int>(
         id_object_maps_[body_id][ImageType::kColor].size() - 1)));
   }
 
-  return nullopt;
+  return std::nullopt;
 }
 
 RgbdRendererOSPRay::RgbdRendererOSPRay(const RenderingConfig& config,
@@ -445,7 +445,7 @@ RgbdRendererOSPRay::RgbdRendererOSPRay(const RenderingConfig& config,
 
 RgbdRendererOSPRay::~RgbdRendererOSPRay() {}
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererOSPRay::ImplRegisterVisual(
+std::optional<RgbdRenderer::VisualIndex> RgbdRendererOSPRay::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   return impl_->ImplRegisterVisual(visual, body_id);
 }
