@@ -35,7 +35,7 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
     // Extract μ from the parameters.
     *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
   };
-  this->DeclareInequalityConstraint(mu, {Vector1d(0), nullopt}, "mu ≥ 0");
+  this->DeclareInequalityConstraint(mu, {Vector1d(0), std::nullopt}, "mu ≥ 0");
 }
 
 template <typename T>
