@@ -7,6 +7,7 @@
 
 #include <vtkActor.h>
 #include <vtkAutoInit.h>
+#include <vtkCylinderSource.h>
 #include <vtkImageExport.h>
 #include <vtkLight.h>
 #include <vtkNew.h>
@@ -15,6 +16,8 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
+#include <vtkSphereSource.h>
+#include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/geometry/render/render_engine.h"
@@ -192,6 +195,13 @@ class RenderEngineOspray final
 
   // Configuration to use path tracer or ray tracer.
   const OsprayMode render_mode_{OsprayMode::kPathTracer};
+
+  void SetSphereOptions(vtkSphereSource* vtk_sphere, double radius);
+  void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
+                          double radius);
+  void TransformToDrakeCylinder(vtkTransform* transform,
+                                vtkTransformPolyDataFilter* transform_filter,
+                                vtkCylinderSource* vtk_cylinder);
 };
 
 }  // namespace render

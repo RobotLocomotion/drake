@@ -593,6 +593,65 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
               CompareColor(expect_quad, color, inlier));
 }
 
+// Performs the shape-centered-in-the-image test with a capsule.
+TEST_F(RenderEngineVtkTest, CapsuleTest) {
+  Init(X_WC_, true);
+
+  // Sets up a capsule.
+  Capsule capsule(0.2, 1.2);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, capsule, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+  // Position the top of the capsule to be 1 m above the terrain.
+  RigidTransformd X_WV{Vector3d{0, 0, 0.2}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  PerformCenterShapeTest(renderer_.get(), "Capsule test");
+}
+
+// Performs the shape-centered-in-the-image test with a rotated capsule.
+TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
+  Init(X_WC_, true);
+
+  // Sets up a capsule.
+  Capsule capsule(0.2, 1.2);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, capsule, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+
+  // Rotate the capsule for a perpendicular view at 1 m above the terrain.
+  RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
+                       Vector3d{0, 0, 0.8}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  Render(renderer_.get());
+
+  const char* name = "Capsule rotated test";
+  VerifyOutliers(*renderer_, camera_, name);
+
+  // Verifies the inliers towards the ends of the capsule.
+  const ScreenCoord inlier = GetInlier(camera_);
+  const int offsets[2] = {kHeight / 4, -kHeight / 4};
+  const int x = inlier.x;
+  for (const int& offset : offsets) {
+    const int y = inlier.y + offset;
+    const ScreenCoord offset_inlier = {x, y};
+    EXPECT_TRUE(CompareColor(expected_color_, color_, offset_inlier))
+        << "Color at: " << offset_inlier << " for test: " << name;
+    EXPECT_TRUE(IsExpectedDepth(depth_, offset_inlier, expected_object_depth_,
+                                kDepthTolerance))
+        << "Depth at: " << offset_inlier << " for test: " << name;
+    EXPECT_EQ(label_.at(x, y)[0], static_cast<int>(expected_label_))
+        << "Label at: " << offset_inlier << " for test: " << name;
+  }
+}
+
 // Performs the shape-centered-in-the-image test  with a cylinder.
 TEST_F(RenderEngineVtkTest, CylinderTest) {
   Init(X_WC_, true);

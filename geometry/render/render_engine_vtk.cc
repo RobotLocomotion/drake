@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include <vtkAppendPolyData.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
@@ -225,29 +226,21 @@ void RenderEngineVtk::RenderLabelImage(const CameraProperties& camera,
 
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkSphereSource> vtk_sphere;
-  vtk_sphere->SetRadius(sphere.get_radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_sphere->SetThetaResolution(50);
-  vtk_sphere->SetPhiResolution(50);
+  SetSphereOptions(vtk_sphere.GetPointer(), sphere.get_radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
                                         void* user_data) {
   vtkNew<vtkCylinderSource> vtk_cylinder;
-  vtk_cylinder->SetHeight(cylinder.get_length());
-  vtk_cylinder->SetRadius(cylinder.get_radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_cylinder->SetResolution(50);
+  SetCylinderOptions(vtk_cylinder, cylinder.get_length(),
+                     cylinder.get_radius());
 
   // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
   // to rotate it to be z-axis aligned because that is what Drake uses.
   vtkNew<vtkTransform> transform;
-  transform->RotateX(90);
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
-  transform_filter->SetTransform(transform.GetPointer());
-  transform_filter->Update();
+  TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
 
   ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
@@ -267,11 +260,38 @@ void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
   ImplementGeometry(cube.GetPointer(), user_data);
 }
 
-void RenderEngineVtk::ImplementGeometry(const Capsule&, void*) {
-  // TODO(tehbelinda - #10153): Add capsule support.
-  static const logging::Warn log_once(
-      "VTK does not support capsules yet; they will not appear in the "
-      "rendering.");
+void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
+                                        void* user_data) {
+  // Since there's no native capsule support, we represent it by appending a
+  // cylinder and two spheres together.
+  vtkSmartPointer<vtkAppendPolyData> append_filter =
+      vtkSmartPointer<vtkAppendPolyData>::New();
+
+  const double half_length = capsule.get_length() / 2;
+  // Place the spheres at the two opposite ends along the z-axis.
+  const double sphere_offsets[2] = {half_length, -half_length};
+  for (const double& offset : sphere_offsets) {
+    vtkNew<vtkSphereSource> vtk_sphere;
+    SetSphereOptions(vtk_sphere.GetPointer(), capsule.get_radius());
+    vtkNew<vtkTransform> transform;
+    vtkNew<vtkTransformPolyDataFilter> transform_filter;
+    transform->Translate(0, 0, offset);
+    transform_filter->SetInputConnection(vtk_sphere->GetOutputPort());
+    transform_filter->SetTransform(transform);
+    transform_filter->Update();
+    append_filter->AddInputData(transform_filter->GetOutput());
+  }
+
+  vtkNew<vtkCylinderSource> vtk_cylinder;
+  SetCylinderOptions(vtk_cylinder, capsule.get_length(), capsule.get_radius());
+  // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
+  // to rotate it to be z-axis aligned because that is what Drake uses.
+  vtkNew<vtkTransform> transform;
+  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
+  append_filter->AddInputData(transform_filter->GetOutput());
+
+  ImplementGeometry(append_filter.GetPointer(), user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
@@ -593,6 +613,31 @@ void RenderEngineVtk::UpdateWindow(const DepthCameraProperties& camera,
   // Never show window for depth camera; it is a meaningless operation as the
   // raw depth rasterization is not human consummable.
   UpdateWindow(camera, false, p, "Depth Image");
+}
+
+void RenderEngineVtk::SetSphereOptions(vtkSphereSource* vtk_sphere,
+                                       double radius) {
+  vtk_sphere->SetRadius(radius);
+  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
+  vtk_sphere->SetThetaResolution(50);
+  vtk_sphere->SetPhiResolution(50);
+}
+
+void RenderEngineVtk::SetCylinderOptions(vtkCylinderSource* vtk_cylinder,
+                                         double height, double radius) {
+  vtk_cylinder->SetHeight(height);
+  vtk_cylinder->SetRadius(radius);
+  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
+  vtk_cylinder->SetResolution(50);
+}
+
+void RenderEngineVtk::TransformToDrakeCylinder(
+    vtkTransform* transform, vtkTransformPolyDataFilter* transform_filter,
+    vtkCylinderSource* vtk_cylinder) {
+  transform->RotateX(90);
+  transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
+  transform_filter->SetTransform(transform);
+  transform_filter->Update();
 }
 
 }  // namespace render

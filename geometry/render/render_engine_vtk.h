@@ -9,6 +9,7 @@
 #include <vtkActor.h>
 #include <vtkAutoInit.h>
 #include <vtkCommand.h>
+#include <vtkCylinderSource.h>
 #include <vtkImageExport.h>
 #include <vtkNew.h>
 #include <vtkPolyDataAlgorithm.h>
@@ -16,6 +17,8 @@
 #include <vtkRenderer.h>
 #include <vtkShaderProgram.h>
 #include <vtkSmartPointer.h>
+#include <vtkSphereSource.h>
+#include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_copyable.h"
@@ -227,6 +230,13 @@ class RenderEngineVtk final : public RenderEngine,
   // depth, and label) keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
       actors_;
+
+  void SetSphereOptions(vtkSphereSource* vtk_sphere, double radius);
+  void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
+                          double radius);
+  void TransformToDrakeCylinder(vtkTransform* transform,
+                                vtkTransformPolyDataFilter* transform_filter,
+                                vtkCylinderSource* vtk_cylinder);
 };
 
 }  // namespace render
