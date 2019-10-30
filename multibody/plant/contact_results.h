@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -70,32 +71,32 @@ class ContactResults {
 
  private:
   bool hydroelastic_contact_vector_holds_pointers() const {
-    return drake::holds_alternative<
+    return std::holds_alternative<
         std::vector<const HydroelasticContactInfo<T>*>>(
         hydroelastic_contact_info_);
   }
 
   const std::vector<const HydroelasticContactInfo<T>*>&
   hydroelastic_contact_vector_of_pointers() const {
-    return drake::get<std::vector<const HydroelasticContactInfo<T>*>>(
+    return std::get<std::vector<const HydroelasticContactInfo<T>*>>(
         hydroelastic_contact_info_);
   }
 
   std::vector<const HydroelasticContactInfo<T>*>&
   hydroelastic_contact_vector_of_pointers() {
-    return drake::get<std::vector<const HydroelasticContactInfo<T>*>>(
+    return std::get<std::vector<const HydroelasticContactInfo<T>*>>(
         hydroelastic_contact_info_);
   }
 
   const std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>&
   hydroelastic_contact_vector_of_unique_ptrs() const {
-    return drake::get<std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>(
+    return std::get<std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>(
         hydroelastic_contact_info_);
   }
 
   std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>&
   hydroelastic_contact_vector_of_unique_ptrs() {
-    return drake::get<std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>(
+    return std::get<std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>(
         hydroelastic_contact_info_);
   }
 
@@ -110,8 +111,8 @@ class ContactResults {
    AddContactInfo(const HydroelasticContactInfo*) can no longer be called on the
    copy (see assertion in AddContactInfo).
    */
-  drake::variant<std::vector<const HydroelasticContactInfo<T>*>,
-                 std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
+  std::variant<std::vector<const HydroelasticContactInfo<T>*>,
+               std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
       hydroelastic_contact_info_;
 };
 

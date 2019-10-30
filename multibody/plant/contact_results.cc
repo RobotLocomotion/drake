@@ -21,7 +21,11 @@ ContactResults<T>::ContactResults(const ContactResults<T>& contact_results) {
 template <typename T>
 ContactResults<T>& ContactResults<T>::operator=(
     const ContactResults<T>& contact_results) {
-  if (contact_results.num_hydroelastic_contacts() > 0) {
+  // Make the type a vector of const pointers if we can.
+  if (contact_results.num_hydroelastic_contacts() == 0) {
+    hydroelastic_contact_info_ =
+        std::vector<const HydroelasticContactInfo<T>*>();
+  } else {
     // If this currently holds pointers, we need to change the type.
     if (hydroelastic_contact_vector_holds_pointers()) {
       hydroelastic_contact_info_ =
