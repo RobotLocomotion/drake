@@ -51,7 +51,7 @@ class FixedOffsetFrame final : public Frame<T> {
   FixedOffsetFrame(
       const std::string& name, const Frame<T>& P,
       const math::RigidTransform<double>& X_PF,
-      optional<ModelInstanceIndex> model_instance = {});
+      std::optional<ModelInstanceIndex> model_instance = {});
 
   /// Creates an unnamed material Frame F. See overload with name for more
   /// information.

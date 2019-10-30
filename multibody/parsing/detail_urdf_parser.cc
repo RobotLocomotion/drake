@@ -293,26 +293,24 @@ void ParseJoint(ModelInstanceIndex model_instance,
   double damping = 0;
   double velocity = 0;
 
-  const optional<RigidTransformd> nullopt;  // `drake::nullopt` is ambiguous
-
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     ParseJointLimits(node, &lower, &upper, &velocity);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<RevoluteJoint>(
         name, parent_body, X_PJ,
-        child_body, nullopt, axis, lower, upper, damping).index();
+        child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
   } else if (type.compare("fixed") == 0) {
     plant->AddJoint<WeldJoint>(name, parent_body, X_PJ,
-                               child_body, nullopt,
+                               child_body, std::nullopt,
                                RigidTransformd::Identity());
   } else if (type.compare("prismatic") == 0) {
     ParseJointLimits(node, &lower, &upper, &velocity);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<PrismaticJoint>(
         name, parent_body, X_PJ,
-        child_body, nullopt, axis, lower, upper, damping).index();
+        child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
   } else if (type.compare("floating") == 0) {
