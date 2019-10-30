@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -10,7 +11,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_velocity.h"
@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value);
 
 struct DifferentialInverseKinematicsResult {
-  optional<VectorX<double>> joint_velocities{};
+  std::optional<VectorX<double>> joint_velocities{};
   DifferentialInverseKinematicsStatus status{
       DifferentialInverseKinematicsStatus::kNoSolutionFound};
 };
@@ -79,22 +79,22 @@ class DifferentialInverseKinematicsParameters {
     return gain_E_;
   }
 
-  const optional<double>& get_unconstrained_degrees_of_freedom_velocity_limit()
-      const {
+  const std::optional<double>&
+      get_unconstrained_degrees_of_freedom_velocity_limit() const {
     return unconstrained_degrees_of_freedom_velocity_limit_;
   }
 
-  const optional<std::pair<VectorX<double>, VectorX<double>>>&
+  const std::optional<std::pair<VectorX<double>, VectorX<double>>>&
   get_joint_position_limits() const {
     return q_bounds_;
   }
 
-  const optional<std::pair<VectorX<double>, VectorX<double>>>&
+  const std::optional<std::pair<VectorX<double>, VectorX<double>>>&
   get_joint_velocity_limits() const {
     return v_bounds_;
   }
 
-  const optional<std::pair<VectorX<double>, VectorX<double>>>&
+  const std::optional<std::pair<VectorX<double>, VectorX<double>>>&
   get_joint_acceleration_limits() const {
     return vd_bounds_;
   }
@@ -216,10 +216,10 @@ class DifferentialInverseKinematicsParameters {
   int num_positions_{0};
   int num_velocities_{0};
   VectorX<double> nominal_joint_position_;
-  optional<std::pair<VectorX<double>, VectorX<double>>> q_bounds_{};
-  optional<std::pair<VectorX<double>, VectorX<double>>> v_bounds_{};
-  optional<std::pair<VectorX<double>, VectorX<double>>> vd_bounds_{};
-  optional<double> unconstrained_degrees_of_freedom_velocity_limit_{};
+  std::optional<std::pair<VectorX<double>, VectorX<double>>> q_bounds_{};
+  std::optional<std::pair<VectorX<double>, VectorX<double>>> v_bounds_{};
+  std::optional<std::pair<VectorX<double>, VectorX<double>>> vd_bounds_{};
+  std::optional<double> unconstrained_degrees_of_freedom_velocity_limit_{};
   Vector6<double> gain_E_{Vector6<double>::Ones()};
   double dt_{1};
   std::vector<std::shared_ptr<solvers::LinearConstraint>>

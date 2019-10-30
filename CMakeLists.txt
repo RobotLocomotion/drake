@@ -1,8 +1,11 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.5.1)
-project(drake)
+cmake_minimum_required(VERSION 3.10)
+project(drake
+  DESCRIPTION "Model-based design and verification for robotics"
+  LANGUAGES C CXX
+)
 
 list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -73,17 +76,17 @@ else()
 
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|xenial)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
      message(FATAL_ERROR
        "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-       "Ubuntu 16.04 (Xenial) or Ubuntu 18.04 (Bionic)."
+       "Ubuntu 18.04 (Bionic)."
      )
   endif()
 endif()
 
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 0.28)
+set(MINIMUM_BAZEL_VERSION 1.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
@@ -100,9 +103,9 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 10)
+set(MINIMUM_APPLE_CLANG_VERSION 11)
 set(MINIMUM_CLANG_VERSION 6)
-set(MINIMUM_GNU_VERSION 5.4)
+set(MINIMUM_GNU_VERSION 7.4)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
@@ -150,12 +153,12 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
-  set(FLAG_STD_CXX14 -std=c++14)
-  check_cxx_compiler_flag(${FLAG_STD_CXX14} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
-  if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
+  set(FLAG_STD_CXX17 -std=c++17)
+  check_cxx_compiler_flag(${FLAG_STD_CXX17} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
+  if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
     message(FATAL_ERROR
       "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it "
-      "does not accept the ${FLAG_STD_CXX14} flag"
+      "does not accept the ${FLAG_STD_CXX17} flag"
     )
   endif()
   message(WARNING
@@ -186,72 +189,28 @@ else()
   endif()
 endif()
 
-set(MINIMUM_SUPPORTED_CXX_VERSION 14)
-set(MAXIMUM_SUPPORTED_CXX_VERSION 17)
-set(DEFAULT_CXX_VERSION 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${DEFAULT_CXX_VERSION})
-endif()
-if(CMAKE_CXX_STANDARD LESS MINIMUM_SUPPORTED_CXX_VERSION)
-  message(FATAL_ERROR
-    "Compilation with C++ standard ${CMAKE_CXX_STANDARD} is NOT supported"
-  )
-endif()
-if(CMAKE_CXX_STANDARD GREATER MAXIMUM_SUPPORTED_CXX_VERSION)
-  message(WARNING
-    "Compilation with C++ standard ${CMAKE_CXX_STANDARD} is NOT supported. "
-    "Compilation of project drake_cxx_python may fail."
-  )
-endif()
-if(CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION)
-  set(MAYBE_BAZEL_CXXOPT_STD
-    "build --cxxopt=${CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION} --host_cxxopt=${CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION}"
-  )
-else()
-  set(MAYBE_BAZEL_CXXOPT_STD)
-endif()
+set(CMAKE_CXX_STANDARD 17)
 
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(SUPPORTED_PYTHON_VERSIONS 3 3.7)
+  set(SUPPORTED_PYTHON_VERSIONS 3.7)
 else()
-  set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
+  set(SUPPORTED_PYTHON_VERSIONS 3.6)
 endif()
 
 if(PYTHON_EXECUTABLE)
   find_package(PythonInterp MODULE REQUIRED)
 else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL xenial)
-    set(DEFAULT_PYTHON_VERSION 2)
-  else()
-    set(DEFAULT_PYTHON_VERSION 3)
-  endif()
-
-  string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
-    "${SUPPORTED_PYTHON_VERSIONS}"
-  )
-  set(WITH_PYTHON_VERSION ${DEFAULT_PYTHON_VERSION} CACHE STRING
-    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
-  )
-  set_property(CACHE WITH_PYTHON_VERSION PROPERTY
-    STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
-  )
-
   if(APPLE)
     # Prefer python3 executable in /usr/local/bin.
     list(INSERT CMAKE_PROGRAM_PATH 0 /usr/local/bin)
-
-    string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
-    list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
-
-    find_program(PYTHON_EXECUTABLE NAMES python${WITH_PYTHON_VERSION_MAJOR})
+    find_program(PYTHON_EXECUTABLE NAMES python3)
     mark_as_advanced(PYTHON_EXECUTABLE)
   endif()
-
-  find_package(PythonInterp ${WITH_PYTHON_VERSION} EXACT MODULE REQUIRED)
+  find_package(PythonInterp 3 EXACT MODULE REQUIRED)
 endif()
 
 set(PYTHON_VERSION_MAJOR_MINOR
@@ -419,10 +378,28 @@ endif()
 if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL F2C OR WITH_SNOPT STREQUAL F2C)
     list(APPEND BAZEL_CONFIGS --config=snopt_f2c)
-  elseif(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
-    list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
   else()
-    list(APPEND BAZEL_CONFIGS --config=snopt)
+    enable_language(Fortran)
+
+    if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+      if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
+        message(FATAL_ERROR
+          "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
+          "supported"
+        )
+      endif()
+    else()
+      message(WARNING
+        "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
+        "Compilation of project drake_cxx_python may fail."
+      )
+    endif()
+
+    if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
+      list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
+    else()
+      list(APPEND BAZEL_CONFIGS --config=snopt)
+    endif()
   endif()
 
   if(WITH_ROBOTLOCOMOTION_SNOPT)
@@ -557,9 +534,6 @@ install(FILES "${PROJECT_BINARY_DIR}/VERSION.TXT" DESTINATION share/doc/drake)
 set(CPACK_GENERATOR TGZ)
 set(CPACK_INSTALLED_DIRECTORIES "${CMAKE_INSTALL_PREFIX}" .)
 set(CPACK_PACKAGE_CONTACT RobotLocomotion)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-  "Model-based design and verification for robotics"
-)
 set(CPACK_PACKAGE_VENDOR RobotLocomotion)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 0)

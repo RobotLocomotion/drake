@@ -450,7 +450,7 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
 // Test both 1-stage (1st order) and 2-stage (3rd order) Radau integrators.
 typedef ::testing::Types<RadauIntegrator<double, 1>, RadauIntegrator<double, 2>>
     MyTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(My, ImplicitIntegratorTest, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ImplicitIntegratorTest, MyTypes);
 
 }  // namespace analysis_test
 }  // namespace systems

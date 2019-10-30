@@ -1,12 +1,12 @@
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
 
 #include <memory>
+#include <optional>
 #include <random>
 #include <string>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -97,7 +97,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
   void CheckPositiveResult(const multibody::SpatialVelocity<double>& V_WE,
                            const DifferentialInverseKinematicsResult& result) {
-    ASSERT_TRUE(result.joint_velocities != nullopt);
+    ASSERT_TRUE(result.joint_velocities != std::nullopt);
     drake::log()->info("result.joint_velocities = {}",
                        result.joint_velocities->transpose());
 
@@ -167,7 +167,7 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
   const DifferentialInverseKinematicsResult result =
       DoDiffIKForSpatialVelocity(V_WE_W);
   drake::log()->info("result.status = {}", result.status);
-  ASSERT_TRUE(result.joint_velocities == nullopt);
+  ASSERT_TRUE(result.joint_velocities == std::nullopt);
 }
 
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
@@ -187,7 +187,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
 
     const DifferentialInverseKinematicsResult result =
         DoDiffIKForSpatialVelocity(V_WE_W_desired);
-    ASSERT_TRUE(result.joint_velocities != nullopt);
+    ASSERT_TRUE(result.joint_velocities != std::nullopt);
 
     // Transform the resulting end effector frame's velocity into body frame.
     plant_->SetPositions(context_, q);

@@ -21,13 +21,9 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "GFlags": {
-      "Version": "2.1",
-      "X-CMake-Find-Args": [
-          "MODULE",
-          "COMPONENTS",
-          "shared"
-      ]
+    "gflags": {
+      "Version": "2.2",
+      "X-CMake-Find-Args": ["CONFIG"]
     },
     "ignition-math6": {
       "Version": "6.4",
@@ -44,7 +40,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "Protobuf": {
-      "Version": "2.6",
+      "Version": "3.0",
       "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {
@@ -54,10 +50,6 @@
     "spdlog": {
       "Version": "1.3",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "stx": {
-      "Hints": ["@prefix@/lib/cmake/stx"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "TinyXML2": {
@@ -71,7 +63,7 @@
       "Type": "dylib",
       "Location": "@prefix@/lib/libdrake.so",
       "Includes": ["@prefix@/include"],
-      "Compile-Features": ["c++14"],
+      "Compile-Features": ["c++17"],
       "Requires": [
         ":drake-lcmtypes-cpp",
         ":drake-marker",
@@ -84,7 +76,6 @@
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx",
         "tinyxml2:tinyxml2",
         "yaml-cpp"
       ]
@@ -92,10 +83,10 @@
     "drake-common-text-logging-gflags": {
       "Type": "interface",
       "Includes": ["@prefix@/include"],
-      "Compile-Features": ["c++14"],
+      "Compile-Features": ["c++17"],
       "Requires": [
           ":drake",
-          "gflags:gflags_shared"
+          "gflags"
       ]
     },
     "drake-lcmtypes-cpp": {
@@ -114,6 +105,7 @@
     }
   },
   "X-CMake-Variables-Init": {
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}",
+    "GFLAGS_USE_TARGET_NAMESPACE": 0
   }
 }

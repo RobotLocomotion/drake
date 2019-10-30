@@ -21,7 +21,7 @@ InternalGeometry::InternalGeometry(
       frame_id_(frame_id),
       X_PG_(move(X_FG)),
       X_FG_(X_PG_),
-      parent_geometry_id_(nullopt) {}
+      parent_geometry_id_(std::nullopt) {}
 
 bool InternalGeometry::has_role(Role role) const {
   switch (role) {

@@ -84,15 +84,17 @@ TEST_F(TetrahedronIntersectionTest, EmptyIntersection) {
             0);
 }
 
-// Case I of marching tetrahedra: only one of the vertices has a sign different
-// from all the other three.
-TEST_F(TetrahedronIntersectionTest, CaseI) {
+// The intersecting polygon is three sided; only one of the vertices has a sign
+// different from all the other three.
+TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
   std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
   std::vector<double> e_M_surface;
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 
-  const int expected_num_intersections = 3;
+  // Intersection polygon is a triangle; but it is converted into a fan around
+  // its centroid producing 4 vertices.
+  const int expected_added_vertex_count = 4;
 
   // Computes a unit vector in the direction of vertex "top" from the centroid
   // of the face opposite to "top".
@@ -111,6 +113,11 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
   // this test.
   const Vector4<double> e_M = Vector4<double>::Zero();
 
+  // The fan of triangles expected for when the intersecting polygon is a
+  // triangle.
+  const std::vector<Vector3<int>> expected_faces{
+      {2, 0, 3}, {0, 1, 3}, {1, 2, 3}};
+
   // All vertices are positive but the i-th vertex.
   for (int i = 0; i < 4; ++i) {
     vertices.clear();
@@ -119,15 +126,17 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
     phi_N[i] = -1.0;
     ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
                                        &e_M_surface),
-              expected_num_intersections);
+              expected_added_vertex_count);
 
-    ASSERT_EQ(faces.size(), 1);
-    const Vector3<int> expected_face(0, 1, 2);
-    const Vector3<int> face(faces[0].vertex(0), faces[0].vertex(1),
-                            faces[0].vertex(2));
-    EXPECT_EQ(face, expected_face);
+    ASSERT_EQ(faces.size(), 3);
 
-    ASSERT_EQ(vertices.size(), 3);
+    for (int v = 0; v < 3; ++v) {
+      const Vector3<int> face(faces[v].vertex(0), faces[v].vertex(1),
+                              faces[v].vertex(2));
+      EXPECT_EQ(face, expected_faces[v]);
+    }
+
+    ASSERT_EQ(vertices.size(), expected_added_vertex_count);
 
     // The negative sign is due to the fact that the i-th vertex is negative.
     const Vector3<double> expected_normal =
@@ -144,15 +153,16 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
     phi_N[i] = 1.0;
     ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
                                        &e_M_surface),
-              expected_num_intersections);
+              expected_added_vertex_count);
 
-    ASSERT_EQ(faces.size(), 1);
-    const Vector3<int> expected_face(0, 1, 2);
-    const Vector3<int> face(faces[0].vertex(0), faces[0].vertex(1),
-                            faces[0].vertex(2));
-    EXPECT_EQ(face, expected_face);
+    ASSERT_EQ(faces.size(), 3);
+    for (int v = 0; v < 3; ++v) {
+      const Vector3<int> face(faces[v].vertex(0), faces[v].vertex(1),
+                              faces[v].vertex(2));
+      EXPECT_EQ(face, expected_faces[v]);
+    }
 
-    ASSERT_EQ(vertices.size(), 3);
+    ASSERT_EQ(vertices.size(), expected_added_vertex_count);
 
     // The expected normal points in the direction of the i-th vertex.
     const Vector3<double> expected_normal =
@@ -162,8 +172,9 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
   }
 }
 
-// Case II of marching tetrahedra: two pairs of vertices with the same sign.
-TEST_F(TetrahedronIntersectionTest, CaseII) {
+// The intersecting polygon is four sided; two vertices have one sign, two have
+// the other.
+TEST_F(TetrahedronIntersectionTest, FourSidedPolygon) {
   // This method assumes that two of vertices are positive (thus defining a
   // positive edge) and two vertices are negative (thus defining a negative
   // edge).

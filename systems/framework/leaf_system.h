@@ -1590,7 +1590,7 @@ class LeafSystem : public System<T> {
   const InputPort<T>& DeclareVectorInputPort(
       variant<std::string, UseDefaultName> name,
       const BasicVector<T>& model_vector,
-      optional<RandomDistribution> random_type = nullopt) {
+      std::optional<RandomDistribution> random_type = std::nullopt) {
     const int size = model_vector.size();
     const int index = this->num_input_ports();
     model_input_values_.AddVectorModel(index, model_vector.Clone());
@@ -1634,7 +1634,7 @@ class LeafSystem : public System<T> {
   /// in #9447.
   const InputPort<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector,
-      optional<RandomDistribution> random_type = nullopt) {
+      std::optional<RandomDistribution> random_type = std::nullopt) {
     return DeclareVectorInputPort(kUseDefaultName, model_vector, random_type);
   }
 
@@ -2643,7 +2643,7 @@ class LeafSystem : public System<T> {
     };
 
     return CreateCachedLeafOutputPort(
-        std::move(name), nullopt /* size */, std::move(allocator),
+        std::move(name), std::nullopt /* size */, std::move(allocator),
         std::move(cache_calc_function), std::move(calc_prerequisites));
   }
 
@@ -2651,7 +2651,7 @@ class LeafSystem : public System<T> {
   // reference to it. Pass fixed_size == nullopt for abstract ports, or the
   // port size for vector ports. Prerequisites list must not be empty.
   LeafOutputPort<T>& CreateCachedLeafOutputPort(
-      std::string name, const optional<int>& fixed_size,
+      std::string name, const std::optional<int>& fixed_size,
       typename CacheEntry::AllocCallback allocator,
       typename CacheEntry::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {

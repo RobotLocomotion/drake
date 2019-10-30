@@ -3,7 +3,6 @@
 See also drake/doc/documentation_instructions.rst.
 """
 
-from __future__ import print_function
 
 import argparse
 from collections import OrderedDict
@@ -14,7 +13,6 @@ import subprocess
 import sys
 import tempfile
 
-from six import iteritems
 from bazel_tools.tools.python.runfiles import runfiles
 
 
@@ -111,7 +109,7 @@ def _run_doxygen(drake_workspace, args):
         definitions["DOXYGEN_DOT_FOUND"] = "YES"
         definitions["DOXYGEN_DOT_EXECUTABLE"] = dot
     definition_args = ["-D%s=%s" % (key, value)
-                       for key, value in iteritems(definitions)]
+                       for key, value in definitions.items()]
 
     # Create Doxyfile_CXX.
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")

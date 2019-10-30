@@ -1,4 +1,3 @@
-
 """Add buttons to drake-visualizer to open and close the Schunk WSG.
 
 Example usage:

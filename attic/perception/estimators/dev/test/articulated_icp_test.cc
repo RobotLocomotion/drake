@@ -296,7 +296,7 @@ TEST_P(ArticulatedIcpTest, PositiveReturnsConvergenceTest) {
 
 // Instantiate parameterized test cases.
 // TODO(eric.cousineau): Clearly parameterize failures for blue funnel case.
-INSTANTIATE_TEST_CASE_P(test, ArticulatedIcpTest, ObjectTestTypes);
+INSTANTIATE_TEST_SUITE_P(test, ArticulatedIcpTest, ObjectTestTypes);
 
 }  // namespace
 }  // namespace estimators

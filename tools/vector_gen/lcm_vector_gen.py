@@ -473,8 +473,24 @@ LCMTYPE_POSTAMBLE = """
 """
 
 
+def _schema_filename_to_snake(named_vector_filename):
+    basename = os.path.basename(named_vector_filename)
+    if basename.endswith("_named_vector.yaml"):
+        snake = basename[:-len("_named_vector.yaml")]
+        flavor = "yaml"
+    elif basename.endswith(".named_vector"):
+        # TODO(jwnimmer-tri) Remove support on or after 2020-02-01.
+        snake = basename[:-len(".named_vector")]
+        flavor = "proto"
+    else:
+        # The .bzl checks should have caught this already.
+        assert False, basename
+    return snake, flavor
+
+
 def generate_code(
         named_vector_filename,
+        flavor=None,
         include_prefix=None,
         vector_hh_filename=None,
         vector_cc_filename=None,
@@ -489,33 +505,51 @@ def generate_code(
         cxx_include_path = "/".join(cxx_include_path.split("/")[2:])
     if include_prefix:
         cxx_include_path = os.path.join(include_prefix, cxx_include_path)
-    snake, _ = os.path.splitext(os.path.basename(named_vector_filename))
+    snake, inferred_flavor = _schema_filename_to_snake(named_vector_filename)
+    assert inferred_flavor == flavor, inferred_flavor
     screaming_snake = snake.upper()
     camel = "".join([x.capitalize() for x in snake.split("_")])
 
-    # Load the vector's details from protobuf.
-    # In the future, this can be extended for nested messages.
-    with open(named_vector_filename, "r") as f:
-        vec = named_vector_pb2.NamedVector()
-        google.protobuf.text_format.Merge(f.read(), vec)
+    if flavor == 'proto':
+        # Load the vector's details from protobuf.
+        # In the future, this can be extended for nested messages.
+        with open(named_vector_filename, "r") as f:
+            vec = named_vector_pb2.NamedVector()
+            google.protobuf.text_format.Merge(f.read(), vec)
+            fields = [{
+                'name': el.name,
+                'doc': el.doc,
+                'default_value': el.default_value,
+                'doc_units': el.doc_units,
+                'min_value': el.min_value,
+                'max_value': el.max_value,
+            } for el in vec.element]
+            for item in fields:
+                if len(item['default_value']) == 0:
+                    print("error: a default_value for",
+                          "{}.{} is required".format(
+                              snake, item['name']))
+            if vec.namespace:
+                namespace_list = vec.namespace.split("::")
+            else:
+                namespace_list = []
+    else:
+        assert flavor == 'yaml', flavor
+        # Load the vector's details.
+        with open(named_vector_filename, 'r') as f:
+            data = yaml.safe_load(f)
         fields = [{
-            'name': el.name,
-            'doc': el.doc,
-            'default_value': el.default_value,
-            'doc_units': el.doc_units,
-            'min_value': el.min_value,
-            'max_value': el.max_value,
-        } for el in vec.element]
-        if vec.namespace:
-            namespace_list = vec.namespace.split("::")
-        else:
-            namespace_list = []
+            'name': str(el['name']),
+            'doc': str(el.get('doc', '')),
+            'default_value': str(el['default_value']),
+            'doc_units': str(el.get('doc_units', '')),
+            'min_value': str(el.get('min_value', '')),
+            'max_value': str(el.get('max_value', '')),
+        } for el in data['elements']]
+        namespace_list = data['namespace'].split('::')
 
     # Default some field attributes if they are missing.
     for item in fields:
-        if len(item['default_value']) == 0:
-            print("error: a default_value for {}.{} is required".format(
-                snake, item['name']))
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
 
@@ -586,7 +620,7 @@ def generate_code(
         # settings file is problematic when formatting within bazel-genfiles,
         # so instead we pass its contents on the command line.
         with open(find_data(".clang-format"), "r") as f:
-            yaml_data = yaml.load(f, Loader=yaml.Loader)
+            yaml_data = yaml.safe_load(f)
             style = str(yaml_data)
             # For some reason, clang-format really wants lowercase booleans.
             style = style.replace("False", "false").replace("True", "true")
@@ -598,7 +632,7 @@ def generate_all_code(args):
     # Match srcs to outs.
     src_to_args = collections.OrderedDict()
     for one_src in args.srcs:
-        snake, _ = os.path.splitext(os.path.basename(one_src))
+        snake, flavor = _schema_filename_to_snake(one_src)
         basename_to_kind = {
             snake + ".h": "vector_hh_filename",
             snake + ".cc": "vector_cc_filename",
@@ -613,6 +647,7 @@ def generate_all_code(args):
             print("warning: no outs matched for src " + one_src)
             continue
         kwargs_for_generate["include_prefix"] = args.include_prefix
+        kwargs_for_generate["flavor"] = flavor
         src_to_args[one_src] = kwargs_for_generate
     # Make sure all outs will be generated.
     covered_outs = set()
@@ -644,7 +679,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--src', metavar="FILE", dest='srcs', action='append', default=[],
-        help="'*.named_vector' description(s) of vector(s)")
+        help="'*_named_vector.yaml' description(s) of vector(s)")
     parser.add_argument(
         '--out', metavar="FILE", dest='outs', action='append', default=[],
         help="generated filename(s) to create")

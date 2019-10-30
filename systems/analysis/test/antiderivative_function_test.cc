@@ -459,7 +459,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(IncreasingAccuracyAntiderivativeFunctionTests,
+INSTANTIATE_TEST_SUITE_P(IncreasingAccuracyAntiderivativeFunctionTests,
                         AntiderivativeFunctionAccuracyTest,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4));
 

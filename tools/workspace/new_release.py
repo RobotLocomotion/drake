@@ -119,12 +119,6 @@ def run(gh, args, metadata):
 def main():
     token = os.getenv("GITHUB_API_TOKEN", None)
     parser = argparse.ArgumentParser(prog="new_release", description=__doc__)
-    if sys.version_info[0] != 3:
-        parser.error("\n".join([
-            "Wrong python version.",
-            "This script only supports python3.",
-            "To compile it in that mode, use this command:",
-            " bazel build --config python3 //tools/workspace:new_release"]))
     parser.add_argument(
         "--use_token", action="store_true", default=(token is not None),
         help="When set, uses an API token instead of username + password")

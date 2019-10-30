@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -264,7 +265,8 @@ std::tuple<double, double, double> ParseJointLimits(
 // specification object.
 void AddJointFromSpecification(
     const sdf::Model& model_spec, const sdf::Joint& joint_spec,
-    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
+    std::set<sdf::JointType>* joint_types) {
   // Pose of the model frame M in the world frame W.
   const RigidTransformd X_WM = ToRigidTransform(model_spec.Pose());
 
@@ -290,7 +292,7 @@ void AddJointFromSpecification(
   const RigidTransformd X_MJ = X_MC * X_CJ;
 
   // Pose of the frame J in the parent body frame P.
-  optional<RigidTransformd> X_PJ;
+  std::optional<RigidTransformd> X_PJ;
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
@@ -305,7 +307,7 @@ void AddJointFromSpecification(
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
   // P directly. We indicate that by passing a nullopt.
-  if (X_PJ.value().IsExactlyIdentity()) X_PJ = nullopt;
+  if (X_PJ.value().IsExactlyIdentity()) X_PJ = std::nullopt;
 
   // These will only be populated for prismatic and revolute joints.
   double lower_limit = 0;
@@ -354,6 +356,7 @@ void AddJointFromSpecification(
           "Joint type not supported for joint '" + joint_spec.Name() + "'.");
     }
   }
+  joint_types->insert(joint_spec.Type());
 }
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
@@ -386,14 +389,21 @@ std::string LoadSdf(
   return root_dir;
 }
 
+struct LinkInfo {
+  const RigidBody<double>* body{};
+  RigidTransformd X_WL;
+};
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-void AddLinksFromSpecification(
+std::vector<LinkInfo> AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
+    const RigidTransformd& X_WM,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
+  std::vector<LinkInfo> link_infos;
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
@@ -419,6 +429,15 @@ void AddLinksFromSpecification(
     // Add a rigid body to model each link.
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
+
+    // Register information.
+    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
+    const RigidTransformd X_WL = X_WM * X_ML;
+    link_infos.push_back(LinkInfo{&body, X_WL});
+
+    // Set the initial pose of the free body (only use if the body is indeed
+    // floating).
+    plant->SetDefaultFreeBodyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -463,6 +482,7 @@ void AddLinksFromSpecification(
       }
     }
   }
+  return link_infos;
 }
 
 template <typename T>
@@ -509,6 +529,18 @@ void AddFramesFromSpecification(
   }
 }
 
+// Helper to determine if two links are welded together.
+bool AreWelded(
+    const MultibodyPlant<double>& plant, const Body<double>& a,
+    const Body<double>& b) {
+  for (auto* body : plant.GetBodiesWeldedTo(a)) {
+    if (body == &b) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 ModelInstanceIndex AddModelFromSpecification(
@@ -517,7 +549,6 @@ ModelInstanceIndex AddModelFromSpecification(
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
-
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
 
@@ -541,17 +572,20 @@ ModelInstanceIndex AddModelFromSpecification(
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
 
-  // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
-  AddLinksFromSpecification(
-      model_instance, model, plant, package_map, root_dir);
+  // TODO(eric.cousineau): Register and use frames from SDFormat once we have
+  // the libsdformat-provided pose graph.
+  std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
+      model_instance, model, X_WM, plant, package_map, root_dir);
 
   // Add all the joints
+  std::set<sdf::JointType> joint_types;
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    AddJointFromSpecification(model, joint, model_instance, plant);
+    AddJointFromSpecification(
+        model, joint, model_instance, plant, &joint_types);
   }
 
   // Add frames at root-level of <model>.
@@ -562,6 +596,28 @@ ModelInstanceIndex AddModelFromSpecification(
   // See: https://bitbucket.org/osrf/sdformat/issues/200
   AddFramesFromSpecification(
       model_instance, model.Element(), sdf_model_frame, plant);
+
+  if (model.Static()) {
+    // Only weld / fixed joints are permissible.
+    // TODO(eric.cousineau): Consider "freezing" non-weld joints, as is
+    // permissible in Bullet and DART via Gazebo (#12227).
+    for (sdf::JointType joint_type : joint_types) {
+      if (joint_type != sdf::JointType::FIXED) {
+        throw std::runtime_error(
+            "Only fixed joints are permitted in static models.");
+      }
+    }
+    // Weld all links that have been added, but are not (yet) attached to the
+    // world.
+    // N.B. This implementation prevents "reposturing" a static model after
+    // parsing. See #12227 for a more concrete example.
+    for (const LinkInfo& link_info : added_link_infos) {
+      if (!AreWelded(*plant, plant->world_body(), *link_info.body)) {
+        plant->WeldFrames(
+            plant->world_frame(), link_info.body->body_frame(), link_info.X_WL);
+      }
+    }
+  }
 
   return model_instance;
 }

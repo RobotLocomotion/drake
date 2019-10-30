@@ -34,13 +34,13 @@ struct RenderEngineOsprayParams {
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
     none is otherwise specified. Note: currently the alpha channel is unused
     by RenderEngineOspray.  */
-  optional<Eigen::Vector4d> default_diffuse{};
+  std::optional<Eigen::Vector4d> default_diffuse{};
 
   // TODO(SeanCurtis-TRI): Reconcile this with a specified background image.
   /** The rgb color for the environment background (each channel in the range
    [0, 1]). The default value is the same color as in the equivalent byte-valued
    rgb triple [204, 229, 255].  */
-  optional<Eigen::Vector3d> background_color{};
+  std::optional<Eigen::Vector3d> background_color{};
 
   /** The number of illumination samples per pixel. Higher numbers introduce
    higher quality at increased cost. Only has an effect if mode is

@@ -12,7 +12,6 @@ For guidance, see:
 # e.g. `LeafSystem` only consists of private things to overload, but it's
 # important to be user-visible.
 
-from __future__ import print_function
 
 from collections import namedtuple
 import re

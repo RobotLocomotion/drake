@@ -259,8 +259,11 @@ MultibodyPlant<T>::MultibodyPlant(
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
+  // TODO(eric.cousineau): Combine all of these elements into one struct, make
+  // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
@@ -416,7 +419,7 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 
   geometry::GeometrySet geometry_set;
   for (const Body<T>* body : bodies) {
-    optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
+    std::optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
     if (frame_id) {
       geometry_set.Add(frame_id.value());
     }
@@ -757,8 +760,8 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
     if (parent.index() == world_index()) continue;
-    optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
-    optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
+    std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
+    std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
     if (child_id && parent_id) {
       member_scene_graph().ExcludeCollisionsBetween(
@@ -2488,7 +2491,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_ASSERT(source_id_ != nullopt);
+  DRAKE_ASSERT(source_id_ != std::nullopt);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 

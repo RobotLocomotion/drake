@@ -2,6 +2,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/nice_type_name.h"
+
 namespace drake {
 namespace geometry {
 
@@ -82,6 +84,16 @@ Box Box::MakeCube(double edge_size) {
   return Box(edge_size, edge_size, edge_size);
 }
 
+Capsule::Capsule(double radius, double length)
+    : Shape(ShapeTag<Capsule>()), radius_(radius), length_(length) {
+  if (radius <= 0 || length <= 0) {
+    throw std::logic_error(
+        fmt::format("Capsule radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
+  }
+}
+
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
   if (std::abs(scale) < 1e-8) {
@@ -94,6 +106,39 @@ Convex::Convex(const std::string& absolute_filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
+}
+
+void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
+  ThrowUnsupportedGeometry("Sphere");
+}
+
+void ShapeReifier::ImplementGeometry(const Cylinder&, void*) {
+  ThrowUnsupportedGeometry("Cylinder");
+}
+
+void ShapeReifier::ImplementGeometry(const HalfSpace&, void*) {
+  ThrowUnsupportedGeometry("HalfSpace");
+}
+
+void ShapeReifier::ImplementGeometry(const Box&, void*) {
+  ThrowUnsupportedGeometry("Box");
+}
+
+void ShapeReifier::ImplementGeometry(const Capsule&, void*) {
+  ThrowUnsupportedGeometry("Capsule");
+}
+
+void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
+  ThrowUnsupportedGeometry("Mesh");
+}
+
+void ShapeReifier::ImplementGeometry(const Convex&, void*) {
+  ThrowUnsupportedGeometry("Convex");
+}
+
+void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
+  throw std::runtime_error(fmt::format("This class ({}) does not support {}.",
+                                       NiceTypeName::Get(*this), shape_name));
 }
 
 }  // namespace geometry

@@ -231,7 +231,7 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
   const Vector3<double> a_WBo_expected =
       fhydro_BBo_W / kMass_ + plant_->gravity_field().gravity_vector();
   EXPECT_TRUE(CompareMatrices(a_WBo_expected, a_WBo,
-                              10 * std::numeric_limits<double>::epsilon()));
+                              40 * std::numeric_limits<double>::epsilon()));
 }
 
 }  // namespace

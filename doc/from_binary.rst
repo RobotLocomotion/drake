@@ -7,13 +7,20 @@ Binary installation (macOS, Ubuntu)
 Nightly releases
 ================
 
-There are `experimental binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
+There are `binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
 
 - https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-bionic.tar.gz
-- https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-xenial.tar.gz
 - https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz
-- :samp:`https://drake-packages.csail.mit.edu/drake/nightly/drake-{yyyymmdd}-{bionic|mac|xenial}.tar.gz`.
-    - Example: https://drake-packages.csail.mit.edu/drake/nightly/drake-20171015-xenial.tar.gz
+- :samp:`https://drake-packages.csail.mit.edu/drake/nightly/drake-{yyyymmdd}-{bionic|mac}.tar.gz`.
+    - Example: https://drake-packages.csail.mit.edu/drake/nightly/drake-20191026-bionic.tar.gz
+
+Note that Drake no longer supports Ubuntu 16.04 (Xenial), but you can still
+download this package from at or before October 26, 2019 as follows:
+
+- https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-xenial.tar.gz
+- https://drake-packages.csail.mit.edu/drake/nightly/drake-20191026-xenial.tar.gz
+
+Individual packages are archived two years from their date of creation.
 
 Example usages of these binaries are shown in this `example CMake project <https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed>`_.
 For the compilers used to produce these releases, see :ref:`binary-packages`.

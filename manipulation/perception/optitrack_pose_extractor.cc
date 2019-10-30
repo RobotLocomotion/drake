@@ -40,21 +40,21 @@ std::map<int, Isometry3<double>> ExtractOptitrackPoses(
   return poses;
 }
 
-optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
+std::optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
       const optitrack::optitrack_frame_t& message, int object_id) {
   for (auto& body : message.rigid_bodies) {
     if (body.id == object_id) return body;
   }
-  return nullopt;
+  return std::nullopt;
 }
 
-optional<int> FindOptitrackObjectId(
+std::optional<int> FindOptitrackObjectId(
     const optitrack::optitrack_data_descriptions_t& message,
     const std::string& object_name) {
   for (auto& desc : message.rigid_bodies) {
     if (desc.name == object_name) return desc.id;
   }
-  return nullopt;
+  return std::nullopt;
 }
 
 OptitrackPoseExtractor::OptitrackPoseExtractor(

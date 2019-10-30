@@ -68,6 +68,7 @@ drake_cc_googletest(
     srcs = ["test/point_cloud_flags_test.cc"],
     deps = [
         ":point_cloud_flags",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -77,6 +78,7 @@ drake_cc_googletest(
     deps = [
         ":point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

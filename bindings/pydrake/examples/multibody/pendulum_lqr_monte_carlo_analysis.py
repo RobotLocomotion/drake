@@ -6,7 +6,6 @@ performance, for the task of stabilizing an inverted torque-limited pendulum
 with LQR.
 """
 
-from __future__ import print_function
 
 import argparse
 

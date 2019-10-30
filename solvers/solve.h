@@ -20,9 +20,10 @@ namespace solvers {
  * @param solver_options The options in addition to those stored in @p prog.
  * @return result The result of solving the program through the solver.
  */
-MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const optional<Eigen::VectorXd>& initial_guess,
-                                const optional<SolverOptions>& solver_options);
+MathematicalProgramResult Solve(
+    const MathematicalProgram& prog,
+    const std::optional<Eigen::VectorXd>& initial_guess,
+    const std::optional<SolverOptions>& solver_options);
 
 /**
  * Solves an optimization program with a given initial guess.
@@ -53,7 +54,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  * to make this method more specific/useful. */
 std::vector<std::string> GetInfeasibleConstraints(
     const MathematicalProgram& prog, const MathematicalProgramResult& result,
-    optional<double> tolerance = nullopt);
+    std::optional<double> tolerance = std::nullopt);
 
 }  // namespace solvers
 }  // namespace drake

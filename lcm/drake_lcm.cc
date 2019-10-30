@@ -69,7 +69,7 @@ std::string DrakeLcm::get_lcm_url() const {
 }
 
 void DrakeLcm::Publish(const std::string& channel, const void* data,
-                       int data_size, optional<double>) {
+                       int data_size, std::optional<double>) {
   DRAKE_THROW_UNLESS(!channel.empty());
   impl_->lcm_.publish(channel, data, data_size);
 }

@@ -8,9 +8,10 @@
 
 namespace drake {
 namespace solvers {
-MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const optional<Eigen::VectorXd>& initial_guess,
-                                const optional<SolverOptions>& solver_options) {
+MathematicalProgramResult Solve(
+    const MathematicalProgram& prog,
+    const std::optional<Eigen::VectorXd>& initial_guess,
+    const std::optional<SolverOptions>& solver_options) {
   const SolverId solver_id = ChooseBestSolver(prog);
   std::unique_ptr<SolverInterface> solver = MakeSolver(solver_id);
   MathematicalProgramResult result{};
@@ -31,7 +32,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog) {
 
 std::vector<std::string> GetInfeasibleConstraints(
     const MathematicalProgram& prog, const MathematicalProgramResult&
-    result, optional<double> tolerance) {
+    result, std::optional<double> tolerance) {
   std::vector<std::string> descriptions;
 
   if (!tolerance) {

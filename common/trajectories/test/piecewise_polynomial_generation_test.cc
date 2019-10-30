@@ -1,3 +1,4 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 /* clang-format off to disable clang-format-includes */
 #include "drake/common/trajectories/piecewise_polynomial.h"
 /* clang-format on */
@@ -565,10 +566,12 @@ template <typename CoefficientType>
 void TestNoThrows(
     const std::vector<double>& breaks,
     const std::vector<MatrixX<CoefficientType>>& knots) {
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::FirstOrderHold(breaks, knots));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::Pchip(breaks, knots));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(breaks, knots));
+  DRAKE_EXPECT_NO_THROW(
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots));
+  DRAKE_EXPECT_NO_THROW(
+      PiecewisePolynomial<double>::FirstOrderHold(breaks, knots));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Pchip(breaks, knots));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(breaks, knots));
 }
 
 GTEST_TEST(SplineTests, TestException) {
@@ -598,8 +601,8 @@ GTEST_TEST(SplineTests, TestException) {
   // Min length
   T = {1, 2};
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
 
   EXPECT_THROW(PiecewisePolynomial<double>::Pchip(T, Y), std::runtime_error);
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
@@ -617,7 +620,7 @@ GTEST_TEST(SplineTests, TestException) {
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   MatrixX<double> Ydot0(rows, cols);
   MatrixX<double> Ydot1(rows, cols);
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1));
 
   Ydot0.resize(rows, cols);
   Ydot1.resize(rows, cols + 1);
@@ -634,7 +637,7 @@ GTEST_TEST(SplineTests, TestException) {
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   std::vector<MatrixX<double>> Ydot =
       std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot));
 
   Ydot = std::vector<MatrixX<double>>(T.size() + 1,
                                       MatrixX<double>::Zero(rows, cols));

@@ -19,9 +19,10 @@ namespace systems {
 namespace analysis_test {
 
 typedef ::testing::Types<RungeKutta5Integrator<double>> Types;
-INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
-INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
-INSTANTIATE_TYPED_TEST_CASE_P(My, GenericIntegratorTest, Types);
+// NOLINTNEXTLINE(whitespace/line_length)
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, PleidesTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, GenericIntegratorTest, Types);
 
 // Tests accuracy for integrating the quintic system (with the state at time t
 // corresponding to f(t) ≡ t⁵ + 2t⁴ + 3t³ + 4t² + 5t + C) over t ∈ [0, 1].

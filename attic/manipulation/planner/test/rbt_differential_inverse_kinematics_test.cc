@@ -1,12 +1,12 @@
 #include "drake/manipulation/planner/rbt_differential_inverse_kinematics.h"
 
 #include <memory>
+#include <optional>
 #include <random>
 #include <string>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -78,7 +78,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
     const double velocity_tolerance{1e-6};
 
-    ASSERT_TRUE(result.joint_velocities != nullopt);
+    ASSERT_TRUE(result.joint_velocities != std::nullopt);
     drake::log()->info("result.joint_velocities = {}",
                        result.joint_velocities->transpose());
 
@@ -149,7 +149,7 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
   DifferentialInverseKinematicsStatus function_status{function_result.status};
   drake::log()->info("function_status = {}", function_status);
 
-  ASSERT_TRUE(function_result.joint_velocities == nullopt);
+  ASSERT_TRUE(function_result.joint_velocities == std::nullopt);
 }
 
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
@@ -173,7 +173,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     DifferentialInverseKinematicsResult function_result =
         rbt::DoDifferentialInverseKinematics(
             *tree_, *cache_, V_WE_desired, *frame_E_, *params_);
-    ASSERT_TRUE(function_result.joint_velocities != nullopt);
+    ASSERT_TRUE(function_result.joint_velocities != std::nullopt);
 
     // Transform the resulting end effector frame's velocity into body frame.
     *cache_ = tree_->doKinematics(q, function_result.joint_velocities.value());

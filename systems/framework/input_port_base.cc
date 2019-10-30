@@ -14,7 +14,7 @@ InputPortBase::InputPortBase(
     internal::SystemMessageInterface* owning_system, std::string name,
     InputPortIndex index, DependencyTicket ticket,
     PortDataType data_type, int size,
-    const optional<RandomDistribution>& random_type,
+    const std::optional<RandomDistribution>& random_type,
     EvalAbstractCallback eval)
     : PortBase("Input", owning_system, std::move(name), index, ticket,
                data_type, size),

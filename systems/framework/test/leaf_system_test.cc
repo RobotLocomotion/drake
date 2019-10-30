@@ -13,6 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -139,7 +140,7 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    optional<PeriodicEventData> periodic_attr =
+    std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);
@@ -149,7 +150,7 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    optional<PeriodicEventData> periodic_attr =
+    std::optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);
@@ -1118,7 +1119,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
   auto input2 = dut.AllocateInputAbstract(dut.get_input_port(2));
   ASSERT_NE(input2, nullptr);
   int downcast_input2{};
-  EXPECT_NO_THROW(downcast_input2 = input2->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(downcast_input2 = input2->get_value<int>());
   EXPECT_EQ(downcast_input2, 22);
 }
 
@@ -1144,7 +1145,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   auto output2 = system_output->get_data(2);
   ASSERT_NE(output2, nullptr);
   std::string downcast_output2{};
-  EXPECT_NO_THROW(downcast_output2 = output2->get_value<std::string>());
+  DRAKE_EXPECT_NO_THROW(downcast_output2 = output2->get_value<std::string>());
   EXPECT_EQ(downcast_output2, "45");
 
   // Check that BasicVector<double>(2) came out.
@@ -1212,11 +1213,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   const MyVector4d* vec1{};
   const std::string* str2{};
   const BasicVector<double>* vec3{};
-  EXPECT_NO_THROW(vec0 = &values[0]->get_value<BasicVector<double>>());
-  EXPECT_NO_THROW(vec1 = dynamic_cast<const MyVector4d*>(
+  DRAKE_EXPECT_NO_THROW(vec0 = &values[0]->get_value<BasicVector<double>>());
+  DRAKE_EXPECT_NO_THROW(vec1 = dynamic_cast<const MyVector4d*>(
                       &values[1]->get_value<BasicVector<double>>()));
-  EXPECT_NO_THROW(str2 = &values[2]->get_value<std::string>());
-  EXPECT_NO_THROW(vec3 = &values[3]->get_value<BasicVector<double>>());
+  DRAKE_EXPECT_NO_THROW(str2 = &values[2]->get_value<std::string>());
+  DRAKE_EXPECT_NO_THROW(vec3 = &values[3]->get_value<BasicVector<double>>());
 
   // Check the calculated values.
   EXPECT_EQ(vec0->get_value(), dut.expected_basic().get_value());
@@ -1314,13 +1315,13 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   auto context = dut.AllocateContext();
 
   // Check that the allocations were made and with the correct type
-  EXPECT_NO_THROW(context->get_abstract_state<int>(0));
-  EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
+  DRAKE_EXPECT_NO_THROW(context->get_abstract_state<int>(0));
+  DRAKE_EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
 
   // Mess with the abstract values on the context.
   AbstractValues& values = context->get_mutable_abstract_state();
   AbstractValue& value = values.get_mutable_value(1);
-  EXPECT_NO_THROW(value.set_value<std::string>("whoops"));
+  DRAKE_EXPECT_NO_THROW(value.set_value<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
 
   // Ask it to reset to the defaults specified on system construction.
@@ -1377,13 +1378,11 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     // Output port 2 uses the "Advanced" method for abstract ports, providing
     // explicit non-member functors for allocator and calculator.
     this->DeclareAbstractOutputPort(
-        []() {
-          return AbstractValue::Make<int>(-2);
-        },
+        []() { return AbstractValue::Make<int>(-2); },
         [](const Context<double>&, AbstractValue* out) {
           ASSERT_NE(out, nullptr);
           int* int_out{};
-          EXPECT_NO_THROW(int_out = &out->get_mutable_value<int>());
+          DRAKE_EXPECT_NO_THROW(int_out = &out->get_mutable_value<int>());
           *int_out = 321;
         });
 
@@ -1488,7 +1487,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output1 = system_output->GetMutableData(1);
   ASSERT_NE(output1, nullptr);
   const std::string* downcast_output1{};
-  EXPECT_NO_THROW(downcast_output1 = &output1->get_value<std::string>());
+  DRAKE_EXPECT_NO_THROW(downcast_output1 = &output1->get_value<std::string>());
   EXPECT_TRUE(downcast_output1->empty());
   out1.Calc(*context, output1);
   EXPECT_EQ(*downcast_output1, "calc'ed string");
@@ -1503,7 +1502,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output2 = system_output->GetMutableData(2);
   ASSERT_NE(output2, nullptr);
   const int* downcast_output2{};
-  EXPECT_NO_THROW(downcast_output2 = &output2->get_value<int>());
+  DRAKE_EXPECT_NO_THROW(downcast_output2 = &output2->get_value<int>());
   EXPECT_EQ(*downcast_output2, -2);
   out2.Calc(*context, output2);
   EXPECT_EQ(*downcast_output2, 321);
@@ -1512,7 +1511,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output3 = system_output->GetMutableData(3);
   ASSERT_NE(output3, nullptr);
   const std::string* downcast_output3{};
-  EXPECT_NO_THROW(downcast_output3 = &output3->get_value<std::string>());
+  DRAKE_EXPECT_NO_THROW(downcast_output3 = &output3->get_value<std::string>());
   EXPECT_EQ(*downcast_output3, "freshly made");
   out3.Calc(*context, output3);
   EXPECT_EQ(*downcast_output3, "calc'ed string");
@@ -1523,7 +1522,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output4 = system_output->GetMutableData(4);
   ASSERT_NE(output4, nullptr);
   const SomePOD* downcast_output4{};
-  EXPECT_NO_THROW(downcast_output4 = &output4->get_value<SomePOD>());
+  DRAKE_EXPECT_NO_THROW(downcast_output4 = &output4->get_value<SomePOD>());
   EXPECT_EQ(downcast_output4->some_int, 0);
   EXPECT_EQ(downcast_output4->some_double, 0.0);
   out4.Calc(*context, output4);
@@ -1606,7 +1605,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   }
 
   // Verify no exception is thrown.
-  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(
+  DRAKE_EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(
       *context, leaf_events.get_unrestricted_update_events(), x.get()));
 
   // Change the function to change the continuous state dimension.
@@ -1716,7 +1715,7 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   }
 
   OutputPortIndex AddAbstractOutputPort(
-      optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
+      std::optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
     // Dummies.
     auto alloc = []() { return AbstractValue::Make<int>(0); };
     auto calc = [](const ContextBase&, AbstractValue*) {};
@@ -1891,7 +1890,7 @@ using FeedthroughTestScalars = ::testing::Types<
 
 template <typename T>
 class FeedthroughTypedTest : public ::testing::Test {};
-TYPED_TEST_CASE(FeedthroughTypedTest, FeedthroughTestScalars);
+TYPED_TEST_SUITE(FeedthroughTypedTest, FeedthroughTestScalars);
 
 // The sparsity of a System should be inferred from its symbolic form.
 TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
@@ -2241,7 +2240,7 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
           &ConstraintTestSystem::CalcStateConstraint,
-          { Eigen::Vector2d::Zero(), nullopt },
+          { Eigen::Vector2d::Zero(), std::nullopt },
           "x"),
       1);
   EXPECT_EQ(dut.num_constraints(), 2);
@@ -2282,7 +2281,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
     *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
-                                            { Vector1d::Zero(), nullopt },
+                                            { Vector1d::Zero(), std::nullopt },
                                             "x1_lower"),
             0);
   EXPECT_EQ(dut.num_constraints(), 1);
@@ -2294,9 +2293,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
                         context.get_continuous_state_vector()[0]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
-                                            { nullopt, Eigen::Vector2d(2, 3) },
-                                            "x_upper"),
-            1);
+      { std::nullopt, Eigen::Vector2d(2, 3) }, "x_upper"), 1);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(

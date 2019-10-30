@@ -252,6 +252,7 @@ drake_cc_googletest(
         ":tamsi_solver",
         ":tamsi_solver_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -298,8 +299,7 @@ drake_cc_googletest(
         ":plant",
         "//common:autodiff",
         "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
         "//geometry/test_utilities",
         "//math:geometric_transform",
         "//math:gradient",
@@ -345,6 +345,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//multibody/parsing",
         "//systems/framework",
@@ -475,6 +476,7 @@ drake_cc_googletest(
     ],
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//multibody/benchmarks/free_body",
         "//multibody/test_utilities:floating_body_plant",
         "//systems/analysis:simulator",

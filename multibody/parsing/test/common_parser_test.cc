@@ -146,11 +146,11 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
 }
 
 
-INSTANTIATE_TEST_CASE_P(SdfMultibodyPlantLinkTests,
+INSTANTIATE_TEST_SUITE_P(SdfMultibodyPlantLinkTests,
                         MultibodyPlantLinkTests,
                         ::testing::Values(test::LoadFromSdf));
 
-INSTANTIATE_TEST_CASE_P(UrdfMultibodyPlantLinkTests,
+INSTANTIATE_TEST_SUITE_P(UrdfMultibodyPlantLinkTests,
                         MultibodyPlantLinkTests,
                         ::testing::Values(test::LoadFromUrdf));
 

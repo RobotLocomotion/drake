@@ -23,6 +23,11 @@ void ShapeToString::ImplementGeometry(const Box& box, void*) {
                         box.height());
 }
 
+void ShapeToString::ImplementGeometry(const Capsule& capsule, void*) {
+  string_ = fmt::format("Capsule(r: {}, l: {})", capsule.get_radius(),
+                        capsule.get_length());
+}
+
 void ShapeToString::ImplementGeometry(const Mesh& mesh, void*) {
   string_ = fmt::format("Mesh(s: {}, path: {})", mesh.scale(), mesh.filename());
 }

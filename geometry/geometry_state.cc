@@ -667,6 +667,7 @@ class MeshIdentifier final : public ShapeReifier {
   void ImplementGeometry(const Cylinder&, void*) final {}
   void ImplementGeometry(const HalfSpace&, void*) final {}
   void ImplementGeometry(const Box&, void*) final {}
+  void ImplementGeometry(const Capsule&, void*) final {}
   void ImplementGeometry(const Mesh& mesh, void*) final {
     is_mesh_ = true;
     drake::log()->warn("Meshes are _not_ supported for proximity: ({})",
@@ -1105,7 +1106,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // remove itself from its possible parent geometry. If called recursively,
     // it is because the parent geometry is being deleted anyways and removal
     // is implicit in the deletion of that parent geometry.
-    if (optional<GeometryId> parent_id = geometry.parent_id()) {
+    if (std::optional<GeometryId> parent_id = geometry.parent_id()) {
       auto& parent_geometry =
           GetMutableValueOrThrow(*parent_id, &geometries_);
       parent_geometry.remove_child(geometry_id);

@@ -24,7 +24,6 @@ This tool has been tested only with Meshlab v1.3.2, which is the version
 available in Ubuntu Xenial 16.04.  It might not work with other versions.
 """
 
-from __future__ import print_function
 
 import argparse
 import os

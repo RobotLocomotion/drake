@@ -2,7 +2,6 @@
 
 import unittest
 
-from six import text_type as unicode
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -271,14 +270,14 @@ class TestPlant(unittest.TestCase):
 
         self.assertIsInstance(frame, Frame)
         self._test_multibody_tree_element_mixin(T, frame)
-        self.assertIsInstance(frame.name(), unicode)
+        self.assertIsInstance(frame.name(), str)
 
     def _test_body_api(self, T, body):
         Body = Body_[T]
 
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
-        self.assertIsInstance(body.name(), unicode)
+        self.assertIsInstance(body.name(), str)
 
     def _test_joint_api(self, T, joint):
         Joint = Joint_[T]
@@ -287,7 +286,7 @@ class TestPlant(unittest.TestCase):
 
         self.assertIsInstance(joint, Joint)
         self._test_multibody_tree_element_mixin(T, joint)
-        self.assertIsInstance(joint.name(), unicode)
+        self.assertIsInstance(joint.name(), str)
         self.assertIsInstance(joint.parent_body(), Body)
         self.assertIsInstance(joint.child_body(), Body)
         self.assertIsInstance(joint.frame_on_parent(), Frame)
@@ -312,7 +311,7 @@ class TestPlant(unittest.TestCase):
         Joint = Joint_[T]
         self.assertIsInstance(joint_actuator, JointActuator)
         self._test_multibody_tree_element_mixin(T, joint_actuator)
-        self.assertIsInstance(joint_actuator.name(), unicode)
+        self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
 
     def check_old_spelling_exists(self, value):
@@ -519,6 +518,10 @@ class TestPlant(unittest.TestCase):
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+        # Test existence of default free body pose setting.
+        body = plant.GetBodyByName("Link1")
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=RigidTransform_[float]())
 
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))

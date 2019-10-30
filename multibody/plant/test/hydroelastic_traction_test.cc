@@ -641,7 +641,7 @@ const RigidTransform<double> poses[] = {
         drake::Vector3<double>(1, 2, 3))
 };
 
-INSTANTIATE_TEST_CASE_P(PoseInstantiations,
+INSTANTIATE_TEST_SUITE_P(PoseInstantiations,
                         MultibodyPlantHydroelasticTractionTests,
                         ::testing::ValuesIn(poses));
 

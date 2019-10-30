@@ -1,10 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/primitives/affine_system.h"
 
@@ -258,7 +258,7 @@ Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the controllability matrix is full row rank.
 /// @ingroup control_systems
 bool IsControllable(const LinearSystem<double>& sys,
-                    optional<double> threshold = nullopt);
+                    std::optional<double> threshold = std::nullopt);
 
 /// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 /// @ingroup estimator_systems
@@ -267,7 +267,7 @@ Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the observability matrix is full column rank.
 /// @ingroup estimator_systems
 bool IsObservable(const LinearSystem<double>& sys,
-                  optional<double> threshold = nullopt);
+                  std::optional<double> threshold = std::nullopt);
 
 }  // namespace systems
 }  // namespace drake

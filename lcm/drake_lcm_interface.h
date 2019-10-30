@@ -3,13 +3,13 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 
 namespace drake {
@@ -57,10 +57,10 @@ class DrakeLcmInterface {
    * @param data_size The length of @data in bytes.
    *
    * @param time_sec Time in seconds when the publish event occurred.
-   * If unknown, use drake::nullopt or a default-constructed optional.
+   * If unknown, use nullopt or a default-constructed optional.
    */
   virtual void Publish(const std::string& channel, const void* data,
-                       int data_size, optional<double> time_sec) = 0;
+                       int data_size, std::optional<double> time_sec) = 0;
 
   /**
    * Most users should use the drake::lcm::Subscribe() free function or the
@@ -151,11 +151,11 @@ class DrakeSubscriptionInterface {
  * @param message The message to publish.
  *
  * @param time_sec Time in seconds when the publish event occurred.
- * If unknown, use the default value of drake::nullopt.
+ * If unknown, use the default value of nullopt.
  */
 template <typename Message>
 void Publish(DrakeLcmInterface* lcm, const std::string& channel,
-             const Message& message, optional<double> time_sec = {}) {
+             const Message& message, std::optional<double> time_sec = {}) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
   const int num_bytes = message.getEncodedSize();
   DRAKE_THROW_UNLESS(num_bytes >= 0);

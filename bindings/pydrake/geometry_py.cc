@@ -1,16 +1,18 @@
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/render_engine.h"
@@ -192,6 +194,35 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::overload_cast<const std::string&>(  // BR
                 &SceneGraph<T>::RegisterSource),
             py::arg("name") = "", doc.SceneGraph.RegisterSource.doc)
+        .def("RegisterFrame",
+            py::overload_cast<SourceId, const GeometryFrame&>(
+                &SceneGraph<T>::RegisterFrame),
+            py::arg("source_id"), py::arg("frame"),
+            doc.SceneGraph.RegisterFrame.doc_2args)
+        .def("RegisterFrame",
+            py::overload_cast<SourceId, FrameId, const GeometryFrame&>(
+                &SceneGraph<T>::RegisterFrame),
+            py::arg("source_id"), py::arg("parent_id"), py::arg("frame"),
+            doc.SceneGraph.RegisterFrame.doc_3args)
+        .def("RegisterGeometry",
+            py::overload_cast<SourceId, FrameId,
+                std::unique_ptr<GeometryInstance>>(
+                &SceneGraph<T>::RegisterGeometry),
+            py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
+            doc.SceneGraph.RegisterGeometry
+                .doc_3args_source_id_frame_id_geometry)
+        .def("RegisterGeometry",
+            py::overload_cast<SourceId, GeometryId,
+                std::unique_ptr<GeometryInstance>>(
+                &SceneGraph<T>::RegisterGeometry),
+            py::arg("source_id"), py::arg("geometry_id"), py::arg("geometry"),
+            doc.SceneGraph.RegisterGeometry
+                .doc_3args_source_id_geometry_id_geometry)
+        .def("RegisterAnchoredGeometry",
+            py::overload_cast<SourceId, std::unique_ptr<GeometryInstance>>(
+                &SceneGraph<T>::RegisterAnchoredGeometry),
+            py::arg("source_id"), py::arg("geometry"),
+            doc.SceneGraph.RegisterAnchoredGeometry.doc)
         .def("AddRenderer", &SceneGraph<T>::AddRenderer,
             py::arg("renderer_name"), py::arg("renderer"),
             doc.SceneGraph.AddRenderer.doc)
@@ -432,6 +463,36 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc);
+  }
+
+  // GeometryFrame
+  {
+    using Class = GeometryFrame;
+    constexpr auto& cls_doc = doc.GeometryFrame;
+    py::class_<Class>(m, "GeometryFrame", cls_doc.doc)
+        .def(py::init<const std::string&, int>(), py::arg("frame_name"),
+            py::arg("frame_group_id") = 0, cls_doc.ctor.doc)
+        .def("id", &Class::id, cls_doc.id.doc)
+        .def("name", &Class::name, cls_doc.name.doc)
+        .def("frame_group", &Class::frame_group, cls_doc.frame_group.doc);
+  }
+
+  // GeometryInstance
+  {
+    using Class = GeometryInstance;
+    constexpr auto& cls_doc = doc.GeometryInstance;
+    py::class_<Class>(m, "GeometryInstance", cls_doc.doc)
+        .def(py::init<const math::RigidTransform<double>&,
+                 std::unique_ptr<Shape>, const std::string&>(),
+            py::arg("X_PG"), py::arg("shape"), py::arg("name"),
+            cls_doc.ctor.doc)
+        .def("id", &Class::id, cls_doc.id.doc)
+        .def("pose", &Class::pose, py_reference_internal, cls_doc.pose.doc)
+        .def(
+            "set_pose", &Class::set_pose, py::arg("X_PG"), cls_doc.set_pose.doc)
+        .def("shape", &Class::shape, py_reference_internal, cls_doc.shape.doc)
+        .def("release_shape", &Class::release_shape, cls_doc.release_shape.doc)
+        .def("name", &Class::name, cls_doc.name.doc);
   }
 
   // Rendering

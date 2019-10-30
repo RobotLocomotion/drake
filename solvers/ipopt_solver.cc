@@ -545,7 +545,7 @@ void SetIpoptOptionsHelper(const std::string& key, const T& default_val,
 }
 
 void SetIpoptOptions(const MathematicalProgram& prog,
-                     const optional<SolverOptions>& user_solver_options,
+                     const std::optional<SolverOptions>& user_solver_options,
                      Ipopt::IpoptApplication* app) {
   SolverOptions merged_solver_options = user_solver_options.has_value()
                                             ? user_solver_options.value()

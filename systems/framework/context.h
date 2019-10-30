@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/value.h"
@@ -179,7 +179,7 @@ class Context : public ContextBase {
   /// Returns the accuracy setting (if any). Note that the return type is
   /// `optional<double>` rather than the double value itself.
   /// @see SetAccuracy() for details.
-  const optional<double>& get_accuracy() const { return accuracy_; }
+  const std::optional<double>& get_accuracy() const { return accuracy_; }
 
   /// Returns a const reference to this %Context's parameters.
   const Parameters<T>& get_parameters() const { return *parameters_; }
@@ -532,7 +532,7 @@ class Context : public ContextBase {
   /// The common thread among these examples is that they all share the
   /// same %Context, so by keeping accuracy here it can be used effectively to
   /// control all accuracy-dependent computations.
-  void SetAccuracy(const optional<double>& accuracy) {
+  void SetAccuracy(const std::optional<double>& accuracy) {
     ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();
     PropagateAccuracyChange(this, accuracy, change_event);
@@ -801,7 +801,7 @@ class Context : public ContextBase {
   /// (Internal use only) Sets a new accuracy and notifies accuracy-dependent
   /// quantities that they are now invalid, as part of a given change event.
   static void PropagateAccuracyChange(Context<T>* context,
-                                      const optional<double>& accuracy,
+                                      const std::optional<double>& accuracy,
                                       int64_t change_event) {
     DRAKE_ASSERT(context != nullptr);
     context->NoteAccuracyChanged(change_event);
@@ -861,7 +861,7 @@ class Context : public ContextBase {
   /// Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
   /// default implementation does nothing, which is suitable for leaf contexts.
   /// Diagram contexts must override.
-  virtual void DoPropagateAccuracyChange(const optional<double>& accuracy,
+  virtual void DoPropagateAccuracyChange(const std::optional<double>& accuracy,
                                          int64_t change_event) {
     unused(accuracy, change_event);
   }
@@ -931,7 +931,7 @@ class Context : public ContextBase {
   StepInfo<T> step_info_;
 
   // Accuracy setting.
-  optional<double> accuracy_;
+  std::optional<double> accuracy_;
 
   // The parameter values (p) for this Context; this is never null.
   copyable_unique_ptr<Parameters<T>> parameters_{
