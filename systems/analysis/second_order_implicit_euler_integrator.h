@@ -137,10 +137,10 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
           compute_and_factor_iteration_matrix,
       VectorX<T>* xtplus, int trial = 1);
   bool DoImplicitIntegratorStep(const T& h) final;
-  bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
+  bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& xtplus_guess,
       VectorX<T>* xtplus, typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv, int trial = 1);
-  bool StepHalfImplicitEulers(const T& t0, const T& h, const VectorX<T>& xt0,
+  bool StepHalfImplicitEulers(const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& xtplus_guess,
        VectorX<T>* xtplus, 
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv);
   // Jacobian computation

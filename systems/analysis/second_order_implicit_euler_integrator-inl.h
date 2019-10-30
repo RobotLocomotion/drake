@@ -409,10 +409,12 @@ void SecondOrderImplicitEulerIntegrator<T>::eval_g_with_y_from_context(
 //       exit.
 template <class T>
 bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
-    const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus,
+    const T& h, const VectorX<T>& xt0, const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, 
     MatrixX<T>* Jv, int trial) {
   using std::abs;
+  // right now the iterate-with-guess mechanism doesn't seem to work that well when Jacobian is from xt0
+  unused(xtplus_guess);
 
   // Verify the trial number is valid.
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
@@ -420,7 +422,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
 
   const System<T>& system = this->get_system();
   // Verify xtplus
-  DRAKE_ASSERT(xtplus != nullptr && xtplus->size() == xt0.size());
+  DRAKE_ASSERT(xtplus != nullptr && xtplus->size() == xt0.size() && xtplus_guess.size() == xt0.size());
+
+  *xtplus = xt0;
 
   // set a residual evaluator
   Context<T>* context = this->get_mutable_context();
@@ -444,7 +448,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   const Eigen::Ref<VectorX<T>> vtplus = xtplus->block(cstate.num_q(),0,cstate.num_v(),1);
   BasicVector<T> qdot (qt0.rows());
   VectorX<T> last_qtplus = qtplus ;
-  VectorX<T> dx (xtplus->rows());
+  VectorX<T> dx (xt0.size());
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;
@@ -465,11 +469,10 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   if (trial < 3)
     trial = 3;
 #endif
-  if (!this->MaybeFreshenVelocityMatrices(tf, *xtplus, qt0, h, trial,
+  if (!this->MaybeFreshenVelocityMatrices(t0, *xtplus, qt0, h, trial,
       ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix, Jv)) {
     return false;
   }
-
 
   // Do the Newton-Raphson iterations.
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
@@ -491,10 +494,10 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
 
     // assume context uses qtk
     system.MapVelocityToQDot(*context, vtplus, &qdot);
+    last_qtplus = qtplus;
     // qtplus is from *xtplus
     qtplus = qt0 + h * qdot.get_value();
     dx << dy, qtplus - last_qtplus;
-    last_qtplus = qtplus;
 
 
     // Get the infinity norm of the weighted update vector.
@@ -551,16 +554,15 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
   if (!this->get_reuse())
     return false;
 
-  // Try StepImplicitEuler again, first resetting xtplus to xt0. That method will
+  // Try StepImplicitEuler again. That method will
   // freshen Jacobians and iteration matrix factorizations as necessary.
-  *xtplus = xt0;
-  return StepImplicitEuler(t0, h, xt0, xtplus, iteration_matrix, Jv, trial + 1);
+  return StepImplicitEuler(t0, h, xt0, xtplus_guess, xtplus, iteration_matrix, Jv, trial + 1);
 }
 
 // Steps forward by two half implicit euler steps, if possible
 template <class T>
 bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus, 
+      const VectorX<T>& xtplus_guess, VectorX<T>* xtplus, 
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv)
       {
 
@@ -579,7 +581,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(const T& t0, 
 
         // todo: work out logic for each failure. Save xt0, initial xtplus, etc.
         // step first time
-        bool success = StepImplicitEuler(t0, 0.5 * h, xt0, xtplus, iteration_matrix, Jv);
+        bool success = StepImplicitEuler(t0, 0.5 * h, xt0, 0.5 * (xt0 + xtplus_guess), xtplus, iteration_matrix, Jv);
         if (!success)
         {
           SPDLOG_DEBUG(drake::log(), "First Half SOIE convergence failed");
@@ -588,7 +590,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(const T& t0, 
         {
           // set new xt0 to xthalf
           VectorX<T> xthalf = *xtplus;
-          success = StepImplicitEuler(t0 + 0.5 * h, 0.5 * h, xthalf, xtplus, iteration_matrix, Jv);
+          success = StepImplicitEuler(t0 + 0.5 * h, 0.5 * h, xthalf, xthalf, xtplus, iteration_matrix, Jv);
           if( !success )
           {
             SPDLOG_DEBUG(drake::log(), "Second Half SOIE convergence failed");
@@ -629,21 +631,21 @@ bool SecondOrderImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0,
   DRAKE_ASSERT(xtplus_ie);
   DRAKE_ASSERT(xtplus_hie);
 
-
+  
   // Use the current state as the candidate value for the next state.
   // [Hairer 1996] validates this choice (p. 120).
-  *xtplus_ie = xt0;
+  const VectorX<T>& xtplus_guess = xt0;
+
   // Do the Euler step.
-  if (!StepImplicitEuler(t0, h, xt0, xtplus_ie, &iteration_matrix_ie_, &Jv_ie_)) {
+  if (!StepImplicitEuler(t0, h, xt0, xtplus_guess, xtplus_ie, &iteration_matrix_ie_, &Jv_ie_)) {
     SPDLOG_DEBUG(drake::log(), "SO Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
   }
-  *xtplus_hie = *xtplus_ie;
   // DO THE HALF IMPLICIT EULER STEPS
   //if (this->get_fixed_step_mode() || StepHalfImplicitEulers(t0, h, xt0, xtplus_hie, 
   // todo antequ: consider turning this off for fixed step mode
-  if (StepHalfImplicitEulers(t0, h, xt0, xtplus_hie, 
+  if (StepHalfImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie, 
       &iteration_matrix_hie_, &Jv_hie_)) {
     Context<T>* context = this->get_mutable_context();
     // propagate the full step
