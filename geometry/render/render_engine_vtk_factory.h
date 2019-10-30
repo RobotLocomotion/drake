@@ -8,6 +8,13 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+/** Determines whether anti-aliasing is on or off. (Designed so that on is the
+ default value.  */
+enum class VtkAntiAliasing {
+  kOn,
+  kOff
+};
+
 /** Construction parameters for the RenderEngineVtk.  */
 struct RenderEngineVtkParams  {
   /** The (optional) label to apply when none is otherwise specified.  */
@@ -22,6 +29,11 @@ struct RenderEngineVtkParams  {
    channel in the range [0, 1]). The default value (in byte values) would be
    [204, 229, 255].  */
   Eigen::Vector3d default_clear_color{204 / 255., 229 / 255., 255 / 255.};
+
+  /** Disables multi-sample anti-aliasing for color images if set to false.
+   Defaults to enabled. Note: by design there is no anti-aliasing for color
+   or depth images.  */
+  VtkAntiAliasing use_color_anti_aliasing{VtkAntiAliasing::kOn};
 };
 
 /** Constructs a RenderEngine implementation which uses a VTK-based OpenGL
