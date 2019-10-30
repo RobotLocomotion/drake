@@ -53,7 +53,8 @@ QuaternionFloatingMobilizer<T>::set_quaternion(
   DRAKE_DEMAND(state != nullptr);
   auto q = this->get_mutable_positions(state);
   DRAKE_ASSERT(q.size() == kNq);
-  // Note: see storage order notes in get_quaternion().
+  // Note: The storage order documented in get_quaternion() is consistent with
+  // the order below, q[0] is the "scalar" part and q[1:3] is the "vector" part.
   q[0] = q_FM.w();
   q.template segment<3>(1) = q_FM.vec();
   return *this;
@@ -107,19 +108,6 @@ void QuaternionFloatingMobilizer<
   positions[0] = q_FM.w();
   positions.template segment<3>(1) = q_FM.vec();
   MobilizerBase::set_random_position_distribution(positions);
-}
-
-template <typename T>
-const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::SetFromRotationMatrix(
-    systems::Context<T>* context, const Matrix3<T>& R_FM) const {
-  auto q = this->get_mutable_positions(&*context);
-  DRAKE_ASSERT(q.size() == kNq);
-  const Vector4<T> v4 = math::RotationMatrix<T>::ToQuaternionAsVector4(R_FM);
-  // Note: The storage order documented in get_quaternion() is consistent with
-  // the order below, q[0] is the "scalar" part and q[1:3] is the "vector" part.
-  q.template head<4>() = v4;
-  return *this;
 }
 
 template <typename T>

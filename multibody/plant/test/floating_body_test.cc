@@ -101,7 +101,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
   const math::RotationMatrixd R_WB_test(AngleAxisd(M_PI / 3.0, axis));
-  mobilizer.SetFromRotationMatrix(&context, R_WB_test.matrix());
+  mobilizer.SetFromRotationMatrix(&context, R_WB_test);
   // Verify we get the right quaternion.
   const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
   const Quaterniond q_WB_test_expected = R_WB_test.ToQuaternion();
