@@ -77,7 +77,7 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
   auto random_source = std::make_unique<RandomSource>(
       RandomDistribution::kUniform, 2, 0.0025);
   EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kUniform);
-  EXPECT_EQ(random_source->get_fixed_seed(), nullopt);
+  EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
   // Cumulative distribution function of the uniform distribution.
   auto Phi = [](double z) { return z; };
@@ -94,7 +94,7 @@ GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
   auto random_source = std::make_unique<RandomSource>(
       RandomDistribution::kGaussian, 2, 0.0025);
   EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kGaussian);
-  EXPECT_EQ(random_source->get_fixed_seed(), nullopt);
+  EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
   // Cumulative distribution function of the standard normal distribution.
   auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
@@ -112,7 +112,7 @@ GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
       RandomDistribution::kExponential, 2, 0.0025);
   EXPECT_EQ(random_source->get_distribution(),
             RandomDistribution::kExponential);
-  EXPECT_EQ(random_source->get_fixed_seed(), nullopt);
+  EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
   // Cumulative distribution function of the exponential distribution with λ=1,
   // (note: only valid for z>=0).
@@ -245,7 +245,7 @@ GTEST_TEST(RandomSourceTest, SeedTest) {
   const auto& port = dut.get_output_port(0);
 
   // The source does not have a fixed seed by default.
-  EXPECT_EQ(dut.get_fixed_seed(), nullopt);
+  EXPECT_EQ(dut.get_fixed_seed(), std::nullopt);
 
   // A given instance of a RandomSource always defaults to the same seed.
   using Seed = RandomSource::Seed;
@@ -318,8 +318,8 @@ GTEST_TEST(RandomSourceTest, SeedTest) {
   EXPECT_EQ(other_port.Eval(*other_context)[0], new1.output);
 
   // If we remove the fixed seed, it returns to normal.
-  other.set_fixed_seed(nullopt);
-  EXPECT_EQ(other.get_fixed_seed(), nullopt);
+  other.set_fixed_seed(std::nullopt);
+  EXPECT_EQ(other.get_fixed_seed(), std::nullopt);
   EXPECT_EQ(other_port.Eval(*other.CreateDefaultContext())[0],
             other_default_output);
 }

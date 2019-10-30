@@ -1,13 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -75,7 +75,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   /// declared as discrete state and the dynamics will be implemented as a
   /// dicraete variable update.
   SymbolicVectorSystem(
-      const optional<symbolic::Variable>& time,
+      const std::optional<symbolic::Variable>& time,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& state,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& input,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& parameter,
@@ -112,7 +112,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   /// declared as discrete state and the dynamics will be implemented as a
   /// dicraete variable update.
   SymbolicVectorSystem(
-      const optional<symbolic::Variable>& time,
+      const std::optional<symbolic::Variable>& time,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& state,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& input,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
@@ -147,7 +147,9 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 
   /// @name Accessor methods.
   /// @{
-  const optional<symbolic::Variable>& time_var() const { return time_var_; }
+  const std::optional<symbolic::Variable>& time_var() const {
+    return time_var_;
+  }
   const VectorX<symbolic::Variable>& state_vars() const { return state_vars_; }
   const VectorX<symbolic::Variable>& input_vars() const { return input_vars_; }
   const VectorX<symbolic::Variable>& parameter_vars() const {
@@ -178,7 +180,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const final;
 
-  const optional<symbolic::Variable> time_var_{nullopt};
+  const std::optional<symbolic::Variable> time_var_{std::nullopt};
   const VectorX<symbolic::Variable> state_vars_{};
   const VectorX<symbolic::Variable> input_vars_{};
   const VectorX<symbolic::Variable> parameter_vars_{};
@@ -306,7 +308,7 @@ class SymbolicVectorSystemBuilder {
   /// @name Accessor methods.
   /// @{
   /// Returns the time variable if exists.
-  const optional<symbolic::Variable>& time() const { return time_var_; }
+  const std::optional<symbolic::Variable>& time() const { return time_var_; }
   /// Returns the state variables.
   const VectorX<symbolic::Variable>& state() const { return state_vars_; }
   /// Returns the input variables.
@@ -339,7 +341,7 @@ class SymbolicVectorSystemBuilder {
   double time_period() const { return time_period_; }
   /// @}
  private:
-  optional<symbolic::Variable> time_var_{nullopt};
+  std::optional<symbolic::Variable> time_var_{std::nullopt};
   VectorX<symbolic::Variable> state_vars_{};
   VectorX<symbolic::Variable> input_vars_{};
   VectorX<symbolic::Variable> parameter_vars_{};
