@@ -221,8 +221,8 @@ int DoMain() {
   } else if (FLAGS_orientation == "horizontal") {
     plant.AddJoint<PrismaticJoint>(
         "brick_translate_x_joint",
-        plant.world_body(), nullopt,
-        plant.GetBodyByName("brick_base"), nullopt,
+        plant.world_body(), std::nullopt,
+        plant.GetBodyByName("brick_base"), std::nullopt,
         Vector3d::UnitX());
     gravity = Vector3d(
         -multibody::UniformGravityFieldElement<double>::kDefaultStrength, 0, 0);
