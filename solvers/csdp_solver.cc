@@ -59,9 +59,9 @@ void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
                         Eigen::VectorXd* prog_sol) {
   for (int i = 0;
        i < static_cast<int>(sdpa_free_format.prog_var_in_sdpa().size()); ++i) {
-    if (holds_alternative<DecisionVariableInSdpaX>(
+    if (std::holds_alternative<DecisionVariableInSdpaX>(
             sdpa_free_format.prog_var_in_sdpa()[i])) {
-      const auto& decision_var_in_X = get<DecisionVariableInSdpaX>(
+      const auto& decision_var_in_X = std::get<DecisionVariableInSdpaX>(
           sdpa_free_format.prog_var_in_sdpa()[i]);
 
       double X_entry_val{};
@@ -94,12 +94,12 @@ void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
           (decision_var_in_X.coeff_sign == internal::Sign::kPositive
                ? X_entry_val
                : -X_entry_val);
-    } else if (holds_alternative<double>(
+    } else if (std::holds_alternative<double>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
-      (*prog_sol)(i) = get<double>(sdpa_free_format.prog_var_in_sdpa()[i]);
-    } else if (holds_alternative<SdpaFreeFormat::FreeVariableIndex>(
+      (*prog_sol)(i) = std::get<double>(sdpa_free_format.prog_var_in_sdpa()[i]);
+    } else if (std::holds_alternative<SdpaFreeFormat::FreeVariableIndex>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
-      (*prog_sol)(i) = s_val(get<SdpaFreeFormat::FreeVariableIndex>(
+      (*prog_sol)(i) = s_val(std::get<SdpaFreeFormat::FreeVariableIndex>(
           sdpa_free_format.prog_var_in_sdpa()[i]));
     }
   }
