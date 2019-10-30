@@ -277,7 +277,7 @@ void OsqpSolver::DoSolve(
   SetOsqpSolverSettings(merged_options, settings);
 
   // If any step fails, it will set the solution_result and skip other steps.
-  optional<SolutionResult> solution_result;
+  std::optional<SolutionResult> solution_result;
 
   // Setup workspace.
   OSQPWorkspace* work = nullptr;

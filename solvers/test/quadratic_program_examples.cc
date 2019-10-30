@@ -419,7 +419,7 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
           (x_desired(0) + x_desired(1) + 1.0) / 2.0;
     }
 
-    optional<Eigen::VectorXd> initial_guess;
+    std::optional<Eigen::VectorXd> initial_guess;
     if (solver.solver_id() == SnoptSolver::id()) {
       initial_guess.emplace(Eigen::VectorXd::Zero(2));
     }
