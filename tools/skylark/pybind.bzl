@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@cc//:compiler.bzl", "COMPILER_ID")
+
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
 load(
@@ -53,6 +55,13 @@ def pybind_py_library(
     # output a *.so, so that the target name is similar to what is provided.
     cc_so_target = cc_so_name + ".so"
 
+    # GCC and Clang don't always agree / succeed when inferring storage
+    # duration (#9600). Workaround it for now.
+    if COMPILER_ID.endswith("Clang"):
+        copts = ["-Wno-unused-lambda-capture"] + cc_copts
+    else:
+        copts = cc_copts
+
     # Add C++ shared library.
     cc_binary_rule(
         name = cc_so_target,
@@ -60,11 +69,7 @@ def pybind_py_library(
         # This is how you tell Bazel to create a shared library.
         linkshared = 1,
         linkstatic = 1,
-        copts = [
-            # GCC and Clang don't always agree / succeed when inferring storage
-            # duration (#9600). Workaround it for now.
-            "-Wno-unused-lambda-capture",
-        ] + cc_copts,
+        copts = copts,
         # Always link to pybind11.
         deps = [
             "@pybind11",
