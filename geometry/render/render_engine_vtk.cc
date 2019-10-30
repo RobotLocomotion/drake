@@ -139,6 +139,8 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
   const auto& c = parameters.default_clear_color;
   default_clear_color_ = ColorD{c(0), c(1), c(2)};
 
+  use_color_anti_aliasing_ = parameters.use_color_anti_aliasing;
+
   InitializePipelines();
 }
 
@@ -395,15 +397,9 @@ void RenderEngineVtk::InitializePipelines() {
 
   // Generic configuration of pipelines.
   for (auto& pipeline : pipelines_) {
-    // Multisampling disabled by design for label and depth. It's turned off for
-    // color because of a bug which affects on-screen rendering with NVidia
-    // drivers on Ubuntu 16.04. In certain very specific
-    // cases (camera position, scene, triangle drawing order, normal
-    // orientation), a plane surface has partial background pixels
-    // bleeding through it, which changes the color of the center pixel.
-    // TODO(fbudin69500) If lack of anti-aliasing in production code is
-    // problematic, change this to only disable anti-aliasing in unit
-    // tests. Alternatively, find other way to resolve the driver bug.
+    // Multisampling disabled by design for label and depth. It is turned back
+    // on for the color image explicitly based on the use_color_anti_aliasing_
+    // value. Unit tests should keep it turned off.
     pipeline->window->SetMultiSamples(0);
 
     auto camera = pipeline->renderer->GetActiveCamera();
@@ -437,9 +433,16 @@ void RenderEngineVtk::InitializePipelines() {
       empty_color.r, empty_color.g, empty_color.b);
 
   pipelines_[ImageType::kColor]->renderer->SetUseDepthPeeling(1);
-  pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
   pipelines_[ImageType::kColor]->renderer->SetBackground(
       default_clear_color_.r, default_clear_color_.g, default_clear_color_.b);
+  if (use_color_anti_aliasing_ == VtkAntiAliasing::kOn) {
+    pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
+    // TODO(SeanCurtis-TRI): VTK documentation is unclear on the interpretation
+    // of this value. However, we cargo-cult this value from
+    // https://gitlab.kitware.com/vtk/vtk/issues/17394
+    // If we can find a better basis for picking this value, do so.
+    pipelines_[ImageType::kColor]->window->SetMultiSamples(8);
+  }
 }
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,

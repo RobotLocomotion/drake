@@ -223,6 +223,9 @@ class RenderEngineVtk final : public RenderEngine,
   // The color to clear the color buffer to.
   systems::sensors::ColorD default_clear_color_;
 
+  // Determines whether color images are anti-aliased or not.
+  VtkAntiAliasing use_color_anti_aliasing_{VtkAntiAliasing::kOn};
+
   // The collection of per-geometry actors (one actor per pipeline (color,
   // depth, and label) keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
