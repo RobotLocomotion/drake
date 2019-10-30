@@ -407,7 +407,7 @@ TEST_P(KukaArmTest, EvalOutput) {
 
 // Instantiate the value-parameterized tests to run twice: once with continuous
 // state and once with discrete state.
-INSTANTIATE_TEST_CASE_P(Blank, KukaArmTest,
+INSTANTIATE_TEST_SUITE_P(Blank, KukaArmTest,
     testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 
 GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {

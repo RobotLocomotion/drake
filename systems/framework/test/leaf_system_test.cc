@@ -1890,7 +1890,7 @@ using FeedthroughTestScalars = ::testing::Types<
 
 template <typename T>
 class FeedthroughTypedTest : public ::testing::Test {};
-TYPED_TEST_CASE(FeedthroughTypedTest, FeedthroughTestScalars);
+TYPED_TEST_SUITE(FeedthroughTypedTest, FeedthroughTestScalars);
 
 // The sparsity of a System should be inferred from its symbolic form.
 TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {

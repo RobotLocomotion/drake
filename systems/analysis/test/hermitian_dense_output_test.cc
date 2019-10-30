@@ -77,7 +77,7 @@ class HermitianDenseOutputTest : public ::testing::Test {
 // HermitianDenseOutput types to test.
 typedef ::testing::Types<double, AutoDiffXd> OutputTypes;
 
-TYPED_TEST_CASE(HermitianDenseOutputTest, OutputTypes);
+TYPED_TEST_SUITE(HermitianDenseOutputTest, OutputTypes);
 
 // Checks that HermitianDenseOutput consistency is ensured.
 TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {

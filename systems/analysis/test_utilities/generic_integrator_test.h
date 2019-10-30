@@ -56,7 +56,7 @@ struct GenericIntegratorTest : public ::testing::Test {
   std::unique_ptr<T> integrator_;
 };
 
-TYPED_TEST_CASE_P(GenericIntegratorTest);
+TYPED_TEST_SUITE_P(GenericIntegratorTest);
 
 // Verifies that the dense output is working for an integrator.
 TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
@@ -100,7 +100,7 @@ TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
   EXPECT_LT(dense_output->end_time(), this->context_->get_time());
 }
 
-REGISTER_TYPED_TEST_CASE_P(GenericIntegratorTest, DenseOutput);
+REGISTER_TYPED_TEST_SUITE_P(GenericIntegratorTest, DenseOutput);
 
 }  // namespace analysis_test
 }  // namespace systems

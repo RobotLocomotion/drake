@@ -87,7 +87,7 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
 
 // Infrastructure to repeat tests on both double and AutoDiffXd.
 using ScalarTypes = ::testing::Types<double>;
-TYPED_TEST_CASE(HydroelasticCallbackTyped, ScalarTypes);
+TYPED_TEST_SUITE(HydroelasticCallbackTyped, ScalarTypes);
 
 template <typename T>
 class HydroelasticCallbackTyped : public ::testing::Test {

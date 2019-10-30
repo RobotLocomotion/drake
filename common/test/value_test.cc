@@ -79,7 +79,7 @@ typedef ::testing::Types<
     CloneableInt,
     MoveOrCloneInt
     > Implementations;
-TYPED_TEST_CASE(TypedValueTest, Implementations);
+TYPED_TEST_SUITE(TypedValueTest, Implementations);
 
 // Value<T>() should work if and only if T is default-constructible.
 GTEST_TEST(ValueTest, DefaultConstructor) {

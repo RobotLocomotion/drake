@@ -312,7 +312,7 @@ TEST_P(SymbolicUnificationTestUnary, Check) {
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     UnaryCases, SymbolicUnificationTestUnary,
     ::testing::Values(
     Abs, Log, Exp, Sqrt, Sin, Cos, Tan, Asin, Acos, Atan, Sinh, Cosh, Tanh,
@@ -365,7 +365,7 @@ TEST_P(SymbolicUnificationTestBinary, Check) {
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     BinaryCases, SymbolicUnificationTestBinary,
     ::testing::Values(Pow, Div, Min, Max, Atan2));
 

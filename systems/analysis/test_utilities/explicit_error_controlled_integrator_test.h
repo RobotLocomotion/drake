@@ -38,7 +38,7 @@ struct ExplicitErrorControlledIntegratorTest : public ::testing::Test {
   const double kMass = 2.0;        // kg
 };
 
-TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest);
+TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest);
 
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ReqInitialStepTarget) {
   // Set the requested initial step size.
@@ -476,7 +476,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
             this->kDt);
 }
 
-REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
+REGISTER_TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEstOrder, SpringMassStepEC, MaxStepSizeRespected,
     IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
@@ -499,7 +499,7 @@ struct PleidesTest : public ::testing::Test {
   std::unique_ptr<IntegratorBase<double>> integrator;
 };
 
-TYPED_TEST_CASE_P(PleidesTest);
+TYPED_TEST_SUITE_P(PleidesTest);
 
 // Verifies that the Pleides system can be integrated accurately.
 TYPED_TEST_P(PleidesTest, Pleides) {
@@ -536,7 +536,7 @@ TYPED_TEST_P(PleidesTest, Pleides) {
     EXPECT_NEAR(q[i], q_des[i], kTolerance) << i;
 }
 
-REGISTER_TYPED_TEST_CASE_P(PleidesTest, Pleides);
+REGISTER_TYPED_TEST_SUITE_P(PleidesTest, Pleides);
 
 }  // namespace analysis_test
 }  // namespace systems

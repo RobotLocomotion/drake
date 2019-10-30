@@ -3302,7 +3302,7 @@ class RemoveRoleTests : public GeometryStateTestBase,
   }
 };
 
-INSTANTIATE_TEST_CASE_P(GeometryStateTest, RemoveRoleTests,
+INSTANTIATE_TEST_SUITE_P(GeometryStateTest, RemoveRoleTests,
                         ::testing::Values(Role::kProximity,
                                           Role::kIllustration,
                                           Role::kPerception));

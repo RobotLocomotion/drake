@@ -171,12 +171,12 @@ TEST_P(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifyModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
 }
 
-INSTANTIATE_TEST_CASE_P(SdfAcrobatModelTests,
+INSTANTIATE_TEST_SUITE_P(SdfAcrobatModelTests,
                         AcrobotModelTests,
                         ::testing::Values(test::LoadFromSdf));
 
 
-INSTANTIATE_TEST_CASE_P(UrdfAcrobatModelTests,
+INSTANTIATE_TEST_SUITE_P(UrdfAcrobatModelTests,
                         AcrobotModelTests,
                         ::testing::Values(test::LoadFromUrdf));
 

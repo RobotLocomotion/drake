@@ -45,7 +45,7 @@ class ScalarViewDenseOutputTest : public ::testing::Test {
 
 typedef ::testing::Types<double, AutoDiffXd> ExtensionTypes;
 
-TYPED_TEST_CASE(ScalarViewDenseOutputTest, ExtensionTypes);
+TYPED_TEST_SUITE(ScalarViewDenseOutputTest, ExtensionTypes);
 
 // Checks that ScalarViewDenseOutput properly wraps a
 // DenseOutput instance.

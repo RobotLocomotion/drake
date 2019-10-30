@@ -39,7 +39,7 @@ class ParticleTest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<T>> derivatives_;
 };
 
-TYPED_TEST_CASE_P(ParticleTest);
+TYPED_TEST_SUITE_P(ParticleTest);
 
 /// Makes sure a Particle output is consistent with its
 /// state (position and velocity).
@@ -91,9 +91,9 @@ TYPED_TEST_P(ParticleTest, DerivativesTest) {
             static_cast<TypeParam>(1.0));  // x1dot == u0
 }
 
-REGISTER_TYPED_TEST_CASE_P(ParticleTest, OutputTest, DerivativesTest);
+REGISTER_TYPED_TEST_SUITE_P(ParticleTest, OutputTest, DerivativesTest);
 
-INSTANTIATE_TYPED_TEST_CASE_P(WithDoubles, ParticleTest, double);
+INSTANTIATE_TYPED_TEST_SUITE_P(WithDoubles, ParticleTest, double);
 
 }  // namespace
 }  // namespace particles
