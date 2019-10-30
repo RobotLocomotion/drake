@@ -2,11 +2,11 @@
 
 #include <memory>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_variant.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/math/spatial_force.h"
@@ -66,7 +66,7 @@ class HydroelasticContactInfo {
       : contact_surface_(std::move(contact_surface)),
         F_Ac_W_(F_Ac_W),
         quadrature_point_data_(std::move(quadrature_point_data)) {
-    DRAKE_DEMAND(drake::get<std::unique_ptr<geometry::ContactSurface<T>>>(
+    DRAKE_DEMAND(std::get<std::unique_ptr<geometry::ContactSurface<T>>>(
                      contact_surface_)
                      .get());
   }
@@ -103,11 +103,11 @@ class HydroelasticContactInfo {
   /// Returns a reference to the ContactSurface data structure. Note that
   /// the mesh and gradient vector fields are expressed in the world frame.
   const geometry::ContactSurface<T>& contact_surface() const {
-    if (drake::holds_alternative<const geometry::ContactSurface<T>*>(
+    if (std::holds_alternative<const geometry::ContactSurface<T>*>(
             contact_surface_)) {
-      return *drake::get<const geometry::ContactSurface<T>*>(contact_surface_);
+      return *std::get<const geometry::ContactSurface<T>*>(contact_surface_);
     } else {
-      return *drake::get<std::unique_ptr<geometry::ContactSurface<T>>>
+      return *std::get<std::unique_ptr<geometry::ContactSurface<T>>>
                   (contact_surface_);
     }
   }
@@ -125,7 +125,7 @@ class HydroelasticContactInfo {
 
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
-  drake::variant<const geometry::ContactSurface<T>*,
+  std::variant<const geometry::ContactSurface<T>*,
                  std::unique_ptr<geometry::ContactSurface<T>>> contact_surface_;
 
   // The spatial force applied at the centroid (Point C) of the surface mesh.

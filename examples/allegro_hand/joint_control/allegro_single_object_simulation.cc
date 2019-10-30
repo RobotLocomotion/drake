@@ -85,8 +85,10 @@ void DoMain() {
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
-  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(), nullopt,
-                                       joint_hand_root, nullopt,
+  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(),
+                                       std::nullopt,
+                                       joint_hand_root,
+                                       std::nullopt,
                                        RigidTransformd::Identity());
 
   if (!FLAGS_add_gravity) {

@@ -1213,12 +1213,12 @@ class System : public SystemBase {
   /// provided as a convenience method since many algorithms provide the same
   /// common default or optional port semantics.
   const InputPort<T>* get_input_port_selection(
-      variant<InputPortSelection, InputPortIndex> port_index) const {
-    if (holds_alternative<InputPortIndex>(port_index)) {
-      return &get_input_port(get<InputPortIndex>(port_index));
+      std::variant<InputPortSelection, InputPortIndex> port_index) const {
+    if (std::holds_alternative<InputPortIndex>(port_index)) {
+      return &get_input_port(std::get<InputPortIndex>(port_index));
     }
 
-    switch (get<InputPortSelection>(port_index)) {
+    switch (std::get<InputPortSelection>(port_index)) {
       case InputPortSelection::kUseFirstInputIfItExists:
         if (num_input_ports() > 0) {
           return &get_input_port(0);
@@ -1257,11 +1257,11 @@ class System : public SystemBase {
   /// provided as a convenience method since many algorithms provide the same
   /// common default or optional port semantics.
   const OutputPort<T>* get_output_port_selection(
-      variant<OutputPortSelection, OutputPortIndex> port_index) const {
-    if (holds_alternative<OutputPortIndex>(port_index)) {
-      return &get_output_port(get<OutputPortIndex>(port_index));
+      std::variant<OutputPortSelection, OutputPortIndex> port_index) const {
+    if (std::holds_alternative<OutputPortIndex>(port_index)) {
+      return &get_output_port(std::get<OutputPortIndex>(port_index));
     }
-    switch (get<OutputPortSelection>(port_index)) {
+    switch (std::get<OutputPortSelection>(port_index)) {
       case OutputPortSelection::kUseFirstOutputIfItExists:
         if (num_output_ports() > 0) {
           return &get_output_port(0);
@@ -1879,8 +1879,8 @@ class System : public SystemBase {
   /// @throws std::logic_error for a duplicate port name.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      variant<std::string, UseDefaultName> name, PortDataType type, int size,
-      std::optional<RandomDistribution> random_type = std::nullopt) {
+      std::variant<std::string, UseDefaultName> name, PortDataType type,
+      int size, std::optional<RandomDistribution> random_type = std::nullopt) {
     const InputPortIndex port_index(num_input_ports());
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
