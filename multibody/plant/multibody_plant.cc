@@ -255,7 +255,7 @@ template <typename T>
 MultibodyPlant<T>::MultibodyPlant(
     std::unique_ptr<internal::MultibodyTree<T>> tree_in, double time_step)
     : internal::MultibodyTreeSystem<T>(
-          systems::SystemTypeTag<multibody::MultibodyPlant>{},
+          systems::SystemTypeTag<MultibodyPlant>{},
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);

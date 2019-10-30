@@ -38,7 +38,7 @@ GTEST_TEST(DiagramBuilderTest, Empty) {
 template <typename T>
 class ConstAndEcho final : public LeafSystem<T> {
  public:
-  ConstAndEcho() : LeafSystem<T>(SystemTypeTag<systems::ConstAndEcho>{}) {
+  ConstAndEcho() : LeafSystem<T>(SystemTypeTag<ConstAndEcho>{}) {
     this->DeclareInputPort("input", kVectorValued, 1);
     this->DeclareVectorOutputPort(
         "echo", BasicVector<T>(1), &ConstAndEcho::CalcEcho);

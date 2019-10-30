@@ -9,7 +9,7 @@ namespace systems {
 
 template <typename T>
 Integrator<T>::Integrator(int size)
-    : VectorSystem<T>(SystemTypeTag<systems::Integrator>{}, size, size) {
+    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size) {
   this->DeclareContinuousState(size);
 }
 

@@ -8,8 +8,7 @@ namespace rimless_wheel {
 
 template <typename T>
 RimlessWheel<T>::RimlessWheel()
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<examples::rimless_wheel::RimlessWheel>{}) {
+    : systems::LeafSystem<T>(systems::SystemTypeTag<RimlessWheel>{}) {
   this->DeclareContinuousState(RimlessWheelContinuousState<T>(), 1, 1, 0);
 
   // Discrete state for stance toe distance along the ramp.

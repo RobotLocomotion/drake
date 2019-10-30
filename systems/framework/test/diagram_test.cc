@@ -1299,7 +1299,7 @@ class FeedbackDiagram : public Diagram<T> {
   FeedbackDiagram()
       // We choose this constructor from our parent class so that we have a
       // useful Diagram for the SubclassTransmogrificationTest.
-      : Diagram<T>(SystemTypeTag<systems::FeedbackDiagram>{}) {
+      : Diagram<T>(SystemTypeTag<FeedbackDiagram>{}) {
     constexpr int kSize = 1;
 
     DiagramBuilder<T> builder;
@@ -3012,7 +3012,7 @@ template <typename T>
 class ConstraintTestSystem : public LeafSystem<T> {
  public:
   ConstraintTestSystem()
-      : LeafSystem<T>(systems::SystemTypeTag<systems::ConstraintTestSystem>{}) {
+      : LeafSystem<T>(systems::SystemTypeTag<ConstraintTestSystem>{}) {
     this->DeclareContinuousState(2);
     this->DeclareEqualityConstraint(&ConstraintTestSystem::CalcState0Constraint,
                                     1, "x0");

@@ -1846,7 +1846,7 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
   SymbolicSparsitySystem()
       : SymbolicSparsitySystem(
-            SystemTypeTag<systems::SymbolicSparsitySystem>{}) {}
+            SystemTypeTag<SymbolicSparsitySystem>{}) {}
 
   // Scalar-converting copy constructor.
   template <typename U>

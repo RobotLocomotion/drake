@@ -45,7 +45,7 @@ class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
                          const trajectories::Trajectory<double>& D,
                          double time_period = 0.)
       : TimeVaryingLinearSystem<T>(
-            SystemTypeTag<systems::TrajectoryLinearSystem>{}, A.rows(),
+            SystemTypeTag<TrajectoryLinearSystem>{}, A.rows(),
             B.cols(), C.rows(), time_period),
         A_(A.Clone()),
         B_(B.Clone()),

@@ -46,7 +46,7 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
                          const trajectories::Trajectory<double>& y0,
                          double time_period = 0.)
       : TimeVaryingAffineSystem<T>(
-            SystemTypeTag<systems::TrajectoryAffineSystem>{}, A.rows(),
+            SystemTypeTag<TrajectoryAffineSystem>{}, A.rows(),
             B.cols(), C.rows(), time_period),
         A_(A.Clone()),
         B_(B.Clone()),

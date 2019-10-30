@@ -21,14 +21,14 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
     std::unique_ptr<MultibodyTree<T>> tree,
     bool is_discrete)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           false,  // Null tree is not allowed here.
           std::move(tree), is_discrete) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           true,  // Null tree is OK.
           nullptr, is_discrete) {}
 
@@ -46,7 +46,7 @@ template <typename T>
 template <typename U>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<multibody::internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           false,  // Null tree isn't allowed (or possible).
           other.internal_tree().template CloneToScalar<T>(),
           other.is_discrete()) {}

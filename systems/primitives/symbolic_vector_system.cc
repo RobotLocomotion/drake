@@ -23,7 +23,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
     const Ref<const VectorX<Variable>>& parameter,
     const Ref<const VectorX<Expression>>& dynamics,
     const Ref<const VectorX<Expression>>& output, double time_period)
-    : LeafSystem<T>(SystemTypeTag<systems::SymbolicVectorSystem>{}),
+    : LeafSystem<T>(SystemTypeTag<SymbolicVectorSystem>{}),
       time_var_(time),
       state_vars_(state),
       input_vars_(input),

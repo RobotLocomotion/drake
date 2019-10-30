@@ -158,7 +158,7 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::VectorXd>& y0,
                               double time_period)
     : AffineSystem<T>(
-          SystemTypeTag<systems::AffineSystem>{},
+          SystemTypeTag<AffineSystem>{},
           A, B, f0, C, D, y0, time_period) {}
 
 // Our protected constructor does all of the real work -- everything else

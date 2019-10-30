@@ -675,7 +675,7 @@ class MimoSystem final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MimoSystem);
 
   explicit MimoSystem(bool is_discrete)
-      : LeafSystem<T>(SystemTypeTag<::drake::systems::MimoSystem>{}),
+      : LeafSystem<T>(SystemTypeTag<MimoSystem>{}),
         is_discrete_(is_discrete) {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareInputPort(kVectorValued, 3);

@@ -115,7 +115,7 @@ template <typename T>
 PassThrough<T>::PassThrough(
     int vector_size,
     std::unique_ptr<const AbstractValue> abstract_model_value)
-    : LeafSystem<T>(SystemTypeTag<systems::PassThrough>()),
+    : LeafSystem<T>(SystemTypeTag<PassThrough>()),
       abstract_model_value_(std::move(abstract_model_value)) {
   if (!is_abstract()) {
     DRAKE_DEMAND(vector_size != -1);

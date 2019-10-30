@@ -19,7 +19,7 @@ namespace acrobot {
 
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant()
-    : systems::LeafSystem<T>(systems::SystemTypeTag<acrobot::AcrobotPlant>{}) {
+    : systems::LeafSystem<T>(systems::SystemTypeTag<AcrobotPlant>{}) {
   this->DeclareVectorInputPort("elbow_torque", AcrobotInput<T>());
   this->DeclareVectorOutputPort("acrobot_state", AcrobotState<T>(),
                                 &AcrobotPlant::CopyStateOut);

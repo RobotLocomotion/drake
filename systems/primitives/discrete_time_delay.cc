@@ -12,7 +12,7 @@ template <typename T>
 DiscreteTimeDelay<T>::DiscreteTimeDelay(
     double update_sec, int delay_timesteps, int vector_size,
     std::unique_ptr<const AbstractValue> abstract_model_value)
-    : LeafSystem<T>(SystemTypeTag<systems::DiscreteTimeDelay>()),
+    : LeafSystem<T>(SystemTypeTag<DiscreteTimeDelay>()),
       update_sec_(update_sec),
       // Delay buffer must be one element longer to properly delay signal
       delay_buffer_size_(delay_timesteps + 1),
