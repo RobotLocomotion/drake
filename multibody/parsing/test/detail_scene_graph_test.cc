@@ -2,12 +2,12 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <sstream>
 
 #include <gtest/gtest.h>
 #include "fmt/ostream.h"
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
@@ -481,15 +481,16 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   // specification with optional color values.
   auto expect_phong = [](
       const IllustrationProperties& dut, bool has_group,
-      const optional<Vector4d> diffuse, const optional<Vector4d> specular,
-      const optional<Vector4d> ambient,
-      const optional<Vector4d> emissive) -> ::testing::AssertionResult {
+      const std::optional<Vector4d> diffuse,
+      const std::optional<Vector4d> specular,
+      const std::optional<Vector4d> ambient,
+      const std::optional<Vector4d> emissive) -> ::testing::AssertionResult {
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
     bool success = true;
     if (has_group) {
       if (dut.HasGroup("phong")) {
         auto test_color = [&failure, &success, &dut](
-            const char* name, const optional<Vector4d> ref_color) {
+            const char* name, const std::optional<Vector4d> ref_color) {
           const bool has_property = dut.HasProperty("phong", name);
           if (ref_color) {
             if (has_property) {

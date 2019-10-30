@@ -157,7 +157,7 @@ class MobilizerImpl : public Mobilizer<T> {
 
   /// Returns the current distribution governing the random samples drawn
   /// for this mobilizer if one has been set.
-  const optional<Vector<symbolic::Expression, kNx>>&
+  const std::optional<Vector<symbolic::Expression, kNx>>&
   get_random_state_distribution() const {
     return random_state_distribution_;
   }
@@ -230,12 +230,12 @@ class MobilizerImpl : public Mobilizer<T> {
     return this->get_topology().velocities_start;
   }
 
-  optional<Vector<double, kNq>> default_position_{};
+  std::optional<Vector<double, kNq>> default_position_{};
 
   // Note: this is maintained as a concatenated vector so that the evaluation
   // method can share the sampled values of any random variables that are
   // shared between position and velocity.
-  optional<Vector<symbolic::Expression, kNx>> random_state_distribution_{};
+  std::optional<Vector<symbolic::Expression, kNx>> random_state_distribution_{};
 };
 
 }  // namespace internal

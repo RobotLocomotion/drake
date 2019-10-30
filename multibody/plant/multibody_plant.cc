@@ -419,7 +419,7 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 
   geometry::GeometrySet geometry_set;
   for (const Body<T>* body : bodies) {
-    optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
+    std::optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
     if (frame_id) {
       geometry_set.Add(frame_id.value());
     }
@@ -760,8 +760,8 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
     if (parent.index() == world_index()) continue;
-    optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
-    optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
+    std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
+    std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
     if (child_id && parent_id) {
       member_scene_graph().ExcludeCollisionsBetween(
@@ -2507,7 +2507,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_ASSERT(source_id_ != nullopt);
+  DRAKE_ASSERT(source_id_ != std::nullopt);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 

@@ -286,7 +286,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
-          "AnotherJoint", link1, nullopt, link2, nullopt, Vector3d::UnitZ()),
+          "AnotherJoint", link1, std::nullopt, link2, std::nullopt,
+          Vector3d::UnitZ()),
       std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
@@ -435,7 +436,7 @@ class AcrobotPlantTests : public ::testing::Test {
     Parser(plant_).AddModelFromFile(full_name);
     // Sanity check on the availability of the optional source id before using
     // it.
-    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
+    DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
 
     // Ensure that we can access the geometry ports pre-finalize.
     DRAKE_EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
@@ -766,7 +767,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
        body_index < plant_->num_bodies(); ++body_index) {
     const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
     // Also confirm the "maybe" variant works.
-    const optional<FrameId> optional_id =
+    const std::optional<FrameId> optional_id =
         plant_->GetBodyFrameIdIfExists(body_index);
     ASSERT_TRUE(optional_id.has_value());
     EXPECT_EQ(frame_id, *optional_id);
@@ -795,9 +796,9 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       "Body 'WorldBody' does not have geometry registered with it.");
 
   // Similarly, the "optional" variant should return a null opt.
-  optional<FrameId> undefined_id =
+  std::optional<FrameId> undefined_id =
       plant_->GetBodyFrameIdIfExists(world_index());
-  EXPECT_EQ(undefined_id, nullopt);
+  EXPECT_EQ(undefined_id, std::nullopt);
 #endif
 }
 
@@ -947,7 +948,7 @@ class SphereChainScenario {
     for (int i = 0; i < sphere_count - 1; ++i) {
       plant_->AddJoint<RevoluteJoint>(
           "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
-          nullopt, *spheres_[i + 1], nullopt, Vector3d::UnitY());
+          std::nullopt, *spheres_[i + 1], std::nullopt, Vector3d::UnitY());
     }
 
     // Body with no registered frame.
