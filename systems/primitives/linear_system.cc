@@ -29,7 +29,7 @@ LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& C,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               double time_period)
-    : LinearSystem<T>(SystemTypeTag<systems::LinearSystem>{}, A, B, C, D,
+    : LinearSystem<T>(SystemTypeTag<LinearSystem>{}, A, B, C, D,
                       time_period) {}
 
 template <typename T>

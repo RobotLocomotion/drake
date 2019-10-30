@@ -601,7 +601,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// same support.
   Diagram() : System<T>(
       SystemScalarConverter(
-          SystemTypeTag<systems::Diagram>{},
+          SystemTypeTag<Diagram>{},
           SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
 
   /// (Advanced) Constructs an uninitialized Diagram.  Subclasses that use this

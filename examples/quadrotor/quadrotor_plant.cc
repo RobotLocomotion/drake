@@ -32,8 +32,7 @@ template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
                                   const Matrix3d& I_arg, double kF_arg,
                                   double kM_arg)
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<quadrotor::QuadrotorPlant>{}),
+    : systems::LeafSystem<T>(systems::SystemTypeTag<QuadrotorPlant>{}),
       g_{9.81}, m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
   // Four inputs -- one for each propellor.
   this->DeclareInputPort("propellor_force", systems::kVectorValued, 4);

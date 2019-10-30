@@ -16,7 +16,7 @@ namespace rendering {
 template <typename T>
 RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
     SourceId source_id, FrameId frame_id)
-    : LeafSystem<T>(SystemTypeTag<rendering::RenderPoseToGeometryPose>{}),
+    : LeafSystem<T>(SystemTypeTag<RenderPoseToGeometryPose>{}),
       source_id_(source_id),
       frame_id_(frame_id) {
   using Input = PoseVector<T>;

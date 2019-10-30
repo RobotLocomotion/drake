@@ -13,8 +13,7 @@ namespace van_der_pol {
 
 template <typename T>
 VanDerPolOscillator<T>::VanDerPolOscillator()
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<van_der_pol::VanDerPolOscillator>{}) {
+    : systems::LeafSystem<T>(systems::SystemTypeTag<VanDerPolOscillator>{}) {
   // State is (q,q̇).
   this->DeclareContinuousState(1, 1, 0);
 

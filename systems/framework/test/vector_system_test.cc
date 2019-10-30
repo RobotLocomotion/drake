@@ -475,7 +475,7 @@ class OpenScalarTypeSystem : public VectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OpenScalarTypeSystem);
 
   explicit OpenScalarTypeSystem(int some_number)
-      : VectorSystem<T>(SystemTypeTag<systems::OpenScalarTypeSystem>{}, 1, 1),
+      : VectorSystem<T>(SystemTypeTag<OpenScalarTypeSystem>{}, 1, 1),
         some_number_(some_number) {}
 
   // Scalar-converting copy constructor.

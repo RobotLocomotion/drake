@@ -43,7 +43,7 @@ class ConstantValueSource final : public LeafSystem<T> {
 
 template <typename T>
 ConstantValueSource<T>::ConstantValueSource(const AbstractValue& value)
-    : LeafSystem<T>(SystemTypeTag<systems::ConstantValueSource>{}),
+    : LeafSystem<T>(SystemTypeTag<ConstantValueSource>{}),
       source_value_(value.Clone()) {
   // Use the "advanced" method to provide explicit non-member functors here
   // since we already have AbstractValues.

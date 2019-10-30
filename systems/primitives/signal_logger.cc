@@ -7,7 +7,7 @@ namespace systems {
 
 template <typename T>
 SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
-    : LeafSystem<T>(SystemTypeTag<systems::SignalLogger>{}),
+    : LeafSystem<T>(SystemTypeTag<SignalLogger>{}),
       log_(input_size, batch_allocation_size) {
   this->DeclareInputPort("data", kVectorValued, input_size);
 

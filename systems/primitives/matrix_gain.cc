@@ -16,7 +16,7 @@ MatrixGain<T>::MatrixGain(int size)
 template <typename T>
 MatrixGain<T>::MatrixGain(const Eigen::MatrixXd& D)
     : LinearSystem<T>(
-          SystemTypeTag<systems::MatrixGain>{},
+          SystemTypeTag<MatrixGain>{},
           Eigen::MatrixXd::Zero(kNumStates, kNumStates),  // A
           Eigen::MatrixXd::Zero(kNumStates, D.cols()),    // B
           Eigen::MatrixXd::Zero(D.rows(), kNumStates),    // C

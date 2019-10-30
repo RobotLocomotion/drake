@@ -259,7 +259,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <typename U>
   MultibodyPlant(const MultibodyPlant<U>& other)
       : internal::MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<multibody::MultibodyPlant>{},
+            systems::SystemTypeTag<MultibodyPlant>{},
             other.internal_tree().template CloneToScalar<T>(),
             other.is_discrete()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
