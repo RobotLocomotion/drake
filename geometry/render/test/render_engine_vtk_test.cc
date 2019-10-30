@@ -50,7 +50,7 @@ const int kHeight = 480;
 const double kZNear = 0.5;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
-const bool kShowWindow = false;
+const bool kShowWindow = true;
 
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Mac OSX.
@@ -310,7 +310,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
     const Vector3d bg_rgb{
         kBgColor.r / 255., kBgColor.g / 255., kBgColor.b / 255.};
-    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    RenderEngineVtkParams params{{}, {}, bg_rgb, VtkAntiAliasing::kOff};
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
@@ -442,7 +442,10 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
   std::vector<ColorI> backgrounds{{10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
   for (const auto& bg : backgrounds) {
     RenderEngineVtkParams params{
-        {}, {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
+        {},
+        {},
+        Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.},
+        VtkAntiAliasing::kOff};
     RenderEngineVtk engine(params);
     Render(&engine);
     VerifyUniformColor(bg, 0u);
@@ -544,6 +547,64 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
   PerformCenterShapeTest(renderer_.get(), "Box test");
+}
+
+// Test that the anti-aliasing makes a difference. Place a box with the front
+// face perpendicular to the camera direction. With a directional light pointing
+// in the same direction as the camera direction, the face will be a single
+// solid color (against a uniform background). With anti-aliasing, we expect
+// there to be two unique colors. Without anti-aliasing there should be more
+// colors.
+TEST_F(RenderEngineVtkTest, AntiAliasTest) {
+  auto render_box = [this](VtkAntiAliasing anti_aliasing_state) {
+    const Vector3d bg_rgb{
+        kBgColor.r / 255., kBgColor.g / 255., kBgColor.b / 255.};
+    // For historical reasons, we disable the anti-aliasing for tests. In the
+    // past, there were circumstances in which this led to undesirable
+    // artifacts, (e.g. on-screen rendering with NVidia drivers on Ubuntu
+    // 16.04). Turning off anti-aliasing simplifies the tests.
+    RenderEngineVtkParams params{{}, {}, bg_rgb, anti_aliasing_state};
+    renderer_ = make_unique<RenderEngineVtk>(params);
+    InitializeRenderer(X_WC_, false, renderer_.get());
+
+    // Sets up a box.
+    Box box(1, 1, 1);
+    RigidTransformd X_WB{AngleAxisd{M_PI / 4, Vector3d::UnitZ()},
+                         Vector3d{0, 0, 0}};
+    expected_label_ = RenderLabel(1);
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, box, simple_material(), X_WB,
+                              false /* needs update */);
+
+    const DepthCameraProperties camera{160, 120, kFovY, "unused",
+                                    kZNear, kZFar};
+    // Can't use the member images in case the camera has been configured to a
+    // different size than the default camera_ configuration.
+    ImageRgba8U color(camera.width, camera.height);
+    renderer_->RenderColorImage(camera, kShowWindow, &color);
+    return color;
+  };
+
+  // Count the number of unique colors in the image.
+  auto count_colors = [](const ImageRgba8U& image) {
+    std::set<int> unique_colors;
+    for (int r = 0; r < image.height(); ++r) {
+      for (int c = 0; c < image.width(); ++c) {
+        const ImageRgba8U::T* pixel = image.at(c, r);
+        // Encode rgba bytes into a single int.
+        int color_id =
+            (*pixel << 24) | (*(pixel + 1) << 16) | (*(pixel + 2) << 8) |
+            *(pixel + 3);
+        unique_colors.insert(color_id);
+      }
+    }
+    return static_cast<int>(unique_colors.size());
+  };
+
+  ImageRgba8U aliased_image = render_box(VtkAntiAliasing::kOff);
+  EXPECT_EQ(count_colors(aliased_image), 2);
+  ImageRgba8U smooth_image = render_box(VtkAntiAliasing::kOn);
+  EXPECT_GT(count_colors(smooth_image), 2);
 }
 
 // Performs the shape-centered-in-the-image test with a sphere.
