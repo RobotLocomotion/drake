@@ -294,7 +294,7 @@ struct Impl {
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("DeclareInputPort",
             overload_cast_explicit<const InputPort<T>&,
-                variant<std::string, UseDefaultName>, PortDataType, int,
+                std::variant<std::string, UseDefaultName>, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
             py::arg("size"), py::arg("random_type") = std::nullopt,

@@ -193,9 +193,9 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 ///
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index =
+    std::variant<InputPortSelection, InputPortIndex> input_port_index =
         InputPortSelection::kUseFirstInputIfItExists,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index =
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index =
         OutputPortSelection::kUseFirstOutputIfItExists,
     double equilibrium_check_tolerance = 1e-6);
 
@@ -246,9 +246,9 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 // me handle the additional options without a lot of boilerplate.
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index =
+    std::variant<InputPortSelection, InputPortIndex> input_port_index =
         InputPortSelection::kUseFirstInputIfItExists,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index =
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index =
         OutputPortSelection::kUseFirstOutputIfItExists);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].

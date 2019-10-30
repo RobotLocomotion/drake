@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <Eigen/Core>
@@ -15,7 +16,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/drake_variant.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 
@@ -178,9 +178,9 @@ class YamlReadArchive final {
     this->VisitOptional(nvp);
   }
 
-  // For drake::variant (which is std::variant iff we have new enough C++).
+  // For std::variant.
   template <typename NVP, typename... Types>
-  void DoVisit(const NVP& nvp, const drake::variant<Types...>&, int32_t) {
+  void DoVisit(const NVP& nvp, const std::variant<Types...>&, int32_t) {
     this->VisitVariant(nvp);
   }
 
