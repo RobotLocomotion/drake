@@ -1,12 +1,12 @@
 #pragma once
 
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include <fcl/fcl.h>
 #include <fmt/format.h>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"

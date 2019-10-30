@@ -2,12 +2,12 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/internal_geometry.h"

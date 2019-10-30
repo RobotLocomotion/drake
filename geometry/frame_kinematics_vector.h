@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -8,7 +9,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/utilities.h"
@@ -178,7 +178,7 @@ class FrameKinematicsVector {
   // replace this unordered_map with a flat_hash_map (where the entire storage
   // is a single heap slab); in that case, the complicated implementation in
   // the cc file would become simplified.
-  std::unordered_map<FrameId, optional<KinematicsValue>> values_;
+  std::unordered_map<FrameId, std::optional<KinematicsValue>> values_;
 
   // The count of non-nullopt items in values_.  We could recompute this from
   // values_, but we store it separately so that size() is still constant-time.

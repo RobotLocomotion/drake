@@ -11,12 +11,12 @@ namespace render {
 /** Construction parameters for the RenderEngineVtk.  */
 struct RenderEngineVtkParams  {
   /** The (optional) label to apply when none is otherwise specified.  */
-  optional<RenderLabel> default_label{};
+  std::optional<RenderLabel> default_label{};
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
     none is otherwise specified. Note: currently the alpha channel is unused
     by RenderEngineVtk.  */
-  optional<Eigen::Vector4d> default_diffuse{};
+  std::optional<Eigen::Vector4d> default_diffuse{};
 
   /** The rgb color to which the color buffer is cleared (each
    channel in the range [0, 1]). The default value (in byte values) would be

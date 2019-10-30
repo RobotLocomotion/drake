@@ -215,7 +215,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   solvers::MathematicalProgramResult result = solver.Solve(prog, {}, {});
 
   if (!result.is_success()) {
-    return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};
+    return {std::nullopt,
+            DifferentialInverseKinematicsStatus::kNoSolutionFound};
   }
 
   if (num_cart_constraints) {
@@ -229,7 +230,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       // computed vel is small.
       log()->info("v_next = {}", result.GetSolution(v_next).transpose());
       log()->info("alpha = {}", result.GetSolution(alpha).transpose());
-      return {nullopt, DifferentialInverseKinematicsStatus::kStuck};
+      return {std::nullopt, DifferentialInverseKinematicsStatus::kStuck};
     }
   }
 
