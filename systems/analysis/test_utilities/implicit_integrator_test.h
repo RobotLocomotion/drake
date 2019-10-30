@@ -21,6 +21,7 @@ namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
 
+#define EXCLUDE_CENTRAL_DIFF_AND_AUTODIFF
 template <typename T>
 class ImplicitIntegratorTest : public ::testing::Test {
  public:
@@ -176,6 +177,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Verify that integrator statistics are valid, and reset the statistics.
     CheckGeneralStatsValidity(&integrator);
 
+#ifndef EXCLUDE_CENTRAL_DIFF_AND_AUTODIFF
     // Switch to central differencing.
     integrator.set_jacobian_computation_scheme(
         T::JacobianComputationScheme::kCentralDifference);
@@ -218,6 +220,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_NEAR(x_final_true, x_final, xtol);
     EXPECT_NEAR(v_final_true, v_final, vtol);
     CheckGeneralStatsValidity(&integrator);
+#endif
   }
 
   // Integrate the modified mass-spring-damping system, which exhibits a
@@ -276,6 +279,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
 
+#ifndef EXCLUDE_CENTRAL_DIFF_AND_AUTODIFF
     // Switch the Jacobian scheme to central differencing.
     integrator.set_jacobian_computation_scheme(
         T::JacobianComputationScheme::kCentralDifference);
@@ -315,6 +319,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
     EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
+#endif
   }
 
   // Integrate an undamped system and check its solution accuracy.
@@ -367,7 +372,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verify that integrator statistics are valid and reset the statistics.
     CheckGeneralStatsValidity(&integrator);
-
+#ifndef EXCLUDE_CENTRAL_DIFF_AND_AUTODIFF
     // Switch to central differencing.
     integrator.set_jacobian_computation_scheme(
         T::JacobianComputationScheme::kCentralDifference);
@@ -407,6 +412,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verify that integrator statistics are valid
     CheckGeneralStatsValidity(&integrator);
+#endif
   }
 
   // Checks the error estimator for the implicit Euler integrator using the
@@ -427,11 +433,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
     integrator.set_maximum_step_size(large_h_);
     integrator.set_fixed_step_mode(true);
     integrator.set_reuse(reuse_type_to_bool(type));
-
+#ifndef EXCLUDE_CENTRAL_DIFF_AND_AUTODIFF
     // Use automatic differentiation because we can.
     integrator.set_jacobian_computation_scheme(
         T::JacobianComputationScheme::kAutomatic);
-
+#endif
     // Create the initial positions and velocities.
     const int n_initial_conditions = 3;
     const double initial_position[n_initial_conditions] = {0.1, 1.0, 0.0};
