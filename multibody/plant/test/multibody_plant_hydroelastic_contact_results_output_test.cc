@@ -215,7 +215,7 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
     // The conversion from Cartesian to barycentric coordinates introduces some
     // roundoff error. Test the values using a relative tolerance since the
     // pressure is generlly much greater than unity.
-    const double tol = pressure * 10 * std::numeric_limits<double>::epsilon();
+    const double tol = pressure * 20 * std::numeric_limits<double>::epsilon();
     const Vector3d expected_traction = expected_traction_direction * pressure;
     EXPECT_NEAR(
         (quadrature_point_datum.traction_Aq_W - expected_traction).norm(), 0,
