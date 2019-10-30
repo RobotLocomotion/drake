@@ -14,7 +14,7 @@ using Seed = RandomSource::Seed;
 // Stores exactly one of the three supported distribution objects.  Note that
 // the distribution objects hold computational state; they are not just pure
 // mathematical functions.
-using DistributionVariant = variant<
+using DistributionVariant = std::variant<
     std::uniform_real_distribution<double>,
     std::normal_distribution<double>,
     std::exponential_distribution<double>>;
@@ -49,9 +49,9 @@ class SampleGenerator {
 
   double GenerateNext() {
     switch (distribution_.index()) {
-      case 0: return get<0>(distribution_)(generator_);
-      case 1: return get<1>(distribution_)(generator_);
-      case 2: return get<2>(distribution_)(generator_);
+      case 0: return std::get<0>(distribution_)(generator_);
+      case 1: return std::get<1>(distribution_)(generator_);
+      case 2: return std::get<2>(distribution_)(generator_);
     }
     DRAKE_UNREACHABLE();
   }

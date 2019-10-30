@@ -20,7 +20,7 @@ using trajectories::PiecewisePolynomial;
 
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index,
+    std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
     : DirectCollocationConstraint(
           system, context, context.num_continuous_states(),
@@ -32,7 +32,7 @@ DirectCollocationConstraint::DirectCollocationConstraint(
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context,
     int num_states, int num_inputs,
-    variant<InputPortSelection, InputPortIndex> input_port_index,
+    std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
     : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
                  Eigen::VectorXd::Zero(num_states),
@@ -151,7 +151,7 @@ Binding<Constraint> AddDirectCollocationConstraint(
 DirectCollocation::DirectCollocation(
     const System<double>* system, const Context<double>& context,
     int num_time_samples, double minimum_timestep, double maximum_timestep,
-    variant<InputPortSelection, InputPortIndex> input_port_index,
+    std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
     : MultipleShooting(
           system->get_input_port_selection(input_port_index)
