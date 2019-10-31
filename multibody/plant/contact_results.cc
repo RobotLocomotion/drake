@@ -27,7 +27,7 @@ ContactResults<T>& ContactResults<T>::operator=(
         std::vector<const HydroelasticContactInfo<T>*>();
   } else {
     // If this currently holds pointers, we need to change the type.
-    if (hydroelastic_contact_vector_holds_pointers()) {
+    if (hydroelastic_contact_vector_ownership_mode() == kAliasedPointers) {
       hydroelastic_contact_info_ =
           std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>();
     }
@@ -54,7 +54,7 @@ ContactResults<T>& ContactResults<T>::operator=(
 template <typename T>
 void ContactResults<T>::Clear() {
   point_pairs_info_.clear();
-  if (hydroelastic_contact_vector_holds_pointers()) {
+  if (hydroelastic_contact_vector_ownership_mode() == kAliasedPointers) {
     hydroelastic_contact_vector_of_pointers().clear();
   } else {
     hydroelastic_contact_vector_of_unique_ptrs().clear();
@@ -72,7 +72,7 @@ template <typename T>
 const HydroelasticContactInfo<T>&
 ContactResults<T>::hydroelastic_contact_info(int i) const {
   DRAKE_DEMAND(i >= 0 && i < num_hydroelastic_contacts());
-  if (hydroelastic_contact_vector_holds_pointers()) {
+  if (hydroelastic_contact_vector_ownership_mode() == kAliasedPointers) {
     return *hydroelastic_contact_vector_of_pointers()[i];
   } else {
     return *hydroelastic_contact_vector_of_unique_ptrs()[i];
@@ -82,14 +82,15 @@ ContactResults<T>::hydroelastic_contact_info(int i) const {
 template <typename T>
 void ContactResults<T>::AddContactInfo(
     const HydroelasticContactInfo<T>* hydroelastic_contact_info) {
-  DRAKE_DEMAND(hydroelastic_contact_vector_holds_pointers());
+  DRAKE_DEMAND(hydroelastic_contact_vector_ownership_mode() ==
+               kAliasedPointers);
   hydroelastic_contact_vector_of_pointers().push_back(
       hydroelastic_contact_info);
 }
 
 template <typename T>
 int ContactResults<T>::num_hydroelastic_contacts() const {
-  if (hydroelastic_contact_vector_holds_pointers()) {
+  if (hydroelastic_contact_vector_ownership_mode() == kAliasedPointers) {
     return static_cast<int>(hydroelastic_contact_vector_of_pointers().size());
   } else {
     return static_cast<int>(

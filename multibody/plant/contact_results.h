@@ -70,10 +70,14 @@ class ContactResults {
   #endif
 
  private:
-  bool hydroelastic_contact_vector_holds_pointers() const {
+  enum OwnershipMode { kAliasedPointers, kOwnsCopies };
+
+  OwnershipMode hydroelastic_contact_vector_ownership_mode() const {
     return std::holds_alternative<
-        std::vector<const HydroelasticContactInfo<T>*>>(
-        hydroelastic_contact_info_);
+               std::vector<const HydroelasticContactInfo<T>*>>(
+               hydroelastic_contact_info_)
+               ? kAliasedPointers
+               : kOwnsCopies;
   }
 
   const std::vector<const HydroelasticContactInfo<T>*>&
