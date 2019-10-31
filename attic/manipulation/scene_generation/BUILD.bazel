@@ -14,6 +14,7 @@ drake_cc_library(
     name = "random_clutter_generator",
     srcs = ["random_clutter_generator.cc"],
     hdrs = ["random_clutter_generator.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:inverse_kinematics",
         "//attic/multibody:rigid_body_constraint",
@@ -25,6 +26,7 @@ drake_cc_library(
     name = "simulate_plant_to_rest",
     srcs = ["simulate_plant_to_rest.cc"],
     hdrs = ["simulate_plant_to_rest.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/manipulation/util:simple_tree_visualizer",
         "//attic/manipulation/util:world_sim_tree_builder",
@@ -41,6 +43,7 @@ drake_cc_library(
 drake_cc_binary(
     name = "random_clutter_demo",
     srcs = ["random_clutter_demo.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//examples/kuka_iiwa_arm:prod_models",
     ],
@@ -58,6 +61,7 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "test_random_clutter_to_rest",
     timeout = "moderate",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//examples/kuka_iiwa_arm:prod_models",
     ],
