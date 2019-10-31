@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace perception {
@@ -15,6 +16,7 @@ namespace estimators {
  * (inferred via PCA), expressed in world coordinates.
  * @return X_WB The pose of the inferred shape in the world frame.
  */
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 Eigen::Isometry3d ComputePcaBodyPose(const Eigen::Matrix3Xd& y_W);
 
 /**
@@ -42,6 +44,7 @@ Eigen::Isometry3d ComputePcaBodyPose(const Eigen::Matrix3Xd& y_W);
  * @note Be wary of the Degeneracy in Sec. V., when the noise in y_W is large
  * and may yield a reflected R_WB.
  */
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 Eigen::Isometry3d ComputeSvdBodyPose(const Eigen::Matrix3Xd& p_B,
                                      const Eigen::Matrix3Xd& y_W);
 
