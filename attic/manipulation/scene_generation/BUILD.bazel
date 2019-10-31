@@ -48,7 +48,7 @@ drake_cc_binary(
         ":random_clutter_generator",
         ":simulate_plant_to_rest",
         "//common",
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "@gflags",
     ],
 )
@@ -69,7 +69,6 @@ drake_cc_googletest(
         ":random_clutter_generator",
         ":simulate_plant_to_rest",
         "//common",
-        "//common:text_logging_gflags",
         "//common/test_utilities:eigen_matrix_compare",
         "@gflags",
     ],

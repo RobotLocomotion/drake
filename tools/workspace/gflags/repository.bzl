@@ -16,6 +16,7 @@ def gflags_repository(
         name = name,
         licenses = licenses,
         modname = modname,
+        extra_deps = ["@drake//tools/workspace/gflags:pthread_iff_linux"],
         pkg_config_paths = pkg_config_paths,
         **kwargs
     )

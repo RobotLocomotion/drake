@@ -81,8 +81,8 @@ drake_cc_binary(
     ],
     deps = [
         ":planar_gripper_common",
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//common/trajectories:piecewise_polynomial",
         "//geometry:geometry_visualization",
         "//lcm:drake_lcm",
