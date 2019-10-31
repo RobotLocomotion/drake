@@ -1084,7 +1084,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
           EvalHydroelasticContactForces(context);
   for (const HydroelasticContactInfo<T>& contact_info :
        contact_info_and_spatial_body_forces.contact_info) {
-    // Note: caching dependcies guarantee that the lifetime of contact_info is
+    // Note: caching dependencies guarantee that the lifetime of contact_info is
     // valid for the lifetime of the contact results.
     contact_results->AddContactInfo(&contact_info);
   }
