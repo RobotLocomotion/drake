@@ -63,6 +63,8 @@ class ShapeToLcm : public ShapeReifier {
     return geometry_data_;
   }
 
+  using ShapeReifier::ImplementGeometry;
+
   void ImplementGeometry(const Sphere& sphere, void*) override {
     geometry_data_.type = geometry_data_.SPHERE;
     geometry_data_.num_float_data = 1;

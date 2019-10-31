@@ -94,6 +94,16 @@ Capsule::Capsule(double radius, double length)
   }
 }
 
+Ellipsoid::Ellipsoid(double a, double b, double c)
+    : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw std::logic_error(
+        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
+                    "should all be > 0 (were {}, {}, and {}, respectively).",
+                    a, b, c));
+  }
+}
+
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
   if (std::abs(scale) < 1e-8) {
@@ -128,6 +138,9 @@ void ShapeReifier::ImplementGeometry(const Capsule&, void*) {
   ThrowUnsupportedGeometry("Capsule");
 }
 
+void ShapeReifier::ImplementGeometry(const Ellipsoid&, void*) {
+  ThrowUnsupportedGeometry("Ellipsoid");
+}
 void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
   ThrowUnsupportedGeometry("Mesh");
 }

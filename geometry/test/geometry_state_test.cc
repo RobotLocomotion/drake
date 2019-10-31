@@ -170,6 +170,8 @@ class ShapeMatcher final : public ShapeReifier {
   }
 
   // Shape reifier implementations.
+  using ShapeReifier::ImplementGeometry;
+
   void ImplementGeometry(const Sphere& sphere, void*) final {
     if (IsExpectedType(sphere)) {
       TestShapeParameters(sphere);

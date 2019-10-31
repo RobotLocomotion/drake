@@ -29,7 +29,7 @@ class ShapeName final : public ShapeReifier {
 
   /** @name  Implementation of ShapeReifier interface  */
   //@{
-
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere&, void*) final {
     string_ = "Sphere";
   }
@@ -44,6 +44,9 @@ class ShapeName final : public ShapeReifier {
   }
   void ImplementGeometry(const Capsule&, void*) final {
     string_ = "Capsule";
+  }
+  void ImplementGeometry(const Ellipsoid&, void*) final {
+    string_ = "Ellipsoid";
   }
   void ImplementGeometry(const Mesh&, void*) final {
     string_ = "Mesh";
