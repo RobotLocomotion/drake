@@ -26,7 +26,7 @@ class MultibodyPlantTester {
   static const std::vector<SpatialForce<double>>& EvalHydroelasticContactForces(
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
-    return plant.EvalHydroelasticContactForces(context);
+    return plant.EvalHydroelasticContactForces(context).F_BBo_W_array;
   }
 };
 

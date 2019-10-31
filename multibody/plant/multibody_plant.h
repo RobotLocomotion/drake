@@ -3152,6 +3152,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
+  // Structure used in the calculation of hydroelastic contact forces (see
+  // method that follows).
+  struct HydroelasticContactInfoAndBodySpatialForces {
+    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
+      F_BBo_W_array.resize(num_bodies);
+    }
+
+    // Forces from hydroelastic contact applied to the origin of each body
+    // (indexed by BodyNodeIndex) in the MultibodyPlant.
+    std::vector<SpatialForce<T>> F_BBo_W_array;
+
+    // Information used for contact reporting collected through the evaluation
+    // of the hydroelastic model.
+    std::vector<HydroelasticContactInfo<T>> contact_info;
+  };
+
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
@@ -3161,7 +3177,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
-    systems::CacheIndex hydro_contact_forces;
+    systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
@@ -3514,13 +3530,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // thrown.
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      HydroelasticContactInfoAndBodySpatialForces* F_BBo_W_array) const;
 
   // Eval version of CalcHydroelasticContactForces().
-  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
-        .template Eval<std::vector<SpatialForce<T>>>(context);
+  const HydroelasticContactInfoAndBodySpatialForces&
+  EvalHydroelasticContactForces(const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.contact_info_and_body_spatial_forces)
+        .template Eval<HydroelasticContactInfoAndBodySpatialForces>(context);
   }
 
   // Helper method to add the contribution of external actuation forces to the
@@ -3962,7 +3979,7 @@ void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
-    std::vector<SpatialForce<symbolic::Expression>>*) const;
+    HydroelasticContactInfoAndBodySpatialForces*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(

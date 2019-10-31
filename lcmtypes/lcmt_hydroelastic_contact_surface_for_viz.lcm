@@ -1,11 +1,25 @@
 package drake;
 
 struct lcmt_hydroelastic_contact_surface_for_viz {
-  // Names of the colliding bodies
+  // Names of the colliding bodies.
   string body1_name;
   string body2_name;
 
-  // Get the number of triangles.
+  // The centroid of the contact surface, as an offset vector expressed in the
+  // world frame.
+  double centroid_W[3];
+
+  // The force, expressed in the world frame, that is applied to `body1_name`
+  // at the centroid of the contact surface.
+  double force_C_W[3];
+
+  // The moment, expressed in the world frame, that is applied to `body1_name`
+  // at the centroid of the contact surface.
+  double moment_C_W[3];
+
+  // The number of triangles.
   int32_t num_triangles;
+
+  // The contact surface mesh and associated data.
   lcmt_hydroelastic_contact_surface_tri_for_viz triangles[num_triangles];
 }
