@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -21,7 +22,9 @@
 #define INSTQP_GUROBI_BARHOMOGENEOUS 0
 #define INSTQP_GUROBI_BARCONVTOL (5e-4)
 
-class InstantaneousQPController {
+class DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+InstantaneousQPController {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InstantaneousQPController)
 
@@ -140,10 +143,13 @@ class InstantaneousQPController {
   const QPControllerParams& FindParams(const std::string& param_set_name);
 };
 
+DRAKE_DEPRECATED("2020-02-01", "Some attic controllers code is being removed.")
 void applyURDFModifications(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree<double>>& robot,
     const KinematicModifications& modifications);
+
+DRAKE_DEPRECATED("2020-02-01", "Some attic controllers code is being removed.")
 void applyURDFModifications(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree<double>>& robot,
