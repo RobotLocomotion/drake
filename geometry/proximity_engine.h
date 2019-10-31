@@ -10,7 +10,9 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -40,6 +42,13 @@ class GeometryStateCollisionFilterAttorney;
    - penetration
    - distance
    - ray-intersection
+
+ <!-- TODO(SeanCurtis-TRI): Fully document the semantics of the proximity
+ properties that will affect the proximity engine -- hydroelastic semantics,
+ required properties, etc.
+
+ <h3>Geometry proximity properties</h3>
+ -->
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
@@ -83,16 +92,20 @@ class ProximityEngine {
   /** Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
    @param id      The id of the geometry in SceneGraph to which this shape
-                  belongs.  */
-  void AddDynamicGeometry(const Shape& shape, GeometryId id);
+                  belongs.
+   @param props   The proximity properties for the shape.  */
+  void AddDynamicGeometry(const Shape& shape, GeometryId id,
+                          const ProximityProperties& props = {});
 
   /** Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.
    @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
-                  belongs.  */
+                  belongs.
+   @param props   The proximity properties for the shape.  */
   void AddAnchoredGeometry(const Shape& shape,
-                           const math::RigidTransformd& X_WG, GeometryId id);
+                           const math::RigidTransformd& X_WG, GeometryId id,
+                           const ProximityProperties& props = {});
 
   // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
   //  is *actually* sufficiently helpful to justify this act.
@@ -183,8 +196,7 @@ class ProximityEngine {
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
-      const std::unordered_map<GeometryId, InternalGeometry>& geometries)
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
   /** Implementation of GeometryState::FindCollisionCandidates().  */
@@ -262,6 +274,10 @@ class ProximityEngine {
   // Reports the pose (X_WG) of the geometry with the given id.
   const math::RigidTransform<double> GetX_WG(GeometryId id,
                                              bool is_dynamic) const;
+
+  // The representation of every geometry that was successfully requested for
+  // use for hydroelastic contact surface computation.
+  const hydroelastic::Geometries& hydroelastic_geometries() const;
 
   ////////////////////////////////////////////////////////////////////////////
 

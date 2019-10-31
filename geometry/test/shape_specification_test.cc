@@ -437,6 +437,55 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Convex.");
 }
 
+GTEST_TEST(ShapeName, SimpleReification) {
+  ShapeName name;
+
+  EXPECT_EQ(name.name(), "");
+
+  Sphere(0.5).Reify(&name);
+  EXPECT_EQ(name.name(), "Sphere");
+
+  Cylinder(1, 2).Reify(&name);
+  EXPECT_EQ(name.name(), "Cylinder");
+
+  Box(1, 2, 3).Reify(&name);
+  EXPECT_EQ(name.name(), "Box");
+
+  Capsule(1, 2).Reify(&name);
+  EXPECT_EQ(name.name(), "Capsule");
+
+  Ellipsoid(1, 2, 3).Reify(&name);
+  EXPECT_EQ(name.name(), "Ellipsoid");
+
+  HalfSpace().Reify(&name);
+  EXPECT_EQ(name.name(), "HalfSpace");
+
+  Mesh("filepath", 1.0).Reify(&name);
+  EXPECT_EQ(name.name(), "Mesh");
+
+  Convex("filepath", 1.0).Reify(&name);
+  EXPECT_EQ(name.name(), "Convex");
+}
+
+GTEST_TEST(ShapeName, ReifyOnConstruction) {
+  EXPECT_EQ(ShapeName(Sphere(0.5)).name(), "Sphere");
+  EXPECT_EQ(ShapeName(Cylinder(1, 2)).name(), "Cylinder");
+  EXPECT_EQ(ShapeName(Capsule(1, 2)).name(), "Capsule");
+  EXPECT_EQ(ShapeName(Ellipsoid(1, 2, 3)).name(), "Ellipsoid");
+  EXPECT_EQ(ShapeName(Box(1, 2, 3)).name(), "Box");
+  EXPECT_EQ(ShapeName(HalfSpace()).name(), "HalfSpace");
+  EXPECT_EQ(ShapeName(Mesh("filepath", 1.0)).name(), "Mesh");
+  EXPECT_EQ(ShapeName(Convex("filepath", 1.0)).name(), "Convex");
+}
+
+GTEST_TEST(ShapeName, Streaming) {
+  ShapeName name(Sphere(0.5));
+  std::stringstream ss;
+  ss << name;
+  EXPECT_EQ(name.name(), "Sphere");
+  EXPECT_EQ(ss.str(), name.name());
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
