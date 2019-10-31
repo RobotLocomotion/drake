@@ -102,14 +102,19 @@ class ContactResults {
 
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
 
-  /* We use a variant type to keep from copying the HydroelasticContactInfo
-   into this data structure, if possible. By default, the variant stores the
-   first type, i.e., std::vector<const HydroelasticContactInfo<T>*>. If this
-   data structure is copied, however, the variant changes to instead store the
-   second type, a vector of unique pointers. In that case, all of the underlying
+  /* We use a variant type to keep from copying already owned data (from a
+   cache), i.e., the HydroelasticContactInfo, into this data structure, if
+   possible. By default, the variant stores the first type, i.e.,
+   std::vector<const HydroelasticContactInfo<T>*>. If this data structure is
+   copied, however, the variant changes to instead store the second type, a
+   vector of unique pointers. In that case, all of the underlying
    HydroelasticContactInfo objects are copied and
    AddContactInfo(const HydroelasticContactInfo*) can no longer be called on the
    copy (see assertion in AddContactInfo).
+
+   Note that we jump through these hoops because storing ContactResults into
+   a cache entry requires that it be placed into a Value<ContactResults>, which
+   in turn requires that ContactResults be copyable.
    */
   std::variant<std::vector<const HydroelasticContactInfo<T>*>,
                std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>

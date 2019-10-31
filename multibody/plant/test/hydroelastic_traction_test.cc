@@ -224,7 +224,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         calculator_data(), dissipation, mu_coulomb, &quadrature_point_data,
         &F_Ac_W);
 
-    traction_calculator().TransformSpatialForcesAtCentroidToBodyOrigins(
+    traction_calculator().ShiftSpatialForcesAtCentroidToBodyOrigins(
         calculator_data(), F_Ac_W, F_Ao_W, F_Bo_W);
   }
 
@@ -648,7 +648,7 @@ INSTANTIATE_TEST_SUITE_P(PoseInstantiations,
 // TODO(edrumwri) Break the tests below out into a separate file.
 
 // Returns a distinct spatial force.
-SpatialForce<double> GetSpatialForce() {
+SpatialForce<double> MakeSpatialForce() {
   return SpatialForce<double>(Vector3<double>(1, 2, 3),
                               Vector3<double>(4, 5, 6));
 }
@@ -678,7 +678,7 @@ HydroelasticContactInfo<double> CreateContactInfo(
   std::vector<HydroelasticQuadraturePointData<double>>
       quadrature_point_data = GetQuadraturePointData();
   return HydroelasticContactInfo<double>(contact_surface->get(),
-                                         GetSpatialForce(),
+                                         MakeSpatialForce(),
                                          std::move(quadrature_point_data));
 }
 
@@ -698,8 +698,8 @@ GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
   EXPECT_NE(contact_surface.get(), &copy2.contact_surface());
 
   // Verify that the spatial force was copied.
-  EXPECT_EQ(copy.F_Ac_W().translational(), GetSpatialForce().translational());
-  EXPECT_EQ(copy.F_Ac_W().rotational(), GetSpatialForce().rotational());
+  EXPECT_EQ(copy.F_Ac_W().translational(), MakeSpatialForce().translational());
+  EXPECT_EQ(copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
 
   // Verify that the quadrature point data was copied.
   EXPECT_EQ(copy.quadrature_point_data(), GetQuadraturePointData());
@@ -719,8 +719,8 @@ GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
 
   // Verify that the spatial force was copied.
   EXPECT_EQ(moved_copy.F_Ac_W().translational(),
-            GetSpatialForce().translational());
-  EXPECT_EQ(moved_copy.F_Ac_W().rotational(), GetSpatialForce().rotational());
+            MakeSpatialForce().translational());
+  EXPECT_EQ(moved_copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
 
   // Verify that the quadrature point data was copied.
   EXPECT_EQ(moved_copy.quadrature_point_data(), GetQuadraturePointData());

@@ -136,7 +136,7 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
 
   // The following crude quadrature process relies upon there being three
   // quadrature points per triangle.
-  ASSERT_EQ(results.contact_surface().mesh_W().num_faces() *3,
+  ASSERT_EQ(results.contact_surface().mesh_W().num_faces() * 3,
             results.quadrature_point_data().size());
 
   // Our crude quadrature process, which uses the mean traction over the

@@ -190,7 +190,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
 // broadly available to unit tests that depend on them.
 
 // Returns a distinct spatial force.
-SpatialForce<double> GetSpatialForce() {
+SpatialForce<double> MakeSpatialForce() {
   return SpatialForce<double>(Vector3<double>(1, 2, 3),
                               Vector3<double>(4, 5, 6));
 }
@@ -262,7 +262,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   *contact_surface =
       CreateContactSurface(world_geoms.front(), block_geoms.front());
 
-  multibody::SpatialForce<double> F_Ac_W = GetSpatialForce();
+  multibody::SpatialForce<double> F_Ac_W = MakeSpatialForce();
   std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
   ContactResults<double> output;
   *contact_info = std::make_unique<HydroelasticContactInfo<double>>(
@@ -390,8 +390,8 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   const Vector3<double> moment_C_W(surface_msg.moment_C_W[0],
                                    surface_msg.moment_C_W[1],
                                    surface_msg.moment_C_W[2]);
-  EXPECT_EQ(force_C_W, GetSpatialForce().translational());
-  EXPECT_EQ(moment_C_W, GetSpatialForce().rotational());
+  EXPECT_EQ(force_C_W, MakeSpatialForce().translational());
+  EXPECT_EQ(moment_C_W, MakeSpatialForce().rotational());
 
   // Verify that the total number of triangles match.
   ASSERT_EQ(surface_msg.num_triangles, contact_surface->mesh_W().num_faces());

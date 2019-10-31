@@ -3152,6 +3152,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
+  // Structure used in the calculation of hydroelastic contact forces (see
+  // method that follows).
+  struct HydroelasticContactInfoAndBodySpatialForces {
+    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
+      F_BBo_W_array.resize(num_bodies);
+    }
+
+    // Forces from hydroelastic contact applied to the origin of each body
+    // (indexed by BodyNodeIndex) in the MultibodyPlant.
+    std::vector<SpatialForce<T>> F_BBo_W_array;
+
+    // Information used for contact reporting collected through the evaluation
+    // of the hydroelastic model.
+    std::vector<HydroelasticContactInfo<T>> contact_info;
+  };
+
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
@@ -3507,22 +3523,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper to create the underlying hydroelastic fields used in the
   // hydroelastic model.
   void MakeHydroelasticModels();
-
-  // Structure used in the calculation of hydroelastic contact forces (see
-  // method that follows).
-  struct HydroelasticContactInfoAndBodySpatialForces {
-    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
-      F_BBo_W_array.resize(num_bodies);
-    }
-
-    // Forces from hydroelastic contact applied to the origin of each body
-    // in the MultibodyPlant.
-    std::vector<SpatialForce<T>> F_BBo_W_array;
-
-    // Information used for contact reporting collected through the evaluation
-    // of the hydroelastic model.
-    std::vector<HydroelasticContactInfo<T>> contact_info;
-  };
 
   // Helper method to compute contact forces using the hydroelastic model.
   // F_BBo_W_array is indexed by BodyNodeIndex and it gets overwritten on

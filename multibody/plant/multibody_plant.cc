@@ -1075,9 +1075,6 @@ void MultibodyPlant<symbolic::Expression>::
       "This method doesn't support T = symbolic::Expression.");
 }
 
-// TODO(edrumwri) Convert this function to use a cached HydroelasticTractionInfo
-// once that structure can serve to both compute contact wrenches and report
-// contact details.
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
@@ -1087,6 +1084,8 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
           EvalHydroelasticContactForces(context);
   for (const HydroelasticContactInfo<T>& contact_info :
        contact_info_and_spatial_body_forces.contact_info) {
+    // Note: caching dependcies guarantee that the lifetime of contact_info is
+    // valid for the lifetime of the contact results.
     contact_results->AddContactInfo(&contact_info);
   }
 }
@@ -1400,9 +1399,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
         data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
 
-    // Transform the traction at the centroid to tractions at the body origins.
+    // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
-    traction_calculator.TransformSpatialForcesAtCentroidToBodyOrigins(
+    traction_calculator.ShiftSpatialForcesAtCentroidToBodyOrigins(
         data, F_Ac_W, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
@@ -2255,32 +2254,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.tamsi_solver_results =
       tamsi_solver_cache_entry.cache_index();
 
-  // Cache contact results.
-  // In discrete mode contact forces computation requires to advance the system
-  // from step n to n+1. Therefore they are a function of state and input.
-  // In continuous mode contact forces are simply a function of state.
-  const systems::DependencyTicket& dependency_ticket =
-      is_discrete() ? this->cache_entry_ticket(
-                          cache_indexes_.tamsi_solver_results)
-                    : this->kinematics_ticket();
-  auto& contact_results_cache_entry = this->DeclareCacheEntry(
-      std::string("Contact results."),
-      []() { return AbstractValue::Make(ContactResults<T>()); },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& contact_results_cache =
-            cache_value->get_mutable_value<ContactResults<T>>();
-        if (is_discrete()) {
-          this->CalcContactResultsDiscrete(context, &contact_results_cache);
-        } else {
-          this->CalcContactResultsContinuous(context, &contact_results_cache);
-        }
-      },
-      {dependency_ticket});
-  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
-
-  // Cache entry for spatial forces due to hydroelastic contact.
+  // Cache entry for spatial forces and contact info due to hydroelastic
+  // contact.
   if (contact_model_ == ContactModel::kHydroelasticsOnly) {
     auto& contact_info_and_body_spatial_forces_cache_entry =
         this->DeclareCacheEntry(
@@ -2305,6 +2280,42 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
     cache_indexes_.contact_info_and_body_spatial_forces =
         contact_info_and_body_spatial_forces_cache_entry.cache_index();
   }
+
+  // Cache contact results.
+  // In discrete mode contact forces computation requires to advance the system
+  // from step n to n+1. Therefore they are a function of state and input.
+  // In continuous mode contact forces are simply a function of state.
+  std::set<systems::DependencyTicket> dependency_ticket = [this]() {
+    std::set<systems::DependencyTicket> tickets;
+     if (is_discrete()) {
+       tickets.insert(
+           this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
+     } else {
+       tickets.insert(this->kinematics_ticket());
+       if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+         tickets.insert(this->cache_entry_ticket(
+             cache_indexes_.contact_info_and_body_spatial_forces));
+       }
+     }
+
+     return tickets;
+  }();
+  auto& contact_results_cache_entry = this->DeclareCacheEntry(
+      std::string("Contact results."),
+      []() { return AbstractValue::Make(ContactResults<T>()); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_results_cache =
+            cache_value->get_mutable_value<ContactResults<T>>();
+        if (is_discrete()) {
+          this->CalcContactResultsDiscrete(context, &contact_results_cache);
+        } else {
+          this->CalcContactResultsContinuous(context, &contact_results_cache);
+        }
+      },
+      {dependency_ticket});
+  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
   // Cache generalized accelerations.
   auto& vdot_cache_entry = this->DeclareCacheEntry(
@@ -2338,20 +2349,20 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
           VectorX<T>(num_velocities()),
           &MultibodyPlant::CalcGeneralizedContactForcesContinuous,
           {this->cache_entry_ticket(
-                          cache_indexes_.spatial_contact_forces_continuous)});
+              cache_indexes_.spatial_contact_forces_continuous)});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
-}
+      }
 
-template <typename T>
-const systems::BasicVector<T>& MultibodyPlant<T>::GetStateVector(
-    const Context<T>& context) const {
-  if (is_discrete()) {
-    return context.get_discrete_state(0);
-  } else {
-    return dynamic_cast<const systems::BasicVector<T>&>(
-        context.get_continuous_state_vector());
-  }
+      template <typename T>
+      const systems::BasicVector<T> &
+      MultibodyPlant<T>::GetStateVector(const Context<T>& context) const {
+    if (is_discrete()) {
+      return context.get_discrete_state(0);
+    } else {
+      return dynamic_cast<const systems::BasicVector<T>&>(
+          context.get_continuous_state_vector());
+    }
 }
 
 template <typename T>

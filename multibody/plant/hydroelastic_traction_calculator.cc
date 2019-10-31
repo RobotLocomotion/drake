@@ -31,6 +31,7 @@ void HydroelasticTractionCalculator<T>::
         std::vector<HydroelasticQuadraturePointData<T>>*
             traction_at_quadrature_points,
         SpatialForce<T>* F_Ac_W) const {
+  DRAKE_DEMAND(traction_at_quadrature_points);
   DRAKE_DEMAND(F_Ac_W);
 
   // Use a second-order Gaussian quadrature rule. For linear pressure fields,
@@ -81,7 +82,7 @@ void HydroelasticTractionCalculator<T>::
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
-    TransformSpatialForcesAtCentroidToBodyOrigins(
+    ShiftSpatialForcesAtCentroidToBodyOrigins(
         const Data& data, const SpatialForce<T>& F_Ac_W,
         SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   DRAKE_DEMAND(F_Ao_W && F_Bo_W);
