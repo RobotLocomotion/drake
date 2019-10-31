@@ -27,6 +27,7 @@ drake_cc_library(
     hdrs = [
         "quasistatic_system.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:kinematics_cache",
         "//attic/multibody:rigid_body_tree",
