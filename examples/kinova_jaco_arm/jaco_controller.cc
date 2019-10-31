@@ -10,7 +10,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kinova_jaco_arm/jaco_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_jaco_command.hpp"

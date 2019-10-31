@@ -27,8 +27,8 @@ drake_cc_binary(
     deps = [
         ":rod2d",
         "//attic/systems/rendering:drake_visualizer_client",
+        "//common:add_text_logging_gflags",
         "//common:essential",
-        "//common:text_logging_gflags",
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis",

@@ -6,7 +6,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/text_logging.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -51,7 +50,6 @@ DEFINE_double(accuracy, 1e-5,
 int main(int argc, char* argv[]) {
   // Parse any flags.
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
 
   // Emit a one-time load message.
   Serializer<drake::lcmt_viewer_load_robot> load_serializer;

@@ -36,8 +36,8 @@ drake_cc_binary(
     ],
     test_rule_timeout = "moderate",
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//math:geometric_transform",
         "//multibody/parsing",

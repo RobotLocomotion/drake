@@ -1,9 +1,8 @@
 /// @file
 /// This is Drake's default main() function for gtest-based unit tests.
 
+#include <gflags/gflags.h>
 #include <gmock/gmock.h>
-
-#include "drake/common/text_logging_gflags.h"
 
 // TODO(SeanCurtis-TRI): Remove this when CLion bazel plug-in no longer executes
 // its debugger with the --gunit_color flag. Most recent versions known to be
@@ -24,9 +23,6 @@ int main(int argc, char** argv) {
   // gtest flags have already been removed from argv and won't confuse gflags.
   google::SetUsageMessage(" ");  // Nerf a silly warning emitted by gflags.
   google::ParseCommandLineFlags(&argc, &argv, true);
-
-  // Adjust Drake's log setting per the gflags results.
-  drake::logging::HandleSpdlogGflags();
 
   // Actually run the tests.
   return RUN_ALL_TESTS();

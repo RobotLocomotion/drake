@@ -5,8 +5,9 @@
 #include <limits>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/find_resource.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/double_pendulum/sdf_helpers.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -36,7 +37,6 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage("Simple sdformat usage example, just"
                           "make sure drake-visualizer is running!");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  logging::HandleSpdlogGflags();
   // Load and parse double pendulum SDF from file into a tree.
   const std::string sdf_path = FindResourceOrThrow(kDoublePendulumSdfPath);
   auto tree = std::make_unique<RigidBodyTree<double>>();

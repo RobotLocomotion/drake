@@ -127,7 +127,7 @@ drake_cc_binary(
     ],
     deps = [
         ":accelerometer_example_diagram",
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "//lcm",
         "//systems/analysis:simulator",
         "@gflags",

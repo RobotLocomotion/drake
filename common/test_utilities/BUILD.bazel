@@ -142,7 +142,7 @@ drake_cc_library(
         "exclude_from_package",
     ],
     deps = [
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "@gtest//:without_main",
     ],
 )

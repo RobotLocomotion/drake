@@ -1,6 +1,5 @@
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h"
@@ -165,7 +164,6 @@ void main() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   drake::examples::kuka_iiwa_arm::main();
   return 0;
 }

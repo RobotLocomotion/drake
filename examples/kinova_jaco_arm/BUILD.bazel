@@ -34,8 +34,8 @@ drake_cc_binary(
     ],
     deps = [
         ":jaco_lcm",
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//lcm",
         "//manipulation/planner:robot_plan_interpolator",
         "//systems/analysis:simulator",
@@ -60,8 +60,8 @@ drake_cc_binary(
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":jaco_lcm",
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//multibody/parsing",
@@ -80,8 +80,8 @@ drake_cc_binary(
     ],
     deps = [
         ":jaco_lcm",
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//lcmtypes:jaco",
         "//manipulation/planner:differential_inverse_kinematics",
         "//math:geometric_transform",

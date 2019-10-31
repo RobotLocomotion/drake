@@ -3,7 +3,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
@@ -144,6 +143,5 @@ int main(int argc, char* argv[]) {
       "MultibodyPlant, with SceneGraph contact handling and visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::examples::multibody::cylinder_with_multicontact::do_main();
 }

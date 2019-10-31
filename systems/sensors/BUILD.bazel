@@ -142,7 +142,7 @@ drake_cc_binary(
     deps = [
         ":image_to_lcm_image_array_t",
         ":lcm_image_array_to_images",
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "//systems/analysis:simulator",
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",

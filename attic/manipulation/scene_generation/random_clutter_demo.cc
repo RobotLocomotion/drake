@@ -7,7 +7,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/scene_generation/random_clutter_generator.h"
 #include "drake/manipulation/scene_generation/simulate_plant_to_rest.h"
@@ -162,6 +161,5 @@ int DoMain() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   drake::manipulation::scene_generation::DoMain();
 }

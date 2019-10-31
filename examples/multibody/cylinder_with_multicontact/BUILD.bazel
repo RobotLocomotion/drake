@@ -58,7 +58,7 @@ drake_cc_binary(
     test_rule_timeout = "long",
     deps = [
         ":make_cylinder_plant",
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",

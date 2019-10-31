@@ -20,7 +20,7 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     deps = [
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/benchmarks/inclined_plane",
         "//multibody/plant:contact_results_to_lcm",
