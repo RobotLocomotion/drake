@@ -18,7 +18,7 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     deps = [
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//systems/analysis:implicit_euler_integrator",
@@ -41,8 +41,8 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//multibody/parsing",

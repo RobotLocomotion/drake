@@ -2,7 +2,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -191,6 +190,5 @@ int main(int argc, char* argv[]) {
       "\nto use command-line arguments is in the file README.md"
       "\n(which is in the folder associated with this example).\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::multibody::examples::inclined_plane_with_body::do_main();
 }

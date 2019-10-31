@@ -446,16 +446,32 @@ drake_cc_library(
     ],
 )
 
+# This is a Drake-internal utility for use only as a direct dependency
+# of executable (drake_cc_binary) targets.  Thus, we exclude it from
+# the ":common" package library and from libdrake.
+drake_cc_library(
+    name = "add_text_logging_gflags",
+    srcs = ["add_text_logging_gflags.cc"],
+    tags = [
+        "exclude_from_libdrake",
+        "exclude_from_package",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
+        ":unused",
+        "@gflags",
+    ],
+    alwayslink = 1,
+)
+
+# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
+# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
+# etc).
 drake_cc_library(
     name = "text_logging_gflags",
     hdrs = ["text_logging_gflags.h"],
-    # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
-    # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
-    # throughout our code.
-    linkopts = select({
-        "//tools/cc_toolchain:linux": ["-pthread"],
-        "//conditions:default": [],
-    }),
+    deprecation = "DRAKE DEPRECATED: The drake/common/text_logging_gflags.h convenience header is being removed from Drake on or after 2020-02-01.  Downstream projects should maintain their own implementation of this feature.  See drake/common/add_text_logging_gflags.cc for an example.",  # noqa
     tags = [
         # Don't add this library into the ":common" package library.
         # Only programs with a main() function should ever use this header.
@@ -467,6 +483,8 @@ drake_cc_library(
         # this cc_library entirely, and use a separate rule below for the
         # installation.
         "exclude_from_libdrake",
+        # Avoid 'build //...' yelling at us.
+        "manual",
     ],
     deps = [
         ":essential",
@@ -474,6 +492,10 @@ drake_cc_library(
     ],
 )
 
+# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
+# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
+# etc).
+#
 # Compared to the above rule, this removes the deps attribute; we don't want to
 # link against gflags for libdrake.so, we just want to publish this header for
 # callers who have their own gflags to link against.
@@ -533,9 +555,9 @@ drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
     deps = [
+        ":add_text_logging_gflags",
         ":essential",
         ":find_resource",
-        ":text_logging_gflags",
     ],
 )
 

@@ -38,7 +38,7 @@ drake_cc_binary(
     ],
     deps = [
         ":make_rolling_sphere_plant",
-        "//common:text_logging_gflags",
+        "//common:add_text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
