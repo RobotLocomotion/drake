@@ -708,7 +708,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   if (assign == RoleAssign::kNew) {
     if (geometry.is_dynamic()) {
       // Pass the geometry to the engine.
-      geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id);
+      geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id,
+                                           *geometry.proximity_properties());
 
       InternalFrame& frame = frames_[geometry.frame_id()];
 
@@ -755,7 +756,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // If it's not dynamic, it must be anchored. No clique madness required;
       // anchored geometries are not tested against each other by the process.
       geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                            geometry_id);
+                                            geometry_id,
+                                            *geometry.proximity_properties());
     }
   }
   // TODO(SeanCurtis-TRI): Handle the assign == kReplace branch for when

@@ -392,5 +392,62 @@ Shape::Shape(ShapeTag<S>) {
   };
 }
 
+// TODO(SeanCurtis-TRI): Merge this into shape_to_string.h so that there's a
+//  single utility for getting a string from a shape.
+/** Class that reports the name of the type of shape being reified (e.g.,
+ Sphere, Box, etc.)  */
+class ShapeName final : public ShapeReifier {
+ public:
+  ShapeName() = default;
+
+  /** Constructs a %ShapeName from the given `shape` such that `string()`
+   already contains the string representation of `shape`.  */
+  explicit ShapeName(const Shape& shape) {
+    shape.Reify(this);
+  }
+
+  /** @name  Implementation of ShapeReifier interface  */
+  //@{
+
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Sphere&, void*) final {
+    string_ = "Sphere";
+  }
+  void ImplementGeometry(const Cylinder&, void*) final {
+    string_ = "Cylinder";
+  }
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    string_ = "HalfSpace";
+  }
+  void ImplementGeometry(const Box&, void*) final {
+    string_ = "Box";
+  }
+  void ImplementGeometry(const Capsule&, void*) final {
+    string_ = "Capsule";
+  }
+  void ImplementGeometry(const Ellipsoid&, void*) final {
+    string_ = "Ellipsoid";
+  }
+  void ImplementGeometry(const Mesh&, void*) final {
+    string_ = "Mesh";
+  }
+  void ImplementGeometry(const Convex&, void*) final {
+    string_ = "Convex";
+  }
+
+  //@}
+
+  /** Returns the name of the last shape reified. Empty if no shape has been
+   reified yet.  */
+  std::string name() const { return string_; }
+
+ private:
+  std::string string_;
+};
+
+/** @relates ShapeName */
+std::ostream& operator<<(std::ostream& out, const ShapeName& name);
+
 }  // namespace geometry
 }  // namespace drake
