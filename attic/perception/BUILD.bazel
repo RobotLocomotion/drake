@@ -23,6 +23,7 @@ drake_cc_library(
     name = "transform_point_cloud",
     srcs = ["transform_point_cloud.cc"],
     hdrs = ["transform_point_cloud.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//common:essential",
@@ -36,6 +37,7 @@ drake_cc_library(
     name = "rigid_body_point_cloud_filter",
     srcs = ["rigid_body_point_cloud_filter.cc"],
     hdrs = ["rigid_body_point_cloud_filter.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//common:essential",
@@ -47,6 +49,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "rigid_body_point_cloud_filter_test",
     srcs = ["test/rigid_body_point_cloud_filter_test.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":rigid_body_point_cloud_filter",
         "//attic/multibody:rigid_body_tree",
@@ -58,6 +61,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "transform_point_cloud_test",
     srcs = ["test/transform_point_cloud_test.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":transform_point_cloud",
         "//attic/multibody/rigid_body_plant",
