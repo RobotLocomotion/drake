@@ -229,18 +229,11 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
     e_MN[i] = std::abs(mesh->vertex(i).r_MV()[0] + mesh->vertex(i).r_MV()[1]);
 
-  // Create the gradient of the "h" field, pointing toward what will be
-  // geometry "M" (the halfspace).
-  std::vector<Vector3<double>> h_MN_W(mesh->num_vertices(),
-      Vector3<double>(0, 0, -1));
-
   SurfaceMesh<double>* mesh_pointer = mesh.get();
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer),
-      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_W", std::move(h_MN_W), mesh_pointer));
+          "e_MN", std::move(e_MN), mesh_pointer));
 }
 
 ContactResults<double> GenerateHydroelasticContactResults(
