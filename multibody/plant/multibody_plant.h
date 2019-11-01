@@ -74,10 +74,10 @@ enum class ContactModel {
 ///   @input_port{geometry_query},
 ///   @output_port{state}
 ///   @output_port{<b style="color:orange">
-///     {model_instance_name[0]}_state</b>}
+///     {model_instance_name[0]}_continuous_state</b>}
 ///   @output_port{...}
 ///   @output_port{<b style="color:orange">
-///     {model_instance_name[N-1]}_state</b>}
+///     {model_instance_name[N-1]}_continuous_state</b>}
 ///   @output_port{<b style="color:orange">
 ///     {model_instance_name[0]}_generalized_contact_forces</b>}
 ///   @output_port{...}
