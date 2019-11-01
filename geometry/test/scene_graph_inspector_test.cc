@@ -46,10 +46,6 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.num_frames();
   inspector.all_frame_ids();
   inspector.num_geometries();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  inspector.all_geometry_ids();
-#pragma GCC diagnostic pop
   inspector.GetAllGeometryIds();
   inspector.NumGeometriesWithRole(Role::kUnassigned);
   inspector.GetNumDynamicGeometries();
@@ -88,11 +84,6 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetFrameId(geometry_id);
   inspector.GetName(geometry_id);
   inspector.GetShape(geometry_id);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  inspector.X_PG(geometry_id);
-  inspector.X_FG(geometry_id);
-#pragma GCC diagnostic pop
   inspector.GetPoseInParent(geometry_id);
   inspector.GetPoseInFrame(geometry_id);
   inspector.GetProximityProperties(geometry_id);

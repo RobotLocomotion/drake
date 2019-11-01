@@ -473,8 +473,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
-      std::make_unique<GeometryInstance>(X_BG.GetAsIsometry3(), shape.Clone(),
-                                         name);
+      std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
   GeometryId geometry_id = member_scene_graph().RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
