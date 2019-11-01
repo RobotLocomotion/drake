@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
@@ -46,14 +47,39 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
   vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
 
-  // Create the face comprising two triangles.
+  // Create the face comprising two triangles. The box penetrates into the
+  // z = 0 plane from above. The contact surface should be constructed such that
+  // the normals point out of geometry M and into geometry N. We assume that the
+  // half space and box are geometries M and N, respectively. So, that means
+  // the contact normals point downwards. We select windings for the triangle
+  // vertices so that the normal will point in the [0, 0, -1] direction.
+  //
+  //             +z  +y
+  //        v1 ___|__/____ v0
+  //          /   | /    /
+  //         /    |/    /
+  //      --/----------/-- +x
+  //       /     /|   /
+  //   v2 /_____/_|__/ v3
+  //           /  |
   faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
+      SurfaceVertexIndex(0), SurfaceVertexIndex(2), SurfaceVertexIndex(1));
   faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+      SurfaceVertexIndex(2), SurfaceVertexIndex(0), SurfaceVertexIndex(3));
 
-  return std::make_unique<SurfaceMesh<double>>(
+  auto mesh = std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
+
+  for (SurfaceFaceIndex f(0); f < mesh->num_faces(); ++f) {
+    // Can't use an ASSERT_TRUE here because it interferes with the return
+    // value.
+    if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),
+        std::numeric_limits<double>::epsilon())) {
+      throw std::logic_error("Malformed mesh; normals don't point downwards");
+    }
+  }
+
+  return mesh;
 }
 
 GeometryId FindGeometry(
@@ -82,19 +108,11 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   // Now transform the mesh to the world frame, as ContactSurface specifies.
   mesh->TransformVertices(X_WH);
 
-  // Create the gradient of the "h" field, pointing toward what will be
-  // geometry "M" (the halfspace). This field must be expressed in the world
-  // frame.
-  std::vector<Vector3<double>> h_MN_W(mesh->num_vertices(),
-    X_WH.rotation() * Vector3<double>(0, 0, -1));
-
   SurfaceMesh<double>* mesh_pointer = mesh.get();
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer),
-      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_M", std::move(h_MN_W), mesh_pointer));
+          "e_MN", std::move(e_MN), mesh_pointer));
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -589,19 +607,11 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
       e_MN[i] = pressure(mesh->vertex(i).r_MV());
 
-    // Set the gradient of the "h" field. Note that even though this pressure
-    // field is normalized, the "h" need not be (it's always normalized before
-    // use).
-    std::vector<Vector3<double>> h_MN_W(
-        mesh->num_vertices(), pressure_field_normal());
-
     SurfaceMesh<double>* mesh_pointer = mesh.get();
     contact_surface_ = std::make_unique<ContactSurface<double>>(
       null_id, null_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer),
-      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_W", std::move(h_MN_W), mesh_pointer));
+          "e_MN", std::move(e_MN), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body
     // free so that we can test the slip velocity. Additionally, we'll
