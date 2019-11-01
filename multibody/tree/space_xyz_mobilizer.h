@@ -128,36 +128,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   const SpaceXYZMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const;
 
-  /// Given a desired orientation `R_FM` of frame M in F as a rotation matrix,
-  /// This method sets `context` so that the generalized coordinates
-  /// corresponding to the space x-y-z angles θ₁, θ₂, θ₃ of `this` mobilizer
-  /// represent this rotation.
-  ///
-  /// @param[in] context
-  ///   The context of the MultibodyTree this mobilizer belongs to.
-  /// @param[in] R_FM
-  ///   The desired pose of M in F. A valid element of `SO(3)`.
-  /// @returns a constant reference to `this` mobilizer.
-  ///
-  /// @warning Ideally, `R_FM` would correspond to a valid rotation in the
-  /// special orthogonal group `SO(3)`. To eliminate possible round-off errors
-  /// in the input matrix `R_FM` this method performs a projection of `R_FM`
-  /// into its closest element in `SO(3)` and then computes the space x-y-z
-  /// angles θ₁, θ₂, θ₃ that correspond to this rotation.
-  /// See @ref RotationMatrix<T>::ProjectToRotationMatrix
-  ///
-  /// @throws std::logic_error if an improper rotation results after projection
-  /// of `R_FM`, that is, if the projected matrix's determinant is `-1`.
-  DRAKE_DEPRECATED("2020-02-01",
-                   "Use SetFromRotationMatrix(context, R_FM), where R_FM is a "
-                   "RotationMatrix, not an arbitrary Matrix3.")
-  const SpaceXYZMobilizer<T>& SetFromRotationMatrix(
-      systems::Context<T>* context, const Matrix3<T>& R_FM_approximate) const {
-    const math::RotationMatrix<T> R_FM =
-        math::RotationMatrix<T>::ProjectToRotationMatrix(R_FM_approximate);
-    return SetFromRotationMatrix(context, R_FM);
-  }
-
   /// Retrieves from `context` the angular velocity `w_FM` of the outboard frame
   /// M in the inboard frame F, expressed in F.
   ///

@@ -61,15 +61,6 @@ TEST_F(QuaternionFloatingMobilizerTest, StateAccess) {
   EXPECT_TRUE(CompareMatrices(mobilizer_->get_quaternion(*context_).coeffs(),
                             Q_WB.coeffs(),
                             kTolerance, MatrixCompareType::relative));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Set mobilizer orientation using a 3x3 matrix (deprecated).
-  mobilizer_->SetFromRotationMatrix(context_.get(), R_WB.matrix());
-  EXPECT_TRUE(CompareMatrices(mobilizer_->get_quaternion(*context_).coeffs(),
-                              Q_WB.coeffs(),
-                              kTolerance, MatrixCompareType::relative));
-#pragma GCC diagnostic push
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
