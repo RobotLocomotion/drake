@@ -8,12 +8,12 @@ two ways to do this:
 
 (1) Type in your password each time you run this program:
 
-  bazel build --config python3 //tools/workspace:new_release
+  bazel build //tools/workspace:new_release
   bazel-bin/tools/workspace/new_release
 
 (2) Use a GitHub API token:
 
-  bazel build --config python3 //tools/workspace:new_release
+  bazel build //tools/workspace:new_release
   env GITHUB_API_TOKEN=$(cat ~/.config/readonly_github_api_token.txt) \
     bazel-bin/tools/workspace/new_release
 
