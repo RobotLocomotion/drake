@@ -245,16 +245,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("id"), py::arg("value"),
             doc.FrameKinematicsVector.set_value.doc)
-        .def("set_value",
-            [](Class* self, FrameId id, const Isometry3<T>& value) {
-              WarnDeprecated("Use RigidTransform instead of Isometry3.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->set_value(id, value);
-#pragma GCC diagnostic pop
-            },
-            py::arg("id"), py::arg("value"),
-            doc.FrameKinematicsVector.set_value.doc_deprecated)
         .def("size", &FramePoseVector<T>::size,
             doc.FrameKinematicsVector.size.doc)
         // This intentionally copies the value to avoid segfaults from accessing

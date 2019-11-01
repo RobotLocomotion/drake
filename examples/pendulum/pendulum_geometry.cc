@@ -18,6 +18,7 @@ namespace pendulum {
 
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
 using geometry::Cylinder;
@@ -68,8 +69,9 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   // The base.
   GeometryId id = scene_graph->RegisterAnchoredGeometry(
       source_id_,
-      make_unique<GeometryInstance>(Isometry3d(Translation3d(0., 0., .025)),
-                                    make_unique<Box>(.05, 0.05, 0.05), "base"));
+      make_unique<GeometryInstance>(
+          math::RigidTransformd(Vector3d(0., 0., .025)),
+          make_unique<Box>(.05, 0.05, 0.05), "base"));
   scene_graph->AssignRole(
       source_id_, id, MakePhongIllustrationProperties(Vector4d(.3, .6, .4, 1)));
 
@@ -77,7 +79,7 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   id = scene_graph->RegisterGeometry(
       source_id_, frame_id_,
       make_unique<GeometryInstance>(
-          Isometry3d(Translation3d(0, 0, -length / 2.)),
+          math::RigidTransformd(Vector3d(0., 0., -length / 2.)),
           make_unique<Cylinder>(0.01, length), "arm"));
   scene_graph->AssignRole(
       source_id_, id, MakePhongIllustrationProperties(Vector4d(.9, .1, 0, 1)));
@@ -86,7 +88,7 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   id = scene_graph->RegisterGeometry(
       source_id_, frame_id_,
       make_unique<GeometryInstance>(
-          Isometry3d(Translation3d(0, 0, -length)),
+          math::RigidTransformd(Vector3d(0., 0., -length)),
           make_unique<Sphere>(mass / 40.), "arm point mass"));
   scene_graph->AssignRole(
       source_id_, id, MakePhongIllustrationProperties(Vector4d(0, 0, 1, 1)));
