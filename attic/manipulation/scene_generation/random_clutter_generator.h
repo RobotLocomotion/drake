@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -36,7 +37,9 @@ namespace scene_generation {
  *    as such only process the convex-hull of the geometry. The resulting IK
  *    solution will be subject to this simplification.
  */
-class RandomClutterGenerator {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The scene_generation package is being removed.")
+RandomClutterGenerator {
  public:
   /**
    * Constructs the RandomClutterGenerator for a particular scene within

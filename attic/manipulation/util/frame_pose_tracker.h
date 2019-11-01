@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/multibody/rigid_body.h"
@@ -33,7 +34,9 @@ namespace util {
  *
  * @ingroup manipulation_systems
  */
-class FramePoseTracker : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic/manipulation/util package is being partially removed.")
+FramePoseTracker : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseTracker)
   /**
