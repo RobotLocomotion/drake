@@ -358,6 +358,7 @@ licenses([
         repository_ctx.os.name,
         "vtkFiltersCore",
         hdrs = [
+            "vtkAppendPolyData.h",
             "vtkCleanPolyData.h",
             "vtkFiltersCoreModule.h",
         ],
