@@ -25,11 +25,13 @@ namespace internal {
  @param mesh_B           A pointer to a tetrahedral mesh of the box. It is
                          aliased in the returned pressure field and must remain
                          alive as long as the field. The position vectors of
-                         mesh vertices are expresseed in the box's frame B.
+                         mesh vertices are expressed in the box's frame B.
  @param elastic_modulus  Scale extent to pressure.
  @return                 The pressure field defined on the tetrahedral mesh.
  @pre                    `elastic_modulus` is strictly positive.
-                         `mesh_B` represents the box with enough resolution
+                         `mesh_B` represents the box well (the space enclosed
+                         by the mesh should be exactly the same space as the
+                         box specification). `mesh_B` has enough resolution
                          to approximate the pressure field.
  */
 template <typename T>
