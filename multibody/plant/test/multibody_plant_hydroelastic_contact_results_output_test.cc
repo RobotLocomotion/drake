@@ -178,7 +178,7 @@ TEST_F(HydroelasticContactResultsOutputTester, SlipVelocity) {
   const bool body_A_is_ball = (std::find(
       ball_collision_geometries.begin(), ball_collision_geometries.end(),
       results.contact_surface().id_M()) != ball_collision_geometries.end());
-  const Vector3d expected_slip = body_A_is_ball ? x : -x;
+  const Vector3d expected_slip = body_A_is_ball ? -x : x;
 
   // Check that value of the slip velocity field points to +x.
   for (const auto& quadrature_point_datum : quadrature_point_data)
@@ -192,9 +192,11 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
   const std::vector<HydroelasticQuadraturePointData<double>>&
       quadrature_point_data = results.quadrature_point_data();
 
-  // If Body A is the ball, then the traction field should point along +z.
-  // Otherwise, it should point along -z.
-  const Vector3d z(0, 0, 1);
+  // If Body A (with geometry M) is the ball, then the traction field should
+  // point along -z (i.e., the contact surfaces normals point out of M and
+  // into N and the tractions should point in the same direction). Otherwise, it
+  // should point along +z.
+  const Vector3d z(0, 0, -1);
   std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
   const bool body_A_is_ball = (std::find(
@@ -214,7 +216,7 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
 
     // The conversion from Cartesian to barycentric coordinates introduces some
     // roundoff error. Test the values using a relative tolerance since the
-    // pressure is generlly much greater than unity.
+    // pressure is generally much greater than unity.
     const double tol = pressure * 20 * std::numeric_limits<double>::epsilon();
     const Vector3d expected_traction = expected_traction_direction * pressure;
     EXPECT_NEAR(
