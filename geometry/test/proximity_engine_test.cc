@@ -11,6 +11,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -55,12 +57,19 @@ class ProximityEngineTester {
                                    const ProximityEngine<T>& engine) {
     return engine.GetX_WG(id, is_dynamic).translation();
   }
+
+  template <typename T>
+  static hydroelastic::HydroelasticType hydroelastic_type(
+      GeometryId id, const ProximityEngine<T>& engine) {
+    return engine.hydroelastic_geometries().hydroelastic_type(id);
+  }
 };
 
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+using hydroelastic::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -72,6 +81,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 using std::make_shared;
+using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unordered_map;
@@ -87,6 +97,89 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
   EXPECT_EQ(engine.num_geometries(), 1);
   EXPECT_EQ(engine.num_anchored(), 0);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// "Processing" hydroelastic geometry is simply a case of invoking a method
+// on hydroelastic::Geometries. All error handling is done there. So, it is
+// sufficient to confirm that it is being properly invoked. We'll simply attempt
+// to instantiate every shape and assert its classification based on whether
+// it's supported or not (note: this test doesn't depend on the choice of
+// rigid/soft -- for each shape, we pick an arbitrary compliance, preferring
+// one that is supported over one that is not. Otherwise, the compliance choice
+// is immaterial.)
+GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible.
+  const double edge_length = 0.5;
+  const double E = 1e8;  // Elastic modulus.
+  ProximityProperties soft_properties;
+  soft_properties.AddProperty(kMaterialGroup, kElastic, E);
+  AddSoftHydroelasticProperties(edge_length, &soft_properties);
+  ProximityProperties rigid_properties;
+  // TODO(SeanCurtis-TRI): Keep an eye on this practice. Defining something as
+  // being rigid by giving it an "infinite elastic modulus" may be counter
+  // intuitive. If so, we'll need to rearticulate how we handle this
+  // classification. However, any dissonance should be mitigated by the upcoming
+  // API in proximity_properties.h for setting rigid/soft properties without
+  // getting into the details of how it's labeled.
+  rigid_properties.AddProperty(kMaterialGroup, kElastic,
+                              std::numeric_limits<double>::infinity());
+  AddRigidHydroelasticProperties(edge_length, &rigid_properties);
+
+  // Case: soft sphere.
+  {
+    Sphere sphere{edge_length};
+    const GeometryId sphere_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(sphere, sphere_id, soft_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere_id, engine),
+              HydroelasticType::kSoft);
+  }
+
+  // Case: rigid cylinder (unsupported).
+  {
+    Cylinder cylinder{edge_length, edge_length};
+    const GeometryId cylinder_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(cylinder, cylinder_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(cylinder_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid half_space (unsupported).
+  {
+    HalfSpace half_space;
+    const GeometryId half_space_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(half_space, half_space_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(half_space_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid box.
+  {
+    Box box{edge_length, edge_length, edge_length};
+    const GeometryId box_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(box, box_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
+              HydroelasticType::kRigid);
+  }
+
+  // TODO(SeanCurtis-TRI): Add test for rigid mesh when ProximityEngine no
+  //  longer blindly throws. See note in proximity_engine.cc:
+  //  ImplementGeometry(Mesh).
+
+  // Case: meshes. Not tested because currently, proximity engine throws at
+  // any attempt to add one.
+
+  // Case: rigid convex (unsupported)
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+        edge_length};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, convex_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kUndefined);
+  }
 }
 
 // Tests simple addition of anchored geometry.
@@ -137,11 +230,21 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
       const GeometryId id = GeometryId::get_new_id();
       ids.push_back(id);
       poses.insert({id, RigidTransformd{Translation3d{i * 2.0, 0, 0}}});
+      // Add rigid properties so we can confirm removal of hydroelastic
+      // representation. We use rigid here to make sure things get invoked and
+      // rely on the implementation of hydroelastic::Geometries to distinguish
+      // soft and rigid.
+      ProximityProperties props;
+      props.AddProperty(kMaterialGroup, kElastic,
+                        std::numeric_limits<double>::infinity());
+      AddRigidHydroelasticProperties(1.0, &props);
       if (is_dynamic) {
-        engine.AddDynamicGeometry(sphere, id);
+        engine.AddDynamicGeometry(sphere, id, props);
       } else {
-        engine.AddAnchoredGeometry(sphere, poses[id], id);
+        engine.AddAnchoredGeometry(sphere, poses[id], id, props);
       }
+      EXPECT_EQ(ProximityEngineTester::hydroelastic_type(id, engine),
+                HydroelasticType::kRigid);
     }
     int expected_count = static_cast<int>(engine.num_geometries());
     EXPECT_EQ(engine.num_geometries(), expected_count);
@@ -161,6 +264,8 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
       EXPECT_EQ(engine.num_dynamic(), is_dynamic ? expected_count : 0);
       EXPECT_THROW(engine.RemoveGeometry(remove_id, is_dynamic),
                    std::logic_error);
+      EXPECT_EQ(ProximityEngineTester::hydroelastic_type(remove_id, engine),
+                HydroelasticType::kUndefined);
     }
   }
 }
