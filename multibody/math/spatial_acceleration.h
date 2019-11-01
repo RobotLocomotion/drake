@@ -245,12 +245,12 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///
   /// This operation can be written in a more compact fom in terms of the
   /// rigid shift operator `Φᵀ(p_PB)` (see SpatialVelocity::Shift()) as: <pre>
-  ///   A_WB = Φᵀ(p_PB)A_WP + Ac_WB(w_WP, V_PB) + A_PB_W
+  ///   A_WB = Φᵀ(p_PB) A_WP + Ac_WB(w_WP, V_PB) + A_PB_W
   /// </pre>
-  /// where `Φᵀ(p_PB)A_WP` denotes the application of the rigid shift
+  /// where `Φᵀ(p_PB) A_WP` denotes the application of the rigid shift
   /// operation as in SpatialVelocity::Shift() and `Ac_WB(w_WP, V_PB)` contains
   /// the centrifugal and Coriolis terms: <pre>
-  ///   Ac_WB(w_WP, V_PB) = | w_WP x w_PB_W                            |
+  ///   Ac_WB(w_WP, V_PB) = | w_WP x w_PB_W                          |
   ///                       | w_WP x w_WP x p_PB_W + 2 w_WP x v_PB_W |
   ///                                   ^^^                ^^^
   ///                               centrifugal         Coriolis
@@ -293,10 +293,10 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// <h3> Derivation </h3>
   /// The spatial velocity of frame B in W can be obtained by composing `V_WP`
   /// with `V_PB`: <pre>
-  ///   V_WB = V_WPq + V_PB = V_WP.Shift(p_PB) + V_PB                     (1)
+  ///   V_WB = V_WPb + V_PB = Φᵀ(p_PB) V_WP + V_PB                        (1)
   /// </pre>
-  /// This operation can be performed with the SpatialVelocity method
-  /// ComposeWithMovingFrameVelocity().
+  /// This operation can be performed with the method
+  /// SpatialVelocity::ComposeWithMovingFrameVelocity().
   ///
   /// <h4> Translational acceleration component </h4>
   ///
@@ -316,7 +316,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// derivative from `DtW()` to `DtP()`,
   /// see drake::math::ConvertTimeDerivativeToOtherFrame(): <pre>
   ///   DtW(p_PB) = DtP(p_PB) + w_WP x p_PB
-  ///               = v_PB + w_WP x p_PB                                  (4)
+  ///             = v_PB + w_WP x p_PB                                    (4)
   /// </pre>
   /// since `v_PB = DtP(p_PB)` by definition.
   /// Similarly, the term `DtW(v_PB)` in Eq. (3) is also obtained by converting
@@ -327,19 +327,26 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// with `a_PB = DtP(v_PB)` by definition.
   /// Using Eqs. (4) and (5) in Eq. (3) yields for the translational
   /// acceleration: <pre>
-  ///   a_WB = a_WP + alpha_WP x p_PB
-  ///         + w_WP x (v_PB + w_WP x p_PB) + a_PB + w_WP x v_PB          (6)
+  ///   a_WB = a_WP + alpha_WP x p_PB + a_PB + ac_WB
+  ///   ac_WB = w_WP x (v_PB + w_WP x p_PB) + w_WP x v_PB                 (6)
   /// </pre>
-  /// and finally, by grouping terms together: <pre>
-  ///   a_WB = a_WP + alpha_WP x p_PB
-  ///         + w_WP x w_WP x p_PB + 2 * w_WP x v_PB + a_PB               (7)
+  /// where finally the term `ac_WB` can be written as: <pre>
+  ///   ac_WB = w_WP x w_WP x p_PB + 2 * w_WP x v_PB                      (7)
   /// </pre>
   /// which includes the effect of angular acceleration of P in W
   /// `alpha_WP x p_PB`, the centrifugal acceleration `w_WP x w_WP x p_PB`,
   /// the Coriolis acceleration `2 * w_WP x v_PB` due to the motion of B in
   /// P and, the additional acceleration of B in P `a_PB`.
   ///
-  /// Note: Alternatively, we can write 
+  /// @note Alternatively, we can write an efficient version of the
+  /// centrifugal term `ac_WB` in Eq. (6) for when the velocities of P and B are
+  /// available (e.g. from velocity kinematics). This is accomplished by adding
+  /// and subtracting v_WP within the parenthesized term in Eq. (6) and grouping
+  /// together v_WB = v_WPb + v_PB = v_WP + w_WP x p_PB + v_PB: <pre>
+  ///   ac_WB = w_WP x (v_WB - v_WP) + w_WP x v_PB
+  ///         = w_WP x (v_WB - v_WP + v_PB)                               (6b)
+  /// </pre>
+  /// which simplifies the expression from three cross products to one.
   ///
   /// <h4> Rotational acceleration component </h4>
   ///
@@ -366,7 +373,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// <h4> The spatial acceleration </h4>
   ///
   /// The rotational and translational components of the spatial acceleration
-  /// are given by Eqs. (11) and (7) respectively: <pre>
+  /// are given by Eqs. (11) and (6) respectively: <pre>
   ///   A_WB.rotational() = alpha_WB
   ///                     = {alpha_WP} + alpha_PB + w_WP x w_PB           (12)
   ///   A_WB.translational() = a_WB
@@ -385,7 +392,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// </pre>
   /// where `Ac_WB(w_WP, V_PB)` contains the centrifugal and Coriolis terms:
   /// <pre>
-  ///   Ac_WB(w_WP, V_PB) = | w_WP x w_PB_W                            |
+  ///   Ac_WB(w_WP, V_PB) = | w_WP x w_PB_W                          |
   ///                       | w_WP x w_WP x p_PB_W + 2 w_WP x v_PB_W |
   ///                                   ^^^                ^^^
   ///                               centrifugal         Coriolis
