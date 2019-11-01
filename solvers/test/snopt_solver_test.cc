@@ -223,11 +223,6 @@ GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
 // s.t x₀ + x₁ = 1
 // The optimal solution is x*=(0, 1)
 GTEST_TEST(SnoptTest, MultiThreadTest) {
-  // Skip this test when SNOPT does not support multi-threading.
-  if (!SnoptSolver::is_thread_safe()) {
-    return;
-  }
-
   // Formulate the problem (shared by all threads).
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

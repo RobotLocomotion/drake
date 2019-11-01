@@ -15,9 +15,7 @@ SnoptSolver::~SnoptSolver() = default;
 
 SolverId SnoptSolver::id() {
   static const never_destroyed<SolverId> singleton{
-    SnoptSolver::is_available() ?
-      (SnoptSolver::is_thread_safe() ? "SNOPT/fortran" : "SNOPT/f2c") :
-      "SNOPT/unavailable"};
+      SnoptSolver::is_available() ? "SNOPT/fortran" : "SNOPT/unavailable"};
   return singleton.access();
 }
 

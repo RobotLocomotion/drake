@@ -81,7 +81,6 @@ build:mosek --define=WITH_MOSEK=ON
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
 build:snopt_fortran --define=WITH_SNOPT_FORTRAN=ON
-build:snopt_f2c --define=WITH_SNOPT_F2C=ON
 
 ### A configuration that enables all optional dependencies. ###
 test:everything --test_tag_filters=-no_everything
