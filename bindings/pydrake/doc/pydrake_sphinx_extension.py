@@ -12,7 +12,6 @@ For guidance, see:
 # e.g. `LeafSystem` only consists of private things to overload, but it's
 # important to be user-visible.
 
-from __future__ import print_function
 
 from collections import namedtuple
 import re
@@ -157,7 +156,12 @@ class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
         """Overrides base to show template objects given the correct module."""
         if self.options.imported_members:
             return True
-        return self.object._module_name == self.modname
+        scope = self.object._scope
+        if isinstance(scope, type):
+            module_name = scope.__module__
+        else:
+            module_name = scope.__name__
+        return module_name == self.modname
 
     def add_directive_header(self, sig):
         """Overrides base to add a line to indicate instantiations."""

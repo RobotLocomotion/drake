@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function
 
 import copy
 import unittest
 
 import numpy as np
-import six
 
 import pydrake.symbolic as sym
 import pydrake.common
@@ -666,11 +664,6 @@ class TestSymbolicFormula(unittest.TestCase):
         ff = sym.Formula.False_()
         self.assertEqual(x == x, tt)
         self.assertEqual(x != x, ff)
-        if six.PY2:
-            # Use `getattr` to avoid syntax errors in Python3 since `True` and
-            # `False` are reserved keywords.
-            self.assertEqual(getattr(sym.Formula, "True")(), tt)
-            self.assertEqual(getattr(sym.Formula, "False")(), ff)
 
     def test_repr(self):
         self.assertEqual(repr(x > y), '<Formula "(x > y)">')

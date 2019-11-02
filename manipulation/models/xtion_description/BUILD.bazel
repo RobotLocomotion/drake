@@ -8,6 +8,39 @@ package(
     default_visibility = [":__subpackages__"],
 )
 
-install_data()
+install_data(name = "deprecated_models")
+
+filegroup(
+    name = "models",
+    data = [":deprecated_models"],
+    deprecation = "The xtion_description package is deprecated and will be removed on 2020-02-01.",  # noqa
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "prod_models",
+    data = [":prod_deprecated_models"],
+    deprecation = "The xtion_description package is deprecated and will be removed on 2020-02-01.",  # noqa
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "test_models",
+    data = [":test_deprecated_models"],
+    deprecation = "The xtion_description package is deprecated and will be removed on 2020-02-01.",  # noqa
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 add_lint_tests()

@@ -3,7 +3,6 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
@@ -46,19 +45,9 @@ PYBIND11_MODULE(manipulation_station, m) {
           &ManipulationStation<T>::SetupManipulationClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupManipulationClassStation.doc)
-      .def("SetupDefaultStation",
-          [](ManipulationStation<T>* self, IiwaCollisionModel collision_model) {
-            WarnDeprecated(
-                "SetupDefaultStation is deprecated and will be removed on or"
-                "around 2019-09-01.  Please use SetupManipulationClassStation "
-                "instead.");
-            self->SetupManipulationClassStation(collision_model);
-          },
-          py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupDefaultStation.doc_deprecated)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
-          py::arg("X_WCameraBody") = nullopt,
+          py::arg("X_WCameraBody") = std::nullopt,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupClutterClearingStation.doc)
       .def("AddManipulandFromFile",

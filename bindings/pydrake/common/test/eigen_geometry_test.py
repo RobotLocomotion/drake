@@ -4,12 +4,13 @@ import copy
 import unittest
 
 import numpy as np
-import six
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 
 def normalize(x):
@@ -103,16 +104,25 @@ class TestEigenGeometry(unittest.TestCase):
         q_AB = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         q_I = q_AB.inverse().multiply(q_AB)
         numpy_compare.assert_float_equal(q_I.wxyz(), [1., 0, 0, 0])
-        if six.PY3:
-            numpy_compare.assert_float_equal(
-                eval("q_AB.inverse() @ q_AB").wxyz(), [1., 0, 0, 0])
+        numpy_compare.assert_float_equal(
+            (q_AB.inverse() @ q_AB).wxyz(), [1., 0, 0, 0])
         v_B = np.array([1., 2, 3])
         v_A = np.array([3., 1, 2])
-        numpy_compare.assert_float_allclose(q_AB.multiply(position=v_B), v_A)
-        v_B_list = np.array([v_B, v_B]).T
-        v_A_list = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_allclose(q_AB.multiply(vector=v_B), v_A)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(
-            q_AB.multiply(position=v_B_list), v_A_list)
+            q_AB.multiply(vector=vlist_B), vlist_A)
+        # Test deprecation.
+        with catch_drake_warnings(expected_count=2):
+            self.assertEqual(q_AB.multiply(position=v_B).shape, v_B.shape)
+            self.assertEqual(
+                q_AB.multiply(position=vlist_B).shape, vlist_B.shape)
+        with catch_drake_warnings(expected_count=0):
+            # No deprecation should happen with position arguments.
+            self.assertEqual(q_AB.multiply(v_B).shape, v_B.shape)
+            self.assertEqual(q_AB.multiply(vlist_B).shape, vlist_B.shape)
+
         q_AB_conj = q_AB.conjugate()
         numpy_compare.assert_float_equal(
                 q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
@@ -122,6 +132,8 @@ class TestEigenGeometry(unittest.TestCase):
             value = test_util.create_quaternion()
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
+
+        assert_pickle(self, q_AB, Quaternion.wxyz, T=T)
 
     @numpy_compare.check_all_types
     def test_isometry3(self, T):
@@ -193,11 +205,11 @@ class TestEigenGeometry(unittest.TestCase):
         p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
             X_AB.multiply(position=p_BQlist), p_AQlist)
-        if six.PY3:
-            numpy_compare.assert_float_equal(
-                eval("X_AB.inverse() @ X_AB").matrix(), X_I_np)
-            numpy_compare.assert_float_equal(
-                eval("X_AB @ p_BQ"), p_AQ)
+        numpy_compare.assert_float_equal(
+            (X_AB.inverse() @ X_AB).matrix(), X_I_np)
+        numpy_compare.assert_float_equal(X_AB @ p_BQ, p_AQ)
+
+        assert_pickle(self, X_AB, Isometry3.matrix, T=T)
 
     def test_translation(self):
         # Test `type_caster`s.
@@ -224,9 +236,8 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_allclose(value.inverse().rotation(), R.T)
         numpy_compare.assert_float_allclose(
             value.multiply(value.inverse()).rotation(), np.eye(3))
-        if six.PY3:
-            numpy_compare.assert_float_allclose(
-                eval("value @ value.inverse()").rotation(), np.eye(3))
+        numpy_compare.assert_float_allclose(
+            (value @ value.inverse()).rotation(), np.eye(3))
         value.set_rotation(np.eye(3))
         numpy_compare.assert_float_equal(value.rotation(), np.eye(3))
 
@@ -264,3 +275,8 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_equal(value.rotation(), value_sym.rotation())
         numpy_compare.assert_equal(value.angle(), -value_sym.angle())
         numpy_compare.assert_equal(value.axis(), -value_sym.axis())
+
+        def get_vector(value):
+            return np.hstack((value.angle(), value.axis()))
+
+        assert_pickle(self, value, get_vector, T=T)

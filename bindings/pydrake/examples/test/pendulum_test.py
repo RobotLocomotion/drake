@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import copy
 import unittest
 import numpy as np
@@ -14,6 +12,12 @@ from pydrake.systems.analysis import (
 
 
 class TestPendulum(unittest.TestCase):
+    def test_plant(self):
+        pendulum = PendulumPlant()
+        self.assertEqual(pendulum.get_input_port(), pendulum.get_input_port(0))
+        self.assertEqual(pendulum.get_state_output_port(),
+                         pendulum.get_output_port(0))
+
     def test_input(self):
         input = PendulumInput()
         input.set_tau(1.)
@@ -48,7 +52,7 @@ class TestPendulum(unittest.TestCase):
         # Set an input torque.
         input = PendulumInput()
         input.set_tau(1.)
-        context.FixInputPort(0, input)
+        pendulum.get_input_port().FixValue(context, input)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()

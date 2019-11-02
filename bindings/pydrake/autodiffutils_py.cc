@@ -6,10 +6,12 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::AutoDiffScalar;
+using Eigen::VectorXd;
 using std::cos;
 using std::sin;
 
@@ -33,7 +35,7 @@ PYBIND11_MODULE(autodiffutils, m) {
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
   autodiff  // BR
       .def(py::init<double>())
-      .def(py::init<const double&, const Eigen::VectorXd&>())
+      .def(py::init<const double&, const VectorXd&>())
       .def("value", [](const AutoDiffXd& self) { return self.value(); })
       .def("derivatives",
           [](const AutoDiffXd& self) { return self.derivatives(); })
@@ -81,6 +83,14 @@ PYBIND11_MODULE(autodiffutils, m) {
           },
           py::is_operator())
       .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
+  DefPickle(&autodiff,
+      [](const AutoDiffXd& self) {
+        return py::make_tuple(self.value(), self.derivatives());
+      },
+      [](py::tuple t) {
+        DRAKE_THROW_UNLESS(t.size() == 2);
+        return AutoDiffXd(t[0].cast<double>(), t[1].cast<VectorXd>());
+      });
   DefCopyAndDeepCopy(&autodiff);
 
   py::implicitly_convertible<double, AutoDiffXd>();
@@ -112,6 +122,13 @@ PYBIND11_MODULE(autodiffutils, m) {
         return autoDiffToGradientMatrix(autodiff_matrix);
       },
       py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
+
+  m.def("initializeAutoDiffGivenGradientMatrix",
+      [](const Eigen::VectorXd& val, const Eigen::MatrixXd& gradient) {
+        return initializeAutoDiffGivenGradientMatrix(val, gradient);
+      },
+      py::arg("val"), py::arg("gradient"),
+      doc.initializeAutoDiffGivenGradientMatrix.doc_2args);
 
   ExecuteExtraPythonCode(m);
 }

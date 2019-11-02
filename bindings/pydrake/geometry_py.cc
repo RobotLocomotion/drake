@@ -1,16 +1,18 @@
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/render_engine.h"
@@ -138,8 +140,36 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SceneGraphInspector", param, doc.SceneGraphInspector.doc);
     cls  // BR
+        .def("num_sources", &SceneGraphInspector<T>::num_sources,
+            doc.SceneGraphInspector.num_sources.doc)
+        .def("num_frames", &SceneGraphInspector<T>::num_frames,
+            doc.SceneGraphInspector.num_frames.doc)
+        .def("num_geometries", &SceneGraphInspector<T>::num_geometries,
+            doc.SceneGraphInspector.num_geometries.doc)
+        .def("GetAllGeometryIds", &SceneGraphInspector<T>::GetAllGeometryIds,
+            doc.SceneGraphInspector.GetAllGeometryIds.doc)
         .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
-            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
+            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc)
+        .def("GetGeometryIdByName",
+            &SceneGraphInspector<T>::GetGeometryIdByName, py::arg("frame_id"),
+            py::arg("role"), py::arg("name"),
+            doc.SceneGraphInspector.GetGeometryIdByName.doc)
+        .def("GetNameByFrameId",
+            overload_cast_explicit<const std::string&, FrameId>(
+                &SceneGraphInspector<T>::GetName),
+            py_reference_internal, py::arg("frame_id"),
+            doc.SceneGraphInspector.GetName.doc_1args_frame_id)
+        .def("GetNameByGeometryId",
+            overload_cast_explicit<const std::string&, GeometryId>(
+                &SceneGraphInspector<T>::GetName),
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetName.doc_1args_geometry_id)
+        .def("GetPoseInFrame", &SceneGraphInspector<T>::GetPoseInFrame,
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetPoseInFrame.doc)
+        .def("GetShape", &SceneGraphInspector<T>::GetShape,
+            py_reference_internal, py::arg("geometry_id"),
+            doc.SceneGraphInspector.GetShape.doc);
   }
 
   //  SceneGraph
@@ -158,10 +188,41 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc.SceneGraph.get_pose_bundle_output_port.doc)
         .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
             py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
+        .def("model_inspector", &SceneGraph<T>::model_inspector,
+            py_reference_internal, doc.SceneGraph.model_inspector.doc)
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &SceneGraph<T>::RegisterSource),
             py::arg("name") = "", doc.SceneGraph.RegisterSource.doc)
+        .def("RegisterFrame",
+            py::overload_cast<SourceId, const GeometryFrame&>(
+                &SceneGraph<T>::RegisterFrame),
+            py::arg("source_id"), py::arg("frame"),
+            doc.SceneGraph.RegisterFrame.doc_2args)
+        .def("RegisterFrame",
+            py::overload_cast<SourceId, FrameId, const GeometryFrame&>(
+                &SceneGraph<T>::RegisterFrame),
+            py::arg("source_id"), py::arg("parent_id"), py::arg("frame"),
+            doc.SceneGraph.RegisterFrame.doc_3args)
+        .def("RegisterGeometry",
+            py::overload_cast<SourceId, FrameId,
+                std::unique_ptr<GeometryInstance>>(
+                &SceneGraph<T>::RegisterGeometry),
+            py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
+            doc.SceneGraph.RegisterGeometry
+                .doc_3args_source_id_frame_id_geometry)
+        .def("RegisterGeometry",
+            py::overload_cast<SourceId, GeometryId,
+                std::unique_ptr<GeometryInstance>>(
+                &SceneGraph<T>::RegisterGeometry),
+            py::arg("source_id"), py::arg("geometry_id"), py::arg("geometry"),
+            doc.SceneGraph.RegisterGeometry
+                .doc_3args_source_id_geometry_id_geometry)
+        .def("RegisterAnchoredGeometry",
+            py::overload_cast<SourceId, std::unique_ptr<GeometryInstance>>(
+                &SceneGraph<T>::RegisterAnchoredGeometry),
+            py::arg("source_id"), py::arg("geometry"),
+            doc.SceneGraph.RegisterAnchoredGeometry.doc)
         .def("AddRenderer", &SceneGraph<T>::AddRenderer,
             py::arg("renderer_name"), py::arg("renderer"),
             doc.SceneGraph.AddRenderer.doc)
@@ -184,16 +245,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("id"), py::arg("value"),
             doc.FrameKinematicsVector.set_value.doc)
-        .def("set_value",
-            [](Class* self, FrameId id, const Isometry3<T>& value) {
-              WarnDeprecated("Use RigidTransform instead of Isometry3.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->set_value(id, value);
-#pragma GCC diagnostic pop
-            },
-            py::arg("id"), py::arg("value"),
-            doc.FrameKinematicsVector.set_value.doc_deprecated)
         .def("size", &FramePoseVector<T>::size,
             doc.FrameKinematicsVector.size.doc)
         // This intentionally copies the value to avoid segfaults from accessing
@@ -380,13 +431,20 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
-        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc);
+        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
+        .def("get_radius", &Sphere::get_radius, doc.Sphere.get_radius.doc);
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
-            doc.Cylinder.ctor.doc);
+            doc.Cylinder.ctor.doc)
+        .def("get_radius", &Cylinder::get_radius, doc.Cylinder.get_radius.doc)
+        .def("get_length", &Cylinder::get_length, doc.Cylinder.get_length.doc);
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),
-            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc);
+            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc)
+        .def("width", &Box::width, doc.Box.width.doc)
+        .def("depth", &Box::depth, doc.Box.depth.doc)
+        .def("height", &Box::height, doc.Box.height.doc)
+        .def("size", &Box::size, py_reference_internal, doc.Box.size.doc);
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc);
     py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)
@@ -395,6 +453,36 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc);
+  }
+
+  // GeometryFrame
+  {
+    using Class = GeometryFrame;
+    constexpr auto& cls_doc = doc.GeometryFrame;
+    py::class_<Class>(m, "GeometryFrame", cls_doc.doc)
+        .def(py::init<const std::string&, int>(), py::arg("frame_name"),
+            py::arg("frame_group_id") = 0, cls_doc.ctor.doc)
+        .def("id", &Class::id, cls_doc.id.doc)
+        .def("name", &Class::name, cls_doc.name.doc)
+        .def("frame_group", &Class::frame_group, cls_doc.frame_group.doc);
+  }
+
+  // GeometryInstance
+  {
+    using Class = GeometryInstance;
+    constexpr auto& cls_doc = doc.GeometryInstance;
+    py::class_<Class>(m, "GeometryInstance", cls_doc.doc)
+        .def(py::init<const math::RigidTransform<double>&,
+                 std::unique_ptr<Shape>, const std::string&>(),
+            py::arg("X_PG"), py::arg("shape"), py::arg("name"),
+            cls_doc.ctor.doc)
+        .def("id", &Class::id, cls_doc.id.doc)
+        .def("pose", &Class::pose, py_reference_internal, cls_doc.pose.doc)
+        .def(
+            "set_pose", &Class::set_pose, py::arg("X_PG"), cls_doc.set_pose.doc)
+        .def("shape", &Class::shape, py_reference_internal, cls_doc.shape.doc)
+        .def("release_shape", &Class::release_shape, cls_doc.release_shape.doc)
+        .def("name", &Class::name, cls_doc.name.doc);
   }
 
   // Rendering

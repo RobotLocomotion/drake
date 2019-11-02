@@ -2,11 +2,11 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/color_palette.h"
@@ -53,10 +53,13 @@ class DummyRenderEngine final : public render::RenderEngine {
                         systems::sensors::ImageDepth32F*) const final {}
   void RenderLabelImage(const render::CameraProperties&, bool,
                         systems::sensors::ImageLabel16I*) const final {}
+
+  using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) final {}
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final {}
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final {}
   void ImplementGeometry(const Box& box, void* user_data) final {}
+  void ImplementGeometry(const Capsule& capsule, void* user_data) final {}
   void ImplementGeometry(const Mesh& mesh, void* user_data) final {}
   void ImplementGeometry(const Convex& convex, void* user_data) final {}
   //@}

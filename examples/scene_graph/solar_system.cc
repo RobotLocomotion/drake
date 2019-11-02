@@ -43,7 +43,7 @@ using std::make_unique;
 using std::unique_ptr;
 
 template <typename Shape, typename... ShapeArgs>
-unique_ptr<GeometryInstance> MakeShape(const Isometry3<double>& pose,
+unique_ptr<GeometryInstance> MakeShape(const RigidTransformd& pose,
                                        const std::string& name,
                                        const Vector4d& diffuse,
                                        ShapeArgs&&... args) {
@@ -130,14 +130,12 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
       AngleAxisd(M_PI / 2, Vector3d::UnitY()), Vector3d(length / 2, 0, 0));
   scene_graph->RegisterGeometry(
       source_id, parent_id,
-      MakeShape<Cylinder>(arm_pose.GetAsIsometry3(), "HorzArm", material,
-                          radius, length));
+      MakeShape<Cylinder>(arm_pose, "HorzArm", material, radius, length));
 
   const math::RigidTransform<double> post_pose(Vector3d(length, 0, height / 2));
   scene_graph->RegisterGeometry(
       source_id, parent_id,
-      MakeShape<Cylinder>(post_pose.GetAsIsometry3(), "VertArm", material,
-                          radius, height));
+      MakeShape<Cylinder>(post_pose, "VertArm", material, radius, height));
 }
 
 template <typename T>

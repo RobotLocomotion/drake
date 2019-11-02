@@ -1,0 +1,13 @@
+package drake;
+
+struct lcmt_hydroelastic_contact_surface_tri_for_viz {
+  // The three vertices of each triangle, all expressed in the world frame.
+  double p_WA[3];
+  double p_WB[3];
+  double p_WC[3];
+
+  // The hydroelastic pressure at each vertex.
+  double pressure_A;
+  double pressure_B;
+  double pressure_C;
+}

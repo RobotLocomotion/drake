@@ -16,7 +16,6 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 
@@ -162,15 +161,6 @@ using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 /// `P`.
 template <typename Scalar>
 using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
-
-/// A column vector consisting of a concatenated rotational and translational
-/// force.  The wrench is a special case of a SpatialForce.  For a general
-/// SpatialForce the rotational force can be a pure torque or the accumulation
-/// of moments and need not necessarily be a function of the force term.
-template <typename Scalar>
-using SpatialForce
-DRAKE_DEPRECATED("2019-10-15", "Please use Vector6<> instead.")
-    = Eigen::Matrix<Scalar, 6, 1>;
 
 /// EigenSizeMinPreferDynamic<a, b>::value gives the min between compile-time
 /// sizes @p a and @p b. 0 has absolute priority, followed by 1, followed by

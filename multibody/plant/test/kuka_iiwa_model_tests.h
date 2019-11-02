@@ -38,10 +38,10 @@ class KukaIiwaModelTests : public ::testing::Test {
         "drake/manipulation/models/iiwa_description/sdf/"
         "iiwa14_no_collision.sdf");
 
-    // Create a model of a Kuka arm. Notice we do not weld the robot's base
-    // to the world and therefore the model is free floating in space. This
-    // makes for a more interesting setup to test the computation of
-    // analytical Jacobians.
+    // Create a model of a Kuka arm. Notice we do not weld the robot's base to
+    // the world and therefore the model is free floating in space. This makes
+    // for a more interesting setup to test the computation of Jacobians with
+    // respect to q̇ (time-derivative of generalized positions).
     plant_ = std::make_unique<MultibodyPlant<double>>();
     Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
@@ -60,7 +60,8 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   // If unit_quaternion = false then the quaternion for the free floating base
   // is not normalized. This configuration is useful to verify the computation
-  // of analytical Jacobians even if the state stores a non-unit quaternion.
+  // of Jacobians with respect to q̇ (time-derivative of generalized positions),
+  // even if the state stores a non-unit quaternion.
   void SetArbitraryConfiguration(bool unit_quaternion = true) {
     // Get an arbitrary set of angles and velocities for each joint.
     const VectorX<double> x0 = GetArbitraryJointConfiguration();
@@ -126,37 +127,6 @@ class KukaIiwaModelTests : public ::testing::Test {
     x << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
 
     return x;
-  }
-
-  // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_EPi in the end
-  // effector frame.
-  // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
-  // TODO(amcastro-tri): Rename this method as per issue #10155.
-  // TODO(Mitiguy): If this method is not used, delete it per issue #10155.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity().")
-  void CalcPointsOnEndEffectorAnalyticJacobian(
-      const MultibodyPlant<T>& plant_on_T,
-      const Context<T>& context_on_T,
-      const MatrixX<T>& p_EoEi_E,
-      MatrixX<T>* p_WoEi_W,
-      MatrixX<T>* Jq_v_WEi_W) const {
-    const Frame<T>& frame_W = plant_on_T.world_frame();
-    const Frame<T>& frame_E =  /* End-effector frame E */
-        (plant_on_T.get_body(end_effector_link_->index())).body_frame();
-
-    plant_on_T.CalcJacobianTranslationalVelocity(context_on_T,
-                                                 JacobianWrtVariable::kQDot,
-                                                 frame_E,
-                                                 p_EoEi_E,
-                                                 frame_W,
-                                                 frame_W,
-                                                 Jq_v_WEi_W);
-    plant_on_T.CalcPointsPositions(context_on_T,
-                                   frame_E, p_EoEi_E,     /* From frame E */
-                                   frame_W, p_WoEi_W);   /* To world frame W */
   }
 
  protected:

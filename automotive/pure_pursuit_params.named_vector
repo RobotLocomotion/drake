@@ -1,9 +1,0 @@
-namespace: "drake::automotive"
-
-element {
-     name: "s_lookahead"
-     doc: "distance along the s-direction to place the reference point"
-     doc_units: "m"
-     default_value: "15.0"
-     min_value: "0.0"
-}

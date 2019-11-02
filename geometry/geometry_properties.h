@@ -290,10 +290,9 @@ class GeometryProperties {
 
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
-   @throws std::logic_error
-                            1. if the group name is invalid,
-                            2. if the property name is invalid, or
-                            3. if the property type is not that specified.
+   @throws std::logic_error if a) the group name is invalid,
+                            b) the property name is invalid, or
+                            c) the property type is not that specified.
    @tparam ValueType  The expected type of the desired property.  */
   template <typename ValueType>
   const ValueType& GetProperty(const std::string& group_name,

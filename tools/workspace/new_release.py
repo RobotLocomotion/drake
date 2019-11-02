@@ -8,12 +8,12 @@ two ways to do this:
 
 (1) Type in your password each time you run this program:
 
-  bazel build --config python3 //tools/workspace:new_release
+  bazel build //tools/workspace:new_release
   bazel-bin/tools/workspace/new_release
 
 (2) Use a GitHub API token:
 
-  bazel build --config python3 //tools/workspace:new_release
+  bazel build //tools/workspace:new_release
   env GITHUB_API_TOKEN=$(cat ~/.config/readonly_github_api_token.txt) \
     bazel-bin/tools/workspace/new_release
 
@@ -96,6 +96,14 @@ def run(gh, args, metadata):
             # TODO(jwnimmer-tri) Implement for real.
             old_commit = data["commit"]
             new_commit = None
+        elif key == "pypi":
+            # TODO(jwnimmer-tri) Implement for real.
+            print("{} version {} needs manual inspection".format(
+                data["name"], data["version"]))
+            continue
+        elif key == "manual":
+            print("{} needs manual inspection".format(data["name"]))
+            continue
         else:
             raise RuntimeError("Bad key " + key)
         if old_commit == new_commit:
@@ -111,12 +119,6 @@ def run(gh, args, metadata):
 def main():
     token = os.getenv("GITHUB_API_TOKEN", None)
     parser = argparse.ArgumentParser(prog="new_release", description=__doc__)
-    if sys.version_info[0] != 3:
-        parser.error("\n".join([
-            "Wrong python version.",
-            "This script only supports python3.",
-            "To compile it in that mode, use this command:",
-            " bazel build --config python3 //tools/workspace:new_release"]))
     parser.add_argument(
         "--use_token", action="store_true", default=(token is not None),
         help="When set, uses an API token instead of username + password")

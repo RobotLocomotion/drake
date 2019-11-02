@@ -135,7 +135,7 @@ namespace {
 std::unique_ptr<geometry::Shape> ParseBox(const XMLElement* shape_node) {
   Eigen::Vector3d size = Eigen::Vector3d::Zero();
   if (!ParseVectorAttribute(shape_node, "size", &size)) {
-    throw std::runtime_error("Missing box attribute size");
+    throw std::runtime_error("Missing box attribute: size");
   }
   return std::make_unique<geometry::Box>(size(0), size(1), size(2));
 }
@@ -143,7 +143,7 @@ std::unique_ptr<geometry::Shape> ParseBox(const XMLElement* shape_node) {
 std::unique_ptr<geometry::Shape> ParseSphere(const XMLElement* shape_node) {
   double r = 0;
   if (!ParseScalarAttribute(shape_node, "radius", &r)) {
-    throw std::runtime_error("Missing sphere attribute radius");
+    throw std::runtime_error("Missing sphere attribute: radius");
   }
 
   // TODO(sammy-tri) Do we need to enforce a minimum radius here?  The old
@@ -155,14 +155,27 @@ std::unique_ptr<geometry::Shape> ParseSphere(const XMLElement* shape_node) {
 std::unique_ptr<geometry::Shape> ParseCylinder(const XMLElement* shape_node) {
   double r = 0;
   if (!ParseScalarAttribute(shape_node, "radius", &r)) {
-    throw std::runtime_error("Missing cylinder attribute radius");
+    throw std::runtime_error("Missing cylinder attribute: radius");
   }
 
   double l = 0;
   if (!ParseScalarAttribute(shape_node, "length", &l)) {
-    throw std::runtime_error("Missing cylinder attribute length");
+    throw std::runtime_error("Missing cylinder attribute: length");
   }
   return std::make_unique<geometry::Cylinder>(r, l);
+}
+
+std::unique_ptr<geometry::Shape> ParseCapsule(const XMLElement* shape_node) {
+  double r = 0;
+  if (!ParseScalarAttribute(shape_node, "radius", &r)) {
+    throw std::runtime_error("Missing capsule attribute: radius");
+  }
+
+  double l = 0;
+  if (!ParseScalarAttribute(shape_node, "length", &l)) {
+    throw std::runtime_error("Missing capsule attribute: length");
+  }
+  return std::make_unique<geometry::Capsule>(r, l);
 }
 
 std::unique_ptr<geometry::Shape> ParseMesh(
@@ -217,8 +230,7 @@ std::unique_ptr<geometry::Shape> ParseGeometry(
     return ParseCylinder(node->FirstChildElement("cylinder"));
   }
   if (node->FirstChildElement("capsule")) {
-    throw std::runtime_error(
-        "capsule geometry is not supported");
+    return ParseCapsule(node->FirstChildElement("capsule"));
   }
   if (node->FirstChildElement("mesh")) {
     return ParseMesh(node->FirstChildElement("mesh"), package_map,

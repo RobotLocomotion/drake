@@ -75,7 +75,7 @@ RandomClutterGenerator::RandomClutterGenerator(
 
 VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
     const VectorX<double>& q_nominal, std::default_random_engine* generator,
-    optional<double> z_height_cost) {
+    std::optional<double> z_height_cost) {
   DRAKE_DEMAND(scene_tree_ptr_->get_num_positions() == q_nominal.size());
 
   VectorX<double> q_nominal_candidate = q_nominal;
@@ -150,7 +150,7 @@ int RandomClutterGenerator::ComputeIK(
     VectorX<double>* q_result,
     const std::vector<RigidBodyConstraint*>& constraint_array,
     const VectorX<double>& q_initial, const VectorX<double>& q_nominal,
-    const std::vector<int>& z_indices, optional<double> z_height_cost) {
+    const std::vector<int>& z_indices, std::optional<double> z_height_cost) {
   VectorX<double> q_result_return;
 
   Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(q_initial.size(), q_initial.size());

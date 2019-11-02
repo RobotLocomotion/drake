@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_engine_vtk.h"
 
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -9,9 +10,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/shape_specification.h"
@@ -336,12 +337,14 @@ class RenderEngineVtkTest : public ::testing::Test {
     }
   }
 
-  // Creates a simple perception properties set for fixed, known results.
+  // Creates a simple perception properties set for fixed, known results. The
+  // material color can be modified by setting default_color_ prior to invoking
+  // this method.
   PerceptionProperties simple_material() const {
     PerceptionProperties material;
-    Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
-                   kDefaultVisualColor.b / 255., 1.);
-    material.AddProperty("phong", "diffuse", color);
+    Vector4d color_n(default_color_.r / 255., default_color_.g / 255.,
+                     default_color_.b / 255., default_color_.a / 255.);
+    material.AddProperty("phong", "diffuse", color_n);
     material.AddProperty("label", "id", expected_label_);
     return material;
   }
@@ -406,6 +409,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
+  RgbaColor default_color_{kDefaultVisualColor, 255};
 
   const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY, "unused",
                                          kZNear, kZFar};
@@ -549,6 +553,125 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
   PopulateSphereTest(renderer_.get());
 
   PerformCenterShapeTest(renderer_.get(), "Sphere test");
+}
+
+// Performs the shape-centered-in-the-image test with a sphere.
+TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
+  RenderEngineVtk renderer;
+  InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
+  const int int_alpha = 128;
+  default_color_ = RgbaColor(kDefaultVisualColor, int_alpha);
+  PopulateSphereTest(&renderer);
+  ImageRgba8U color(camera_.width, camera_.height);
+  renderer.RenderColorImage(camera_, kShowWindow, &color);
+
+  // Note: under CI this test runs with Xvfb - a virtual frame buffer. This does
+  // *not* use the OpenGL drivers and, empirically, it has shown a different
+  // alpha blending behavior.
+  // For an alpha of 128 (i.e., 50%), the correct pixel color would be a
+  // *linear* blend, i.e., 50% background and 50% foreground. However, the
+  // implementation in Xvfb seems to be a function alpha *squared*. So, we
+  // formulate this test to pass if the resultant pixel has one of two possible
+  // colors.
+  // In both cases, the resultant alpha will always be a full 255 (because the
+  // background is a full 255).
+  auto blend = [](const ColorI& c1, const ColorI& c2, double alpha) {
+    int r = static_cast<int>(c1.r * alpha + (c2.r * (1 - alpha)));
+    int g = static_cast<int>(c1.g * alpha + (c2.g * (1 - alpha)));
+    int b = static_cast<int>(c1.b * alpha + (c2.b * (1 - alpha)));
+    return ColorI{r, g, b};
+  };
+  const double linear_factor = int_alpha / 255.0;
+  const RgbaColor expect_linear{
+      blend(kDefaultVisualColor, kTerrainColorI, linear_factor), 255};
+  const double quad_factor = linear_factor * (-linear_factor + 2);
+  const RgbaColor expect_quad{
+      blend(kDefaultVisualColor, kTerrainColorI, quad_factor), 255};
+
+  const ScreenCoord inlier = GetInlier(camera_);
+  EXPECT_TRUE(CompareColor(expect_linear, color, inlier) ||
+              CompareColor(expect_quad, color, inlier));
+}
+
+// Performs the shape-centered-in-the-image test with a capsule.
+TEST_F(RenderEngineVtkTest, CapsuleTest) {
+  Init(X_WC_, true);
+
+  // Sets up a capsule.
+  const double radius = 0.2;
+  const double length = 1.2;
+  Capsule capsule(radius, length);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, capsule, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+  // Position the top of the capsule to be 1 m above the terrain. Since the
+  // middle of the capsule is positioned at the origin 0, the top of the
+  // capsule is placed at half the length plus the radius, i.e. 1.2/2 + 0.2 =
+  // 0.8. To reach a total of 1, we need to offset it by an additional 0.2.
+  RigidTransformd X_WV{Vector3d{0, 0, 0.2}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  PerformCenterShapeTest(renderer_.get(), "Capsule test");
+}
+
+// Performs a test with a capsule centered in the image but rotated
+// perpendicularly such that the length of the capsule can be seen in the
+// camera view (as opposed to a top-down view of its spherical side).
+// |          ●●
+// |         ●  ●
+// |        ●    ●
+// |________●____●__________
+// |        ●    ●
+// |        ●    ●
+// |         ●  ●
+// |          ●●
+TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
+  Init(X_WC_, true);
+
+  // Sets up a capsule.
+  const double radius = 0.2;
+  const double length = 1.2;
+  Capsule capsule(radius, length);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, capsule, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+
+  // Position the capsule so that it lies along the x-axis where the highest
+  // point on the barrel is at z = 1. Capsules are by default z-axis aligned
+  // so we need to rotate it by 90 degrees. Since the radius of the capsule is
+  // 0.2, we need to shift it by an additional 0.8 along the z-axis to reach 1.
+  RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
+                       Vector3d{0, 0, 0.8}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  Render(renderer_.get());
+
+  const char* name = "Capsule rotated test";
+  VerifyOutliers(*renderer_, camera_, name);
+
+  // Verifies the inliers towards the ends of the capsule and ensures its
+  // length attribute is respected as opposed to just its radius. This
+  // distinguishes it from other shape tests, such as a sphere.
+  const ScreenCoord inlier = GetInlier(camera_);
+  const int offsets[2] = {kHeight / 4, -kHeight / 4};
+  const int x = inlier.x;
+  for (const int& offset : offsets) {
+    const int y = inlier.y + offset;
+    const ScreenCoord offset_inlier = {x, y};
+    EXPECT_TRUE(CompareColor(expected_color_, color_, offset_inlier))
+        << "Color at: " << offset_inlier << " for test: " << name;
+    EXPECT_TRUE(IsExpectedDepth(depth_, offset_inlier, expected_object_depth_,
+                                kDepthTolerance))
+        << "Depth at: " << offset_inlier << " for test: " << name;
+    EXPECT_EQ(label_.at(x, y)[0], static_cast<int>(expected_label_))
+        << "Label at: " << offset_inlier << " for test: " << name;
+  }
 }
 
 // Performs the shape-centered-in-the-image test  with a cylinder.
@@ -905,7 +1028,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
     RenderEngineVtk renderer{{RenderLabel::kDontCare, {}}};
     InitializeRenderer(X_WC_, true /* no terrain */, &renderer);
 
-    EXPECT_NO_THROW(populate_default_sphere(&renderer));
+    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
     expected_label_ = RenderLabel::kDontCare;
     expected_color_ = RgbaColor(renderer.default_diffuse());
 

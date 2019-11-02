@@ -20,9 +20,91 @@ namespace internal {
 namespace {
 
 using drake::geometry::ContactSurface;
+using drake::geometry::GeometryId;
+using drake::geometry::SceneGraph;
 using drake::geometry::SurfaceMesh;
 using drake::math::RigidTransformd;
 using Eigen::Vector3d;
+
+GeometryId AddSoftBody(MultibodyPlant<double>* plant,
+                       const std::string& body_name, double elastic_modulus,
+                       double dissipation) {
+  const RigidBody<double>& body =
+      plant->AddRigidBody(body_name, SpatialInertia<double>());
+  GeometryId geometry_id = plant->RegisterCollisionGeometry(
+      body, RigidTransformd(), geometry::Sphere(1.0), body_name + "_geometry",
+      CoulombFriction<double>());
+  plant->set_elastic_modulus(geometry_id, elastic_modulus);
+  plant->set_hunt_crossley_dissipation(geometry_id, dissipation);
+  return geometry_id;
+}
+
+GeometryId AddRigidBody(MultibodyPlant<double>* plant,
+                        const std::string& body_name) {
+  const RigidBody<double>& body =
+      plant->AddRigidBody(body_name, SpatialInertia<double>());
+  GeometryId geometry_id = plant->RegisterCollisionGeometry(
+      body, RigidTransformd(), geometry::HalfSpace(), body_name + "_geometry",
+      CoulombFriction<double>());
+  return geometry_id;
+}
+
+GTEST_TEST(HydroelasticEngine, CombineSoftAndRigidMaterialProperties) {
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  const double E_A = 10.0;
+  const double d_A = 1.0;
+  GeometryId geometry_A = AddSoftBody(&plant, "SoftBody", E_A, d_A);
+  GeometryId geometry_B = AddRigidBody(&plant, "RigidBody");
+
+  // Done defining the model.
+  plant.Finalize();
+
+  // Create an engine.
+  HydroelasticEngine<double> engine;
+  engine.MakeModels(scene_graph.model_inspector());
+
+  // The combination must be symmetric.
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(geometry_A, geometry_B), E_A);
+  EXPECT_EQ(engine.CalcCombinedDissipation(geometry_A, geometry_B), d_A);
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(geometry_B, geometry_A), E_A);
+  EXPECT_EQ(engine.CalcCombinedDissipation(geometry_B, geometry_A), d_A);
+}
+
+GTEST_TEST(HydroelasticEngine, CombineSoftAndSoftMaterialProperties) {
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  const double E_A = 2.0;
+  const double d_A = 1.0;
+  const double E_B = 8.0;
+  const double d_B = 4.0;
+  // Expected combined properties.
+  const double Estar = 1.6;
+  const double dstar = 1.6;
+  GeometryId geometry_A = AddSoftBody(&plant, "SoftBodyA", E_A, d_A);
+  GeometryId geometry_B = AddSoftBody(&plant, "SoftBodyB", E_B, d_B);
+
+  // Done defining the model.
+  plant.Finalize();
+
+  // Create an engine.
+  HydroelasticEngine<double> engine;
+  engine.MakeModels(scene_graph.model_inspector());
+
+  // The combination must be symmetric.
+  EXPECT_NEAR(engine.CalcCombinedElasticModulus(geometry_A, geometry_B), Estar,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(engine.CalcCombinedDissipation(geometry_A, geometry_B), dstar,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(engine.CalcCombinedElasticModulus(geometry_B, geometry_A), Estar,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(engine.CalcCombinedDissipation(geometry_B, geometry_A), dstar,
+              std::numeric_limits<double>::epsilon());
+}
 
 class SphereVsPlaneTest : public ::testing::Test {
  public:
@@ -42,14 +124,13 @@ class SphereVsPlaneTest : public ::testing::Test {
     ground_geometry_id_ = plant_->GetCollisionGeometriesForBody(*ground_)[0];
 
     // Set elastic properties pre-finalize.
-    const double elastic_modulus = 10.0;
-    plant_->set_elastic_modulus(sphere_geometry_id_, elastic_modulus);
+    plant_->set_elastic_modulus(sphere_geometry_id_, elastic_modulus());
 
     plant_->Finalize();
     diagram_ = builder.Build();
     // Sanity check on the availability of the optional source id before using
     // it.
-    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
+    DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
 
     MakeNewContext();
 
@@ -58,6 +139,9 @@ class SphereVsPlaneTest : public ::testing::Test {
 
     SetInContactConfiguration();
   }
+
+  // Gets the elastic modulus for the sphere geometry.
+  double elastic_modulus() const { return 10.0; }
 
   // Sets a configuration for which there is contact between the sphere and the
   // ground. The 5 cm sphere is placed with its center 4 cm above the ground and
@@ -111,10 +195,10 @@ TEST_F(SphereVsPlaneTest, RespectsCollisionFilter) {
   EXPECT_EQ(engine_->ComputeContactSurfaces(*query_object_).size(), 1u);
 
   // Add filter to exclude collisions between the ground and the sphere.
-  optional<geometry::FrameId> ground_id =
+  std::optional<geometry::FrameId> ground_id =
       plant_->GetBodyFrameIdIfExists(ground_->index());
   ASSERT_TRUE(ground_id.has_value());
-  optional<geometry::FrameId> sphere_id =
+  std::optional<geometry::FrameId> sphere_id =
       plant_->GetBodyFrameIdIfExists(sphere_->index());
   ASSERT_TRUE(sphere_id.has_value());
   scene_graph_->ExcludeCollisionsBetween(context_.get(),
@@ -152,30 +236,34 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   // has thorough unit tests.
   // Since id_M corresponds to the ground geometry, the mesh is expressed in
   // frame G of the ground.
-  const SurfaceMesh<double>& mesh_G = surface.mesh();
+  const SurfaceMesh<double>& mesh_G = surface.mesh_W();
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
-  // The expected value of ∇hₘₙ, which by definition points from N towards M.
-  const Vector3<double> expected_grad_h_mn_M =
+
+  // TODO(edrumwri): This is the gradient of the strain field. It should be
+  // the gradient of the pressure field. Fix.
+  // The expected value of ∇hₘₙ, which we expect to point from N towards M.
+  const Vector3<double> expected_grad_h_MN_W =
       surface.id_M() == sphere_geometry_id_ ? Vector3<double>(0.0, 0.0, 1.0)
                                             : Vector3<double>(0.0, 0.0, -1.0);
+
   for (geometry::SurfaceVertexIndex v(0); v < mesh_G.num_vertices(); ++v) {
-    // Position of a vertex V in the frame S of the soft sphere.
-    const Vector3d p_SV = mesh_G.vertex(v).r_MV();
+    // Position of a vertex V in the ground frame G.
+    const Vector3d p_GV = mesh_G.vertex(v).r_MV();
 
     // We verify that the positions were correctly interpolated to lie on the
     // plane.
-    EXPECT_NEAR(p_SV[2], 0.0, kTolerance);
+    EXPECT_NEAR(p_GV[2], 0.0, kTolerance);
 
     // Verify surface vertices lie within a circle of the expected radius.
     const double surface_radius =
         std::sqrt(radius_ * radius_ - height_ * height_);
-    const double radius = p_SV.norm();  // since z component is zero.
+    const double radius = p_GV.norm();  // since z component is zero.
     EXPECT_LE(radius, surface_radius);
 
     // We expect ∇hₘₙ to point from N towards M.
-    const Vector3<double> grad_h_mn_M = surface.EvaluateGrad_h_MN_M(v);
-    EXPECT_TRUE(CompareMatrices(grad_h_mn_M, expected_grad_h_mn_M, kTolerance));
+    const Vector3<double> grad_h_MN_W = surface.EvaluateGrad_h_MN_W(v);
+    EXPECT_TRUE(CompareMatrices(grad_h_MN_W, expected_grad_h_MN_W, kTolerance));
   }
 
   // The number of models should not change on further queries.

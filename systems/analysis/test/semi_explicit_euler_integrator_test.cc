@@ -23,7 +23,6 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   // Create the integrator.
   SemiExplicitEulerIntegrator<double> integrator(
@@ -45,7 +44,6 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
   SemiExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());
 
@@ -70,7 +68,6 @@ GTEST_TEST(IntegratorTest, RigidBody) {
 
   // Set free_body to have zero translation, zero rotation, and zero velocity.
   auto context = plant.CreateDefaultContext();
-  context->EnableCaching();
   plant.SetDefaultState(*context, &context->get_mutable_state());
 
   // Update the velocity.
@@ -128,7 +125,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
-  context->EnableCaching();
 
   // Setup the integration size and infinity.
   const double dt = 1e-6;

@@ -29,7 +29,7 @@ PortSwitch<T>::PortSwitch(
     const std::shared_ptr<const AbstractValue> model_value_double,
     const std::shared_ptr<const AbstractValue> model_value_autodiff,
     const std::shared_ptr<const AbstractValue> model_value_symbolic)
-    : LeafSystem<T>(SystemTypeTag<systems::PortSwitch>()),
+    : LeafSystem<T>(SystemTypeTag<PortSwitch>()),
       vector_size_(vector_size),
       model_value_double_(model_value_double),
       model_value_autodiff_(model_value_autodiff ? model_value_autodiff

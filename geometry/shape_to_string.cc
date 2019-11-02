@@ -23,6 +23,16 @@ void ShapeToString::ImplementGeometry(const Box& box, void*) {
                         box.height());
 }
 
+void ShapeToString::ImplementGeometry(const Capsule& capsule, void*) {
+  string_ = fmt::format("Capsule(r: {}, l: {})", capsule.get_radius(),
+                        capsule.get_length());
+}
+
+void ShapeToString::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
+  string_ = fmt::format("Ellipsoid(a: {}, b: {}, c: {})", ellipsoid.get_a(),
+                        ellipsoid.get_b(), ellipsoid.get_c());
+}
+
 void ShapeToString::ImplementGeometry(const Mesh& mesh, void*) {
   string_ = fmt::format("Mesh(s: {}, path: {})", mesh.scale(), mesh.filename());
 }

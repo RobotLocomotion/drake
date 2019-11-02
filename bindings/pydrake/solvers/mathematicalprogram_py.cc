@@ -7,7 +7,6 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -162,6 +161,42 @@ class PyFunctionConstraint : public Constraint {
   const AutoDiffFunc autodiff_func_;
 };
 
+// pybind11 trampoline class to permit overriding virtual functions in Python.
+class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
+ public:
+  using Base = py::wrapper<solvers::SolverInterface>;
+
+  PySolverInterface() : Base() {}
+
+  // The following methods are for the pybind11 trampoline class to permit C++
+  // to call the correct Python override. This code path is only activated for
+  // Python implementations of the class (whose inheritance will pass through
+  // `PySolverInterface`). C++ implementations will use the bindings on the
+  // interface below.
+
+  bool available() const override {
+    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, available);
+  }
+
+  void Solve(const solvers::MathematicalProgram& prog,
+      const std::optional<Eigen::VectorXd>& initial_guess,
+      const std::optional<solvers::SolverOptions>& solver_options,
+      solvers::MathematicalProgramResult* result) const override {
+    PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
+        initial_guess, solver_options, result);
+  }
+
+  solvers::SolverId solver_id() const override {
+    PYBIND11_OVERLOAD_PURE(
+        solvers::SolverId, solvers::SolverInterface, solver_id);
+  }
+
+  bool AreProgramAttributesSatisfied(
+      const solvers::MathematicalProgram& prog) const override {
+    PYBIND11_OVERLOAD_PURE(
+        bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
+  }
+};
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
@@ -181,26 +216,39 @@ top-level documentation for :py:mod:`pydrake.math`.
       py::module::import("pydrake.symbolic").attr("Expression");
   py::object formula = py::module::import("pydrake.symbolic").attr("Formula");
 
-  py::class_<SolverInterface>(m, "SolverInterface", doc.SolverInterface.doc)
+  py::class_<SolverInterface, PySolverInterface>(
+      m, "SolverInterface", doc.SolverInterface.doc)
+      .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
+          doc.SolverInterface.ctor.doc)
+      // The following bindings are present to allow Python to call C++
+      // implementations of this interface.
       .def("available", &SolverInterface::available,
           doc.SolverInterface.available.doc)
       .def("solver_id", &SolverInterface::solver_id,
           doc.SolverInterface.solver_id.doc)
       .def("AreProgramAttributesSatisfied",
-          &SolverInterface::AreProgramAttributesSatisfied, py::arg("prog"),
+          [](const SolverInterface& self,
+              const solvers::MathematicalProgram& prog) {
+            return self.AreProgramAttributesSatisfied(prog);
+          },
+          py::arg("prog"),
           doc.SolverInterface.AreProgramAttributesSatisfied.doc)
       .def("Solve",
-          pydrake::overload_cast_explicit<void, const MathematicalProgram&,
-              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&,
-              MathematicalProgramResult*>(&SolverInterface::Solve),
+          [](const SolverInterface& self,
+              const solvers::MathematicalProgram& prog,
+              const std::optional<Eigen::VectorXd>& initial_guess,
+              const std::optional<solvers::SolverOptions>& solver_options,
+              solvers::MathematicalProgramResult* result) {
+            self.Solve(prog, initial_guess, solver_options, result);
+          },
           py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
           py::arg("result"), doc.SolverInterface.Solve.doc)
       .def("Solve",
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.
           [](const SolverInterface& self, const MathematicalProgram& prog,
-              const optional<Eigen::VectorXd>& initial_guess,
-              const optional<SolverOptions>& solver_options) {
+              const std::optional<Eigen::VectorXd>& initial_guess,
+              const std::optional<SolverOptions>& solver_options) {
             MathematicalProgramResult result;
             self.Solve(prog, initial_guess, solver_options, &result);
             return result;
@@ -417,6 +465,12 @@ top-level documentation for :py:mod:`pydrake.math`.
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "X",
           doc.MathematicalProgram.NewIndeterminates.doc_3args)
+      .def("AddIndeterminates", &MathematicalProgram::AddIndeterminates,
+          py::arg("new_indeterminates"),
+          doc.MathematicalProgram.AddIndeterminates.doc)
+      .def("AddDecisionVariables", &MathematicalProgram::AddDecisionVariables,
+          py::arg("decision_variables"),
+          doc.MathematicalProgram.AddDecisionVariables.doc)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&,
@@ -680,6 +734,10 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
+      .def("indeterminates", &MathematicalProgram::indeterminates,
+          doc.MathematicalProgram.indeterminates.doc)
+      .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
+          doc.MathematicalProgram.indeterminate.doc)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
@@ -800,6 +858,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
           doc.MathematicalProgram.SetSolverOption.doc)
+      .def("SetSolverOptions", &MathematicalProgram::SetSolverOptions,
+          doc.MathematicalProgram.SetSolverOptions.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("GetSolverOptions",
           [](MathematicalProgram& prog, SolverId solver_id) {
@@ -850,7 +910,12 @@ top-level documentation for :py:mod:`pydrake.math`.
         .def("get_description", &Class::get_description,
             cls_doc.get_description.doc)
         .def("set_description", &Class::set_description,
-            cls_doc.set_description.doc);
+            cls_doc.set_description.doc)
+        .def("SetGradientSparsityPattern", &Class::SetGradientSparsityPattern,
+            py::arg("gradient_sparsity_pattern"),
+            cls_doc.SetGradientSparsityPattern.doc)
+        .def("gradient_sparsity_pattern", &Class::gradient_sparsity_pattern,
+            cls_doc.gradient_sparsity_pattern.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
@@ -1016,12 +1081,12 @@ top-level documentation for :py:mod:`pydrake.math`.
           "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
       .def("Solve",
           py::overload_cast<const MathematicalProgram&,
-              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
-              &solvers::Solve),
+              const std::optional<Eigen::VectorXd>&,
+              const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
-          py::arg("prog"), py::arg("result"), py::arg("tol") = nullopt,
+          py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
           doc.GetInfeasibleConstraints.doc);
 }  // NOLINT(readability/fn_size)
 

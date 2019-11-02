@@ -416,7 +416,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(IncreasingAccuracyInitialValueProblemTests,
+INSTANTIATE_TEST_SUITE_P(IncreasingAccuracyInitialValueProblemTests,
                         InitialValueProblemAccuracyTest,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 

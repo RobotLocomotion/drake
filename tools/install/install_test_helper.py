@@ -71,12 +71,13 @@ def create_temporary_dir(name='tmp'):
 def get_python_executable():
     """Use appropriate Python executable
 
-    Call python2/3 on MacOS to force using python brew install. Calling python
-    system would result in a crash since pydrake was built against brew python.
-    On other systems, it will just fall-back to the current Python executable.
+    Call /usr/local/bin/python3 on macOS to force using python brew install.
+    Calling python system would result in a crash since pydrake was built
+    against brew python. On other systems, it will just fall-back to the
+    current Python executable.
     """
     if sys.platform == "darwin":
-        return "python{}".format(sys.version_info.major)
+        return "/usr/local/bin/python3"
     else:
         return sys.executable
 

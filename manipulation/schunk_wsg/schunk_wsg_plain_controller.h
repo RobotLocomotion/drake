@@ -10,6 +10,7 @@ namespace schunk_wsg {
 
 enum class ControlMode { kPosition = 0, kForce = 1 };
 
+// N.B. Inheritance order must remain fixed for pydrake (#9243).
 /** This class implements a controller for a Schunk WSG gripper as a
  * `systems::Diagram`. The composition of this diagram is determined by the
  * control mode specified for the controller, which can be either

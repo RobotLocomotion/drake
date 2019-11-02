@@ -5,8 +5,8 @@
 #include <utility>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/test/csdp_test_examples.h"
@@ -19,7 +19,7 @@ namespace internal {
 void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
                           int variable_index, double val_expected) {
   const double val =
-      get<double>(sdpa_free_format.prog_var_in_sdpa()[variable_index]);
+      std::get<double>(sdpa_free_format.prog_var_in_sdpa()[variable_index]);
   EXPECT_EQ(val, val_expected);
 }
 
@@ -27,7 +27,7 @@ void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
                           int variable_index,
                           SdpaFreeFormat::FreeVariableIndex s_index_expected) {
   const SdpaFreeFormat::FreeVariableIndex s_index =
-      get<SdpaFreeFormat::FreeVariableIndex>(
+      std::get<SdpaFreeFormat::FreeVariableIndex>(
           sdpa_free_format.prog_var_in_sdpa()[variable_index]);
   EXPECT_EQ(s_index, s_index_expected);
 }
@@ -35,7 +35,7 @@ void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
 void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
                           int variable_index,
                           const DecisionVariableInSdpaX& val_expected) {
-  const auto val = get<DecisionVariableInSdpaX>(
+  const auto val = std::get<DecisionVariableInSdpaX>(
       sdpa_free_format.prog_var_in_sdpa()[variable_index]);
   EXPECT_EQ(val.coeff_sign, val_expected.coeff_sign);
   EXPECT_EQ(val.offset, val_expected.offset);
@@ -713,7 +713,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   const std::string file_name = temp_directory() + "/sdpa";
   std::cout << file_name << "\n";
   EXPECT_TRUE(GenerateSDPA(prog, file_name));
-  EXPECT_TRUE(spruce::path(file_name + ".dat-s").exists());
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
 
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());

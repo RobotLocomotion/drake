@@ -131,7 +131,9 @@ class QueryObject {
 
   //@}
 
-  /** @name                Collision Queries
+  /**
+   @anchor collision_queries
+   @name                Collision Queries
 
    These queries detect _collisions_ between geometry. Two geometries collide
    if they overlap each other and are not explicitly excluded through
@@ -148,12 +150,20 @@ class QueryObject {
    geometry is penetrating.     */
   //@{
 
-  /** Computes the penetrations across all pairs of geometries in the world.
+  /** Computes the penetrations across all pairs of geometries in the world
+   with the penetrations characterized by pairs of points (see
+   PenetrationAsPointPair), providing some measure of the penetration "depth" of
+   the two objects, but _not_ the overlapping volume.
+
    Only reports results for _penetrating_ geometries; if two geometries are
-   separated, there will be no result for that pair. Pairs of _anchored_
-   geometry are also not reported. The penetration between two geometries is
-   characterized as a point pair (see PenetrationAsPointPair). This method is
-   affected by collision filtering.
+   separated, there will be no result for that pair. Geometries whose surfaces
+   are just touching (osculating) are not considered in penetration. Surfaces
+   whose penetration is within an epsilon of osculation, are likewise not
+   considered penetrating. Pairs of _anchored_ geometry are also not reported.
+   This method is affected by collision filtering.
+
+   For two penetrating geometries g_A and g_B, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner.
 
    <h3>Scalar support</h3>
    This method only provides double-valued penetration results.
@@ -179,19 +189,46 @@ class QueryObject {
    intersection as a ContactSurface. The computation is subject to collision
    filtering.
 
-   @returns A vector populated with contact surfaces of all detected
-            intersecting pairs of geometries.
-   @note  This function is not implemented yet. */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
+   For two intersecting geometries g_A and g_B, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
+   `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
-  //@}
+   In the current incarnation, this function represents the most bare-bones
+   implementation possible.
+
+     - Only collision between spheres and boxes is supported. If an unfiltered
+       geometry pair of any other type pairing cannot be culled in the
+       broadphase an error will be thrown.
+     - The sphere will *always* be considered soft, and the box rigid.
+     - The elasticity modulus for the sphere is hard-coded and arbitrary (but
+       consistent with being a medium rubber).
+     - The sphere's pressure function is is simply: p_0(e) = Ee. Where
+       E = 1e8 N/m^2.
+     - The tessellation of the corresponding meshes will be coarse.
+     - Attempting to invoke this method with T = AutoDiffXd will throw an
+       exception if there are *any* geometry pairs that couldn't be culled.
+
+   In the near future, this behavior will extend to be configurable and more
+   general.
+
+   @returns A vector populated with all detected intersections characterized as
+            contact surfaces.  */
+  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair
    that is *absent* from the results is either a) culled by collision filters or
-   b) *known* to be separated. The  caller is responsible for confirming that
-   the remaining, unculled geometry pairs are *actually* in collision. */
+   b) *known* to be separated. The caller is responsible for confirming that
+   the remaining, unculled geometry pairs are *actually* in collision.
+
+   @returns A vector populated with collision pair candidates. */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
+
+  /** Reports true if there are _any_ collisions between unfiltered pairs in the
+   world.  */
+  bool HasCollisions() const;
+
+  //@}
 
   //---------------------------------------------------------------------------
   // TODO(DamrongGuoy): Write a better documentation for Signed Distance
@@ -245,6 +282,11 @@ class QueryObject {
    This method is affected by collision filtering; geometry pairs that
    have been filtered will not produce signed distance query results.
 
+   For a geometry pair (A, B), the returned results will always be reported in
+   a fixed order (e.g., always (A, B) and never (B, A)). The _basis_ for the
+   ordering is arbitrary (and therefore undocumented), but guaranteed to be
+   fixed and repeatable.
+
    Notice that this is an O(N²) operation, where N
    is the number of geometries remaining in the world after applying collision
    filter. We report the distance between dynamic objects, and between dynamic
@@ -267,8 +309,9 @@ class QueryObject {
 
    @param max_distance  The maximum distance at which distance data is reported.
 
-   @returns The signed distance for all unfiltered geometry pairs whose distance
-            is less than or equal to `max_distance`.  */
+   @returns The signed distance (and supporting data) for all unfiltered
+            geometry pairs whose distance is less than or equal to
+            `max_distance`.  */
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
@@ -357,7 +400,9 @@ class QueryObject {
 
 
   //---------------------------------------------------------------------------
-  /** @name                Render Queries
+  /**
+   @anchor render_queries
+   @name                Render Queries
 
    The methods support queries along the lines of "What do I see?" They support
    simulation of sensors. External entities define a sensor camera -- its

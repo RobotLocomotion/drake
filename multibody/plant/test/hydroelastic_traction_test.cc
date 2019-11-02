@@ -66,29 +66,35 @@ GeometryId FindGeometry(
 
 // Creates a contact surface between the two given geometries.
 std::unique_ptr<ContactSurface<double>> CreateContactSurface(
-    GeometryId halfspace_id, GeometryId block_id) {
-// Create the surface mesh first.
-auto mesh = CreateSurfaceMesh();
+    GeometryId halfspace_id, GeometryId block_id,
+    const math::RigidTransform<double>& X_WH) {
+  // Create the surface mesh first (in the halfspace frame); we'll transform
+  // it to the world frame *after* we use the vertices in the halfspace frame
+  // to determine the hydroelastic pressure.
+  auto mesh = CreateSurfaceMesh();
 
-// Create the "e" field values (i.e., "hydroelastic pressure") using
-// negated "z" values.
-std::vector<double> e_MN(mesh->num_vertices());
-for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+  // Create the "e" field values (i.e., "hydroelastic pressure") using
+  // negated "z" values.
+  std::vector<double> e_MN(mesh->num_vertices());
+  for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
     e_MN[i] = -mesh->vertex(i).r_MV()[2];
 
-// Create the gradient of the "h" field, pointing toward what will be
-// geometry "M" (the halfspace).
-std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
-    Vector3<double>(0, 0, -1));
+  // Now transform the mesh to the world frame, as ContactSurface specifies.
+  mesh->TransformVertices(X_WH);
 
-SurfaceMesh<double>* mesh_pointer = mesh.get();
-return std::make_unique<ContactSurface<double>>(
-    halfspace_id, block_id, std::move(mesh),
-    std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-        "e_MN", std::move(e_MN), mesh_pointer),
-    std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-        "h_MN_M", std::move(h_MN_M), mesh_pointer),
-    RigidTransform<double>::Identity());
+  // Create the gradient of the "h" field, pointing toward what will be
+  // geometry "M" (the halfspace). This field must be expressed in the world
+  // frame.
+  std::vector<Vector3<double>> h_MN_W(mesh->num_vertices(),
+    X_WH.rotation() * Vector3<double>(0, 0, -1));
+
+  SurfaceMesh<double>* mesh_pointer = mesh.get();
+  return std::make_unique<ContactSurface<double>>(
+      halfspace_id, block_id, std::move(mesh),
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e_MN", std::move(e_MN), mesh_pointer),
+      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
+          "h_MN_M", std::move(h_MN_W), mesh_pointer));
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -116,11 +122,11 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   // Note: see Data constructor for description of these parameters.
   void set_calculator_data(
       const RigidTransform<double>& X_WA, const RigidTransform<double>& X_WB,
-      const SpatialVelocity<double>& V_WA, const SpatialVelocity<double>& V_WB,
-      const RigidTransform<double>& X_WM) {
+      const SpatialVelocity<double>& V_WA,
+      const SpatialVelocity<double>& V_WB) {
     calculator_data_ = std::make_unique<HydroelasticTractionCalculator<double>::
         Data>(
-            X_WA, X_WB, V_WA, V_WB, X_WM, &contact_surface());
+            X_WA, X_WB, V_WA, V_WB, &contact_surface());
   }
 
   const ContactSurface<double>& contact_surface() const {
@@ -142,7 +148,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
-    HydroelasticTractionCalculator<double>::TractionAtPointData output =
+    HydroelasticQuadraturePointData<double> output =
         traction_calculator().CalcTractionAtPoint(
             calculator_data(), SurfaceFaceIndex(0),
             SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
@@ -157,7 +163,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     // Verify the point of contact.
     for (int i = 0; i < 3; ++i)
-      ASSERT_NEAR(output.p_WQ[i], p_WQ_expected[i], tol());
+      ASSERT_NEAR(output.p_WQ[i], p_WQ_expected[i], tol()) << i;
 
     const SpatialForce<double> Ft_Ac_W =
         traction_calculator().ComputeSpatialTractionAtAcFromTractionAtAq(
@@ -180,14 +186,10 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   }
 
   void UpdateCalculatorData() {
-    // Get the pose of the Geometry M in the world frame.
-    const auto& query_object = plant_->get_geometry_query_input_port().
-        template Eval<geometry::QueryObject<double>>(*plant_context_);
-    const math::RigidTransform<double> X_WM = query_object.X_WG(
-        contact_surface_->id_M());
-
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
+    const auto& query_object = plant_->get_geometry_query_input_port().
+        template Eval<geometry::QueryObject<double>>(*plant_context_);
     const geometry::FrameId frameM_id = query_object.inspector().GetFrameId(
         contact_surface_->id_M());
     const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(
@@ -208,7 +210,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         *plant_context_, bodyB);
 
     // (Re)-initialize the traction calculator data.
-    set_calculator_data(X_WA, X_WB, V_WA, V_WB, X_WM);
+    set_calculator_data(X_WA, X_WB, V_WA, V_WB);
   }
 
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
@@ -216,8 +218,14 @@ public ::testing::TestWithParam<RigidTransform<double>> {
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
     UpdateCalculatorData();
 
-    traction_calculator_.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        calculator_data(), dissipation, mu_coulomb, F_Ao_W, F_Bo_W);
+    SpatialForce<double> F_Ac_W;
+    std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
+    traction_calculator().ComputeSpatialForcesAtCentroidFromHydroelasticModel(
+        calculator_data(), dissipation, mu_coulomb, &quadrature_point_data,
+        &F_Ac_W);
+
+    traction_calculator().ShiftSpatialForcesAtCentroidToBodyOrigins(
+        calculator_data(), F_Ac_W, F_Ao_W, F_Bo_W);
   }
 
  private:
@@ -242,10 +250,6 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     plant_context_ =
         &diagram_->GetMutableSubsystemContext(plant, context_.get());
 
-    GeometryId halfspace_id = internal::FindGeometry(plant, "ground");
-    GeometryId block_id = internal::FindGeometry(plant, "box");
-    contact_surface_ = CreateContactSurface(halfspace_id, block_id);
-
     // See class documentation for description of Frames Y, B, and H.
     const RigidTransform<double>& X_WY = GetParam();
     const auto& X_YH = RigidTransform<double>::Identity();
@@ -254,6 +258,10 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const RigidTransform<double> X_WB = X_WY * X_YB;
     plant.SetFreeBodyPose(plant_context_, plant.GetBodyByName("ground"), X_WH);
     plant.SetFreeBodyPose(plant_context_, plant.GetBodyByName("box"), X_WB);
+
+    GeometryId halfspace_id = internal::FindGeometry(plant, "ground");
+    GeometryId block_id = internal::FindGeometry(plant, "box");
+    contact_surface_ = CreateContactSurface(halfspace_id, block_id, X_WH);
   }
 
   const double tol_{10 * std::numeric_limits<double>::epsilon()};
@@ -569,8 +577,6 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const RigidTransform<double>& X_WY = GetParam();
     const RigidTransform<double> X_YA = RigidTransform<double>::Identity();
     const RigidTransform<double> X_YB = RigidTransform<double>::Identity();
-    const RigidTransform<double> X_YM = RigidTransform<double>::Identity();
-    const RigidTransform<double> X_MN = RigidTransform<double>::Identity();
 
     // Note: this test does not require valid GeometryIds.
     const GeometryId null_id;
@@ -578,7 +584,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
 
-    // Create the "e" field values (i.e., "hydroelastic pressure").
+    // Create the e field values (i.e., "hydroelastic pressure").
     std::vector<double> e_MN(mesh->num_vertices());
     for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
       e_MN[i] = pressure(mesh->vertex(i).r_MV());
@@ -586,7 +592,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Set the gradient of the "h" field. Note that even though this pressure
     // field is normalized, the "h" need not be (it's always normalized before
     // use).
-    std::vector<Vector3<double>> h_MN_M(
+    std::vector<Vector3<double>> h_MN_W(
         mesh->num_vertices(), pressure_field_normal());
 
     SurfaceMesh<double>* mesh_pointer = mesh.get();
@@ -595,8 +601,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_M", std::move(h_MN_M), mesh_pointer),
-      X_MN);
+          "h_MN_W", std::move(h_MN_W), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body
     // free so that we can test the slip velocity. Additionally, we'll
@@ -612,14 +617,13 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Convert all quantities to the world frame.
     const RigidTransform<double> X_WA = X_WY * X_YA;
     const RigidTransform<double> X_WB = X_WY * X_YB;
-    const RigidTransform<double> X_WM = X_WY * X_YM;
     const SpatialVelocity<double> V_WA = X_WY.rotation() * V_YA;
     const SpatialVelocity<double> V_WB = X_WY.rotation() * V_YB;
 
     // Set the calculator data.
     calculator_data_ = std::make_unique<
         HydroelasticTractionCalculator<double>::Data>(
-            X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface_.get());
+            X_WA, X_WB, V_WA, V_WB, contact_surface_.get());
   }
 
   const double tol_{10 * std::numeric_limits<double>::epsilon()};
@@ -627,137 +631,6 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   std::unique_ptr<HydroelasticTractionCalculator<double>::Data>
       calculator_data_;
 };
-
-// Tests that the traction reporting is accurate. Note that this test only needs
-// to check whether the field is set correctly; tests for traction are handled
-// elsewhere in this file.
-TEST_P(HydroelasticReportingTests, LinearTraction) {
-  // Nonzero values for dissipation and Coulomb friction will only serve to make
-  // the traction harder to interpret. We only need to assess the normal
-  // traction to ensure that the field has been set correctly.
-  const double dissipation = 0.0;
-  const double mu_coulomb = 0.0;
-
-  // Create the fields.
-  HydroelasticTractionCalculator<double> calculator;
-  HydroelasticTractionCalculator<double>::ContactReportingFields fields =
-      calculator.CreateReportingFields(
-          calculator_data(), dissipation, mu_coulomb);
-
-  // Test the traction at the vertices of the contact surface.
-  for (SurfaceVertexIndex(i);
-      i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    // Evaluate the traction at vertex i on Body A (the body to which geometry
-    // M is attached).
-    const Vector3<double> traction_Av_W =
-       fields.traction_A_W->EvaluateAtVertex(i);
-
-    // Get the normal to the contact surface at the point. The test below will
-    // rely upon the assumption (specified in the construction of the field)
-    // that this vector is normalized.
-    const Vector3<double> normal_M =
-        calculator_data().surface.EvaluateGrad_h_MN_M(i);
-    EXPECT_NEAR(normal_M.norm(), 1.0, tol());
-
-    // Check the pressure is evaluated in accordance with how we constructed it.
-    const Vector3<double>& r_MV =
-        calculator_data().surface.mesh().vertex(i).r_MV();
-    const Vector3<double> r_WV = calculator_data().X_WM * r_MV;
-    EXPECT_LT((traction_Av_W - normal_M * pressure(r_WV)).norm(), tol());
-  }
-
-  // Test the traction at the centroid of the contact surface. This should just
-  // be the mean of the tractions at the vertices since (a) the pressure field
-  // is linear and (b) there is no sliding velocity.
-  // 1. Compute the mean of the tractions at the vertices.
-  Vector3<double> expected_traction_A_W = Vector3<double>::Zero();
-  for (SurfaceVertexIndex(i);
-      i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    expected_traction_A_W += fields.traction_A_W->EvaluateAtVertex(i);
-  }
-  expected_traction_A_W /= calculator_data().surface.mesh().num_vertices();
-  // 2. Compute the traction at the centroid of the contact surface. Note that
-  //    we use SurfaceFaceIndex zero arbitrarily- the centroid is located on
-  //    both faces in this particular instance.
-  const SurfaceMesh<double>::Barycentric b_MC =
-      calculator_data().surface.mesh().CalcBarycentric(
-          calculator_data().surface.mesh().centroid(), SurfaceFaceIndex(0));
-  const Vector3<double> traction_Ac_W = fields.traction_A_W->Evaluate(
-      SurfaceFaceIndex(0), b_MC);
-
-  // Check that the two are approximately equal.
-  for (int i = 0; i < 3; ++i)
-    EXPECT_NEAR(expected_traction_A_W[i], traction_Ac_W[i], tol());
-}
-
-// Tests that the slip velocity reporting is consistent with the values computed
-// by the HydroelasticTractionCalculator. Note that this test only needs to
-// check whether the field is set correctly; tests for traction are handled
-// elsewhere in this file.
-TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
-  // Dissipation and Coulomb friction will not even be used in this test. Set
-  // the values to NaN to prove it.
-  const double nan = std::numeric_limits<double>::quiet_NaN();
-  const double dissipation = nan;
-  const double mu_coulomb = nan;
-
-  // Create the fields.
-  HydroelasticTractionCalculator<double> calculator;
-  HydroelasticTractionCalculator<double>::ContactReportingFields fields =
-      calculator.CreateReportingFields(
-          calculator_data(), dissipation, mu_coulomb);
-
-  // Test the slip velocity at the vertices of the contact surface.
-  const SurfaceMesh<double>& mesh = calculator_data().surface.mesh();
-  for (SurfaceVertexIndex(i); i < mesh.num_vertices(); ++i) {
-    // Compute the vertex location (V) in the world frame.
-    const Vector3<double>& p_MV = mesh.vertex(i).r_MV();
-    const Vector3<double> p_WV = calculator_data().X_WM * p_MV;
-
-    // Get the normal from Geometry M to Geometry N, expressed in the world
-    // frame to the contact surface at Point Q. By extension, this means that
-    // the normal points from Body A to Body B.
-    const Vector3<double> h_M =
-        calculator_data().surface.EvaluateGrad_h_MN_M(i);
-    const Vector3<double> nhat_M = h_M.normalized();
-    const Vector3<double> nhat_W = calculator_data().X_WM.rotation() * nhat_M;
-
-    // First compute the spatial velocity of Body A at Av.
-    const Vector3<double> p_AoAv_W =
-        p_WV - calculator_data().X_WA.translation();
-    const SpatialVelocity<double> V_WAv =
-        calculator_data().V_WA.Shift(p_AoAv_W);
-
-    // Next compute the spatial velocity of Body B at Bq.
-    const Vector3<double> p_BoBv_W =
-        p_WV - calculator_data().X_WB.translation();
-    const SpatialVelocity<double> V_WBv =
-        calculator_data().V_WB.Shift(p_BoBv_W);
-
-    // Compute the relative velocity between the bodies at the vertex.
-    const multibody::SpatialVelocity<double> V_BvAv_W = V_WAv - V_WBv;
-    const Vector3<double>& v_BvAv_W = V_BvAv_W.translational();
-    const double vn_BvAv_W = v_BvAv_W.dot(nhat_W);
-
-    // Compute the slip velocity.
-    const Vector3<double> vt_BvAv_W = v_BvAv_W - nhat_W * vn_BvAv_W;
-
-    // Check against the reported slip velocity.
-    const Vector3<double> vt_BvAv_W_reported =
-        fields.vslip_AB_W->EvaluateAtVertex(i);
-    EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol());
-  }
-
-  // Test the slip velocity at the centroid of the contact surface. As long as
-  // the centroid lies directly below the body's center-of-mass, the slip
-  // velocity will be zero. The face index below is arbitrary; the centroid
-  // lies on the edge of both triangles.
-  const SurfaceMesh<double>::Barycentric b_MC =
-      mesh.CalcBarycentric(mesh.centroid(), SurfaceFaceIndex(0));
-  const Vector3<double> vt_BcAc_W = fields.vslip_AB_W->Evaluate(
-      SurfaceFaceIndex(0), b_MC);
-  EXPECT_LT(vt_BcAc_W.norm(), tol());
-}
 
 // These transformations, denoted X_WY, are passed as parameters to the tests
 // to allow changing the absolute (but not relative) poses of the two bodies.
@@ -768,40 +641,89 @@ const RigidTransform<double> poses[] = {
         drake::Vector3<double>(1, 2, 3))
 };
 
-INSTANTIATE_TEST_CASE_P(PoseInstantiations,
+INSTANTIATE_TEST_SUITE_P(PoseInstantiations,
                         MultibodyPlantHydroelasticTractionTests,
                         ::testing::ValuesIn(poses));
 
-// Verifies that the HydroelasticContactInfo structure can be created.
-GTEST_TEST(Hydroelastics, ContactInfo) {
-  // Create the contact surface using a duplicated arbitrary ID: geometry IDs
-  // are irrelevant for this test.
+// TODO(edrumwri) Break the tests below out into a separate file.
+
+// Returns a distinct spatial force.
+SpatialForce<double> MakeSpatialForce() {
+  return SpatialForce<double>(Vector3<double>(1, 2, 3),
+                              Vector3<double>(4, 5, 6));
+}
+
+// Returns a distinct vector (containing a single element) of quadrature point
+// data.
+std::vector<HydroelasticQuadraturePointData<double>> GetQuadraturePointData() {
+  HydroelasticQuadraturePointData<double> data;
+  data.p_WQ = Vector3<double>(3.0, 5.0, 7.0);
+  data.face_index = SurfaceFaceIndex(1);
+  data.vt_BqAq_W = Vector3<double>(11.0, 13.0, 17.0);
+  data.traction_Aq_W = Vector3<double>(19.0, 23.0, 29.0);
+  return { data };
+}
+
+HydroelasticContactInfo<double> CreateContactInfo(
+    std::unique_ptr<ContactSurface<double>>* contact_surface,
+    std::unique_ptr<HydroelasticContactInfo<double>>* contact_info) {
+  // Create the contact surface using a duplicated arbitrary ID and identity
+  // pose; pose and geometry IDs are irrelevant for this test.
   GeometryId arbitrary_id = GeometryId::get_new_id();
-  std::unique_ptr<ContactSurface<double>> contact_surface =
-      CreateContactSurface(arbitrary_id, arbitrary_id);
+  *contact_surface = CreateContactSurface(arbitrary_id, arbitrary_id,
+          RigidTransform<double>::Identity());
 
-  // Create the calculator data, populated with dummy values since we're only
-  // testing that the structure can be created.
-  const RigidTransform<double> X_WA = RigidTransform<double>::Identity();
-  const RigidTransform<double> X_WB = RigidTransform<double>::Identity();
-  const RigidTransform<double> X_WM = RigidTransform<double>::Identity();
-  const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
-  const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
-  HydroelasticTractionCalculator<double>::Data data(
-      X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface.get());
+  // Create the HydroelasticContactInfo using particular spatial force and
+  // quadrature point data.
+  std::vector<HydroelasticQuadraturePointData<double>>
+      quadrature_point_data = GetQuadraturePointData();
+  return HydroelasticContactInfo<double>(contact_surface->get(),
+                                         MakeSpatialForce(),
+                                         std::move(quadrature_point_data));
+}
 
-  // Material properties are also dummies (the test will be unaffected by their
-  // settings).
-  const double dissipation = 0.0;
-  const double mu_coulomb = 0.0;
+// Verifies that the HydroelasticContactInfo structure uses the raw pointer
+// and the unique pointer, as appropriate, on copy construction.
+GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
+  std::unique_ptr<ContactSurface<double>> contact_surface;
+  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
+  HydroelasticContactInfo<double> copy =
+      CreateContactInfo(&contact_surface, &contact_info);
 
-  // Create the HydroelasticContactInfo and validate the contact surface pointer
-  // is correct. Correctness of field values is validated elsewhere in this
-  // file.
-  HydroelasticTractionCalculator<double> calculator;
-  HydroelasticContactInfo<double> contact_info = calculator.ComputeContactInfo(
-      data, dissipation, mu_coulomb);
-  EXPECT_EQ(&contact_info.contact_surface(), contact_surface.get());
+  // Verify that copy construction used the raw pointer.
+  EXPECT_EQ(contact_surface.get(), &copy.contact_surface());
+
+  // Copy it again and make sure that the surface is new.
+  HydroelasticContactInfo<double> copy2 = copy;
+  EXPECT_NE(contact_surface.get(), &copy2.contact_surface());
+
+  // Verify that the spatial force was copied.
+  EXPECT_EQ(copy.F_Ac_W().translational(), MakeSpatialForce().translational());
+  EXPECT_EQ(copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
+
+  // Verify that the quadrature point data was copied.
+  EXPECT_EQ(copy.quadrature_point_data(), GetQuadraturePointData());
+}
+
+// Verifies that the HydroelasticContactInfo structure transfers ownership of
+// the ContactSurface.
+GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
+  std::unique_ptr<ContactSurface<double>> contact_surface;
+  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
+  HydroelasticContactInfo<double> copy =
+      CreateContactInfo(&contact_surface, &contact_info);
+  HydroelasticContactInfo<double> moved_copy = std::move(copy);
+
+  // Verify that the move construction retained the raw pointer.
+  EXPECT_EQ(contact_surface.get(), &moved_copy.contact_surface());
+
+  // Verify that the spatial force was copied.
+  EXPECT_EQ(moved_copy.F_Ac_W().translational(),
+            MakeSpatialForce().translational());
+  EXPECT_EQ(moved_copy.F_Ac_W().rotational(), MakeSpatialForce().rotational());
+
+  // Verify that the quadrature point data was copied.
+  EXPECT_EQ(moved_copy.quadrature_point_data(), GetQuadraturePointData());
 }
 
 }  // namespace internal

@@ -41,7 +41,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//math:wrap_to",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/framework",
@@ -215,6 +215,7 @@ drake_cc_googletest(
     deps = [
         ":linear_quadratic_regulator",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -223,6 +224,7 @@ drake_cc_googletest(
     deps = [
         ":pid_controlled_system",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -231,6 +233,7 @@ drake_cc_googletest(
     deps = [
         ":pid_controller",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

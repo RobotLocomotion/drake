@@ -69,7 +69,6 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
@@ -91,7 +90,6 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
@@ -122,7 +120,8 @@ drake_pybind_library(
     name = "inverse_kinematics_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
     ],
     cc_srcs = ["inverse_kinematics_py.cc"],
     package_info = PACKAGE_INFO,
@@ -131,23 +130,6 @@ drake_pybind_library(
         ":plant_py",
         "//bindings/pydrake/solvers:mathematicalprogram_py",
     ],
-)
-
-PY_LIBRARIES_ATTIC_ALIASES = [
-    ":collision_py",
-    ":joints_py",
-    ":parsers_py",
-    ":rigid_body_plant_py",
-    ":rigid_body_py",
-    ":rigid_body_tree_py",
-    ":shapes_py",
-]
-
-drake_py_library_aliases(
-    actual_subdir = "bindings/pydrake/attic/multibody",
-    add_deprecation_warning = 1,
-    deprecation_removal_date = "2019-10-01",
-    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
@@ -159,7 +141,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":tree_py",
 ]
 
-PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
+PY_LIBRARIES = [
     ":module_py",
 ]
 

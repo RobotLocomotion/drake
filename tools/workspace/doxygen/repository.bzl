@@ -27,7 +27,6 @@ def _impl(repo_ctx):
     archive = "doxygen-{version}-{codename}-x86_64.tar.gz".format(
         version = version,
         codename = {
-            "16.04": "xenial",
             "18.04": "bionic",
         }[os_result.ubuntu_release],
     )
@@ -36,12 +35,12 @@ def _impl(repo_ctx):
         for pattern in repo_ctx.attr.mirrors.get("doxygen")
     ]
     sha256 = {
-        "16.04": "7b0a11bab077b8aa677aad09ca89d978ef2e75b56742a4b6870d064c8bd6d4bc",  # noqa
         "18.04": "16b4ce1fcee27495c0de23dc4a2ab9bd24ee218800a2fb0db17a9c5bf8955e4e",  # noqa
     }[os_result.ubuntu_release]
     repo_ctx.download_and_extract(
         url = url,
         sha256 = sha256,
+        type = "tar.gz",
     )
 
 doxygen_repository = repository_rule(

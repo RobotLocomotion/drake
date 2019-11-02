@@ -2,17 +2,19 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <iostream>
+#include <optional>
 #include <sstream>
 #include <utility>
 #include <vector>
 
-#include <spruce.hh>
 #include <tinydir.h>
 #include <tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -32,7 +34,7 @@ PackageMap::PackageMap() {}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
   DRAKE_THROW_UNLESS(map_.count(package_name) == 0);
-  if (!spruce::path(package_path).exists()) {
+  if (!filesystem::is_directory(package_path)) {
     throw std::runtime_error(
         "Could not add package://" + package_name + " to the search path "
         "because directory " + package_path + " does not exist");
@@ -68,18 +70,20 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
 
 namespace {
 
-// Returns true if @p directory has a package.xml file.
-bool HasPackageXmlFile(const string& directory) {
+// Returns the package.xml file in the given directory, if any.
+std::optional<filesystem::path> GetPackageXmlFile(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
-  spruce::path spruce_path(directory);
-  spruce_path.append("package.xml");
-  return spruce_path.exists();
+  filesystem::path filename = filesystem::path(directory) / "package.xml";
+  if (filesystem::is_regular_file(filename)) {
+    return filename;
+  }
+  return std::nullopt;
 }
 
 // Returns the parent directory of @p directory.
 string GetParentDirectory(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
-  return spruce::path(directory).root();
+  return filesystem::path(directory).parent_path().string();
 }
 
 // Parses the package.xml file specified by package_xml_file. Finds and returns
@@ -141,10 +145,8 @@ void PackageMap::PopulateUpstreamToDrakeHelper(
   }
 
   // If there is a new package.xml file, then add it.
-  if (HasPackageXmlFile(directory)) {
-    spruce::path spruce_path(directory);
-    spruce_path.append("package.xml");
-    const string package_name = GetPackageName(spruce_path.getStr());
+  if (auto filename = GetPackageXmlFile(directory)) {
+    const string package_name = GetPackageName(filename->string());
     AddPackageIfNew(package_name, directory);
   }
 
@@ -157,8 +159,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   DRAKE_DEMAND(!model_file.empty());
 
   // Verify that the model_file names an URDF or SDF file.
-  spruce::path spruce_path(model_file);
-  string extension = spruce_path.extension();
+  string extension = filesystem::path(model_file).extension().string();
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  ::tolower);
   if (extension != ".urdf" && extension != ".sdf") {
@@ -166,10 +167,10 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
         "The file type '{}' is not supported for '{}'",
         extension, model_file));
   }
-  const string model_dir = spruce_path.root();
+  const string model_dir = filesystem::path(model_file).parent_path();
 
   // Bail out if the model file is not part of Drake.
-  const optional<string> maybe_drake_path = MaybeGetDrakePath();
+  const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
   if (!maybe_drake_path) {
     return;
   }
@@ -182,7 +183,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   }
 
   // Search the directory containing the model_file and "upstream".
-  PopulateUpstreamToDrakeHelper(spruce_path.root(), drake_path);
+  PopulateUpstreamToDrakeHelper(model_dir, drake_path);
 }
 
 void PackageMap::CrawlForPackages(const string& path) {
@@ -217,9 +218,9 @@ void PackageMap::CrawlForPackages(const string& path) {
         CrawlForPackages(file.path);
       } else if (file.name == target_filename) {
         const string package_name = GetPackageName(file.path);
-        spruce::path spruce_path(file.path);
-        const string package_path = spruce_path.root().append("/");
-        AddPackageIfNew(package_name, package_path);
+        const string package_path =
+            filesystem::path(file.path).parent_path().string();
+        AddPackageIfNew(package_name, package_path + "/");
       }
       tinydir_next(&dir);
     }

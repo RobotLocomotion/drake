@@ -94,6 +94,13 @@ drake_py_library(
     name = "deprecation_py",
     srcs = ["deprecation.py"],
     imports = PACKAGE_INFO.py_imports,
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        # Allow Drake's Jupyter scaffolding to import this module directly,
+        # without also importing all of pydrake. This is only sound because
+        # none of the transitive `deps` of this target use C++ code.
+        "//tools/jupyter:__pkg__",
+    ],
 )
 
 # N.B. Since `module_py` incorporates `deprecation_py`, C++ Python libraries
@@ -164,6 +171,7 @@ drake_pybind_library(
     cc_deps = [
         ":cpp_template_pybind",
         ":default_scalars_pybind",
+        ":deprecation_pybind",
         ":eigen_geometry_pybind",
         ":type_pack",
     ],
@@ -234,6 +242,11 @@ drake_cc_library(
     name = "drake_optional_pybind",
     hdrs = ["drake_optional_pybind.h"],
     declare_installed_headers = 0,
+    deprecation = " ".join([
+        "//bindings/pydrake/common:drake_optional_pybind is deprecated and",
+        "will be removed on 2020-02-01.",
+    ]),
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//:drake_shared_library"],
 )
@@ -241,6 +254,19 @@ drake_cc_library(
 drake_cc_library(
     name = "drake_variant_pybind",
     hdrs = ["drake_variant_pybind.h"],
+    declare_installed_headers = 0,
+    deprecation = " ".join([
+        "//bindings/pydrake/common:drake_variant_pybind is deprecated and",
+        "will be removed on 2020-02-01.",
+    ]),
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_cc_library(
+    name = "sorted_pair_pybind",
+    hdrs = ["sorted_pair_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = ["//:drake_shared_library"],
@@ -437,6 +463,7 @@ drake_py_unittest(
     name = "cpp_template_test",
     deps = [
         ":cpp_template_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 
@@ -449,14 +476,6 @@ drake_pybind_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
-)
-
-drake_pybind_cc_googletest(
-    name = "drake_variant_pybind_test",
-    cc_deps = [
-        ":drake_variant_pybind",
-        "//bindings/pydrake:test_util_pybind",
-    ],
 )
 
 drake_pybind_library(
@@ -475,7 +494,7 @@ drake_py_unittest(
     deps = [
         ":eigen_geometry_py",
         ":eigen_geometry_test_util_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

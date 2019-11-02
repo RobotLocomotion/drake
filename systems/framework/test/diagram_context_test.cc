@@ -9,6 +9,7 @@
 
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -639,7 +640,7 @@ TEST_F(DiagramContextTest, DiagramState) {
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {
-  EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
+  DRAKE_EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
       {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
       {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
 }

@@ -1,11 +1,8 @@
 #include "drake/common/find_runfiles.h"
 
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include <cstdlib>
-#include <fstream>
 #include <memory>
+#include <stdexcept>
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -15,13 +12,13 @@
 #include "tools/cpp/runfiles/runfiles.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 
 using bazel::tools::cpp::runfiles::Runfiles;
 
 namespace drake {
-namespace internal {
 namespace {
 
 // Replace `nullptr` with `"nullptr",` or else just return `arg` unchanged.
@@ -67,7 +64,8 @@ RunfilesSingleton Create() {
     argv0 = argv0.c_str();  // Remove trailing nil bytes.
     drake::log()->debug("_NSGetExecutablePath = {}", argv0);
 #else
-    const std::string& argv0 = Readlink("/proc/self/exe");
+    const std::string& argv0 = filesystem::read_symlink({
+        "/proc/self/exe"}).string();
     drake::log()->debug("readlink(/proc/self/exe) = {}", argv0);
 #endif
     result.runfiles.reset(Runfiles::Create(argv0, &bazel_error));
@@ -86,7 +84,7 @@ RunfilesSingleton Create() {
     if (result.runfiles_dir.empty()) {
       bazel_error = "RUNFILES_DIR was not provided by the Runfiles object";
       result.runfiles.reset();
-    } else if (!IsDir(result.runfiles_dir)) {
+    } else if (!filesystem::is_directory({result.runfiles_dir})) {
       bazel_error = fmt::format(
           "RUNFILES_DIR '{}' does not exist", result.runfiles_dir);
       result.runfiles.reset();
@@ -156,8 +154,8 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
   // Locate the file on the manifest and in the directory.
   const std::string by_man = singleton.runfiles->Rlocation(resource_path);
   const std::string by_dir = singleton.runfiles_dir + "/" + resource_path;
-  const bool by_man_ok = IsFile(by_man);
-  const bool by_dir_ok = IsFile(by_dir);
+  const bool by_man_ok = filesystem::is_regular_file({by_man});
+  const bool by_dir_ok = filesystem::is_regular_file({by_dir});
   drake::log()->debug(
       "FindRunfile found by-manifest '{}' ({}) and by-directory '{}' ({})",
       by_man, by_man_ok ? "good" : "bad", by_dir, by_dir_ok ? "good" : "bad");
@@ -195,35 +193,4 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
   return result;
 }
 
-bool IsFile(const std::string& filesystem_path) {
-  struct stat attributes{};
-  int error = stat(filesystem_path.c_str(), &attributes);
-  if (error) { return false; }
-  return S_ISREG(attributes.st_mode);
-}
-
-bool IsDir(const std::string& filesystem_path) {
-  struct stat attributes{};
-  int error = stat(filesystem_path.c_str(), &attributes);
-  if (error) { return false; }
-  return S_ISDIR(attributes.st_mode);
-}
-
-std::string Readlink(const std::string& pathname) {
-  std::string result;
-  result.resize(4096);
-  ssize_t length = ::readlink(pathname.c_str(), &result.front(), result.size());
-  if (length < 0) {
-    throw std::runtime_error(fmt::format(
-        "Could not open {}", pathname));
-  }
-  if (length >= static_cast<ssize_t>(result.size())) {
-    throw std::runtime_error(
-        fmt::format("Could not readlink {} (too long)", pathname));
-  }
-  result.resize(length);
-  return result;
-}
-
-}  // namespace internal
 }  // namespace drake

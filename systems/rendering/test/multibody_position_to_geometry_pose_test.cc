@@ -40,7 +40,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
       // The world geometry will not appear in the poses.
       continue;
     }
-    const optional<geometry::FrameId> id = mbp.GetBodyFrameIdIfExists(i);
+    const std::optional<geometry::FrameId> id = mbp.GetBodyFrameIdIfExists(i);
     EXPECT_TRUE(id.has_value());
     EXPECT_TRUE(output.has_id(id.value()));
   }

@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/sorted_pair.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
@@ -245,7 +246,7 @@ TEST_F(IdentifierTests, InvalidHash) {
   }
   std::unordered_set<AId> ids;
   AId invalid;
-  EXPECT_NO_THROW(ids.insert(invalid));
+  DRAKE_EXPECT_NO_THROW(ids.insert(invalid));
 }
 
 // Streaming an invalid id is an error.

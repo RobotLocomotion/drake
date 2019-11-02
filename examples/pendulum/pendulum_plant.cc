@@ -10,8 +10,7 @@ namespace pendulum {
 
 template <typename T>
 PendulumPlant<T>::PendulumPlant()
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
+    : systems::LeafSystem<T>(systems::SystemTypeTag<PendulumPlant>{}) {
   this->DeclareVectorInputPort("tau", PendulumInput<T>());
   this->DeclareVectorOutputPort("state", &PendulumPlant::CopyStateOut,
                                 {this->all_state_ticket()});

@@ -45,21 +45,6 @@ class RigidBodyTreeAliasGroups {
       : tree_(*tree) {}
 
   /**
-   * Parses body groups and joint groups from a config file.
-   *
-   * @param config Path to text-format AliasGroups file.
-   *
-   * @throws std::logic_error if body_namei or joint_namei cannot be found in
-   * the RigidBodyTree provided at construction time.
-   * @throws std::runtime_error if joint names or body names cannot be parsed
-   * correctly.
-   */
-  DRAKE_DEPRECATED("2019-10-01",
-      "Loading of alias_groups files is deprecated. "
-      "Construct the groups using C++ API calls instead.")
-  void LoadFromFile(const std::string& path);
-
-  /**
    * Creates a body group named @p group_name whose elements have names from
    * @p body_names. If a group named @p group_name already exists, @p body_names
    * is appended to the end of the existing group. The resulting group will not

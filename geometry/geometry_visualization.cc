@@ -63,6 +63,8 @@ class ShapeToLcm : public ShapeReifier {
     return geometry_data_;
   }
 
+  using ShapeReifier::ImplementGeometry;
+
   void ImplementGeometry(const Sphere& sphere, void*) override {
     geometry_data_.type = geometry_data_.SPHERE;
     geometry_data_.num_float_data = 1;
@@ -105,6 +107,15 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(box.width()));
     geometry_data_.float_data.push_back(static_cast<float>(box.depth()));
     geometry_data_.float_data.push_back(static_cast<float>(box.height()));
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void*) override {
+    geometry_data_.type = geometry_data_.CAPSULE;
+    geometry_data_.num_float_data = 2;
+    geometry_data_.float_data.push_back(
+        static_cast<float>(capsule.get_radius()));
+    geometry_data_.float_data.push_back(
+        static_cast<float>(capsule.get_length()));
   }
 
   void ImplementGeometry(const Mesh& mesh, void*) override {
@@ -313,11 +324,6 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
   return ConnectDrakeVisualizer(builder, scene_graph,
                                 scene_graph.get_pose_bundle_output_port(), lcm,
                                 role);
-}
-
-IllustrationProperties MakeDrakeVisualizerProperties(
-    const Vector4<double>& diffuse) {
-  return MakePhongIllustrationProperties(diffuse);
 }
 
 }  // namespace geometry

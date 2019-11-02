@@ -136,9 +136,11 @@ AddBrickStaticEquilibriumConstraint(
   // Add the linear constraint that the contact force is within the friction
   // cone.
   for (int i = 0; i < num_contacts; ++i) {
+    const double friction_cone_shrink_factor = 1;
     AddFrictionConeConstraint(gripper_brick_system,
                               finger_face_contacts[i].first,
-                              finger_face_contacts[i].second, f_Cb_B, prog);
+                              finger_face_contacts[i].second, f_Cb_B,
+                              friction_cone_shrink_factor, prog);
   }
 
   return f_Cb_B;

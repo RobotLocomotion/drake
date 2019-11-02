@@ -1,28 +1,26 @@
 #pragma once
 
-/// @file
-/// Provides drake::variant as an alias for the appropriate implementation of
-/// std::variant or stx::variant for the C++ toolchain being used.
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning "drake/common/drake_variant.h" and drake::variant are deprecated and will be removed on or after 2020-02-01. Please use <variant> and std::variant instead.
 
-// For now, #include <stx/variant.hpp> via drake_optional.h; there is a lot of
-// ceremony to include it correctly, which we only want to repeat once.
-#include "drake/common/drake_optional.h"
+/// @file
+/// Provides drake::variant as a deprecated alias for std::variant.
+
+#include <variant>
+
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 
-#ifdef STX_NO_STD_VARIANT
 template <typename... Types>
-using variant = stx::variant<Types...>;
-using stx::get;
-using stx::holds_alternative;
-#else
-template <typename... Types>
-using variant = std::variant<Types...>;
-using std::get;
-using std::holds_alternative;
-#endif
+using variant
+    DRAKE_DEPRECATED("2020-02-01", "Please use std::variant instead.")
+    = std::variant<Types...>;
 
-// N.B. We don't alias stx::get_if, because it's signature (reference argument)
-// differs from what was standardized (pointer argument).
+// DRAKE_DEPRECATED 2020-02-01 Please use std::get instead.
+using std::get;
+
+// DRAKE_DEPRECATED 2020-02-01 Please use std::holds_alternative instead.
+using std::holds_alternative;
 
 }  // namespace drake

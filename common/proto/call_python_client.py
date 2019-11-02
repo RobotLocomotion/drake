@@ -37,9 +37,10 @@ Note:
     Occasionally, the plotting will not come through on the notebook. I (Eric)
     am unsure why.
 """
-from __future__ import print_function
+
 import argparse
 import os
+from queue import Queue
 import signal
 import stat
 import sys
@@ -51,11 +52,9 @@ import traceback
 # @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
 from google.protobuf.internal.decoder import _DecodeVarint32
 import numpy as np
-import six
-from six import text_type as unicode
-from six.moves.queue import Queue
 
-from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+from drake.common.proto.python_remote_message_pb2 import (
+    PythonRemoteData, PythonRemoteMessage)
 
 
 def _ensure_sigint_handler():
@@ -113,7 +112,7 @@ def _get_required_helpers(scope_locals):
         """Create a scalar or tuple for accessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, unicode):
+            if isinstance(arg, str):
                 out[i] = _make_slice(arg)
             else:
                 out[i] = arg
@@ -339,13 +338,14 @@ class CallPythonClient(object):
         # Converts a protobuf argument to the appropriate NumPy array (or
         # scalar).
         np_raw = np.frombuffer(arg.data, dtype=dtype)
-        if arg.shape_type == MatlabArray.SCALAR:
+        if arg.shape_type == PythonRemoteData.SCALAR:
             assert arg.cols == 1 and arg.rows == 1
             return np_raw[0]
-        elif arg.shape_type == MatlabArray.VECTOR:
+        elif arg.shape_type == PythonRemoteData.VECTOR:
             assert arg.cols == 1
             return np_raw.reshape(arg.rows)
-        elif arg.shape_type is None or arg.shape_type == MatlabArray.MATRIX:
+        elif arg.shape_type is None or \
+                arg.shape_type == PythonRemoteData.MATRIX:
             # TODO(eric.cousineau): Figure out how to ensure `np.frombuffer`
             # creates a column-major array?
             return np_raw.reshape(arg.cols, arg.rows).T
@@ -373,20 +373,20 @@ class CallPythonClient(object):
         for i, arg in enumerate(args):
             arg_raw = arg.data
             value = None
-            if arg.type == MatlabArray.REMOTE_VARIABLE_REFERENCE:
+            if arg.type == PythonRemoteData.REMOTE_VARIABLE_REFERENCE:
                 id = np.frombuffer(arg_raw, dtype=np.uint64).reshape(1)[0]
                 if id not in self._client_vars:
                     raise RuntimeError("Unknown local variable. " +
                                        "Dropping message.")
                 value = self._client_vars[id]
-            elif arg.type == MatlabArray.DOUBLE:
+            elif arg.type == PythonRemoteData.DOUBLE:
                 value = self._to_array(arg, np.double)
-            elif arg.type == MatlabArray.CHAR:
+            elif arg.type == PythonRemoteData.CHAR:
                 assert arg.rows == 1
                 value = arg_raw.decode('utf8')
-            elif arg.type == MatlabArray.LOGICAL:
+            elif arg.type == PythonRemoteData.LOGICAL:
                 value = self._to_array(arg, np.bool)
-            elif arg.type == MatlabArray.INT:
+            elif arg.type == PythonRemoteData.INT:
                 value = self._to_array(arg, np.int32)
             else:
                 assert False
@@ -399,7 +399,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
-        assert isinstance(function_name, unicode), type(function_name)
+        assert isinstance(function_name, str), type(function_name)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1
@@ -410,7 +410,7 @@ class CallPythonClient(object):
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            six.exec_(inputs[0], self.scope_globals, self.scope_locals)
+            exec(inputs[0], self.scope_globals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
@@ -527,7 +527,7 @@ class CallPythonClient(object):
         while not self._done:
             f = self._get_file()
             while not self._done:
-                msg = MatlabRPC()
+                msg = PythonRemoteMessage()
                 status = _read_next(f, msg)
                 if status == _READ_GOOD:
                     yield msg

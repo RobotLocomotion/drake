@@ -16,6 +16,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+// N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
  * A state feedback controller that uses a PidController to generate desired
  * accelerations, which are then converted into torques using InverseDynamics.

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 
@@ -170,10 +171,10 @@ GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
 
   if (kDrakeAssertIsDisarmed) {
     // In release builds, check for invalid matrix.
-    EXPECT_NO_THROW(
+    DRAKE_EXPECT_NO_THROW(
         R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz));
     EXPECT_FALSE(R.IsValid());
-    EXPECT_NO_THROW(
+    DRAKE_EXPECT_NO_THROW(
         R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz));
     EXPECT_FALSE(R.IsValid());
   }
@@ -200,7 +201,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(R.set(m), std::logic_error);
   } else {
-    EXPECT_NO_THROW(R.set(m));
+    DRAKE_EXPECT_NO_THROW(R.set(m));
   }
 }
 
@@ -405,34 +406,38 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
 
   // Test that setting R to an identity matrix does not throw an exception.
   Matrix3d m;
+  // clang-format off
   m << 1, 0, 0,
        0, 1, 0,
        0, 0, 1;
+  // clang-format on
   R.set(m);
   EXPECT_TRUE(R.IsExactlyIdentity());
 
   // Test impact of absolute mininimum deviation from identity matrix.
   m(0, 2) = std::numeric_limits<double>::denorm_min();  // ≈ 4.94066e-324
-  EXPECT_NO_THROW(R.set(m));
+  DRAKE_EXPECT_NO_THROW(R.set(m));
   EXPECT_FALSE(R.IsExactlyIdentity());
 
   // Test that setting a RotationMatrix to a 3x3 matrix that is close to a valid
   // RotationMatrix does not throw an exception, whereas setting to a 3x3 matrix
   // that is slightly too-far from a valid RotationMatrix throws an exception.
   m(0, 2) = 127 * kEpsilon;
-  EXPECT_NO_THROW(R.set(m));
+  DRAKE_EXPECT_NO_THROW(R.set(m));
   m(0, 2) = 129 * kEpsilon;
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(R.set(m), std::logic_error);
   } else {
-    EXPECT_NO_THROW(R.set(m));
+    DRAKE_EXPECT_NO_THROW(R.set(m));
   }
 
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
+  // clang-format off
   m << 1, 0, 0,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
+  // clang-format on
   R.set(m);
   EXPECT_FALSE(R.IsExactlyIdentity());
 }
@@ -465,9 +470,11 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(std::abs(quality_factor - 2.0) < 40*kEpsilon);
 
   // Test a 3x3 matrix that is far from orthonormal.
+  // clang-format off
   m << 1,   0.1, 0.1,
       -0.2, 1.0, 0.1,
        0.5, 0.6, 0.8;
+  // clang-format on
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
@@ -475,27 +482,33 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(std::abs(quality_factor - 0.4688222) < 1E-5);
 
   // Test another 3x3 matrix that is far from orthonormal.
+  // clang-format off
   m << 1, 2,  3,
        4, 5,  6,
        7, 8, -10;
+  // clang-format on
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [14.61524, 9.498744, 0.4105846]
   EXPECT_TRUE(std::abs(quality_factor - 14.61524) < 1E-5);
 
   // Test another 3x3 matrix that is far from orthonormal.
+  // clang-format off
   m << 1E-7, 2, 3,
           4, 5, 6,
           7, 8, -1E6;
+  // clang-format on
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [1000000, 6.597777, 1.21254]
   EXPECT_TRUE(std::abs(quality_factor - 1000000) < 1E-1);
 
   // Test a 3x3 near-zero matrix whose determinant is positive (det = 1E-47).
+  // clang-format off
   m << kEpsilon, 0, 0,
        0, kEpsilon, 0,
        0, 0, kEpsilon;
+  // clang-format on
   EXPECT_TRUE(0 < m.determinant() &&
               m.determinant() < 64 * kEpsilon * kEpsilon * kEpsilon);
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
@@ -506,18 +519,22 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
                                 64 * kEpsilon));
 
   // Test a 3x3 near-zero matrix whose determinant is negative (det = -1E-47).
+  // clang-format off
   m << kEpsilon, 0, 0,
       0, kEpsilon, 0,
       0, 0, -kEpsilon;
+  // clang-format on
   EXPECT_TRUE(-64 * kEpsilon * kEpsilon * kEpsilon < m.determinant() &&
                m.determinant() < 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
 
   // Test a 3x3 orthogonal matrix but whose determinant is negative (-1).
+  // clang-format off
   m << 1, 0, 0,
        0, 1, 0,
        0, 0, -1;
+  // clang-format on
   EXPECT_TRUE(std::abs(m.determinant() + 1) < 64 * kEpsilon);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
@@ -530,9 +547,11 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // which means that it has a barely negative determinant [det(m) ≈ -3e-13].
   // One can see that matrix m below is near singular by noticing either:
   // row(0) + row(2) ≈ 2 * row(1)  or  col(0) + col(2) ≈ 2 * col(1).
+  // clang-format off
   m << 1, 2, 3,
        4, 5, 6,
        7, 8, 9 + 400 * kEpsilon;
+  // clang-format on
   EXPECT_TRUE(-1600 * kEpsilon < m.determinant() && m.determinant() < 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
@@ -545,9 +564,11 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // means that it has a barely positive determinant [det(m) ≈ 3e-13].
   // One can see that matrix m below is near singular by noticing either:
   // row(0) + row(2) ≈ 2 * row(1)  or  col(0) + col(2) ≈ 2 * col(1).
+  // clang-format off
   m << 1, 2, 3,
        4, 5, 6,
        7, 8, 9 - 400 * kEpsilon;
+  // clang-format on
   EXPECT_TRUE(0 < m.determinant() && m.determinant() < 1600 * kEpsilon);
   RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(quality_factor > 0 && std::abs(quality_factor) < 1600 * kEpsilon);
@@ -556,18 +577,22 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // have been improper (the resulting rotation matrix would have a determinant
   // of -1 instead of +1).  One way to generate an improper rotation matrix is
   // to try to project a matrix m whose determinant is negative [det(m) = -6].
+  // clang-format off
   m << 1, 2, 3,
        4, 5, 6,
       -7, -8, -7;
+  // clang-format on
   EXPECT_LT(m.determinant(), 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
 
   // Check that returned rotation matrix is orthonormal.  In other words, its
   // transpose should be equal to its inverse so  that R * Rᵀ = IdentityMatrix.
+  // clang-format off
   m << 1, 2, 3,
        4, 5, 6,
        7, 8, 7;
+  // clang-format on
   EXPECT_GT(m.determinant(), 0);
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   const RotationMatrix<double> I = R * R.inverse();
@@ -608,20 +633,22 @@ GTEST_TEST(RotationMatrix, SymbolicConstructionTest) {
   // set(m_symbolic) only sets the rotation matrix, with no validity checks
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
   Matrix3<Expression> m_symbolic;
+  // clang-format off
   m_symbolic << 1, 2, 3,  // This is an obviously invalid rotation matrix.
                 4, 5, 6,
                 7, 8, 9;
+  // clang-format on
   // Note: The function under test in the next line is ThrowIfNotValid().
   // Since this function is private, it cannot be directly tested.
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
   RotationMatrix<Expression> R;
-  EXPECT_NO_THROW(R.set(m_symbolic));
+  DRAKE_EXPECT_NO_THROW(R.set(m_symbolic));
 
   // Set one of the matrix terms to a variable.  Still no throw.
   const symbolic::Variable x{"x"};
   m_symbolic(0, 0) = x;
-  EXPECT_NO_THROW(R.set(m_symbolic));
+  DRAKE_EXPECT_NO_THROW(R.set(m_symbolic));
 }
 
 // Verify RotationMatrix projection with symbolic::Expression behaves as
@@ -663,9 +690,11 @@ GTEST_TEST(RotationMatrix, SymbolicProjectionTest) {
   // is not already orthonormal since an already-orthonormal matrix may produce
   // an early-return from Eigen's SVD.
   Matrix3d m;
+  // clang-format off
   m << 1, 2,  3,
        4, 5,  6,
        7, 8, -10;
+  // clang-format on
   m_symbolic = m.template cast<Expression>();
   RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality);
   EXPECT_GT(quality, 10.0);
@@ -752,9 +781,11 @@ GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
   CheckProjectionWithAxis(M, axis, -2 * M_PI, -M_PI);
 
   // A random matrix.
+  // clang-format off
   M << 0.1, 0.4, 1.2,
       -0.4, 2.3, 1.5,
       1.3, -.4, -0.2;
+  // clang-format on
   CheckProjectionWithAxis(M, axis, M_PI, 2 * M_PI);
   CheckProjectionWithAxis(M, axis, -2 * M_PI, 0);
   CheckProjectionWithAxis(M, axis, 0.1, 0.2);
@@ -772,7 +803,7 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   const RollPitchYaw<double> rpy(r, p, y);
   const RotationMatrix<double> R_AB(rpy);
 
-  // Multiply the RigidTransform R_AB by two vectors to test operator* for a
+  // Multiply the RigidTransform R_AB by three vectors to test operator* for a
   // 3 x n matrix, where n = 3 is known before compilation.
   Eigen::Matrix3d v_B;
   const Vector3d v1_B(-12, -9, 7);   v_B.col(0) = v1_B;
@@ -816,9 +847,11 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   EXPECT_EQ(s_A.rows(), 3);
   EXPECT_EQ(s_A.cols(), 4);
   Eigen::Matrix<double, 3, 4> m34_expected;
+  // clang-format off
   m34_expected << 1, 2, 3, 4,
                   2, 4, 6, 8,
                   3, 6, 9, 12;
+  // clang-format on
   EXPECT_TRUE(CompareMatrices(s_A, R_AB.matrix() * m34_expected, kEpsilon));
 
   // Test RotationMatrix operator* can multiply a different looking Eigen

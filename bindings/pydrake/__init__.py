@@ -1,12 +1,9 @@
 """Python bindings for Drake.
 """
 
-from __future__ import absolute_import, division, print_function
-from os.path import abspath, dirname, join
-from platform import python_version_tuple
-from sys import stderr
-
-import six
+import os
+import sys
+import warnings
 
 # When importing `pydrake` as an external under Bazel, Bazel will use a shared
 # library whose relative RPATHs are incorrect for `libdrake.so`, and thus will
@@ -38,27 +35,65 @@ common.set_assertion_failure_to_throw_exception()
 
 def getDrakePath():
     # Compatibility alias.
-    return abspath(common.GetDrakePath())
+    return os.path.abspath(common.GetDrakePath())
 
 
 def _execute_extra_python_code(m):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
-    pydrake_dir = dirname(__file__)
-    orig_pieces = m.__name__.split(".")
-    assert orig_pieces[0] == __name__
-    pieces = [pydrake_dir] + orig_pieces[1:-1] + [
-        "_{}_extra.py".format(orig_pieces[-1])]
-    filename = join(*pieces)
-    if six.PY2:
-        execfile(filename, m.__dict__)
-    else:
-        with open(filename) as f:
-            _code = compile(f.read(), filename, 'exec')
-            exec(_code, m.__dict__, m.__dict__)
+    module_path = m.__name__.split(".")
+    if len(module_path) == 1:
+        raise RuntimeError((
+            "ExecuteExtraPythonCode cannot be used with the top-level "
+            "module `{}`. If you are writing modules in a downstream "
+            "project, please review this thread and ensure your import is "
+            "correct: https://stackoverflow.com/a/57858822/7829525"
+            ).format(m.__name__))
+    top_module_name = module_path[0]
+    top_module_dir = os.path.dirname(sys.modules[top_module_name].__file__)
+    extra_path = [top_module_dir] + module_path[1:-1] + [
+        "_{}_extra.py".format(module_path[-1])]
+    extra_filename = os.path.join(*extra_path)
+    with open(extra_filename) as f:
+        _code = compile(f.read(), extra_filename, 'exec')
+        exec(_code, m.__dict__, m.__dict__)
 
 
 def _setattr_kwargs(obj, kwargs):
     # For `ParamInit` in `pydrake_pybind.h`.
     for name, value in kwargs.items():
         setattr(obj, name, value)
+
+
+class _DrakeImportWarning(Warning):
+    pass
+
+
+_RTLD_GLOBAL_WARNING = r"""
+You may have already (directly or indirectly) imported `torch` which uses
+`RTLD_GLOBAL`. Using `RTLD_GLOBAL` may cause symbol collisions which manifest
+themselves in bugs like "free(): invalid pointer". Please consider importing
+`pydrake` (and related C++-wrapped libraries like `cv2`, `open3d`, etc.)
+*before* importing `torch`. For more details, see:
+https://github.com/pytorch/pytorch/issues/3059#issuecomment-534676459
+"""
+
+
+def _check_for_rtld_global_usages():
+    # Naively check if `torch` is using RTLD_GLOBAL.
+    torch = sys.modules.get("torch")
+    if torch is None:
+        return False
+    init_file = getattr(torch, "__file__")
+    if init_file.endswith(".pyc"):
+        init_file = init_file[:-1]
+    if not init_file.endswith(".py"):
+        return False
+    with open(init_file) as f:
+        init_source = f.read()
+    return "sys.setdlopenflags(_dl_flags.RTLD_GLOBAL" in init_source
+
+
+if _check_for_rtld_global_usages():
+    warnings.warn(
+        _RTLD_GLOBAL_WARNING, category=_DrakeImportWarning, stacklevel=3)

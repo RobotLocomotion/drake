@@ -48,8 +48,6 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
-        "//bindings/pydrake/common:drake_variant_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -89,8 +87,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
-        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -98,7 +94,6 @@ drake_pybind_library(
         ":framework_py",
         ":module_py",
     ],
-    py_srcs = ["_primitives_extra.py"],
 )
 
 drake_pybind_library(
@@ -107,6 +102,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
@@ -179,7 +175,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
@@ -451,6 +446,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
@@ -482,6 +478,7 @@ drake_py_unittest(
     deps = [
         ":sensors_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

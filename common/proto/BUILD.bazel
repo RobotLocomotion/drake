@@ -25,47 +25,40 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proto",
     deps = [
-        ":call_matlab",
         ":call_python",
-        ":matlab_rpc",
         ":protobuf",
+        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
     ],
 )
 
 drake_cc_proto_library(
-    name = "matlab_rpc",
+    name = "python_remote_message_proto",
     srcs = [
-        "matlab_rpc.proto",
+        "python_remote_message.proto",
     ],
     visibility = ["//visibility:private"],
 )
 
 drake_py_proto_library(
-    name = "matlab_rpc_py",
+    name = "python_remote_message_proto_py",
     srcs = [
-        "matlab_rpc.proto",
+        "python_remote_message.proto",
     ],
     visibility = ["//visibility:private"],
-)
-
-drake_cc_library(
-    name = "call_matlab",
-    srcs = ["call_matlab.cc"],
-    hdrs = ["call_matlab.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":matlab_rpc",
-        ":rpc_pipe_temp_directory",
-        "//common:essential",
-    ],
 )
 
 drake_cc_library(
     name = "protobuf",
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
+    deprecation = "To be removed from Drake on or after 2020-02-01, with no replacement.",  # noqa
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
     deps = [
+        "//common:essential",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -75,9 +68,10 @@ drake_cc_library(
     srcs = ["call_python.cc"],
     hdrs = ["call_python.h"],
     deps = [
-        ":call_matlab",
+        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
         "//common:copyable_unique_ptr",
+        "//common:essential",
     ],
 )
 
@@ -86,7 +80,7 @@ drake_py_library(
     srcs = ["call_python_client.py"],
     imports = ["."],
     deps = [
-        ":matlab_rpc_py",
+        ":python_remote_message_proto_py",
     ],
 )
 
@@ -129,7 +123,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
-        "@spruce",
+        "//common:filesystem",
     ],
 )
 
@@ -170,6 +164,7 @@ drake_py_unittest(
 
 drake_cc_googletest(
     name = "protobuf_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "test/test_string.txt",
     ],

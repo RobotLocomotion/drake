@@ -3,12 +3,12 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/mathematical_program.h"
 

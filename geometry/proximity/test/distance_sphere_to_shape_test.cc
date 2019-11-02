@@ -9,8 +9,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/proximity/distance_to_shape.h"
+#include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/autodiff_gradient.h"
@@ -20,9 +21,9 @@
 // primitive tests.
 
 /** @file
- This tests only the code in distance_to_shape.h that supports (sphere-shape)
- signed distance queries. Ultimately, we'll have unit tests for all
- shapeA-shapeB primitive functions.  */
+ This tests only the code in distance_to_shape_callback.h that supports
+ (sphere-shape) signed distance queries. Ultimately, we'll have unit tests for
+ all shapeA-shapeB primitive functions.  */
 
 namespace drake {
 namespace geometry {
@@ -91,8 +92,8 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   EncodedData(id_b, true).write_to(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
-  EXPECT_NO_THROW(CalcDistanceFallback<double>(obj_a, obj_b, request,
-                                               &distance_pair_d));
+  DRAKE_EXPECT_NO_THROW(
+      CalcDistanceFallback<double>(obj_a, obj_b, request, &distance_pair_d));
   EXPECT_TRUE(distance_pair_d.id_A.is_valid());
   EXPECT_TRUE(distance_pair_d.id_B.is_valid());
   ASSERT_LT(id_a, id_b);  // Confirm assumption that the next two tests require.
@@ -371,7 +372,7 @@ TEST_F(DistancePairGeometryTest, SphereCylinderAutoDiffXd) {
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 template <typename T>
 class ComputeNarrowHalfspaceTest : public ::testing::Test {};
-TYPED_TEST_CASE(ComputeNarrowHalfspaceTest, ScalarTypes);
+TYPED_TEST_SUITE(ComputeNarrowHalfspaceTest, ScalarTypes);
 
 // Confirms that the distance fallback is *not* invoked for (sphere-X) pairs
 // where X is in {Sphere, Box, Cylinder}. Note the use of the `float` scalar.
@@ -395,8 +396,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
   // These scenarios should *not* invoke the fallback; they will be exercised
   // by primitives.
 
-  EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-      sphere, X_WA, sphere, X_WB, request, &result));
+  DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(sphere, X_WA, sphere,
+                                                      X_WB, request, &result));
 
   std::vector<std::shared_ptr<fcl::CollisionGeometry<double>>> supported{
       make_shared<Boxd>(1, 1, 1), make_shared<Cylinderd>(1, 1)};
@@ -404,9 +405,9 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
     CollisionObjectd other(other_geo);
     EncodedData(other_id, true).write_to(&other);
 
-    EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
+    DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
         other, X_WA, sphere, X_WB, request, &result));
-    EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
+    DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
         sphere, X_WA, other, X_WB, request, &result));
   }
 }
@@ -663,7 +664,7 @@ CallbackScalarSupport<AutoDiffXd>::unsupported_pairs() {
   };
 }
 
-TYPED_TEST_CASE(CallbackScalarSupport, ScalarTypes);
+TYPED_TEST_SUITE(CallbackScalarSupport, ScalarTypes);
 
 // Tests that the pairs that are reported supported, run normally. The pairs
 // that are marked *unsupported* throw.
@@ -715,7 +716,7 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   std::vector<SignedDistancePair<T>> results;
   CallbackData<T> data(&collision_filter, &X_WGs, kInf, &results);
   double threshold = kInf;
-  EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
+  DRAKE_EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
   EXPECT_EQ(results.size(), 0u);
 }
 
@@ -801,7 +802,7 @@ GTEST_TEST(Callback, ABOrdering) {
 // set.)
 template <typename T>
 class CallbackMaxDistanceTest : public ::testing::Test {};
-TYPED_TEST_CASE(CallbackMaxDistanceTest, ScalarTypes);
+TYPED_TEST_SUITE(CallbackMaxDistanceTest, ScalarTypes);
 
 TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   using T = TypeParam;
@@ -838,7 +839,7 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
     CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
-    EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    DRAKE_EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
     EXPECT_EQ(results.size(), 1u);
     EXPECT_EQ(threshold, kMaxDistance);
   }
@@ -852,7 +853,7 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
     CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
-    EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    DRAKE_EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
     EXPECT_EQ(results.size(), 0u);
     EXPECT_EQ(threshold, kMaxDistance);
   }

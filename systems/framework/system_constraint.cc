@@ -33,14 +33,14 @@ SystemConstraintBounds::SystemConstraintBounds(
 
 SystemConstraintBounds::SystemConstraintBounds(
     const Eigen::Ref<const Eigen::VectorXd>& lower,
-    nullopt_t)
+    std::nullopt_t)
     : SystemConstraintBounds(
           lower,
           Eigen::VectorXd::Constant(
               lower.size(), std::numeric_limits<double>::infinity())) {}
 
 SystemConstraintBounds::SystemConstraintBounds(
-    nullopt_t,
+    std::nullopt_t,
     const Eigen::Ref<const Eigen::VectorXd>& upper)
     : SystemConstraintBounds(
           Eigen::VectorXd::Constant(

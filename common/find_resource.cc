@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"
@@ -20,7 +21,7 @@ namespace drake {
 
 using Result = FindResourceResult;
 
-optional<string>
+std::optional<string>
 Result::get_absolute_path() const {
   return absolute_path_;
 }
@@ -33,21 +34,21 @@ Result::get_absolute_path_or_throw() const {
 
   // Otherwise, throw the error message.
   const auto& optional_error = get_error_message();
-  DRAKE_ASSERT(optional_error != nullopt);
+  DRAKE_ASSERT(optional_error != std::nullopt);
   throw std::runtime_error(*optional_error);
 }
 
-optional<string>
+std::optional<string>
 Result::get_error_message() const {
   // If an error has been set, return it.
-  if (error_message_ != nullopt) {
-    DRAKE_ASSERT(absolute_path_ == nullopt);
+  if (error_message_ != std::nullopt) {
+    DRAKE_ASSERT(absolute_path_ == std::nullopt);
     return error_message_;
   }
 
   // If successful, return no-error.
-  if (absolute_path_ != nullopt) {
-    return nullopt;
+  if (absolute_path_ != std::nullopt) {
+    return std::nullopt;
   }
 
   // Both optionals are null; we are empty; return a default error message.
@@ -90,15 +91,16 @@ Result Result::make_empty() {
 void Result::CheckInvariants() {
   if (resource_path_.empty()) {
     // For our "empty" state, both success and error must be empty.
-    DRAKE_DEMAND(absolute_path_ == nullopt);
-    DRAKE_DEMAND(error_message_ == nullopt);
+    DRAKE_DEMAND(absolute_path_ == std::nullopt);
+    DRAKE_DEMAND(error_message_ == std::nullopt);
   } else {
     // For our "non-empty" state, we must have exactly one of success or error.
-    DRAKE_DEMAND((absolute_path_ == nullopt) != (error_message_ == nullopt));
+    DRAKE_DEMAND(
+        (absolute_path_ == std::nullopt) != (error_message_ == std::nullopt));
   }
   // When non-nullopt, the path and error cannot be the empty string.
-  DRAKE_DEMAND((absolute_path_ == nullopt) || !absolute_path_->empty());
-  DRAKE_DEMAND((error_message_ == nullopt) || !error_message_->empty());
+  DRAKE_DEMAND((absolute_path_ == std::nullopt) || !absolute_path_->empty());
+  DRAKE_DEMAND((error_message_ == std::nullopt) || !error_message_->empty());
 }
 
 namespace {
@@ -124,11 +126,11 @@ Result CheckAndMakeResult(
   DRAKE_DEMAND(!root_description.empty());
   DRAKE_DEMAND(!root.empty());
   DRAKE_DEMAND(!resource_path.empty());
-  DRAKE_DEMAND(internal::IsDir(root));
+  DRAKE_DEMAND(filesystem::is_directory({root}));
   DRAKE_DEMAND(IsRelativePath(resource_path));
 
   // Check for the sentinel.
-  if (!internal::IsFile(root + "/" + kSentinelRelpath)) {
+  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
@@ -138,7 +140,7 @@ Result CheckAndMakeResult(
 
   // Check for the resource_path.
   const string abspath = root + '/' + resource_path;
-  if (!internal::IsFile(abspath)) {
+  if (!filesystem::is_regular_file({abspath})) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
@@ -152,7 +154,7 @@ Result CheckAndMakeResult(
 // Opportunistically searches inside the attic for multibody resource paths.
 // This function is not unit tested -- only acceptance-tested by the fact that
 // none of the tests in the attic fail.
-optional<string> MaybeFindResourceInAttic(const string& resource_path) {
+std::optional<string> MaybeFindResourceInAttic(const string& resource_path) {
   const string prefix("drake/");
   DRAKE_DEMAND(StartsWith(resource_path, prefix));
   const string substr = resource_path.substr(prefix.size());
@@ -168,44 +170,44 @@ optional<string> MaybeFindResourceInAttic(const string& resource_path) {
        }) {
     if (StartsWith(substr, directory)) {
       const auto rlocation_or_error =
-          internal::FindRunfile(prefix + string("attic/") + substr);
+          FindRunfile(prefix + string("attic/") + substr);
       if (rlocation_or_error.error.empty()) {
         return rlocation_or_error.abspath;
       }
     }
   }
-  return nullopt;
+  return std::nullopt;
 }
 
 // If the DRAKE_RESOURCE_ROOT environment variable is usable as a resource
 // root, returns its value, else returns nullopt.
-optional<string> MaybeGetEnvironmentResourceRoot() {
+std::optional<string> MaybeGetEnvironmentResourceRoot() {
   const char* const env_name = kDrakeResourceRootEnvironmentVariableName;
   const char* const env_value = getenv(env_name);
   if (!env_value) {
     log()->debug(
         "FindResource ignoring {} because it is not set.",
         env_name);
-    return nullopt;
+    return std::nullopt;
   }
   const std::string root{env_value};
-  if (!internal::IsDir(root)) {
+  if (!filesystem::is_directory({root})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not exist.",
         env_name, env_value);
-    return nullopt;
+    return std::nullopt;
   }
-  if (!internal::IsDir(root + "/drake")) {
+  if (!filesystem::is_directory({root + "/drake"})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain a 'drake' "
         "subdirectory.", env_name, env_value);
-    return nullopt;
+    return std::nullopt;
   }
-  if (!internal::IsFile(root + "/" + kSentinelRelpath)) {
+  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain the "
         "expected sentinel file '{}'.", env_name, env_value, kSentinelRelpath);
-    return nullopt;
+    return std::nullopt;
   }
   return root;
 }
@@ -213,13 +215,13 @@ optional<string> MaybeGetEnvironmentResourceRoot() {
 // If we are linked against libdrake_marker.so, and the install-tree-relative
 // path resolves correctly, returns the install tree resource root, else
 // returns nullopt.
-optional<string> MaybeGetInstallResourceRoot() {
+std::optional<string> MaybeGetInstallResourceRoot() {
   // Ensure that we have the library loaded.
   DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
-  optional<string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
+  std::optional<string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
   if (libdrake_dir) {
     const string root = *libdrake_dir + "/../share";
-    if (internal::IsDir(root)) {
+    if (filesystem::is_directory({root})) {
       return root;
     } else {
       log()->debug("FindResource ignoring CMake install candidate '{}' "
@@ -228,7 +230,7 @@ optional<string> MaybeGetInstallResourceRoot() {
   } else {
     log()->debug("FindResource has no CMake install candidate");
   }
-  return nullopt;
+  return std::nullopt;
 }
 
 }  // namespace
@@ -268,8 +270,8 @@ Result FindResource(const string& resource_path) {
   }
 
   // (2) Check the Runfiles.
-  if (internal::HasRunfiles()) {
-    auto rlocation_or_error = internal::FindRunfile(resource_path);
+  if (HasRunfiles()) {
+    auto rlocation_or_error = FindRunfile(resource_path);
     if (rlocation_or_error.error.empty()) {
       return Result::make_success(
           resource_path, rlocation_or_error.abspath);

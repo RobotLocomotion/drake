@@ -1,5 +1,9 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <fmt/format.h>
+
+#include "drake/common/nice_type_name.h"
+
 namespace drake {
 namespace geometry {
 
@@ -13,12 +17,24 @@ void Shape::Reify(ShapeReifier* reifier, void* user_data) const {
 std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 
 Sphere::Sphere(double radius)
-    : Shape(ShapeTag<Sphere>()), radius_(radius) {}
+    : Shape(ShapeTag<Sphere>()), radius_(radius) {
+  if (radius < 0) {
+    throw std::logic_error(
+        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
+  }
+}
 
 Cylinder::Cylinder(double radius, double length)
     : Shape(ShapeTag<Cylinder>()),
       radius_(radius),
-      length_(length) {}
+      length_(length) {
+  if (radius <= 0 || length <= 0) {
+    throw std::logic_error(
+        fmt::format("Cylinder radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
+  }
+}
 
 HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
@@ -55,17 +71,93 @@ RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
 
 Box::Box(double width, double depth, double height)
     : Shape(ShapeTag<Box>()),
-      size_(width, depth, height) {}
+      size_(width, depth, height) {
+  if (width <= 0 || depth <= 0 || height <= 0) {
+    throw std::logic_error(
+        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
+                    "{}, and {}, respectively).",
+                    width, depth, height));
+  }
+}
 
 Box Box::MakeCube(double edge_size) {
   return Box(edge_size, edge_size, edge_size);
 }
 
+Capsule::Capsule(double radius, double length)
+    : Shape(ShapeTag<Capsule>()), radius_(radius), length_(length) {
+  if (radius <= 0 || length <= 0) {
+    throw std::logic_error(
+        fmt::format("Capsule radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
+  }
+}
+
+Ellipsoid::Ellipsoid(double a, double b, double c)
+    : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw std::logic_error(
+        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
+                    "should all be > 0 (were {}, {}, and {}, respectively).",
+                    a, b, c));
+  }
+}
+
 Mesh::Mesh(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {}
+    : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
+  }
+}
 
 Convex::Convex(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {}
+    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Convex |scale| cannot be < 1e-8.");
+  }
+}
+
+void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
+  ThrowUnsupportedGeometry("Sphere");
+}
+
+void ShapeReifier::ImplementGeometry(const Cylinder&, void*) {
+  ThrowUnsupportedGeometry("Cylinder");
+}
+
+void ShapeReifier::ImplementGeometry(const HalfSpace&, void*) {
+  ThrowUnsupportedGeometry("HalfSpace");
+}
+
+void ShapeReifier::ImplementGeometry(const Box&, void*) {
+  ThrowUnsupportedGeometry("Box");
+}
+
+void ShapeReifier::ImplementGeometry(const Capsule&, void*) {
+  ThrowUnsupportedGeometry("Capsule");
+}
+
+void ShapeReifier::ImplementGeometry(const Ellipsoid&, void*) {
+  ThrowUnsupportedGeometry("Ellipsoid");
+}
+void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
+  ThrowUnsupportedGeometry("Mesh");
+}
+
+void ShapeReifier::ImplementGeometry(const Convex&, void*) {
+  ThrowUnsupportedGeometry("Convex");
+}
+
+void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
+  throw std::runtime_error(fmt::format("This class ({}) does not support {}.",
+                                       NiceTypeName::Get(*this), shape_name));
+}
+
+std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
+  out << name.name();
+  return out;
+}
 
 }  // namespace geometry
 }  // namespace drake

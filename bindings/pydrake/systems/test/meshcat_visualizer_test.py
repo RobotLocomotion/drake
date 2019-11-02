@@ -20,7 +20,7 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import SceneGraph
+from pydrake.geometry import Box, SceneGraph
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
@@ -33,7 +33,8 @@ from pydrake.systems.meshcat_visualizer import (
 )
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.math import RigidTransform
-from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.plant import CoulombFriction, MultibodyPlant
+from pydrake.multibody.tree import SpatialInertia, UnitInertia
 
 import pydrake.perception as mut
 
@@ -67,8 +68,7 @@ class TestMeshcat(unittest.TestCase):
         cart_pole_context = diagram.GetMutableSubsystemContext(
             cart_pole, diagram_context)
 
-        cart_pole_context.FixInputPort(
-            cart_pole.get_actuation_input_port().get_index(), [0])
+        cart_pole.get_actuation_input_port().FixValue(cart_pole_context, 0)
 
         cart_slider = cart_pole.GetJointByName("CartSlider")
         pole_pin = cart_pole.GetJointByName("PolePin")
@@ -89,9 +89,17 @@ class TestMeshcat(unittest.TestCase):
         Parser(plant=kuka).AddModelFromFile(file_name)
         kuka.Finalize()
 
-        visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=ZMQ_URL,
-                                                         open_browser=False))
+        # Make sure that the frames to visualize exist.
+        kuka.GetModelInstanceByName("iiwa14")
+        kuka.GetFrameByName("iiwa_link_7")
+        kuka.GetFrameByName("iiwa_link_6")
+
+        frames_to_draw = {"iiwa14": {"iiwa_link_7", "iiwa_link_6"}}
+        visualizer = builder.AddSystem(MeshcatVisualizer(
+            scene_graph,
+            zmq_url=ZMQ_URL,
+            open_browser=False,
+            frames_to_draw=frames_to_draw))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
 
@@ -101,11 +109,51 @@ class TestMeshcat(unittest.TestCase):
         kuka_context = diagram.GetMutableSubsystemContext(
             kuka, diagram_context)
 
-        kuka_context.FixInputPort(
-            kuka.get_actuation_input_port().get_index(), np.zeros(
-                kuka.get_actuation_input_port().size()))
+        kuka_actuation_port = kuka.get_actuation_input_port()
+        kuka_actuation_port.FixValue(kuka_context,
+                                     np.zeros(kuka_actuation_port.size()))
 
         simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.AdvanceTo(.1)
+
+    def test_procedural_geometry(self):
+        """
+        This test ensures we can draw procedurally added primitive
+        geometry that is added to the world model instance (which has
+        a slightly different naming scheme than geometry with a
+        non-default / non-world model instance).
+        """
+        builder = DiagramBuilder()
+        mbp, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        world_body = mbp.world_body()
+        box_shape = Box(1., 2., 3.)
+        # This rigid body will be added to the world model instance since
+        # the model instance is not specified.
+        box_body = mbp.AddRigidBody("box", SpatialInertia(
+            mass=1.0, p_PScm_E=np.array([0., 0., 0.]),
+            G_SP_E=UnitInertia(1.0, 1.0, 1.0)))
+        mbp.WeldFrames(world_body.body_frame(), box_body.body_frame(),
+                       RigidTransform())
+        mbp.RegisterVisualGeometry(
+            box_body, RigidTransform.Identity(), box_shape, "ground_vis",
+            np.array([0.5, 0.5, 0.5, 1.]))
+        mbp.RegisterCollisionGeometry(
+            box_body, RigidTransform.Identity(), box_shape, "ground_col",
+            CoulombFriction(0.9, 0.8))
+        mbp.Finalize()
+
+        frames_to_draw = {"world": {"box"}}
+        visualizer = builder.AddSystem(MeshcatVisualizer(
+            scene_graph,
+            zmq_url=ZMQ_URL,
+            open_browser=False,
+            frames_to_draw=frames_to_draw))
+        builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                        visualizer.get_input_port(0))
+
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
         simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(.1)
 
@@ -183,7 +231,7 @@ class TestMeshcat(unittest.TestCase):
             contact_viz_context,
             contact_input_port.get_index()).get_value()
 
-        self.assertGreater(contact_results.num_contacts(), 0)
+        self.assertGreater(contact_results.num_point_pair_contacts(), 0)
         self.assertEqual(contact_viz._contact_key_counter, 4)
 
     def test_texture_override(self):
@@ -253,15 +301,15 @@ class TestMeshcat(unittest.TestCase):
             diagram_context = diagram.CreateDefaultContext()
             context = diagram.GetMutableSubsystemContext(
                 pc_viz, diagram_context)
-            context.FixInputPort(
-                pc_viz.GetInputPort("point_cloud_P").get_index(),
-                AbstractValue.Make(pc))
+            # TODO(eric.cousineau): Replace `AbstractValue.Make(pc)` with just
+            # `pc` (#12086).
+            pc_viz.GetInputPort("point_cloud_P").FixValue(
+                context, AbstractValue.Make(pc))
             if pc2:
                 context = diagram.GetMutableSubsystemContext(
                     pc_viz2, diagram_context)
-                context.FixInputPort(
-                    pc_viz2.GetInputPort("point_cloud_P").get_index(),
-                    AbstractValue.Make(pc2))
+                pc_viz2.GetInputPort("point_cloud_P").FixValue(
+                    context, AbstractValue.Make(pc2))
             simulator = Simulator(diagram, diagram_context)
             simulator.set_publish_every_time_step(False)
             simulator.AdvanceTo(sim_time)

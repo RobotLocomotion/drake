@@ -35,7 +35,7 @@ GTEST_TEST(InputPortTest, VectorTest) {
   const DependencyTicket ticket;
   const PortDataType data_type = kVectorValued;
   const int size = 3;
-  const optional<RandomDistribution> random_type = nullopt;
+  const std::optional<RandomDistribution> random_type = std::nullopt;
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
       system, system_base, name, index, ticket, data_type, size, random_type,
@@ -95,7 +95,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   const DependencyTicket ticket;
   const PortDataType data_type = kAbstractValued;
   const int size = 0;
-  const optional<RandomDistribution> random_type = nullopt;
+  const std::optional<RandomDistribution> random_type = std::nullopt;
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
       system, system_base, name, index, ticket, data_type, size, random_type,

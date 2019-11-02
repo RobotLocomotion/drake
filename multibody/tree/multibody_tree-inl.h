@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -13,7 +14,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
@@ -242,6 +242,18 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
   if (force_element == nullptr) {
     throw std::logic_error("Input force element is a nullptr.");
   }
+
+  auto gravity_element = dynamic_cast<UniformGravityFieldElement<T>*>(
+      force_element.get());
+  if (gravity_element) {
+    if (gravity_field_) {
+      throw std::runtime_error(
+          "This model already contains a gravity field element. "
+          "Only one gravity field element is allowed per model.");
+    }
+    gravity_field_ = gravity_element;
+  }
+
   ForceElementIndex force_element_index = topology_.add_force_element();
   // This test MUST be performed BEFORE owned_force_elements_.push_back()
   // below. Do not move it around!
@@ -256,53 +268,13 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
 
 template <typename T>
 template<template<typename Scalar> class ForceElementType, typename... Args>
-#ifdef DRAKE_DOXYGEN_CXX
 const ForceElementType<T>&
-#else
-typename std::enable_if<!std::is_same<
-    ForceElementType<T>,
-    UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-#endif
 MultibodyTree<T>::AddForceElement(Args&&... args) {
   static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
                 "ForceElementType<T> must be a sub-class of "
                 "ForceElement<T>.");
   return AddForceElement(
       std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-}
-
-template <typename T>
-template<template<typename Scalar> class ForceElementType, typename... Args>
-typename std::enable_if<std::is_same<
-    ForceElementType<T>,
-    UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-MultibodyTree<T>::AddForceElement(Args&&... args) {
-  // TODO(sam.creasey) Once this method is removed at the end of the
-  // deprecation period, the initialization of gravity_field_ should probably
-  // move to the MultibodyTree constructor (which currently calls this
-  // implementation).  My current thought on what the post-deprecation code
-  // should look like is that all of the SFINAE goes away and we do a run-time
-  // type check in the overload of AddForceElement that takes a unique_ptr
-  // which throws if (1) the actual ForceElementType is
-  // UniformGravityFieldElement and (2) gravity_field_ is not yet set.
-  // Alternately we could find a way to produce an error at compile time
-  // instead of throwing.
-  auto new_field =
-      std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...);
-  if (gravity_field_) {
-    if (new_field->gravity_vector() == gravity_field_->gravity_vector()) {
-      return *gravity_field_;
-    }
-
-    throw std::runtime_error(
-        "This model already contains a gravity field element. "
-        "Only one gravity field element is allowed per model.");
-  }
-  // We save the force element so that we can grant users access to it for
-  // gravity field specific queries.
-  gravity_field_ = const_cast<ForceElementType<T>*>(
-      &AddForceElement(std::move(new_field)));
-  return *gravity_field_;
 }
 
 template <typename T>
@@ -340,8 +312,10 @@ template <typename T>
 template<template<typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::string& name,
-    const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-    const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
+    const Body<T>& parent,
+    const std::optional<math::RigidTransform<double>>& X_PF,
+    const Body<T>& child,
+    const std::optional<math::RigidTransform<double>>& X_BM,
     Args&&... args) {
   static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                 "JointType<T> must be a sub-class of Joint<T>.");

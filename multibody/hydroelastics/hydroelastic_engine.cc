@@ -1,5 +1,6 @@
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
@@ -14,6 +15,7 @@
 #include "drake/multibody/hydroelastics/hydroelastic_field_sphere.h"
 
 using drake::geometry::Box;
+using drake::geometry::Capsule;
 using drake::geometry::ContactSurface;
 using drake::geometry::Convex;
 using drake::geometry::Cylinder;
@@ -33,8 +35,16 @@ namespace internal {
 
 template <typename T>
 HydroelasticGeometry<T>::HydroelasticGeometry(
-    std::unique_ptr<HydroelasticField<T>> mesh_field)
-    : mesh_field_(std::move(mesh_field)) {}
+    std::unique_ptr<HydroelasticField<T>> mesh_field, double elastic_modulus,
+    double hunt_crossley_dissipation)
+    : mesh_field_(std::move(mesh_field)),
+      elastic_modulus_(elastic_modulus),
+      hunt_crossley_dissipation_(hunt_crossley_dissipation) {
+  DRAKE_THROW_UNLESS(std::isfinite(elastic_modulus));
+  DRAKE_THROW_UNLESS(std::isfinite(hunt_crossley_dissipation));
+  DRAKE_THROW_UNLESS(elastic_modulus > 0);
+  DRAKE_THROW_UNLESS(hunt_crossley_dissipation >= 0);
+}
 
 template <typename T>
 HydroelasticGeometry<T>::HydroelasticGeometry(
@@ -51,9 +61,13 @@ void HydroelasticEngine<T>::MakeModels(
       const Shape& shape = inspector.GetShape(geometry_id);
       const double elastic_modulus =
           properties->template GetPropertyOrDefault<double>(
-              "hydroelastics", "elastic modulus",
+              "material", "elastic_modulus",
               std::numeric_limits<double>::infinity());
-      GeometryImplementationData specs{geometry_id, elastic_modulus};
+      const double dissipation =
+          properties->template GetPropertyOrDefault<double>(
+              "material", "hunt_crossley_dissipation", 0.0);
+      GeometryImplementationData specs{geometry_id, elastic_modulus,
+                                       dissipation};
       shape.Reify(this, &specs);
     }
   }
@@ -74,6 +88,49 @@ const HydroelasticGeometry<T>* HydroelasticEngine<T>::get_model(
   auto it = model_data_.geometry_id_to_model_.find(id);
   if (it != model_data_.geometry_id_to_model_.end()) return it->second.get();
   return nullptr;
+}
+
+template <typename T>
+double HydroelasticEngine<T>::CalcCombinedElasticModulus(
+    geometry::GeometryId id_A, geometry::GeometryId id_B) const {
+  const HydroelasticGeometry<T>* geometry_A = get_model(id_A);
+  const HydroelasticGeometry<T>* geometry_B = get_model(id_B);
+  // We demand id_A and id_B to correspond to hydroelastic model.
+  DRAKE_DEMAND(geometry_A && geometry_B);
+  const double E_A = geometry_A->elastic_modulus();
+  const double E_B = geometry_B->elastic_modulus();
+  if (E_A == std::numeric_limits<double>::infinity()) return E_B;
+  if (E_B == std::numeric_limits<double>::infinity()) return E_A;
+  return E_A * E_B / (E_A + E_B);
+}
+
+// TODO(amcastro-tri): as of 09/18/2019 we still are discussing how to combine
+// these material properties. Update this method once the discussion is
+// resolved.
+template <typename T>
+double HydroelasticEngine<T>::CalcCombinedDissipation(
+    geometry::GeometryId id_A, geometry::GeometryId id_B) const {
+  const HydroelasticGeometry<T>* geometry_A = get_model(id_A);
+  const HydroelasticGeometry<T>* geometry_B = get_model(id_B);
+  // We demand id_A and id_B to correspond to hydroelastic model.
+  DRAKE_DEMAND(geometry_A && geometry_B);
+  const double E_A = geometry_A->elastic_modulus();
+  const double E_B = geometry_B->elastic_modulus();
+  const double d_A = geometry_A->hunt_crossley_dissipation();
+  const double d_B = geometry_B->hunt_crossley_dissipation();
+  const double Estar = CalcCombinedElasticModulus(id_A, id_B);
+
+  // Both bodies are rigid. We simply return the arithmetic average.
+  if (Estar == std::numeric_limits<double>::infinity())
+    return 0.5 * (d_A + d_B);
+
+  // At least one body is soft.
+  double d_star = 0;
+  if (E_A != std::numeric_limits<double>::infinity())
+    d_star += Estar / E_A * d_A;
+  if (E_B != std::numeric_limits<double>::infinity())
+    d_star += Estar / E_B * d_B;
+  return d_star;
 }
 
 template <typename T>
@@ -110,14 +167,9 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     const RigidTransform<T>& X_WM = query_object.X_WG(id_M);
     const RigidTransform<T>& X_WN = query_object.X_WG(id_N);
 
-    // Pose of the soft model frame S in the rigid model frame R.
-    // N.B. For a given state, SceneGraph broadphase reports are guaranteed to
-    // always be in the same order that is, id_M < id_N.
-    // Therefore, even if we swap the id's below so that id_S (id_R) always
-    // corresponds to the soft (rigid) geometry, the order still is guaranteed
-    // to be the same on successive calls.
-    const RigidTransform<T> X_NM = X_WN.inverse() * X_WM;
-    const RigidTransform<T> X_RS = model_M->is_soft() ? X_NM : X_NM.inverse();
+    // Determine the poses in the world frame of the soft and rigid models.
+    const RigidTransform<T> X_WR = model_M->is_soft() ? X_WN : X_WM;
+    const RigidTransform<T> X_WS = model_M->is_soft() ? X_WM : X_WN;
     const GeometryId id_S = model_M->is_soft() ? id_M : id_N;
     const GeometryId id_R = model_M->is_soft() ? id_N : id_M;
     const HydroelasticGeometry<T>& model_S =
@@ -125,8 +177,8 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     const HydroelasticGeometry<T>& model_R =
         model_M->is_soft() ? *model_N : *model_M;
 
-    optional<ContactSurface<T>> surface =
-        CalcContactSurface(id_S, model_S, id_R, model_R, X_RS);
+    std::optional<ContactSurface<T>> surface =
+        CalcContactSurface(id_S, model_S, X_WS, id_R, model_R, X_WR);
     if (surface) all_contact_surfaces.emplace_back(std::move(*surface));
   }
 
@@ -134,41 +186,51 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
 }
 
 template <typename T>
-optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
+std::optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
     GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
+    const RigidTransform<T>& X_WS,
     GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
-    const RigidTransform<T>& X_RS) const {
+    const RigidTransform<T>& X_WR) const {
   DRAKE_DEMAND(soft_model_S.is_soft());
   DRAKE_DEMAND(!rigid_model_R.is_soft());
   const HydroelasticField<T>& soft_field_S = soft_model_S.hydroelastic_field();
   std::vector<T> e_s_surface;
   std::vector<Vector3<T>> grad_level_set_R_surface;
-  std::unique_ptr<SurfaceMesh<T>> surface_R = CalcZeroLevelSetInMeshDomain(
+
+  const auto X_RS = X_WR.inverse() * X_WS;
+  // Surface is measured and expressed in frame R. We'll transform to frame W
+  // below if non-empty.
+  std::unique_ptr<SurfaceMesh<T>> surface_W = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
       soft_field_S.scalar_field().values(), &e_s_surface,
       &grad_level_set_R_surface);
-  if (surface_R->num_vertices() == 0) return nullopt;
+  if (surface_W->num_vertices() == 0) return std::nullopt;
+  // Transform with vertices measured and expressed in frame W.
+  surface_W->TransformVertices(X_WR);
+
+  // TODO(edrumwri): This says that it is a pressure field, but notation
+  //                 reflects that it is a strain field. Fix.
   // Compute pressure field.
   for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
 
+  // TODO(edrumwri): h_RS should be the gradient of a pressure field, but it
+  //                 is currently the gradient of a strain field. Fix.
   // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
-  // R). However, the gradient of the level set function points into S (N).
-  // Therefore we flip its direction.
-  for (Vector3<T>& grad_level_set_R : grad_level_set_R_surface) {
-    grad_level_set_R = -grad_level_set_R;
-  }
+  // R). Note that the gradient of the level set function points into S (N), so
+  // we flip its direction. We also re-express this field in the world frame in
+  // accordance with the ContactSurface specification.
+  std::vector<Vector3<T>> h_RS_W_vectors = std::move(grad_level_set_R_surface);
+  for (Vector3<T>& grad : h_RS_W_vectors)
+    grad = X_WR.rotation() * -grad;
 
   auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
-      "e_MN", std::move(e_s_surface), surface_R.get());
-  auto grad_level_set_R =
+      "e_MN", std::move(e_s_surface), surface_W.get());
+  auto h_RS_W =
       std::make_unique<geometry::SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_M", std::move(grad_level_set_R_surface), surface_R.get());
-  // Surface and gradients are measured and expressed in the rigid frame R.
-  // In consistency with ContactSurface's contract, the first id must belong
-  // to the geometry associated with the frame in which quantities are
-  // expressed, in this case id_R.
-  return ContactSurface<T>(id_R, id_S, std::move(surface_R), std::move(e_s),
-                           std::move(grad_level_set_R), X_RS);
+          "grad_h_MN_W", std::move(h_RS_W_vectors), surface_W.get());
+
+  return ContactSurface<T>(id_R, id_S, std::move(surface_W), std::move(e_s),
+                           std::move(h_RS_W));
 }
 
 template <typename T>
@@ -177,6 +239,7 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   const GeometryImplementationData& specs =
       *reinterpret_cast<GeometryImplementationData*>(user_data);
   const double elastic_modulus = specs.elastic_modulus;
+  const double dissipation = specs.dissipation;
   if (elastic_modulus == std::numeric_limits<double>::infinity()) {
     drake::log()->warn(
         "HydroelasticEngine. The current hydroelastic model implementation "
@@ -189,10 +252,8 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   const int refinement_level = 2;
   auto sphere_field =
       MakeSphereHydroelasticField<T>(refinement_level, sphere.get_radius());
-  auto model =
-      std::make_unique<HydroelasticGeometry<T>>(std::move(sphere_field));
-  model->set_elastic_modulus(elastic_modulus);
-
+  auto model = std::make_unique<HydroelasticGeometry<T>>(
+      std::move(sphere_field), elastic_modulus, dissipation);
   model_data_.geometry_id_to_model_[specs.id] = std::move(model);
 }
 
@@ -228,6 +289,13 @@ void HydroelasticEngine<T>::ImplementGeometry(const Box&, void*) {
   drake::log()->warn(
       "HydroelasticEngine. The current hydroelastic model implementation "
       "does not support box geometries. Geometry ignored.");
+}
+
+template <typename T>
+void HydroelasticEngine<T>::ImplementGeometry(const Capsule&, void*) {
+  drake::log()->warn(
+      "HydroelasticEngine. The current hydroelastic model implementation "
+      "does not support capsule geometries. Geometry ignored.");
 }
 
 template <typename T>

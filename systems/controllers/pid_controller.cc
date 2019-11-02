@@ -30,7 +30,7 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
+    : LeafSystem<T>(SystemTypeTag<PidController>{}),
       kp_(kp),
       ki_(ki),
       kd_(kd),
@@ -39,10 +39,10 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
       state_projection_(state_projection),
       output_projection_(output_projection) {
   if (kp_.size() != kd_.size() || kd_.size() != ki_.size()) {
-    throw std::logic_error("Gains must have equal length: |Kp| = " +
-                           std::to_string(kp_.size()) + ", |Ki| = " +
-                           std::to_string(ki_.size()) + ", |Kd| = " +
-                           std::to_string(kd_.size()));
+    throw std::logic_error(
+        "Gains must have equal length: |Kp| = " + std::to_string(kp_.size()) +
+        ", |Ki| = " + std::to_string(ki_.size()) +
+        ", |Kd| = " + std::to_string(kd_.size()));
   }
   if (state_projection_.rows() != 2 * num_controlled_q_) {
     throw std::logic_error(
@@ -60,15 +60,19 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(output_projection_.rows()),
+      this->DeclareVectorOutputPort("control",
+                                    BasicVector<T>(output_projection_.rows()),
                                     &PidController<T>::CalcControl)
           .get_index();
 
   input_index_state_ =
-      this->DeclareInputPort(kVectorValued, num_full_state_).get_index();
+      this->DeclareInputPort("estimated_state", kVectorValued, num_full_state_)
+          .get_index();
 
   input_index_desired_state_ =
-      this->DeclareInputPort(kVectorValued, 2 * num_controlled_q_).get_index();
+      this->DeclareInputPort("desired_state", kVectorValued,
+                             2 * num_controlled_q_)
+          .get_index();
 }
 
 template <typename T>

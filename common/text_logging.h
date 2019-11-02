@@ -23,7 +23,7 @@ not be compiled if debugging is turned off (-DNDEBUG is set):
   SPDLOG_LOGGER_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
 </pre>
 
-The format string syntax is fmtlib; see http://fmtlib.net/5.3.0/syntax.html.
+The format string syntax is fmtlib; see https://fmt.dev/6.0.0/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
 printed without any special handling.
 */
@@ -198,6 +198,12 @@ struct Warn {
 /// @return The string value of the previous log level. If SPDLOG is disabled,
 /// then this returns an empty string.
 std::string set_log_level(const std::string& level);
+
+/// The "unchanged" string to pass to set_log_level() so as to achieve a no-op.
+extern const char* const kSetLogLevelUnchanged;
+
+/// An end-user help string suitable to describe the effects of set_log_level().
+extern const char* const kSetLogLevelHelpMessage;
 
 }  // namespace logging
 }  // namespace drake

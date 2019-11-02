@@ -107,7 +107,7 @@ TEST_P(PoseClosedFormTest, PcaAndSvd) {
 }
 
 // Instantiate parameterized test cases.
-INSTANTIATE_TEST_CASE_P(test, PoseClosedFormTest, ObjectTestTypes);
+INSTANTIATE_TEST_SUITE_P(test, PoseClosedFormTest, ObjectTestTypes);
 
 }  // namespace
 }  // namespace estimators

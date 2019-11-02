@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
+load("@drake//tools/workspace:os.bzl", "os_repository")
 load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
 load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
@@ -8,6 +9,7 @@ load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository
 load("@drake//tools/workspace/bullet:repository.bzl", "bullet_repository")
 load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
+load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
 load("@drake//tools/workspace/clang_cindex_python3:repository.bzl", "clang_cindex_python3_repository")  # noqa
 load("@drake//tools/workspace/com_google_protobuf:repository.bzl", "com_google_protobuf_repository")  # noqa
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
@@ -23,14 +25,15 @@ load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/freetype2:repository.bzl", "freetype2_repository")  # noqa
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
+load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_repository")  # noqa
 load("@drake//tools/workspace/github3_py:repository.bzl", "github3_py_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
 load("@drake//tools/workspace/godotengine:repository.bzl", "godotengine_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
-load("@drake//tools/workspace/ignition_rndf:repository.bzl", "ignition_rndf_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
@@ -57,14 +60,15 @@ load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
+load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
 load("@drake//tools/workspace/protoc:repository.bzl", "protoc_repository")
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/pycps:repository.bzl", "pycps_repository")
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
-load("@drake//tools/workspace/python3:repository.bzl", "python3_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
 load("@drake//tools/workspace/ruby:repository.bzl", "ruby_repository")
+load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
 load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
 load("@drake//tools/workspace/sdformat:repository.bzl", "sdformat_repository")
 load("@drake//tools/workspace/semantic_version:repository.bzl", "semantic_version_repository")  # noqa
@@ -74,11 +78,11 @@ load("@drake//tools/workspace/sphinx:repository.bzl", "sphinx_repository")
 load("@drake//tools/workspace/spruce:repository.bzl", "spruce_repository")
 load("@drake//tools/workspace/stx:repository.bzl", "stx_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
+load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinydir:repository.bzl", "tinydir_repository")
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
-load("@drake//tools/workspace/u_msgpack_python:repository.bzl", "u_msgpack_python_repository")  # noqa
 load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
@@ -108,6 +112,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         cc_repository(name = "cc")
     if "ccd" not in excludes:
         ccd_repository(name = "ccd", mirrors = mirrors)
+    if "cds" not in excludes:
+        cds_repository(name = "cds", mirrors = mirrors)
     if "clang_cindex_python3" not in excludes:
         clang_cindex_python3_repository(name = "clang_cindex_python3", mirrors = mirrors)  # noqa
     if "com_google_protobuf" not in excludes:
@@ -120,10 +126,12 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         csdp_repository(name = "csdp", mirrors = mirrors)
     if "doxygen" not in excludes:
         doxygen_repository(name = "doxygen", mirrors = mirrors)
+    if "drake_detected_os" not in excludes:
+        os_repository(name = "drake_detected_os")
     if "drake_visualizer" not in excludes:
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
     if "dreal" not in excludes:
-        dreal_repository(name = "dreal")
+        dreal_repository(name = "dreal", mirrors = mirrors)
     if "eigen" not in excludes:
         eigen_repository(name = "eigen", mirrors = mirrors)
     if "expat" not in excludes:
@@ -138,6 +146,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gflags_repository(name = "gflags")
     if "gfortran" not in excludes:
         gfortran_repository(name = "gfortran")
+    if "ghc_filesystem" not in excludes:
+        ghc_filesystem_repository(name = "ghc_filesystem", mirrors = mirrors)
     if "github3_py" not in excludes:
         github3_py_repository(name = "github3_py", mirrors = mirrors)
     if "glew" not in excludes:
@@ -150,10 +160,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gtest_repository(name = "gtest", mirrors = mirrors)
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
+    if "ibex" not in excludes:
+        ibex_repository(name = "ibex")
     if "ignition_math" not in excludes:
         ignition_math_repository(name = "ignition_math", mirrors = mirrors)
-    if "ignition_rndf" not in excludes:
-        ignition_rndf_repository(name = "ignition_rndf", mirrors = mirrors)
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
     if "json" not in excludes:
@@ -206,6 +216,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors)  # noqa
     if "osqp" not in excludes:
         osqp_repository(name = "osqp", mirrors = mirrors)
+    if "picosat" not in excludes:
+        picosat_repository(name = "picosat", mirrors = mirrors)
     if "protoc" not in excludes:
         protoc_repository(name = "protoc")
     if "pybind11" not in excludes:
@@ -216,12 +228,12 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pycps_repository(name = "pycps", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
-    if "python3" not in excludes:
-        python3_repository(name = "python3")
     if "qdldl" not in excludes:
         qdldl_repository(name = "qdldl", mirrors = mirrors)
     if "ruby" not in excludes:
         ruby_repository(name = "ruby")
+    if "rules_pkg" not in excludes:
+        rules_pkg_repository(name = "rules_pkg", mirrors = mirrors)
     if "scs" not in excludes:
         scs_repository(name = "scs", mirrors = mirrors)
     if "sdformat" not in excludes:
@@ -240,6 +252,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         stx_repository(name = "stx", mirrors = mirrors)
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
+    if "suitesparse" not in excludes:
+        suitesparse_repository(name = "suitesparse")
     if "tinydir" not in excludes:
         tinydir_repository(name = "tinydir", mirrors = mirrors)
     if "tinyobjloader" not in excludes:
@@ -248,8 +262,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml2_repository(name = "tinyxml2")
     if "tinyxml" not in excludes:
         tinyxml_repository(name = "tinyxml")
-    if "u_msgpack_python" not in excludes:
-        u_msgpack_python_repository(name = "u_msgpack_python", mirrors = mirrors)  # noqa
     if "uritemplate_py" not in excludes:
         uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
     if "vtk" not in excludes:

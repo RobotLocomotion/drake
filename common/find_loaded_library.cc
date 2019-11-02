@@ -1,7 +1,7 @@
 #include "drake/common/find_loaded_library.h"
 
 #include "drake/common/drake_throw.h"
-#include "drake/common/find_runfiles.h"
+#include "drake/common/filesystem.h"
 
 #ifdef __APPLE__
 #include <dlfcn.h>
@@ -43,7 +43,7 @@ unsigned char * ReadProcessMemory(mach_vm_address_t addr,
 // Gets the list of all the dynamic libraries that have been loaded. Finds
 // `library_name` in the list, and returns its absolute directory path.
 // This function is specific to MacOS
-optional<string> LoadedLibraryPath(const string& library_name) {
+std::optional<string> LoadedLibraryPath(const string& library_name) {
   task_dyld_info dyld_info;
   mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
   // Getinformation from current process.
@@ -54,7 +54,7 @@ optional<string> LoadedLibraryPath(const string& library_name) {
     unsigned char* data =
       ReadProcessMemory(dyld_info.all_image_info_addr, &size);
     if (!data) {
-      return nullopt;
+      return std::nullopt;
     }
     dyld_all_image_infos* infos =
       reinterpret_cast<dyld_all_image_infos *>(data);
@@ -65,7 +65,7 @@ optional<string> LoadedLibraryPath(const string& library_name) {
     unsigned char* info_addr = ReadProcessMemory(
         reinterpret_cast<mach_vm_address_t>(infos->infoArray), &size2);
     if (!info_addr) {
-      return nullopt;
+      return std::nullopt;
     }
     dyld_image_info* info =
       reinterpret_cast<dyld_image_info*>(info_addr);
@@ -80,14 +80,14 @@ optional<string> LoadedLibraryPath(const string& library_name) {
       }
     }
   }
-  return nullopt;
+  return std::nullopt;
 }
 #else  // Not __APPLE__
 
 // Gets the list of all the shared objects that have been loaded. Finds
 // `library_name` in the list, and returns its absolute directory path.
 // This function is specific to Linux.
-optional<string> LoadedLibraryPath(const std::string& library_name) {
+std::optional<string> LoadedLibraryPath(const std::string& library_name) {
   void* handle = dlopen(NULL, RTLD_NOW);
   link_map *map;
   dlinfo(handle, RTLD_DI_LINKMAP, &map);
@@ -102,7 +102,8 @@ optional<string> LoadedLibraryPath(const std::string& library_name) {
     if (pos_slash && !strcmp(pos_slash + 1, library_name.c_str())) {
       // Check if path is relative. If so, make it absolute.
       if (map->l_name[0] != '/') {
-        std::string argv0 = internal::Readlink("/proc/self/exe");
+        std::string argv0 = filesystem::read_symlink({
+            "/proc/self/exe"}).string();
         return string(dirname(&argv0[0])) + "/" +
               string(map->l_name, pos_slash - map->l_name);
       } else {
@@ -111,7 +112,7 @@ optional<string> LoadedLibraryPath(const std::string& library_name) {
     }
     map = map->l_next;
   }
-  return nullopt;
+  return std::nullopt;
 }
 #endif
 }  // namespace drake

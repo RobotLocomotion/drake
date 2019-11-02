@@ -1,10 +1,8 @@
-from __future__ import absolute_import, print_function
-
 import unittest
-import six
 from types import ModuleType
 
 import pydrake.common.cpp_template as m
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 _TEST_MODULE = "cpp_template_test"
 
@@ -88,6 +86,10 @@ class TestCppTemplate(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             template.add_instantiations(instantiation_func, [dummy_c])
 
+        with self.assertRaises(TypeError) as cm:
+            assert_pickle(self, template)
+        self.assertIn("can't pickle module objects", str(cm.exception))
+
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
         self.assertEqual(str(template), "<TemplateClass {}.ClassTpl>".format(
@@ -102,6 +104,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(template[float], DummyB)
         self.assertEqual(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
             _TEST_MODULE))
+
+        assert_pickle(self, template[int]())
 
     def test_user_class(self):
         test = self
@@ -152,6 +156,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(MyFloat().mangled_result, (float, 10))
         self.assertTrue(hasattr(MyFloat, "_Impl__mangled_method"))
 
+        assert_pickle(self, MyTemplate[int]())
+
     def test_function(self):
         template = m.TemplateFunction("func")
 
@@ -164,6 +170,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(template), "<TemplateFunction {}.func>".format(
             _TEST_MODULE))
 
+        assert_pickle(self, template[int])
+
     def test_method(self):
         DummyC.method = m.TemplateMethod("method", DummyC)
         DummyC.method.add_instantiation(int, DummyC.dummy_c)
@@ -172,14 +180,10 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(DummyC.method),
                          "<unbound TemplateMethod DummyC.method>")
         self.assertTrue(DummyC.method.is_instantiation(DummyC.dummy_c))
-        if six.PY2:
-            self.assertEqual(
-                str(DummyC.method[int]), "<unbound method DummyC.method[int]>")
-        else:
-            self.assertTrue(
-                str(DummyC.method[int]).startswith(
-                    "<function DummyC.method[int] at "),
-                str(DummyC.method[int]))
+        self.assertTrue(
+            str(DummyC.method[int]).startswith(
+                "<function DummyC.method[int] at "),
+            str(DummyC.method[int]))
 
         obj = DummyC()
         self.assertTrue(
@@ -192,6 +196,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(DummyC.method[int](obj), (obj, 3))
         self.assertEqual(obj.method[float](), (obj, 4))
         self.assertEqual(DummyC.method[float](obj), (obj, 4))
+        assert_pickle(self, DummyC.method[int])
 
     def test_get_or_init(self):
         m_test = ModuleType("test_module")

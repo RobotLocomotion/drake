@@ -34,7 +34,7 @@ const int kInvalidPortIdentifier = -1;
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(
     std::unique_ptr<const RigidBodyTree<double>> tree, double timestep)
-    : LeafSystem<T>(SystemTypeTag<drake::systems::RigidBodyPlant>{}),
+    : LeafSystem<T>(SystemTypeTag<RigidBodyPlant>{}),
       tree_(move(tree)),
       timestep_(timestep),
       compliant_contact_model_(std::make_unique<CompliantContactModel<T>>()) {
@@ -55,7 +55,7 @@ RigidBodyPlant<T>::RigidBodyPlant(
 template <typename T>
 template <typename U>
 RigidBodyPlant<T>::RigidBodyPlant(const RigidBodyPlant<U>& other)
-    : LeafSystem<T>(SystemTypeTag<drake::systems::RigidBodyPlant>{}),
+    : LeafSystem<T>(SystemTypeTag<RigidBodyPlant>{}),
       tree_(other.get_rigid_body_tree().Clone()),
       timestep_(other.get_time_step()),
       compliant_contact_model_(std::make_unique<CompliantContactModel<T>>(

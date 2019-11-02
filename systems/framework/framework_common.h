@@ -2,13 +2,13 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_optional.h"
-#include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/value.h"
 
@@ -90,9 +90,9 @@ constexpr UseDefaultName kUseDefaultName = {};
 
 /** (Advanced.) Sugar that compares a variant against kUseDefaultName. */
 inline bool operator==(
-    const variant<std::string, UseDefaultName>& value,
+    const std::variant<std::string, UseDefaultName>& value,
     const UseDefaultName&) {
-  return holds_alternative<UseDefaultName>(value);
+  return std::holds_alternative<UseDefaultName>(value);
 }
 
 /** Intended for use in e.g. variant<InputPortSelection, InputPortIndex> for
@@ -107,6 +107,7 @@ enum class OutputPortSelection { kNoOutput = -1, kUseFirstOutputIfItExists =
 #ifndef DRAKE_DOXYGEN_CXX
 class ContextBase;
 class InputPortBase;
+class SystemBase;
 
 namespace internal {
 
@@ -240,6 +241,10 @@ class SystemParentServiceInterface {
   // above.)
   virtual std::string GetParentPathname() const = 0;
 
+  // Returns the root Diagram at the top of this Diagram tree. Will return
+  // `this` if we are already at the root.
+  virtual const SystemBase& GetRootSystemBase() const = 0;
+
  protected:
   SystemParentServiceInterface() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemParentServiceInterface);
@@ -288,7 +293,7 @@ enum BuiltInTicketNumbers {
 // of the child's parent Diagram. If the `child_subsystem` index is missing it
 // indicates that the prerequisite is internal.
 struct OutputPortPrerequisite {
-  optional<SubsystemIndex> child_subsystem;
+  std::optional<SubsystemIndex> child_subsystem;
   DependencyTicket dependency;
 };
 

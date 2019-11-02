@@ -1,4 +1,3 @@
-
 import argparse
 
 try:
@@ -35,12 +34,12 @@ from robotlocomotion import image_array_t
 class EndEffectorTeleop(LeafSystem):
     def __init__(self):
         LeafSystem.__init__(self)
-        self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
-                                      self._DoCalcOutput)
+        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+                                     self.DoCalcOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self._DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicPublish(0.01, 0.0)
 
         self.window = tk.Tk()
         self.window.title("End-Effector TeleOp")
@@ -134,11 +133,11 @@ class EndEffectorTeleop(LeafSystem):
         self.y.set(xyz[1])
         self.z.set(xyz[2])
 
-    def _DoPublish(self, context, event):
+    def DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
 
-    def _DoCalcOutput(self, context, output):
+    def DoCalcOutput(self, context, output):
         output.SetAtIndex(0, self.roll.get())
         output.SetAtIndex(1, self.pitch.get())
         output.SetAtIndex(2, self.yaw.get())

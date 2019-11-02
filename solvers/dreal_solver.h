@@ -1,12 +1,10 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
-#include <dreal/dreal.h>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 #include "drake/solvers/solver_base.h"
@@ -16,7 +14,36 @@ namespace solvers {
 
 class DrealSolver final : public SolverBase {
  public:
-  using Interval = dreal::Box::Interval;
+  /// Class representing an interval of doubles.
+  class Interval {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Interval)
+
+    /// Constructs an interval [low, high].
+    ///
+    /// @pre Its lower bound @p low must be less than or equal to its upper
+    /// bound @p high.
+    Interval(double low, double high) : low_{low}, high_{high} {
+      DRAKE_DEMAND(low <= high);
+    }
+
+    /// Returns its diameter.
+    double diam() const { return high_ - low_; }
+
+    /// Returns its mid-point.
+    double mid() const { return high_ / 2 + low_ / 2; }
+
+    /// Returns its lower bound.
+    double low() const { return low_; }
+
+    /// Returns its upper bound.
+    double high() const { return high_; }
+
+   private:
+    double low_{};
+    double high_{};
+  };
+
   using IntervalBox = std::unordered_map<symbolic::Variable, Interval>;
 
   /// Indicates whether to use dReal's --local-optimization option or not.
@@ -36,8 +63,9 @@ class DrealSolver final : public SolverBase {
   /// @returns a model, a mapping from a variable to an interval, if @p f is
   /// δ-satisfiable.
   /// @returns a nullopt, if @p is unsatisfiable.
-  static optional<IntervalBox> CheckSatisfiability(const symbolic::Formula& f,
-                                                   double delta);
+  static std::optional<IntervalBox> CheckSatisfiability(
+      const symbolic::Formula& f,
+      double delta);
 
   /// Finds a solution to minimize @p objective function while satisfying a
   /// given @p constraint using @p delta. When @p local_optimization is
@@ -48,10 +76,11 @@ class DrealSolver final : public SolverBase {
   /// @returns a model, a mapping from a variable to an interval, if a solution
   /// exists.
   /// @returns nullopt, if there is no solution.
-  static optional<IntervalBox> Minimize(const symbolic::Expression& objective,
-                                        const symbolic::Formula& constraint,
-                                        double delta,
-                                        LocalOptimization local_optimization);
+  static std::optional<IntervalBox> Minimize(
+      const symbolic::Expression& objective,
+      const symbolic::Formula& constraint,
+      double delta,
+      LocalOptimization local_optimization);
 
   /// @name Static versions of the instance methods with similar names.
   //@{

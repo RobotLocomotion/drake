@@ -4,11 +4,12 @@
 
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
@@ -33,6 +34,8 @@ using math::RollPitchYaw;
 using math::RollPitchYawd;
 using systems::Context;
 
+const double kEps = std::numeric_limits<double>::epsilon();
+
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
@@ -43,13 +46,13 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
 
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
-  spruce::path package_path = full_sdf_filename;
-  package_path = package_path.root();
-  package_path = package_path.root();
+  filesystem::path package_path = full_sdf_filename;
+  package_path = package_path.parent_path();
+  package_path = package_path.parent_path();
 
   // Construct the PackageMap.
   PackageMap package_map;
-  package_map.PopulateFromFolder(package_path.getStr());
+  package_map.PopulateFromFolder(package_path.string());
 
   // Read in the SDF file.
   AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
@@ -177,8 +180,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 
   // Check model scope frames.
   auto context = plant.CreateDefaultContext();
-  const double eps = std::numeric_limits<double>::epsilon();
-  auto check_frame = [&plant, instance1, &context, eps](
+  auto check_frame = [&plant, instance1, &context](
       std::string parent_name, std::string name,
       const RigidTransformd& X_PF_expected) {
     const Frame<double>& frame = plant.GetFrameByName(name, instance1);
@@ -186,7 +188,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
         plant.GetFrameByName(parent_name, instance1);
     const RigidTransformd X_PF = plant.CalcRelativeTransform(
         *context, parent_frame, frame);
-    EXPECT_TRUE(CompareMatrices(X_PF_expected.matrix(), X_PF.matrix(), eps))
+    EXPECT_TRUE(CompareMatrices(X_PF_expected.matrix(), X_PF.matrix(), kEps))
         << name;
   };
 
@@ -199,6 +201,131 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   const RigidTransformd X_MF3(Vector3d(0.7, 0.8, 0.9));
   check_frame(
       "_instance1_sdf_model_frame", "model_scope_model_frame_implicit", X_MF3);
+}
+
+struct PlantAndSceneGraph {
+  std::unique_ptr<MultibodyPlant<double>> plant;
+  std::unique_ptr<SceneGraph<double>> scene_graph;
+};
+
+PlantAndSceneGraph ParseTestString(const std::string& inner) {
+  const std::string filename = temp_directory() + "/test_string.sdf";
+  std::ofstream file(filename);
+  file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
+  file.close();
+  PlantAndSceneGraph pair;
+  pair.plant = std::make_unique<MultibodyPlant<double>>();
+  pair.scene_graph = std::make_unique<SceneGraph<double>>();
+  PackageMap package_map;
+  pair.plant->RegisterAsSourceForSceneGraph(pair.scene_graph.get());
+  drake::log()->debug("inner: {}", inner);
+  AddModelsFromSdfFile(filename, package_map, pair.plant.get());
+  return pair;
+}
+
+GTEST_TEST(SdfParser, FloatingBodyPose) {
+  // Test that floating bodies (links) still have their poses preserved.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='good'>
+  <link name='a'>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
+  </link>
+  <link name='b'>
+    <pose>4 5 6  0.4 0.5 0.6</pose>
+  </link>
+</model>)""");
+  pair.plant->Finalize();
+  EXPECT_GT(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+  const RigidTransformd X_WA_expected(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+  const RigidTransformd X_WA =
+      pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
+  const RigidTransformd X_WB_expected(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
+  const RigidTransformd X_WB =
+      pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
+}
+
+GTEST_TEST(SdfParser, StaticModelSupported) {
+  // Test that static models are partially supported.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='good'>
+  <static>true</static>
+  <link name='a'>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
+  </link>
+  <link name='b'>
+    <pose>4 5 6  0.4 0.5 0.6</pose>
+  </link>
+</model>)""");
+  pair.plant->Finalize();
+  EXPECT_EQ(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+  const RigidTransformd X_WA_expected(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+  const RigidTransformd X_WA =
+      pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
+  const RigidTransformd X_WB_expected(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
+  const RigidTransformd X_WB =
+      pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
+}
+
+GTEST_TEST(SdfParser, StaticModelWithJoints) {
+  // Specifying redundant welds in the model yields no errors, either to the
+  // world or between links.
+  DRAKE_EXPECT_NO_THROW(ParseTestString(R"""(
+<model name='good'>
+  <static>true</static>
+  <link name='a'/>
+  <joint name='a_weld' type='fixed'>
+    <parent>world</parent>
+    <child>a</child>
+  </joint>
+  <link name='b'/>
+  <joint name='b_weld' type='fixed'>
+    <parent>a</parent>
+    <child>b</child>
+  </joint>
+</model>)"""));
+
+  // Attempting to weld should fail fast, either during the welding or when
+  // finalizing (due to loop).
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='bad'>
+  <static>true</static>
+  <link name='a'/>
+</model>
+)""");
+  auto weld_and_finalize = [&pair]() {
+    pair.plant->WeldFrames(
+        pair.plant->world_frame(), pair.plant->GetFrameByName("a"));
+    pair.plant->Finalize();
+  };
+  EXPECT_THROW(weld_and_finalize(), std::runtime_error);
+
+  // Drake does not support "frozen" joints (#12227).
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    ParseTestString(R"""(
+<model name='good'>
+  <static>true</static>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='my_hinge' type='revolute'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+  </joint>
+</model>)"""),
+    std::runtime_error,
+    "Only fixed joints are permitted in static models.");
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
@@ -222,7 +349,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
-  sdf::addURIPath("model://", spruce::path(full_name).root());
+  sdf::addURIPath("model://", filesystem::path(full_name).parent_path());
   MultibodyPlant<double> plant;
 
   // We start with the world and default model instances.
@@ -392,18 +519,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
 }
 
 void ExpectUnsupportedFrame(const std::string& inner) {
-  const std::string filename = temp_directory() + "/bad.sdf";
-  std::ofstream file(filename);
-  file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
-  file.close();
-
-  MultibodyPlant<double> plant;
-  SceneGraph<double> scene_graph;
-  PackageMap package_map;
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  drake::log()->debug("inner: {}", inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelsFromSdfFile(filename, package_map, &plant),
+      ParseTestString(inner),
       std::runtime_error,
       R"(<pose frame='\{non-empty\}'/> is presently not supported )"
       R"(outside of the <frame/> tag.)");

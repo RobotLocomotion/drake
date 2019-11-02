@@ -2,7 +2,6 @@
 Test math overloads.
 """
 
-from __future__ import print_function
 
 import math
 import unittest

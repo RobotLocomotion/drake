@@ -10,9 +10,10 @@ py_library(
 py_library(
     name = "plugin",
     srcs = [
-        "show_contact.py",
         "show_frame.py",
+        "show_hydroelastic_contact.py",
         "show_image.py",
+        "show_point_pair_contact.py",
         "show_time.py",
         "use_builtin_scripts.py",
     ],

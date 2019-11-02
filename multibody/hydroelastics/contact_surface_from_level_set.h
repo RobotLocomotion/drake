@@ -176,55 +176,40 @@ int IntersectTetWithLevelSet(
     const Vector3<T> pz_N = w1 * p1_N + w2 * p2_N;
     vertices_N->emplace_back(pz_N);
 
-    // The geometric center is only needed for Case II.
-    if (num_intersections == 4) pc_N += pz_N;
+    // Regardless of whether we get a 3- or 4-sided polygon, we need the
+    // centroid.
+    pc_N += pz_N;
 
     // Interpolate the scalar field e_m at the zero crossing z.
     const T e_m_at_z = w1 * e_m[v1] + w2 * e_m[v2];
     e_m_surface->emplace_back(e_m_at_z);
   }
 
-  // Case I: A single vertex has different sign from the other three. A single
-  // triangle is formed. We form a triangle so that its right handed normal
-  // points in the direction of the positive side of the volume.
+  // Every face must be split around its centroid. This prevents discontinuities
+  // when the intersection goes from a triangle to a quad.
+
   using V = geometry::SurfaceVertexIndex;
-  if (num_intersections == 3) {
-    faces->emplace_back(V(num_vertices), V(num_vertices + 1),
-                        V(num_vertices + 2));
-    return num_intersections;
+  pc_N /= num_intersections;
+  V centroid_index(vertices_N->size());
+  vertices_N->emplace_back(pc_N);
+
+  // Interpolate scalar field e_m at pc_N as the average of the values at the
+  // zero crossings.
+  const T e_m_at_c = std::accumulate(e_m_surface->end() - num_intersections,
+                                     e_m_surface->end(), T(0)) /
+                     T(num_intersections);
+  e_m_surface->emplace_back(e_m_at_c);
+
+  // Build a fan of triangles consistent of an edge from the original polygon
+  // and the centroid vertex.
+  V prev(num_vertices + num_intersections - 1);
+  for (int i = 0; i < num_intersections; ++i) {
+    V current(i + num_vertices);
+    faces->emplace_back(prev, current, centroid_index);
+    prev = current;
   }
 
-  // Case II: Two pairs of vertices with the same sign. We form four new
-  // triangles by placing an additional vertex in the geometry center of the
-  // intersected vertices. The new triangles are oriented such that their
-  // normals point towards the positive side, in accordance to our convention.
-  if (num_intersections == 4) {
-    // Add the geometric center.
-    pc_N /= 4.0;
-    vertices_N->emplace_back(pc_N);
-
-    // Interpolate scalar field e_m at pc_N as the average of the values at the
-    // zero crossings.
-    const T e_m_at_c =
-        std::accumulate(e_m_surface->end() - 4, e_m_surface->end(), T(0)) /
-        T(4.0);
-    e_m_surface->emplace_back(e_m_at_c);
-
-    // Make four triangles sharing the geometric center. All oriented such
-    // that their right-handed normal points towards the positive side.
-    faces->emplace_back(V(0 + num_vertices), V(1 + num_vertices),
-                        V(4 + num_vertices));
-    faces->emplace_back(V(1 + num_vertices), V(2 + num_vertices),
-                        V(4 + num_vertices));
-    faces->emplace_back(V(2 + num_vertices), V(3 + num_vertices),
-                        V(4 + num_vertices));
-    faces->emplace_back(V(3 + num_vertices), V(0 + num_vertices),
-                        V(4 + num_vertices));
-
-    // Five vertices from intersecting four edges plus one additional vertex at
-    // the geometric center.
-    return 5;
-  }
+  return num_intersections + 1;
 
   DRAKE_UNREACHABLE();
 }
@@ -276,9 +261,9 @@ int IntersectTetWithLevelSet(
 /// Graphics Gems IV, pp. 324-349.
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
-/// defined by `mesh_M`.  The triangulation is expressed in frame N. The
-/// right handed normal of each triangle points towards the positive side of the
-/// level set function `φ(V)`.
+/// defined by `mesh_M`.  The triangulation is measured and expressed in frame
+/// N. The right handed normal of each triangle points towards the positive side
+/// of the level set function `φ(V)`.
 ///
 /// @note  The geometry::SurfaceMesh may have duplicate vertices.
 template <typename T>

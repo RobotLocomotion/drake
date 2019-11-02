@@ -5,6 +5,7 @@
 
 #include "bot_core/atlas_command_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -12,7 +13,8 @@
 namespace drake {
 namespace systems {
 
-class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED("2020-02-01", "The valkyrie example is being removed.")
+ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
  public:
   ValkyriePDAndFeedForwardController(const RigidBodyTree<double>& robot,
                          const VectorX<double>& nominal_position,

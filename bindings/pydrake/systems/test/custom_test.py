@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import copy
 import unittest
 import warnings
@@ -45,6 +43,7 @@ from pydrake.systems.test.test_util import (
     call_vector_system_overrides,
     )
 
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
@@ -128,10 +127,10 @@ class TestCustom(unittest.TestCase):
         system = CustomAdder(2, 3)
         return system
 
-    def _fix_adder_inputs(self, context):
+    def _fix_adder_inputs(self, system, context):
         self.assertEqual(context.num_input_ports(), 2)
-        context.FixInputPort(0, BasicVector([1, 2, 3]))
-        context.FixInputPort(1, BasicVector([4, 5, 6]))
+        system.get_input_port(0).FixValue(context, [1, 2, 3])
+        system.get_input_port(1).FixValue(context, [4, 5, 6])
 
     def test_diagram_adder(self):
         system = CustomDiagram(2, 3)
@@ -144,7 +143,7 @@ class TestCustom(unittest.TestCase):
         system = self._create_adder_system()
         context = system.CreateDefaultContext()
         self.assertEqual(context.num_output_ports(), 1)
-        self._fix_adder_inputs(context)
+        self._fix_adder_inputs(system, context)
         output = system.AllocateOutput()
         self.assertEqual(output.num_ports(), 1)
         system.CalcOutput(context, output)
@@ -164,7 +163,7 @@ class TestCustom(unittest.TestCase):
         builder.Connect(adder.get_output_port(0), zoh.get_input_port(0))
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
-        self._fix_adder_inputs(context)
+        self._fix_adder_inputs(diagram, context)
 
         simulator = Simulator(diagram, context)
         simulator.Initialize()
@@ -380,53 +379,6 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
 
-    def test_deprecated_protected_aliases(self):
-        """Tests a subset of protected aliases, pursuant to #9651."""
-
-        class OldSystem(LeafSystem):
-            def __init__(self):
-                LeafSystem.__init__(self)
-                self.called_publish = False
-                # Check a non-overridable method
-                with catch_drake_warnings(expected_count=1):
-                    self._DeclareVectorInputPort("x", BasicVector(1))
-
-            def _DoPublish(self, context, events):
-                self.called_publish = True
-
-        # Ensure old overrides are still used
-        system = OldSystem()
-        context = system.CreateDefaultContext()
-        with catch_drake_warnings(expected_count=1):
-            system.Publish(context)
-        self.assertTrue(system.called_publish)
-
-        # Ensure documentation includes the deprecation message.
-        self.assertIn("deprecated", LeafSystem._DoPublish.__doc__)
-        # This will warn both on (a) calling the method and (b) on the
-        # invocation of the override.
-        with catch_drake_warnings(expected_count=2):
-            LeafSystem._DoPublish(system, context, [])
-
-        class AccidentallyBothSystem(LeafSystem):
-            def __init__(self):
-                LeafSystem.__init__(self)
-                self.called_old_publish = False
-                self.called_new_publish = False
-
-            def DoPublish(self, context, events):
-                self.called_new_publish = True
-
-            def _DoPublish(self, context, events):
-                self.called_old_publish = True
-
-        system = AccidentallyBothSystem()
-        context = system.CreateDefaultContext()
-        # This will trigger no deprecations, as the newer publish is called.
-        system.Publish(context)
-        self.assertTrue(system.called_new_publish)
-        self.assertFalse(system.called_old_publish)
-
     def test_vector_system_overrides(self):
         dt = 0.5
         for is_discrete in [False, True]:
@@ -434,7 +386,7 @@ class TestCustom(unittest.TestCase):
             context = system.CreateDefaultContext()
 
             u = np.array([1.])
-            context.FixInputPort(0, BasicVector(u))
+            system.get_input_port(0).FixValue(context, u)
 
             # Dispatch virtual calls from C++.
             output = call_vector_system_overrides(
@@ -541,6 +493,10 @@ class TestCustom(unittest.TestCase):
         self.assertIsNot(subcontext, None)
         self.assertIs(
             diagram.GetSubsystemContext(system, context), subcontext)
+        subcontext2 = system.GetMyMutableContextFromRoot(context)
+        self.assertIsNot(subcontext2, None)
+        self.assertIs(subcontext2, subcontext)
+        self.assertIs(system.GetMyContextFromRoot(context), subcontext2)
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
@@ -604,6 +560,13 @@ class TestCustom(unittest.TestCase):
 
     def test_abstract_io_port(self):
         test = self
+
+        def assert_value_equal(a, b):
+            a_name, a_value = a
+            b_name, b_value = b
+            self.assertEqual(a_name, b_name)
+            numpy_compare.assert_equal(a_value, b_value)
+
         # N.B. Since this has trivial operations, we can test all scalar types.
         for T in [float, AutoDiffXd, Expression]:
             default_value = ("default", T(0.))
@@ -627,16 +590,16 @@ class TestCustom(unittest.TestCase):
                         context, 0).get_value()
                     # The allocator function will populate the output with
                     # the "input"
-                    test.assertTupleEqual(input_value, expected_input_value)
+                    assert_value_equal(input_value, expected_input_value)
                     y_data.set_value(expected_output_value)
-                    test.assertTupleEqual(y_data.get_value(),
-                                          expected_output_value)
+                    assert_value_equal(
+                        y_data.get_value(), expected_output_value)
 
             system = CustomAbstractSystem()
             context = system.CreateDefaultContext()
 
             self.assertEqual(context.num_input_ports(), 1)
-            context.FixInputPort(0, AbstractValue.Make(expected_input_value))
+            system.get_input_port(0).FixValue(context, expected_input_value)
             output = system.AllocateOutput()
             self.assertEqual(output.num_ports(), 1)
             system.CalcOutput(context, output)
@@ -667,6 +630,7 @@ class TestCustom(unittest.TestCase):
         system = ParseFloatSystem()
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
-        context.FixInputPort(0, AbstractValue.Make(["22.2"]))
+        system.get_input_port(0).FixValue(context,
+                                          AbstractValue.Make(["22.2"]))
         system.CalcOutput(context, output)
         self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)

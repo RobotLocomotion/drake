@@ -70,7 +70,7 @@
       <pose frame=''>0 0 0.023 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.025 0.092 0.046</size>
+          <size>0.05 0.092 0.046</size>
         </box>
       </geometry>
       <material>
@@ -81,7 +81,7 @@
       <pose frame=''>0 0 -0.023 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.025 0.092 0.046</size>
+          <size>0.05 0.092 0.046</size>
         </box>
       </geometry>
       <material>
@@ -92,8 +92,40 @@
       <pose>0 0 0 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.025 0.092 0.092</size>
+          <size>0.05 0.092 0.092</size>
         </box>
+      </geometry>
+    </collision>
+    <collision name='sphere1_collision'>
+      <pose>-0.025 0.046 0.046 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>.0001</radius>
+        </sphere>
+      </geometry>
+    </collision>
+    <collision name='sphere2_collision'>
+      <pose>-0.025 -0.046 0.046 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>.0001</radius>
+        </sphere>
+      </geometry>
+    </collision>
+    <collision name='sphere3_collision'>
+      <pose>-0.025 0.046 -0.046 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>.0001</radius>
+        </sphere>
+      </geometry>
+    </collision>
+    <collision name='sphere4_collision'>
+      <pose>-0.025 -0.046 -0.046 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>.0001</radius>
+        </sphere>
       </geometry>
     </collision>
    </link>

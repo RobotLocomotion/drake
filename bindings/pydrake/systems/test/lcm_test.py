@@ -6,7 +6,6 @@ import time
 import unittest
 
 import numpy as np
-from six import text_type as unicode
 
 from robotlocomotion import header_t, quaternion_t
 
@@ -22,10 +21,10 @@ from pydrake.systems.primitives import ConstantVectorSource, LogOutput
 # code uses it.
 def lcm_to_json(message):
     def helper(thing):
-        if type(thing) in (int, float, np.float64, str, unicode):
+        if type(thing) in (int, float, np.float64, str):
             return thing
         if type(thing) in (list,):
-            return map(helper, [x for x in thing])
+            return list(map(helper, [x for x in thing]))
         result = collections.OrderedDict()
         for field in thing.__slots__:
             value = getattr(thing, field)
@@ -131,7 +130,7 @@ class TestSystemsLcm(unittest.TestCase):
 
     def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
-        context.FixInputPort(0, value)
+        dut.get_input_port(0).FixValue(context, value)
         dut.Publish(context)
 
     def test_publisher(self):

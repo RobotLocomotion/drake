@@ -1,8 +1,5 @@
 #pragma once
 
-// Exclude internal classes from doxygen.
-#if !defined(DRAKE_DOXYGEN_CXX)
-
 #include <algorithm>
 #include <cstdint>
 #include <string>
@@ -12,10 +9,15 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+// TODO(SeanCurtis-TRI): Given the dependencies on fcl for this file, the name
+//  should reflect it so that it doesn't get included in files that will
+//  eventually get included in the public API.
 
 // TODO(SeanCurtis-TRI): Snake case this name.
 /** Calculates an absolute tolerance value conditioned to a problem's
@@ -75,7 +77,7 @@ class EncodedData {
   void set_anchored() { data_ &= ~kIsDynamicMask; }
 
   /** Writes the encoded data into the collision object's user data.  */
-  void write_to(fcl::CollisionObject<double>* object) {
+  void write_to(fcl::CollisionObject<double>* object) const {
     object->setUserData(reinterpret_cast<void*>(data_));
   }
 
@@ -127,5 +129,3 @@ std::string GetGeometryName(const fcl::CollisionObjectd& object);
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
-
-#endif  // !defined(DRAKE_DOXYGEN_CXX)

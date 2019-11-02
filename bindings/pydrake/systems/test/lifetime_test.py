@@ -6,7 +6,6 @@ Captures limitations for the present state of the Python bindings for the
 lifetime of objects, eventually lock down capabilities as they are introduced.
 """
 
-from __future__ import print_function
 
 import unittest
 import numpy as np
@@ -103,7 +102,7 @@ class TestLifetime(unittest.TestCase):
         context = system.CreateDefaultContext()
         info = Info()
         vector = DeleteListenerVector(info.record_deletion)
-        context.FixInputPort(0, vector)
+        system.get_input_port(0).FixValue(context, vector)
         del context
         # Same as above applications, using `py::keep_alive`.
         self.assertFalse(info.deleted)

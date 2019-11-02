@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -17,7 +18,9 @@
 #include "drake/systems/controllers/side.h"
 #include "drake/util/drakeUtil.h"
 
-struct QPControllerState {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+QPControllerState {
   double t_prev;
   bool foot_contact_prev[2];
   Eigen::VectorXd vref_integrator_state;
@@ -38,7 +41,9 @@ struct QPControllerState {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct PositionIndices {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+PositionIndices {
   std::map<Side, std::vector<int>> legs;
   std::map<Side, int> knees;
   std::map<Side, std::vector<int>> ankles;
@@ -48,12 +53,16 @@ struct PositionIndices {
   int back_bky;
 };
 
-struct RobotPropertyCache {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+RobotPropertyCache {
   PositionIndices position_indices;
   std::map<Side, int> foot_ids;
 };
 
-struct VRefIntegratorParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+VRefIntegratorParams {
   VRefIntegratorParams()
       : zero_ankles_on_contact(false), eta(0.0), delta_max(0.0) {}
 
@@ -68,7 +77,9 @@ struct VRefIntegratorParams {
   }
 };
 
-struct IntegratorParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+IntegratorParams {
   explicit IntegratorParams(const RigidBodyTree<double>& robot)
       : gains(Eigen::VectorXd::Zero(robot.get_num_positions())),
         clamps(Eigen::VectorXd::Zero(robot.get_num_positions())),
@@ -85,7 +96,9 @@ struct IntegratorParams {
   }
 };
 
-struct Bounds {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+Bounds {
   Bounds(const Eigen::Ref<const Eigen::VectorXd>& min_,
          const Eigen::Ref<const Eigen::VectorXd>& max_)
       : min(min_), max(max_) {}
@@ -98,7 +111,9 @@ struct Bounds {
   }
 };
 
-struct JointSoftLimitParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+JointSoftLimitParams {
   explicit JointSoftLimitParams(const RigidBodyTree<double>& robot)
       : enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
             robot.get_num_positions())),
@@ -132,7 +147,9 @@ struct JointSoftLimitParams {
   }
 };
 
-struct WholeBodyParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+WholeBodyParams {
   explicit WholeBodyParams(const RigidBodyTree<double>& robot)
       : Kp(Eigen::VectorXd::Zero(robot.get_num_positions())),
         Kd(Eigen::VectorXd::Zero(robot.get_num_positions())),
@@ -157,7 +174,9 @@ struct WholeBodyParams {
   }
 };
 
-struct BodyMotionParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+BodyMotionParams {
   BodyMotionParams()
       : Kp(Vector6d::Zero()),
         Kd(Vector6d::Zero()),
@@ -178,7 +197,9 @@ struct BodyMotionParams {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct HardwareGains {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+HardwareGains {
   explicit HardwareGains(const RigidBodyTree<double>& robot)
       : k_f_p(Eigen::VectorXd::Zero(robot.actuators.size())),
         k_q_p(Eigen::VectorXd::Zero(robot.actuators.size())),
@@ -209,7 +230,9 @@ struct HardwareGains {
   }
 };
 
-struct HardwareParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+HardwareParams {
   explicit HardwareParams(const RigidBodyTree<double>& robot)
       : gains(robot),
         joint_is_force_controlled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
@@ -229,7 +252,9 @@ struct HardwareParams {
   }
 };
 
-struct QPControllerParams {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+QPControllerParams {
   explicit QPControllerParams(const RigidBodyTree<double>& robot)
       : whole_body(robot),
         body_motion(robot.get_bodies().size()),
@@ -285,10 +310,13 @@ struct QPControllerParams {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
+DRAKE_DEPRECATED("2020-02-01", "Some attic controllers code is being removed.")
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
     const RigidBodyTree<double>& robot);
 
-struct DesiredBodyAcceleration {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+DesiredBodyAcceleration {
   DesiredBodyAcceleration()
       : accel_bounds(Eigen::VectorXd(6), Eigen::VectorXd(6)) {}
 
@@ -305,14 +333,18 @@ struct DesiredBodyAcceleration {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct QPControllerOutput {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+QPControllerOutput {
   Eigen::VectorXd q_ref;
   Eigen::VectorXd qd_ref;
   Eigen::VectorXd qdd;
   Eigen::VectorXd u;
 };
 
-struct QPControllerDebugData {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+QPControllerDebugData {
   drake::eigen_aligned_std_vector<SupportStateElement> active_supports;
   int nc;
   Eigen::MatrixXd normals;
@@ -339,14 +371,18 @@ struct QPControllerDebugData {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct PIDOutput {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+PIDOutput {
   Eigen::VectorXd q_ref;
   Eigen::VectorXd qddot_des;
 };
 
 // enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
 
-class Attachment {
+class DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+Attachment {
  public:
   std::string attach_to_frame;
   std::string urdf_filename;
@@ -367,7 +403,9 @@ class Attachment {
   }
 };
 
-class KinematicModifications {
+class DRAKE_DEPRECATED("2020-02-01",
+    "Some attic controllers code is being removed.")
+KinematicModifications {
  public:
   std::set<std::string> collision_groups_to_keep;
   std::vector<Attachment> attachments;

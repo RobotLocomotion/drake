@@ -342,7 +342,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   }
 
  protected:
-  /// Constructs a MultipleShooting instance with fixed sample times.
+  /// Constructs a MultipleShooting instance with fixed sample times. It creates
+  /// new placeholder variables for input and state.
   ///
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
@@ -351,8 +352,21 @@ class MultipleShooting : public solvers::MathematicalProgram {
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
                    double fixed_timestep);
 
+  /// Constructs a MultipleShooting instance with fixed sample times. It uses
+  /// the provided `input` and `state` as placeholders instead of creating new
+  /// placeholder variables for them.
+  ///
+  /// @param input Placeholder variables for input.
+  /// @param state Placeholder variables for state.
+  /// @param num_time_samples Number of time samples.
+  /// @param fixed_timestep The spacing between sample times.
+  MultipleShooting(const solvers::VectorXDecisionVariable& input,
+                   const solvers::VectorXDecisionVariable& state,
+                   int num_time_samples, double fixed_timestep);
+
   /// Constructs a MultipleShooting instance with sample times as decision
-  /// variables.
+  /// variables.  It creates new placeholder variables for input, state, and
+  /// time.
   ///
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
@@ -360,6 +374,21 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// @param minimum_timestep Minimum spacing between sample times.
   /// @param maximum_timestep Maximum spacing between sample times.
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
+                   double minimum_timestep, double maximum_timestep);
+
+  /// Constructs a MultipleShooting instance with sample times as decision
+  /// variables. It uses the provided `input`, `state`, and `time` as
+  /// placeholders instead of creating new placeholder variables for them.
+  ///
+  /// @param input Placeholder variables for input.
+  /// @param state Placeholder variables for state.
+  /// @param time Placeholder variable for time.
+  /// @param num_time_samples Number of time samples.
+  /// @param minimum_timestep Minimum spacing between sample times.
+  /// @param maximum_timestep Maximum spacing between sample times.
+  MultipleShooting(const solvers::VectorXDecisionVariable& input,
+                   const solvers::VectorXDecisionVariable& state,
+                   const solvers::DecisionVariable& time, int num_time_samples,
                    double minimum_timestep, double maximum_timestep);
 
   /// Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
@@ -394,6 +423,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
       const std::string& name) const;
 
  private:
+  MultipleShooting(const solvers::VectorXDecisionVariable& input,
+                   const solvers::VectorXDecisionVariable& state,
+                   int num_time_samples,
+                   const std::optional<solvers::DecisionVariable>& time_var,
+                   double minimum_timestep, double maximum_timestep);
+
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
                    bool timesteps_are_decision_variables,
                    double minimum_timestep, double maximum_timestep);

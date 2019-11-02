@@ -8,8 +8,8 @@ def gtest_repository(
     github_archive(
         name = name,
         repository = "google/googletest",
-        commit = "release-1.8.1",
-        sha256 = "9bf1fe5182a604b4135edc1a425ae356c9ad15e9b23f9f12a02e80184c3a249c",  # noqa
+        commit = "release-1.10.0",
+        sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",  # noqa
         build_file = "@drake//tools/workspace/gtest:package.BUILD.bazel",
         mirrors = mirrors,
     )

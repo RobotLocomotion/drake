@@ -8,7 +8,7 @@ namespace systems {
 
 template <typename T>
 Adder<T>::Adder(int num_inputs, int size)
-    : LeafSystem<T>(SystemTypeTag<systems::Adder>{}) {
+    : LeafSystem<T>(SystemTypeTag<Adder>{}) {
   for (int i = 0; i < num_inputs; i++) {
     this->DeclareInputPort(kUseDefaultName, kVectorValued, size);
   }

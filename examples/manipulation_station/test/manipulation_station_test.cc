@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -116,8 +117,8 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                   .isZero());
 
   // Check that the additional output ports exist and are spelled correctly.
-  EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
-  EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
+  DRAKE_EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
+  DRAKE_EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
 }
 
 // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
@@ -213,7 +214,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
                                   .get_value(),
                               Vector2d(q, v)));
 
-  EXPECT_NO_THROW(station.GetOutputPort("wsg_force_measured"));
+  DRAKE_EXPECT_NO_THROW(station.GetOutputPort("wsg_force_measured"));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
@@ -314,18 +315,18 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     auto set_default_camera_poses = [&default_poses]() {
       default_poses.emplace(
           "0", math::RigidTransform<double>(
-                   math::RollPitchYaw<double>(1.69101, 0.176488, 0.432721),
-                   Eigen::Vector3d(-0.233066, -0.451461, 0.466761)));
+                   math::RollPitchYaw<double>(2.549607, 1.357609, 2.971679),
+                   Eigen::Vector3d(-0.228895, -0.452176, 0.486308)));
 
       default_poses.emplace(
           "1", math::RigidTransform<double>(
-                   math::RollPitchYaw<double>(-1.68974, 0.20245, -0.706783),
-                   Eigen::Vector3d(-0.197236, 0.468471, 0.436499)));
+                   math::RollPitchYaw<double>(2.617427, -1.336404, -0.170522),
+                   Eigen::Vector3d(-0.201813, 0.469259, 0.417045)));
 
       default_poses.emplace(
           "2", math::RigidTransform<double>(
-                   math::RollPitchYaw<double>(0.0438918, 1.03776, -3.13612),
-                   Eigen::Vector3d(0.786905, -0.0284378, 1.04287)));
+                   math::RollPitchYaw<double>(-2.608978, 0.022298, 1.538460),
+                   Eigen::Vector3d(0.786258, -0.048422, 1.043315)));
     };
 
     ManipulationStation<double> dut;

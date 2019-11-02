@@ -393,7 +393,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   // Loop, decreasing accuracy as we go.
   while (accuracy > 1e-8) {
     // Verify that the isolation window is computed.
-    optional<double> iso_win = simulator.GetCurrentWitnessTimeIsolation();
+    std::optional<double> iso_win = simulator.GetCurrentWitnessTimeIsolation();
     EXPECT_TRUE(iso_win);
 
     // Verify that the new evaluation is closer to zero than the old one.
@@ -543,7 +543,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     EXPECT_EQ(w1, w2);
 
     // Verify that they are triggering.
-    optional<double> iso_time = simulator->GetCurrentWitnessTimeIsolation();
+    std::optional<double> iso_time =
+        simulator->GetCurrentWitnessTimeIsolation();
     EXPECT_TRUE(iso_time);
     EXPECT_LT(std::abs(w1), iso_time.value());
 
@@ -600,7 +601,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   simulator.get_mutable_context().SetAccuracy(tol);
 
   // Get the isolation interval tolerance.
-  const optional<double> iso_tol = simulator.GetCurrentWitnessTimeIsolation();
+  const std::optional<double> iso_tol =
+      simulator.GetCurrentWitnessTimeIsolation();
   EXPECT_TRUE(iso_tol);
 
   // Simulate to right after the second one should have triggered.

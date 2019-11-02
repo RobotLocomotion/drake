@@ -28,8 +28,6 @@ drake_cc_package_library(
         ":matrix_gain",
         ":multiplexer",
         ":pass_through",
-        ":piecewise_polynomial_affine_system",
-        ":piecewise_polynomial_linear_system",
         ":port_switch",
         ":random_source",
         ":saturation",
@@ -200,30 +198,6 @@ drake_cc_library(
     deps = [
         "//systems/framework",
     ],
-)
-
-drake_cc_library(
-    name = "piecewise_polynomial_affine_system",
-    hdrs = ["piecewise_polynomial_affine_system.h"],
-    deprecation = "This will be removed on or around 2019-09-01.  Use " +
-                  ":trajectory_affine_system instead.",
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [":trajectory_affine_system"],
-)
-
-drake_cc_library(
-    name = "piecewise_polynomial_linear_system",
-    hdrs = ["piecewise_polynomial_linear_system.h"],
-    deprecation = "This will be removed on or around 2019-09-01.  Use " +
-                  ":trajectory_linear_system instead.",
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [":trajectory_linear_system"],
 )
 
 drake_cc_library(
@@ -474,6 +448,7 @@ drake_cc_googletest(
         ":gain",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",
         "//systems/framework/test_utilities",
@@ -496,6 +471,7 @@ drake_cc_googletest(
         ":affine_linear_test",
         ":linear_system",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//examples/pendulum:pendulum_plant",
         "//systems/framework",
@@ -610,6 +586,7 @@ drake_cc_googletest(
         ":linear_system",
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
         "//systems/framework",
@@ -637,6 +614,7 @@ drake_cc_googletest(
     deps = [
         ":symbolic_vector_system",
         "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:symbolic_test_util",
         "//systems/framework/test_utilities:scalar_conversion",
     ],
 )

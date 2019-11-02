@@ -48,12 +48,22 @@ TEST_F(SpaceXYZMobilizerTest, StateAccess) {
   mobilizer_->set_angles(context_.get(), rpy_value);
   EXPECT_EQ(mobilizer_->get_angles(*context_), rpy_value);
 
+  // Set mobilizer orientation using a rotation matrix.
   const RollPitchYawd rpy(M_PI / 5, -M_PI / 7, M_PI / 3);
   const RotationMatrixd R_WB(rpy);
+  mobilizer_->SetFromRotationMatrix(context_.get(), R_WB);
+  EXPECT_TRUE(CompareMatrices(
+    mobilizer_->get_angles(*context_), rpy.vector(),
+    kTolerance, MatrixCompareType::relative));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Set mobilizer orientation using a 3x3 matrix (deprecated).
   mobilizer_->SetFromRotationMatrix(context_.get(), R_WB.matrix());
   EXPECT_TRUE(CompareMatrices(
       mobilizer_->get_angles(*context_), rpy.vector(),
       kTolerance, MatrixCompareType::relative));
+#pragma GCC diagnostic push
 }
 
 TEST_F(SpaceXYZMobilizerTest, ZeroState) {

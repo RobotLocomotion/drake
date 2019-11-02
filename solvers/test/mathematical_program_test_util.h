@@ -18,7 +18,7 @@ namespace test {
 MathematicalProgramResult RunSolver(
     const MathematicalProgram& prog,
     const SolverInterface& solver,
-    const optional<Eigen::VectorXd>& initial_guess = {});
+    const std::optional<Eigen::VectorXd>& initial_guess = {});
 
 /// Determine if two bindings are the same. Two bindings are the same if
 ///

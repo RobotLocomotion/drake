@@ -828,11 +828,11 @@ class SystemBase : public internal::SystemMessageInterface {
   from the next available input port index.
   @pre `given_name` must not be empty. */
   std::string NextInputPortName(
-      variant<std::string, UseDefaultName> given_name) const {
+      std::variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
            ? std::string("u") + std::to_string(num_input_ports())
-           : get<std::string>(std::move(given_name));
+           : std::get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
   }
@@ -842,11 +842,11 @@ class SystemBase : public internal::SystemMessageInterface {
   from the next available output port index.
   @pre `given_name` must not be empty. */
   std::string NextOutputPortName(
-      variant<std::string, UseDefaultName> given_name) const {
+      std::variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
            ? std::string("y") + std::to_string(num_output_ports())
-           : get<std::string>(std::move(given_name));
+           : std::get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
   }

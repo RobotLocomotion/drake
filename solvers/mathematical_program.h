@@ -7,6 +7,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -20,7 +21,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
@@ -2374,6 +2374,14 @@ class MathematicalProgram {
   }
 
   /**
+   * Overwrite the stored solver options inside MathematicalProgram with the
+   * provided solver options.
+   */
+  void SetSolverOptions(const SolverOptions& solver_options) {
+    solver_options_ = solver_options;
+  }
+
+  /**
    * Returns the solver options stored inside MathematicalProgram.
    */
   const SolverOptions& solver_options() const { return solver_options_; }
@@ -2746,7 +2754,7 @@ class MathematicalProgram {
 
   Eigen::VectorXd x_initial_guess_;
   Eigen::VectorXd x_values_;
-  optional<SolverId> solver_id_;
+  std::optional<SolverId> solver_id_;
   double optimal_cost_{};
   // The lower bound of the objective found by the solver, during the
   // optimization process.

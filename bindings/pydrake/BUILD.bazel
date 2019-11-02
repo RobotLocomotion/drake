@@ -123,29 +123,12 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "automotive_py",
-    cc_copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-        "//bindings/pydrake/common:wrap_pybind",
-    ],
-    cc_srcs = ["automotive_py.cc"],
-    package_info = PACKAGE_INFO,
-)
-
-drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
@@ -164,7 +147,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
@@ -273,7 +255,6 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
-    ":automotive_py",
     ":geometry_py",
     ":lcm_py",
     ":math_py",
@@ -284,7 +265,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/attic",
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
-    "//bindings/pydrake/maliput",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
@@ -387,6 +367,7 @@ drake_py_unittest(
         ":autodiffutils_test_util_py",
         ":math_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 
@@ -411,6 +392,21 @@ drake_py_unittest(
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
+    ],
+)
+
+drake_py_library(
+    name = "mock_torch_py",
+    testonly = 1,
+    srcs = ["test/mock_torch/torch.py"],
+    imports = ["test/mock_torch"],
+)
+
+drake_py_unittest(
+    name = "rtld_global_warning_test",
+    deps = [
+        ":mock_torch_py",
+        ":module_py",
     ],
 )
 
@@ -443,7 +439,7 @@ drake_py_unittest(
     name = "math_test",
     deps = [
         ":math_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -486,17 +482,6 @@ drake_py_unittest(
     deps = [
         ":trajectories_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "automotive_test",
-    deps = [
-        ":automotive_py",
-        "//bindings/pydrake/maliput:api_py",
-        "//bindings/pydrake/maliput:dragway_py",
-        "//bindings/pydrake/multibody:math_py",
-        "//bindings/pydrake/systems",
     ],
 )
 

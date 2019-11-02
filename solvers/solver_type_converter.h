@@ -1,7 +1,8 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/solvers/solver_id.h"
 #include "drake/solvers/solver_type.h"
 
@@ -20,7 +21,7 @@ class SolverTypeConverter {
 
   /// Converts the given ID to its matching type, iff the type matches one of
   /// SolverType's known values.
-  static optional<SolverType> IdToType(SolverId);
+  static std::optional<SolverType> IdToType(SolverId);
 };
 
 }  // namespace solvers
