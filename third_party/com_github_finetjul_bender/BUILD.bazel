@@ -1,0 +1,24 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load("@drake//tools/install:install.bzl", "install")
+
+drake_cc_library(
+    name = "vtk_capsule_source",
+    srcs = [
+        "vtkCapsuleSource.cxx",
+    ],
+    hdrs = ["vtkCapsuleSource.h"],
+    install_hdrs_exclude = [
+        "vtkCapsuleSource.h",
+    ],
+    licenses = ["notice"],  # Apache-2.0
+    visibility = ["//visibility:private"],
+)
+
+install(
+    name = "install",
+    targets = ["vtk_capsule_source"],
+    docs = ["LICENSE"],
+)
