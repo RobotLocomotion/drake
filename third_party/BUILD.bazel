@@ -17,6 +17,16 @@ exports_files(
 )
 
 exports_files(
+    ["com_github_finetjul_bender/" + f for f in [
+        "LICENSE",
+        "vtkCapsuleSource.cxx",
+        "vtkCapsuleSource.h",
+    ]],
+    licenses = ["notice"],  # Apache-2.0
+    visibility = ["//tools/workspace/vtk:__pkg__"],
+)
+
+exports_files(
     [
         "com_github_google_protobuf/LICENSE",
         "com_github_google_protobuf/protobuf.bzl",
