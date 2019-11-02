@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
@@ -63,11 +64,10 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
     // N is for the nearest point of V on the boundary of the box,
     // and grad_B is the gradient vector of the signed distance function
     // of the box at V, expressed in frame B.
-    Vector3<T> r_BN, grad_B;
-    bool is_V_on_edge_or_vertex;  // Not used.
-    std::tie(r_BN, grad_B, is_V_on_edge_or_vertex) =
+    const auto[r_BN, grad_B, is_V_on_edge_or_vertex] =
         point_distance::DistanceToPoint<T>::ComputeDistanceToBox(half_size,
                                                                  r_BV);
+    unused(is_V_on_edge_or_vertex);
     T signed_distance = grad_B.dot(r_BV - r_BN);
     // Map signed_distance ∈ [-min_half_size, 0] to extent e ∈ [0, 1],
     // -min_half_size ⇝ 1, 0 ⇝ 0.

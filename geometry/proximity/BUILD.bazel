@@ -245,6 +245,7 @@ drake_cc_library(
         ":distance_to_point_callback",
         ":volume_mesh",
         "//common:essential",
+        "//common:unused",
         "//geometry:shape_specification",
     ],
 )
