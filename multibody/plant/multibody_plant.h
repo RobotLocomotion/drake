@@ -121,7 +121,8 @@ enum class ContactModel {
 /// reserved for all elements with no explicit model instance.
 /// multibody::ModelInstanceIndex 1 is generally only relevant for elements
 /// created programmatically (and only when a model instance is not explicitly
-/// specified). Note that Parser creates model instances as needed.
+/// specified). Note that Parser creates model instances (resulting in a
+/// multibody::ModelInstanceIndex > 1) as needed.
 ///
 /// See num_model_instances(),
 /// num_positions(),
