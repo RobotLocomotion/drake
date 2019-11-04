@@ -114,14 +114,14 @@ enum class ContactModel {
 /// generalized positions for model instance.
 ///
 /// Model instances are frequently defined through SDF files
-/// (using the `model` tag) and should be established automatically when SDF
-/// files are parsed (see, e.g., Parser). There are two special
+/// (using the `model` tag) and are automatically created when SDF
+/// files are parsed (by Parser). There are two special
 /// multibody::ModelInstanceIndex values. The world body is always
-/// multibody::ModelInstanceIndex 0, and multibody::ModelInstanceIndex 1 is
-/// reserved for all elements with no explicit model instance.  The latter
-/// instance is generally only relevant for elements created programmatically
-/// (and for which a model instance is not explicitly specified), as parsers
-/// are expected to create model instances as needed.
+/// multibody::ModelInstanceIndex 0. multibody::ModelInstanceIndex 1 is
+/// reserved for all elements with no explicit model instance, and is generally
+/// only relevant for elements created programmatically (and only when a model
+/// instance is not explicitly specified). Note that Parser creates model
+/// instances as needed.
 ///
 /// See num_model_instances(),
 /// num_positions(),
