@@ -445,7 +445,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SetSubVector(q_prime_beta_prime_, index_sets_.beta_prime, q_prime);
   SetSubVector(q_prime_alpha_bar_prime_, index_sets_.alpha_bar_prime, q_prime);
 
-  DRAKE_SPDLOG_DEBUG(log(), "q': {}", q_prime->transpose());
+  DRAKE_LOGGER_DEBUG("q': {}", q_prime->transpose());
 
   // If it is not necessary to compute the column of M, quit now.
   if (!M_prime_col)
@@ -453,7 +453,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 
   // Examine the driving variable.
   if (!indep_variables_[driving_index].is_z()) {
-    DRAKE_SPDLOG_DEBUG(log(), "Driving case #1: driving variable from w");
+    DRAKE_LOGGER_DEBUG("Driving case #1: driving variable from w");
     // Case from Section 2.2.1.
     // Determine gamma by determining the position of the driving variable
     // in INDEPENDENT W (as defined in [Dai 2018]).
@@ -484,7 +484,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     M_prime_driving_alpha_bar_prime_ = M_alpha_bar_beta_ *
         M_prime_driving_beta_prime_;
   } else {
-    DRAKE_SPDLOG_DEBUG(log(), "Driving case #2: driving variable from z");
+    DRAKE_LOGGER_DEBUG("Driving case #2: driving variable from z");
 
     // Case from Section 2.2.2 of [Dai 2018].
     // Determine zeta.
@@ -507,7 +507,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SetSubVector(M_prime_driving_alpha_bar_prime_, index_sets_.alpha_bar_prime,
                M_prime_col);
 
-  DRAKE_SPDLOG_DEBUG(log(), "M' (driving): {}", M_prime_col->transpose());
+  DRAKE_LOGGER_DEBUG("M' (driving): {}", M_prime_col->transpose());
   return true;
 }
 
@@ -585,7 +585,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
   *blocking_index = -1;
   for (int i = 0; i < n; ++i) {
     if (matrix_col[i] < -zero_tol) {
-      DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
+      DRAKE_LOGGER_DEBUG("Ratio for index {}: {}", i, ratios[i]);
       if (ratios[i] < min_ratio) {
         min_ratio = ratios[i];
         *blocking_index = i;
@@ -594,7 +594,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
   }
 
   if (*blocking_index < 0) {
-    SPDLOG_DEBUG(log(), "driving variable is unblocked- algorithm failed");
+    DRAKE_LOGGER_DEBUG("driving variable is unblocked- algorithm failed");
     return false;
   }
 
@@ -604,7 +604,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
   std::vector<int> blocking_indices;
   for (int i = 0; i < n; ++i) {
     if (matrix_col[i] < -zero_tol) {
-      DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
+      DRAKE_LOGGER_DEBUG("Ratio for index {}: {}", i, ratios[i]);
       if (ratios[i] < min_ratio + zero_tol) {
         if (IsArtificial(dep_variables_[i])) {
           // *Always* select the artificial variable, if multiple choices are
@@ -625,7 +625,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     // Verify that we have not run out of indices to select, which means that
     // cycling would be occurring, in spite of cycling prevention.
     if (index >= static_cast<int>(blocking_indices.size())) {
-      DRAKE_SPDLOG_DEBUG(log(), "Cycling detected- indicating failure.");
+      DRAKE_LOGGER_DEBUG("Cycling detected- indicating failure.");
       *blocking_index = -1;
       return false;
     }
@@ -667,7 +667,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   using std::abs;
   DRAKE_DEMAND(num_pivots);
 
-  DRAKE_SPDLOG_DEBUG(log(),
+  DRAKE_LOGGER_DEBUG(
       "UnrevisedLemkeSolver::SolveLcpLemke() entered, M: {}, "
       "q: {}, ", M, q.transpose());
 
@@ -682,7 +682,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   // Look for immediate exit.
   if (n == 0) {
-    DRAKE_SPDLOG_DEBUG(log(), "-- LCP is zero dimensional");
+    DRAKE_LOGGER_DEBUG("-- LCP is zero dimensional");
     z->resize(0);
     return true;
   }
@@ -705,8 +705,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   // be non-negative, z would be non-negative (zero), and w'z = 0.
   if (q.minCoeff() > -mod_zero_tol) {
     z->setZero(q.size());
-    SPDLOG_DEBUG(log(), " -- trivial solution found");
-    SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited");
+    DRAKE_LOGGER_DEBUG(" -- trivial solution found");
+    DRAKE_LOGGER_DEBUG("UnrevisedLemkeSolver::SolveLcpLemke() exited");
     return true;
   }
 
@@ -735,7 +735,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
           return true;
         }
       } else {
-        DRAKE_SPDLOG_DEBUG(log(),
+        DRAKE_LOGGER_DEBUG(
             "Failed to solve linear system implied by last solution");
       }
     }
@@ -766,9 +766,9 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   LCPVariable blocking = dep_variables_[blocking_index];
   int driving_index = blocking.index();
   std::swap(dep_variables_[blocking_index], indep_variables_[kArtificial]);
-  DRAKE_SPDLOG_DEBUG(log(), "First blocking variable {}{}",
+  DRAKE_LOGGER_DEBUG("First blocking variable {}{}",
                      ((blocking.is_z()) ? "z" : "w"), blocking.index());
-  DRAKE_SPDLOG_DEBUG(log(), "First driving variable (artificial)");
+  DRAKE_LOGGER_DEBUG("First driving variable (artificial)");
 
   // Initialize the independent variable indices. We do this after the initial
   // variable swap for simplicity.
@@ -783,22 +783,22 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     return oss.str();
   };
   unused(to_string);  // ... when in release mode.
-  DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
+  DRAKE_LOGGER_DEBUG("Independent set variables: {}",
       to_string(indep_variables_));
-  DRAKE_SPDLOG_DEBUG(log(), "Dependent set variables: {}",
+  DRAKE_LOGGER_DEBUG("Dependent set variables: {}",
       to_string(dep_variables_));
 
   // Pivot up to the maximum number of times.
   VectorX<T> q_prime(n), M_prime_col(n);
   while (++(*num_pivots) < max_pivots) {
-    DRAKE_SPDLOG_DEBUG(log(), "New driving variable {}{}",
+    DRAKE_LOGGER_DEBUG("New driving variable {}{}",
                        ((indep_variables_[driving_index].is_z()) ? "z" : "w"),
                        indep_variables_[driving_index].index());
 
     // Compute the permuted q and driving column of the permuted M matrix.
     if (!LemkePivot(
         M, q, driving_index, mod_zero_tol, &M_prime_col, &q_prime)) {
-      DRAKE_SPDLOG_DEBUG(log(), "Linear system solve failed.");
+      DRAKE_LOGGER_DEBUG("Linear system solve failed.");
       z->setZero(n);
       return false;
     }
@@ -811,7 +811,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       return false;
     }
     blocking = dep_variables_[blocking_index];
-    DRAKE_SPDLOG_DEBUG(log(), "Blocking variable {}{}",
+    DRAKE_LOGGER_DEBUG("Blocking variable {}{}",
                        ((blocking.is_z()) ? "z" : "w"), blocking.index());
 
     // See whether the artificial variable blocks the driving variable.
@@ -827,14 +827,13 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
         if (IsSolution(M, q, *z))
           return true;
 
-        DRAKE_SPDLOG_DEBUG(log(),
-            "Solution not computed to requested tolerance");
+        DRAKE_LOGGER_DEBUG("Solution not computed to requested tolerance");
         z->setZero(n);
         return false;
       }
 
       // Otherwise, indicate failure.
-      DRAKE_SPDLOG_DEBUG(log(),
+      DRAKE_LOGGER_DEBUG(
           "Linear system solver failed to construct Lemke solution");
       z->setZero(n);
       return false;
@@ -854,15 +853,15 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     // Make the driving variable the complement of the blocking variable.
     driving_index = FindComplementIndex(blocking);
 
-    DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
+    DRAKE_LOGGER_DEBUG("Independent set variables: {}",
         to_string(indep_variables_));
-    DRAKE_SPDLOG_DEBUG(log(), "Dependent set variables: {}",
+    DRAKE_LOGGER_DEBUG("Dependent set variables: {}",
         to_string(dep_variables_));
   }
 
   // If here, the maximum number of pivots has been exceeded.
   z->setZero(n);
-  DRAKE_SPDLOG_DEBUG(log(), "Maximum number of pivots exceeded");
+  DRAKE_LOGGER_DEBUG("Maximum number of pivots exceeded");
   return false;
 }
 
