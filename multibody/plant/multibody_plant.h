@@ -3,7 +3,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -14,6 +13,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -259,7 +259,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <typename U>
   MultibodyPlant(const MultibodyPlant<U>& other)
       : internal::MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<MultibodyPlant>{},
+            systems::SystemTypeTag<multibody::MultibodyPlant>{},
             other.internal_tree().template CloneToScalar<T>(),
             other.is_discrete()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
@@ -969,10 +969,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
-      const Body<T>& parent,
-      const std::optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child,
-      const std::optional<math::RigidTransform<double>>& X_BM,
+      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
+      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
@@ -1270,7 +1268,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       const std::string& name,
-      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
     return internal_tree().template GetJointByName<JointType>(
         name, model_instance);
   }
@@ -1280,7 +1278,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   JointType<T>& GetMutableJointByName(
       const std::string& name,
-      std::optional<ModelInstanceIndex> model_instance = std::nullopt) {
+      optional<ModelInstanceIndex> model_instance = nullopt) {
     return this->mutable_tree().template GetMutableJointByName<JointType>(
         name, model_instance);
   }
@@ -1326,9 +1324,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns a vector of actuation values for `model_instance` from a
-  /// vector `u` of actuation values for the entire model. This method
-  /// throws an exception if `u` is not of size
-  /// MultibodyPlant::num_actuated_dofs().
+  /// vector `u` of actuation values for the entire model. This method throws an
+  /// exception if `u` is not of size MultibodyPlant::num_actuated_dofs().
   VectorX<T> GetActuationFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u) const {
@@ -2647,7 +2644,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// only assigned once at the first call of any of this plant's geometry
   /// registration methods, and it does not change after that.
   /// Post-finalize calls will always return the same value.
-  std::optional<geometry::SourceId> get_source_id() const {
+  optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
 
@@ -2693,7 +2690,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
-  std::optional<geometry::FrameId> GetBodyFrameIdIfExists(
+  optional<geometry::FrameId> GetBodyFrameIdIfExists(
       BodyIndex body_index) const {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
@@ -3162,22 +3159,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
-  // Structure used in the calculation of hydroelastic contact forces (see
-  // method that follows).
-  struct HydroelasticContactInfoAndBodySpatialForces {
-    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
-      F_BBo_W_array.resize(num_bodies);
-    }
-
-    // Forces from hydroelastic contact applied to the origin of each body
-    // (indexed by BodyNodeIndex) in the MultibodyPlant.
-    std::vector<SpatialForce<T>> F_BBo_W_array;
-
-    // Information used for contact reporting collected through the evaluation
-    // of the hydroelastic model.
-    std::vector<HydroelasticContactInfo<T>> contact_info;
-  };
-
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
@@ -3187,7 +3168,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
-    systems::CacheIndex contact_info_and_body_spatial_forces;
+    systems::CacheIndex hydro_contact_forces;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
@@ -3540,14 +3521,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // thrown.
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
-      HydroelasticContactInfoAndBodySpatialForces* F_BBo_W_array) const;
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   // Eval version of CalcHydroelasticContactForces().
-  const HydroelasticContactInfoAndBodySpatialForces&
-  EvalHydroelasticContactForces(const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.contact_info_and_body_spatial_forces)
-        .template Eval<HydroelasticContactInfoAndBodySpatialForces>(context);
+  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
+        .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
   // Helper method to add the contribution of external actuation forces to the
@@ -3652,7 +3632,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
-  std::optional<geometry::SourceId> source_id_{std::nullopt};
+  optional<geometry::SourceId> source_id_{nullopt};
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
@@ -3677,7 +3657,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     double time_scale{-1.0};
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
-    std::optional<double> gravity;
+    optional<double> gravity;
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
@@ -3989,7 +3969,7 @@ void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
-    HydroelasticContactInfoAndBodySpatialForces*) const;
+    std::vector<SpatialForce<symbolic::Expression>>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(
