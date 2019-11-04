@@ -55,15 +55,6 @@ TEST_F(SpaceXYZMobilizerTest, StateAccess) {
   EXPECT_TRUE(CompareMatrices(
     mobilizer_->get_angles(*context_), rpy.vector(),
     kTolerance, MatrixCompareType::relative));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Set mobilizer orientation using a 3x3 matrix (deprecated).
-  mobilizer_->SetFromRotationMatrix(context_.get(), R_WB.matrix());
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer_->get_angles(*context_), rpy.vector(),
-      kTolerance, MatrixCompareType::relative));
-#pragma GCC diagnostic push
 }
 
 TEST_F(SpaceXYZMobilizerTest, ZeroState) {
