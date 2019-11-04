@@ -98,8 +98,10 @@ class JointActuator final
       const T& tau,
       MultibodyForces<T>* forces) const;
 
-  /// Gets the actuation values u_instance for `this` actuator from the
-  /// actuation vector u for the entire model.
+  /// Gets the actuation values for `this` actuator from the actuation vector u
+  /// for the entire model.
+  /// @return a reference to a nv-dimensional vector, where nv is the number
+  ///         of velocity variables of joint().
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
       const VectorX<T>& u) const {
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
