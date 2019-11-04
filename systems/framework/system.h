@@ -1325,9 +1325,9 @@ class System : public SystemBase {
       // If T is a real number (not a symbolic expression), we can bail out
       // early with a diagnostic when the first constraint fails.
       if (scalar_predicate<T>::is_bool && !result) {
-        SPDLOG_DEBUG(drake::log(),
-                     "Context fails to satisfy SystemConstraint {}",
-                     constraint->description());
+        DRAKE_LOGGER_DEBUG(
+            "Context fails to satisfy SystemConstraint {}",
+            constraint->description());
         return result;
       }
     }

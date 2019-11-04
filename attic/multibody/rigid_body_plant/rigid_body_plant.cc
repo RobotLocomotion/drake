@@ -1086,9 +1086,9 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
         limits.push_back(JointLimit());
         limits.back().v_index = b->get_velocity_start_index();
         limits.back().signed_distance = (qjoint - qmin);
-        SPDLOG_DEBUG(drake::log(), "body name: {} ", b->get_name());
-        SPDLOG_DEBUG(drake::log(), "joint name: {} ", joint.get_name());
-        SPDLOG_DEBUG(drake::log(), "joint signed distance: {} ",
+        DRAKE_LOGGER_DEBUG("body name: {} ", b->get_name());
+        DRAKE_LOGGER_DEBUG("joint name: {} ", joint.get_name());
+        DRAKE_LOGGER_DEBUG("joint signed distance: {} ",
             limits.back().signed_distance);
         limits.back().lower_limit = true;
       }
@@ -1097,9 +1097,9 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
         limits.push_back(JointLimit());
         limits.back().v_index = b->get_velocity_start_index();
         limits.back().signed_distance = (qmax - qjoint);
-        SPDLOG_DEBUG(drake::log(), "body name: {} ", b->get_name());
-        SPDLOG_DEBUG(drake::log(), "joint name: {} ", joint.get_name());
-        SPDLOG_DEBUG(drake::log(), "joint signed distance: {} ",
+        DRAKE_LOGGER_DEBUG("body name: {} ", b->get_name());
+        DRAKE_LOGGER_DEBUG("joint name: {} ", joint.get_name());
+        DRAKE_LOGGER_DEBUG("joint signed distance: {} ",
             limits.back().signed_distance);
         limits.back().lower_limit = false;
       }
@@ -1159,9 +1159,9 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     F.col(i) = data.F_mult(unit);
     L.col(i) = data.L_mult(unit);
   }
-  SPDLOG_DEBUG(drake::log(), "N: {}", N);
-  SPDLOG_DEBUG(drake::log(), "F: {}", F);
-  SPDLOG_DEBUG(drake::log(), "L: {}", L);
+  DRAKE_LOGGER_DEBUG("N: {}", N);
+  DRAKE_LOGGER_DEBUG("F: {}", F);
+  DRAKE_LOGGER_DEBUG("L: {}", L);
   #endif
 
   // Set the regularization and stabilization terms for contact tangent
@@ -1201,30 +1201,30 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   constraint_solver_.SolveImpactProblem(data, &contact_force);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, contact_force,
       &new_velocity);
-  SPDLOG_DEBUG(drake::log(), "Actuator forces: {} ", u.transpose());
-  SPDLOG_DEBUG(drake::log(), "Transformed actuator forces: {} ",
+  DRAKE_LOGGER_DEBUG("Actuator forces: {} ", u.transpose());
+  DRAKE_LOGGER_DEBUG("Transformed actuator forces: {} ",
       (tree.B * u).transpose());
-  SPDLOG_DEBUG(drake::log(), "force: {}", right_hand_side.transpose());
-  SPDLOG_DEBUG(drake::log(), "old velocity: {}", v.transpose());
-  SPDLOG_DEBUG(drake::log(), "integrated forward velocity: {}",
+  DRAKE_LOGGER_DEBUG("force: {}", right_hand_side.transpose());
+  DRAKE_LOGGER_DEBUG("old velocity: {}", v.transpose());
+  DRAKE_LOGGER_DEBUG("integrated forward velocity: {}",
       data.solve_inertia(data.Mv).transpose());
-  SPDLOG_DEBUG(drake::log(), "change in velocity: {}",
+  DRAKE_LOGGER_DEBUG("change in velocity: {}",
       new_velocity.transpose());
   new_velocity += data.solve_inertia(data.Mv);
-  SPDLOG_DEBUG(drake::log(), "new velocity: {}", new_velocity.transpose());
-  SPDLOG_DEBUG(drake::log(), "new configuration: {}",
+  DRAKE_LOGGER_DEBUG("new velocity: {}", new_velocity.transpose());
+  DRAKE_LOGGER_DEBUG("new configuration: {}",
       (q + dt * tree.transformVelocityToQDot(kinematics_cache, new_velocity)).
       transpose());
-  SPDLOG_DEBUG(drake::log(), "N * new velocity: {} ", data.N_mult(new_velocity).
+  DRAKE_LOGGER_DEBUG("N * new velocity: {} ", data.N_mult(new_velocity).
       transpose());
-  SPDLOG_DEBUG(drake::log(), "F * new velocity: {} ", data.F_mult(new_velocity).
+  DRAKE_LOGGER_DEBUG("F * new velocity: {} ", data.F_mult(new_velocity).
       transpose());
-  SPDLOG_DEBUG(drake::log(), "L * new velocity: {} ", data.L_mult(new_velocity).
+  DRAKE_LOGGER_DEBUG("L * new velocity: {} ", data.L_mult(new_velocity).
       transpose());
-  SPDLOG_DEBUG(drake::log(), "G * new velocity: {} ", data.G_mult(new_velocity).
+  DRAKE_LOGGER_DEBUG("G * new velocity: {} ", data.G_mult(new_velocity).
       transpose());
-  SPDLOG_DEBUG(drake::log(), "G * v: {} ", data.G_mult(v).transpose());
-  SPDLOG_DEBUG(drake::log(), "g(): {}",
+  DRAKE_LOGGER_DEBUG("G * v: {} ", data.G_mult(v).transpose());
+  DRAKE_LOGGER_DEBUG("g(): {}",
       tree.positionConstraints(kinematics_cache).transpose());
 
   // qn = q + dt*qdot.
