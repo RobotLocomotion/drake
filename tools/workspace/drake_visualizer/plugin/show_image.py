@@ -12,7 +12,6 @@ specifically:
 *   src/python/director/cameraview.py (CameraImageView)
 *   src/app/ddBotImageQueue.cpp
 """
-
 import sys
 import argparse
 import math
@@ -125,7 +124,7 @@ class ImageWidget(object):
 
         if self._depth_mapper is not None:
             depth_range = self._get_depth_range()
-            for i in xrange(2):
+            for i in range(2):
                 value = [0.] * 6
                 coloring = self._depth_mapper.GetLookupTable()
                 coloring.GetNodeValue(i, value)
@@ -454,7 +453,7 @@ class LcmImageArraySubscriber(object):
         issues = []
 
         msg_frame_names = [image.header.frame_name for image in msg.images]
-        for (frame_name, handler) in self._handlers.iteritems():
+        for (frame_name, handler) in self._handlers.items():
             if frame_name not in msg_frame_names:
                 issues.append("Did not find '{}' in message"
                               .format(frame_name))
