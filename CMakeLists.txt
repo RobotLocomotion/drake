@@ -341,33 +341,13 @@ if(WITH_MOSEK)
   list(APPEND BAZEL_CONFIGS --config=mosek)
 endif()
 
-set(WITH_SNOPT_STRINGS F2C Fortran OFF ON)
-string(REPLACE ";" " " WITH_SNOPT_STRINGS_STRING "${WITH_SNOPT_STRINGS}")
-
-set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE STRING
-  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository, options are ${WITH_SNOPT_STRINGS_STRING}"
-)
-set_property(CACHE WITH_ROBOTLOCOMOTION_SNOPT PROPERTY
-  STRINGS "${WITH_SNOPT_STRINGS}"
+set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
+  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
 
-if(NOT WITH_ROBOTLOCOMOTION_SNOPT IN_LIST WITH_SNOPT_STRINGS)
-  message(FATAL_ERROR
-    "Value ${WITH_ROBOTLOCOMOTION_SNOPT} for the WITH_ROBOTLOCOMOTION_SNOPT "
-    "option is NOT supported"
-  )
-endif()
-
-set(WITH_SNOPT OFF CACHE STRING
-  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH, options are ${WITH_SNOPT_STRINGS_STRING}"
+set(WITH_SNOPT OFF CACHE BOOL
+  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
 )
-set_property(CACHE WITH_SNOPT PROPERTY STRINGS "${WITH_SNOPT_STRINGS}")
-
-if(NOT WITH_SNOPT IN_LIST WITH_SNOPT_STRINGS)
-  message(FATAL_ERROR
-    "Value ${WITH_SNOPT} for the WITH_SNOPT option is NOT supported"
-  )
-endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
   message(FATAL_ERROR
@@ -376,31 +356,23 @@ if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
 endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
-  if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL F2C OR WITH_SNOPT STREQUAL F2C)
-    list(APPEND BAZEL_CONFIGS --config=snopt_f2c)
-  else()
-    enable_language(Fortran)
+  enable_language(Fortran)
 
-    if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-      if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
-        message(FATAL_ERROR
-          "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
-          "supported"
-        )
-      endif()
-    else()
-      message(WARNING
-        "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
-        "Compilation of project drake_cxx_python may fail."
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+    if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
+      message(FATAL_ERROR
+        "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
+        "supported"
       )
     endif()
-
-    if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
-      list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
-    else()
-      list(APPEND BAZEL_CONFIGS --config=snopt)
-    endif()
+  else()
+    message(WARNING
+      "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
+      "Compilation of project drake_cxx_python may fail."
+    )
   endif()
+
+  list(APPEND BAZEL_CONFIGS --config=snopt)
 
   if(WITH_ROBOTLOCOMOTION_SNOPT)
     list(APPEND BAZEL_ENV "SNOPT_PATH=git")
