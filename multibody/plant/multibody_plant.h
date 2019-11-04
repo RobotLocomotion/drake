@@ -100,23 +100,28 @@ enum class ContactModel {
 ///
 /// @section model_instances Model Instances
 ///
-/// A MultiBodyPlant may contain a number of _model instances_, which are
-/// categories of (typically related) bodies. Model instances offer a
-/// straightforward mechanism for getting and setting the state of a subset
-/// of bodies in the plant (e.g., through GetPositionsAndVelocities() and
-/// SetPositionsAndVelocities()), connecting controllers to certain models
-/// in the plant (through get_state_output_port() and
-/// get_actuation_input_port()), and organizing duplicate models (read through
-/// a parser). In most cases, the allocation of model instances will be handled
-/// automatically by a parser.
+/// A MultiBodyPlant usually contains one or more _model instance_ and
+/// may contain multiple model instances. Each model instance corresponds to a
+/// set of bodies and their connections (joints). Model instances provide
+/// methods to get or set the state of the set of bodies (e.g., through
+/// GetPositionsAndVelocities() and SetPositionsAndVelocities()), connecting
+/// controllers to certain models in the plant (through get_state_output_port()
+/// and get_actuation_input_port()), and organizing duplicate models (read
+/// through a parser). In fact, many %MultibodyPlant methods are overloaded
+/// to allow operating on the entire plant or just the subset corresponding to
+/// the model instance; for example, one GetPositions() method obtains the
+/// generalized positions for the entire plant while the other obtains the
+/// generalized positions for model instance.
 ///
-/// There are two special multibody::ModelInstanceIndex values. There are two
-/// special multibody::ModelInstanceIndex values.  The world body is always
+/// Model instances are frequently defined through SDF files
+/// (using the `model` tag) and should be established automatically when SDF
+/// files are parsed (see, e.g., Parser). There are two special
+/// multibody::ModelInstanceIndex values. The world body is always
 /// multibody::ModelInstanceIndex 0, and multibody::ModelInstanceIndex 1 is
-/// reserved for all elements with no explicit model instance.  This is
-/// generally only relevant for elements created programmatically (and for which
-/// a model instance is not explicitly specified), as parsers should handle
-/// creating model elements as needed.
+/// reserved for all elements with no explicit model instance.  The latter
+/// instance is generally only relevant for elements created programmatically
+/// (and for which a model instance is not explicitly specified), as parsers
+/// are expected to create model instances as needed.
 ///
 /// See num_model_instances(),
 /// num_positions(),
@@ -132,14 +137,6 @@ enum class ContactModel {
 /// get_actuation_input_port().
 ///
 /// @section equations_of_motion System dynamics
-///
-/// @cond
-/// TODO(amcastro-tri): Update this documentation to include:
-///   - Input actuation and ports and connection to the B matrix.
-///   - Externally applied forces and ports to apply them.
-///   - Bilateral constraints.
-///   - Unilateral constraints and contact.
-/// @endcond
 ///
 /// The state of a multibody system `x = [q; v]` is given by its generalized
 /// positions vector q, of size `nq` (see num_positions()), and by its
@@ -161,9 +158,17 @@ enum class ContactModel {
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
 ///
+/// @cond
+/// TODO(amcastro-tri): Update this documentation to include:
+///   - Input actuation and ports and connection to the B matrix.
+///   - Externally applied forces and ports to apply them.
+///   - Bilateral constraints.
+///   - Unilateral constraints and contact.
+/// @endcond
+///
 /// @section sdf_loading Loading models from SDF files
 ///
-/// Drake has the capability of loading multibody models from SDF and URDF
+/// Drake has the capability to load multibody models from SDF and URDF
 /// files.  Consider the example below which loads an acrobot model:
 /// @code
 ///   MultibodyPlant<T> acrobot;
