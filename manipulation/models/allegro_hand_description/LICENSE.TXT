@@ -1,5 +1,5 @@
 This folder contains a model of the Allegro hand. The files were originally
-aken from
+taken from
 https://github.com/felixduvallet/allegro-hand-ros/tree/master/allegro_hand_description,SHA c414ffb.
 The original license for these files is BSD, expressed in
 http://wiki.ros.org/allegro_hand_ros
