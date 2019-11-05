@@ -1,0 +1,22 @@
+load("@drake//tools/install:install.bzl", "install")
+
+cc_library(
+    name = "vtkCapsuleSource",
+    srcs = [
+        "vtkCapsuleSource.cxx",
+    ],
+    hdrs = ["vtkCapsuleSource.h"],
+    include_prefix = "third_party/com_github_finetjul_bender/",
+    deps = [
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonExecutionModel",
+    ],
+    licenses = ["notice"],  # Apache-2.0
+    visibility = ["//geometry:__subpackages__"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)
