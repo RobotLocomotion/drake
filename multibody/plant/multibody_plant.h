@@ -97,7 +97,7 @@ enum class ContactModel {
 /// - register geometries to a provided SceneGraph instance,
 /// - create and manipulate its Context,
 /// - perform Context-dependent computational queries.
-///
+//
 /// @section equations_of_motion System dynamics
 ///
 /// @cond
