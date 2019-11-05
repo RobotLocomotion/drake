@@ -148,12 +148,12 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   // Verify xtplus
   DRAKE_ASSERT(xtplus && xtplus->size() == xt0.size());
 
-  SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}, trial={}",
+  DRAKE_LOGGER_DEBUG("StepAbstract() entered for t={}, h={}, trial={}",
       t0, h, trial);
 
   // Start from the guess.
   *xtplus = xtplus_guess;
-  SPDLOG_DEBUG(drake::log(), "Starting state: {}", xtplus->transpose());
+  DRAKE_LOGGER_DEBUG("Starting state: {}", xtplus->transpose());
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;
@@ -200,8 +200,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     // is at least some change to the state, no matter how small, on a
     // non-stationary system.
     if (i > 0 && this->IsUpdateZero(*xtplus, dx)) {
-      SPDLOG_DEBUG(drake::log(), "Converged with zero update. xt+: {}",
-                   xtplus->transpose());
+      DRAKE_LOGGER_DEBUG("Converged with zero update. xt+: {}",
+          xtplus->transpose());
       return true;
     }
 
@@ -215,12 +215,12 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     if (i > 1) {
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
-                   i, theta, eta);
+      DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
+          i, theta, eta);
 
       // Look for divergence.
       if (theta > 1) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
+        DRAKE_LOGGER_DEBUG("Newton-Raphson divergence detected for "
             "h={}", h);
         break;
       }
@@ -232,9 +232,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
       const double kappa = 0.05;
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(),
-                     "Newton-Raphson converged; η = {}, h = {}, xt+ = {}", eta,
-                     h, xtplus->transpose());
+        DRAKE_LOGGER_DEBUG(
+            "Newton-Raphson converged; η = {}, h = {}, xt+ = {}",
+            eta, h, xtplus->transpose());
         return true;
       }
     }
@@ -243,7 +243,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     last_dx_norm = dx_norm;
   }
 
-  SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
+  DRAKE_LOGGER_DEBUG("StepAbstract() convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
@@ -270,7 +270,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus) {
   using std::abs;
 
-  SPDLOG_DEBUG(drake::log(), "StepImplicitEuler(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG("StepImplicitEuler(h={}) t={}", h, t0);
 
   // Set g for the implicit Euler method.
   Context<T>* context = this->get_mutable_context();
@@ -307,7 +307,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
     const VectorX<T>& xtplus_ie, VectorX<T>* xtplus) {
   using std::abs;
 
-  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoid(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoid(h={}) t={}", h, t0);
 
   // Set g for the implicit trapezoid method.
   // Define g(x(t+h)) ≡ x(t0+h) - x(t0) - h/2 (f(t0,x(t0)) + f(t0+h,x(t0+h)) and
@@ -378,7 +378,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 
   // Do the Euler step.
   if (!StepImplicitEuler(t0, h, xt0, xtplus_ie)) {
-    SPDLOG_DEBUG(drake::log(), "Implicit Euler approach did not converge for "
+    DRAKE_LOGGER_DEBUG("Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
   }
@@ -407,7 +407,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     context->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
     return true;
   } else {
-    SPDLOG_DEBUG(drake::log(), "Implicit trapezoid approach FAILED with a step"
+    DRAKE_LOGGER_DEBUG("Implicit trapezoid approach FAILED with a step"
         "size that succeeded on implicit Euler.");
     return false;
   }
@@ -423,7 +423,7 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Save the current time and state.
   Context<T>* context = this->get_mutable_context();
   const T t0 = context->get_time();
-  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG("IE DoStep(h={}) t={}", h, t0);
 
   xt0_ = context->get_continuous_state().CopyToVector();
   xtplus_ie_.resize(xt0_.size());
@@ -432,7 +432,7 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
   if (h < this->get_working_minimum_step_size()) {
-    SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
+    DRAKE_LOGGER_DEBUG("-- requested step too small, taking explicit "
         "step instead");
 
     // TODO(edrumwri): Investigate replacing this with an explicit trapezoid

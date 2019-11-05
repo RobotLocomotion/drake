@@ -324,8 +324,8 @@ class DependencyTracker {
         owning_subcontext_(owning_subcontext),
         has_associated_cache_entry_(cache_value != nullptr),
         cache_value_(cache_value ? cache_value : &CacheEntryValue::dummy()) {
-    DRAKE_SPDLOG_DEBUG(
-        log(), "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
+    DRAKE_LOGGER_DEBUG(
+        "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
         description_, has_associated_cache_entry_ ? "with" : "without",
         size_t(cache_value),
         has_associated_cache_entry_

@@ -931,7 +931,7 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
   while (true) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
-    SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
+    DRAKE_LOGGER_TRACE("Starting a simulation step at {}", step_start_time);
 
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
@@ -1118,7 +1118,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   // continue moving leftward as a witness function triggers until the length of
   // the time interval is small. If a witness fails to trigger as c moves
   // leftward, we return, indicating that no witnesses triggered over [t0, c].
-  SPDLOG_DEBUG(drake::log(),
+  DRAKE_LOGGER_DEBUG(
       "Isolating witness functions using isolation window of {} over [{}, {}]",
       witness_iso_len.value(), t0, tf);
   VectorX<T> wc(witnesses.size());
@@ -1127,7 +1127,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   do {
     // Compute the midpoint and evaluate the witness functions at it.
     T c = (a + b) / 2;
-    SPDLOG_DEBUG(drake::log(), "Integrating forward to time {}", c);
+    DRAKE_LOGGER_DEBUG("Integrating forward to time {}", c);
     integrate_forward(c);
 
     // See whether any witness functions trigger.
@@ -1148,7 +1148,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       // events first). That change would avoid handling unnecessary per-step
       // events- we know no other events are to be handled between t0 and tf-
       // but the current logic appears easier to follow.
-      SPDLOG_DEBUG(drake::log(), "No witness functions triggered up to {}", c);
+      DRAKE_LOGGER_DEBUG("No witness functions triggered up to {}", c);
       triggered_witnesses->clear();
       return;  // Time is c.
     } else {
@@ -1297,8 +1297,8 @@ Simulator<T>::IntegrateContinuousState(
 
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
-      SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
-                   fn->description(), context.get_time());
+      DRAKE_LOGGER_DEBUG("Witness function {} crossed zero at time {}",
+          fn->description(), context.get_time());
 
       // Skip witness functions that have no associated event (i.e., skip
       // witness functions whose sole purpose is to insert a break in the
