@@ -72,7 +72,7 @@ enum class ContactModel {
 ///   @input_port{applied_generalized_force}
 ///   @input_port{applied_spatial_force}
 ///   @input_port{geometry_query},
-///   @output_port{continuous_state}
+///   @output_port{state}
 ///   @output_port{<b style="color:orange">
 ///     {model_instance_name[0]}_continuous_state</b>}
 ///   @output_port{...}
@@ -88,8 +88,8 @@ enum class ContactModel {
 /// }
 ///
 /// Note that the outputs in <b style="color:orange">orange</b> are not
-/// allocated for model instances with no state (e.g. the world, or a welded
-/// model which isn't actuated (like a table)).
+/// allocated for @ref model_instances with no state (e.g. the world, or a
+/// welded model which isn't actuated (like a table)).
 ///
 /// %MultibodyPlant provides a user-facing API to:
 ///
@@ -98,15 +98,46 @@ enum class ContactModel {
 /// - create and manipulate its Context,
 /// - perform Context-dependent computational queries.
 ///
-/// @section equations_of_motion System dynamics
+/// @section model_instances Model Instances
 ///
-/// @cond
-/// TODO(amcastro-tri): Update this documentation to include:
-///   - Input actuation and ports and connection to the B matrix.
-///   - Externally applied forces and ports to apply them.
-///   - Bilateral constraints.
-///   - Unilateral constraints and contact.
-/// @endcond
+/// A MultiBodyPlant usually contains one or more _model instance_ and
+/// may contain multiple model instances. Each model instance corresponds to a
+/// set of bodies and their connections (joints). Model instances provide
+/// methods to get or set the state of the set of bodies (e.g., through
+/// GetPositionsAndVelocities() and SetPositionsAndVelocities()), connecting
+/// controllers to certain models in the plant (through get_state_output_port()
+/// and get_actuation_input_port()), and organizing duplicate models (read
+/// through a parser). In fact, many %MultibodyPlant methods are overloaded
+/// to allow operating on the entire plant or just the subset corresponding to
+/// the model instance; for example, one GetPositions() method obtains the
+/// generalized positions for the entire plant while the other obtains the
+/// generalized positions for model instance.
+///
+/// Model instances are frequently defined through SDF files
+/// (using the `model` tag) and are automatically created when SDF
+/// files are parsed (by Parser). There are two special
+/// multibody::ModelInstanceIndex values. The world body is always
+/// multibody::ModelInstanceIndex 0 and multibody::ModelInstanceIndex 1 is
+/// reserved for all elements with no explicit model instance.
+/// multibody::ModelInstanceIndex 1 is generally only relevant for elements
+/// created programmatically (and only when a model instance is not explicitly
+/// specified). Note that Parser creates model instances (resulting in a
+/// multibody::ModelInstanceIndex ≥ 2) as needed.
+///
+/// See num_model_instances(),
+/// num_positions(),
+/// num_velocities(), num_actuated_dofs(),
+/// AddModelInstance() GetPositionsAndVelocities(),
+/// GetPositions(), GetVelocities(),
+/// SetPositionsAndVelocities(),
+/// SetPositions(), SetVelocities(),
+/// GetPositionsFromArray(), GetVelocitiesFromArray(),
+/// SetPositionsInArray(), SetVelocitiesInArray(), SetActuationInArray(),
+/// HasModelInstanceNamed(), GetModelInstanceName(),
+/// get_state_output_port(),
+/// get_actuation_input_port().
+///
+/// @section equations_of_motion System dynamics
 ///
 /// The state of a multibody system `x = [q; v]` is given by its generalized
 /// positions vector q, of size `nq` (see num_positions()), and by its
@@ -128,9 +159,17 @@ enum class ContactModel {
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
 ///
+/// @cond
+/// TODO(amcastro-tri): Update this documentation to include:
+///   - Input actuation and ports and connection to the B matrix.
+///   - Externally applied forces and ports to apply them.
+///   - Bilateral constraints.
+///   - Unilateral constraints and contact.
+/// @endcond
+///
 /// @section sdf_loading Loading models from SDF files
 ///
-/// Drake has the capability of loading multibody models from SDF and URDF
+/// Drake has the capability to load multibody models from SDF and URDF
 /// files.  Consider the example below which loads an acrobot model:
 /// @code
 ///   MultibodyPlant<T> acrobot;
