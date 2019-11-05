@@ -204,8 +204,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
             cls_doc.ToQuaternion.doc_0args)
-        .def("ToAngleAxis", &Class::ToAngleAxis,
-             cls_doc.ToAngleAxis.doc);
+        .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc);
     DefPickle(&cls, [](const Class& self) { return self.matrix(); },
         [](const Matrix3<T>& matrix) { return Class(matrix); });
     cls.attr("__matmul__") = cls.attr("multiply");
