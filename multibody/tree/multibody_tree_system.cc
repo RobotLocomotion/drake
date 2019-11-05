@@ -21,14 +21,14 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
     std::unique_ptr<MultibodyTree<T>> tree,
     bool is_discrete)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           false,  // Null tree is not allowed here.
           std::move(tree), is_discrete) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           true,  // Null tree is OK.
           nullptr, is_discrete) {}
 
@@ -46,7 +46,7 @@ template <typename T>
 template <typename U>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<multibody::internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           false,  // Null tree isn't allowed (or possible).
           other.internal_tree().template CloneToScalar<T>(),
           other.is_discrete()) {}
@@ -201,7 +201,7 @@ void MultibodyTreeSystem<T>::Finalize() {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& H_PB_W_cache =
             cache_value->get_mutable_value<std::vector<Vector6<T>>>();
-        tree->CalcAcrossNodeGeometricJacobianExpressedInWorld(
+        tree->CalcAcrossNodeJacobianWrtVExpressedInWorld(
             context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },
       {this->cache_entry_ticket(cache_indexes_.position_kinematics)});

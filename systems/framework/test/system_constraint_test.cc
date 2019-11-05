@@ -55,7 +55,7 @@ GTEST_TEST(SystemConstraintBoundsTest, EqNonzero) {
 
 GTEST_TEST(SystemConstraintBoundsTest, Lower) {
   const double kInf = std::numeric_limits<double>::infinity();
-  const SystemConstraintBounds dut(Vector2d::Zero(), nullopt);
+  const SystemConstraintBounds dut(Vector2d::Zero(), std::nullopt);
   EXPECT_EQ(dut.size(), 2);
   EXPECT_EQ(dut.type(), SystemConstraintType::kInequality);
   EXPECT_TRUE(CompareMatrices(dut.lower(), Vector2d::Zero()));
@@ -64,7 +64,7 @@ GTEST_TEST(SystemConstraintBoundsTest, Lower) {
 
 GTEST_TEST(SystemConstraintBoundsTest, Upper) {
   const double kInf = std::numeric_limits<double>::infinity();
-  const SystemConstraintBounds dut(nullopt, Vector2d::Constant(1.0));
+  const SystemConstraintBounds dut(std::nullopt, Vector2d::Constant(1.0));
   EXPECT_EQ(dut.size(), 2);
   EXPECT_EQ(dut.type(), SystemConstraintType::kInequality);
   EXPECT_TRUE(CompareMatrices(dut.lower(), Vector2d::Constant(-kInf)));
@@ -250,7 +250,7 @@ TEST_F(ExternalSystemConstraintTest, DoubleOnly) {
   auto dummy_context = dummy_system.CreateDefaultContext();
 
   const ExternalSystemConstraint dut(
-      "desc", {nullopt, Vector2d::Constant(100.0)},
+      "desc", {std::nullopt, Vector2d::Constant(100.0)},
       [&](const System<double>& system, const Context<double>& context,
          VectorXd* value) {
         EXPECT_EQ(&system, &dummy_system);

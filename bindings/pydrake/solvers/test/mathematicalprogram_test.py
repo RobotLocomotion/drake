@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import
-
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
@@ -181,12 +179,14 @@ class TestMathematicalProgram(unittest.TestCase):
         for (i, binding) in enumerate(prog.linear_costs()):
             cost = binding.evaluator()
             self.assertTrue(np.allclose(cost.a(), np.ones((1, 2))))
+            self.assertIsNone(cost.gradient_sparsity_pattern())
 
         self.assertTrue(prog.quadratic_costs())
         for (i, binding) in enumerate(prog.quadratic_costs()):
             cost = binding.evaluator()
             self.assertTrue(np.allclose(cost.Q(), np.eye(2)))
             self.assertTrue(np.allclose(cost.b(), np.zeros(2)))
+            self.assertIsNone(cost.gradient_sparsity_pattern())
 
         self.assertTrue(prog.bounding_box_constraints())
         for (i, binding) in enumerate(prog.bounding_box_constraints()):
@@ -194,6 +194,7 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[0]),
                 prog.FindDecisionVariableIndex(var=x[i]))
+            self.assertIsNone(constraint.gradient_sparsity_pattern())
             num_constraints = constraint.num_constraints()
             if num_constraints == 1:
                 self.assertEqual(constraint.A(), 1)
@@ -209,6 +210,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(prog.linear_constraints())
         for (i, binding) in enumerate(prog.linear_constraints()):
             constraint = binding.evaluator()
+            self.assertIsNone(constraint.gradient_sparsity_pattern())
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[0]),
                 prog.FindDecisionVariableIndex(var=x[0]))
@@ -221,6 +223,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_equality_constraints())
         for (i, binding) in enumerate(prog.linear_equality_constraints()):
+            self.assertIsNone(constraint.gradient_sparsity_pattern())
             constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[0]),
@@ -462,6 +465,30 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
         prog.AddLinearEqualityConstraint(x[0] == 1)
         prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
+
+    def test_constraint_gradient_sparsity(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        def cost(x):
+            return x[0]**2
+
+        def constraint(x):
+            return x[1] ** 2
+
+        cost_binding = prog.AddCost(cost, vars=x)
+        constraint_binding = prog.AddConstraint(constraint, [0], [1], vars=x)
+        cost_evaluator = cost_binding.evaluator()
+        constraint_evaluator = constraint_binding.evaluator()
+        self.assertIsNone(cost_evaluator.gradient_sparsity_pattern())
+        self.assertIsNone(constraint_evaluator.gradient_sparsity_pattern())
+        # Now set the sparsity
+        cost_evaluator.SetGradientSparsityPattern([(0, 0)])
+        self.assertEqual(cost_evaluator.gradient_sparsity_pattern(), [(0, 0)])
+        constraint_binding.evaluator().SetGradientSparsityPattern([(0, 1)])
+        self.assertEqual(
+            constraint_evaluator.gradient_sparsity_pattern(),
+            [(0, 1)])
 
     def test_pycost_and_pyconstraint(self):
         prog = mp.MathematicalProgram()

@@ -4,7 +4,7 @@ should NOT be called directly by anything else.
 """
 
 import argparse
-import imp
+from importlib.machinery import SourceFileLoader
 import io
 import os
 import re
@@ -58,7 +58,8 @@ if __name__ == '__main__':
               "marked executable in the filesystem; fix this via chmod a-x " +
               test_basename)
         sys.exit(1)
-    module = imp.load_source(test_name, runfiles_test_filename)
+    module = SourceFileLoader(test_name, runfiles_test_filename).load_module(
+        test_name)
 
     # Figure out which arguments are for unittest and which are for the module
     # under test.

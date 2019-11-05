@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/scalar_dense_output.h"
@@ -74,12 +74,12 @@ class AntiderivativeFunction {
     /// Constructor that specifies all values.
     /// @param v_in Specified lower integration bound v.
     /// @param k_in Specified parameter vector 𝐤.
-    SpecifiedValues(const optional<T>& v_in,
-                    const optional<VectorX<T>>& k_in)
+    SpecifiedValues(const std::optional<T>& v_in,
+                    const std::optional<VectorX<T>>& k_in)
         : v(v_in), k(k_in) {}
 
-    optional<T> v;  ///< The lower integration bound v.
-    optional<VectorX<T>> k;  ///< The parameter vector 𝐤.
+    std::optional<T> v;  ///< The lower integration bound v.
+    std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤.
   };
 
   /// Constructs the antiderivative function of the given

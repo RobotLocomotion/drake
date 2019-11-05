@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/integrator.h"
@@ -136,9 +137,6 @@ class TestVectorSystem : public VectorSystem<double> {
   mutable int time_derivatives_count_{0};
   mutable int discrete_variable_updates_count_{0};
 };
-#if  __cplusplus < 201703L
-constexpr int TestVectorSystem::kSize;
-#endif
 
 class VectorSystemTest : public ::testing::Test {
   // Not yet needed, but placeholder for future common code.
@@ -176,14 +174,14 @@ TEST_F(VectorSystemTest, Topology) {
 TEST_F(VectorSystemTest, TopologyFailFast) {
   {  // A second input.
     TestVectorSystem dut;
-    EXPECT_NO_THROW(dut.CreateDefaultContext());
+    DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
   {  // A second output.
     TestVectorSystem dut;
-    EXPECT_NO_THROW(dut.CreateDefaultContext());
+    DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.DeclareAbstractOutputPort(
         []() { return AbstractValue::Make<int>(0); },  // Dummies.
         [](const ContextBase&, AbstractValue*) {});
@@ -199,7 +197,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     // abstract state in VectorSystem, then it would be okay to write the
     // code and tests to support it.
     TestVectorSystem dut;
-    EXPECT_NO_THROW(dut.CreateDefaultContext());
+    DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.set_prototype_abstract_state<double>(1.0);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
@@ -207,7 +205,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
   {  // More than one discrete state group.
     TestVectorSystem dut;
     dut.set_prototype_discrete_state_count(1);
-    EXPECT_NO_THROW(dut.CreateDefaultContext());
+    DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.set_prototype_discrete_state_count(2);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
@@ -215,7 +213,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
   {  // Both continuous and discrete state.
     TestVectorSystem dut;
     dut.DeclareContinuousState(1);
-    EXPECT_NO_THROW(dut.CreateDefaultContext());
+    DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.set_prototype_discrete_state_count(1);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
@@ -477,7 +475,7 @@ class OpenScalarTypeSystem : public VectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OpenScalarTypeSystem);
 
   explicit OpenScalarTypeSystem(int some_number)
-      : VectorSystem<T>(SystemTypeTag<systems::OpenScalarTypeSystem>{}, 1, 1),
+      : VectorSystem<T>(SystemTypeTag<OpenScalarTypeSystem>{}, 1, 1),
         some_number_(some_number) {}
 
   // Scalar-converting copy constructor.

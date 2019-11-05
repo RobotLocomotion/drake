@@ -2,7 +2,6 @@
 
 import unittest
 
-from six import text_type as unicode
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -24,6 +23,7 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
     MultibodyForces_,
     RevoluteJoint_,
+    RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
@@ -36,6 +36,7 @@ from pydrake.multibody.math import (
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+    CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactResults_,
     ContactResultsToLcmSystem,
@@ -57,10 +58,12 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import (
     Box,
     GeometryId,
+    Role,
     PenetrationAsPointPair_,
     SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
+    Sphere,
 )
 from pydrake.math import (
     RigidTransform_,
@@ -140,6 +143,11 @@ class TestPlant(unittest.TestCase):
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
+        body_mass = body.default_mass()
+        body_com = body.default_com()
+        body_default_unit_inertia = body.default_unit_inertia()
+        body_default_spatial_inertial = body.default_spatial_inertia()
+
         new_model_instance = plant.AddModelInstance("new_model_instance")
         body = plant.AddRigidBody(name="new_body_2",
                                   M_BBo_B=spatial_inertia,
@@ -148,6 +156,13 @@ class TestPlant(unittest.TestCase):
         body_X_BG = RigidTransform()
         body_friction = CoulombFriction(static_friction=0.6,
                                         dynamic_friction=0.5)
+        self.assertEqual(body_friction.static_friction(), 0.6)
+        self.assertEqual(body_friction.dynamic_friction(), 0.5)
+        body_friction2 = CoulombFriction(static_friction=0.2,
+                                         dynamic_friction=0.1)
+        combined_friction = CalcContactFrictionFromSurfaceProperties(
+            body_friction, body_friction2)
+
         if T == float:
             plant.RegisterVisualGeometry(
                 body=body, X_BG=body_X_BG, shape=box, name="new_body_visual",
@@ -155,6 +170,13 @@ class TestPlant(unittest.TestCase):
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
+            self.assertGreater(plant.num_collision_geometries(), 0)
+            self.assertEqual(plant.default_coulomb_friction(
+                plant.GetCollisionGeometriesForBody(body)[0]
+                ).static_friction(), 0.6)
+            self.assertEqual(plant.default_coulomb_friction(
+                plant.GetCollisionGeometriesForBody(body)[0]
+                ).dynamic_friction(), 0.5)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
@@ -248,14 +270,14 @@ class TestPlant(unittest.TestCase):
 
         self.assertIsInstance(frame, Frame)
         self._test_multibody_tree_element_mixin(T, frame)
-        self.assertIsInstance(frame.name(), unicode)
+        self.assertIsInstance(frame.name(), str)
 
     def _test_body_api(self, T, body):
         Body = Body_[T]
 
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
-        self.assertIsInstance(body.name(), unicode)
+        self.assertIsInstance(body.name(), str)
 
     def _test_joint_api(self, T, joint):
         Joint = Joint_[T]
@@ -264,7 +286,7 @@ class TestPlant(unittest.TestCase):
 
         self.assertIsInstance(joint, Joint)
         self._test_multibody_tree_element_mixin(T, joint)
-        self.assertIsInstance(joint.name(), unicode)
+        self.assertIsInstance(joint.name(), str)
         self.assertIsInstance(joint.parent_body(), Body)
         self.assertIsInstance(joint.child_body(), Body)
         self.assertIsInstance(joint.frame_on_parent(), Frame)
@@ -289,7 +311,7 @@ class TestPlant(unittest.TestCase):
         Joint = Joint_[T]
         self.assertIsInstance(joint_actuator, JointActuator)
         self._test_multibody_tree_element_mixin(T, joint_actuator)
-        self.assertIsInstance(joint_actuator.name(), unicode)
+        self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
 
     def check_old_spelling_exists(self, value):
@@ -363,10 +385,11 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
-            context=context, frame_B=base_frame,
-            p_BoFo_B=[0, 0, 0])
-        self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+        with catch_drake_warnings(expected_count=1):
+            Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
+                context=context, frame_B=base_frame,
+                p_BoFo_B=[0, 0, 0])
+            self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
         nq = plant.num_positions()
         nv = plant.num_velocities()
@@ -381,6 +404,16 @@ class TestPlant(unittest.TestCase):
                 frame_E=world_frame)
             self.assert_sane(Jw_ABp_E)
             self.assertEqual(Jw_ABp_E.shape, (6, nw))
+            Jw_w_AB_E = plant.CalcJacobianAngularVelocity(
+                context=context, with_respect_to=wrt, frame_B=base_frame,
+                frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Jw_w_AB_E)
+            self.assertEqual(Jw_w_AB_E.shape, (3, nw))
+            Jw_v_AB_E = plant.CalcJacobianTranslationalVelocity(
+                context=context, with_respect_to=wrt, frame_B=base_frame,
+                p_BoBi_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Jw_v_AB_E)
+            self.assertEqual(Jw_v_AB_E.shape, (3, nw))
 
         # Compute body pose.
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
@@ -485,6 +518,10 @@ class TestPlant(unittest.TestCase):
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+        # Test existence of default free body pose setting.
+        body = plant.GetBodyByName("Link1")
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=RigidTransform_[float]())
 
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
@@ -1101,11 +1138,7 @@ class TestPlant(unittest.TestCase):
 
         # ContactResults
         contact_results = ContactResults()
-        contact_results.AddContactInfo(contact_info)
-        self.assertTrue(contact_results.num_point_pair_contacts() == 1)
-        self.assertTrue(
-            isinstance(contact_results.point_pair_contact_info(0),
-                       PointPairContactInfo))
+        self.assertTrue(contact_results.num_point_pair_contacts() == 0)
 
     def test_contact_results_to_lcm(self):
         # ContactResultsToLcmSystem
@@ -1176,13 +1209,29 @@ class TestPlant(unittest.TestCase):
                               SignedDistanceToPoint_[T])
         self.assertIsInstance(signed_distance_to_point[1],
                               SignedDistanceToPoint_[T])
+        # Test SceneGraphInspector
         inspector = query_object.inspector()
+
+        self.assertEqual(inspector.num_geometries(), 2)
+        self.assertEqual(inspector.num_geometries(),
+                         len(inspector.GetAllGeometryIds()))
+        for geometry_id in inspector.GetAllGeometryIds():
+            frame_id = inspector.GetFrameId(geometry_id)
+            self.assertEqual(
+                inspector.GetGeometryIdByName(
+                    frame_id, Role.kProximity,
+                    inspector.GetNameByGeometryId(geometry_id)), geometry_id)
+            self.assertIsInstance(inspector.GetShape(geometry_id), Sphere)
+            self.assertIsInstance(inspector.GetPoseInFrame(geometry_id),
+                                  RigidTransform_[float])
 
         def get_body_from_frame_id(frame_id):
             # Get body from frame id, and check inverse method.
             body = plant.GetBodyFromFrameId(frame_id)
             self.assertEqual(
                 plant.GetBodyFrameIdIfExists(body.index()), frame_id)
+            self.assertEqual(plant.GetBodyFrameIdOrThrow(body.index()),
+                             frame_id)
             return body
 
         bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))

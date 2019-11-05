@@ -3,6 +3,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -13,7 +14,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -64,6 +64,32 @@ enum class ContactModel {
 /// systems::System) for the model of a physical system consisting of a
 /// collection of interconnected bodies.  See @ref multibody for an overview of
 /// concepts/notation.
+///
+/// @system{MultibodyPlant,
+///   @input_port{{model_instance_name[0]}_actuation}
+///   @input_port{...}
+///   @input_port{{model_instance_name[N-1]}_actuation}
+///   @input_port{applied_generalized_force}
+///   @input_port{applied_spatial_force}
+///   @input_port{geometry_query},
+///   @output_port{continuous_state}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[0]}_continuous_state</b>}
+///   @output_port{...}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[N-1]}_continuous_state</b>}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[0]}_generalized_contact_forces</b>}
+///   @output_port{...}
+///   @output_port{<b style="color:orange">
+///     {model_instance_name[N-1]}_generalized_contact_forces</b>}
+///   @output_port{contact_results}
+///   @output_port{geometry_pose}
+/// }
+///
+/// Note that the outputs in <b style="color:orange">orange</b> are not
+/// allocated for model instances with no state (e.g. the world, or a welded
+/// model which isn't actuated (like a table)).
 ///
 /// %MultibodyPlant provides a user-facing API to:
 ///
@@ -233,7 +259,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <typename U>
   MultibodyPlant(const MultibodyPlant<U>& other)
       : internal::MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<multibody::MultibodyPlant>{},
+            systems::SystemTypeTag<MultibodyPlant>{},
             other.internal_tree().template CloneToScalar<T>(),
             other.is_discrete()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
@@ -248,6 +274,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
@@ -451,6 +478,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
+  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
+  /// will affect subsequent calls to SetDefaultState(); otherwise, this value
+  /// is effectively ignored.
+  /// @param[in] body
+  ///   Body whose default pose will be set.
+  /// @param[in] X_WB
+  ///   Default pose of the body.
+  void SetDefaultFreeBodyPose(
+      const Body<T>& body, const math::RigidTransform<double>& X_WB) {
+    X_WB_default_list_[body.index()] = X_WB;
+  }
+
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -479,9 +518,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
   }
-
-  // TODO(sammy-tri) We should also be able to set the default pose of a free
-  // body.  See https://github.com/RobotLocomotion/drake/issues/10713
 
   /// Sets the distribution used by SetRandomState() to populate the
   /// x-y-z `position` component of the floating-base state.
@@ -792,6 +828,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     visual_geometries_.emplace_back();
     DRAKE_DEMAND(collision_geometries_.size() == body.index());
     collision_geometries_.emplace_back();
+    DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
+    X_WB_default_list_.emplace_back();
     return body;
   }
 
@@ -931,8 +969,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
-      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
+      const Body<T>& parent,
+      const std::optional<math::RigidTransform<double>>& X_PF,
+      const Body<T>& child,
+      const std::optional<math::RigidTransform<double>>& X_BM,
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
@@ -1230,7 +1270,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) const {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     return internal_tree().template GetJointByName<JointType>(
         name, model_instance);
   }
@@ -1240,7 +1280,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   JointType<T>& GetMutableJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) {
     return this->mutable_tree().template GetMutableJointByName<JointType>(
         name, model_instance);
   }
@@ -1528,68 +1568,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
 
-  /// Given a list of points with fixed position vectors `p_FP` in a frame
-  /// F, (that is, their time derivative `DtF(p_FP)` in frame F is zero),
-  /// this method computes the geometric Jacobian `Jv_WFp` defined by:
-  /// <pre>
-  ///   v_WP(q, v) = Jv_WFp(q)⋅v
-  /// </pre>
-  /// where `v_WP(q, v)` is the translational velocity of point `P` in the
-  /// world frame W and q and v are the vectors of generalized position and
-  /// velocity, respectively.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   The positions `p_FP` of each point in the input set are measured and
-  ///   expressed in this frame F and are constant (fixed) in this frame.
-  /// @param[in] p_FP_list
-  ///   A matrix with the fixed position of a set of points `P` measured and
-  ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FP` for a
-  ///   point `P` measured and expressed in frame F. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WP_list
-  ///   The output positions of each point `P` now measured and expressed in
-  //    the world frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WP` and therefore external storage
-  ///   must be provided.
-  ///   The output `p_WP_list` **must** have the same size as the input set
-  ///   `p_FP_list` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WP_list` **must** be in
-  ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WP` of each point `P` in the input set by: <pre>
-  ///     v_WP(q, v) = Jv_WFp(q)⋅v
-  ///   </pre>
-  ///   so that `v_WP` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `P` in the same order they were given in the
-  ///   input set. Therefore `J_WFp` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WFp` **must**
-  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
-  ///   exception.
-  ///
-  /// @throws std::exception if the output `p_WP_list` is nullptr or does not
-  ///  have the same size as the input array `p_FP_list`.
-  /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WFp` for details.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-  void CalcPointsGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list,
-      EigenPtr<MatrixX<T>> Jv_WFp) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // most applications it is all we need and it is more efficient to compute.
-    // TODO(amcastro-tri): Rework this method as per issue #10155.
-    return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, frame_F, p_FP_list, p_WP_list, Jv_WFp);
-  }
-
   /// For a point Fp that is fixed to a frame F, calculates Fp's translational
   /// acceleration "bias" term `abias_AFp = J̇s_v_AFp(q, s) * s` in frame A with
   /// respect to "speeds" 𝑠.
@@ -1644,150 +1622,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
-  // TODO(eric.cousineau): Reduce duplicate text between overloads.
-  /// This is a variant to compute the geometric Jacobian `Jv_WFp` for a list of
-  /// points `P` moving with `frame_F`, given that we know the position `p_WP`
-  /// of each point in the list measured and expressed in the world frame W. The
-  /// geometric Jacobian `Jv_WFp` is defined such that: <pre>
-  ///   v_WP(q, v) = Jv_WFp(q)⋅v
-  /// </pre>
-  /// where `v_WP(q, v)` is the translational velocity of point `P` in the
-  /// world frame W and q and v are the vectors of generalized position and
-  /// velocity, respectively. Since the spatial velocity of each
-  /// point `P` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jv_WFp` is a function of the generalized coordinates q only.
-  ///
+  /// For a point Fp fixed/welded to a frame F, calculates `Jv_V_WFp`, Fp's
+  /// spatial velocity Jacobian with respect to generalized velocities v.
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   Points `P` in the list instantaneously move with this frame.
-  /// @param[in] p_WP_list
-  ///   A matrix with the fixed position of a list of points `P` measured and
-  ///   expressed in the world frame W.
-  ///   Each column of this matrix contains the position vector `p_WP` for a
-  ///   point `P` measured and expressed in the world frame W. Therefore this
-  ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WP` of each point `P` in the input list by: <pre>
-  ///     `v_WP(q, v) = Jv_WFp(q)⋅v`
-  ///   </pre>
-  ///   so that `v_WP` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `P` in the same order they were given in the
-  ///   input list. Therefore `J_WP` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WP` **must**
-  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
-  ///   exception.
-  ///
-  /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WFp` for details.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-  void CalcPointsGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_WP_list,
-      EigenPtr<MatrixX<T>> Jv_WFp) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // most applications it is all we need and it is more efficient to compute.
-    // TODO(amcastro-tri): Rework this method as per issue #10155.
-    return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, frame_F, p_WP_list, Jv_WFp);
-  }
-
-  /// Given a list of points with fixed position vectors `p_FP` in a frame
-  /// F, (that is, their time derivative `DtF(p_FP)` in frame F is zero),
-  /// this method computes the analytical Jacobian `Jq_WFp(q)`.
-  /// The analytical Jacobian `Jq_WFp(q)` is defined by: <pre>
-  ///   Jq_WFp(q) = d(p_WFp(q))/dq
+  ///   The position vector `p_FoFp` is expressed in this frame F.
+  /// @param[in] p_FoFp
+  ///   The position vector from Fo (frame F's origin) to Fp, expressed in F.
+  /// @param[out] Jv_V_WFp
+  ///   Fp's spatial velocity Jacobian with respect to generalized velocities v.
+  ///   `V_WFp`, Fp's spatial velocity in world frame W, can be written <pre>
+  ///   V_WFp(q, v) = Jv_V_WFp(q) * v
   /// </pre>
-  /// where `p_WFp(q)` is the position of point P, which moves with frame F, in
-  /// the world frame W.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   The positions `p_FP` of each point in the input set are measured and
-  ///   expressed in this frame F and are constant (fixed) in this frame.
-  /// @param[in] p_FP_list
-  ///   A matrix with the fixed position of a set of points `P` measured and
-  ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FP` for a
-  ///   point `P` measured and expressed in frame F. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WP_list
-  ///   The output positions of each point `P` now measured and expressed in
-  //    the world frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WP` and therefore external storage
-  ///   must be provided.
-  ///   The output `p_WP_list` **must** have the same size as the input set
-  ///   `p_FP_list` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WP_list` **must** be in
-  ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jq_WFp
-  ///   The analytical Jacobian `Jq_WFp(q)`, function of the generalized
-  ///   positions q only.
-  ///   We stack the positions of each point P in the world frame W into a
-  ///   column vector p_WFp = [p_WFp1; p_WFp2; ...] of size 3⋅np, with np
-  ///   the number of points in p_FP_list. Then the analytical Jacobian is
-  ///   defined as: <pre>
-  ///     Jq_WFp(q) = ∇(p_WFp(q))
-  ///   </pre>
-  ///   with `∇(⋅)` the gradient operator with respect to the generalized
-  ///   positions q. Therefore `Jq_WFp` is a matrix of size `3⋅np x nq`, with
-  ///   `nq` the number of generalized positions. On input, matrix `Jq_WFp`
-  ///   **must** have size `3⋅np x nq` or this method throws a
-  ///   std::runtime_error exception.
-  ///
-  /// @throws std::exception if the output `p_WP_list` is nullptr or does not
-  /// have the same size as the input array `p_FP_list`.
-  /// @throws std::exception if `Jq_WFp` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jq_WFp` for details.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
-  void CalcPointsAnalyticalJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list,
-      EigenPtr<MatrixX<T>> Jq_WFp) const {
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
-    // most applications it is all we need and it is more efficient to compute.
-    // TODO(amcastro-tri): Rework this method as per issue #10155.
-    internal_tree().CalcPointsAnalyticalJacobianExpressedInWorld(
-        context, frame_F, p_FP_list, p_WP_list, Jq_WFp);
-  }
-
-  /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `P`, this method computes the geometric Jacobian `Jv_WFp`
-  /// for frame `Fp`. The new origin `P` is specified by the position vector
-  /// `p_FP` in frame F. The frame geometric Jacobian `Jv_WFp` is defined by:
-  /// <pre>
-  ///   V_WFp(q, v) = Jv_WFp(q)⋅v
-  /// </pre>
-  /// where `V_WFp(q, v)` is the spatial velocity of frame `Fp` measured and
-  /// expressed in the world frame W and q and v are the vectors of generalized
-  /// position and velocity, respectively.
-  /// The geometric Jacobian `Jv_WFp(q)` is a function of the generalized
-  /// coordinates q only.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   The position `p_FP` of frame `Fp` is measured and expressed in this
-  ///   frame F.
-  /// @param[in] p_FP
-  ///   The (fixed) position of the origin `P` of frame `Fp` as measured and
-  ///   expressed in frame F.
-  /// @param[out] Jv_WFp
-  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity `V_WFp`
-  ///   of frame `Fp` by: <pre>
-  ///     V_WFp(q, v) = Jv_WFp(q)⋅v
-  ///   </pre>
-  ///   Therefore `Jv_WFp` is a matrix of size `6 x nv`, with `nv`
+  ///   The Jacobian `Jv_V_WFp(q)` is a matrix of size `6 x nv`, with `nv`
   ///   the number of generalized velocities. On input, matrix `Jv_WFp` **must**
   ///   have size `6 x nv` or this method throws an exception. The top rows of
   ///   this matrix (which can be accessed with Jv_WFp.topRows<3>()) is the
@@ -1800,20 +1649,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   results in a valid spatial velocity: <pre>
   ///     SpatialVelocity<double> Jv_WFp_times_v(Jv_WFp * v);
   ///   </pre>
-  ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
+  DRAKE_DEPRECATED("2020-02-01", "Use CalcJacobianSpatialVelocity().")
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> J_WFp) const {
-    // TODO(Mitiguy) Deprecate this method when it is removed from Python.
-    // DRAKE_DEPRECATED("2019-11-01", "Use CalcJacobianSpatialVelocity().")
+    const Frame<T>& frame_W = world_frame();
     return CalcJacobianSpatialVelocity(context,
                                        JacobianWrtVariable::kV,
-                                       frame_F, p_FP,
-                                       world_frame(), world_frame(),
+                                       frame_F,
+                                       p_FP,
+                                       frame_W,
+                                       frame_W,
                                        J_WFp);
   }
 
@@ -1869,7 +1719,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
   }
 
-
   /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
@@ -1898,7 +1747,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
   /// @param[out] J𝑠_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// `J𝑠_V_ABi_E` is a `6*p x n` matrix, where p is the number of points Bi and
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
@@ -1995,6 +1844,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// n is the number of elements in 𝑠.  The Jacobian is a function of only
   /// generalized positions q (which are pulled from the context).
   /// @throws std::exception if `J𝑠_v_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @note When 𝑠 = q̇, `Jq̇_v_ABi = Jq_p_AoBi`.  In other words, point Bi's
+  /// velocity Jacobian in frame A with respect to q̇ is equal to point Bi's
+  /// position Jacobian from Ao (A's origin) in frame A with respect to q. <pre>
+  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
+  /// </pre>
+  /// Note: Each partial derivative of p_AoBi is taken in frame A.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2003,6 +1858,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // some applications it is all we need and it is more efficient to compute.
     internal_tree().CalcJacobianTranslationalVelocity(context, with_respect_to,
         frame_B, frame_B, p_BoBi_B, frame_A, frame_E, Js_v_ABi_E);
   }
@@ -2039,8 +1896,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
+  /// velocity Jacobian in W with respect to generalized velocities v).
+  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -2112,16 +1970,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcConservativePower(context);
   }
 
-  /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
-  /// effects of the multibody equations of motion: <pre>
-  ///   M(q)v̇ + C(q, v)v = tau_app + ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and
+  /// gyroscopic effects in the multibody equations of motion: <pre>
+  ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
-  /// where `M(q)` is the multibody model's mass matrix and `tau_app` consists
-  /// of a vector applied generalized forces. The last term is a summation over
-  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
-  /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// where `M(q)` is the multibody model's mass matrix and `tau_app` is a
+  /// vector of generalized forces. The last term is a summation over all bodies
+  /// of the dot-product of `Fapp_Bo_W` (applied spatial force on body B at Bo)
+  /// with `Jv_V_WB(q)` (B's spatial Jacobian in world W with respect to
+  /// generalized velocities v).
+  /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
@@ -2779,7 +2637,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// only assigned once at the first call of any of this plant's geometry
   /// registration methods, and it does not change after that.
   /// Post-finalize calls will always return the same value.
-  optional<geometry::SourceId> get_source_id() const {
+  std::optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
 
@@ -2825,7 +2683,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
-  optional<geometry::FrameId> GetBodyFrameIdIfExists(
+  std::optional<geometry::FrameId> GetBodyFrameIdIfExists(
       BodyIndex body_index) const {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
@@ -3249,13 +3107,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// Sets the `state` so that generalized positions and velocities are zero.
+  /// Sets `state` according to defaults set by the user for joints (e.g.
+  /// RevoluteJoint::set_default_angle()) and free bodies
+  /// (SetDefaultFreeBodyPose()). If the user does not specify defaults, the
+  /// state corresponds to zero generalized positions and velocities.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
+    for (const BodyIndex index : GetFloatingBaseBodies()) {
+      SetFreeBodyPose(
+          context, state, internal_tree().get_body(index),
+          X_WB_default_list_[index].template cast<T>());
+    }
   }
 
   /// Assigns random values to all elements of the state, by drawing samples
@@ -3286,15 +3152,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
+  // Structure used in the calculation of hydroelastic contact forces (see
+  // method that follows).
+  struct HydroelasticContactInfoAndBodySpatialForces {
+    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
+      F_BBo_W_array.resize(num_bodies);
+    }
+
+    // Forces from hydroelastic contact applied to the origin of each body
+    // (indexed by BodyNodeIndex) in the MultibodyPlant.
+    std::vector<SpatialForce<T>> F_BBo_W_array;
+
+    // Information used for contact reporting collected through the evaluation
+    // of the hydroelastic model.
+    std::vector<HydroelasticContactInfo<T>> contact_info;
+  };
+
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
+    systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
-    systems::CacheIndex hydro_contact_forces;
+    systems::CacheIndex contact_info_and_body_spatial_forces;
+    systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
   };
@@ -3444,10 +3328,37 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<internal::TamsiSolverResults<T>>(context);
   }
 
+  // Computes the vector of ContactSurfaces for hydroelastic contact.
+  void CalcContactSurfaces(
+      const drake::systems::Context<T>& context,
+      std::vector<geometry::ContactSurface<T>>* contact_surfaces) const;
+
+  // Eval version of the method CalcContactSurfaces().
+  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+      const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.contact_surfaces)
+        .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
+  }
+
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
   void CalcContactResultsContinuous(const systems::Context<T>& context,
                                     ContactResults<T>* contact_results) const;
+
+  // Helper method for the continuous mode plant, to fill in the ContactResults
+  // for the point pair model, given the current context. Called by
+  // CalcContactResultsContinuous.
+  void CalcContactResultsContinuousPointPair(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
+  // Helper method for the continuous mode plant, to fill in the ContactResults
+  // for the hydroelastic model, given the current context. Called by
+  // CalcContactResultsContinuous.
+  void CalcContactResultsContinuousHydroelastic(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is discrete. If cached contact solver results are not up-to-date
@@ -3541,6 +3452,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
+  // Method to compute spatial contact forces for continuous plants.
+  void CalcSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Eval() version of the method CalcSpatialContactForcesContinuous().
+  const std::vector<SpatialForce<T>>& EvalSpatialContactForcesContinuous(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(
+        cache_indexes_.spatial_contact_forces_continuous).
+            template Eval<std::vector<SpatialForce<T>>>(context);
+  }
+
   // Method to compute generalized contact forces for continuous plants.
   void CalcGeneralizedContactForcesContinuous(
     const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const;
@@ -3548,9 +3472,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval() version of the method CalcGeneralizedContactForcesContinuous().
   const VectorX<T>& EvalGeneralizedContactForcesContinuous(
       const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.generalized_contact_forces_continuous)
-        .template Eval<VectorX<T>>(context);
+    return this->get_cache_entry(
+        cache_indexes_.generalized_contact_forces_continuous).
+            template Eval<VectorX<T>>(context);
   }
 
   // Calc method to output per model instance vector of generalized contact
@@ -3606,13 +3530,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // thrown.
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      HydroelasticContactInfoAndBodySpatialForces* F_BBo_W_array) const;
 
   // Eval version of CalcHydroelasticContactForces().
-  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
-        .template Eval<std::vector<SpatialForce<T>>>(context);
+  const HydroelasticContactInfoAndBodySpatialForces&
+  EvalHydroelasticContactForces(const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.contact_info_and_body_spatial_forces)
+        .template Eval<HydroelasticContactInfoAndBodySpatialForces>(context);
   }
 
   // Helper method to add the contribution of external actuation forces to the
@@ -3717,7 +3642,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
-  optional<geometry::SourceId> source_id_{nullopt};
+  std::optional<geometry::SourceId> source_id_{std::nullopt};
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
@@ -3742,7 +3667,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     double time_scale{-1.0};
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
-    optional<double> gravity;
+    std::optional<double> gravity;
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
@@ -3914,6 +3839,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
+
+  // Vector (with size num_bodies()) of default poses for each body. This is
+  // only used if Body::is_floating() is true.
+  std::vector<math::RigidTransform<double>> X_WB_default_list_;
 };
 
 /// @cond
@@ -4050,7 +3979,12 @@ void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
-    std::vector<SpatialForce<symbolic::Expression>>*) const;
+    HydroelasticContactInfoAndBodySpatialForces*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousHydroelastic(
+        const systems::Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const;
 #endif
 
 }  // namespace multibody

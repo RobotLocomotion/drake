@@ -48,6 +48,7 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/multibody/cart_pole",
     "//examples/particles",
     "//examples/pendulum",
+    "//examples/planar_gripper",
     "//examples/pr2",
     "//examples/quadrotor",
     "//examples/rimless_wheel",

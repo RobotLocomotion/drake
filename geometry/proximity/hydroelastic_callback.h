@@ -11,8 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
-#include "drake/geometry/proximity/make_box_mesh.h"
-#include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -30,6 +29,8 @@ namespace hydroelastic {
     - A collision filter instance.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph,
       each indexed by its corresponding geometry's GeometryId.
+    - The representation of all geometries that have been prepped for computing
+      contact surfaces.
     - A vector of contact surfaces -- one instance of ContactSurface for
       every supported, unfiltered penetrating pair.
 
@@ -42,16 +43,21 @@ struct CallbackData {
 
    @param collision_filter_in     The collision filter system. Aliased.
    @param X_WGs_in                The T-valued poses. Aliased.
+   @param geometries_in           The set of all hydroelastic geometric
+                                  representations. Aliased.
    @param surfaces_in             The output results. Aliased.  */
   CallbackData(
       const CollisionFilterLegacy* collision_filter_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
+      const Geometries* geometries_in,
       std::vector<ContactSurface<T>>* surfaces_in)
       : collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
+        geometries(*geometries_in),
         surfaces(*surfaces_in) {
     DRAKE_DEMAND(collision_filter_in);
     DRAKE_DEMAND(X_WGs_in);
+    DRAKE_DEMAND(geometries_in);
     DRAKE_DEMAND(surfaces_in);
   }
 
@@ -61,58 +67,12 @@ struct CallbackData {
   /** The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
+  /** The hydroelastic geometric representations.  */
+  const Geometries& geometries;
+
   /** The results of the distance query.  */
-  std::vector<ContactSurface<T>>& surfaces{};
+  std::vector<ContactSurface<T>>& surfaces;
 };
-
-// TODO(SeanCurtis-TRI): Remove these two functions (MakeBoxMeshFromFcl and
-//  MakeSphereFromFcl) when the real infrastructure is in place.
-
-/** Given an object_ptr whose geometry is a box, create a coarse surface mesh
- for that box.  */
-SurfaceMesh<double> MakeBoxMeshFromFcl(fcl::CollisionObjectd* object_ptr) {
-  const fcl::Boxd* box_ptr = dynamic_cast<const fcl::Boxd*>(
-      object_ptr->collisionGeometry().get());
-  DRAKE_DEMAND(box_ptr != nullptr);
-  Box box(box_ptr->side(0), box_ptr->side(1), box_ptr->side(2));
-  // Edge length as long as the longest side guarantees the coarsest mesh.
-  const double edge_length = box_ptr->side.maxCoeff();
-  return MakeBoxSurfaceMesh<double>(box, edge_length);
-}
-
-struct SoftGeometry {
-  std::unique_ptr<VolumeMesh<double>> mesh;
-  std::unique_ptr<VolumeMeshFieldLinear<double, double>> p0;
-};
-
-/** Given an object_ptr whose geometry is a sphere, creates a coarse volume mesh
- field for that sphere.  */
-SoftGeometry MakeSphereFromFcl(
-    fcl::CollisionObjectd* object_ptr) {
-  const fcl::Sphered* sphere_ptr = dynamic_cast<const fcl::Sphered*>(
-      object_ptr->collisionGeometry().get());
-  DRAKE_DEMAND(sphere_ptr != nullptr);
-  const double r = sphere_ptr->radius;
-  Sphere sphere(r);
-  // We arbitrarly choose to a coarse sphere approximation that has eight edges
-  // around the equator. The length of such an edge, is the length of the chord
-  // that spans 45 degrees (for a circle of radius r).
-  SoftGeometry geometry;
-  const double edge_length = 2 * r * std::sin(M_PI / 8.0);
-  geometry.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeSphereVolumeMesh<double>(sphere, edge_length));
-
-  std::vector<double> p0_values;
-  for (const auto& v : geometry.mesh->vertices()) {
-    const Eigen::Vector3d& p_MV = v.r_MV();
-    const double p_MV_len = p_MV.norm();
-    p0_values.push_back(1e8 * (1.0 - p_MV_len / r));
-  }
-  geometry.p0 = std::make_unique<VolumeMeshFieldLinear<double, double>>(
-      "p0", move(p0_values), geometry.mesh.get());
-
-  return geometry;
-}
 
 /** The callback function for computing a hydroelastic contact surface between
  two arbitrary shapes.
@@ -138,46 +98,51 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       encoding_a.encoding(), encoding_b.encoding());
 
   if (can_collide) {
-    // TODO(SeanCurtis-TRI): This logic will be replaced by real logic that
-    //  makes more complex decisions about shapes rather than all of the hard-
-    //  coded hacks.
-    fcl::NODE_TYPE a_type = object_A_ptr->getNodeType();
-    fcl::NODE_TYPE b_type = object_B_ptr->getNodeType();
-
-    const bool valid =(a_type == fcl::GEOM_BOX && b_type == fcl::GEOM_SPHERE) ||
-        (a_type == fcl::GEOM_SPHERE && b_type == fcl::GEOM_BOX);
-    if (!valid) {
+    const HydroelasticType type_A =
+        data.geometries.hydroelastic_type(encoding_a.id());
+    const HydroelasticType type_B =
+        data.geometries.hydroelastic_type(encoding_b.id());
+    if (type_A == HydroelasticType::kUndefined ||
+        type_B == HydroelasticType::kUndefined) {
       throw std::logic_error(fmt::format(
-          "Can't compute a contact surface between geometries {} ({}) and "
-          "{} ({})",
-          to_string(encoding_a.id()), GetGeometryName(*object_A_ptr),
-          to_string(encoding_b.id()), GetGeometryName(*object_B_ptr)));
+          "Requested a contact surface between a pair of geometries without "
+          "hydroelastic representation for at least one shape: a {} {} with id "
+          "{} and a {} {} with id {}",
+          type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
+          GetGeometryName(*object_B_ptr), encoding_b.id()));
+    }
+    if (type_A == type_B) {
+      throw std::logic_error(fmt::format(
+          "Requested contact between two {} objects ({} with id "
+          "{}, {} with id {}); only rigid-soft pairs are currently supported",
+          type_A, GetGeometryName(*object_A_ptr), encoding_a.id(),
+          GetGeometryName(*object_B_ptr), encoding_b.id()));
     }
 
-    fcl::CollisionObjectd* object_box_ptr{};
-    fcl::CollisionObjectd* object_sphere_ptr{};
-    GeometryId box_id;
-    GeometryId sphere_id;
-    if (a_type == fcl::GEOM_BOX) {
-      object_box_ptr = object_A_ptr;
-      box_id = encoding_a.id();
-      object_sphere_ptr = object_B_ptr;
-      sphere_id = encoding_b.id();
-    } else {
-      object_box_ptr = object_B_ptr;
-      box_id = encoding_b.id();
-      object_sphere_ptr = object_A_ptr;
-      sphere_id = encoding_a.id();
-    }
+    const bool A_is_rigid = type_A == HydroelasticType::kRigid;
+    const GeometryId id_S = A_is_rigid ? encoding_b.id() : encoding_a.id();
+    const GeometryId id_R = A_is_rigid ? encoding_a.id() : encoding_b.id();
 
-    SurfaceMesh<double> box_mesh = MakeBoxMeshFromFcl(object_box_ptr);
-    // Build the sphere.
-    SoftGeometry soft_sphere = MakeSphereFromFcl(object_sphere_ptr);
+    const math::RigidTransform<T>& X_WS(data.X_WGs.at(id_S));
+    const math::RigidTransform<T>& X_WR(data.X_WGs.at(id_R));
+
+    // TODO(SeanCurtis-TRI): We are currently assuming that *everything* is a
+    //  mesh. When rigid and compliant half spaces are fully supported modify
+    //  this.
+    const SoftGeometry& soft = data.geometries.soft_geometry(id_S);
+    const VolumeMeshField<double, double>& field_S = soft.pressure_field();
+    const RigidGeometry& rigid = data.geometries.rigid_geometry(id_R);
+    const SurfaceMesh<double>& mesh_R = rigid.mesh();
+
+    // TODO(SeanCurtis-TRI): There are multiple heap allocations implicit in
+    // this (resizing vector, constructing mesh and pressure field), this *may*
+    // prove to be too expensive to be in the inner loop of the simulation.
+    // Keep an eye on this.
     std::unique_ptr<ContactSurface<T>> surface =
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-            sphere_id, *soft_sphere.p0, data.X_WGs.at(sphere_id), box_id,
-            box_mesh, data.X_WGs.at(box_id));
+            id_S, field_S, X_WS, id_R, mesh_R, X_WR);
 
+    DRAKE_DEMAND(surface->id_M() < surface->id_N());
     data.surfaces.emplace_back(std::move(*surface));
   }
   // Tell the broadphase to keep searching.

@@ -6,8 +6,8 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -199,7 +199,7 @@ GTEST_TEST(URDFParserTest,
   const string atlas_xml = FindResourceOrThrow(
       "drake/examples/atlas/package.xml");
   PackageMap package_map;
-  package_map.Add("Atlas", spruce::path(atlas_xml).root());
+  package_map.Add("Atlas", filesystem::path(atlas_xml).parent_path());
 
   auto tree = make_unique<RigidBodyTree<double>>();
   ASSERT_NO_THROW(AddModelInstanceFromUrdfFileSearchingInRosPackages(

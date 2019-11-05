@@ -35,16 +35,14 @@ load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 # The supported Python versions should match those listed in both the root
-# CMakeLists.txt and doc/developers.rst. The first version is the default.
+# CMakeLists.txt and doc/developers.rst.
 _VERSION_SUPPORT_MATRIX = {
-    "ubuntu:16.04": ["2.7"],
-    "ubuntu:18.04": ["3.6", "2.7"],
-    "macos:10.13": ["3.7"],
+    "ubuntu:18.04": ["3.6"],
     "macos:10.14": ["3.7"],
     "macos:10.15": ["3.7"],
 }
 
-def _repository_python_info(repository_ctx):
+def repository_python_info(repository_ctx):
     # Using `DRAKE_PYTHON_BIN_PATH` from the environment, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
@@ -70,11 +68,9 @@ def _repository_python_info(repository_ctx):
         # TODO(eric.cousineau): Make this an error once `.bazelrc` stops using
         # `try-import` for configuration.
         if os_result.is_macos:
-            python_path = "/usr/local/bin/python{}".format(
-                versions_supported[0],
-            )
+            python_path = "/usr/local/bin/python3"
         else:
-            python_path = "/usr/bin/python{}".format(versions_supported[0])
+            python_path = "/usr/bin/python3"
     if not python_path.startswith("/"):
         fail("`--action_env=DRAKE_PYTHON_BIN_PATH` must provide an " +
              "absolute path.")
@@ -133,7 +129,7 @@ def _repository_python_info(repository_ctx):
 
 def _impl(repository_ctx):
     # Repository implementation.
-    py_info = _repository_python_info(
+    py_info = repository_python_info(
         repository_ctx,
     )
 

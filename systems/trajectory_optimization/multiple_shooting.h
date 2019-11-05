@@ -426,7 +426,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   MultipleShooting(const solvers::VectorXDecisionVariable& input,
                    const solvers::VectorXDecisionVariable& state,
                    int num_time_samples,
-                   const optional<solvers::DecisionVariable>& time_var,
+                   const std::optional<solvers::DecisionVariable>& time_var,
                    double minimum_timestep, double maximum_timestep);
 
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,

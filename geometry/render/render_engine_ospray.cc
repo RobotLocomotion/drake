@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include <vtkAppendPolyData.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
@@ -20,6 +21,8 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
+#include "drake/common/text_logging.h"
+#include "drake/geometry/render/render_engine_vtk_base.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/vtk_util.h"
 
@@ -70,7 +73,7 @@ struct RegistrationData {
   const RigidTransformd& X_FG;
   const GeometryId id;
   // The file name if the shape being registered is a mesh.
-  optional<std::string> mesh_filename;
+  std::optional<std::string> mesh_filename;
 };
 
 std::string RemoveFileExtension(const std::string& filepath) {
@@ -169,33 +172,25 @@ void RenderEngineOspray::RenderLabelImage(const CameraProperties&, bool,
 void RenderEngineOspray::ImplementGeometry(const Sphere& sphere,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive sphere; find some way to
-  //  exercise *that* instead of needlessly tesselating.
+  //  exercise *that* instead of needlessly tessellating.
   vtkNew<vtkSphereSource> vtk_sphere;
-  vtk_sphere->SetRadius(sphere.get_radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_sphere->SetThetaResolution(50);
-  vtk_sphere->SetPhiResolution(50);
+  SetSphereOptions(vtk_sphere.GetPointer(), sphere.get_radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Cylinder& cylinder,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive cylinder; find some way
-  //  to exercise *that* instead of needlessly tesselating.
+  //  to exercise *that* instead of needlessly tessellating.
   vtkNew<vtkCylinderSource> vtk_cylinder;
-  vtk_cylinder->SetHeight(cylinder.get_length());
-  vtk_cylinder->SetRadius(cylinder.get_radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_cylinder->SetResolution(50);
+  SetCylinderOptions(vtk_cylinder, cylinder.get_length(),
+                     cylinder.get_radius());
 
   // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
   // to rotate it to be z-axis aligned because that is what Drake uses.
   vtkNew<vtkTransform> transform;
-  transform->RotateX(90);
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
-  transform_filter->SetTransform(transform.GetPointer());
-  transform_filter->Update();
+  TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
 
   ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
@@ -214,6 +209,14 @@ void RenderEngineOspray::ImplementGeometry(const Box& box, void* user_data) {
   cube->SetYLength(box.depth());
   cube->SetZLength(box.height());
   ImplementGeometry(cube.GetPointer(), user_data);
+}
+
+void RenderEngineOspray::ImplementGeometry(const Capsule& capsule,
+                                           void* user_data) {
+  vtkSmartPointer<vtkAppendPolyData> append_filter =
+      vtkSmartPointer<vtkAppendPolyData>::New();
+  CreateVtkCapsule(append_filter, capsule.get_radius(), capsule.get_length());
+  ImplementGeometry(append_filter.GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Mesh& mesh, void* user_data) {

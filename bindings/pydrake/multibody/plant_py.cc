@@ -1,11 +1,11 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 #include "pybind11/stl_bind.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -120,12 +120,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 .c_str())
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
-        .def("AddContactInfo",
-            [](Class* self, const PointPairContactInfo<T>& contact_info) {
-              self->AddContactInfo(contact_info);
-            },
-            py::arg("point_pair_info"),
-            cls_doc.AddContactInfo.doc_1args_point_pair_info)
         .def("contact_info",
             [](Class* self, int i) {
               WarnDeprecated(
@@ -150,7 +144,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "CoulombFriction", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
-            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args);
+            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args)
+        .def("static_friction", &Class::static_friction,
+            cls_doc.static_friction.doc)
+        .def("dynamic_friction", &Class::dynamic_friction,
+            cls_doc.dynamic_friction.doc);
+
+    m.def("CalcContactFrictionFromSurfaceProperties",
+        [](const multibody::CoulombFriction<T>& surface_properties1,
+            const multibody::CoulombFriction<T>& surface_properties2) {
+          return drake::multibody::CalcContactFrictionFromSurfaceProperties(
+              surface_properties1, surface_properties2);
+        },
+        py::arg("surface_properties1"), py::arg("surface_properties2"),
+        py_reference, doc.CalcContactFrictionFromSurfaceProperties.doc);
   }
 
   {
@@ -247,21 +254,28 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
-        .def("CalcFrameGeometricJacobianExpressedInWorld",
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
+    // Bind deprecated overload.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("CalcFrameGeometricJacobianExpressedInWorld",
+        WrapDeprecated(
+            cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc_deprecated,
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
               MatrixX<T> Jv_WF(6, self->num_velocities());
               self->CalcFrameGeometricJacobianExpressedInWorld(
                   context, frame_B, p_BoFo_B, &Jv_WF);
               return Jv_WF;
-            },
-            py::arg("context"), py::arg("frame_B"),
-            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
-            cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc)
-        // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
-        // overload that (a) services MBP directly and (b) uses body
-        // association that is less awkward than implicit BodyNodeIndex.
+            }),
+        py::arg("context"), py::arg("frame_B"),
+        py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
+        cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
+         // overload that (a) services MBP directly and (b) uses body
+         // association that is less awkward than implicit BodyNodeIndex.
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -276,6 +290,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc_iso3_deprecation)
+        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
+            py::arg("body"), py::arg("X_WB"),
+            cls_doc.SetDefaultFreeBodyPose.doc)
         .def("SetActuationInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> u_instance,
@@ -376,6 +393,33 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcJacobianSpatialVelocity.doc)
+        .def("CalcJacobianAngularVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              Matrix3X<T> Js_w_AB_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianAngularVelocity(context, with_respect_to,
+                  frame_B, frame_A, frame_E, &Js_w_AB_E);
+              return Js_w_AB_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianAngularVelocity.doc)
+        .def("CalcJacobianTranslationalVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              Matrix3X<T> Js_v_ABi_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianTranslationalVelocity(context, with_respect_to,
+                  frame_B, p_BoBi_B, frame_A, frame_E, &Js_v_ABi_E);
+              return Js_v_ABi_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBi_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianTranslationalVelocity.doc)
         .def("CalcSpatialAccelerationsFromVdot",
             [](const Class* self, const Context<T>& context,
                 const VectorX<T>& known_vdot) {
@@ -506,21 +550,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
             cls_doc.GetBodyByName.doc_2args)
+        .def("GetBodyFrameIdOrThrow", &Class::GetBodyFrameIdOrThrow,
+            py::arg("body_index"), cls_doc.GetBodyFrameIdOrThrow.doc)
         .def("GetBodyIndices", &Class::GetBodyIndices,
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
         .def("GetJointByName",
             [](const Class* self, const string& name,
-                optional<ModelInstanceIndex> model_instance) -> auto& {
+                std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
-            py::arg("name"), py::arg("model_instance") = nullopt,
+            py::arg("name"), py::arg("model_instance") = std::nullopt,
             py_reference_internal, cls_doc.GetJointByName.doc)
         .def("GetMutableJointByName",
             [](Class * self, const string& name,
-                optional<ModelInstanceIndex> model_instance) -> auto& {
+                std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetMutableJointByName(name, model_instance);
             },
-            py::arg("name"), py::arg("model_instance") = nullopt,
+            py::arg("name"), py::arg("model_instance") = std::nullopt,
             py_reference_internal, cls_doc.GetJointByName.doc)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(
@@ -587,7 +633,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetBodyFrameIdIfExists.doc)
         .def("GetCollisionGeometriesForBody",
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
-            cls_doc.GetCollisionGeometriesForBody.doc);
+            py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
+        .def("num_collision_geometries", &Class::num_collision_geometries,
+            cls_doc.num_collision_geometries.doc)
+        .def("default_coulomb_friction", &Class::default_coulomb_friction,
+            py::arg("geometry_id"), py_reference_internal,
+            cls_doc.default_coulomb_friction.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",

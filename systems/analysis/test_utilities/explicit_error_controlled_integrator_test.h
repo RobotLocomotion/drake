@@ -1,3 +1,4 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 #pragma once
 
 #include <cmath>
@@ -37,7 +38,7 @@ struct ExplicitErrorControlledIntegratorTest : public ::testing::Test {
   const double kMass = 2.0;        // kg
 };
 
-TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest);
+TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest);
 
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ReqInitialStepTarget) {
   // Set the requested initial step size.
@@ -55,8 +56,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ContextAccess) {
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
   EXPECT_GE(this->integrator->get_error_estimate_order(), 1);
   EXPECT_EQ(this->integrator->supports_error_estimation(), true);
-  EXPECT_NO_THROW(this->integrator->set_target_accuracy(1e-1));
-  EXPECT_NO_THROW(this->integrator->request_initial_step_size_target(
+  DRAKE_EXPECT_NO_THROW(this->integrator->set_target_accuracy(1e-1));
+  DRAKE_EXPECT_NO_THROW(this->integrator->request_initial_step_size_target(
       this->kDt));
 }
 
@@ -74,8 +75,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
   this->integrator->Initialize();
 
   // Attempt to take a variable step- should not throw an exception.
-  EXPECT_NO_THROW(
-    this->integrator->IntegrateWithMultipleStepsToTime(1e-40));
+  DRAKE_EXPECT_NO_THROW(
+      this->integrator->IntegrateWithMultipleStepsToTime(1e-40));
 }
 
 // Test scaling vectors
@@ -475,7 +476,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
             this->kDt);
 }
 
-REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
+REGISTER_TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEstOrder, SpringMassStepEC, MaxStepSizeRespected,
     IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
@@ -498,7 +499,7 @@ struct PleidesTest : public ::testing::Test {
   std::unique_ptr<IntegratorBase<double>> integrator;
 };
 
-TYPED_TEST_CASE_P(PleidesTest);
+TYPED_TEST_SUITE_P(PleidesTest);
 
 // Verifies that the Pleides system can be integrated accurately.
 TYPED_TEST_P(PleidesTest, Pleides) {
@@ -535,7 +536,7 @@ TYPED_TEST_P(PleidesTest, Pleides) {
     EXPECT_NEAR(q[i], q_des[i], kTolerance) << i;
 }
 
-REGISTER_TYPED_TEST_CASE_P(PleidesTest, Pleides);
+REGISTER_TYPED_TEST_SUITE_P(PleidesTest, Pleides);
 
 }  // namespace analysis_test
 }  // namespace systems

@@ -18,6 +18,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
@@ -47,6 +48,8 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::AddRigidHydroelasticProperties;
+using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
 using geometry::QueryObject;
@@ -69,7 +72,10 @@ using systems::Simulator;
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
-DEFINE_bool(real_time, true, "Set to true to run no faster than realtime");
+DEFINE_bool(real_time, true, "Set to false to run as fast as possible");
+DEFINE_double(length, 1.0,
+              "Measure of sphere edge length -- smaller numbers produce a "
+              "denser, more expensive mesh");
 
 /** Places a ball at the world's origin and defines its velocity as being
  sinusoidal in time in the z direction.
@@ -92,7 +98,10 @@ class MovingBall final : public LeafSystem<double> {
         make_unique<GeometryInstance>(RigidTransformd(),
                                       make_unique<Sphere>(1.0), "ball"));
 
-    scene_graph->AssignRole(source_id_, geometry_id_, ProximityProperties());
+    ProximityProperties prox_props;
+    prox_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic, 1e8);
+    AddSoftHydroelasticProperties(FLAGS_length, &prox_props);
+    scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
     illus_props.AddProperty("phong", "diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
@@ -208,6 +217,10 @@ class ContactResultMaker final : public LeafSystem<double> {
         write_double3(vA.r_MV(), tri_msg.p_WA);
         write_double3(vB.r_MV(), tri_msg.p_WB);
         write_double3(vC.r_MV(), tri_msg.p_WC);
+
+        tri_msg.pressure_A = contacts[i].EvaluateE_MN(face.vertex(0));
+        tri_msg.pressure_B = contacts[i].EvaluateE_MN(face.vertex(1));
+        tri_msg.pressure_C = contacts[i].EvaluateE_MN(face.vertex(2));
       }
     }
   }
@@ -235,7 +248,12 @@ int do_main() {
       source_id,
       make_unique<GeometryInstance>(
           X_WB, make_unique<Box>(edge_len, edge_len, edge_len), "box"));
-  scene_graph.AssignRole(source_id, ground_id, ProximityProperties());
+  ProximityProperties rigid_props;
+  // A rigid hydroelastic geometry must have an infinite elastic modulus.
+  rigid_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic,
+                          std::numeric_limits<double>::infinity());
+  AddRigidHydroelasticProperties(edge_len, &rigid_props);
+  scene_graph.AssignRole(source_id, ground_id, rigid_props);
   IllustrationProperties illus_props;
   illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 1.0});
   scene_graph.AssignRole(source_id, ground_id, illus_props);

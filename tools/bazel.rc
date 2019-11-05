@@ -3,9 +3,6 @@ import %workspace%/tools/cc_toolchain/bazel.rc
 import %workspace%/tools/dynamic_analysis/bazel.rc
 import %workspace%/tools/lint/bazel.rc
 
-# Continue to use Python 2 by default in Bazel 0.25 and above.
-build --incompatible_py3_is_default=false
-
 # Continue to obtain the python runtime from the --python_version flag rather
 # than a toolchain in Bazel 0.27 and above until #11660 is resolved.
 build --incompatible_use_python_toolchains=false
@@ -84,7 +81,6 @@ build:mosek --define=WITH_MOSEK=ON
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
 build:snopt_fortran --define=WITH_SNOPT_FORTRAN=ON
-build:snopt_f2c --define=WITH_SNOPT_F2C=ON
 
 ### A configuration that enables all optional dependencies. ###
 test:everything --test_tag_filters=-no_everything

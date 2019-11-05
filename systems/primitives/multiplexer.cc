@@ -19,7 +19,7 @@ Multiplexer<T>::Multiplexer(int num_scalar_inputs)
 template <typename T>
 Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
     : Multiplexer<T>(
-          SystemTypeTag<systems::Multiplexer>{}, input_sizes,
+          SystemTypeTag<Multiplexer>{}, input_sizes,
           BasicVector<T>(std::accumulate(input_sizes.begin(), input_sizes.end(),
                                          0, std::plus<int>{}))) {}
 

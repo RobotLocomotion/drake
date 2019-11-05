@@ -177,7 +177,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
       edges_to_newly_created_vertices_;
   std::unique_ptr<HalfSpace<T>> half_space_H_;
 };  // namespace
-TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest);
+TYPED_TEST_SUITE_P(MeshHalfspaceIntersectionTest);
 
 // Verifies that a triangle that lies fully outside of the half space yields an
 // empty intersection. This covers Case 4 in the code.
@@ -567,14 +567,14 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
   ASSERT_EQ(intersection_mesh.num_faces(), 14);
 }
 
-REGISTER_TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest, NoIntersection,
+REGISTER_TYPED_TEST_SUITE_P(MeshHalfspaceIntersectionTest, NoIntersection,
                            InsideOrOnIntersection,
                            VertexOnHalfspaceIntersection,
                            EdgeOnHalfspaceIntersection, QuadrilateralResults,
                            OutsideInsideOn, OneInsideTwoOutside, BoxMesh);
 
 typedef ::testing::Types<double, AutoDiffXd> MyTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(My, MeshHalfspaceIntersectionTest, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfspaceIntersectionTest, MyTypes);
 
 }  // namespace
 }  // namespace geometry

@@ -147,7 +147,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param X_WCameraBody Transformation between the world and the camera body.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupClutterClearingStation(
-      const optional<const math::RigidTransformd>& X_WCameraBody = {},
+      const std::optional<const math::RigidTransformd>& X_WCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT

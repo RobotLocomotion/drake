@@ -94,10 +94,10 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   /// `cloud` must have the XYZ channel enabled.
   static void Convert(
       const systems::sensors::CameraInfo& camera_info,
-      const optional<math::RigidTransformd>& camera_pose,
+      const std::optional<math::RigidTransformd>& camera_pose,
       const systems::sensors::ImageDepth32F& depth_image,
-      const optional<systems::sensors::ImageRgba8U>& color_image,
-      const optional<float>& scale, PointCloud* cloud);
+      const std::optional<systems::sensors::ImageRgba8U>& color_image,
+      const std::optional<float>& scale, PointCloud* cloud);
 
   /// Converts a depth image to a point cloud using direct arguments instead of
   /// System input and output ports.  The semantics are the same as documented
@@ -108,10 +108,10 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   /// `cloud` must have the XYZ channel enabled.
   static void Convert(
       const systems::sensors::CameraInfo& camera_info,
-      const optional<math::RigidTransformd>& camera_pose,
+      const std::optional<math::RigidTransformd>& camera_pose,
       const systems::sensors::ImageDepth16U& depth_image,
-      const optional<systems::sensors::ImageRgba8U>& color_image,
-      const optional<float>& scale, PointCloud* cloud);
+      const std::optional<systems::sensors::ImageRgba8U>& color_image,
+      const std::optional<float>& scale, PointCloud* cloud);
 
  private:
   void CalcOutput16U(const systems::Context<double>&, PointCloud*) const;

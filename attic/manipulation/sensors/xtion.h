@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
@@ -44,7 +45,9 @@ namespace sensors {
  *
  * @ingroup manipulation_systems
  */
-class Xtion : public systems::Diagram<double> {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic/manipulation/sensors package is being removed.")
+Xtion : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Xtion)
 

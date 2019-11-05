@@ -26,8 +26,7 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector() {
 
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
-        init) {
+    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
   values_.insert(init.begin(), init.end());
   size_ = init.size();
   DRAKE_ASSERT_VOID(CheckInvariants());
@@ -36,8 +35,7 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>&
 FrameKinematicsVector<KinematicsValue>::operator=(
-    std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
-        init) {
+    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
   // N.B. We can't use unordered_map::insert in our operator= implementation
   // because it does not overwrite pre-existing keys.  (Our clear() doesn't
   // remove the keys, it only nulls the values.)
@@ -52,7 +50,7 @@ FrameKinematicsVector<KinematicsValue>::operator=(
 template <typename KinematicsValue>
 void FrameKinematicsVector<KinematicsValue>::clear() {
   for (auto& item : values_) {
-    item.second = nullopt;
+    item.second = std::nullopt;
   }
   size_ = 0;
 }
@@ -71,7 +69,7 @@ const KinematicsValue& FrameKinematicsVector<KinematicsValue>::value(
   using std::to_string;
   auto iter = values_.find(id);
   if (iter != values_.end()) {
-    const optional<KinematicsValue>& map_value = iter->second;
+    const std::optional<KinematicsValue>& map_value = iter->second;
     if (map_value.has_value()) {
       return *map_value;
     }

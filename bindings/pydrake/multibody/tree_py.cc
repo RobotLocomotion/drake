@@ -1,11 +1,11 @@
 #include "pybind11/eigen.h"
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -124,18 +124,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "FixedOffsetFrame", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const std::string&, const Frame<T>&,
-                 const RigidTransform<double>&, optional<ModelInstanceIndex>>(),
+                 const RigidTransform<double>&,
+                 std::optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = nullopt, cls_doc.ctor.doc_4args)
+            py::arg("model_instance") = std::nullopt, cls_doc.ctor.doc_4args)
         .def(py::init([](const std::string& name, const Frame<T>& P,
                           const Isometry3<double>& X_PF,
-                          optional<ModelInstanceIndex> model_instance) {
+                          std::optional<ModelInstanceIndex> model_instance) {
           WarnDeprecated(doc_iso3_deprecation);
           return std::make_unique<Class>(
               name, P, RigidTransform<double>(X_PF), model_instance);
         }),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = nullopt, doc_iso3_deprecation);
+            py::arg("model_instance") = std::nullopt, doc_iso3_deprecation);
   }
 
   // Bodies.
@@ -163,6 +164,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.RigidBody;
     auto cls = DefineTemplateClassWithDefault<Class, Body<T>>(
         m, "RigidBody", param, cls_doc.doc);
+    cls  // BR
+        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
+        .def("default_com", &Class::default_com, py_reference_internal,
+            cls_doc.default_com.doc)
+        .def("default_unit_inertia", &Class::default_unit_inertia,
+            py_reference_internal, cls_doc.default_unit_inertia.doc)
+        .def("default_spatial_inertia", &Class::default_spatial_inertia,
+            py_reference_internal, cls_doc.default_spatial_inertia.doc);
   }
 
   // Joints.

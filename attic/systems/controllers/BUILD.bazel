@@ -29,6 +29,7 @@ drake_cc_library(
     name = "control_util",
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:resolve_center_of_pressure",
         "//attic/multibody:rigid_body_tree",
@@ -45,13 +46,17 @@ drake_cc_library(
     name = "side",
     srcs = ["side.cc"],
     hdrs = ["side.h"],
-    deps = [],
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
     name = "qp_common",
     srcs = [],
     hdrs = ["QPCommon.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":control_util",
         ":side",
@@ -65,6 +70,7 @@ drake_cc_library(
     name = "zmp_util",
     srcs = ["zmpUtil.cpp"],
     hdrs = ["zmpUtil.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
     ],
@@ -74,6 +80,7 @@ drake_cc_library(
     name = "yaml_util",
     srcs = ["yaml_util.cc"],
     hdrs = ["yaml_util.h"],
+    copts = ["-Wno-deprecated-declarations"],
     # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
     # headers; yaml_util.h is only included internally within this package.
     install_hdrs_exclude = ["yaml_util.h"],
@@ -89,6 +96,7 @@ drake_cc_library(
     name = "polynomial_encode_decode",
     srcs = ["polynomial_encode_decode.cc"],
     hdrs = ["polynomial_encode_decode.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/util",
         "//common/trajectories:piecewise_polynomial",
@@ -109,6 +117,7 @@ drake_cc_library(
         "//tools:with_gurobi": ["InstantaneousQPController.h"],
         "//conditions:default": [],
     }),
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":control_util",
         ":polynomial_encode_decode",
@@ -168,6 +177,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "polynomial_encode_decode_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":polynomial_encode_decode",
         "//common/test_utilities",

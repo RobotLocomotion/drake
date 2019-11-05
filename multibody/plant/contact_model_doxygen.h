@@ -204,7 +204,7 @@ Next topic: @ref contact_engineering
 
  @note When modeling the multibody system as discrete (refer to
  the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
- section), only the static coefficient of friction is used while the kinetic
+ section), only the dynamic coefficient of friction is used while the static
  coefficient of friction is ignored.
 
  @anchor time_advancement_strategy
@@ -392,7 +392,7 @@ Next topic: @ref contact_engineering
  Rather than modeling _perfect_ stiction, it makes use of an _allowable_ amount
  of relative motion to approximate stiction.  When we refer to
  "relative motion", we refer specifically to the relative translational speed of
- two points `Ac` and `Bc` defined to instantly be located at contact point 
+ two points `Ac` and `Bc` defined to instantly be located at contact point
  `Co` and moving with bodies A and B, respectively.
 
  The function, as illustrated in Figure 3, is a function of the unitless

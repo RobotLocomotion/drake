@@ -3,8 +3,7 @@
 # the build. They are neither called during the build nor expected to be called
 # by most developers or users of the project.
 
-ARG CODENAME=bionic
-FROM ubuntu:$CODENAME
+FROM ubuntu:bionic
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update --quiet \
   && apt-get install --no-install-recommends --quiet --yes \

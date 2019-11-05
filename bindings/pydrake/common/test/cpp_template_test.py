@@ -1,9 +1,5 @@
-from __future__ import absolute_import, print_function
-
 import unittest
 from types import ModuleType
-
-import six
 
 import pydrake.common.cpp_template as m
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
@@ -184,14 +180,10 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(DummyC.method),
                          "<unbound TemplateMethod DummyC.method>")
         self.assertTrue(DummyC.method.is_instantiation(DummyC.dummy_c))
-        if six.PY2:
-            self.assertEqual(
-                str(DummyC.method[int]), "<unbound method DummyC.method[int]>")
-        else:
-            self.assertTrue(
-                str(DummyC.method[int]).startswith(
-                    "<function DummyC.method[int] at "),
-                str(DummyC.method[int]))
+        self.assertTrue(
+            str(DummyC.method[int]).startswith(
+                "<function DummyC.method[int] at "),
+            str(DummyC.method[int]))
 
         obj = DummyC()
         self.assertTrue(
@@ -204,10 +196,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(DummyC.method[int](obj), (obj, 3))
         self.assertEqual(obj.method[float](), (obj, 4))
         self.assertEqual(DummyC.method[float](obj), (obj, 4))
-
-        # Cannot pickle instancemethod's in Python 2.
-        if not six.PY2:
-            assert_pickle(self, DummyC.method[int])
+        assert_pickle(self, DummyC.method[int])
 
     def test_get_or_init(self):
         m_test = ModuleType("test_module")

@@ -302,7 +302,7 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
     const SolverInterface& solver, double tol) {
   const MathematicalProgramResult result = RunSolver(prog_, solver);
 
-  const optional<SolverId> solver_id = result.get_solver_id();
+  const std::optional<SolverId> solver_id = result.get_solver_id();
   ASSERT_TRUE(solver_id);
   const int num_nodes = weight_.rows();
   for (int i = 0; i < num_nodes - 1; ++i) {

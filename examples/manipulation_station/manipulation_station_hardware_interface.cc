@@ -5,12 +5,13 @@
 #include "robotlocomotion/image_array_t.hpp"
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -44,7 +45,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
 
   // Publish IIWA command.
   auto iiwa_command_sender =
-      builder.AddSystem<examples::kuka_iiwa_arm::IiwaCommandSender>();
+      builder.AddSystem<manipulation::kuka_iiwa::IiwaCommandSender>();
   auto iiwa_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_command>(
           "IIWA_COMMAND", lcm, 0.005
@@ -58,7 +59,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
 
   // Receive IIWA status and populate the output ports.
   auto iiwa_status_receiver =
-      builder.AddSystem<examples::kuka_iiwa_arm::IiwaStatusReceiver>();
+      builder.AddSystem<manipulation::kuka_iiwa::IiwaStatusReceiver>();
   iiwa_status_subscriber_ = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_status>(
           "IIWA_STATUS", lcm));

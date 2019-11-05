@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -27,7 +28,9 @@ namespace scene_generation {
  * In case the simulation were to explode, the forward simulation is simply
  * repeated with half the max step size.
  */
-class SimulatePlantToRest {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The scene_generation package is being removed.")
+SimulatePlantToRest {
  public:
   /**
    * Constructs the SimulatePlantToRest

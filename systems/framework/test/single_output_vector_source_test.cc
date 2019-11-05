@@ -62,7 +62,7 @@ class Convertable final : public SingleOutputVectorSource<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Convertable)
 
   using Base = SingleOutputVectorSource<T>;
-  using Tag = SystemTypeTag<systems::Convertable>;
+  using Tag = SystemTypeTag<Convertable>;
 
   Convertable() : Base(kSize) {}
   explicit Convertable(UseVector) : Base(*MakeVec()) {}

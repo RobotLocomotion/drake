@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -8,7 +9,6 @@
 #include "drake/common/constants.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -184,7 +184,7 @@ class InputPort final : public InputPortBase {
       const System<T>* system, internal::SystemMessageInterface* system_base,
       std::string name, InputPortIndex index, DependencyTicket ticket,
       PortDataType data_type, int size,
-      const optional<RandomDistribution>& random_type,
+      const std::optional<RandomDistribution>& random_type,
       EvalAbstractCallback eval)
       : InputPortBase(system_base, std::move(name), index, ticket, data_type,
                       size, random_type, std::move(eval)),

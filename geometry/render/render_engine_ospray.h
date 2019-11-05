@@ -7,6 +7,7 @@
 
 #include <vtkActor.h>
 #include <vtkAutoInit.h>
+#include <vtkCylinderSource.h>
 #include <vtkImageExport.h>
 #include <vtkLight.h>
 #include <vtkNew.h>
@@ -15,6 +16,8 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
+#include <vtkSphereSource.h>
+#include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/geometry/render/render_engine.h"
@@ -87,10 +90,12 @@ class RenderEngineOspray final
 
   /** @name    Shape reification  */
   //@{
+  using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) final;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final;
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final;
   void ImplementGeometry(const Box& box, void* user_data) final;
+  void ImplementGeometry(const Capsule& capsule, void* user_data) final;
   void ImplementGeometry(const Mesh& mesh, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;
   //@}

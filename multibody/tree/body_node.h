@@ -223,7 +223,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // TODO(amcastro-tri):
     // With H_FM(qm) already in the cache (computed by
     // Mobilizer::UpdatePositionKinematicsCache()) update the cache
-    // entries for H_PB_W, the Jacobian for the SpatialVelocity jump between
+    // entries for H_PB_W, the hinge matrix for the SpatialVelocity jump between
     // body B and its parent body P expressed in the world frame W.
   }
 
@@ -237,10 +237,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
   /// @param[in] H_PB_W
-  ///   The across-node Jacobian matrix that relates to the spatial velocity
-  ///   `V_PB_W` of this node's body B in its parent node body P, expressed in
-  ///   the world frame W, with this node's generalized velocities
-  ///   (or mobilities) `v_B` by `V_PB_W = H_PB_W⋅v_B`.
+  ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  ///   velocity in its parent body P, expressed in world W) to this node's `nm`
+  ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
   /// @param[out] vc
   ///   A pointer to a valid, non nullptr, velocity kinematics cache.
   /// @pre The position kinematics cache `pc` was already updated to be in sync
@@ -297,9 +296,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                               (4)
     //
     // V_FM is immediately available from this node's mobilizer with the method
-    // CalcAcrossMobilizerSpatialVelocity() which computes the velocity of M in
-    // F as the application V_FM = H_FM * vm, where H_FM is the mobilizer's
-    // Jacobian matrix.
+    // CalcAcrossMobilizerSpatialVelocity() which computes M's spatial velocity
+    // in F by V_FM = H_FM * vm, where H_FM is the mobilizer's hinge matrix.
     //
     // Computation of V_WPb:
     // This can be computed by a simple shift operation from V_WP:
@@ -786,25 +784,20 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
-  /// Computes the geometric Jacobian `H_PB_W` which relates to the spatial
-  /// velocity of a body B in its parent body P by `V_PB_W = H_PB_W(q)⋅v_B`,
-  /// where v_B denotes the generalized velocities associated with body B's
-  /// node. `H_PB_W ∈ ℝ⁶ˣⁿᵐ` where `nm` is the number of mobilities associated
-  /// with body B's node. `H_PB_W(q)` is a function of the model's generalized
-  /// positions q only.
-  ///
+  /// Calculates the hinge matrix H_PB_W.
   /// @param[in] context
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
   /// @param[out] H_PB_W
-  ///   The geometric Jacobian which relates the velocity `V_PB_W` of this
-  ///   node's body B in its parent body P, expressed in W, by
-  ///   `V_PB_W = H_PB_W⋅v_B`.
+  ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  ///   velocity in its parent body P, expressed in world W) to this node's `nm`
+  ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  /// @note `H_PB_W` is only a function of the model's generalized positions q.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {
@@ -851,17 +844,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     }
   }
 
-  /// Helper method to retrieve a Jacobian matrix for `this` node from an array
-  /// storing the columns of a set of Jacobian matrices for each node.
-  /// This method is used by MultibodyTree implementations to retrieve per-node
-  /// Jacobian matrices from a `std::vector` that would usually live in the
-  /// cache.
+  /// Helper method to retrieve a Jacobian matrix with respect to generalized
+  /// velocities v for `this` node from an array storing the columns of a set of
+  /// Jacobian matrices for each node.  This method is used by MultibodyTree
+  /// implementations to retrieve per-node Jacobian matrices from a
+  /// `std::vector` that would usually live in the cache.
   /// @param[in] H_array
   ///   This array stores a Jacobian matrix `H` for each node in the tree. Each
   ///   matrix has size `6 x nm` with `nm` the number of mobilities of the node.
   ///   `H_array` stores the columns of these matrices and therefore it consists
   ///   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
-  ///   of generalized velocities in the model.
+  ///   of generalized velocities v in the model.
   ///   `H_array` must be of size MultibodyTree::num_velocities().
   /// @retval H
   ///   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
@@ -872,7 +865,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
-    // The first column of this node's Jacobian matrix H_PB_W:
+    // The first column of this node's hinge matrix H_PB_W:
     const Vector6<T>& H_col0 = H_array[start_index_in_v];
     // Create an Eigen map to the full H_PB_W for this node:
     return Eigen::Map<const MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
@@ -883,7 +876,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       std::vector<Vector6<T>>* H_array) const {
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
-    // The first column of this node's Jacobian matrix H_PB_W:
+    // The first column of this node's hinge matrix H_PB_W:
     Vector6<T>& H_col0 = (*H_array)[start_index_in_v];
     // Create an Eigen map to the full H_PB_W for this node:
     return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
@@ -898,10 +891,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
   /// @param[in] H_PB_W
-  ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
-  ///   of this node's body B in its parent node body P, expressed in the world
-  ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
-  ///   by `V_PB_W = H_PB_W⋅v_B`.
+  ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  ///   velocity in its parent body P, expressed in world W) to this node's `nm`
+  ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
   /// @param[out] abc
   ///   A pointer to a valid, non nullptr, articulated body cache.
   ///
@@ -964,8 +956,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // A few quantities are required in the second pass. We write them out
     // explicitly so we can cache them and simplify the expression for P_PB_W.
-    //   D_B = H_PB_Wᵀ P_B_W H_PB_W                                         (3)
-    //   g_PB_W = P_B_W H_PB_W D_B⁻¹                                        (4)
+    //   D_B = H_PB_Wᵀ P_B_W H_PB_W                                        (3)
+    //   g_PB_W = P_B_W H_PB_W D_B⁻¹                                       (4)
     // where D_B is the articulated body hinge inertia and g_PB_W is the
     // Kalman gain.
     //
@@ -1384,12 +1376,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // which includes:
   // - X_FM(q): The pose of the outboard frame M as measured and expressed in
   //            the inboard frame F.
-  // - H_FM(q): the Jacobian matrix describing the relationship between
-  //            generalized velocities v and the spatial velocity `V_FM` by
+  // - H_FM(q): the mobilizer hinge matrix that relates the mobilizer's
+  //            generalized velocities v to the spatial velocity `V_FM` by
   //            `V_FM(q, v) = H_FM(q) * v`.
-  // - Hdot_FM(q): The time derivative of the Jacobian matrix which allows
-  //               computing the spatial acceleration between the F and M
-  //               frames as:
+  // - Hdot_FM(q): The time derivative of H_FM which is used to computing the
+  //               M's spatial acceleration in frame F, expressed in F as:
   //               `A_FM(q, v, v̇) = H_FM(q) * v̇ + Hdot_FM(q) * v`
   // - N(q): The kinematic coupling matrix describing the relationship between
   //         the rate of change of generalized coordinates and the generalized

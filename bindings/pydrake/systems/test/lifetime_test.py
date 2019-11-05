@@ -6,7 +6,6 @@ Captures limitations for the present state of the Python bindings for the
 lifetime of objects, eventually lock down capabilities as they are introduced.
 """
 
-from __future__ import print_function
 
 import unittest
 import numpy as np

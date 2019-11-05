@@ -6,7 +6,6 @@ from io import BytesIO
 import pickle
 
 import numpy as np
-import six
 
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.symbolic import Expression
@@ -36,13 +35,7 @@ def assert_pickle(test, obj, value_to_compare=lambda x: x.__dict__, T=None):
             currently not a serializable type.
     """
     metaclass = type(type(obj))
-    # Pickling is explicitly disabled for our pybind11 types in Python 2.
-    if six.PY2 and metaclass == _PYBIND11_METACLASS:
-        with test.assertRaises(RuntimeError) as cm:
-            pickle.dump(obj, BytesIO())
-        test.assertIn(
-            "Pickling in pydrake is disabled in Python 2", str(cm.exception))
-    elif T == Expression:
+    if T == Expression:
         # Pickling not enabled for Expression.
         return
     else:

@@ -62,8 +62,9 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common:find_resource",
-        "//examples/kuka_iiwa_arm:iiwa_lcm",
         "//lcm",
+        "//manipulation/kuka_iiwa:iiwa_command_sender",
+        "//manipulation/kuka_iiwa:iiwa_status_receiver",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//multibody/parsing",
         "//multibody/plant",
@@ -84,9 +85,10 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         ":manipulation_station",
-        "//examples/kuka_iiwa_arm:iiwa_lcm",
         "//geometry:geometry_visualization",
         "//lcm",
+        "//manipulation/kuka_iiwa:iiwa_command_receiver",
+        "//manipulation/kuka_iiwa:iiwa_status_sender",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//systems/analysis:simulator",
         "//systems/lcm",
@@ -121,6 +123,7 @@ drake_cc_googletest(
     deps = [
         ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//geometry/test_utilities:dummy_render_engine",
     ],
 )

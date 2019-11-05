@@ -3,7 +3,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/text_logging_gflags.h"
 
 DEFINE_string(
     print_resource_path, "",
@@ -23,7 +22,6 @@ namespace {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage("Find Drake-related resources");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  logging::HandleSpdlogGflags();
 
   // The user must supply exactly one of --print_resource_path or
   // --print_resource_root_environment_variable_name.

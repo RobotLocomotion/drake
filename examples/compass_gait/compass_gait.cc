@@ -10,8 +10,7 @@ namespace compass_gait {
 
 template <typename T>
 CompassGait<T>::CompassGait()
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<examples::compass_gait::CompassGait>{}) {
+    : systems::LeafSystem<T>(systems::SystemTypeTag<CompassGait>{}) {
   this->DeclareContinuousState(CompassGaitContinuousState<T>(), 2, 2, 0);
 
   // Discrete state for stance toe distance along the ramp.

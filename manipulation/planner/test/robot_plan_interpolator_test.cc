@@ -215,7 +215,7 @@ class TrajectoryTestClass : public testing::TestWithParam<InterpolatorType> {
   virtual void TearDown() {}
 };
 
-INSTANTIATE_TEST_CASE_P(InstantiationName, TrajectoryTestClass,
+INSTANTIATE_TEST_SUITE_P(InstantiationName, TrajectoryTestClass,
                         ::testing::Values(InterpolatorType::ZeroOrderHold,
                                           InterpolatorType::FirstOrderHold,
                                           InterpolatorType::Pchip,

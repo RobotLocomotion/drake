@@ -88,7 +88,7 @@ SpringMassSystem<T>::SpringMassSystem(
     double mass_kg,
     bool system_is_forced)
     : SpringMassSystem(
-          SystemTypeTag<systems::SpringMassSystem>{},
+          SystemTypeTag<SpringMassSystem>{},
           spring_constant_N_per_m,
           mass_kg,
           system_is_forced) {}

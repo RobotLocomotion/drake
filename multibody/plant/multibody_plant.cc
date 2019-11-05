@@ -255,12 +255,15 @@ template <typename T>
 MultibodyPlant<T>::MultibodyPlant(
     std::unique_ptr<internal::MultibodyTree<T>> tree_in, double time_step)
     : internal::MultibodyTreeSystem<T>(
-          systems::SystemTypeTag<multibody::MultibodyPlant>{},
+          systems::SystemTypeTag<MultibodyPlant>{},
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
+  // TODO(eric.cousineau): Combine all of these elements into one struct, make
+  // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
@@ -416,7 +419,7 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 
   geometry::GeometrySet geometry_set;
   for (const Body<T>* body : bodies) {
-    optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
+    std::optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
     if (frame_id) {
       geometry_set.Add(frame_id.value());
     }
@@ -470,8 +473,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
-      std::make_unique<GeometryInstance>(X_BG.GetAsIsometry3(), shape.Clone(),
-                                         name);
+      std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
   GeometryId geometry_id = member_scene_graph().RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
@@ -757,8 +759,8 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
     if (parent.index() == world_index()) continue;
-    optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
-    optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
+    std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
+    std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
     if (child_id && parent_id) {
       member_scene_graph().ExcludeCollisionsBetween(
@@ -835,9 +837,10 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // midpoint (or any other point between Ac and Bc for that matter) since,
     // in the limit to rigid contact, Ac = Bc.
 
-    // Geometric Jacobian for the velocity of the contact point C as moving with
-    // body A, s.t.: v_WAc = Jv_WAc * v
-    // where v is the vector of generalized velocities.
+    // For contact point Ac of (fixed to) body A, calculate `Jv_v_WAc` (Ac's
+    // translational velocity Jacobian in the world frame W with respect to
+    // generalized velocities v).  Note: Ac's translational velocity in W can
+    // be written in terms of this Jacobian as `v_WAc = Jv_v_WAc * v`.
     Matrix3X<T> Jv_WAc(3, this->num_velocities());
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,
@@ -848,8 +851,8 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
                                                       frame_W,
                                                       &Jv_WAc);
 
-    // Geometric Jacobian for the velocity of the contact point C as moving with
-    // body B, s.t.: v_WBc = Jv_WBc * v.
+    // Similarly, for contact point Bc of body B, calculate `Jv_v_WBc
+    // (Bc's translational velocity Jacobian in W with respect to v)
     Matrix3X<T> Jv_WBc(3, this->num_velocities());
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,
@@ -1048,19 +1051,48 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
-  // Thus far we do not allow mixing hydroelastics with point contact and
-  // therefore we throw an exception.
-  // TODO(amcastro-tri): Update the computation of contact results to report
-  // both point and hydroelastic results.
-  if (contact_model_  != ContactModel::kPointContactOnly) {
-    throw std::runtime_error(
-        "Currently we do not support mixing point contact with hydroelastics. "
-        "You requested the hydroelastic model with a call to "
-        "set_contact_model(). "
-        "Currently contact results are only supported for point contact.");
+  switch (contact_model_) {
+    case ContactModel::kPointContactOnly:
+      CalcContactResultsContinuousPointPair(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticsOnly:
+      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      break;
   }
+}
+
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousHydroelastic(
+        const Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
+  const HydroelasticContactInfoAndBodySpatialForces&
+      contact_info_and_spatial_body_forces =
+          EvalHydroelasticContactForces(context);
+  for (const HydroelasticContactInfo<T>& contact_info :
+       contact_info_and_spatial_body_forces.contact_info) {
+    // Note: caching dependencies guarantee that the lifetime of contact_info is
+    // valid for the lifetime of the contact results.
+    contact_results->AddContactInfo(&contact_info);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1288,7 +1320,7 @@ void MultibodyPlant<T>::MakeHydroelasticModels() {
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const Context<symbolic::Expression>&,
-    std::vector<SpatialForce<symbolic::Expression>>*) const {
+    HydroelasticContactInfoAndBodySpatialForces*) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
@@ -1296,19 +1328,27 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
-    std::vector<SpatialForce<T>>* F_BBo_W_array) const {
-  DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
-  // Initialize to zero.
-  F_BBo_W_array->assign(num_bodies(), SpatialForce<T>::Zero());
+    HydroelasticContactInfoAndBodySpatialForces* contact_info_and_body_forces)
+    const {
+  DRAKE_DEMAND(contact_info_and_body_forces != nullptr);
+
+  std::vector<SpatialForce<T>>& F_BBo_W_array =
+      contact_info_and_body_forces->F_BBo_W_array;
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array.size()) == num_bodies());
+  std::vector<HydroelasticContactInfo<T>>& contact_info =
+      contact_info_and_body_forces->contact_info;
+
+  // Initialize the body forces to zero.
+  F_BBo_W_array.assign(num_bodies(), SpatialForce<T>::Zero());
   if (num_collision_geometries() == 0) return;
 
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalContactSurfaces(context);
 
-  const std::vector<ContactSurface<T>> all_surfaces =
-      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+  // Reserve memory here to keep from repeatedly allocating heap storage in the
+  // loop below.
+  contact_info.clear();
+  contact_info.reserve(all_surfaces.size());
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
@@ -1329,7 +1369,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const CoulombFriction<double> combined_friction =
         CalcContactFrictionFromSurfaceProperties(geometryM_friction,
                                                  geometryN_friction);
-    const double static_friction = combined_friction.static_friction();
+    const double dynamic_friction = combined_friction.dynamic_friction();
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
@@ -1353,17 +1393,26 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         geometryM_id, geometryN_id);
 
     // Integrate the hydroelastic traction field over the contact surface.
+    std::vector<HydroelasticQuadraturePointData<T>> traction_output;
+    SpatialForce<T> F_Ac_W;
+    traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
+        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
+
+    // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
-    traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
+    traction_calculator.ShiftSpatialForcesAtCentroidToBodyOrigins(
+        data, F_Ac_W, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
-      F_BBo_W_array->at(bodyA.node_index()) += F_Ao_W;
+      F_BBo_W_array.at(bodyA.node_index()) += F_Ao_W;
     }
 
     if (bodyB_index != world_index()) {
-      F_BBo_W_array->at(bodyB.node_index()) += F_Bo_W;
+      F_BBo_W_array.at(bodyB.node_index()) += F_Bo_W;
     }
+
+    // Add the information for contact reporting.
+    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
   }
 }
 
@@ -1569,6 +1618,20 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcContactSurfaces(
+    const drake::systems::Context<T>& context,
+    std::vector<ContactSurface<T>>* contact_surfaces) const {
+  DRAKE_DEMAND(contact_surfaces);
+
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+
+  *contact_surfaces =
+      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcAppliedForces(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
@@ -1654,7 +1717,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   const internal::ContactJacobians<T>& contact_jacobians =
       EvalContactJacobians(context0);
 
-  // Get friction coefficient into a single vector. Dynamic friction is ignored
+  // Get friction coefficient into a single vector. Static friction is ignored
   // by the time stepping scheme.
   std::vector<CoulombFriction<double>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(point_pairs0);
@@ -1662,7 +1725,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
                  mu.data(),
                  [](const CoulombFriction<double>& coulomb_friction) {
-                   return coulomb_friction.static_friction();
+                   return coulomb_friction.dynamic_friction();
                  });
 
   // Place all the penetration depths within a single vector as required by
@@ -1738,7 +1801,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerations(
 
 template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
-    const drake::systems::Context<T>& context, VectorX<T>* tau_contact) const {
+    const Context<T>& context, VectorX<T>* tau_contact) const {
   DRAKE_DEMAND(tau_contact);
   DRAKE_DEMAND(tau_contact->size() == num_velocities());
   DRAKE_DEMAND(!is_discrete());
@@ -1748,73 +1811,66 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
   tau_contact->setZero();
   if (num_collision_geometries() == 0) return;
 
-  // We will use this vector to solve for zero generalized accelerations and as
-  // the vector of (zero) external applied generalized forces.
+  // We will alias this zero vector to serve both as zero-valued generalized
+  // accelerations and zero-valued externally applied generalized forces.
   const VectorX<T> zero = VectorX<T>::Zero(nv);
   const VectorX<T>& zero_vdot = zero;
   const VectorX<T>& tau_array = zero;
 
-  // Use zero link forces.
-  std::vector<SpatialForce<T>> F_BBo_W_array(num_bodies(),
-                                             SpatialForce<T>::Zero());
+  // Get the spatial forces.
+  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
+      EvalSpatialContactForcesContinuous(context);
 
-  // Bodies' accelerations, ordered by BodyNodeIndex.
+  // Bodies' accelerations and inboard mobilizer reaction forces, respectively,
+  // ordered by BodyNodeIndex and required as output arguments for
+  // CalcInverseDynamics() below but otherwise not used by this method.
   std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
-
-  // Note: this method is only able to compute contact forces independently of
-  // applied forces (i.e., without calling CalcAppliedForces()) because it
-  // approximates stiction with a regularized friction model.
-
-  // With vdot = 0, this computes C(q, v)v (see
-  // MultibodyTree::CalcInverseDynamics()).
-  VectorX<T> C_v(nv);
-
-  // WARNING: to reduce memory foot-print, we use F_BBo_W_array as an output
-  // array. We'll need these values again, so we reset them to zero immediately
-  // thereafter. Please see the documentation for CalcInverseDynamics() for
-  // details.
-  internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
-      &F_BBo_W_array, /* Notice this array gets overwritten on output. */
-      &C_v);
-  std::fill(F_BBo_W_array.begin(), F_BBo_W_array.end(),
-            SpatialForce<T>::Zero());
-
-  // Compute the spatial forces on each body from contact.
-  if (contact_model_ == ContactModel::kPointContactOnly) {
-    // Compute contact forces on each body by penalty method.
-    if (num_collision_geometries() > 0) {
-      CalcAndAddContactForcesByPenaltyMethod(context, &F_BBo_W_array);
-    }
-  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-    // Compute contact forces using hydroelastics.
-    const std::vector<SpatialForce<T>>& Fhydro_BBo_W =
-        EvalHydroelasticContactForces(context);
-    std::transform(F_BBo_W_array.begin(), F_BBo_W_array.end(),
-                   Fhydro_BBo_W.begin(),
-                   F_BBo_W_array.begin(),
-                   std::plus<SpatialForce<T>>());
-  } else {
-    DRAKE_UNREACHABLE();
-  }
-
-  // WARNING: to reduce memory foot-print, we again use F_BBo_W_array as an
-  // output array, since we don't need its values anymore.
+  std::vector<SpatialForce<T>> F_BMo_W_array(internal_tree().num_bodies());
 
   // With vdot = 0, this computes:
-  //   tau_contact = C(q, v)v - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  //   tau_contact = - ∑ J_WBᵀ(q) Fcontact_Bo_W.
   internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
-      &F_BBo_W_array, /* Notice this array gets overwritten on output. */
-      tau_contact);
+      context, zero_vdot, Fcontact_BBo_W_array, tau_array,
+      true /* Do not compute velocity-dependent terms */,
+      &A_WB_array, &F_BMo_W_array, tau_contact);
 
-  // From above, the tau_contact computation above undesirably includes C(q,
-  // v)v. Remove it.
-  (*tau_contact) -= C_v;
-
-  // Now tau_contact represents the negated spatial forces. Fix this and the
-  // computation is complete.
+  // Per above, tau_contact must be negated to get ∑ J_WBᵀ(q) Fcontact_Bo_W.
   (*tau_contact) = -(*tau_contact);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  DRAKE_DEMAND(F_BBo_W_array);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(!is_discrete());
+
+  // Forces can accumulate into F_BBo_W_array; initialize it to zero first.
+  std::fill(F_BBo_W_array->begin(), F_BBo_W_array->end(),
+            SpatialForce<T>::Zero());
+
+  // Early exit if there are no contact forces.
+  if (num_collision_geometries() == 0) return;
+
+  // Note: we don't need to know the applied forces here because we use a
+  // regularized friction model whose forces depend only on the current state; a
+  // constraint based friction model would require accounting for the applied
+  // forces.
+
+  // Compute the spatial forces on each body from contact.
+  switch (contact_model_) {
+    case ContactModel::kPointContactOnly:
+      // Note: consider caching the results from the following method (in which
+      // case we would also want to introduce the Eval... naming convention for
+      // the method).
+      CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
+      break;
+
+    case ContactModel::kHydroelasticsOnly:
+      *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
+      break;
+  }
 }
 
 template <typename T>
@@ -1845,22 +1901,28 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   // not important in this case since we don't need their values anymore.
   // Please see the documentation for CalcInverseDynamics() for details.
 
-  // With vdot = 0, this computes:
-  //   tau_non_contact_negated = C(q, v)v - tau_applied - ∑ J_WBᵀ(q) Fapp_BBo_W.
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
-  VectorX<T>& tau_applied = forces.mutable_generalized_forces();
-  VectorX<T>& tau_non_contact_negated = forces.mutable_generalized_forces();
+  // Compute all applied forces.
+  std::vector<SpatialForce<T>>& Fapp_BBo_W_array = forces.mutable_body_forces();
+  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
+      EvalSpatialContactForcesContinuous(context);
+  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
+    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
+  VectorX<T>& tau_app = forces.mutable_generalized_forces();
+
+  // Aliases for memory foot-print reduction.
+  VectorX<T>& tau = tau_app;
+  std::vector<SpatialForce<T>>& F_BBo_W_array = Fapp_BBo_W_array;
+
+  // Compute all applied forces as a generalized force. With vdot = 0, this
+  // computes:
+  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_BBo_W.
+
   internal_tree().CalcInverseDynamics(
-      context, zero_vdot, F_BBo_W_array, tau_applied, &A_WB_array,
-      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
-      &tau_non_contact_negated);
+      context, zero_vdot, Fapp_BBo_W_array, tau_app, &A_WB_array,
+      &F_BBo_W_array, /* Notice "applied" arrays get overwritten on output. */
+      &tau);
 
-  // Compute contact forces using an alias for zero_vdot, which is no longer
-  // needed.
-  VectorX<T>& tau_contact = zero_vdot;
-  CalcGeneralizedContactForcesContinuous(context, &tau_contact);
-
-  *vdot = M.ldlt().solve(tau_contact - tau_non_contact_negated);
+  *vdot = M.ldlt().solve(-tau);
 }
 
 template <typename T>
@@ -2057,8 +2119,10 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               cache_indexes_.generalized_contact_forces_continuous);
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
-                      systems::BasicVector<T>* output) {
-        output->SetFromVector(EvalGeneralizedContactForcesContinuous(context));
+                      systems::BasicVector<T>* result) {
+        result->SetFromVector(GetVelocitiesFromArray(
+            model_instance_index,
+            EvalGeneralizedContactForcesContinuous(context)));
       };
       instance_generalized_contact_forces_output_ports_[model_instance_index] =
           this->DeclareVectorOutputPort(
@@ -2110,6 +2174,23 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {this->configuration_ticket()});
   cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
+
+  // Cache entry for hydroelastic contact surfaces.
+  auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
+      std::string("Hydroelastic contact surfaces."),
+      []() {
+        return AbstractValue::Make(
+            std::vector<ContactSurface<T>>());
+      },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_surfaces_cache = cache_value->get_mutable_value<
+            std::vector<ContactSurface<T>>>();
+        this->CalcContactSurfaces(context, &contact_surfaces_cache);
+      },
+      {this->configuration_ticket()});
+  cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
@@ -2172,14 +2253,52 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.tamsi_solver_results =
       tamsi_solver_cache_entry.cache_index();
 
+  // Cache entry for spatial forces and contact info due to hydroelastic
+  // contact.
+  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+    auto& contact_info_and_body_spatial_forces_cache_entry =
+        this->DeclareCacheEntry(
+            std::string("Hydroelastic contact info and body spatial forces."),
+            [this]() {
+              return AbstractValue::Make(
+                  HydroelasticContactInfoAndBodySpatialForces(
+                      this->num_bodies()));
+            },
+            [this](const systems::ContextBase& context_base,
+                   AbstractValue* cache_value) {
+              auto& context = dynamic_cast<const Context<T>&>(context_base);
+              auto& contact_info_and_body_spatial_forces_cache =
+                  cache_value->get_mutable_value<
+                      HydroelasticContactInfoAndBodySpatialForces>();
+              this->CalcHydroelasticContactForces(
+                  context, &contact_info_and_body_spatial_forces_cache);
+            },
+            // Compliant contact forces due to hydroelastics with Hunt &
+            // Crosseley are function of the kinematic variables q & v only.
+            {this->kinematics_ticket()});
+    cache_indexes_.contact_info_and_body_spatial_forces =
+        contact_info_and_body_spatial_forces_cache_entry.cache_index();
+  }
+
   // Cache contact results.
   // In discrete mode contact forces computation requires to advance the system
   // from step n to n+1. Therefore they are a function of state and input.
   // In continuous mode contact forces are simply a function of state.
-  const systems::DependencyTicket& dependency_ticket =
-      is_discrete() ? this->cache_entry_ticket(
-                          cache_indexes_.tamsi_solver_results)
-                    : this->kinematics_ticket();
+  std::set<systems::DependencyTicket> dependency_ticket = [this]() {
+    std::set<systems::DependencyTicket> tickets;
+     if (is_discrete()) {
+       tickets.insert(
+           this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
+     } else {
+       tickets.insert(this->kinematics_ticket());
+       if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+         tickets.insert(this->cache_entry_ticket(
+             cache_indexes_.contact_info_and_body_spatial_forces));
+       }
+     }
+
+     return tickets;
+  }();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
       std::string("Contact results."),
       []() { return AbstractValue::Make(ContactResults<T>()); },
@@ -2197,28 +2316,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {dependency_ticket});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
-  // Cache entry for spatial forces due to hydroelastic contact.
-  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-    auto& hydro_forces_cache_entry = this->DeclareCacheEntry(
-        std::string("Hydroelastic spatial forces (F_Bo_W)."),
-        [this]() {
-          return AbstractValue::Make(
-              std::vector<SpatialForce<T>>(this->num_bodies()));
-        },
-        [this](const systems::ContextBase& context_base,
-               AbstractValue* cache_value) {
-          auto& context = dynamic_cast<const Context<T>&>(context_base);
-          auto& hydro_forces_cache =
-              cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
-          this->CalcHydroelasticContactForces(context, &hydro_forces_cache);
-        },
-        // Compliant contact forces due to hydroelastics with Hunt & Crosseley
-        // are function of the kinematic variables q & v only.
-        {this->kinematics_ticket()});
-    cache_indexes_.hydro_contact_forces =
-        hydro_forces_cache_entry.cache_index();
-  }
-
   // Cache generalized accelerations.
   auto& vdot_cache_entry = this->DeclareCacheEntry(
       std::string("Generalized Accelerations (vdot)."),
@@ -2235,37 +2332,36 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->all_sources_ticket()});
   cache_indexes_.generalized_accelerations = vdot_cache_entry.cache_index();
 
-  // Cache generalized contact forces.
+  // Cache spatial continuous contact forces.
+  auto& spatial_contact_forces_continuous_cache_entry = this->DeclareCacheEntry(
+      "Spatial contact forces (continuous).",
+      std::vector<SpatialForce<T>>(num_bodies()),
+      &MultibodyPlant::CalcSpatialContactForcesContinuous,
+      {this->kinematics_ticket()});
+  cache_indexes_.spatial_contact_forces_continuous =
+      spatial_contact_forces_continuous_cache_entry.cache_index();
+
+  // Cache generalized continuous contact forces.
   auto& generalized_contact_forces_continuous_cache_entry =
       this->DeclareCacheEntry(
-          std::string("Generalized contact forces (continuous)."),
-          [this]() {
-            return AbstractValue::Make(VectorX<T>(num_velocities()));
-          },
-          [this](const systems::ContextBase& context_base,
-                 AbstractValue* cache_value) {
-            auto& context = dynamic_cast<const Context<T>&>(context_base);
-            auto& tau_contact = cache_value->get_mutable_value<VectorX<T>>();
-            this->CalcGeneralizedContactForcesContinuous(context, &tau_contact);
-          },
-          // Generalized contact forces depend only upon the kinematic variables
-          // q and v only (with the caveat that it is the regularized friction
-          // model that buys us that independence - see comment in
-          // CalcGeneralizedContactForcesContinuous()).
-          {this->kinematics_ticket()});
+          "Generalized contact forces (continuous).",
+          VectorX<T>(num_velocities()),
+          &MultibodyPlant::CalcGeneralizedContactForcesContinuous,
+          {this->cache_entry_ticket(
+              cache_indexes_.spatial_contact_forces_continuous)});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
-}
+      }
 
-template <typename T>
-const systems::BasicVector<T>& MultibodyPlant<T>::GetStateVector(
-    const Context<T>& context) const {
-  if (is_discrete()) {
-    return context.get_discrete_state(0);
-  } else {
-    return dynamic_cast<const systems::BasicVector<T>&>(
-        context.get_continuous_state_vector());
-  }
+      template <typename T>
+      const systems::BasicVector<T> &
+      MultibodyPlant<T>::GetStateVector(const Context<T>& context) const {
+    if (is_discrete()) {
+      return context.get_discrete_state(0);
+    } else {
+      return dynamic_cast<const systems::BasicVector<T>&>(
+          context.get_continuous_state_vector());
+    }
 }
 
 template <typename T>
@@ -2405,7 +2501,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_ASSERT(source_id_ != nullopt);
+  DRAKE_ASSERT(source_id_ != std::nullopt);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 

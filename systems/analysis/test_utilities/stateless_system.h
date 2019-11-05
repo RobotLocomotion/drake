@@ -19,7 +19,7 @@ class StatelessSystem final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
-      : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}),
+      : LeafSystem<T>(SystemTypeTag<StatelessSystem>{}),
         offset_(offset) {
     witness_ = this->MakeWitnessFunction(
         "clock witness", dir_type, &StatelessSystem::CalcClockWitness,

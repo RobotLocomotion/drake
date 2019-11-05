@@ -17,7 +17,7 @@ SystemConstraintAdapter::SystemConstraintAdapter(
   DRAKE_DEMAND(system);
 }
 
-optional<std::vector<solvers::Binding<solvers::Constraint>>>
+std::optional<std::vector<solvers::Binding<solvers::Constraint>>>
 SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
     SystemConstraintIndex index,
     const Context<symbolic::Expression>& context) const {
@@ -85,7 +85,7 @@ class UpdateContextForSymbolicSystemConstraint {
  public:
   UpdateContextForSymbolicSystemConstraint(
       std::vector<ContextIndex> context_indices,
-      const optional<int>& time_var_index)
+      const std::optional<int>& time_var_index)
       : context_indices_(std::move(context_indices)),
         time_var_index_{time_var_index} {}
 
@@ -122,7 +122,7 @@ class UpdateContextForSymbolicSystemConstraint {
 
  private:
   std::vector<ContextIndex> context_indices_;
-  optional<int> time_var_index_;
+  std::optional<int> time_var_index_;
 };
 
 // Parse the expression to either @p constant_val or the variable. Append that
@@ -132,8 +132,8 @@ class UpdateContextForSymbolicSystemConstraint {
 bool ParseSymbolicVariableOrConstant(
     const symbolic::Expression& expr,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index,
-    VectorX<symbolic::Variable>* bound_variables, optional<int>* variable_index,
-    optional<double>* constant_val) {
+    VectorX<symbolic::Variable>* bound_variables,
+    std::optional<int>* variable_index, std::optional<double>* constant_val) {
   variable_index->reset();
   constant_val->reset();
   if (symbolic::is_constant(expr)) {
@@ -158,7 +158,7 @@ bool ParseSymbolicVariableOrConstant(
 }
 }  // namespace
 
-optional<solvers::Binding<solvers::Constraint>>
+std::optional<solvers::Binding<solvers::Constraint>>
 SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     SystemConstraintIndex index,
     const Context<symbolic::Expression>& context) const {
@@ -175,9 +175,9 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   context_fixed->SetAccuracy(context.get_accuracy());
 
   std::vector<ContextIndex> context_indices;
-  optional<int> time_var_index{};
-  optional<double> constant_val{};
-  optional<int> variable_index{};
+  std::optional<int> time_var_index{};
+  std::optional<double> constant_val{};
+  std::optional<int> variable_index{};
   // Time
   bool success = ParseSymbolicVariableOrConstant(
       context.get_time(), &map_var_to_index, &bound_variables, &variable_index,

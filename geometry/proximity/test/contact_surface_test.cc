@@ -35,6 +35,21 @@ class ContactSurfaceTester {
     return *(surface_.grad_h_MN_W_);
   }
 
+  SurfaceMeshFieldLinear<T, T>& mutable_e_MN() const {
+    DRAKE_DEMAND(surface_.e_MN_ != nullptr);
+    return *(surface_.e_MN_);
+  }
+
+  SurfaceMeshFieldLinear<Vector3<T>, T>& mutable_grad_h_MN_W() const {
+    DRAKE_DEMAND(surface_.grad_h_MN_W_ != nullptr);
+    return *(surface_.grad_h_MN_W_);
+  }
+
+  SurfaceMesh<T>& mutable_mesh_W() const {
+    DRAKE_DEMAND(surface_.mesh_W_ != nullptr);
+    return *(surface_.mesh_W_);
+  }
+
  private:
   const geometry::ContactSurface<T>& surface_;
 };
@@ -191,6 +206,33 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
   EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
   EXPECT_EQ(original.EvaluateGrad_h_MN_W(f, b), copy.EvaluateGrad_h_MN_W(f, b));
+}
+
+// Tests the equality comparisons.
+GTEST_TEST(ContactSurfaceTest, TestEqual) {
+  // Create contact surface for comparison.
+  const ContactSurface<double> surface = TestContactSurface<double>();
+
+  // Same contact surface.
+  auto surface0 = ContactSurface<double>(surface);
+  EXPECT_TRUE(surface.Equal(surface0));
+
+  // Different mesh.
+  auto surface1 = ContactSurface<double>(surface);
+  ContactSurfaceTester<double>(surface1).mutable_mesh_W().ReverseFaceWinding();
+  EXPECT_FALSE(surface.Equal(surface1));
+
+  // Different pressure field.
+  auto surface2 = ContactSurface<double>(surface);
+  ContactSurfaceTester<double>(surface2).mutable_e_MN().mutable_values()[0] +=
+      2.0;
+  EXPECT_FALSE(surface.Equal(surface2));
+
+  // Different grad h field.
+  auto surface3 = ContactSurface<double>(surface);
+  ContactSurfaceTester<double>(surface3).mutable_grad_h_MN_W()
+      .mutable_values()[0][0] += 2.;
+  EXPECT_FALSE(surface.Equal(surface3));
 }
 
 // Tests the constructor of ContactSurface that when id_M is greater than

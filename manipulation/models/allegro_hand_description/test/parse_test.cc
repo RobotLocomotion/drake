@@ -54,7 +54,7 @@ TEST_P(ParseTest, Quantities) {
   EXPECT_EQ(plant.num_velocities(left_hand_index), 22);
 }
 
-INSTANTIATE_TEST_CASE_P(Both, ParseTest, testing::Values("sdf", "urdf"));
+INSTANTIATE_TEST_SUITE_P(Both, ParseTest, testing::Values("sdf", "urdf"));
 
 }  // namespace
 }  // namespace manipulation

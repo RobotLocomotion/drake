@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -186,7 +187,7 @@ GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
 GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
   // IsPhysicallyValid() supported for numeric types.
   ArticulatedBodyInertia<double> Pd;
-  EXPECT_NO_THROW(Pd.IsPhysicallyValid());
+  DRAKE_EXPECT_NO_THROW(Pd.IsPhysicallyValid());
 
   // IsPhysicallyValid() not supported for non-numeric types.
   ArticulatedBodyInertia<symbolic::Expression> Ps;

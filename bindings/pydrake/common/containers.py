@@ -1,7 +1,6 @@
 """Provides extensions for containers of Drake-related objects."""
 
 import numpy as np
-import six
 
 
 class _EqualityProxyBase(object):
@@ -20,9 +19,6 @@ class _EqualityProxyBase(object):
     def __eq__(self, other):
         raise NotImplemented("Abstract method")
 
-    def __nonzero__(self):
-        return bool(self._value)
-
     value = property(_get_value)
 
 
@@ -40,7 +36,7 @@ class _DictKeyWrap(dict):
         # sidestepped by storing the properties in a `dict`.
         self._key_wrap = key_wrap
         self._key_unwrap = key_unwrap
-        for key, value in six.iteritems(dict_in):
+        for key, value in dict_in.items():
             self[key] = value
 
     def __setitem__(self, key, value):
@@ -59,20 +55,7 @@ class _DictKeyWrap(dict):
         return zip(self.keys(), self.values())
 
     def keys(self):
-        # `six.iterkeys` will not constrain the call to use `dict` methods.
-        if six.PY2:
-            keys_iter = dict.iterkeys(self)
-        else:
-            keys_iter = dict.keys(self)
-        return [self._key_unwrap(key) for key in keys_iter]
-
-    def iterkeys(self):
-        # Non-performant, but sufficient for now.
-        return self.keys()
-
-    def iteritems(self):
-        # Non-performant, but sufficient for now.
-        return self.items()
+        return (self._key_unwrap(key) for key in dict.keys(self))
 
     def raw(self):
         """Returns a dict with the original keys.
@@ -80,7 +63,7 @@ class _DictKeyWrap(dict):
         Note:
             Copying to a `dict` will maintain the proxy keys.
         """
-        return dict(self.iteritems())
+        return dict(self.items())
 
 
 class EqualToDict(_DictKeyWrap):

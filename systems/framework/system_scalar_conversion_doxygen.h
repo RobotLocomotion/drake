@@ -91,7 +91,7 @@ class MySystem final : public LeafSystem<T> {
 
   // Constructs a system with the given `gain`.
   explicit MySystem(double gain)
-    : LeafSystem<T>(SystemTypeTag<sample::MySystem>{}), gain_{gain} {}
+    : LeafSystem<T>(SystemTypeTag<MySystem>{}), gain_{gain} {}
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -112,7 +112,7 @@ class MySystem final : public VectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystem);
 
   // Default constructor.
-  MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+  MySystem() : VectorSystem<T>(SystemTypeTag<MySystem>{}, 1, 1) {}
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -156,7 +156,7 @@ class MySystemBase : public LeafSystem<T> {
   // Constructs a system with the given `gain`.
   // Subclasses must use the protected constructor, not this one.
   explicit MySystemBase(double gain)
-    : LeafSystem<T>(SystemTypeTag<sample::MySystemBase>{}), gain_{gain} {}
+    : LeafSystem<T>(SystemTypeTag<MySystemBase>{}), gain_{gain} {}
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -182,7 +182,7 @@ class MySystemDerived final : public MySystemBase<T> {
 
   // Constructs a system with a gain of 1.0.
   MySystemDerived() : MySystemBase<T>(
-      SystemTypeTag<sample::MySystemDerived>{},
+      SystemTypeTag<MySystemDerived>{},
       1.0) {}
 
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
@@ -244,7 +244,7 @@ constructor should delegate to another regular constructor, rather than
 re-implementing its logic.  For example, in the `VectorSystem`-based example
 above we have:
 @code
-  MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+  MySystem() : VectorSystem<T>(SystemTypeTag<MySystem>{}, 1, 1) {}
   template <typename U> explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
 @endcode
 The default constructor configures the System to have a `input_size == 1` and
@@ -253,10 +253,10 @@ default constructor to re-use that logic by stating `: MySystem<T>()`.
 
 Without delegation, we would  have to duplicate those arguments:
 @code
-  MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+  MySystem() : VectorSystem<T>(SystemTypeTag<MySystem>{}, 1, 1) {}
   // NOT RECOMMENDED because it duplicates the details of calling VectorSystem.
   template <typename U> explicit MySystem(const MySystem<U>&)
-    : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+    : VectorSystem<T>(SystemTypeTag<MySystem>{}, 1, 1) {}
 @endcode
 
 <h3>Instance data</h3>
@@ -311,7 +311,7 @@ namespace sample {
 template <typename T>
 class SpecialDiagram<T> final : public Diagram<T> {
  public:
-  SpecialDiagram() : Diagram<T>(SystemTypeTag<sample::SpecialDiagram>{}) {
+  SpecialDiagram() : Diagram<T>(SystemTypeTag<SpecialDiagram>{}) {
     DiagramBuilder<T> builder;
     const auto* integrator = builder.template AddSystem<Integrator<T>>(1);
     builder.ExportInput(integrator->get_input_port());

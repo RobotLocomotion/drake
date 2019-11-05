@@ -1,13 +1,10 @@
-from __future__ import print_function
-# N.B. We are purposely not importing `division` to test nominal Python2
-# behavior.
-
 import pydrake.autodiffutils as mut
 from pydrake.autodiffutils import (
     autoDiffToGradientMatrix,
     autoDiffToValueMatrix,
     AutoDiffXd,
     initializeAutoDiff,
+    initializeAutoDiffGivenGradientMatrix,
     initializeAutoDiffTuple,
 )
 
@@ -191,10 +188,14 @@ class TestAutoDiffXd(unittest.TestCase):
         C = np.dot(A, B)
         numpy_compare.assert_equal(C, [[AD(4, [4., 2])]])
 
-        # `matmul` not supported for `dtype=object` (#11332). `np.dot` should
-        # be used instead.
-        with self.assertRaises(TypeError):
+        # Before NumPy 1.17, `matmul` was not supported for `dtype=object`
+        # (#11332), and `np.dot` should be used instead.
+        if np.lib.NumpyVersion(np.__version__) < "1.17.0":
+            with self.assertRaises(TypeError):
+                C2 = np.matmul(A, B)
+        else:
             C2 = np.matmul(A, B)
+            numpy_compare.assert_equal(C2, C)
 
         # Type mixing
         Bf = np.array([[2., 2]]).T
@@ -232,3 +233,10 @@ class TestAutoDiffXd(unittest.TestCase):
                                       np.eye(1, 3))
         np.testing.assert_array_equal(autoDiffToGradientMatrix(b),
                                       np.hstack((np.zeros((2, 1)), np.eye(2))))
+
+        c_grad = [[2, 4, 5], [1, -1, 0]]
+        c = initializeAutoDiffGivenGradientMatrix([2, 3], c_grad)
+        np.testing.assert_array_equal(autoDiffToValueMatrix(c),
+                                      np.array([2, 3]).reshape((2, 1)))
+        np.testing.assert_array_equal(autoDiffToGradientMatrix(c),
+                                      np.array(c_grad))

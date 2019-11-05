@@ -1,5 +1,8 @@
 # -*- python -*-
 
+# TODO(jwnimmer-tri) When this package is removed on 2020-02-01, also
+# remove the "//manipulation/models/xtion_description package.
+
 load(
     "@drake//attic:build_macros.bzl",
     drake_cc_library = "attic_drake_cc_library",
@@ -16,16 +19,13 @@ drake_cc_package_library(
     ],
 )
 
-# This is tested by usage in:
-# //examples/kuka_iiwa_arm/dev/monolithic_pick_and_place
-#   :monolithic_pick_and_place_demo.
-# TODO(eric.cousineau): Add a test here once #5227 is resolved.
 drake_cc_library(
     name = "xtion",
     srcs = ["xtion.cc"],
     hdrs = ["xtion.h"],
+    copts = ["-Wno-deprecated-declarations"],
     data = [
-        "//manipulation/models/xtion_description:models",
+        "//manipulation/models/xtion_description:deprecated_models",
     ],
     deps = [
         "//attic/manipulation/util:world_sim_tree_builder",

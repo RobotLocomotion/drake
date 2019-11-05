@@ -27,7 +27,7 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
 }
 
 void DrakeLcmLog::Publish(const std::string& channel, const void* data,
-                          int data_size, optional<double> time_sec) {
+                          int data_size, std::optional<double> time_sec) {
   if (!is_write_) {
     throw std::logic_error("Publish is only available for log saving.");
   }

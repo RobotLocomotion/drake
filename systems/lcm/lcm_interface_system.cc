@@ -30,7 +30,7 @@ LcmInterfaceSystem::~LcmInterfaceSystem() = default;
 
 void LcmInterfaceSystem::Publish(
     const std::string& channel, const void* data, int data_size,
-    optional<double> time_sec) {
+    std::optional<double> time_sec) {
   lcm_->Publish(channel, data, data_size, time_sec);
 }
 

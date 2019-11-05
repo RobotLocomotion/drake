@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/math/rigid_transform.h"
@@ -100,7 +101,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   const std::string file_no_conflict_1 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
 
-  EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
 
   ASSERT_EQ(materials_.size(), 3);
 
@@ -113,7 +114,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   Vector4d green(0, 1, 0, 1);
   EXPECT_TRUE(CompareMatrices(materials_.at("green"), green, 1e-10));
 
-  ASSERT_EQ(visual_instances_.size(), 1);
+  ASSERT_EQ(visual_instances_.size(), 2);
   const auto& visual = visual_instances_.front();
   const std::string name_base = "non_conflicting_materials_1";
   EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
@@ -125,6 +126,13 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
       dynamic_cast<const geometry::Box*>(&visual.shape());
   ASSERT_TRUE(box);
   EXPECT_TRUE(CompareMatrices(box->size(), Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  const auto& capsule_visual = visual_instances_.back();
+  const geometry::Capsule* capsule =
+      dynamic_cast<const geometry::Capsule*>(&capsule_visual.shape());
+  ASSERT_TRUE(capsule);
+  EXPECT_EQ(capsule->get_radius(), 0.2);
+  EXPECT_EQ(capsule->get_length(), 0.5);
 
   const geometry::IllustrationProperties* properties =
       visual.illustration_properties();
@@ -141,7 +149,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   const std::string file_no_conflict_2 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_2.urdf");
 
-  EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_2));
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_2));
   EXPECT_EQ(materials_.size(), 1);
 
   ASSERT_EQ(visual_instances_.size(), 2);
@@ -182,7 +190,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial3) {
   const std::string file_no_conflict_3 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_3.urdf");
 
-  EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_3));
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_3));
 }
 
 TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
@@ -191,7 +199,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
   // This URDF defines the same color multiple times in different links.
   const std::string file_same_color_diff_links = FindResourceOrThrow(
       resource_dir + "duplicate_but_same_materials.urdf");
-  EXPECT_NO_THROW(ParseUrdfGeometry(file_same_color_diff_links));
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_same_color_diff_links));
 
   ASSERT_GE(visual_instances_.size(), 1);
 
@@ -229,7 +237,7 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   const std::string file_no_conflict_1 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
 
-  EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
 
   const XMLElement* node = xml_doc_.FirstChildElement("robot");
   ASSERT_TRUE(node);
@@ -259,7 +267,7 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
   const std::string convex_and_nonconvex_test =
       FindResourceOrThrow(resource_dir + "convex_and_nonconvex_test.urdf");
 
-  EXPECT_NO_THROW(ParseUrdfGeometry(convex_and_nonconvex_test));
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(convex_and_nonconvex_test));
 
   ASSERT_EQ(collision_instances_.size(), 2);
 

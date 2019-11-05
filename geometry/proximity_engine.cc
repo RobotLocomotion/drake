@@ -5,18 +5,23 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <fcl/fcl.h>
+#include <fmt/format.h>
 #include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/utilities.h"
 
 static_assert(std::is_same<tinyobj::real_t, double>::value,
@@ -28,6 +33,7 @@ namespace internal {
 
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
+using drake::geometry::internal::hydroelastic::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using std::make_shared;
@@ -36,112 +42,9 @@ using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::unordered_map;
+using std::vector;
 
 namespace {
-
-// Struct for use in SingleCollisionCallback(). Contains the collision request
-// and accumulates results in a drake::multibody::collision::PointPair vector.
-struct CollisionData {
-  explicit CollisionData(const CollisionFilterLegacy* collision_filter_in)
-      : collision_filter(*collision_filter_in) {}
-  // Collision filter used to exclude filtered pairs.
-  const CollisionFilterLegacy& collision_filter;
-
-  // Collision request
-  fcl::CollisionRequestd request;
-
-  // Vector of distance results
-  std::vector<PenetrationAsPointPair<double>>* contacts{};
-};
-
-// Callback function for FCL's collide() function for retrieving a *single*
-// contact.
-bool SingleCollisionCallback(CollisionObjectd* fcl_object_A_ptr,
-                             CollisionObjectd* fcl_object_B_ptr,
-                             void* callback_data) {
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We insure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
-
-  auto& collision_data = *static_cast<CollisionData*>(callback_data);
-
-  // Extract the collision filter keys from the fcl collision objects. These
-  // keys will also be used to map the fcl collision object back to the Drake
-  // GeometryId for colliding geometries.
-  EncodedData encoding_A(fcl_object_A);
-  EncodedData encoding_B(fcl_object_B);
-
-  const bool can_collide = collision_data.collision_filter.CanCollideWith(
-      encoding_A.encoding(), encoding_B.encoding());
-
-  // NOTE: Here and below, false is returned regardless of whether collision
-  // is detected or not because true tells the broadphase manager to terminate.
-  // Since we want *all* collisions, we return false.
-  if (!can_collide) return false;
-
-  // Unpack the callback data
-  const fcl::CollisionRequestd& request = collision_data.request;
-
-  // This callback only works for a single contact, this confirms a request
-  // hasn't been made for more contacts.
-  DRAKE_ASSERT(request.num_max_contacts == 1);
-  fcl::CollisionResultd result;
-
-  // Perform nearphase collision detection
-  fcl::collide(&fcl_object_A, &fcl_object_B, request, result);
-
-  if (!result.isCollision()) return false;
-
-  // Process the contact points
-  // NOTE: This assumes that the request is configured to use a single
-  // contact.
-  const fcl::Contactd& contact = result.getContact(0);
-
-  // Signed distance is negative when penetration depth is positive.
-  const double depth = contact.penetration_depth;
-
-  // TODO(SeanCurtis-TRI): Remove this test when FCL issue 375 is fixed.
-  // FCL returns osculation as contact but doesn't guarantee a non-zero
-  // normal. Drake isn't really in a position to define that normal from the
-  // geometry or contact results so, if the geometry is sufficiently close
-  // to osculation, we consider the geometries to be non-penetrating.
-  if (depth <= std::numeric_limits<double>::epsilon()) return false;
-
-  // By convention, Drake requires the contact normal to point out of B
-  // and into A. FCL uses the opposite convention.
-  Vector3d drake_normal = -contact.normal;
-
-  // FCL returns a single contact point centered between the two
-  // penetrating surfaces. PenetrationAsPointPair expects
-  // two, one on the surface of body A (Ac) and one on the surface of body
-  // B (Bc). Choose points along the line defined by the contact point and
-  // normal, equidistant to the contact point. Recall that signed_distance
-  // is strictly non-positive, so signed_distance * drake_normal points
-  // out of A and into B.
-  Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
-  Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
-
-  PenetrationAsPointPair<double> penetration;
-  penetration.depth = depth;
-  penetration.id_A = encoding_A.id();
-  penetration.id_B = encoding_B.id();
-  penetration.p_WCa = p_WAc;
-  penetration.p_WCb = p_WBc;
-  penetration.nhat_BA_W = drake_normal;
-  // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-  // surfaces and then flip the normal.
-  if (penetration.id_B < penetration.id_A) {
-    std::swap(penetration.id_A, penetration.id_B);
-    std::swap(penetration.p_WCa, penetration.p_WCb);
-    penetration.nhat_BA_W = -penetration.nhat_BA_W;
-  }
-  collision_data.contacts->emplace_back(std::move(penetration));
-
-  return false;
-}
 
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
@@ -238,6 +141,13 @@ void BuildTreeFromReference(
   target->update();
 }
 
+// The data necessary for shape reification.
+struct ReifyData {
+  unique_ptr<CollisionObjectd> fcl_object;
+  const GeometryId id;
+  const ProximityProperties& properties;
+};
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -249,6 +159,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   Impl() = default;
 
   Impl(const Impl& other) : ShapeReifier(other) {
+    hydroelastic_geometries_ = other.hydroelastic_geometries_;
     dynamic_tree_.clear();
     dynamic_objects_.clear();
     anchored_tree_.clear();
@@ -296,32 +207,29 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return engine;
   }
 
-  void AddDynamicGeometry(const Shape& shape, GeometryId id) {
-    // The collision object gets instantiated in the reification process and
-    // placed in this unique pointer.
-    std::unique_ptr<CollisionObjectd> fcl_object;
-    shape.Reify(this, &fcl_object);
-    dynamic_tree_.registerObject(fcl_object.get());
+  void AddDynamicGeometry(const Shape& shape, GeometryId id,
+                          const ProximityProperties& props) {
+    ReifyData data{nullptr, id, props};
+    shape.Reify(this, &data);
+    dynamic_tree_.registerObject(data.fcl_object.get());
     EncodedData encoding(id, true /* is dynamic */);
-    encoding.write_to(fcl_object.get());
-    dynamic_objects_[id] = std::move(fcl_object);
+    encoding.write_to(data.fcl_object.get());
+    dynamic_objects_[id] = std::move(data.fcl_object);
 
     collision_filter_.AddGeometry(encoding.encoding());
   }
 
   void AddAnchoredGeometry(const Shape& shape, const RigidTransformd& X_WG,
-                           GeometryId id) {
-    // The collision object gets instantiated in the reification process and
-    // placed in this unique pointer.
-    std::unique_ptr<CollisionObjectd> fcl_object;
-    shape.Reify(this, &fcl_object);
-    fcl_object->setTransform(X_WG.GetAsIsometry3());
-    fcl_object->computeAABB();
-    anchored_tree_.registerObject(fcl_object.get());
+                           GeometryId id, const ProximityProperties& props) {
+    ReifyData data{nullptr, id, props};
+    shape.Reify(this, &data);
+    data.fcl_object->setTransform(X_WG.GetAsIsometry3());
+    data.fcl_object->computeAABB();
+    anchored_tree_.registerObject(data.fcl_object.get());
     anchored_tree_.update();
     EncodedData encoding(id, false /* is dynamic */);
-    encoding.write_to(fcl_object.get());
-    anchored_objects_[id] = std::move(fcl_object);
+    encoding.write_to(data.fcl_object.get());
+    anchored_objects_[id] = std::move(data.fcl_object);
 
     collision_filter_.AddGeometry(encoding.encoding());
   }
@@ -332,6 +240,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     } else {
       RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
     }
+    hydroelastic_geometries_.RemoveGeometry(id);
   }
 
   int num_geometries() const {
@@ -367,11 +276,21 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   // Implementation of ShapeReifier interface
+  using ShapeReifier::ImplementGeometry;
+
+  // Attempts to process the declared geometry into a hydroelastic
+  // representation.
+  template <typename Shape>
+  void ProcessHydroelastic(const Shape& shape, void* user_data) {
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    hydroelastic_geometries_.MaybeAddGeometry(shape, data.id, data.properties);
+  }
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_sphere = make_shared<fcl::Sphered>(sphere.get_radius());
     TakeShapeOwnership(fcl_sphere, user_data);
+    ProcessHydroelastic(sphere, user_data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
@@ -379,20 +298,36 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.get_radius(),
                                                     cylinder.get_length());
     TakeShapeOwnership(fcl_cylinder, user_data);
+    ProcessHydroelastic(cylinder, user_data);
   }
 
-  void ImplementGeometry(const HalfSpace&, void* user_data) override {
+  void ImplementGeometry(const HalfSpace& half_space,
+                         void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_half_space = make_shared<fcl::Halfspaced>(0, 0, 1, 0);
     TakeShapeOwnership(fcl_half_space, user_data);
+    ProcessHydroelastic(half_space, user_data);
   }
 
   void ImplementGeometry(const Box& box, void* user_data) override {
     auto fcl_box = make_shared<fcl::Boxd>(box.size());
     TakeShapeOwnership(fcl_box, user_data);
+    ProcessHydroelastic(box, user_data);
   }
 
-  void ImplementGeometry(const Mesh&, void*) override {
+  void ImplementGeometry(const Capsule&, void*) override {
+    // TODO(tehbelinda - #10153): Add capsule support.
+    throw std::domain_error(
+        "The proximity engine does not support capsules yet");
+  }
+
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override {
+    // TODO(SeanCurtis-TRI): When meshes are supported for hydroelastic contact,
+    //  remove this throw and replace it with a one-time warning that meshes are
+    //  only supported for hydroelastic contact (and no other proximity
+    //  queries). Also update the test in proximity_engine_test.cc for
+    //  GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties).
+    ProcessHydroelastic(mesh, user_data);
     throw std::domain_error("The proximity engine does not support meshes yet");
   }
 
@@ -527,6 +462,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto fcl_convex = make_shared<fcl::Convexd>(
         vertices, num_faces, faces);
     TakeShapeOwnership(fcl_convex, user_data);
+    ProcessHydroelastic(convex, user_data);
 
     // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
     // to own vertices and face by a map from filename.  This way we won't have
@@ -590,21 +526,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const {
     std::vector<PenetrationAsPointPair<double>> contacts;
-    // CollisionData stores references to the provided data structures.
-    CollisionData collision_data{&collision_filter_};
-    collision_data.contacts = &contacts;
-    collision_data.request.num_max_contacts = 1;
-    collision_data.request.enable_contact = true;
-    // NOTE: As of 5/1/2018 the GJK implementation of Libccd appears to be
-    // superior to FCL's "independent" implementation. Furthermore, libccd
-    // appears to behave badly if its gjk tolerance is much tighter than
-    // 2e-12. Until this changes, we explicitly specify these parameters rather
-    // than relying on FCL's defaults.
-    collision_data.request.gjk_tolerance = 2e-12;
-    collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    penetration_as_point_pair::CallbackData data{&collision_filter_, &contacts};
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&collision_data, SingleCollisionCallback);
+    dynamic_tree_.collide(&data, penetration_as_point_pair::Callback);
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
@@ -613,7 +538,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     dynamic_tree_.collide(
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
-        &collision_data, SingleCollisionCallback);
+        &data, penetration_as_point_pair::Callback);
     return contacts;
   }
 
@@ -636,11 +561,30 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return pairs;
   }
 
-  std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-    std::vector<ContactSurface<T>> surfaces;
+  bool HasCollisions() const {
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &surfaces};
+    has_collisions::CallbackData data{&collision_filter_};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, has_collisions::Callback);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, has_collisions::Callback);
+    return data.collisions_exist;
+  }
+
+  vector<ContactSurface<T>> ComputeContactSurfaces(
+      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    vector<ContactSurface<T>> surfaces;
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
+                                       &hydroelastic_geometries_, &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
@@ -815,6 +759,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
   }
 
+  const hydroelastic::Geometries& hydroelastic_geometries() const {
+    return hydroelastic_geometries_;
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
@@ -849,9 +797,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void TakeShapeOwnership(const std::shared_ptr<fcl::ShapeBased>& shape,
                           void* data) {
     DRAKE_ASSERT(data != nullptr);
-    std::unique_ptr<CollisionObjectd>& fcl_object_ptr =
-        *reinterpret_cast<std::unique_ptr<CollisionObjectd>*>(data);
-    fcl_object_ptr = make_unique<CollisionObjectd>(shape);
+    ReifyData& reify_data = *static_cast<ReifyData*>(data);
+    reify_data.fcl_object = make_unique<CollisionObjectd>(shape);
   }
 
   // The BVH of all dynamic geometries; this depends on *all* inputs.
@@ -873,6 +820,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
   double distance_tolerance_{1E-6};
+
+  // All of the hydroelastic representations of supported geometries -- this
+  // can get quite large based on mesh resolution.
+  hydroelastic::Geometries hydroelastic_geometries_;
 };
 
 template <typename T>
@@ -917,15 +868,16 @@ ProximityEngine<T>& ProximityEngine<T>::operator=(
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDynamicGeometry(
-    const Shape& shape, GeometryId id) {
-  impl_->AddDynamicGeometry(shape, id);
+void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape, GeometryId id,
+                                            const ProximityProperties& props) {
+  impl_->AddDynamicGeometry(shape, id, props);
 }
 
 template <typename T>
 void ProximityEngine<T>::AddAnchoredGeometry(
-    const Shape& shape, const RigidTransformd& X_WG, GeometryId id) {
-  impl_->AddAnchoredGeometry(shape, X_WG, id);
+    const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
+    const ProximityProperties& props) {
+  impl_->AddAnchoredGeometry(shape, X_WG, id, props);
 }
 
 template <typename T>
@@ -986,6 +938,11 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double threshold) const {
   return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
+}
+
+template <typename T>
+bool ProximityEngine<T>::HasCollisions() const {
+  return impl_->HasCollisions();
 }
 
 template <typename T>
@@ -1057,6 +1014,12 @@ template <typename T>
 const RigidTransformd ProximityEngine<T>::GetX_WG(GeometryId id,
                                                   bool is_dynamic) const {
   return impl_->GetX_WG(id, is_dynamic);
+}
+
+template <typename T>
+const hydroelastic::Geometries& ProximityEngine<T>::hydroelastic_geometries()
+    const {
+  return impl_->hydroelastic_geometries();
 }
 
 }  // namespace internal

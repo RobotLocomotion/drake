@@ -9,7 +9,7 @@ namespace systems {
 
 template <typename T>
 Demultiplexer<T>::Demultiplexer(const std::vector<int>& output_ports_sizes)
-    : LeafSystem<T>(SystemTypeTag<systems::Demultiplexer>{}),
+    : LeafSystem<T>(SystemTypeTag<Demultiplexer>{}),
       output_ports_sizes_(output_ports_sizes),
       output_ports_start_(CalcOutputPortsStart(output_ports_sizes)) {
   const int size =

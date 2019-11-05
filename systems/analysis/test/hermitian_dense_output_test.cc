@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
@@ -76,7 +77,7 @@ class HermitianDenseOutputTest : public ::testing::Test {
 // HermitianDenseOutput types to test.
 typedef ::testing::Types<double, AutoDiffXd> OutputTypes;
 
-TYPED_TEST_CASE(HermitianDenseOutputTest, OutputTypes);
+TYPED_TEST_SUITE(HermitianDenseOutputTest, OutputTypes);
 
 // Checks that HermitianDenseOutput consistency is ensured.
 TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
@@ -148,8 +149,8 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   EXPECT_EQ(dense_output.start_time(), first_step.start_time());
   EXPECT_EQ(dense_output.end_time(), first_step.end_time());
   EXPECT_EQ(dense_output.size(), first_step.size());
-  EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime));
-  EXPECT_NO_THROW(dense_output.EvaluateNth(
+  DRAKE_EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime));
+  DRAKE_EXPECT_NO_THROW(dense_output.EvaluateNth(
       this->kMidTime, this->kValidElementIndex));
 
   // Verifies that invalid evaluation arguments generate errors.

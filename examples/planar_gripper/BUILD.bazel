@@ -81,12 +81,14 @@ drake_cc_binary(
     ],
     deps = [
         ":planar_gripper_common",
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//common/trajectories:piecewise_polynomial",
         "//geometry:geometry_visualization",
+        "//lcm:drake_lcm",
         "//multibody/parsing",
         "//multibody/plant",
+        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
@@ -132,5 +134,7 @@ drake_cc_googletest(
         "//solvers:solve",
     ],
 )
+
+install_data()
 
 add_lint_tests()

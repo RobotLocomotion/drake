@@ -11,6 +11,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/hydroelastic_callback.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -55,12 +57,19 @@ class ProximityEngineTester {
                                    const ProximityEngine<T>& engine) {
     return engine.GetX_WG(id, is_dynamic).translation();
   }
+
+  template <typename T>
+  static hydroelastic::HydroelasticType hydroelastic_type(
+      GeometryId id, const ProximityEngine<T>& engine) {
+    return engine.hydroelastic_geometries().hydroelastic_type(id);
+  }
 };
 
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+using hydroelastic::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -72,6 +81,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 using std::make_shared;
+using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unordered_map;
@@ -87,6 +97,89 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
   EXPECT_EQ(engine.num_geometries(), 1);
   EXPECT_EQ(engine.num_anchored(), 0);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// "Processing" hydroelastic geometry is simply a case of invoking a method
+// on hydroelastic::Geometries. All error handling is done there. So, it is
+// sufficient to confirm that it is being properly invoked. We'll simply attempt
+// to instantiate every shape and assert its classification based on whether
+// it's supported or not (note: this test doesn't depend on the choice of
+// rigid/soft -- for each shape, we pick an arbitrary compliance, preferring
+// one that is supported over one that is not. Otherwise, the compliance choice
+// is immaterial.)
+GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible.
+  const double edge_length = 0.5;
+  const double E = 1e8;  // Elastic modulus.
+  ProximityProperties soft_properties;
+  soft_properties.AddProperty(kMaterialGroup, kElastic, E);
+  AddSoftHydroelasticProperties(edge_length, &soft_properties);
+  ProximityProperties rigid_properties;
+  // TODO(SeanCurtis-TRI): Keep an eye on this practice. Defining something as
+  // being rigid by giving it an "infinite elastic modulus" may be counter
+  // intuitive. If so, we'll need to rearticulate how we handle this
+  // classification. However, any dissonance should be mitigated by the upcoming
+  // API in proximity_properties.h for setting rigid/soft properties without
+  // getting into the details of how it's labeled.
+  rigid_properties.AddProperty(kMaterialGroup, kElastic,
+                              std::numeric_limits<double>::infinity());
+  AddRigidHydroelasticProperties(edge_length, &rigid_properties);
+
+  // Case: soft sphere.
+  {
+    Sphere sphere{edge_length};
+    const GeometryId sphere_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(sphere, sphere_id, soft_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere_id, engine),
+              HydroelasticType::kSoft);
+  }
+
+  // Case: rigid cylinder (unsupported).
+  {
+    Cylinder cylinder{edge_length, edge_length};
+    const GeometryId cylinder_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(cylinder, cylinder_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(cylinder_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid half_space (unsupported).
+  {
+    HalfSpace half_space;
+    const GeometryId half_space_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(half_space, half_space_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(half_space_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid box.
+  {
+    Box box{edge_length, edge_length, edge_length};
+    const GeometryId box_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(box, box_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
+              HydroelasticType::kRigid);
+  }
+
+  // TODO(SeanCurtis-TRI): Add test for rigid mesh when ProximityEngine no
+  //  longer blindly throws. See note in proximity_engine.cc:
+  //  ImplementGeometry(Mesh).
+
+  // Case: meshes. Not tested because currently, proximity engine throws at
+  // any attempt to add one.
+
+  // Case: rigid convex (unsupported)
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+        edge_length};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, convex_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kUndefined);
+  }
 }
 
 // Tests simple addition of anchored geometry.
@@ -137,11 +230,21 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
       const GeometryId id = GeometryId::get_new_id();
       ids.push_back(id);
       poses.insert({id, RigidTransformd{Translation3d{i * 2.0, 0, 0}}});
+      // Add rigid properties so we can confirm removal of hydroelastic
+      // representation. We use rigid here to make sure things get invoked and
+      // rely on the implementation of hydroelastic::Geometries to distinguish
+      // soft and rigid.
+      ProximityProperties props;
+      props.AddProperty(kMaterialGroup, kElastic,
+                        std::numeric_limits<double>::infinity());
+      AddRigidHydroelasticProperties(1.0, &props);
       if (is_dynamic) {
-        engine.AddDynamicGeometry(sphere, id);
+        engine.AddDynamicGeometry(sphere, id, props);
       } else {
-        engine.AddAnchoredGeometry(sphere, poses[id], id);
+        engine.AddAnchoredGeometry(sphere, poses[id], id, props);
       }
+      EXPECT_EQ(ProximityEngineTester::hydroelastic_type(id, engine),
+                HydroelasticType::kRigid);
     }
     int expected_count = static_cast<int>(engine.num_geometries());
     EXPECT_EQ(engine.num_geometries(), expected_count);
@@ -161,6 +264,8 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
       EXPECT_EQ(engine.num_dynamic(), is_dynamic ? expected_count : 0);
       EXPECT_THROW(engine.RemoveGeometry(remove_id, is_dynamic),
                    std::logic_error);
+      EXPECT_EQ(ProximityEngineTester::hydroelastic_type(remove_id, engine),
+                HydroelasticType::kUndefined);
     }
   }
 }
@@ -1173,50 +1278,50 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
 // GenDistanceTestDataSphere() with the function
 // TEST_P(SignedDistanceToPointTest, SingleQueryPoint).
 // Sphere
-INSTANTIATE_TEST_CASE_P(Sphere, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(Sphere, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataSphere()));
 
-INSTANTIATE_TEST_CASE_P(TransformSphere, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TransformSphere, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestTransformSphere()));
 
 // Box
-INSTANTIATE_TEST_CASE_P(OutsideBox, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(OutsideBox, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataOutsideBox()));
-INSTANTIATE_TEST_CASE_P(BoxBoundary, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(BoxBoundary, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataBoxBoundary()));
-INSTANTIATE_TEST_CASE_P(InsideBoxUnique, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(InsideBoxUnique, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestDataInsideBoxUnique()));
-INSTANTIATE_TEST_CASE_P(InsideBoxNonUnique, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(InsideBoxNonUnique, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestDataInsideBoxNonUnique()));
-INSTANTIATE_TEST_CASE_P(TranslateBox, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TranslateBox, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataTranslateBox()));
-INSTANTIATE_TEST_CASE_P(TransformOutsideBox, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TransformOutsideBox, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestTransformOutsideBox()));
-INSTANTIATE_TEST_CASE_P(TransformBoxBoundary, SignedDistanceToPointTest,
+INSTANTIATE_TEST_SUITE_P(TransformBoxBoundary, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistTestTransformBoxBoundary()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TransformInsideBoxUnique, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
 
 // Cylinder
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CylinderBoundary, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataCylinderBoundary()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OutsideCylinder, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataOutsideCylinder()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     InsideCylinder, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataInsideCylinder()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CenterCylinder, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataCylinderCenter()));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CylinderTransform, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataCylinderTransform()));
 
 // Half space
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     Halfspace, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestDataHalfSpace()));
 
@@ -1463,12 +1568,12 @@ class SimplePenetrationTest : public ::testing::Test {
 // Tests collision between dynamic and anchored sphere. One case colliding, one
 // case *not* colliding.
 TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
-  // Set up anchored geometry
+  // Set up anchored geometry.
   RigidTransformd pose = RigidTransformd::Identity();
   const GeometryId anchored_id = GeometryId::get_new_id();
   engine_.AddAnchoredGeometry(sphere_, pose, anchored_id);
 
-  // Set up dynamic geometry
+  // Set up dynamic geometry.
   const GeometryId dynamic_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, dynamic_id);
   EXPECT_EQ(engine_.num_geometries(), 2);
@@ -1476,11 +1581,11 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   X_WGs_[anchored_id] = pose;
   X_WGs_[dynamic_id] = RigidTransformd::Identity();
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(dynamic_id, false /* not colliding */);
   ExpectNoPenetration(anchored_id, dynamic_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(dynamic_id, true /* colliding */);
   ExpectPenetration(anchored_id, dynamic_id, &engine_);
 
@@ -1488,14 +1593,14 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(anchored_id, dynamic_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
-// the same source
+// the same source.
 TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   const GeometryId origin_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, origin_id);
@@ -1507,11 +1612,11 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   X_WGs_[origin_id] = RigidTransformd::Identity();
   X_WGs_[collide_id] = RigidTransformd::Identity();
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
   ExpectNoPenetration(origin_id, collide_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
   ExpectPenetration(origin_id, collide_id, &engine_);
 
@@ -1519,10 +1624,75 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
+}
+
+// Tests if collisions exist between dynamic and anchored sphere. One case
+// colliding, one case *not* colliding.
+TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
+  // Set up anchored geometry.
+  const RigidTransformd pose = RigidTransformd::Identity();
+  const GeometryId anchored_id = GeometryId::get_new_id();
+  engine_.AddAnchoredGeometry(sphere_, pose, anchored_id);
+
+  // Set up dynamic geometry.
+  const GeometryId dynamic_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, dynamic_id);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  X_WGs_[anchored_id] = pose;
+  X_WGs_[dynamic_id] = RigidTransformd::Identity();
+
+  // Non-colliding case.
+  MoveDynamicSphere(dynamic_id, false /* not colliding */);
+  EXPECT_FALSE(engine_.HasCollisions());
+
+  // Colliding case.
+  MoveDynamicSphere(dynamic_id, true /* colliding */);
+  EXPECT_TRUE(engine_.HasCollisions());
+
+  // Test colliding case on copy.
+  ProximityEngine<double> copy_engine(engine_);
+  EXPECT_TRUE(copy_engine.HasCollisions());
+
+  // Test AutoDiffXd converted engine.
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
+  EXPECT_TRUE(ad_engine->HasCollisions());
+}
+
+// Performs the same collision test between two dynamic spheres which belong to
+// the same source.
+TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
+  const GeometryId origin_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, origin_id);
+
+  GeometryId collide_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(sphere_, collide_id);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  X_WGs_[origin_id] = RigidTransformd::Identity();
+  X_WGs_[collide_id] = RigidTransformd::Identity();
+
+  // Non-colliding case.
+  MoveDynamicSphere(collide_id, false /* not colliding */);
+  EXPECT_FALSE(engine_.HasCollisions());
+
+  // Colliding case.
+  MoveDynamicSphere(collide_id, true /* colliding */);
+  EXPECT_TRUE(engine_.HasCollisions());
+
+  // Test colliding case on copy.
+  ProximityEngine<double> copy_engine(engine_);
+  EXPECT_TRUE(copy_engine.HasCollisions());
+
+  // Test AutoDiffXd converted engine.
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
+  EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
 // Invokes ExcludeCollisionsWithin in various scenarios which will and won't
@@ -1598,11 +1768,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   engine_.ExcludeCollisionsWithin({origin_id, collide_id}, {});
   EXPECT_TRUE(engine_.CollisionFiltered(origin_id, true, collide_id, true));
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
@@ -1610,7 +1780,7 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
@@ -1694,11 +1864,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   X_WGs_[origin_id] = RigidTransformd::Identity();
   X_WGs_[collide_id] = RigidTransformd::Identity();
 
-  // Non-colliding case
+  // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
-  // Colliding case
+  // Colliding case.
   MoveDynamicSphere(collide_id, true /* colliding */);
   ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
 
@@ -1706,7 +1876,7 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine
+  // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
@@ -1768,7 +1938,7 @@ GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
 //    ComputeSignedDistancePairwiseClosestPoints() from here.
 //    See TEST_P(SignedDistancePairTest, SinglePair), for example.
 // 4. Initiate all the tests by specifying the test fixture and the test data.
-//    See INSTANTIATE_TEST_CASE_P() below.
+//    See INSTANTIATE_TEST_SUITE_P() below.
 class SignedDistancePairTestData {
  public:
   SignedDistancePairTestData(shared_ptr<const Shape> a,
@@ -2457,46 +2627,46 @@ TEST_P(SignedDistancePairTest, SinglePair) {
     << "Distance between witness points do not equal the signed distance.";
 }
 
-INSTANTIATE_TEST_CASE_P(SphereSphere, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphere, SignedDistancePairTest,
     testing::ValuesIn(GenDistancePairTestSphereSphere()));
-INSTANTIATE_TEST_CASE_P(SphereSphereTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereTransform()));
-INSTANTIATE_TEST_CASE_P(SphereSphereGimbalLock, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphereGimbalLock, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereGimbalLock()));
 
-INSTANTIATE_TEST_CASE_P(SphereSphreNonAligned, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphreNonAligned, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAligned()));
-INSTANTIATE_TEST_CASE_P(SphereSphreNonAlignedTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereSphreNonAlignedTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAlignedTransform()));
 
-INSTANTIATE_TEST_CASE_P(SphereBox, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBox, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBox()));
-INSTANTIATE_TEST_CASE_P(SphereBoxTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxTransform()));
-INSTANTIATE_TEST_CASE_P(SphereBoxGimbalLock, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxGimbalLock, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxGimbalLock()));
 
-INSTANTIATE_TEST_CASE_P(BoxSphere, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(BoxSphere, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphere()));
-INSTANTIATE_TEST_CASE_P(BoxSphereTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(BoxSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphereTransform()));
 
-INSTANTIATE_TEST_CASE_P(SphereBoxBoundary, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxBoundary, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundary()));
-INSTANTIATE_TEST_CASE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundaryTransform()));
 
-INSTANTIATE_TEST_CASE_P(SphereCylinder, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereCylinder, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinder()));
-INSTANTIATE_TEST_CASE_P(SphereCylinderTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereCylinderTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderTransform()));
-INSTANTIATE_TEST_CASE_P(SphereCylinderBoundary, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(SphereCylinderBoundary, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderBoundary()));
-INSTANTIATE_TEST_CASE_P(SphereCylinderBoundaryTransform,
+INSTANTIATE_TEST_SUITE_P(SphereCylinderBoundaryTransform,
     SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderBoundaryTransform()));
 
-INSTANTIATE_TEST_CASE_P(HalfspaceSphere,
+INSTANTIATE_TEST_SUITE_P(HalfspaceSphere,
                         SignedDistancePairTest,
                         testing::ValuesIn(GenDistPairTestHalfspaceSphere()));
 
@@ -2674,20 +2844,20 @@ GenDistPairTestSphereBoxConcentricTransform() {
       RotationMatrixd(RollPitchYawd(M_PI, M_PI/6., M_PI)));
 }
 
-INSTANTIATE_TEST_CASE_P(SphereSphereConcentric,
+INSTANTIATE_TEST_SUITE_P(SphereSphereConcentric,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentric()));
-INSTANTIATE_TEST_CASE_P(SphereSphereConcentricTransform,
+INSTANTIATE_TEST_SUITE_P(SphereSphereConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricTransform()));
-INSTANTIATE_TEST_CASE_P(SphereSphereConcentricGimbalLock,
+INSTANTIATE_TEST_SUITE_P(SphereSphereConcentricGimbalLock,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricGimbalLock()));
 
-INSTANTIATE_TEST_CASE_P(SphereBoxConcentric,
+INSTANTIATE_TEST_SUITE_P(SphereBoxConcentric,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentric()));
-INSTANTIATE_TEST_CASE_P(SphereBoxConcentricTransform,
+INSTANTIATE_TEST_SUITE_P(SphereBoxConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentricTransform()));
 
@@ -2814,9 +2984,34 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
   }
 }
 
+// TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
+//  testing in proximity engine. They should only test the following:
+//  Successful evaluation between two dynamic shapes and between a dynamic
+//  and anchored shape. Those simple tests confirm ProximityEngine handles its
+//  responsibilty correctly; it calls the appropriate broadphase methods on FCL.
+//  Unit tests on ProximityEngine for the FCL-based query methods should *not*
+//  be concerned with the correctness of the results' values -- that lies in the
+//  responsibility of the callback and underlying geometric algorithms. They
+//  were originally created here because FCL wasn't completely trusted. So,
+//  create a set of tests that can be evaluated on each of the FCL-based queries
+//  that performs those two tests.
+
+// TODO(SeanCurtis-TRI): Remove these geometric tests from here and put them
+//  in their own test. We're keeping them, ultimately, so that we can use these
+//  tests for our own implementation of shape-shape point-intersection
+//  algorithms. In the short-term, these tests should be expressed directly
+//  in terms of the penetration_as_point_pair::Callback and moved to that set
+//  of tests.
+
 // Robust Box-Primitive tests. Tests collision of the box with other primitives
 // in a uniform framework. These tests parallel tests located in fcl.
-
+//
+// All of the tests below here are using the callback to exercise the black box.
+// They exist because of FCL; FCL's unit tests were sporadic at best and these
+// tests revealed errors/properties of FCL that weren't otherwise apparent.
+// Ultimately, these tests don't belong here. But they can be re-used when we
+// replace FCL with Drake's own implementations.
+//
 // This performs a very specific test. It collides a rotated box with a
 // surface that is tangent to the z = 0 plane. The box is a cube with unit size.
 // The goal is to transform the box such that:
@@ -3171,6 +3366,15 @@ TEST_F(BoxPenetrationTest, TangentConvex1) {
 TEST_F(BoxPenetrationTest, TangentConvex2) {
   // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
   TestCollision2(TangentConvex, 1e-3);
+}
+
+// Attempting to add a Capsule should cause an abort.
+GTEST_TEST(ProximityEngineTests, AddCapsule) {
+  ProximityEngine<double> engine;
+  Capsule capsule{0.2, 1.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.AddDynamicGeometry(capsule, GeometryId::get_new_id()),
+      std::exception, ".*The proximity engine does not support capsules yet.*");
 }
 
 // Attempting to add a dynamic Mesh should cause an abort.

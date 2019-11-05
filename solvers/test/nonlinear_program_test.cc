@@ -7,12 +7,14 @@
 #include <utility>     // std::pair
 #include <vector>      // std::vector
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -41,7 +43,7 @@ namespace drake {
 namespace solvers {
 namespace test {
 void RunNonlinearProgram(const MathematicalProgram& prog,
-                         const optional<Eigen::VectorXd>& x_init,
+                         const std::optional<Eigen::VectorXd>& x_init,
                          std::function<void(void)> test_func,
                          MathematicalProgramResult* result) {
   IpoptSolver ipopt_solver;
@@ -54,13 +56,13 @@ void RunNonlinearProgram(const MathematicalProgram& prog,
       std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
+    SCOPED_TRACE(fmt::format("Using solver: {}", solver.first));
     if (!solver.second->available()) {
       continue;
     }
-    ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result))
-        << "Using solver: " << solver.first;
-    EXPECT_TRUE(result->is_success()) << "Using solver: " << solver.first;
-    EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
+    DRAKE_ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result));
+    EXPECT_TRUE(result->is_success());
+    DRAKE_EXPECT_NO_THROW(test_func());
   }
 }
 
@@ -530,9 +532,9 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
     MathematicalProgramResult result;
 
     num_calls = 0;
-    ASSERT_NO_THROW(solver.second->Solve(prog, {}, {}, &result))
-        << "Using solver: " << solver.first;
-    EXPECT_TRUE(result.is_success()) << "Using solver: " << solver.first;
+    SCOPED_TRACE(fmt::format("Using solver: {}", solver.first));
+    DRAKE_ASSERT_NO_THROW(solver.second->Solve(prog, {}, {}, &result));
+    EXPECT_TRUE(result.is_success());
     EXPECT_GT(num_calls, 0);
   }
 }

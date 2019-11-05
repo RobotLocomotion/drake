@@ -7,13 +7,13 @@
 
 namespace drake {
 
-optional<std::string> MaybeGetDrakePath() {
+std::optional<std::string> MaybeGetDrakePath() {
   // Find something that represents where Drake resources live.  This will be
   // "/path/to/drake/.drake-find_resource-sentinel" where "/path/to/" names the
   // root of Drake's git source tree (or perhaps an installed version of same).
   const auto& find_result = FindResource("drake/.drake-find_resource-sentinel");
   if (find_result.get_error_message()) {
-    return nullopt;
+    return std::nullopt;
   }
   filesystem::path sentinel_path(find_result.get_absolute_path_or_throw());
 

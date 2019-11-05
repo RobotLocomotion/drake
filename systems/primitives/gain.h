@@ -79,7 +79,7 @@ Gain<T>::Gain(double k, int size) : Gain(Eigen::VectorXd::Ones(size) * k) {}
 
 template <typename T>
 Gain<T>::Gain(const Eigen::VectorXd& k)
-    : VectorSystem<T>(SystemTypeTag<systems::Gain>{}, k.size(), k.size()),
+    : VectorSystem<T>(SystemTypeTag<Gain>{}, k.size(), k.size()),
       k_(k) {}
 
 template <typename T>

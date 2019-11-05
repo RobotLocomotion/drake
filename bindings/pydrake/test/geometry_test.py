@@ -33,6 +33,23 @@ class TestGeometry(unittest.TestCase):
 
         scene_graph = SceneGraph()
         global_source = scene_graph.RegisterSource("anchored")
+        global_frame = scene_graph.RegisterFrame(
+            source_id=global_source, frame=mut.GeometryFrame("anchored_frame"))
+        global_frame_2 = scene_graph.RegisterFrame(
+            source_id=global_source, parent_id=global_frame,
+            frame=mut.GeometryFrame("anchored_frame"))
+        global_geometry = scene_graph.RegisterGeometry(
+            source_id=global_source, frame_id=global_frame,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(1.), name="sphere"))
+        global_geometry_2 = scene_graph.RegisterGeometry(
+            source_id=global_source, geometry_id=global_geometry,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(1.), name="sphere"))
+        anchored_geometry = scene_graph.RegisterAnchoredGeometry(
+            source_id=global_source,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(1.), name="sphere"))
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
         self.assertIsInstance(
@@ -44,6 +61,12 @@ class TestGeometry(unittest.TestCase):
         scene_graph.AddRenderer("test_renderer",
                                 mut.render.MakeRenderEngineVtk(
                                     mut.render.RenderEngineVtkParams()))
+
+        # Test SceneGraphInspector API
+        inspector = scene_graph.model_inspector()
+        self.assertEqual(inspector.num_frames(), 3)
+        self.assertEqual(inspector.num_sources(), 2)
+        self.assertEqual(inspector.num_geometries(), 3)
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
@@ -152,6 +175,36 @@ class TestGeometry(unittest.TestCase):
         ]
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
+
+    def test_shapes(self):
+        sphere = mut.Sphere(radius=1.0)
+        self.assertEqual(sphere.get_radius(), 1.0)
+        cylinder = mut.Cylinder(radius=1.0, length=2.0)
+        self.assertEqual(cylinder.get_radius(), 1.0)
+        self.assertEqual(cylinder.get_length(), 2.0)
+        box = mut.Box(width=1.0, depth=2.0, height=3.0)
+        self.assertEqual(box.width(), 1.0)
+        self.assertEqual(box.depth(), 2.0)
+        self.assertEqual(box.height(), 3.0)
+        numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+
+    def test_geometry_frame_api(self):
+        frame = mut.GeometryFrame(frame_name="test_frame")
+        self.assertIsInstance(frame.id(), mut.FrameId)
+        self.assertEqual(frame.name(), "test_frame")
+        frame = mut.GeometryFrame(frame_name="test_frame", frame_group_id=1)
+        self.assertEqual(frame.frame_group(), 1)
+
+    def test_geometry_instance_api(self):
+        RigidTransform = RigidTransform_[float]
+        geometry = mut.GeometryInstance(X_PG=RigidTransform(),
+                                        shape=mut.Sphere(1.), name="sphere")
+        self.assertIsInstance(geometry.id(), mut.GeometryId)
+        geometry.set_pose(RigidTransform([1, 0, 0]))
+        self.assertIsInstance(geometry.pose(), RigidTransform)
+        self.assertIsInstance(geometry.shape(), mut.Shape)
+        self.assertIsInstance(geometry.release_shape(), mut.Shape)
+        self.assertEqual(geometry.name(), "sphere")
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.

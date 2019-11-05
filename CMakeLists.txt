@@ -1,8 +1,11 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.5.1)
-project(drake)
+cmake_minimum_required(VERSION 3.10)
+project(drake
+  DESCRIPTION "Model-based design and verification for robotics"
+  LANGUAGES C CXX
+)
 
 list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -10,8 +13,10 @@ include(CTest)
 
 configure_file(CTestCustom.cmake.in CTestCustom.cmake @ONLY)
 
-if(CYGWIN OR NOT UNIX)
-  message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
+if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
+  message(FATAL_ERROR
+    "Android, Cygwin, iOS, and non-Unix platforms are NOT supported"
+  )
 endif()
 
 if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
@@ -23,12 +28,21 @@ endif()
 set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
-if(UNIX AND NOT APPLE)
+if(APPLE)
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 18)
+     message(FATAL_ERROR
+       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
+       "18.x (macOS Mojave) or Darwin 19.x (macOS Catalina)."
+     )
+  endif()
+else()
   find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
 
   if(NOT LSB_RELEASE_EXECUTABLE)
     message(FATAL_ERROR "Could NOT find the lsb_release executable")
   endif()
+
+  mark_as_advanced(LSB_RELEASE_EXECUTABLE)
 
   execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --id --short
     RESULT_VARIABLE LSB_RELEASE_ID_SHORT_RESULT_VARIABLE
@@ -62,16 +76,17 @@ if(UNIX AND NOT APPLE)
 
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|xenial)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
      message(FATAL_ERROR
-       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported"
+       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
+       "Ubuntu 18.04 (Bionic)."
      )
   endif()
 endif()
 
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 0.28)
+set(MINIMUM_BAZEL_VERSION 1.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
@@ -88,9 +103,9 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 10)
+set(MINIMUM_APPLE_CLANG_VERSION 11)
 set(MINIMUM_CLANG_VERSION 6)
-set(MINIMUM_GNU_VERSION 5.4)
+set(MINIMUM_GNU_VERSION 7.4)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
@@ -112,7 +127,8 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
   endif()
 else()
   message(WARNING
-    "Compilation with ${CMAKE_C_COMPILER_ID} is NOT supported. Compilation of project drake_cxx_python may fail."
+    "Compilation with ${CMAKE_C_COMPILER_ID} is NOT supported. Compilation of "
+    "project drake_cxx_python may fail."
   )
 endif()
 
@@ -137,15 +153,17 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
-  set(FLAG_STD_CXX14 -std=c++14)
-  check_cxx_compiler_flag(${FLAG_STD_CXX14} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
-  if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
+  set(FLAG_STD_CXX17 -std=c++17)
+  check_cxx_compiler_flag(${FLAG_STD_CXX17} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
+  if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
     message(FATAL_ERROR
-      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the ${FLAG_STD_CXX14} flag"
+      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it "
+      "does not accept the ${FLAG_STD_CXX17} flag"
     )
   endif()
   message(WARNING
-    "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported. Compilation of project drake_cxx_python may fail."
+    "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported. Compilation "
+    "of project drake_cxx_python may fail."
   )
 endif()
 
@@ -171,67 +189,28 @@ else()
   endif()
 endif()
 
-set(MINIMUM_SUPPORTED_CXX_VERSION 14)
-set(MAXIMUM_SUPPORTED_CXX_VERSION 17)
-set(DEFAULT_CXX_VERSION 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${DEFAULT_CXX_VERSION})
-endif()
-if(CMAKE_CXX_STANDARD LESS MINIMUM_SUPPORTED_CXX_VERSION)
-  message(FATAL_ERROR
-    "Compilation with C++ standard ${CMAKE_CXX_STANDARD} is NOT supported"
-  )
-endif()
-if(CMAKE_CXX_STANDARD GREATER MAXIMUM_SUPPORTED_CXX_VERSION)
-  message(WARNING
-    "Compilation with C++ standard ${CMAKE_CXX_STANDARD} is NOT supported. Compilation of project drake_cxx_python may fail."
-  )
-endif()
-if(CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION)
-  set(MAYBE_BAZEL_CXXOPT_STD
-    "build --cxxopt=${CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION} --host_cxxopt=${CMAKE_CXX${CMAKE_CXX_STANDARD}_STANDARD_COMPILE_OPTION}"
-  )
-else()
-  set(MAYBE_BAZEL_CXXOPT_STD)
-endif()
+set(CMAKE_CXX_STANDARD 17)
 
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
-set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
+if(APPLE)
+  set(SUPPORTED_PYTHON_VERSIONS 3.7)
+else()
+  set(SUPPORTED_PYTHON_VERSIONS 3.6)
+endif()
 
 if(PYTHON_EXECUTABLE)
   find_package(PythonInterp MODULE REQUIRED)
 else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL xenial)
-    set(DEFAULT_PYTHON_VERSION 2)
-  else()
-    set(DEFAULT_PYTHON_VERSION 3)
+  if(APPLE)
+    # Prefer python3 executable in /usr/local/bin.
+    list(INSERT CMAKE_PROGRAM_PATH 0 /usr/local/bin)
+    find_program(PYTHON_EXECUTABLE NAMES python3)
+    mark_as_advanced(PYTHON_EXECUTABLE)
   endif()
-
-  string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
-    "${SUPPORTED_PYTHON_VERSIONS}"
-  )
-  set(WITH_PYTHON_VERSION ${DEFAULT_PYTHON_VERSION} CACHE STRING
-    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
-  )
-  set_property(CACHE WITH_PYTHON_VERSION PROPERTY
-    STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
-  )
-
-  string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
-  list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
-
-  if(APPLE AND WITH_PYTHON_VERSION_MAJOR EQUAL 2)
-    # Ensure that the python2 executable or link is used in preference to the
-    # python and python2.7 executables or links, which correspond to the
-    # system version of Python installed on macOS. There is no system python3
-    # as of macOS Mojave 10.14.
-    find_program(PYTHON_EXECUTABLE NAMES python2)
-  endif()
-
-  find_package(PythonInterp ${WITH_PYTHON_VERSION} EXACT MODULE REQUIRED)
+  find_package(PythonInterp 3 EXACT MODULE REQUIRED)
 endif()
 
 set(PYTHON_VERSION_MAJOR_MINOR
@@ -240,7 +219,8 @@ set(PYTHON_VERSION_MAJOR_MINOR
 
 if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
   message(WARNING
-    "Python ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python code in project drake_cxx_python may fail at runtime."
+    "Python ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python code in "
+    "project drake_cxx_python may fail at runtime."
   )
 endif()
 
@@ -279,7 +259,9 @@ else()
     set(MAYBE_BAZEL_COPT_OS)
     if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
       message(WARNING
-        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration MinSizeRel is NOT supported because it does not accept the ${FLAG_OS} flag. Code will NOT be optimized for size."
+        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration MinSizeRel "
+        "is NOT supported because it does not accept the ${FLAG_OS} flag. Code "
+        "will NOT be optimized for size."
       )
       if(CMAKE_CONFIGURATION_TYPES)
         list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel)
@@ -293,7 +275,9 @@ else()
     set(MAYBE_BAZEL_COPT_G)
     if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
       message(WARNING
-        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration RelWithDebInfo is NOT supported because it does not accept the ${FLAG_G} flag. Debug information will NOT be generated."
+        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration "
+        "RelWithDebInfo is NOT supported because it does not accept the "
+        "${FLAG_G} flag. Debug information will NOT be generated."
       )
       if(CMAKE_CONFIGURATION_TYPES)
         list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES RelWithDebInfo)
@@ -357,32 +341,13 @@ if(WITH_MOSEK)
   list(APPEND BAZEL_CONFIGS --config=mosek)
 endif()
 
-set(WITH_SNOPT_STRINGS F2C Fortran OFF ON)
-string(REPLACE ";" " " WITH_SNOPT_STRINGS_STRING "${WITH_SNOPT_STRINGS}")
-
-set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE STRING
-  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository, options are ${WITH_SNOPT_STRINGS_STRING}"
-)
-set_property(CACHE WITH_ROBOTLOCOMOTION_SNOPT PROPERTY
-  STRINGS "${WITH_SNOPT_STRINGS}"
+set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
+  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
 
-if(NOT WITH_ROBOTLOCOMOTION_SNOPT IN_LIST WITH_SNOPT_STRINGS)
-  message(FATAL_ERROR
-    "Value ${WITH_ROBOTLOCOMOTION_SNOPT} for the WITH_ROBOTLOCOMOTION_SNOPT option is NOT supported"
-  )
-endif()
-
-set(WITH_SNOPT OFF CACHE STRING
-  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH, options are ${WITH_SNOPT_STRINGS_STRING}"
+set(WITH_SNOPT OFF CACHE BOOL
+  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
 )
-set_property(CACHE WITH_SNOPT PROPERTY STRINGS "${WITH_SNOPT_STRINGS}")
-
-if(NOT WITH_SNOPT IN_LIST WITH_SNOPT_STRINGS)
-  message(FATAL_ERROR
-    "Value ${WITH_SNOPT} for the WITH_SNOPT option is NOT supported"
-  )
-endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
   message(FATAL_ERROR
@@ -391,13 +356,23 @@ if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
 endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
-  if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL F2C OR WITH_SNOPT STREQUAL F2C)
-    list(APPEND BAZEL_CONFIGS --config=snopt_f2c)
-  elseif(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
-    list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
+  enable_language(Fortran)
+
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+    if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
+      message(FATAL_ERROR
+        "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
+        "supported"
+      )
+    endif()
   else()
-    list(APPEND BAZEL_CONFIGS --config=snopt)
+    message(WARNING
+      "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
+      "Compilation of project drake_cxx_python may fail."
+    )
   endif()
+
+  list(APPEND BAZEL_CONFIGS --config=snopt)
 
   if(WITH_ROBOTLOCOMOTION_SNOPT)
     list(APPEND BAZEL_ENV "SNOPT_PATH=git")
@@ -469,7 +444,8 @@ if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
     message(WARNING
-      "Install configurations Debug and RelWithDebInfo will STILL strip symbols because support for SNOPT is enabled"
+      "Install configurations Debug and RelWithDebInfo will STILL strip "
+      "symbols because support for SNOPT is enabled"
     )
   else()
     list(INSERT BAZEL_TARGETS_ARGS 0 "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>")
@@ -530,9 +506,6 @@ install(FILES "${PROJECT_BINARY_DIR}/VERSION.TXT" DESTINATION share/doc/drake)
 set(CPACK_GENERATOR TGZ)
 set(CPACK_INSTALLED_DIRECTORIES "${CMAKE_INSTALL_PREFIX}" .)
 set(CPACK_PACKAGE_CONTACT RobotLocomotion)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-  "Model-based design and verification for robotics"
-)
 set(CPACK_PACKAGE_VENDOR RobotLocomotion)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 0)

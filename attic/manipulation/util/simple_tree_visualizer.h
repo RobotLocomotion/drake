@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
 
@@ -9,7 +10,9 @@ namespace manipulation {
 /**
  * A utility to render a `RigidBodyTree` in a specified configuration.
  */
-class SimpleTreeVisualizer {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic/manipulation/util package is being partially removed.")
+SimpleTreeVisualizer {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleTreeVisualizer)
 

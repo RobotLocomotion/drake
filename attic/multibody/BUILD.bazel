@@ -384,7 +384,6 @@ drake_cc_library(
         ":rigid_body_tree",
         ":rigid_body_tree_alias_groups_proto",
         "//common:essential",
-        "//common/proto:protobuf",
     ],
 )
 
@@ -615,7 +614,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_test(
     name = "test_kinematics_cache_checks",
     data = ["//examples/atlas:models"],
     deps = [

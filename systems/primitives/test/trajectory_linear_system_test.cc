@@ -151,7 +151,7 @@ TEST_P(TrajectoryLinearSystemTest, ScalarTypeConversion) {
   EXPECT_FALSE(is_symbolic_convertible(*dut_));
 }
 
-INSTANTIATE_TEST_CASE_P(Constructor, TrajectoryLinearSystemTest,
+INSTANTIATE_TEST_SUITE_P(Constructor, TrajectoryLinearSystemTest,
                         testing::Values(ConstructorType::FromContinuous,
                                         ConstructorType::FromDiscrete));
 

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/random.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/framework_common.h"
@@ -33,7 +33,9 @@ class InputPortBase : public PortBase {
   bool is_random() const { return static_cast<bool>(random_type_); }
 
   /** Returns the RandomDistribution if this is a random port. */
-  optional<RandomDistribution> get_random_type() const { return random_type_; }
+  std::optional<RandomDistribution> get_random_type() const {
+    return random_type_;
+  }
 
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
@@ -72,7 +74,7 @@ class InputPortBase : public PortBase {
   InputPortBase(
       internal::SystemMessageInterface* owning_system, std::string name,
       InputPortIndex index, DependencyTicket ticket, PortDataType data_type,
-      int size, const optional<RandomDistribution>& random_type,
+      int size, const std::optional<RandomDistribution>& random_type,
       EvalAbstractCallback eval);
 
   /** Evaluate this port; throws an exception if the port is not connected. */
@@ -93,7 +95,7 @@ class InputPortBase : public PortBase {
 
  private:
   const EvalAbstractCallback eval_;
-  const optional<RandomDistribution> random_type_;
+  const std::optional<RandomDistribution> random_type_;
 };
 
 }  // namespace systems

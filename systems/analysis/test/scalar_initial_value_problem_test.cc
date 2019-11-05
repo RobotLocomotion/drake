@@ -354,7 +354,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(IncreasingAccuracyScalarInitialValueProblemTests,
+INSTANTIATE_TEST_SUITE_P(IncreasingAccuracyScalarInitialValueProblemTests,
                         ScalarInitialValueProblemAccuracyTest,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 

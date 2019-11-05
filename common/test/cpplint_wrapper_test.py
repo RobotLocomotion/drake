@@ -6,14 +6,8 @@ import subprocess
 import sys
 import unittest
 
-import six
-
 
 class TestStringMethods(unittest.TestCase):
-
-    if six.PY2:
-        assertRegex = unittest.TestCase.assertRegexpMatches
-
     def setUp(self):
         self.cpplint_wrapper_exe, self.valid_header_filename = sys.argv[1:]
         self.assertTrue(

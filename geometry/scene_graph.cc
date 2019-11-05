@@ -62,7 +62,7 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 
 template <typename T>
 SceneGraph<T>::SceneGraph()
-    : LeafSystem<T>(SystemTypeTag<geometry::SceneGraph>{}) {
+    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}) {
   auto state_value = make_unique<GeometryStateValue<T>>();
   initial_state_ = &state_value->get_mutable_value();
   model_inspector_.set(initial_state_);

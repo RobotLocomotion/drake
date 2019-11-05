@@ -141,7 +141,7 @@ Sine<T>::Sine(const Eigen::VectorXd& amplitudes,
               const Eigen::VectorXd& frequencies,
               const Eigen::VectorXd& phases,
               bool is_time_based)
-      : LeafSystem<T>(SystemTypeTag<systems::Sine>{}),
+      : LeafSystem<T>(SystemTypeTag<Sine>{}),
       amplitude_(amplitudes), frequency_(frequencies), phase_(phases),
       is_time_based_(is_time_based) {
   // Ensure the incoming vectors are all the same size

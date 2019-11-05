@@ -37,19 +37,16 @@ typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 5.4 on Xenial and GCC 7.4 on Bionic. On macOS, the
-default compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu, set
-the ``CC`` and ``CXX`` environment variables before running **bazel build**,
-**bazel test**, or any other **bazel** commands.
+``PATH``, usually GCC 7.4 on Bionic. On macOS, the default compiler is the Apple
+LLVM compiler. To use Clang 6.0 on Ubuntu, set the ``CC`` and ``CXX``
+environment variables before running **bazel build**, **bazel test**, or any
+other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake
   bazel build //...                               # Build the entire project.
   bazel test //...                                # Build and test the entire project.
-
-  CC=clang-6.0 CXX=clang++-6.0 bazel build //...  # Build using Clang 6.0 on Xenial.
-  CC=clang-6.0 CXX=clang++-6.0 bazel test //...   # Build and test using Clang 6.0 on Xenial.
 
   CC=clang CXX=clang++ bazel build //...          # Build using Clang 6.0 on Bionic.
   CC=clang CXX=clang++ bazel test //...           # Build and test using Clang 6.0 on Bionic.
@@ -141,17 +138,6 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 .. _buildifier:
-
-Python Versions
-===============
-By default, Python 3 will be used for both Bazel and the Python bindings if
-supported on the given platform; it is also usable by passing
-``--config=python3``.
-
-To use Python 2, pass ``--config=python2``. As an example to run all lint
-checks in Python 2::
-
-    bazel test --config=python2 --config=lint //...
 
 Updating BUILD files
 ====================
@@ -262,18 +248,9 @@ these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
-Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
-
- - The ``--config snopt_f2c`` option selects the legacy bindings that use the
-   f2c compiler; these bindings will be removed on 2019-11-01.
- - The ``--config snopt_fortran`` option selects the bindings that use the
-   gfortran compiler; these bindings will be supported for the foreseeable
-   future.
- - The ``--config snopt`` is synonymous with ``--config snopt_fortran``.
-
-The gfortran bindings are superior in several ways (such as being threadsafe),
-but have some known problems on certain programs (see drake issue `#10422
-<https://github.com/RobotLocomotion/drake/issues/10422>`_ for a summary).
+SNOPT support has some known problems on certain programs (see drake issue
+`#10422 <https://github.com/RobotLocomotion/drake/issues/10422>`_ for a
+summary).
 
 Optional Tools
 ==============

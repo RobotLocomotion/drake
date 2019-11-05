@@ -122,7 +122,7 @@ const char* CompliantMaterialParseTest::kUrdfTail =
 </robot>
 )_";
 
-INSTANTIATE_TEST_CASE_P(CompliantMaterialParseTest, CompliantMaterialParseTest,
+INSTANTIATE_TEST_SUITE_P(CompliantMaterialParseTest, CompliantMaterialParseTest,
                         ::testing::Values("urdf", "sdf"));
 
 // Test that parsing a file with *no* specification assigns the default

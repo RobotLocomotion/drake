@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import pydrake.systems.framework as mut
 
 import copy
@@ -57,7 +55,6 @@ from pydrake.systems.primitives import (
     SignalLogger,
     ZeroOrderHold,
     )
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -345,6 +342,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is context)
             check_output(context)
             simulator.AdvanceTo(1)
+            simulator.AdvancePendingEvents()
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.

@@ -132,7 +132,7 @@ template <typename T>
 ZeroOrderHold<T>::ZeroOrderHold(
     double period_sec, int vector_size,
     std::unique_ptr<const AbstractValue> abstract_model_value)
-    : LeafSystem<T>(SystemTypeTag<systems::ZeroOrderHold>()),
+    : LeafSystem<T>(SystemTypeTag<ZeroOrderHold>()),
       period_sec_(period_sec),
       abstract_model_value_(std::move(abstract_model_value)) {
   if (!is_abstract()) {

@@ -56,7 +56,8 @@ class LcmInterfaceSystem final
   ~LcmInterfaceSystem() final;
 
   // DrakeLcmInterface overrides.
-  void Publish(const std::string&, const void*, int, optional<double>) final;
+  void Publish(const std::string&, const void*, int,
+               std::optional<double>) final;
   std::shared_ptr<drake::lcm::DrakeSubscriptionInterface>
       Subscribe(const std::string&, HandlerFunction) final;
   int HandleSubscriptions(int) final;

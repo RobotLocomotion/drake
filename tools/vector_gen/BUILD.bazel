@@ -48,14 +48,14 @@ drake_py_binary(
 drake_cc_vector_gen_library(
     name = "sample",
     testonly = 1,
-    srcs = ["test/sample.named_vector"],
+    srcs = ["test/sample_named_vector.yaml"],
 )
 
 # From sample.named_vector, create lcmt_sample_t.lcm (message definition).
 drake_vector_gen_lcm_sources(
     name = "sample_lcm_srcs",
     testonly = 1,
-    srcs = ["test/sample.named_vector"],
+    srcs = ["test/sample_named_vector.yaml"],
 )
 
 # From lcmt_sample_t.lcm, create lcmt_sample_t.hpp (C++ bindings).

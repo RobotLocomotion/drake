@@ -3,13 +3,13 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -134,12 +134,12 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant);
   auto diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
-  diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
@@ -232,6 +232,5 @@ int main(int argc, char* argv[]) {
       "with SceneGraph visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::examples::multibody::bouncing_ball::do_main();
 }

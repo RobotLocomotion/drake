@@ -34,7 +34,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBall);
 
   BouncingBall() : systems::LeafSystem<T>(
-      systems::SystemTypeTag<bouncing_ball::BouncingBall>{}) {
+      systems::SystemTypeTag<BouncingBall>{}) {
     // Two state variables: q and v.
     this->DeclareContinuousState(1, 1, 0);
 

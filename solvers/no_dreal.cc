@@ -7,14 +7,14 @@
 namespace drake {
 namespace solvers {
 
-optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
+std::optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
     const symbolic::Formula&, double) {
   throw std::runtime_error(
       "The dReal bindings were not compiled.  You'll need to use a different "
       "solver.");
 }
 
-optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
+std::optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
     const symbolic::Expression&,
     const symbolic::Formula&,
     double,

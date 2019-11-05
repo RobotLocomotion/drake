@@ -1,17 +1,14 @@
-from __future__ import print_function
-
 import argparse
+from http.server import SimpleHTTPRequestHandler
 import os
 from os import listdir, symlink, mkdir
 from os.path import abspath, dirname, isabs, isdir, isfile, join
 from shutil import rmtree
+from socketserver import TCPServer
 from subprocess import check_call
 import sys
 import tempfile
 import webbrowser
-
-from six.moves.SimpleHTTPServer import SimpleHTTPRequestHandler
-from six.moves.socketserver import TCPServer
 
 _SPHINX_BUILD = "doc/sphinx_build.py"
 

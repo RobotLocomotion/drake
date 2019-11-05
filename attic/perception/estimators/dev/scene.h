@@ -2,16 +2,21 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace perception {
 namespace estimators {
 
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 typedef RigidBodyFrame<double> RigidBodyFramed;
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 typedef KinematicsCache<double> KinematicsCached;
 
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 typedef int BodyIndex;
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 typedef int FrameIndex;
 
 // TODO(eric.cousineau): Replace with SceneGraph when it becomes available
@@ -21,7 +26,9 @@ typedef int FrameIndex;
  * structure), the world frame, and the camera frame. This is used to for
  * posing things such as an ICP formulation.
  */
-class Scene {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+Scene {
  public:
   Scene(const RigidBodyTreed* tree, const FrameIndex frame_world,
         const FrameIndex frame_camera)
@@ -41,7 +48,9 @@ class Scene {
 /**
  * Stored state of a scene. Presently, only incorporates position configuration.
  */
-class SceneState {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+SceneState {
  public:
   explicit SceneState(const Scene* scene)
       : scene_(scene), tree_cache_(scene->tree().CreateKinematicsCache()) {}

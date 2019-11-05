@@ -108,7 +108,7 @@ TEST_P(PassThroughTest, ToSymbolic) {
 }
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
-INSTANTIATE_TEST_CASE_P(test, PassThroughTest,
+INSTANTIATE_TEST_SUITE_P(test, PassThroughTest,
     ::testing::Values(false, true));
 
 }  // namespace
