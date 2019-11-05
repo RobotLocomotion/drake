@@ -28,4 +28,5 @@ def ycb_mesh_files():
         "ycb/meshes/010_potted_meat_can_textured.mtl",
         "ycb/meshes/010_potted_meat_can_textured.obj",
         "ycb/meshes/010_potted_meat_can_textured.png",
+        "ycb/meshes/LICENSE.txt",
     ]

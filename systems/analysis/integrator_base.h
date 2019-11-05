@@ -1512,9 +1512,9 @@ class IntegratorBase {
     if (new_step_size < get_working_minimum_step_size() &&
         new_step_size < current_step_size &&  // Verify step adjusted downward.
         min_step_exceeded_throws_) {
-      SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
+      DRAKE_LOGGER_DEBUG("Integrator wants to select too small step "
           "size of {}; working minimum is ", new_step_size,
-                   get_working_minimum_step_size());
+          get_working_minimum_step_size());
       std::ostringstream str;
       str << "Error control wants to select step smaller than minimum" <<
            " allowed (" << get_working_minimum_step_size() << ")";
@@ -1714,7 +1714,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     // a sufficiently small, yet nonzero step size.
     T adjusted_step_size = step_size_to_attempt;
     while (!Step(adjusted_step_size)) {
-      SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
+      DRAKE_LOGGER_DEBUG("Sub-step failed at {}", adjusted_step_size);
       adjusted_step_size *= subdivision_factor_;
 
       // Note: we could give the user more rope to hang themselves by looking
@@ -1737,7 +1737,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
         err_norm, step_size_to_attempt, &at_minimum_step_size);
-    SPDLOG_DEBUG(drake::log(), "Succeeded? {}, Next step size: {}",
+    DRAKE_LOGGER_DEBUG("Succeeded? {}, Next step size: {}",
         step_succeeded, next_step_size);
 
     if (step_succeeded) {
@@ -1823,8 +1823,8 @@ T IntegratorBase<T>::CalcStateChangeNorm(
       weighted_q_change_.get());
   T q_nrm = weighted_q_change_->CopyToVector().
       template lpNorm<Eigen::Infinity>();
-  SPDLOG_DEBUG(drake::log(), "dq norm: {}, dv norm: {}, dz norm: {}",
-               q_nrm, v_nrm, z_nrm);
+  DRAKE_LOGGER_DEBUG("dq norm: {}, dv norm: {}, dz norm: {}",
+      q_nrm, v_nrm, z_nrm);
 
   // Return NaN if one of the values is NaN (whether std::max does this is
   // dependent upon ordering!)
