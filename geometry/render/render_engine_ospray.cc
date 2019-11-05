@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <utility>
 
-#include <vtkAppendPolyData.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
@@ -213,10 +212,10 @@ void RenderEngineOspray::ImplementGeometry(const Box& box, void* user_data) {
 
 void RenderEngineOspray::ImplementGeometry(const Capsule& capsule,
                                            void* user_data) {
-  vtkSmartPointer<vtkAppendPolyData> append_filter =
-      vtkSmartPointer<vtkAppendPolyData>::New();
-  CreateVtkCapsule(append_filter, capsule.get_radius(), capsule.get_length());
-  ImplementGeometry(append_filter.GetPointer(), user_data);
+  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  CreateVtkCapsule(transform_filter, capsule.get_radius(),
+                   capsule.get_length());
+  ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Mesh& mesh, void* user_data) {
