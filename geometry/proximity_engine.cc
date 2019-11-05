@@ -340,6 +340,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         "Capsule is currently not supported in hydroelastic contact model. "
         "It is available for collision queries and pairwise signed distance "
         "queries.");
+    // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
     TakeShapeOwnership(fcl_capsule, user_data);
