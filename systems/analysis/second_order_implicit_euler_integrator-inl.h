@@ -136,9 +136,9 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   const int nv = cstate.num_v();
   const int ny = nv + cstate.num_z();
 
-  SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute Forwarddiff "
+  DRAKE_LOGGER_DEBUG( "  ImplicitIntegrator Compute Forwarddiff "
                "{}-Jacobian t={}", ny, t);
-  SPDLOG_DEBUG(drake::log(), "  computing from state {}", xt.transpose());
+  DRAKE_LOGGER_DEBUG( "  computing from state {}", xt.transpose());
 
   // Initialize the Jacobian.
   Jv->resize(ny, ny);
@@ -206,10 +206,10 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     // Reset yt' to yt.
     yt_prime(i) = yt(i);
   }
-  /*SPDLOG_DEBUG(drake::log(), "Jacobian");
+  /*DRAKE_LOGGER_DEBUG( "Jacobian");
   for (int i = 0; i < ny; ++i)
   {
-    SPDLOG_DEBUG(drake::log(), (Jv->row(i)));
+    DRAKE_LOGGER_DEBUG( (Jv->row(i)));
   }*/
 }
 
@@ -418,7 +418,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
 
   // Verify the trial number is valid.
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
-  SPDLOG_DEBUG(drake::log(), "StepImplicitEuler(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG( "StepImplicitEuler(h={}) t={}", h, t0);
 
   const System<T>& system = this->get_system();
   // Verify xtplus
@@ -513,12 +513,12 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
     if (i >= 1) {
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {}, dx {}, last dx {}, theta: {}, eta: {}",
+      DRAKE_LOGGER_DEBUG( "Newton-Raphson loop {}, dx {}, last dx {}, theta: {}, eta: {}",
                    i, dx_norm, last_dx_norm, theta, eta);
 
       // Look for divergence.
       if (theta > 1) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
+        DRAKE_LOGGER_DEBUG( "Newton-Raphson divergence detected for "
             "h={}", h);
         break;
       }
@@ -530,7 +530,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
       const double kappa = 0.05;
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
+        DRAKE_LOGGER_DEBUG( "Newton-Raphson converged; η = {}, h = {}",
                      eta, h);
         return true;
       }
@@ -547,7 +547,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0,
 #endif
   }
 
-  SPDLOG_DEBUG(drake::log(), "SOIE convergence failed");
+  DRAKE_LOGGER_DEBUG( "SOIE convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
@@ -584,7 +584,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(const T& t0, 
         bool success = StepImplicitEuler(t0, 0.5 * h, xt0, 0.5 * (xt0 + xtplus_guess), xtplus, iteration_matrix, Jv);
         if (!success)
         {
-          SPDLOG_DEBUG(drake::log(), "First Half SOIE convergence failed");
+          DRAKE_LOGGER_DEBUG( "First Half SOIE convergence failed");
         }
         else
         {
@@ -593,7 +593,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(const T& t0, 
           success = StepImplicitEuler(t0 + 0.5 * h, 0.5 * h, xthalf, xthalf, xtplus, iteration_matrix, Jv);
           if( !success )
           {
-            SPDLOG_DEBUG(drake::log(), "Second Half SOIE convergence failed");
+            DRAKE_LOGGER_DEBUG( "Second Half SOIE convergence failed");
           }
         }
           // Move statistics to error estimate-specific.
@@ -638,23 +638,24 @@ bool SecondOrderImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0,
 
   // Do the Euler step.
   if (!StepImplicitEuler(t0, h, xt0, xtplus_guess, xtplus_ie, &iteration_matrix_ie_, &Jv_ie_)) {
-    SPDLOG_DEBUG(drake::log(), "SO Implicit Euler approach did not converge for "
+    DRAKE_LOGGER_DEBUG( "SO Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
   }
   // DO THE HALF IMPLICIT EULER STEPS
   //if (this->get_fixed_step_mode() || StepHalfImplicitEulers(t0, h, xt0, xtplus_hie, 
   // todo antequ: consider turning this off for fixed step mode
+  // I AM REUSING JV_IE AND IT MATRIX IE instead of _hie. It works quite well.
   if (StepHalfImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie, 
-      &iteration_matrix_hie_, &Jv_hie_)) {
+      &iteration_matrix_ie_, &Jv_ie_)) {
     Context<T>* context = this->get_mutable_context();
-    // propagate the full step
+    // propagate the half steps
     // todo antequ: consider propagating the full step result
     context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
 
     return true;
   } else {
-    SPDLOG_DEBUG(drake::log(), "SO Implicit Euler half-step approach failed with a step size "
+    DRAKE_LOGGER_DEBUG( "SO Implicit Euler half-step approach failed with a step size "
         "that succeeded for the normal approach {}", h);
     return false;
   }
@@ -672,7 +673,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::
   // Save the current time and state.
   Context<T>* context = this->get_mutable_context();
   const T t0 = context->get_time();
-  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG( "IE DoStep(h={}) t={}", h, t0);
 
   xt0_ = context->get_continuous_state().CopyToVector();
   xtplus_ie_.resize(xt0_.size());
@@ -681,7 +682,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
   if (h < this->get_working_minimum_step_size()) {
-    SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
+    DRAKE_LOGGER_DEBUG( "-- requested step too small, taking explicit "
         "step instead");
 
     // TODO(edrumwri): Investigate replacing this with an explicit trapezoid
