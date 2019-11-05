@@ -235,6 +235,10 @@ class TestMath(unittest.TestCase):
         q_R = R.ToQuaternion()
         numpy_compare.assert_float_equal(
             q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
+        # - Conversion to AngleAxis
+        angle_axis = R.ToAngleAxis()
+        R_AngleAxis = RotationMatrix(angle_axis)
+        numpy_compare.assert_float_equal(R.matrix(), R_AngleAxis.matrix())
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
