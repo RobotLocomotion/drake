@@ -577,9 +577,9 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
 template <typename T>
 void MultibodyTree<T>::CalcDynamicBiasCache(
     const systems::Context<T>& context,
-    std::vector<SpatialForce<T>>* b_Bo_W_cache) const {
-  DRAKE_THROW_UNLESS(b_Bo_W_cache != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(b_Bo_W_cache->size()) == num_bodies());
+    std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const {
+  DRAKE_THROW_UNLESS(Fb_Bo_W_cache != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(Fb_Bo_W_cache->size()) == num_bodies());
 
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
@@ -599,11 +599,12 @@ void MultibodyTree<T>::CalcDynamicBiasCache(
     // B's unit rotational inertia about Bo, expressed in W.
     const UnitInertia<T>& G_B_W = M_B_W.get_unit_inertia();
 
-    // Gyroscopic spatial force b_Bo_W(q, v) on body B about Bo, expressed in W.
+    // Gyroscopic spatial force Fb_Bo_W(q, v) on body B about Bo, expressed in
+    // W.
     const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
     const Vector3<T>& w_WB = V_WB.rotational();
-    SpatialForce<T>& b_Bo_W = (*b_Bo_W_cache)[body.node_index()];
-    b_Bo_W = mass * SpatialForce<T>(
+    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body.node_index()];
+    Fb_Bo_W = mass * SpatialForce<T>(
                         w_WB.cross(G_B_W * w_WB), /* rotational */
                         w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
   }
@@ -750,7 +751,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
 
-  // Eval b_Bo_W(q, v). b_Bo_W = 0 if v = 0.
+  // Eval Fb_Bo_W(q, v). Fb_Bo_W = 0 if v = 0.
   const std::vector<SpatialForce<T>>* dynamic_bias_cache =
       ignore_velocities ? nullptr : &EvalDynamicBiasCache(context);
 
