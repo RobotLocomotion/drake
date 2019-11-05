@@ -17,7 +17,7 @@
   limitations under the License.
 
 =========================================================================*/
-#include "vtkCapsuleSource.h"
+#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
@@ -31,6 +31,8 @@
 #include <vtkStreamingDemandDrivenPipeline.h>
 
 #include <math.h>
+
+namespace com_github_finetjul_bender {
 
 vtkStandardNewMacro(vtkCapsuleSource);
 
@@ -73,8 +75,8 @@ void FillHalfSphere(vtkPoints* points, vtkFloatArray* normals,
                     double center[3], double radius, double halfHeight) {
   double n[3], x[3], norm;
 
-  double deltaTheta = vtkMath::DoublePi() / (thetaResolution - 1);
-  double deltaPhi = vtkMath::DoublePi() / (phiResolution - 1);
+  double deltaTheta = vtkMath::Pi() / (thetaResolution - 1);
+  double deltaPhi = vtkMath::Pi() / (phiResolution - 1);
   for (int i = 0; i < thetaResolution; ++i) {
     double theta = startAngle + sign * i * deltaTheta;
 
@@ -193,7 +195,7 @@ int vtkCapsuleSource::RequestData(
 
   // Create intermediate points
   FillHalfSphere(newPoints, newNormals, this->ThetaResolution,
-                 this->PhiResolution, vtkMath::DoubleTwoPi(), -1, this->Center,
+                 this->PhiResolution, 2.0 * vtkMath::Pi(), -1, this->Center,
                  this->Radius, -1.0 * halfHeight);
   this->UpdateProgress(0.555);
 
@@ -370,11 +372,10 @@ int vtkCapsuleSource::RequestInformation(
   // get the info object
   vtkInformation* outInfo = outputVector->GetInformationObject(0);
 
-  outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(),
-               -1);
+  outInfo->Set(vtkStreamingDemandDrivenPipeline::UPDATE_NUMBER_OF_PIECES(), -1);
 
   double halfLength = this->CylinderLength / 2.0;
-  outInfo->Set(vtkStreamingDemandDrivenPipeline::WHOLE_BOUNDING_BOX(),
+  outInfo->Set(vtkStreamingDemandDrivenPipeline::BOUNDS(),
                this->Center[0] - this->Radius - halfLength,
                this->Center[0] + this->Radius + halfLength,
                this->Center[1] - this->Radius, this->Center[1] + this->Radius,
@@ -382,3 +383,5 @@ int vtkCapsuleSource::RequestInformation(
 
   return 1;
 }
+
+}  // namespace com_github_finetjul_bender

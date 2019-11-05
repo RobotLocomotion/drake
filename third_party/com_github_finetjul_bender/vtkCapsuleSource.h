@@ -34,15 +34,14 @@
 // VTK includes
 #include <vtkPolyDataAlgorithm.h>
 
-// Bender includes
-#include "vtkBenderSourcesExport.h"
-
 #define VTK_MAX_SPHERE_RESOLUTION 1024
 
-class VTK_BENDER_SOURCES_EXPORT vtkCapsuleSource : public vtkPolyDataAlgorithm {
+namespace com_github_finetjul_bender {
+
+class vtkCapsuleSource : public vtkPolyDataAlgorithm {
  public:
   vtkTypeMacro(vtkCapsuleSource, vtkPolyDataAlgorithm);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // Description:
   // Construct sphere with radius=0.5 and default resolution 8 in both Phi
@@ -92,9 +91,9 @@ class VTK_BENDER_SOURCES_EXPORT vtkCapsuleSource : public vtkPolyDataAlgorithm {
   ~vtkCapsuleSource() {}
 
   int RequestData(vtkInformation*, vtkInformationVector**,
-                  vtkInformationVector*);
+                  vtkInformationVector*) override;
   int RequestInformation(vtkInformation*, vtkInformationVector**,
-                         vtkInformationVector*);
+                         vtkInformationVector*) override;
 
   double Radius;
   double Center[3];
@@ -108,5 +107,7 @@ class VTK_BENDER_SOURCES_EXPORT vtkCapsuleSource : public vtkPolyDataAlgorithm {
   vtkCapsuleSource(const vtkCapsuleSource&);  // Not implemented.
   void operator=(const vtkCapsuleSource&);    // Not implemented.
 };
+
+}  // namespace com_github_finetjul_bender
 
 #endif

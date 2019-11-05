@@ -598,7 +598,7 @@ TEST_F(RenderEngineVtkTest, CapsuleTest) {
   Init(X_WC_, true);
 
   // Sets up a capsule.
-  const double radius = 0.2;
+  const double radius = 0.15;
   const double length = 1.2;
   Capsule capsule(radius, length);
   expected_label_ = RenderLabel(2);
@@ -608,9 +608,9 @@ TEST_F(RenderEngineVtkTest, CapsuleTest) {
                             true /* needs update */);
   // Position the top of the capsule to be 1 m above the terrain. Since the
   // middle of the capsule is positioned at the origin 0, the top of the
-  // capsule is placed at half the length plus the radius, i.e. 1.2/2 + 0.2 =
-  // 0.8. To reach a total of 1, we need to offset it by an additional 0.2.
-  RigidTransformd X_WV{Vector3d{0, 0, 0.2}};
+  // capsule is placed at half the length plus the radius, i.e. 1.2/2 + 0.15 =
+  // 0.75. To reach a total of 1, we need to offset it by an additional 0.25.
+  RigidTransformd X_WV{Vector3d{0, 0, 0.25}};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
@@ -632,7 +632,7 @@ TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
   Init(X_WC_, true);
 
   // Sets up a capsule.
-  const double radius = 0.2;
+  const double radius = 0.15;
   const double length = 1.2;
   Capsule capsule(radius, length);
   expected_label_ = RenderLabel(2);
@@ -644,9 +644,10 @@ TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
   // Position the capsule so that it lies along the x-axis where the highest
   // point on the barrel is at z = 1. Capsules are by default z-axis aligned
   // so we need to rotate it by 90 degrees. Since the radius of the capsule is
-  // 0.2, we need to shift it by an additional 0.8 along the z-axis to reach 1.
+  // 0.15, we need to shift it by an additional 0.85 along the z-axis to reach
+  // a total of 1.
   RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
-                       Vector3d{0, 0, 0.8}};
+                       Vector3d{0, 0, 0.85}};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
