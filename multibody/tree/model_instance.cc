@@ -8,6 +8,24 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+VectorX<T> ModelInstance<T>::GetActuationFromArray(
+    const Eigen::Ref<const VectorX<T>>& u) const {
+  if (u.size() != this->get_parent_tree().num_actuated_dofs())
+    throw std::logic_error("Passed in array is not properly sized.");
+  VectorX<T> u_instance(num_actuated_dofs_);
+  int u_instance_offset = 0;
+  for (const JointActuator<T>* actuator : joint_actuators_) {
+    const int num_dofs = actuator->joint().num_velocities();
+    u_instance.segment(u_instance_offset, num_dofs) =
+       actuator->get_actuation_vector(u);
+    u_instance_offset += num_dofs;
+    DRAKE_DEMAND(u_instance_offset <= u.size());
+  }
+
+  return u_instance;
+}
+
+template <typename T>
 void ModelInstance<T>::SetActuationInArray(
     const Eigen::Ref<const VectorX<T>>& u_instance,
     EigenPtr<VectorX<T>> u) const {
