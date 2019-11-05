@@ -238,7 +238,8 @@ class TestMath(unittest.TestCase):
         # - Conversion to AngleAxis
         angle_axis = R.ToAngleAxis()
         R_AngleAxis = RotationMatrix(angle_axis)
-        np.testing.assert_array_almost_equal(R.matrix(), R_AngleAxis.matrix())
+        R_I = R.inverse() * R_AngleAxis
+        numpy_compare.assert_equal(R_I.IsIdentityToInternalTolerance(), True)
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
