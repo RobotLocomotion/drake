@@ -92,6 +92,19 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// computed) is O(h²).
   int get_error_estimate_order() const final { return 2; }
 
+  /* Because the internal dt and h are different from the steps actually
+     advanced, we provide modified statistics here. */
+  T get_soie_actual_initial_step_size_taken() const {
+    return 0.5 * IntegratorBase<T>::get_actual_initial_step_size_taken();
+  }
+  T get_soie_smallest_adapted_step_size_taken() const {
+    return 0.5 * IntegratorBase<T>::get_smallest_adapted_step_size_taken();
+  }
+  T get_soie_largest_step_size_taken() const {
+    return 0.5 * IntegratorBase<T>::get_largest_step_size_taken();
+  }
+
+  int get_soie_num_steps_taken() const { return 2 * IntegratorBase<T>::get_num_steps_taken(); }
  private:
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;

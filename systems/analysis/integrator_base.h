@@ -1148,7 +1148,7 @@ class IntegratorBase {
    The size of the largest step taken since the last Initialize() or
    ResetStatistics() call.
    */
-  const T& get_largest_step_size_taken() const {
+  virtual const T& get_largest_step_size_taken() const {
     return largest_step_size_taken_;
   }
 
