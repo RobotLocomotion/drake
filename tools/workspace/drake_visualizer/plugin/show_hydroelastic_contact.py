@@ -14,6 +14,41 @@ import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
+class ContactVisModes:
+    '''Common specification of contact visualization modes'''
+    @staticmethod
+    def get_mode_string(mode):
+        if mode == ContactVisModes.kFixedLength:
+            return "Fixed Length"
+        elif mode == ContactVisModes.kScaled:
+            return "Scaled"
+        elif mode == ContactVisModes.kAutoScale:
+            return "Auto-scale"
+        else:
+            return "Unrecognized mode"
+
+    @staticmethod
+    def get_modes():
+        return (ContactVisModes.kFixedLength, ContactVisModes.kScaled,
+                ContactVisModes.kAutoScale)
+
+    @staticmethod
+    def get_mode_docstring(mode):
+        if mode == ContactVisModes.kFixedLength:
+            return "force vectors have fixed length equal to global scale"
+        elif mode == ContactVisModes.kScaled:
+            return "simply scaled by global scale"
+        elif mode == ContactVisModes.kAutoScale:
+            return "largest force has fixed length and all other "\
+                   "forces with proportional length on a per-message basis"
+        else:
+            return "unrecognized mode"
+
+    kFixedLength = 0
+    kScaled = 1
+    kAutoScale = 2
+
+
 # TODO(seancurtis-TRI) Convert the modal dialog to a mode-less dialog to allow
 # continual tweaking of the visualization.
 
@@ -336,6 +371,10 @@ class HydroelasticContactVisualizer(object):
         self.show_contact_edges = True
         self.show_pressure = True
         self.max_pressure_observed = 0
+        self.show_spatial_force = True
+        self.magnitude_mode = ContactVisModes.kFixedLength
+        self.global_scale = 0.3
+        self.min_magnitude = 1e-4
 
         menu_bar = applogic.getMainWindow().menuBar()
         plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
@@ -421,10 +460,62 @@ class HydroelasticContactVisualizer(object):
         # Set the color map.
         color_map = self.create_color_map()
 
+        # The scale value attributable to auto-scale.
+        auto_scale = 1.0
+        max_force = -1
+        max_moment = -1
+
         # TODO(drum) Consider exiting early if no visualization options are
         # enabled.
-        # Iterate over all triangles.
         for surface in msg.hydroelastic_contacts:
+            # Draw the spatial force.
+            if self.show_spatial_force:
+                point = np.array([surface.centroid_W[0],
+                                  surface.centroid_W[1],
+                                  surface.centroid_W[2]])
+                force = np.array([surface.force_C_W[0],
+                                  surface.force_C_W[1],
+                                  surface.force_C_W[2]])
+                moment = np.array([surface.moment_C_W[0],
+                                   surface.moment_C_W[1],
+                                   surface.moment_C_W[2]])
+                force_mag = np.linalg.norm(force)
+                moment_mag = np.linalg.norm(moment)
+
+                # Draw the force arrow if it's of sufficient magnitude.
+                if force_mag > self.min_magnitude:
+                    # TODO(drum) Fix this
+                    if force_mag > max_force:
+                        max_force = force_mag
+
+                    scale = self.global_scale
+                    if self.magnitude_mode == ContactVisModes.kFixedLength:
+                        # magnitude must be > 0 otherwise this force would be
+                        # skipped.
+                        scale /= force_mag
+
+                    d.addArrow(start=point,
+                               end=point + auto_scale * force * scale,
+                               tubeRadius=0.005,
+                               headRadius=0.01, color=[1, 0, 0])
+
+                if moment_mag > self.min_magnitude:
+                    # TODO(drum) Fix this
+                    if moment_mag > max_moment:
+                        max_moment = moment_mag
+
+                    scale = self.global_scale
+                    if self.magnitude_mode == ContactVisModes.kFixedLength:
+                        # magnitude must be > 0 otherwise this force would be
+                        # skipped.
+                        scale /= moment_mag
+
+                    d.addArrow(start=point,
+                               end=point + auto_scale * moment * scale,
+                               tubeRadius=0.005,
+                               headRadius=0.01, color=[0, 0, 1])
+
+            # Iterate over all triangles.
             for tri in surface.triangles:
                 va = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
                 vb = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
