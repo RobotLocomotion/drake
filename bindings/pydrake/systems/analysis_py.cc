@@ -25,6 +25,9 @@ PYBIND11_MODULE(analysis, m) {
 
   py::module::import("pydrake.systems.framework");
 
+  py::class_<SimulatorStatus>(
+      m, "SimulatorStatus", pydrake_doc.drake.systems.SimulatorStatus.doc);
+
   auto bind_scalar_types = [m](auto dummy) {
     constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
