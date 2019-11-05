@@ -13,6 +13,7 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/second_order_implicit_euler_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -23,8 +24,8 @@ DEFINE_double(target_realtime_rate, 0.2,
 
 DEFINE_string(integration_scheme, "implicit_euler",
               "Integration scheme to be used. Available options are: "
-              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
-              "'implicit_euler'");
+              "'radau1', 'implicit_euler' (ec), 'second_order_implicit_euler' (ec), 'semi_explicit_euler',"
+              "'runge_kutta2', 'runge_kutta3' (ec), 'bogacki_shampine3' (ec), 'radau'");
 
 // Integration parameters.
 DEFINE_double(simulation_time, 2.0,
@@ -32,6 +33,7 @@ DEFINE_double(simulation_time, 2.0,
 DEFINE_double(accuracy, 1.0e-3, "The integration accuracy.");
 DEFINE_double(max_time_step, 1.0e-3,
               "The maximum time step the integrator is allowed to take, [s].");
+DEFINE_bool(error_control, false, "If 'true', integrator uses error control.");
 
 // Contact model parameters.
 DEFINE_string(contact_model, "point",
@@ -158,37 +160,101 @@ int do_main() {
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
   systems::IntegratorBase<double>* integrator{nullptr};
+  // for SOIE statistics
+  bool soie = false;
+  bool implicit = false;
+  systems::SecondOrderImplicitEulerIntegrator<double>* soie_integrator{nullptr};
+  systems::ImplicitIntegrator<double>* implicit_integrator{nullptr};
+  
   if (FLAGS_integration_scheme == "implicit_euler") {
-    integrator =
-        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
+    implicit_integrator =
+        simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
+    implicit = true;
+    integrator = implicit_integrator;
+    integrator->set_target_accuracy(target_accuracy);
+    integrator->set_fixed_step_mode(!FLAGS_error_control);
   } else if (FLAGS_integration_scheme == "runge_kutta2") {
-    integrator = simulator.reset_integrator<RungeKutta2Integrator<double>>(
-        *diagram, FLAGS_max_time_step, &simulator.get_mutable_context());
+    integrator =
+        simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+            *diagram, FLAGS_max_time_step, &simulator.get_mutable_context());
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
-        simulator.reset_integrator<RungeKutta3Integrator<double>>(
+        simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(
             *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "second_order_implicit_euler") {
+    soie_integrator =
+        simulator.reset_integrator<systems::SecondOrderImplicitEulerIntegrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+    soie = true;
+    implicit_integrator = soie_integrator;
+    implicit = true;
+    integrator = implicit_integrator;
+    integrator->set_target_accuracy(target_accuracy);
+    integrator->set_fixed_step_mode(!FLAGS_error_control);
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
-        simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+        simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
             *diagram, FLAGS_max_time_step, &simulator.get_mutable_context());
   } else {
     throw std::runtime_error(
         "Integration scheme '" + FLAGS_integration_scheme +
-        "' not supported for this example.");
+            "' not supported for this example.");
   }
   integrator->set_maximum_step_size(FLAGS_max_time_step);
-
-  // Error control is only supported for variable time step integrators.
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(target_accuracy);
+  
+  integrator->set_fixed_step_mode(!FLAGS_error_control);
 
-  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
+
+
   simulator.AdvanceTo(FLAGS_simulation_time);
 
+
+  
+  fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
+  fmt::print("Number of time steps taken = {:d}\n",
+              soie ? soie_integrator->get_soie_num_steps_taken() : integrator->get_num_steps_taken());
+  if (!integrator->get_fixed_step_mode()) {
+    fmt::print("Initial time step taken = {:10.6g} s\n",
+                soie ? soie_integrator->get_soie_actual_initial_step_size_taken() : 
+                integrator->get_actual_initial_step_size_taken());
+    fmt::print("Largest time step taken = {:10.6g} s\n",
+                soie ? soie_integrator->get_soie_largest_step_size_taken() : 
+                integrator->get_largest_step_size_taken());
+    fmt::print("Smallest adapted step size = {:10.6g} s\n",
+                soie ? soie_integrator->get_soie_smallest_adapted_step_size_taken() :
+                integrator->get_smallest_adapted_step_size_taken());
+    fmt::print("Number of steps shrunk due to error control = {:d}\n",
+                integrator->get_num_step_shrinkages_from_error_control());
+  }
+  if(implicit)
+  {
+    if(soie)
+      fmt::print("Implicit Integrator Statistics (total, half-size-steps):\n");
+    else
+      fmt::print("Implicit Integrator Statistics (total, error estimator):\n");
+    fmt::print("Number of Derivative Evaluations = {:d}, {:d} \n",
+                implicit_integrator->get_num_derivative_evaluations(),
+                implicit_integrator->get_num_error_estimator_derivative_evaluations());
+    fmt::print("Number of Jacobian Computations = {:d}, {:d} \n",
+                implicit_integrator->get_num_jacobian_evaluations(),
+                implicit_integrator->get_num_error_estimator_jacobian_evaluations());
+    fmt::print("Number of Derivative Evaluations for Jacobians = {:d}, {:d} \n",
+                implicit_integrator->get_num_derivative_evaluations_for_jacobian(),
+                implicit_integrator->get_num_error_estimator_derivative_evaluations_for_jacobian());
+    fmt::print("Number of Iteration Matrix Factorizations = {:d}, {:d} \n",
+                implicit_integrator->get_num_iteration_matrix_factorizations(),
+                implicit_integrator->get_num_error_estimator_iteration_matrix_factorizations());
+    fmt::print("Number of Newton-Raphson Iterations = {:d}, {:d} \n",
+                implicit_integrator->get_num_newton_raphson_iterations(),
+                implicit_integrator->get_num_error_estimator_newton_raphson_iterations());
+  }
+  
   // Some sanity checks:
   if (FLAGS_integration_scheme == "semi_explicit_euler") {
     DRAKE_DEMAND(integrator->get_fixed_step_mode() == true);
@@ -209,10 +275,10 @@ int do_main() {
 
   // Checks for fixed time step integrators.
   if (integrator->get_fixed_step_mode()) {
-    const int kNumEvaluationsPerStep =
-        FLAGS_integration_scheme == "runge_kutta2"? 2 : 1;
-    DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
-        integrator->get_num_steps_taken() * kNumEvaluationsPerStep);
+    ///const int kNumEvaluationsPerStep =
+     //   FLAGS_integration_scheme == "runge_kutta2"? 2 : 1;
+   // DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
+    //    integrator->get_num_steps_taken() * kNumEvaluationsPerStep);
     DRAKE_DEMAND(
         integrator->get_num_step_shrinkages_from_error_control() == 0);
   }
