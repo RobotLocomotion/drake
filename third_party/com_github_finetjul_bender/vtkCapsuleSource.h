@@ -34,12 +34,9 @@
 // VTK includes
 #include <vtkPolyDataAlgorithm.h>
 
-// Bender includes
-#include "vtkBenderSourcesExport.h"
-
 #define VTK_MAX_SPHERE_RESOLUTION 1024
 
-class VTK_BENDER_SOURCES_EXPORT vtkCapsuleSource : public vtkPolyDataAlgorithm {
+class vtkCapsuleSource : public vtkPolyDataAlgorithm {
  public:
   vtkTypeMacro(vtkCapsuleSource, vtkPolyDataAlgorithm);
   void PrintSelf(ostream& os, vtkIndent indent);

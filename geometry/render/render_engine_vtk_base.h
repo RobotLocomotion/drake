@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vtkAppendPolyData.h>
 #include <vtkCylinderSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
@@ -11,8 +10,8 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-// Creates a capsule by appending a cylinder and two spheres.
-void CreateVtkCapsule(vtkSmartPointer<vtkAppendPolyData> append_filter,
+// Creates a z-axis aligned VTK capsule.
+void CreateVtkCapsule(vtkTransformPolyDataFilter* transform_filter,
                       double radius, double length);
 
 // Sets common sphere options such as its dimensions and resolution.

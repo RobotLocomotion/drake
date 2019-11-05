@@ -7,7 +7,6 @@
 
 #include <vtkActor.h>
 #include <vtkAutoInit.h>
-#include <vtkCylinderSource.h>
 #include <vtkImageExport.h>
 #include <vtkLight.h>
 #include <vtkNew.h>
@@ -16,8 +15,6 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
-#include <vtkSphereSource.h>
-#include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/geometry/render/render_engine.h"
