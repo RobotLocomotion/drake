@@ -107,15 +107,16 @@ def repository_python_info(repository_ctx):
     if which(repository_ctx, python_config) == None:
         fail((
             "Cannot find corresponding config executable: {}\n" +
-            "  For interpreter: {}"
+            "  From interpreter: {}"
         ).format(python_config, python_path))
 
     # Warn if we do not the correct platform support.
     if version not in versions_supported:
         print((
             "\n\nWARNING: Python {} is not a supported / tested version for " +
-            "use with Drake.\n  Supported versions on {}: {}\n\n"
-        ).format(version, os_key, versions_supported))
+            "use with Drake.\n  Supported versions on {}: {}\n  " +
+            "From interpreter: {}\n\n"
+        ).format(version, os_key, versions_supported, python))
 
     site_packages_relpath = "lib/python{}/site-packages".format(version)
     return struct(
