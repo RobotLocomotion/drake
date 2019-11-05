@@ -320,6 +320,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
+    // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
     TakeShapeOwnership(fcl_capsule, user_data);
