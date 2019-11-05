@@ -117,7 +117,7 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
 // period or publish period = 0.0 was passed to the constructor).
 EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
     const Context<double>& context) const {
-  SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
+  DRAKE_LOGGER_TRACE("Publishing LCM {} message", channel_);
   DRAKE_ASSERT(serializer_ != nullptr);
 
   // Converts the input into LCM message bytes.

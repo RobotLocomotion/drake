@@ -1557,8 +1557,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const OutputPortIndex port_index(id.second);
     const OutputPort<T>& port = system->get_output_port(port_index);
     const SubsystemIndex i = GetSystemIndexOrAbort(system);
-    SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
-                 system->GetSystemPathname(), port_index);
+    DRAKE_LOGGER_TRACE("Evaluating output for subsystem {}, port {}",
+        system->GetSystemPathname(), port_index);
     const Context<T>& subsystem_context = context.GetSubsystemContext(i);
     return port.template Eval<AbstractValue>(subsystem_context);
   }
