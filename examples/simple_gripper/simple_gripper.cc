@@ -419,6 +419,10 @@ int do_main() {
                  integrator->get_smallest_adapted_step_size_taken());
       fmt::print("Number of steps shrunk due to error control = {:d}\n",
                  integrator->get_num_step_shrinkages_from_error_control());
+      fmt::print("Number of steps shrunk due to convergence-based failure = {:d}\n",
+                 integrator->get_num_step_shrinkages_from_substep_failures());
+      fmt::print("Number of convergence-based step failures (should match) = {:d}\n",
+                 integrator->get_num_substep_failures());
     }
     if(implicit)
     {
@@ -441,6 +445,12 @@ int do_main() {
       fmt::print("Number of Newton-Raphson Iterations = {:d}, {:d} \n",
                  implicit_integrator->get_num_newton_raphson_iterations(),
                  implicit_integrator->get_num_error_estimator_newton_raphson_iterations());
+      fmt::print("Number of Newton-Raphson Iterations That Lead to Failure = {:d}, {:d} \n",
+                 implicit_integrator->get_num_newton_raphson_iterations_that_end_in_failure(),
+                 implicit_integrator->get_num_error_estimator_newton_raphson_iterations_that_end_in_failure());
+      fmt::print("Number of Newton-Raphson Failures = {:d}, {:d} \n",
+                 implicit_integrator->get_num_newton_raphson_failures(),
+                 implicit_integrator->get_num_error_estimator_newton_raphson_failures());
     }
   }
 
