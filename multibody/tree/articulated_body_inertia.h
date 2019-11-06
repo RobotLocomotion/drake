@@ -21,12 +21,12 @@ namespace multibody {
 /// remarkable `O(n)` Articulated Body Algorithm (ABA) for solving forward
 /// dynamics. Recall that the Newton-Euler equations allow us to describe the
 /// combined rotational and translational dynamics of a rigid body: <pre>
-///   F_BBo_W = M_B_W * A_WB + b_Bo_W                                    (1)
+///   F_BBo_W = M_B_W * A_WB + Fb_Bo_W                                    (1)
 /// </pre>
 /// where the spatial inertia (see SpatialInertia) `M_B_W` of body B expressed
 /// in the world frame W linearly relates the spatial acceleration (see
 /// SpatialAcceleration) of body B in the world frame with the total applied
-/// spatial forces (see SpatialForce) `F_BBo` on body B and where `b_Bo_W`
+/// spatial forces (see SpatialForce) `F_BBo` on body B and where `Fb_Bo_W`
 /// contains the velocity dependent gyroscopic terms.
 ///
 /// A similar relationship is found for an articulated body with a rigid body B
