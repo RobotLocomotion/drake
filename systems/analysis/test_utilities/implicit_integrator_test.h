@@ -600,6 +600,16 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_GE(integrator->get_num_substep_failures(), 0);
     EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
     EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
+
+    EXPECT_GE(
+        integrator->get_num_newton_raphson_iterations_that_end_in_failure(), 0);
+    EXPECT_GE(
+        integrator->
+        get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+        , 0);
+
+    EXPECT_GE(integrator->get_num_newton_raphson_failures(), 0);
+    EXPECT_GE(integrator->get_num_error_estimator_newton_raphson_failures(), 0);
     integrator->ResetStatistics();
   }
 
@@ -718,7 +728,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
       integrator.request_initial_step_size_target(this->h()));
 }
 
-
 TYPED_TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamperNoReuse) {
   this->DoubleSpringMassDamperTest(kNoReuse);
 }
@@ -780,4 +789,3 @@ REGISTER_TYPED_TEST_SUITE_P(
 }  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
-

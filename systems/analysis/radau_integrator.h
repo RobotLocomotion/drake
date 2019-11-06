@@ -63,13 +63,13 @@ namespace systems {
 template <typename T, int num_stages = 2>
 class RadauIntegrator final : public ImplicitIntegrator<T> {
   static_assert(num_stages == 1 || num_stages == 2,
-      "Only 1-stage and 2-stage Radau are supported.");
+                "Only 1-stage and 2-stage Radau are supported.");
 
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RadauIntegrator)
 
   explicit RadauIntegrator(const System<T>& system,
-      Context<T>* context = nullptr);
+                           Context<T>* context = nullptr);
   ~RadauIntegrator() final = default;
 
   bool supports_error_estimation() const final { return true; }
@@ -93,6 +93,15 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_nr_iterations_;
   }
 
+  int64_t do_get_num_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return num_nr_iterations_that_end_in_failure_;
+  }
+
+  int64_t do_get_num_newton_raphson_failures() const final {
+    return num_nr_failures_;
+  }
+
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
     return num_err_est_function_evaluations_;
   }
@@ -102,8 +111,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_jacobian_function_evaluations_;
   }
 
-  int64_t do_get_num_error_estimator_newton_raphson_iterations()
-      const final {
+  int64_t do_get_num_error_estimator_newton_raphson_iterations() const final {
     return num_err_est_nr_iterations_;
   }
 
@@ -116,39 +124,53 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  int64_t
+  do_get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return num_err_est_nr_iterations_that_end_in_failure_;
+  }
+
+  int64_t do_get_num_error_estimator_newton_raphson_failures() const final {
+    return num_err_est_nr_failures_;
+  }
+
   enum class ConvergenceStatus {
     kDiverged,
     kConverged,
     kNotConverged,
   };
   ConvergenceStatus CheckConvergence(int iteration, const VectorX<T>& xtplus,
-      const VectorX<T>& dx, const T& dx_norm, const T& last_dx_norm) const;
-  void ComputeSolutionFromIterate(
-      const VectorX<T>& xt0, const VectorX<T>& Z, VectorX<T>* xtplus) const;
-  void ComputeAndSetErrorEstimate(
-      const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed);
-  bool AttemptStepPaired(const T& t0, const T& h,
-      const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_tr);
-  const VectorX<T>& ComputeFofZ(
-      const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
+                                     const VectorX<T>& dx, const T& dx_norm,
+                                     const T& last_dx_norm) const;
+  void ComputeSolutionFromIterate(const VectorX<T>& xt0, const VectorX<T>& Z,
+                                  VectorX<T>* xtplus) const;
+  void ComputeAndSetErrorEstimate(const VectorX<T>& xtplus_prop,
+                                  const VectorX<T>& xtplus_embed);
+  bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
+                         VectorX<T>* xtplus_radau, VectorX<T>* xtplus_tr);
+  const VectorX<T>& ComputeFofZ(const T& t0, const T& h, const VectorX<T>& xt0,
+                                const VectorX<T>& Z);
   void DoInitialize() final;
   void DoResetImplicitIntegratorStatistics() final;
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus, int trial = 1);
+                 VectorX<T>* xtplus, int trial = 1);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, const VectorX<T>& xtplus_radau,
-      VectorX<T>* xtplus);
+                             const VectorX<T>& dx0,
+                             const VectorX<T>& xtplus_radau,
+                             VectorX<T>* xtplus);
   static MatrixX<T> CalcTensorProduct(const MatrixX<T>& A, const MatrixX<T>& B);
-  static void ComputeImplicitTrapezoidIterationMatrix(const MatrixX<T>& J,
-      const T& h,
+  static void ComputeImplicitTrapezoidIterationMatrix(
+      const MatrixX<T>& J, const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
-  static void ComputeRadauIterationMatrix(const MatrixX<T>& J, const T& h,
-      const MatrixX<double>& A,
+  static void ComputeRadauIterationMatrix(
+      const MatrixX<T>& J, const T& h, const MatrixX<double>& A,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   bool StepImplicitTrapezoidDetail(const T& t0, const T& h,
-      const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
-      const VectorX<T>& xtplus_radau, VectorX<T>* xtplus, int trial = 1);
+                                   const VectorX<T>& xt0,
+                                   const std::function<VectorX<T>()>& g,
+                                   const VectorX<T>& xtplus_radau,
+                                   VectorX<T>* xtplus, int trial = 1);
 
   // The num_stages-dimensional (constant) vector of time-scaling coefficients
   // common to Runge-Kutta-type integrators.
@@ -216,6 +238,8 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   // Statistics specific to this integrator.
   int64_t num_nr_iterations_{0};
+  int64_t num_nr_iterations_that_end_in_failure_{0};
+  int64_t num_nr_failures_{0};
 
   // Implicit trapezoid specific statistics.
   int64_t num_err_est_jacobian_reforms_{0};
@@ -223,21 +247,28 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_iter_factorizations_{0};
   int64_t num_err_est_function_evaluations_{0};
   int64_t num_err_est_nr_iterations_{0};
+  int64_t num_err_est_nr_iterations_that_end_in_failure_{0};
+  int64_t num_err_est_nr_failures_{0};
 };
 
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
-  num_err_est_jacobian_reforms_ = 0;
-  num_err_est_jacobian_function_evaluations_ = 0;
-  num_err_est_iter_factorizations_ = 0;
-  num_err_est_function_evaluations_ = 0;
+  num_nr_iterations_that_end_in_failure_ = 0;
+  num_nr_failures_ = 0;
   num_err_est_nr_iterations_ = 0;
+  num_err_est_function_evaluations_ = 0;
+  num_err_est_jacobian_function_evaluations_ = 0;
+  num_err_est_jacobian_reforms_ = 0;
+  num_err_est_iter_factorizations_ = 0;
+  num_err_est_nr_iterations_that_end_in_failure_ = 0;
+  num_err_est_nr_failures_ = 0;
 }
 
 template <typename T, int num_stages>
 RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
-    Context<T>* context) : ImplicitIntegrator<T>(system, context) {
+                                                Context<T>* context)
+    : ImplicitIntegrator<T>(system, context) {
   A_.resize(num_stages, num_stages);
 
   // TODO(edrumwri) Convert A_, c_, b_, and d_ to fixed-size when Drake supports
@@ -246,23 +277,25 @@ RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
 
   if (num_stages == 2) {
     // Set the matrix coefficients (from [Hairer, 1996] Table 5.5).
-    A_(0, 0) = 5.0/12;     A_(0, 1) = -1.0/12;
-    A_(1, 0) = 3.0/4;      A_(1, 1) = 1.0/4;
+    A_(0, 0) = 5.0 / 12;
+    A_(0, 1) = -1.0 / 12;
+    A_(1, 0) = 3.0 / 4;
+    A_(1, 1) = 1.0 / 4;
 
     // Set the time coefficients (from the same table).
-    c_ = { 1.0/3, 1.0 };
+    c_ = {1.0 / 3, 1.0};
 
     // Set the propagation constants (again, from the same table).
-    b_ = { 3.0/4, 1.0/4 };
+    b_ = {3.0 / 4, 1.0 / 4};
 
     // Set the scaling constants for the solution using (8.2b) and Table 5.6.
-    d_ = { 0.0, 1.0 };
+    d_ = {0.0, 1.0};
   } else {
     // For implicit Euler integration.
     A_(0, 0) = 1.0;
-    c_ = { 1.0 };
-    b_ = { 1.0 };
-    d_ = { 1.0 };
+    c_ = {1.0};
+    b_ = {1.0};
+    d_ = {1.0};
   }
 }
 
@@ -298,12 +331,12 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
     if (isnan(this->get_maximum_step_size())) {
-      throw std::logic_error("Neither initial step size target nor maximum "
-                                 "step size has been set!");
+      throw std::logic_error(
+          "Neither initial step size target nor maximum "
+          "step size has been set!");
     }
 
-    this->request_initial_step_size_target(
-        this->get_maximum_step_size());
+    this->request_initial_step_size_target(this->get_maximum_step_size());
   }
 
   // If the user asks for accuracy that is looser than the loosest this
@@ -324,8 +357,7 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // will never be triggered (the integrator will always be used in fixed-step
   // mode).
   bs3_ = std::make_unique<BogackiShampine3Integrator<T>>(
-      this->get_system(),
-      this->get_mutable_context());
+      this->get_system(), this->get_mutable_context());
 
   // Instantiate the embedded second-order Runge-Kutta integrator.
   rk2_ = std::make_unique<RungeKutta2Integrator<T>>(
@@ -352,7 +384,7 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
 // @return a (state_dim * num_stages)-dimensional vector.
 template <typename T, int num_stages>
 const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
-      const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
+    const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
   Context<T>* context = this->get_mutable_context();
   const int state_dim = xt0.size();
 
@@ -377,8 +409,7 @@ void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
   // Compute the solution using (IV.8.2b) in [Hairer, 1996].
   xtplus->setZero();
   for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
-    if (d_[i] != 0.0)
-      *xtplus += d_[i] * Z.segment(j, state_dim);
+    if (d_[i] != 0.0) *xtplus += d_[i] * Z.segment(j, state_dim);
   }
   *xtplus += xt0;
 }
@@ -386,9 +417,11 @@ void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
 // Checks the Newton-Raphson iteration process for convergence.
 template <typename T, int num_stages>
 typename RadauIntegrator<T, num_stages>::ConvergenceStatus
-RadauIntegrator<T, num_stages>::CheckConvergence(
-    int iteration, const VectorX<T>& xtplus, const VectorX<T>& dx,
-    const T& dx_norm, const T& last_dx_norm) const {
+RadauIntegrator<T, num_stages>::CheckConvergence(int iteration,
+                                                 const VectorX<T>& xtplus,
+                                                 const VectorX<T>& dx,
+                                                 const T& dx_norm,
+                                                 const T& last_dx_norm) const {
   // The check below looks for convergence by identifying cases where the
   // update to the state results in no change. We do this check only after
   // at least one Newton-Raphson update has been applied to ensure that there
@@ -409,8 +442,8 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
     // theta to these alternative values for minimizing convergence failures.
     const T theta = dx_norm / last_dx_norm;
     const T eta = theta / (1 - theta);
-    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
-                 iteration, theta, eta);
+    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}", iteration,
+                       theta, eta);
 
     // Look for divergence.
     if (theta > 1) {
@@ -447,7 +480,8 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
 //           step of size `h`.
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
+                                               const VectorX<T>& xt0,
+                                               VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
 
@@ -463,8 +497,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // Verify xtplus
   DRAKE_ASSERT(xtplus && xtplus->size() == state_dim);
 
-  DRAKE_LOGGER_DEBUG("StepRadau() entered for t={}, h={}, trial={}",
-               t0, h, trial);
+  DRAKE_LOGGER_DEBUG("StepRadau() entered for t={}, h={}, trial={}", t0, h,
+                     trial);
 
   // TODO(edrumwri) Experiment with setting this as recommended in
   // [Hairer, 1996], p. 120.
@@ -475,16 +509,19 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   DRAKE_LOGGER_DEBUG("Starting state: {}", xtplus->transpose());
 
   // Set the iteration matrix construction method.
-  auto construct_iteration_matrix = [this](const MatrixX<T>& J, const T& dt,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
-    ComputeRadauIterationMatrix(J, dt, this->A_, iteration_matrix);
-  };
+  auto construct_iteration_matrix =
+      [this](
+          const MatrixX<T>& J, const T& dt,
+          typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+        ComputeRadauIterationMatrix(J, dt, this->A_, iteration_matrix);
+      };
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
   if (!this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
-      &iteration_matrix_radau_)) {
+                                  &iteration_matrix_radau_)) {
     return false;
   }
+  int num_nr_iterations_at_beginning = num_nr_iterations_;
 
   // Initialize the "last" norm of dx; this will be used to detect convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
@@ -503,9 +540,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Solve (I − hA⊗J) ΔZᵏ = h (A⊗I) F(Zᵏ) - Zᵏ for ΔZᵏ, where:
     // A_tp_eye ≡ (A⊗I) and (I − hA⊗J) is the iteration matrix.
     DRAKE_LOGGER_DEBUG("residual: {}",
-        (A_tp_eye_ * (h * F_of_Z) - Z_).transpose());
-    VectorX<T> dZ = iteration_matrix_radau_.Solve(
-        A_tp_eye_ * (h * F_of_Z) - Z_);
+                       (A_tp_eye_ * (h * F_of_Z) - Z_).transpose());
+    VectorX<T> dZ =
+        iteration_matrix_radau_.Solve(A_tp_eye_ * (h * F_of_Z) - Z_);
 
     // Update the iterate.
     Z_ += dZ;
@@ -522,8 +559,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // where dx ≡ x+ - x*
     VectorX<T> dx = VectorX<T>::Zero(state_dim);
     for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
-      if (d_[i] != 0.0)
-        dx += d_[i] * dZ.segment(j, state_dim);
+      if (d_[i] != 0.0) dx += d_[i] * dZ.segment(j, state_dim);
     }
 
     dx_state_->SetFromVector(dx);
@@ -548,16 +584,18 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   }
 
   DRAKE_LOGGER_DEBUG("StepRadau() convergence failed");
+  num_nr_iterations_that_end_in_failure_ +=
+      num_nr_iterations_ - num_nr_iterations_at_beginning;
+  num_nr_failures_++;
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try; otherwise, the following code will recurse
   // into this function again, and freshen computations as helpful.
-  if (!this->get_reuse())
-    return false;
+  if (!this->get_reuse()) return false;
 
   // Try StepRadau again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
-  return StepRadau(t0, h, xt0, xtplus, trial+1);
+  return StepRadau(t0, h, xt0, xtplus, trial + 1);
 }
 
 // Computes the next continuous state (at t0 + h) using the implicit trapezoid
@@ -572,23 +610,23 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 // @returns `true` if the method was successfully able to take an integration
 //           step of size `h` (or `false` otherwise).
 template <typename T, int num_stages>
-bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
-    const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
+bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(
+    const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
     const VectorX<T>& radau_xtplus, VectorX<T>* xtplus) {
   using std::abs;
 
-  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoid(h={}) t={}",
-               h, t0);
+  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoid(h={}) t={}", h, t0);
 
   // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
   // evaluate it at the current x(t+h).
   Context<T>* context = this->get_mutable_context();
-  std::function<VectorX<T>()> g =
-      [&xt0, h, &dx0, context, this]() {
-        return (context->get_continuous_state().CopyToVector() - xt0 - h/2 *
-            (dx0 + this->EvalTimeDerivatives(
-                this->get_context()).CopyToVector())).eval();
-      };
+  std::function<VectorX<T>()> g = [&xt0, h, &dx0, context, this]() {
+    return (context->get_continuous_state().CopyToVector() - xt0 -
+            h / 2 *
+                (dx0 +
+                 this->EvalTimeDerivatives(this->get_context()).CopyToVector()))
+        .eval();
+  };
 
   // Store statistics before calling StepAbstract(). The difference between
   // the modified statistics and the stored statistics will be used to compute
@@ -601,10 +639,13 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   int64_t stored_num_jacobian_function_evaluations =
       this->get_num_derivative_evaluations_for_jacobian();
   int stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
+  int stored_num_nr_iterations_that_end_in_failure =
+      this->get_num_newton_raphson_iterations_that_end_in_failure();
+  int stored_num_nr_failures = this->get_num_newton_raphson_failures();
 
   // Step.
-  bool success = StepImplicitTrapezoidDetail(
-      t0, h, xt0, g, radau_xtplus, xtplus);
+  bool success =
+      StepImplicitTrapezoidDetail(t0, h, xt0, g, radau_xtplus, xtplus);
 
   // Move statistics to implicit trapezoid-specific.
   num_err_est_jacobian_reforms_ +=
@@ -617,8 +658,13 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   num_err_est_jacobian_function_evaluations_ +=
       this->get_num_derivative_evaluations_for_jacobian() -
       stored_num_jacobian_function_evaluations;
-  num_err_est_nr_iterations_ += this->get_num_newton_raphson_iterations() -
-      stored_num_nr_iterations;
+  num_err_est_nr_iterations_ +=
+      this->get_num_newton_raphson_iterations() - stored_num_nr_iterations;
+  num_err_est_nr_iterations_that_end_in_failure_ +=
+      this->get_num_newton_raphson_iterations_that_end_in_failure() -
+      stored_num_nr_iterations_that_end_in_failure;
+  num_err_est_nr_failures_ +=
+      this->get_num_newton_raphson_failures() - stored_num_nr_failures;
 
   return success;
 }
@@ -626,9 +672,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
 // Does all of the real work for the implicit trapezoid method.
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
-    const T& t0, const T& h,
-    const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
-    const VectorX<T>& radau_xtplus, VectorX<T>* xtplus, int trial) {
+    const T& t0, const T& h, const VectorX<T>& xt0,
+    const std::function<VectorX<T>()>& g, const VectorX<T>& radau_xtplus,
+    VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
 
@@ -646,8 +692,10 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   *xtplus = radau_xtplus;
   DRAKE_LOGGER_DEBUG("Starting state: {}", xtplus->transpose());
 
-  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoidDetail() entered for t={}, "
-      "h={}, trial={}", t0, h, trial);
+  DRAKE_LOGGER_DEBUG(
+      "StepImplicitTrapezoidDetail() entered for t={}, "
+      "h={}, trial={}",
+      t0, h, trial);
 
   // Advance the context time; this means that all derivatives will be computed
   // at t+h.
@@ -669,6 +717,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
                                   &iteration_matrix_implicit_trapezoid_)) {
     return false;
   }
+  int num_nr_iterations_at_beginning = num_nr_iterations_;
 
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
@@ -702,18 +751,21 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     last_dx_norm = dx_norm;
   }
 
-  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoidDetail() convergence "
+  DRAKE_LOGGER_DEBUG(
+      "StepImplicitTrapezoidDetail() convergence "
       "failed");
+  num_nr_iterations_that_end_in_failure_ +=
+      num_nr_iterations_ - num_nr_iterations_at_beginning;
+  num_nr_failures_++;
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
-  if (!this->get_reuse())
-    return false;
+  if (!this->get_reuse()) return false;
 
   // Try the step again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
-  return StepImplicitTrapezoidDetail(
-      t0, h, xt0, g, radau_xtplus, xtplus, trial + 1);
+  return StepImplicitTrapezoidDetail(t0, h, xt0, g, radau_xtplus, xtplus,
+                                     trial + 1);
 }
 
 // Steps Radau forward by h, if possible.
@@ -731,7 +783,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 //       unsuccessful exit (indicated by this function returning `false`).
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr) {
+                                                       const VectorX<T>& xt0,
+                                                       VectorX<T>* xtplus_radau,
+                                                       VectorX<T>* xtplus_itr) {
   using std::abs;
   DRAKE_ASSERT(xtplus_radau);
   DRAKE_ASSERT(xtplus_itr);
@@ -745,8 +799,8 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   // point (early on in the integration process) in order to reuse the
   // derivative evaluation, via the cache, from the last integration step (if
   // possible).
-  const VectorX<T> dx0 = this->EvalTimeDerivatives(
-      this->get_context()).CopyToVector();
+  const VectorX<T> dx0 =
+      this->EvalTimeDerivatives(this->get_context()).CopyToVector();
 
   // Use the current state as the candidate value for the next state.
   // [Hairer 1996] validates this choice (p. 120).
@@ -754,8 +808,10 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
 
   // Do the Radau step.
   if (!StepRadau(t0, h, xt0, xtplus_radau)) {
-    DRAKE_LOGGER_DEBUG("Radau approach did not converge for "
-        "step size {}", h);
+    DRAKE_LOGGER_DEBUG(
+        "Radau approach did not converge for "
+        "step size {}",
+        h);
     return false;
   }
 
@@ -791,11 +847,12 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   // Attempt to compute the implicit trapezoid solution.
   if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_radau, xtplus_itr)) {
     // Reset the state to that computed by Radau3.
-    this->get_mutable_context()->SetTimeAndContinuousState(
-        t0 + h, *xtplus_radau);
+    this->get_mutable_context()->SetTimeAndContinuousState(t0 + h,
+                                                           *xtplus_radau);
     return true;
   } else {
-    DRAKE_LOGGER_DEBUG("Implicit trapezoid approach FAILED with a step"
+    DRAKE_LOGGER_DEBUG(
+        "Implicit trapezoid approach FAILED with a step"
         "size that succeeded on Radau3.");
     return false;
   }
@@ -813,8 +870,8 @@ void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
 
   // Compute and set the error estimate.
   DRAKE_LOGGER_DEBUG("Error estimate: {}", err_est_vec_.transpose());
-  this->get_mutable_error_estimate()->get_mutable_vector().
-      SetFromVector(err_est_vec_);
+  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(
+      err_est_vec_);
 }
 
 /// Takes a given step of the requested size, if possible.
@@ -838,7 +895,8 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   // using an explicit Bogacki-Shampine/explicit Euler step, depending on the
   // number of stages in use.
   if (h < this->get_working_minimum_step_size()) {
-    DRAKE_LOGGER_DEBUG("-- requested step too small, taking explicit "
+    DRAKE_LOGGER_DEBUG(
+        "-- requested step too small, taking explicit "
         "step instead");
 
     // We want to maintain the order of the error estimation process even as we
@@ -879,8 +937,8 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
     }
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(
-        t0, h, xt0_, &xtplus_prop_, &xtplus_embed_);
+    bool success =
+        AttemptStepPaired(t0, h, xt0_, &xtplus_prop_, &xtplus_embed_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
@@ -899,28 +957,25 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
 // method.
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeImplicitTrapezoidIterationMatrix(
-    const MatrixX<T>& J,
-    const T& h,
+    const MatrixX<T>& J, const T& h,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   const int n = J.rows();
   // TODO(edrumwri) Investigate how to do the below operation with a move.
   iteration_matrix->SetAndFactorIterationMatrix(J * (-h / 2.0) +
-      MatrixX<T>::Identity(n, n));
+                                                MatrixX<T>::Identity(n, n));
 }
 
 // Function for computing the iteration matrix for the Radau method. This
 // is the matrix in [Hairer, 1996] (IV.8.4) on p.119.
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeRadauIterationMatrix(
-    const MatrixX<T>& J,
-    const T& h,
-    const MatrixX<double>& A,
+    const MatrixX<T>& J, const T& h, const MatrixX<double>& A,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   const int n = J.rows() * num_stages;
   // TODO(edrumwri) Investigate how to do the below operation with a move.
   // Computes I - h A ⊗ J.
-  iteration_matrix->SetAndFactorIterationMatrix(
-      CalcTensorProduct(A * -h, J) + MatrixX<T>::Identity(n , n));
+  iteration_matrix->SetAndFactorIterationMatrix(CalcTensorProduct(A * -h, J) +
+                                                MatrixX<T>::Identity(n, n));
 }
 
 // Computes the tensor product between two matrices. Given
