@@ -1,7 +1,7 @@
-from drake.tools.install.cpsutils import read_defs, read_requires
+from drake.tools.install.cpsutils import read_version_defs, read_requires
 
-def_re = "#define\s+(\S+)\s+(\S+)"
-defs = read_defs(def_re)
+def_re = "project\(spdlog\sVERSION\s([0-9]+).([0-9]+).([0-9]+)"
+defs = read_version_defs(def_re)
 
 defs.update(read_requires())
 
@@ -9,9 +9,9 @@ content = """
 {
   "Cps-Version": "0.8.0",
   "Name": "spdlog",
-  "Description": "Fast C++ logging library",
+  "Description": "Super fast C++ logging library",
   "License": "MIT",
-  "Version": "%(SPDLOG_VER_MAJOR)s.%(SPDLOG_VER_MINOR)s.%(SPDLOG_VER_PATCH)s",
+  "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
   "Requires": {
     "fmt": {
       "Version": "%(fmt_VERSION)s",
