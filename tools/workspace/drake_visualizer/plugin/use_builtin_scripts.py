@@ -1,6 +1,5 @@
 """Amalgam of visualizer scripts."""
 
-from __future__ import print_function
 
 from collections import OrderedDict
 import os
@@ -30,7 +29,7 @@ def init_visualizer():
     scripts_raw = os.environ["_DRAKE_VISUALIZER_BUILTIN_SCRIPTS"]
     print("  Specified: --use_builtin_scripts={}".format(scripts_raw))
     if scripts_raw == "all":
-        scripts = available.keys()
+        scripts = list(available.keys())
     else:
         scripts = []
         for script in scripts_raw.split(","):

@@ -7,7 +7,6 @@ from director import visualization as vis
 from director.debugVis import DebugData
 import director.vtkAll as vtk
 import numpy as np
-from six import iteritems
 from PythonQt import QtCore, QtGui
 
 import drake as lcmdrakemsg
@@ -209,9 +208,10 @@ class ColorMap:
     def _do_get_color(self, norm_value):
         raise NotImplementedError('Subclasses need to implement this')
 
-    def _normalize(self, data, (min_val, max_val)):
+    def _normalize(self, data, range):
         '''Returns an affine mapped version of the data based on the data range
          provided'''
+        (min_val, max_val) = range
         if (min_val > max_val):
             raise AttributeError(
                 'Bad range: [{}, {}]'.format(min_val, max_val))
@@ -382,7 +382,7 @@ class HydroelasticContactVisualizer(object):
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
-        print self._name + ' subscriber added.'
+        print(self._name + ' subscriber added.')
 
     def remove_subscriber(self):
         if self._sub is None:
@@ -391,7 +391,7 @@ class HydroelasticContactVisualizer(object):
         lcmUtils.removeSubscriber(self._sub)
         self._sub = None
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
-        print self._name + ' subscriber removed.'
+        print(self._name + ' subscriber removed.')
 
     def is_enabled(self):
         return self._enabled

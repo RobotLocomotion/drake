@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import argparse
 import os
 from os.path import exists, join
@@ -71,7 +69,7 @@ if sys.platform.startswith("linux"):
     prepend_path("LD_LIBRARY_PATH", "external/vtk/lib")
     # TODO(eric.cousineau): Ensure that Drake Visualizer works even when Bazel
     # uses a separate version of Python.
-    prepend_path("PYTHONPATH", "external/vtk/lib/python2.7/site-packages")
+    prepend_path("PYTHONPATH", "external/vtk/lib/python3.6/site-packages")
 elif sys.platform == "darwin":
     # Ensure that we handle DYLD_LIBRARY_PATH for @lcm.
     set_path("DYLD_LIBRARY_PATH", "external/lcm")

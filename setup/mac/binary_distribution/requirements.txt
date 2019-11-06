@@ -3,7 +3,6 @@ matplotlib
 pydot
 PyYAML
 pyzmq
-six
 tornado
 u-msgpack-python
 virtualenv
