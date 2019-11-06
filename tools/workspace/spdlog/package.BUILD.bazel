@@ -9,34 +9,72 @@ load(
 
 licenses(["notice"])  # MIT
 
-package(
-    default_visibility = ["//visibility:public"],
-)
-
 config_setting(
     name = "linux",
     values = {"cpu": "k8"},
     visibility = ["//visibility:private"],
 )
 
-cc_library(
-    name = "spdlog",
-    hdrs = glob(
-        ["include/spdlog/**"],
-        exclude = ["include/spdlog/fmt/bundled/**"],
-    ),
-    defines = [
-        "HAVE_SPDLOG",
-        # Use Drake's @fmt external, not the bundled version inside spdlog.
-        "SPDLOG_FMT_EXTERNAL",
+_HDRS = glob(
+    [
+        "include/spdlog/**",
     ],
-    includes = ["include"],
+    exclude = [
+        "**/*-inl.h",
+        "include/spdlog/fmt/bundled/**",
+    ],
+)
+
+_INCLUDES = ["include"]
+
+_DEFINES = [
+    "HAVE_SPDLOG",
+    # Use the compiled (not header-only) variant of spdlog for build speed and
+    # substantially (20%+) smaller binary sizes.
+    "SPDLOG_COMPILED_LIB",
+    # Use Drake's @fmt external, not the bundled version inside spdlog.
+    "SPDLOG_FMT_EXTERNAL",
+]
+
+_SRCS = glob(
+    [
+        "include/spdlog/**/*-inl.h",
+        "src/**",
+    ],
+    exclude = [
+        "include/spdlog/fmt/bundled/**",
+    ],
+)
+
+# Upstream's default is to ship static (not shared), but XXX...
+cc_binary(
+    name = "libspdlog.so",
+    srcs = _HDRS + _SRCS,
+    defines = _DEFINES,
+    includes = _INCLUDES,
     linkopts = select({
         ":linux": ["-pthread"],
         # This is a bazel-default rule, and does not need @drake//
         "@//conditions:default": [],
     }),
+    linkshared = True,
+    linkstatic = True,
     deps = ["@fmt"],
+)
+
+cc_library(
+    name = "spdlog",
+    srcs = ["libspdlog.so"],
+    hdrs = _HDRS,
+    defines = _DEFINES,
+    includes = _INCLUDES,
+    linkstatic = True,
+    deps = [
+        # This is valid iff fmt is compiled in header-only mode.  If it gains a
+        # library, we should depend only on the headers here.
+        "@fmt",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 CMAKE_PACKAGE = "spdlog"
@@ -53,10 +91,11 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
-    targets = [":spdlog"],
+    targets = [":libspdlog.so"],
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
     deps = [":install_cmake_config"],
+    visibility = ["//visibility:public"],
 )

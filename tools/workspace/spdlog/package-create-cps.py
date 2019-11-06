@@ -22,10 +22,12 @@ content = """
   "Default-Components": [":spdlog"],
   "Components": {
     "spdlog": {
-      "Type": "interface",
+      "Type": "dylib",
       "Includes": ["@prefix@/include/spdlog"],
+      "Location": "@prefix@/lib/libspdlog.so",
       "Definitions": [
         "HAVE_SPDLOG",
+        "SPDLOG_COMPILED_LIB",
         "SPDLOG_FMT_EXTERNAL"
       ],
       "Requires": ["fmt:fmt-header-only"]
