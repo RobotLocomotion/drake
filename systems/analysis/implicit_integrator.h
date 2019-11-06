@@ -148,6 +148,26 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   int64_t get_num_iteration_matrix_factorizations() const {
     return num_iter_factorizations_;
   }
+  /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
+  /// of equation solving process that ended in failure (divergence or hit the
+  /// max number of iterations) since the last call to ResetStatistics(). This
+  /// count includes those Newton-Raphson iterations used during error
+  /// estimation processes.
+  int64_t get_num_newton_raphson_iterations_that_end_in_failure() const {
+    return do_get_num_newton_raphson_iterations_that_end_in_failure();
+  }
+  /// Gets the number of Newton-Raphson solves that ended in failure
+  /// (divergence or hit the max number of iterations) since the last
+  /// call to ResetStatistics(). This includes those during error estimation.
+  int64_t get_num_newton_raphson_failures() const {
+    return do_get_num_newton_raphson_failures();
+  }
+  /// @}
+
+  /// @name Error-estimation statistics functions.
+  /// The functions return statistics specific to the error estimation
+  /// process.
+  /// @{
 
   /// Gets the number of ODE function evaluations
   /// (calls to EvalTimeDerivatives()) *used only for the error estimation
@@ -156,12 +176,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   int64_t get_num_error_estimator_derivative_evaluations() const {
     return do_get_num_error_estimator_derivative_evaluations();
   }
-  /// @}
 
-  /// @name Error-estimation statistics functions.
-  /// The functions return statistics specific to the error estimation
-  /// process.
-  /// @{
   /// Gets the number of ODE function evaluations (calls to
   /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
   /// needed by the error estimation process* since the last call to
@@ -189,8 +204,24 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
     return do_get_num_error_estimator_iteration_matrix_factorizations();
   }
-  /// @}
 
+  /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
+  /// of equation solving process that ended in failure (divergence or hit the
+  /// max number of iterations) during error estimations.
+  int64_t
+      get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+      const {
+    return
+    do_get_num_error_estimator_newton_raphson_iterations_that_end_in_failure();
+  }
+
+  /// Gets the number of Newton-Raphson solves that ended in failure
+  /// (divergence or hit the max number of iterations) during error
+  /// estimations.
+  int64_t get_num_error_estimator_newton_raphson_failures() const {
+    return do_get_num_error_estimator_newton_raphson_failures();
+  }
+  /// @}
  protected:
   /// Derived classes can override this method to change the number of
   /// Newton-Raphson iterations (10 by default) to take before the
@@ -316,6 +347,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   // TODO(edrumwri) Document the functions below.
   virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
+  virtual int64_t do_get_num_newton_raphson_iterations_that_end_in_failure()
+      const = 0;
+  virtual int64_t do_get_num_newton_raphson_failures() const = 0;
   virtual int64_t do_get_num_error_estimator_derivative_evaluations() const = 0;
   virtual int64_t
       do_get_num_error_estimator_derivative_evaluations_for_jacobian()
@@ -324,6 +358,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const = 0;
   virtual int64_t do_get_num_error_estimator_jacobian_evaluations() const = 0;
   virtual int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
+      const = 0;
+  virtual int64_t
+     do_get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+     const = 0;
+  virtual int64_t do_get_num_error_estimator_newton_raphson_failures()
       const = 0;
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void DoResetStatistics() override;
@@ -338,9 +377,15 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @copydoc IntegratorBase::DoStep()
   virtual bool DoImplicitIntegratorStep(const T& h) = 0;
 
-  inline void increment_num_iter_factorizations() { ++num_iter_factorizations_; }
-  inline void increment_jacobian_function_evaluations(int count) { num_jacobian_function_evaluations_ += count; }
-  inline void increment_jacobian_evaluations() { ++num_jacobian_evaluations_; }
+  inline void increment_num_iter_factorizations() {
+    ++num_iter_factorizations_;
+  }
+  inline void increment_jacobian_function_evaluations(int count) {
+    num_jacobian_function_evaluations_ += count;
+  }
+  inline void increment_jacobian_evaluations() {
+    ++num_jacobian_evaluations_;
+  }
 
  private:
   bool DoStep(const T& h) final {
@@ -511,8 +556,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
     xt_prime(i) = xt(i);
   }
   SPDLOG_DEBUG(drake::log(), "Jacobian");
-  for (int i = 0; i < n; ++i)
-  {
+  for (int i = 0; i < n; ++i) {
     SPDLOG_DEBUG(drake::log(), (J->row(i)));
   }
 }
@@ -597,8 +641,7 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
     xt_prime(i) = xt(i);
   }
   SPDLOG_DEBUG(drake::log(), "Jacobian");
-  for (int i = 0; i < n; ++i)
-  {
+  for (int i = 0; i < n; ++i) {
     SPDLOG_DEBUG(drake::log(), (J->row(i)));
   }
 }

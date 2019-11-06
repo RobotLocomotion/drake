@@ -96,6 +96,14 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
   }
+  int64_t do_get_num_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return num_nr_iterations_that_end_in_failure_;
+  }
+
+  int64_t do_get_num_newton_raphson_failures() const final {
+    return num_nr_failures_;
+  }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
     return num_err_est_function_evaluations_;
@@ -106,8 +114,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_jacobian_function_evaluations_;
   }
 
-  int64_t do_get_num_error_estimator_newton_raphson_iterations()
-      const final {
+  int64_t do_get_num_error_estimator_newton_raphson_iterations() const final {
     return num_err_est_nr_iterations_;
   }
 
@@ -120,6 +127,16 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  int64_t
+  do_get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return num_err_est_nr_iterations_that_end_in_failure_;
+  }
+
+  int64_t do_get_num_error_estimator_newton_raphson_failures() const final {
+    return num_err_est_nr_failures_;
+  }
+
   void DoResetImplicitIntegratorStatistics() final;
   static void ComputeAndFactorImplicitEulerIterationMatrix(
       const MatrixX<T>& J, const T& h,
@@ -129,7 +146,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   void DoInitialize() final;
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
+                         VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
                     const std::function<VectorX<T>()>& g,
                     const std::function<
@@ -141,9 +158,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                     VectorX<T>* xtplus, int trial = 1);
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus);
+                         VectorX<T>* xtplus);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, const VectorX<T>& xtplus_ie, VectorX<T>* xtplus);
+                             const VectorX<T>& dx0, const VectorX<T>& xtplus_ie,
+                             VectorX<T>* xtplus);
 
   // The last computed iteration matrix and factorization for implicit Euler.
   typename ImplicitIntegrator<T>::IterationMatrix ie_iteration_matrix_;
@@ -163,6 +181,8 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
+  int64_t num_nr_iterations_that_end_in_failure_{0};
+  int64_t num_nr_failures_{0};
 
   // Second order Runge-Kutta method for estimating the integration error when
   // the requested step size lies below the working step size.
@@ -174,6 +194,8 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_function_evaluations_{0};
   int64_t num_err_est_jacobian_function_evaluations_{0};
   int64_t num_err_est_nr_iterations_{0};
+  int64_t num_err_est_nr_iterations_that_end_in_failure_{0};
+  int64_t num_err_est_nr_failures_{0};
 };
 }  // namespace systems
 }  // namespace drake

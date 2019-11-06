@@ -80,7 +80,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   ~SecondOrderImplicitEulerIntegrator() override = default;
 
   explicit SecondOrderImplicitEulerIntegrator(const System<T>& system,
-                                   Context<T>* context = nullptr)
+                                              Context<T>* context = nullptr)
       : ImplicitIntegrator<T>(system, context) {}
 
   /// The integrator supports error estimation.
@@ -104,10 +104,22 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return 0.5 * IntegratorBase<T>::get_largest_step_size_taken();
   }
 
-  int get_soie_num_steps_taken() const { return 2 * IntegratorBase<T>::get_num_steps_taken(); }
+  int get_soie_num_steps_taken() const {
+    return 2 * IntegratorBase<T>::get_num_steps_taken();
+  }
+
  private:
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
+  }
+
+  int64_t do_get_num_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return num_nr_iterations_that_end_in_failure_;
+  }
+
+  int64_t do_get_num_newton_raphson_failures() const final {
+    return num_nr_failures_;
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
@@ -119,8 +131,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_jacobian_function_evaluations_;
   }
 
-  int64_t do_get_num_error_estimator_newton_raphson_iterations()
-      const final {
+  int64_t do_get_num_error_estimator_newton_raphson_iterations() const final {
     return num_err_est_nr_iterations_;
   }
 
@@ -133,6 +144,16 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  int64_t
+  do_get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return num_err_est_nr_iterations_that_end_in_failure_;
+  }
+
+  int64_t do_get_num_error_estimator_newton_raphson_failures() const final {
+    return num_err_est_nr_failures_;
+  }
+
   void DoResetImplicitIntegratorStatistics() final;
   static void ComputeAndFactorImplicitEulerIterationMatrix(
       const MatrixX<T>& J, const T& h,
@@ -142,40 +163,56 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   void DoInitialize() final;
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
+                         VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
-      const std::function<VectorX<T>()>& g,
-      const std::function<void(const MatrixX<T>&, const T&,
-          typename ImplicitIntegrator<T>::IterationMatrix*)>&
-          compute_and_factor_iteration_matrix,
-      VectorX<T>* xtplus, int trial = 1);
+                    const std::function<VectorX<T>()>& g,
+                    const std::function<
+                        void(const MatrixX<T>&, const T&,
+                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
+                        compute_and_factor_iteration_matrix,
+                    VectorX<T>* xtplus, int trial = 1);
   bool DoImplicitIntegratorStep(const T& h) final;
-  bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& xtplus_guess,
-      VectorX<T>* xtplus, typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+  bool StepImplicitEuler(
+      const T& t0, const T& h, const VectorX<T>& xt0,
+      const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv, int trial = 1);
-  bool StepHalfImplicitEulers(const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& xtplus_guess,
-       VectorX<T>* xtplus, 
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv);
+  bool StepHalfImplicitEulers(
+      const T& t0, const T& h, const VectorX<T>& xt0,
+      const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+      MatrixX<T>* Jv);
   // Jacobian computation
   MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
-  MatrixX<T>& get_mutable_velocity_jacobian_half_implicit_euler() { return Jv_hie_; }
-  void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus, const VectorX<T>& qt0, MatrixX<T>* Jv);
-  void ComputeForwardDiffVelocityJacobian(const T& t, const T& h, 
-      const VectorX<T>& xt, const VectorX<T>& qt0, Context<T>* context, MatrixX<T>* Jv);
+  MatrixX<T>& get_mutable_velocity_jacobian_half_implicit_euler() {
+    return Jv_hie_;
+  }
+  void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus,
+                            const VectorX<T>& qt0, MatrixX<T>* Jv);
+  void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
+                                          const VectorX<T>& xt,
+                                          const VectorX<T>& qt0,
+                                          Context<T>* context, MatrixX<T>* Jv);
 
-  // this is where we just break everything and do things our way. I no longer think override is even wise
-  bool MaybeFreshenVelocityMatrices(const T& t, const VectorX<T>& xt, const VectorX<T>& qt0, const T& h,
+  // this is where we just break everything and do things our way. I no longer
+  // think override is even wise
+  bool MaybeFreshenVelocityMatrices(
+      const T& t, const VectorX<T>& xt, const VectorX<T>& qt0, const T& h,
       int trial,
-      const std::function<void(const MatrixX<T>& J, const T& h,
-          typename ImplicitIntegrator<T>::IterationMatrix*)>&
-      compute_and_factor_iteration_matrix,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix, MatrixX<T>* Jv);
-  // This function evaluates g(y) with y from the context. Context should be at time tf
-  void eval_g_with_y_from_context(const VectorX<T>& qt0,
-      const T& h, const VectorX<T>& qk, VectorX<T>* result);
+      const std::function<
+          void(const MatrixX<T>& J, const T& h,
+               typename ImplicitIntegrator<T>::IterationMatrix*)>&
+          compute_and_factor_iteration_matrix,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+      MatrixX<T>* Jv);
+  // This function evaluates g(y) with y from the context. Context should be at
+  // time tf
+  void eval_g_with_y_from_context(const VectorX<T>& qt0, const T& h,
+                                  const VectorX<T>& qk, VectorX<T>* result);
   // The last computed iteration matrix and factorization, used for both the
   // integrator and the error estimator.
-  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_, iteration_matrix_hie_;
+  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_,
+      iteration_matrix_hie_;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;
@@ -188,6 +225,8 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
+  int64_t num_nr_iterations_that_end_in_failure_{0};
+  int64_t num_nr_failures_{0};
 
   // The last computed velocity+misc Jacobian matrices.
   MatrixX<T> Jv_ie_;
@@ -203,6 +242,8 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_function_evaluations_{0};
   int64_t num_err_est_jacobian_function_evaluations_{0};
   int64_t num_err_est_nr_iterations_{0};
+  int64_t num_err_est_nr_iterations_that_end_in_failure_{0};
+  int64_t num_err_est_nr_failures_{0};
 };
 }  // namespace systems
 }  // namespace drake
