@@ -7,7 +7,7 @@ load(
     "install_cmake_config",
 )
 
-licenses(["notice"])  # BSD-2-Clause AND MIT
+licenses(["notice"])  # MIT
 
 package(
     default_visibility = ["//visibility:public"],
@@ -27,6 +27,7 @@ cc_library(
     ),
     defines = [
         "HAVE_SPDLOG",
+        # Use Drake's @fmt external, not the bundled version inside spdlog.
         "SPDLOG_FMT_EXTERNAL",
     ],
     includes = ["include"],
@@ -43,7 +44,7 @@ CMAKE_PACKAGE = "spdlog"
 cmake_config(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/spdlog:package-create-cps.py",
-    version_file = "CMakeLists.txt",
+    version_file = "include/spdlog/version.h",
     deps = ["@fmt//:cps"],
 )
 
