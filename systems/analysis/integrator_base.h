@@ -771,7 +771,7 @@ class IntegratorBase {
    * The size of the largest step taken since the last Initialize() or
    * ResetStatistics() call.
    */
-  virtual const T& get_largest_step_size_taken() const {
+  const T& get_largest_step_size_taken() const {
     return largest_step_size_taken_;
   }
 
@@ -1777,7 +1777,6 @@ template <class T>
 T IntegratorBase<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   using std::max;
-  using std::isnan;
   const Context<T>& context = get_context();
   const System<T>& system = get_system();
 
