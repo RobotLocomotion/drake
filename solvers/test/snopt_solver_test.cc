@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <thread>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

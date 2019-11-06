@@ -22,7 +22,10 @@ cc_library(
         "include/fmt/posix.h",
     ]),
     defines = [
-        # By tradition, Drake uses the header-only build of fmt.
+        # By tradition, Drake uses the header-only build of fmt.  If we ever
+        # change it to use a library, then we'll also need to update the
+        # tools/workspace/spdlog/package.BUILD.bazel shared library rules
+        # to avoid double-linking.
         "FMT_HEADER_ONLY=1",
         # Avoid macro pollution.
         "FMT_NO_FMT_STRING_ALIAS=1",
