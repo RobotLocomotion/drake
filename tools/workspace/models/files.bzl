@@ -7,7 +7,7 @@ def ycb_mesh_files():
     Recipe to reproduce:
         $ cd models
         $ find ycb/meshes -type f | \
-            python -c 'import sys; print(repr(sys.stdin.read().split()))'
+            python3 -c 'import sys; print(repr(sys.stdin.read().split()))'
     """
     return [
         "ycb/meshes/003_cracker_box_textured.mtl",

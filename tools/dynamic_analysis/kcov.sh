@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
+me=$(python3 -c 'import os; print(os.path.realpath("'"$0"'"))')
 WORKSPACE=$(dirname $(dirname $(dirname "${me}")))
 
 # There must be ${WORKSPACE}/WORKSPACE.

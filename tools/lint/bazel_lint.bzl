@@ -20,7 +20,6 @@ def _bazel_lint(name, files, ignore):
             data = files,
             args = ignore + locations,
             main = "@drake//tools/lint:bzlcodestyle.py",
-            srcs_version = "PY2AND3",
             tags = ["bzlcodestyle", "lint"],
         )
 

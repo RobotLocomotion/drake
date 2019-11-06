@@ -31,7 +31,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     libxt-dev \
     lsb-release \
     ninja-build \
-    python-dev \
     python3-dev \
     qt5-default \
     qttools5-dev \

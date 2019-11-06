@@ -64,8 +64,7 @@ incorporate its install tree into a ``virtualenv``
 `FHS <https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard>`_-like
 environment.
 
-An example for ``python3``, where you should replace ``<venv_path>`` and
-``<platform>``:
+An example, where you should replace ``<venv_path>`` and ``<platform>``:
 
 .. code-block:: shell
 
