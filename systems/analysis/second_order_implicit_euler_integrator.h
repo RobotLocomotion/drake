@@ -24,8 +24,10 @@ namespace systems {
  * Instantiated templates for the following kinds of T's are provided:
  *
  * - double
- * - AutoDiffXd
- *
+ * 
+ * TODO(antequ): support AutodiffXd
+ * TODO(antequ): update this documentation to match the google doc.
+ * 
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))
  * </pre>
@@ -86,14 +88,15 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// The integrator supports error estimation.
   bool supports_error_estimation() const final { return true; }
 
-  /// This first-order integrator uses embedded second order methods to compute
-  /// estimates of the local truncation error. The order of the asymptotic
-  /// difference between these two methods (from which the error estimate is
-  /// computed) is O(h²).
+  /// The asymptotic order of the difference between the large and small steps
+  /// (from which the error estimate is computed) is O(h²).
   int get_error_estimate_order() const final { return 2; }
 
-  /* Because the internal dt and h are different from the steps actually
-     advanced, we provide modified statistics here. */
+  /* Because the IntegratorBase dt is different from the half-step hs actually
+     used, we provide modified statistics here. */
+  // TODO(antequ): redesign this API in IntegratorBase so that the step size
+  //    adjustment logic still works while returning the true sizes
+  //    to the public
   T get_soie_actual_initial_step_size_taken() const {
     return 0.5 * IntegratorBase<T>::get_actual_initial_step_size_taken();
   }
@@ -158,12 +161,18 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   static void ComputeAndFactorImplicitEulerIterationMatrix(
       const MatrixX<T>& J, const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
+  // ComputeAndFactorImplicitTrapezoidIterationMatrix is NOT USED 
+  //     (I will remove in final PR)
   static void ComputeAndFactorImplicitTrapezoidIterationMatrix(
       const MatrixX<T>& J, const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
   void DoInitialize() final;
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
                          VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
+
+  // StepAbstract is NOT USED (I will remove in final PR)
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
                     const std::function<VectorX<T>()>& g,
                     const std::function<
@@ -171,6 +180,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                              typename ImplicitIntegrator<T>::IterationMatrix*)>&
                         compute_and_factor_iteration_matrix,
                     VectorX<T>* xtplus, int trial = 1);
+
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(
       const T& t0, const T& h, const VectorX<T>& xt0,
@@ -182,11 +192,14 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv);
-  // Jacobian computation
+
+  // velocity Jacobians for implicit euler and half implicit euler
   MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
   MatrixX<T>& get_mutable_velocity_jacobian_half_implicit_euler() {
     return Jv_hie_;
   }
+
+  // Jacobian computation
   void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus,
                             const VectorX<T>& qt0, MatrixX<T>* Jv);
   void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
@@ -194,8 +207,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                                           const VectorX<T>& qt0,
                                           Context<T>* context, MatrixX<T>* Jv);
 
-  // this is where we just break everything and do things our way. I no longer
-  // think override is even wise
+  // method containing the logic for sometimes refreshing the Jacobians
   bool MaybeFreshenVelocityMatrices(
       const T& t, const VectorX<T>& xt, const VectorX<T>& qt0, const T& h,
       int trial,
@@ -205,12 +217,14 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
           compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv);
+
   // This function evaluates g(y) with y from the context. Context should be at
-  // time tf
+  // the time tf
   void eval_g_with_y_from_context(const VectorX<T>& qt0, const T& h,
                                   const VectorX<T>& qk, VectorX<T>* result);
-  // The last computed iteration matrix and factorization, used for both the
-  // integrator and the error estimator.
+
+  // The last computed iteration matrix and factorization; the _ie_ is for
+  // the large step and the _hie_ is for the small step
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_,
       iteration_matrix_hie_;
 
