@@ -129,11 +129,7 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   // Set epsilon to the square root of machine precision.
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
-  // Evaluate f(t,xt).
-  context->SetTimeAndContinuousState(t, xt);
-  const VectorX<T> f = this->EvalTimeDerivatives(*context).CopyToVector();
-
-  // Get the number of continuous state variables xt.
+  // Get the number of q, v, y state variables in xt.
   const ContinuousState<T>& cstate = context->get_continuous_state();
   const int nq = cstate.num_q();
   const int nv = cstate.num_v();
@@ -151,21 +147,30 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   const VectorX<T>& qt = xt.block(0, 0, nq, 1);
   const VectorX<T>& vt = xt.block(nq, 0, nv, 1);
   const VectorX<T>& yt = xt.block(nq, 0, ny, 1);
-  VectorX<T> qt_plus_hNv(nq);
+  VectorX<T> qt0_plus_hNv(nq);
   BasicVector<T> qdot(nq);
+
+  // evaluate N(q) with q from xt and compute qt0 + h N(qt) vt
+  context->SetTimeAndContinuousState(t, xt);
   this->get_system().MapVelocityToQDot(*context, vt, &qdot);
-  qt_plus_hNv = qt0 + h * qdot.get_value();
-  // qt_plus_hNv should equal qt from xt. Don't assert if they're both infinite.
-  DRAKE_ASSERT(drake::ExtractDoubleOrThrow((qt_plus_hNv - qt).norm()) <=
-                   10 * std::numeric_limits<double>::epsilon() ||
-               (!qt.allFinite() && !qt_plus_hNv.allFinite()));
+  qt0_plus_hNv = qt0 + h * qdot.get_value();
 
   // Compute the Jacobian.
+
+  // initialize the baseline from xt
   VectorX<T> xt_prime = xt;
   Eigen::Ref<VectorX<T>> qt_prime = xt_prime.block(0, 0, nq, 1);
   Eigen::Ref<VectorX<T>> vt_prime = xt_prime.block(nq, 0, nv, 1);
   Eigen::Ref<VectorX<T>> yt_prime = xt_prime.block(nq, 0, ny, 1);
-  qt_prime = qt_plus_hNv;
+  qt_prime = qt0_plus_hNv;
+
+
+  // Evaluate g(t,yt). (Difference between g and f is g uses qt0_plus_hNv instead of qt.)
+  context->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(qt_prime);
+  const VectorX<T> g = this->EvalTimeDerivatives(*context).CopyToVector();
+
   for (int i = 0; i < ny; ++i) {
     // Compute a good increment to the dimension using approximately 1/eps
     // digits of precision. Note that if |yt| is large, the increment will
@@ -181,36 +186,30 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
       dxi = eps * abs_yi;
     }
 
-    // Update xt', minimizing the effect of roundoff error by ensuring that
-    // x and dx differ by an exactly representable number. See p. 192 of
-    // Press, W., Teukolsky, S., Vetterling, W., and Flannery, P. Numerical
-    //   Recipes in C++, 2nd Ed., Cambridge University Press, 2002.
+    // Update yt'
     yt_prime(i) = yt(i) + dxi;
     if (i < nv) {
-      // set context to the right qt
-      context->SetTimeAndContinuousState(t, xt);
+      // evaluate N(qt) and use it to update qt' = qt0 + h N(qt) vt'
+      context->get_mutable_continuous_state()
+          .get_mutable_generalized_position()
+          .SetFromVector(qt);
       this->get_system().MapVelocityToQDot(*context, vt_prime, &qdot);
       qt_prime = qt0 + h * qdot.get_value();
     } else {
-      qt_prime = qt_plus_hNv;
+      qt_prime = qt0_plus_hNv;
     }
     dxi = yt_prime(i) - yt(i);
 
-    // TODO(sherm1) This is invalidating q, v, and z but we only changed one.
-    //              Switch to a method that invalides just the relevant
-    //              partition, and ideally modify only the one changed element.
-    // Compute f' and set the relevant column of the Jacobian matrix.
-    // e.g. if i > nv, just use GetMutableVZVector(). (still need this for i =
-    // nv).
     context->SetTimeAndContinuousState(t, xt_prime);
-    // consider using eval_g ?
-    Jv->col(i) = (this->EvalTimeDerivatives(*context).CopyToVector() - f)
-                     .block(nq, 0, ny, 1) /
-                 dxi;
+    // TODO(antequ): consider using eval_g to reduce duplicate code?
+    Jv->col(i) = (this->EvalTimeDerivatives(*context).CopyToVector() - g)
+                     .block(nq, 0, ny, 1) / dxi;
 
     // Reset yt' to yt.
     yt_prime(i) = yt(i);
   }
+  // this block of code is for debugging; because it floods the logs,
+  //   it will be removed before I finalize this PR.
   /*DRAKE_LOGGER_DEBUG( "Jacobian");
   for (int i = 0; i < ny; ++i)
   {
@@ -218,7 +217,6 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   }*/
 }
 
-// COPIED FROM IMPLICIT INTEGRATOR H
 // Compute the partial derivative of the ordinary differential equations with
 // respect to the state variables for a given x(t).
 // @post the context's time and continuous state will be temporarily set during
@@ -264,17 +262,6 @@ void SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
     default:
       throw new std::logic_error("Invalid Jacobian computation scheme!");
   }
-  // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
-  /*[this, context, &system, &t, &x]() {
-    switch (jacobian_scheme_) {
-      case JacobianComputationScheme::kForwardDifference:
-        ComputeForwardDiffVelocityJacobian(system, t, h, x, qt0, &*context, Jv);
-        break;
-
-      default:
-        throw new std::logic_error("Non forward diffs are not supported yet!");
-    }
-  }();*/
 
   // Use the new number of ODE evaluations to determine the number of Jacobian
   // evaluations.
@@ -284,7 +271,6 @@ void SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   // Reset the time and state.
   context->SetTimeAndContinuousState(t_current, x_current);
 
-  // return *Jv;
 }
 
 // COPIED FROM IMPLICIT INTEGRATOR H
@@ -393,6 +379,7 @@ void SecondOrderImplicitEulerIntegrator<T>::eval_g_with_y_from_context(
     VectorX<T>* result) {
   Context<T>* context = this->get_mutable_context();
   const systems::ContinuousState<T>& cstate = context->get_continuous_state();
+  // compute q = qt0 + h N(qk) vt
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
       .SetFromVector(qk);
@@ -400,13 +387,12 @@ void SecondOrderImplicitEulerIntegrator<T>::eval_g_with_y_from_context(
   this->get_system().MapVelocityToQDot(
       *context, cstate.get_generalized_velocity(), &qdot);
   VectorX<T> q = qt0 + h * qdot.get_value();
+
+  // evaluate g from q
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
       .SetFromVector(q);
   const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
-  // VectorX<T> to_return (yt0.rows()); // using result instead of to_return
-  // consider using CopyToPreSizedVector if there's a performance improvement
-  // (probably not)
   *result = xc_deriv.CopyToVector().block(
       xc_deriv.num_q(), 0, xc_deriv.num_v() + xc_deriv.num_z(), 1);
 }
@@ -429,7 +415,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
     MatrixX<T>* Jv, int trial) {
   using std::abs;
   // right now the iterate-with-guess mechanism doesn't seem to work that well
-  // when Jacobian is from xt0
+  // when the Jacobian comes from xt0
   unused(xtplus_guess);
 
   // Verify the trial number is valid.
@@ -443,13 +429,16 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
 
   *xtplus = xt0;
 
-  // set a residual evaluator
+  // set up a residual evaluator called velocity_residual_R
   Context<T>* context = this->get_mutable_context();
   const systems::ContinuousState<T>& cstate = context->get_continuous_state();
   const VectorX<T>& qt0 = xt0.block(0, 0, cstate.num_q(), 1);
   const VectorX<T>& yt0 =
       xt0.block(cstate.num_q(), 0, cstate.num_v() + cstate.num_z(), 1);
+  // const Vector<T>& doesn't keep a live reference (it forces eigen to copy it),
+  //   so use Eigen::Ref to refer to qtplus
   Eigen::Ref<VectorX<T>> qtplus = xtplus->block(0, 0, cstate.num_q(), 1);
+  // this reference is just for readibility: qk is qtplus.
   const Eigen::Ref<VectorX<T>>& qk = qtplus;
   std::function<VectorX<T>()> velocity_residual_R = [&qt0, &yt0, h, context,
                                                      &qk, this]() {
@@ -462,23 +451,26 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
     return (y - yt0 - h * g_of_y).eval();
   };
 
+  // references to y and v portions of xtplus
   Eigen::Ref<VectorX<T>> ytplus =
       xtplus->block(cstate.num_q(), 0, cstate.num_v() + cstate.num_z(), 1);
-  // const Vector<T>& doesn't keep a live reference (it forces eigen to copy it)
   const Eigen::Ref<VectorX<T>> vtplus =
       xtplus->block(cstate.num_q(), 0, cstate.num_v(), 1);
-  BasicVector<T> qdot(qt0.rows());
+
+  // set last_qtplus to qt0 before we initialize qtplus = qt0 + h N(qt0) vt0
   VectorX<T> last_qtplus = qtplus;
-  VectorX<T> dx(xt0.size());
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
-  // update qtplus for Jacobian computation
+
+  // (optional) update qtplus = qt0 + h N(qt0) vt0 for Jacobian computation
+  BasicVector<T> qdot(qt0.rows());
+  VectorX<T> dx(xt0.size());
   system.MapVelocityToQDot(*context, vtplus, &qdot);
   qtplus = qt0 + h * qdot.get_value();
 
-  // Evaluate the residual error for equation (11)
+  // Evaluate the residual error for equation (11) from Ante's doc
   VectorX<T> residual = velocity_residual_R();
 
   // Initialize the "last" state update norm; this will be used to detect
@@ -501,27 +493,25 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
-    // Compute the state update using the equation A*x = -g(), where A is the
+    // Compute the state update using the equation A*y = -r(), where A is the
     // iteration matrix.
-    // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dy = iteration_matrix->Solve(-residual);
-    // DRAKE_ASSERT(dy.allFinite());
-    // if (!dy.allFinite())
-    //  return false;
+    
     if (i > 0 && this->IsUpdateZero(ytplus, dy)) return true;
-    // ytplus is from *xtplus
+    // Update the y portion of xtplus
     ytplus += dy;
 
-    // assume context uses qtk
+    // assume context has the last qk, evaluate N(qk) and update q
     system.MapVelocityToQDot(*context, vtplus, &qdot);
     last_qtplus = qtplus;
-    // qtplus is from *xtplus
+    // Update the q portion of xtplus
     qtplus = qt0 + h * qdot.get_value();
     dx << dy, qtplus - last_qtplus;
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
+    
     // update the context
     context->SetTimeAndContinuousState(tf, *xtplus);
 
@@ -591,9 +581,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(
     const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
     MatrixX<T>* Jv) {
-  // Store statistics before error control. The difference between
+  // Store statistics before "error control". The difference between
   // the modified statistics and the stored statistics will be used to compute
-  // the trapezoid method-specific statistics.
+  // the half-sized-step-specific statistics.
   int stored_num_jacobian_evaluations = this->get_num_jacobian_evaluations();
   int stored_num_iter_factorizations =
       this->get_num_iteration_matrix_factorizations();
@@ -606,8 +596,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(
       this->get_num_newton_raphson_iterations_that_end_in_failure();
   int stored_num_nr_failures = this->get_num_newton_raphson_failures();
 
-  // todo: work out logic for each failure. Save xt0, initial xtplus, etc.
-  // step first time
+
   bool success = StepImplicitEuler(t0, 0.5 * h, xt0, 0.5 * (xt0 + xtplus_guess),
                                    xtplus, iteration_matrix, Jv);
   if (!success) {
@@ -663,7 +652,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::AttemptStepPaired(
   // [Hairer 1996] validates this choice (p. 120).
   const VectorX<T>& xtplus_guess = xt0;
 
-  // Do the Euler step.
+  // Do the Implicit Euler step.
   if (!StepImplicitEuler(t0, h, xt0, xtplus_guess, xtplus_ie,
                          &iteration_matrix_ie_, &Jv_ie_)) {
     DRAKE_LOGGER_DEBUG(
@@ -672,16 +661,17 @@ bool SecondOrderImplicitEulerIntegrator<T>::AttemptStepPaired(
         h);
     return false;
   }
-  // DO THE HALF IMPLICIT EULER STEPS
-  // if (this->get_fixed_step_mode() || StepHalfImplicitEulers(t0, h, xt0,
-  // xtplus_hie,
-  // todo antequ: consider turning this off for fixed step mode
-  // I AM REUSING JV_IE AND IT MATRIX IE instead of _hie. It works quite well.
+
+  // Do the half Implicit Euler steps.
+  // TODO(antequ): consider turning this off for fixed step mode (this needs
+  //   to stay on to pass some of the error-control tests.). To do so, just
+  //   begin the if statement with "if (this->get_fixed_step_mode() || "
+  // REUSE the Jacobian and A Matrix from the big step because it works quite
+  //   well from the examples Ante ran.
   if (StepHalfImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie,
                              &iteration_matrix_ie_, &Jv_ie_)) {
     Context<T>* context = this->get_mutable_context();
-    // propagate the half steps
-    // todo antequ: consider propagating the full step result
+    // As per discussions, we propagate the half steps
     context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
 
     return true;
@@ -718,18 +708,12 @@ bool SecondOrderImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(
         "-- requested step too small, taking explicit "
         "step instead");
 
-    // TODO(edrumwri): Investigate replacing this with an explicit trapezoid
-    //                 step, which would be expected to give better accuracy.
-    //                 The mitigating factor is that h is already small, so a
-    //                 test of, e.g., a square wave function, should quantify
-    //                 the improvement (if any).
-
     // The error estimation process for explicit Euler uses an explicit second
     // order Runge-Kutta method so that the order of the asymptotic term
     // matches that used for estimating the error of the implicit Euler
     // integrator.
 
-    // Compute the Euler step.
+    // Compute the explicit Euler step.
     xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
     xtplus_ie_ = xt0_ + h * xdot_;
 
