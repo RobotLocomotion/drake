@@ -22,8 +22,13 @@ cc_library(
         "include/fmt/posix.h",
     ]),
     defines = [
+        # By tradition, Drake uses the header-only build of fmt.
         "FMT_HEADER_ONLY=1",
-        "FMT_NO_FMT_STRING_ALIAS=1",  # Avoid macro pollution.
+        # Avoid macro pollution.
+        "FMT_NO_FMT_STRING_ALIAS=1",
+        # Use sensible floating-point formatting.  (As of 6.0.0 this isn't the
+        # default upstream, but it is promised to be in a forthcoming release.)
+        "FMT_USE_GRISU=1",
     ],
     includes = ["include"],
 )
