@@ -237,6 +237,7 @@ class TestMath(unittest.TestCase):
             q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
         # - Conversion to AngleAxis
         angle_axis = R.ToAngleAxis()
+        self.assertIsInstance(angle_axis, AngleAxis)
         R_AngleAxis = RotationMatrix(angle_axis)
         R_I = R.inverse().multiply(R_AngleAxis)
         numpy_compare.assert_equal(R_I.IsIdentityToInternalTolerance(), True)
