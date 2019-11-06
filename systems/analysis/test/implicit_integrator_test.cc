@@ -29,6 +29,13 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
     return 0;
   }
+  int64_t do_get_num_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return 0;
+  }
+
+  int64_t do_get_num_newton_raphson_failures() const final { return 0; }
+
   int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
     return 0;
   }
@@ -41,6 +48,15 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
   }
   int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
       const final {
+    return 0;
+  }
+  int64_t
+  do_get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
+      const final {
+    return 0;
+  }
+
+  int64_t do_get_num_error_estimator_newton_raphson_failures() const final {
     return 0;
   }
 
@@ -96,4 +112,3 @@ GTEST_TEST(ImplicitIntegratortest, IsUpdateZero) {
 }  // namespace
 }  // namespace systems
 }  // namespace drake
-
