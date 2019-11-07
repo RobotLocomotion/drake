@@ -24,7 +24,11 @@ cc_library(
 
 install(
     name = "install",
-    docs = ["LICENSE"],
+    docs = [
+        "LICENSE",
+        "NOTICE",
+    ],
+    doc_dest = "share/doc/bender",
     visibility = ["//visibility:public"],
 )
 
