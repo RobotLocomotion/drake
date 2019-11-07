@@ -1,7 +1,3 @@
-from __future__ import print_function
-# N.B. We are purposely not importing `division` to test nominal Python2
-# behavior.
-
 import pydrake.autodiffutils as mut
 from pydrake.autodiffutils import (
     autoDiffToGradientMatrix,

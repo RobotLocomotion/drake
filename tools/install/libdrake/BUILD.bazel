@@ -146,15 +146,6 @@ cc_library(
     }),
 )
 
-# Depend on SCS's shared library iff SCS is enabled.
-cc_library(
-    name = "scs_deps",
-    deps = select({
-        "//conditions:default": ["@scs//:scsdir"],
-        "//tools:no_scs": [],
-    }),
-)
-
 # Depend on the subset of VTK's shared libraries that Drake uses.
 cc_library(
     name = "vtk_deps",
@@ -203,16 +194,16 @@ cc_library(
         # The list of depended-on *.so files. These should ONLY be shared
         # libraries; do not add static dependencies here.
         ":dreal_deps",
-        ":ipopt_deps",
         ":gurobi_deps",
+        ":ipopt_deps",
         ":mosek_deps",
         ":nlopt_deps",
-        ":scs_deps",
         ":vtk_deps",
         "//common:drake_marker_shared_library",
         "@ignition_math",
         "@lcm",
         "@libprotobuf",
+        "@spdlog",
         "@tinyxml2",
         "@yaml_cpp",
     ] + [
@@ -221,11 +212,9 @@ cc_library(
         "//lcmtypes:lcmtypes_drake_cc",
         "@eigen",
         "@fmt",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-        "@spdlog",
-        "@stx",
     ],
 )
 

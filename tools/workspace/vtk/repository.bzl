@@ -10,8 +10,7 @@ robotlocomotion/director tap (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:
     vtk-<version>-embree-<embree version>-ospray-<ospray version>
-        -python-<python 2.x version>[-python-<python 3.x version>]
-        -qt-<qt version>-<platform>-<arch>[-<rebuild>]
+        -python-<python version>-qt-<qt version>-<platform>-<arch>[-<rebuild>]
 
 Example:
     WORKSPACE:
@@ -104,12 +103,9 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_VERSION,
         ), "include")
     elif os_result.is_ubuntu:
-        if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64.tar.gz"  # noqa
-            sha256 = "c0b27f3b0e9e4212190702afdfe49f2c5f0f41ee89354e94b4417bbc840cb2f6"  # noqa
-        elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-2.7.15-python-3.6.7-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
-            sha256 = "bcf01f7968a9c3d7d5ed6297bcb5dd7a9d753c2ccabbc4120747b97ae3502c76"  # noqa
+        if os_result.ubuntu_release == "18.04":
+            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-3.6.8-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
+            sha256 = "42e0661004d089a93202c15e49b36167c02f92e40f9c62a412580ebc434f50ff"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -190,12 +186,15 @@ licenses([
             "vtkConfigure.h",
             "vtkDataArray.h",
             "vtkDebugLeaksManager.h",
+            "vtkFloatArray.h",
             "vtkGenericDataArray.h",
             "vtkGenericDataArray.txx",
             "vtkGenericDataArrayLookupHelper.h",
             "vtkIdList.h",
             "vtkIdTypeArray.h",
             "vtkIndent.h",
+            "vtkInformation.h",
+            "vtkInformationVector.h",
             "vtkIntArray.h",
             "vtkIOStream.h",
             "vtkMath.h",
@@ -252,6 +251,7 @@ licenses([
             "vtkDataSetAttributesFieldList.h",
             "vtkFieldData.h",
             "vtkImageData.h",
+            "vtkPointData.h",
             "vtkPointSet.h",
             "vtkPolyData.h",
             "vtkRect.h",
@@ -274,8 +274,11 @@ licenses([
         hdrs = [
             "vtkAlgorithm.h",
             "vtkCommonExecutionModelModule.h",
+            "vtkDemandDrivenPipeline.h",
+            "vtkExecutive.h",
             "vtkImageAlgorithm.h",
             "vtkPolyDataAlgorithm.h",
+            "vtkStreamingDemandDrivenPipeline.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -884,8 +887,7 @@ cc_library(
     file_content += """
 filegroup(
     name = "vtk",
-    srcs = glob(["**/*"], exclude=["BUILD.bazel", "WORKSPACE",
-        "lib/python3.*/**/*", "lib/libvtkWrappingPython3*.so"]),
+    srcs = glob(["**/*"], exclude=["BUILD.bazel", "WORKSPACE"]),
     visibility = ["//visibility:public"],
 )
 """

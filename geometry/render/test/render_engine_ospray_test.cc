@@ -453,6 +453,81 @@ TEST_F(RenderEngineOsprayTest, TransparentSphereTest) {
   EXPECT_TRUE(CompareColor(expect_linear, color_, inlier));
 }
 
+// Performs the shape-centered-in-the-image test with a capsule.
+TEST_F(RenderEngineOsprayTest, CapsuleTest) {
+  Init(X_WC_, true);
+
+  // Sets up a capsule.
+  const double radius = 0.15;
+  const double length = 1.2;
+  Capsule capsule(radius, length);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, capsule, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+  // Position the top of the capsule to be 1 m above the terrain. Since the
+  // middle of the capsule is positioned at the origin 0, the top of the
+  // capsule is placed at half the length plus the radius, i.e. 1.2/2 + 0.15 =
+  // 0.75. To reach a total of 1, we need to offset it by an additional 0.25.
+  RigidTransformd X_WV{Vector3d{0, 0, 0.25}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  PerformCenterShapeTest(renderer_.get(), "Capsule test");
+}
+
+// Performs a test with a capsule centered in the image but rotated
+// perpendicularly such that the length of the capsule can be seen in the
+// camera view (as opposed to a top-down view of its spherical side).
+// |          ●●
+// |         ●  ●
+// |        ●    ●
+// |________●____●__________
+// |        ●    ●
+// |        ●    ●
+// |         ●  ●
+// |          ●●
+TEST_F(RenderEngineOsprayTest, CapsuleRotatedTest) {
+  Init(X_WC_, true);
+
+  // Sets up a capsule.
+  const double radius = 0.15;
+  const double length = 1.2;
+  Capsule capsule(radius, length);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, capsule, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+
+  // Position the capsule so that it lies along the x-axis where the highest
+  // point on the barrel is at z = 1. Capsules are by default z-axis aligned
+  // so we need to rotate it by 90 degrees. Since the radius of the capsule is
+  // 0.15, we need to shift it by an additional 0.85 along the z-axis to reach
+  // a total of 1.
+  RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
+                       Vector3d{0, 0, 0.85}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  Render(renderer_.get());
+
+  const char* name = "Capsule rotated test";
+  VerifyOutliers(*renderer_, camera_, name);
+
+  // Verifies the inliers towards the ends of the capsule and ensures its
+  // length attribute is respected as opposed to just its radius. This
+  // distinguishes it from other shape tests, such as a sphere.
+  const ScreenCoord inlier = GetInlier(camera_);
+  const int offsets[2] = {kHeight / 4, -kHeight / 4};
+  const int x = inlier.x;
+  for (const int& offset : offsets) {
+    const int y = inlier.y + offset;
+    const ScreenCoord offset_inlier = {x, y};
+    EXPECT_TRUE(CompareColor(expected_color_, color_, offset_inlier))
+        << "Color at: " << offset_inlier << " for test: " << name;
+  }
+}
+
 // Performs the shape-centered-in-the-image test with a cylinder.
 TEST_F(RenderEngineOsprayTest, CylinderTest) {
   Init(X_WC_, true);

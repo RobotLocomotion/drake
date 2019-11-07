@@ -1,13 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/framework_common.h"

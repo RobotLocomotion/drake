@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -215,8 +216,8 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
-          model->world_body(), nullopt,
-          model->GetBodyByName("iiwa_link_5"), nullopt,
+          model->world_body(), std::nullopt,
+          model->GetBodyByName("iiwa_link_5"), std::nullopt,
           Vector3<double>::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
@@ -236,7 +237,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
 
   // Now we tested we cannot add body or joints with an existing name, finalize
   // the model.
-  EXPECT_NO_THROW(model->Finalize());
+  DRAKE_EXPECT_NO_THROW(model->Finalize());
 
   // Another call to Finalize() is not allowed.
   EXPECT_THROW(model->Finalize(), std::logic_error);
@@ -265,14 +266,14 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
 GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
   // Create the internal tree and finalize the MBSystem correctly.
   BadDerivedMBSystem finalized(false);
-  EXPECT_NO_THROW(finalized.mutable_tree());
+  DRAKE_EXPECT_NO_THROW(finalized.mutable_tree());
 
   // Make the MBSystem behave badly.
   DRAKE_EXPECT_THROWS_MESSAGE(BadDerivedMBSystem(true), std::logic_error,
                               ".*Finalize().*repeated.*not allowed.*");
 
   auto model = std::make_unique<MultibodyTree<double>>();
-  EXPECT_NO_THROW(MultibodyTreeSystem<double>(std::move(model)));
+  DRAKE_EXPECT_NO_THROW(MultibodyTreeSystem<double>(std::move(model)));
   EXPECT_EQ(model, nullptr);  // Should have been moved from.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -283,11 +284,10 @@ GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
 GTEST_TEST(MultibodyTree, BackwardsCompatibility) {
   auto owned_tree = std::make_unique<MultibodyTree<double>>();
   auto* tree = owned_tree.get();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    tree->CreateDefaultContext(), std::runtime_error,
-    ".*that is owned by a MultibodyPlant.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(tree->CreateDefaultContext(), std::runtime_error,
+                              ".*that is owned by a MultibodyPlant.*");
   MultibodyTreeSystem<double> system(std::move(owned_tree));
-  EXPECT_NO_THROW(tree->CreateDefaultContext());
+  DRAKE_EXPECT_NO_THROW(tree->CreateDefaultContext());
 }
 
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
@@ -324,7 +324,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     context_ = system_->CreateDefaultContext();
 
-    EXPECT_NO_THROW(context_->Clone());
+    DRAKE_EXPECT_NO_THROW(context_->Clone());
 
     // Scalar-convert the model and create a default context for it.
     system_autodiff_ = std::make_unique<MultibodyTreeSystem<AutoDiffXd>>(

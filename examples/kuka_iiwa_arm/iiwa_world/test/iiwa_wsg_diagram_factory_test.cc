@@ -124,7 +124,7 @@ TEST_P(IiwaAndWsgPlantWithStateEstimatorParameterizedTest, Constructor) {
   CheckNumPorts(*iiwa_and_wsg_plant, num_iiwas, num_wsgs, num_objects);
 }
 
-INSTANTIATE_TEST_CASE_P(ValidCombinations,
+INSTANTIATE_TEST_SUITE_P(ValidCombinations,
                         IiwaAndWsgPlantWithStateEstimatorParameterizedTest,
                         ::testing::Combine(::testing::Values(1, 2, 3, 10),
                                            ::testing::Values(1, 2, 3, 10)));

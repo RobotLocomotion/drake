@@ -121,7 +121,7 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
   thread.reset();
 }
 
-INSTANTIATE_TEST_CASE_P(test, LcmInterfaceSystemTest,
+INSTANTIATE_TEST_SUITE_P(test, LcmInterfaceSystemTest,
                         ::testing::Values(0, 1, 2));
 
 }  // namespace

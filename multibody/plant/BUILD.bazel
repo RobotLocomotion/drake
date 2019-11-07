@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":coulomb_friction",
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
+        ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
         ":multibody_plant_core",
         ":point_pair_contact_info",
@@ -108,8 +109,21 @@ drake_cc_library(
         "hydroelastic_contact_info.h",
     ],
     deps = [
+        ":hydroelastic_quadrature_point_data",
         "//common:default_scalars",
         "//geometry/query_results:contact_surface",
+        "//multibody/math",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_quadrature_point_data",
+    srcs = [],
+    hdrs = [
+        "hydroelastic_quadrature_point_data.h",
+    ],
+    deps = [
+        "//geometry/proximity:surface_mesh",
     ],
 )
 
@@ -190,6 +204,7 @@ drake_cc_library(
     ],
     deps = [
         ":hydroelastic_contact_info",
+        ":hydroelastic_quadrature_point_data",
         "//geometry/proximity:mesh_field",
         "//geometry/query_results:contact_surface",
         "//math",
@@ -237,6 +252,7 @@ drake_cc_googletest(
         ":tamsi_solver",
         ":tamsi_solver_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -283,8 +299,7 @@ drake_cc_googletest(
         ":plant",
         "//common:autodiff",
         "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
         "//geometry/test_utilities",
         "//math:geometric_transform",
         "//math:gradient",
@@ -330,6 +345,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//multibody/parsing",
         "//systems/framework",
@@ -460,6 +476,7 @@ drake_cc_googletest(
     ],
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//multibody/benchmarks/free_body",
         "//multibody/test_utilities:floating_body_plant",
         "//systems/analysis:simulator",

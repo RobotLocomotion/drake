@@ -14,7 +14,7 @@ namespace rendering {
 
 template <typename T>
 PoseAggregator<T>::PoseAggregator()
-    : LeafSystem<T>(SystemTypeTag<rendering::PoseAggregator>{}) {
+    : LeafSystem<T>(SystemTypeTag<PoseAggregator>{}) {
   // Declare the output port and provide an allocator for a PoseBundle of length
   // equal to the concatenation of all inputs. This can't be done with a model
   // value because we don't know at construction how big the output will be.

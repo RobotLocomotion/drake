@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import sys
 import unittest
 import warnings
@@ -17,19 +15,15 @@ class TestAll(unittest.TestCase):
         # - While this may be redundant, let's do it for good measure.
         self.assertTrue("pydrake.all" not in sys.modules)
         # Enable *all* warnings, and ensure that we don't trigger them.
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
             # TODO(eric.cousineau): Figure out a more conservative filter to
             # avoid issues on different machines, but still catch meaningful
             # warnings.
-            warnings.simplefilter("always", Warning)
+            warnings.simplefilter("error", Warning)
             warnings.filterwarnings(
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
             import pydrake.all
-            if w:
-                sys.stderr.write("Encountered import warnings:\n{}\n".format(
-                    "\n".join(map(str, w)) + "\n"))
-            self.assertEqual(len(w), 0)
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow

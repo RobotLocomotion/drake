@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -10,7 +11,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
@@ -389,7 +389,7 @@ class GeometryState {
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const {
-    return geometry_engine_->ComputeContactSurfaces(X_WGs_, geometries_);
+    return geometry_engine_->ComputeContactSurfaces(X_WGs_);
   }
 
   /** Implementation of QueryObject::FindCollisionCandidates().  */

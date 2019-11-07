@@ -559,11 +559,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in] M_B_W_cache
   ///   An already updated cache storing the spatial inertia M_Bo_W(q) for each
   ///   body in the model, in sync with `context`.
-  /// @param[in] b_Bo_W_cache
-  ///   An already updated cache storing the bias term b_Bo_W(q, v) for each
+  /// @param[in] Fb_Bo_W_cache
+  ///   An already updated cache storing the bias term Fb_Bo_W(q, v) for each
   ///   body in the model, in sync with `context`.
-  ///   If b_Bo_W_cache is nullptr, velocities are assumed to be zero (thus
-  ///   b_Bo_W is zero) and velocity dependent terms are not computed.
+  ///   If Fb_Bo_W_cache is nullptr, velocities are assumed to be zero (thus
+  ///   Fb_Bo_W is zero) and velocity dependent terms are not computed.
   /// @param[in] A_WB_array
   ///   A vector of known spatial accelerations containing the spatial
   ///   acceleration `A_WB` for each body in the MultibodyTree model. It must be
@@ -619,7 +619,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
-      const std::vector<SpatialForce<T>>* b_Bo_W_cache,
+      const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
@@ -659,11 +659,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // The spatial force through body B's inboard mobilizer is obtained from a
     // force balance (essentially the F = m * a for rigid bodies, see
     // [Jain 2010, Eq. 2.26, p. 27] for a derivation):
-    //   Ftot_BBo_W = M_Bo_W * A_WB + b_Bo_W                                (1)
-    // where b_Bo_W contains the velocity dependent gyroscopic terms, Ftot_BBo_W
-    // is the total spatial force on body B, applied at its origin Bo and
-    // quantities are expressed in the world frame W (though the expressed-in
-    // frame is not needed in a coordinate-free form.)
+    //   Ftot_BBo_W = M_Bo_W * A_WB + Fb_Bo_W                                (1)
+    // where Fb_Bo_W contains the velocity dependent gyroscopic terms,
+    // Ftot_BBo_W is the total spatial force on body B, applied at its origin Bo
+    // and quantities are expressed in the world frame W (though the
+    // expressed-in frame is not needed in a coordinate-free form.)
     //
     // The total spatial force on body B is the combined effect of externally
     // applied spatial forces Fapp_BMo on body B at Mo and spatial forces
@@ -691,7 +691,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Total spatial force on body B producing acceleration A_WB.
     SpatialForce<T> Ftot_BBo_W;
-    CalcBodySpatialForceGivenItsSpatialAcceleration(M_B_W_cache, b_Bo_W_cache,
+    CalcBodySpatialForceGivenItsSpatialAcceleration(M_B_W_cache, Fb_Bo_W_cache,
                                                     A_WB, &Ftot_BBo_W);
 
     // Compute shift vector from Bo to Mo expressed in the world frame W.
@@ -1409,12 +1409,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   //   1. Ftot_BBo = b_Bo when A_WB = 0.
   //   2. b_Bo = 0 when w_WB = 0.
   //   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
-  //      When b_Bo_W_cache is nullptr velocites are considered to be zero.
+  //      When Fb_Bo_W_cache is nullptr velocites are considered to be zero.
   //      Therefore, from (2), the bias term is assumed to be zero and is not
   //      computed.
   void CalcBodySpatialForceGivenItsSpatialAcceleration(
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
-      const std::vector<SpatialForce<T>>* b_Bo_W_cache,
+      const std::vector<SpatialForce<T>>* Fb_Bo_W_cache,
       const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
   const {
     DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
@@ -1435,11 +1435,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // to Eq. 2.26 (p. 27) in A. Jain's book.
     Ftot_BBo_W = M_B_W * A_WB;
 
-    // If velocities are zero, then b_Bo_W is zero and does not contribute.
-    if (b_Bo_W_cache != nullptr) {
+    // If velocities are zero, then Fb_Bo_W is zero and does not contribute.
+    if (Fb_Bo_W_cache != nullptr) {
       // Dynamic bias for body B.
-      const SpatialForce<T>& b_Bo_W = (*b_Bo_W_cache)[body_B.node_index()];
-      Ftot_BBo_W += b_Bo_W;
+      const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body_B.node_index()];
+      Ftot_BBo_W += Fb_Bo_W;
     }
   }
 

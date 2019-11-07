@@ -53,7 +53,7 @@ class DirectCollocation : public MultipleShooting {
   DirectCollocation(const System<double>* system,
                     const Context<double>& context, int num_time_samples,
                     double minimum_timestep, double maximum_timestep,
-                    variant<InputPortSelection, InputPortIndex>
+                    std::variant<InputPortSelection, InputPortIndex>
                         input_port_index =
                     InputPortSelection::kUseFirstInputIfItExists,
                     bool assume_non_continuous_states_are_fixed = false);
@@ -100,7 +100,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
   /// @see DirectCollocation constructor for a description of the parameters.
   DirectCollocationConstraint(
       const System<double>& system, const Context<double>& context,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
+      std::variant<InputPortSelection, InputPortIndex> input_port_index =
           InputPortSelection::kUseFirstInputIfItExists,
       bool assume_non_continuous_states_are_fixed = false);
 
@@ -113,7 +113,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
   DirectCollocationConstraint(
       const System<double>& system, const Context<double>& context,
       int num_states, int num_inputs,
-      variant<InputPortSelection, InputPortIndex> input_port_index,
+      std::variant<InputPortSelection, InputPortIndex> input_port_index,
       bool assume_non_continuous_states_are_fixed);
 
 

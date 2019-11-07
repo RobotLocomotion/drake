@@ -85,6 +85,13 @@ class ModelInstance :
     joint_actuators_.push_back(joint_actuator);
   }
 
+  /// Returns an Eigen vector of the actuation for `this` model instance from a
+  /// vector `u` of actuator forces for the entire model.
+  /// @throws std::logic_error if `u` is not of size
+  ///         MultibodyTree::num_actuators().
+  VectorX<T> GetActuationFromArray(
+      const Eigen::Ref<const VectorX<T>>& u) const;
+
   /// Given the actuation values `u_instance` for all actuators in `this` model
   /// instance, this method sets the portion of the actuation vector `u` (which
   /// is the actuation vector for the entire MultibodyTree) corresponding to the

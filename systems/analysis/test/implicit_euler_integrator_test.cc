@@ -162,7 +162,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
 // Test Euler integrator.
 typedef ::testing::Types<ImplicitEulerIntegrator<double>>
     MyTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(My, ImplicitIntegratorTest, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ImplicitIntegratorTest, MyTypes);
 
 }  // namespace analysis_test
 }  // namespace systems

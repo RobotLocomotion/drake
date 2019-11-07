@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <thread>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -36,7 +37,7 @@ TEST_P(LinearProgramTest, TestLP) {
   prob()->RunProblem(&solver);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SnoptTest, LinearProgramTest,
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
@@ -68,7 +69,7 @@ TEST_P(QuadraticProgramTest, TestQP) {
   prob()->RunProblem(&solver);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     SnoptTest, QuadraticProgramTest,
     ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
@@ -223,11 +224,6 @@ GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
 // s.t x₀ + x₁ = 1
 // The optimal solution is x*=(0, 1)
 GTEST_TEST(SnoptTest, MultiThreadTest) {
-  // Skip this test when SNOPT does not support multi-threading.
-  if (!SnoptSolver::is_thread_safe()) {
-    return;
-  }
-
   // Formulate the problem (shared by all threads).
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

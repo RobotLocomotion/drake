@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -18,7 +19,9 @@ namespace dev {
  * The drake-visualizer binary shipped with Drake does NOT support Remote Tree
  * Viewer.
  */
-class RemoteTreeViewerWrapper {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic/manipulation/dev package is being removed.")
+RemoteTreeViewerWrapper {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RemoteTreeViewerWrapper)
 

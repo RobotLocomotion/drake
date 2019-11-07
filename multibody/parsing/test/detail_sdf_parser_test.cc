@@ -9,6 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
@@ -32,11 +33,6 @@ using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RollPitchYawd;
 using systems::Context;
-
-// TODO(eric.cousineau): Make a simple test that parses SDFormat <=1.6 and 1.7
-// separately. See private Slack convo with Steve and Addisu,
-// 2019-09-16T4:30-0400; this may be complicated and require some code
-// duplication.
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -232,20 +228,22 @@ GTEST_TEST(SdfParser, FloatingBodyPose) {
   PlantAndSceneGraph pair = ParseTestString(R"""(
 <model name='good'>
   <link name='a'>
-    <pose>1 2 3  0 0 0</pose>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
   </link>
   <link name='b'>
-    <pose>4 5 6  0 0 0</pose>
+    <pose>4 5 6  0.4 0.5 0.6</pose>
   </link>
 </model>)""");
   pair.plant->Finalize();
   EXPECT_GT(pair.plant->num_positions(), 0);
   auto context = pair.plant->CreateDefaultContext();
-  const RigidTransformd X_WA_expected(Vector3d(1, 2, 3));
+  const RigidTransformd X_WA_expected(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
-  const RigidTransformd X_WB_expected(Vector3d(4, 5, 6));
+  const RigidTransformd X_WB_expected(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
   const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
@@ -257,20 +255,22 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 <model name='good'>
   <static>true</static>
   <link name='a'>
-    <pose>1 2 3  0 0 0</pose>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
   </link>
   <link name='b'>
-    <pose>4 5 6  0 0 0</pose>
+    <pose>4 5 6  0.4 0.5 0.6</pose>
   </link>
 </model>)""");
   pair.plant->Finalize();
   EXPECT_EQ(pair.plant->num_positions(), 0);
   auto context = pair.plant->CreateDefaultContext();
-  const RigidTransformd X_WA_expected(Vector3d(1, 2, 3));
+  const RigidTransformd X_WA_expected(
+      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
-  const RigidTransformd X_WB_expected(Vector3d(4, 5, 6));
+  const RigidTransformd X_WB_expected(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
   const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
   EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
@@ -279,7 +279,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
   // Specifying redundant welds in the model yields no errors, either to the
   // world or between links.
-  /*EXPECT_NO_THROW*/(ParseTestString(R"""(
+  DRAKE_EXPECT_NO_THROW(ParseTestString(R"""(
 <model name='good'>
   <static>true</static>
   <link name='a'/>

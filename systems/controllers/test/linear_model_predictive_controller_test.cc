@@ -88,8 +88,7 @@ template <typename T>
 class CubicPolynomialSystem final : public LeafSystem<T> {
  public:
   explicit CubicPolynomialSystem(double time_step)
-      : LeafSystem<T>(
-            SystemTypeTag<systems::controllers::CubicPolynomialSystem>{}),
+      : LeafSystem<T>(SystemTypeTag<CubicPolynomialSystem>{}),
         time_step_(time_step) {
     this->DeclareInputPort(systems::kVectorValued, 1);
     this->DeclareVectorOutputPort(BasicVector<T>(2),

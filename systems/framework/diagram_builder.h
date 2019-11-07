@@ -220,7 +220,7 @@ class DiagramBuilder {
   /// @return The index of the exported input port of the entire diagram.
   InputPortIndex ExportInput(
       const InputPort<T>& input,
-      variant<std::string, UseDefaultName> name = kUseDefaultName) {
+      std::variant<std::string, UseDefaultName> name = kUseDefaultName) {
     InputPortLocator id{&input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(&input.get_system());
@@ -232,7 +232,7 @@ class DiagramBuilder {
     std::string port_name =
         name == kUseDefaultName
             ? input.get_system().get_name() + "_" + input.get_name()
-            : get<std::string>(std::move(name));
+            : std::get<std::string>(std::move(name));
     DRAKE_DEMAND(!port_name.empty());
     input_port_names_.emplace_back(std::move(port_name));
 
@@ -247,7 +247,7 @@ class DiagramBuilder {
   /// @return The index of the exported output port of the entire diagram.
   OutputPortIndex ExportOutput(
       const OutputPort<T>& output,
-      variant<std::string, UseDefaultName> name = kUseDefaultName) {
+      std::variant<std::string, UseDefaultName> name = kUseDefaultName) {
     ThrowIfSystemNotRegistered(&output.get_system());
     OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
@@ -258,7 +258,7 @@ class DiagramBuilder {
     std::string port_name =
         name == kUseDefaultName
             ? output.get_system().get_name() + "_" + output.get_name()
-            : get<std::string>(std::move(name));
+            : std::get<std::string>(std::move(name));
     DRAKE_DEMAND(!port_name.empty());
     output_port_names_.emplace_back(std::move(port_name));
 

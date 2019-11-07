@@ -20,9 +20,10 @@ namespace systems {
 namespace analysis_test {
 
 typedef ::testing::Types<BogackiShampine3Integrator<double>> Types;
-INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
-INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
-INSTANTIATE_TYPED_TEST_CASE_P(My, GenericIntegratorTest, Types);
+// NOLINTNEXTLINE(whitespace/line_length)
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, PleidesTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, GenericIntegratorTest, Types);
 
 // Tests accuracy for integrating the cubic system (with the state at time t
 // corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. BS3 is a third

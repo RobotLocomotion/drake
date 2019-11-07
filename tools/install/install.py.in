@@ -352,7 +352,7 @@ def create_java_launcher(filename, classpath, jvm_flags, main_class):
 set -euo pipefail
 
 # This file is installed to <prefix>/bin.
-readonly prefix=$(python -c 'import os;\
+readonly prefix=$(python3 -c 'import os;\
     print(os.path.realpath(os.path.join(\"'\"$0\"'\", os.pardir, os.pardir)))')
 
 for jar_file in {}; do

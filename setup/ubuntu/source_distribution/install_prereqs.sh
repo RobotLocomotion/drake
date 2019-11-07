@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 16.04 (Xenial) or 18.04 (Bionic).
+# Ubuntu 18.04 (Bionic).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.

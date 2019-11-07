@@ -19,7 +19,7 @@ template <typename T>
 FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
     const VectorX<double>& time_constants)
     : VectorSystem<T>(
-          SystemTypeTag<systems::FirstOrderLowPassFilter>{},
+          SystemTypeTag<FirstOrderLowPassFilter>{},
           time_constants.size(), time_constants.size()),
       time_constants_(time_constants) {
   DRAKE_ASSERT(time_constants.size() > 0);

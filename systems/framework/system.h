@@ -5,6 +5,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -17,7 +18,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -870,15 +870,15 @@ class System : public SystemBase {
   /// times.
   /// @returns optional<PeriodicEventData> Contains the periodic trigger
   /// attributes if the unique periodic attribute exists, otherwise `nullopt`.
-  optional<PeriodicEventData>
+  std::optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const {
-    optional<PeriodicEventData> saved_attr;
+    std::optional<PeriodicEventData> saved_attr;
     auto periodic_events = GetPeriodicEvents();
     for (const auto& saved_attr_and_vector : periodic_events) {
       for (const auto& event : saved_attr_and_vector.second) {
         if (event->is_discrete_update()) {
           if (saved_attr)
-            return nullopt;
+            return std::nullopt;
           saved_attr = saved_attr_and_vector.first;
           break;
         }
@@ -1021,19 +1021,91 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                    Subcontext access
+  /// Methods in this section locate the Context belonging to a particular
+  /// subsystem, from within the Context for a containing System (typically a
+  /// Diagram). There are two common circumstances where this is needed:
+  ///
+  /// 1. You are given a Diagram and its Context, and have a reference to a
+  ///    particular subsystem contained somewhere in that Diagram (that is,
+  ///    an immediate child or deeper descendent). You can ask the Diagram to
+  ///    find the subcontext of that subsystem, using GetSubsystemContext()
+  ///    or GetMutableSubsystemContext().
+  /// 2. You are given the root Context for a complete Diagram (typically by
+  ///    the Simulator as part of a generated trajectory). You don't have a
+  ///    reference to the Diagram, but you do have a reference to a subsystem
+  ///    of interest. You want to find its subcontext from within the root
+  ///    Context. Use GetMyContextFromRoot() or GetMyMutableContextFromRoot().
+  ///
+  /// The second case is particularly useful in monitor functions for the
+  /// Drake Simulator.
+  //@{
+
+  /// Returns a const reference to the subcontext that corresponds to the
+  /// contained %System `subsystem`.
+  /// @throws std::logic_error if `subsystem` not contained in `this` %System.
+  /// @pre The given `context` is valid for use with `this` %System.
+  const Context<T>& GetSubsystemContext(const System<T>& subsystem,
+                                        const Context<T>& context) const {
+    auto ret = DoGetTargetSystemContext(subsystem, &context);
+    if (ret != nullptr) return *ret;
+
+    throw std::logic_error(
+        fmt::format("GetSubsystemContext(): {} subsystem '{}' is not "
+                    "contained in {} System '{}'.",
+                    subsystem.GetSystemType(), subsystem.GetSystemPathname(),
+                    this->GetSystemType(), this->GetSystemPathname()));
+  }
+
+  /// Returns a mutable reference to the subcontext that corresponds to the
+  /// contained %System `subsystem`.
+  /// @throws std::logic_error if `subsystem` not contained in `this` %System.
+  /// @pre The given `context` is valid for use with `this` %System.
+  Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
+                                         Context<T>* context) const {
+    DRAKE_ASSERT(context != nullptr);
+    // Make use of the const method to avoid code duplication.
+    const Context<T>& subcontext = GetSubsystemContext(subsystem, *context);
+    return const_cast<Context<T>&>(subcontext);
+  }
+
+  /// Returns the const Context for `this` subsystem, given a root context. If
+  /// `this` %System is already the top level (root) %System, just returns
+  /// `root_context`. (A root Context is one that does not have a parent
+  /// Context.)
+  /// @throws std::logic_error if the given `root_context` is not actually
+  ///     a root context.
+  /// @see GetSubsystemContext()
+  const Context<T>& GetMyContextFromRoot(const Context<T>& root_context) const {
+    if (!root_context.is_root_context())
+      throw std::logic_error(
+          "GetMyContextFromRoot(): given context must be a root context.");
+    const internal::SystemParentServiceInterface* parent_service =
+        this->get_parent_service();
+    if (!parent_service)  // This is the root System.
+      return root_context;
+
+    return static_cast<const System<T>&>(parent_service->GetRootSystemBase())
+        .GetSubsystemContext(*this, root_context);
+  }
+
+  /// Returns the mutable subsystem context for `this` system, given a root
+  /// context.
+  /// @see GetMyContextFromRoot()
+  Context<T>& GetMyMutableContextFromRoot(Context<T>* root_context) const {
+    DRAKE_DEMAND(root_context != nullptr);
+    // Make use of the const method to avoid code duplication.
+    const Context<T>& subcontext = GetMyContextFromRoot(*root_context);
+    return const_cast<Context<T>&>(subcontext);
+  }
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @cond
   // Functions to avoid RTTI in Diagram. Conceptually, these should be protected
   // and should not be directly called, so they are hidden from doxygen.
 
   // TODO(siyuan): change all target_system to reference.
-
-  // Returns @p context if @p target_system equals `this`, nullptr otherwise.
-  // Should not be directly called.
-  virtual Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>& target_system, Context<T>* context) const {
-    if (&target_system == this) return context;
-    return nullptr;
-  }
 
   // Returns @p context if @p target_system equals `this`, nullptr otherwise.
   // Should not be directly called.
@@ -1141,12 +1213,12 @@ class System : public SystemBase {
   /// provided as a convenience method since many algorithms provide the same
   /// common default or optional port semantics.
   const InputPort<T>* get_input_port_selection(
-      variant<InputPortSelection, InputPortIndex> port_index) const {
-    if (holds_alternative<InputPortIndex>(port_index)) {
-      return &get_input_port(get<InputPortIndex>(port_index));
+      std::variant<InputPortSelection, InputPortIndex> port_index) const {
+    if (std::holds_alternative<InputPortIndex>(port_index)) {
+      return &get_input_port(std::get<InputPortIndex>(port_index));
     }
 
-    switch (get<InputPortSelection>(port_index)) {
+    switch (std::get<InputPortSelection>(port_index)) {
       case InputPortSelection::kUseFirstInputIfItExists:
         if (num_input_ports() > 0) {
           return &get_input_port(0);
@@ -1185,11 +1257,11 @@ class System : public SystemBase {
   /// provided as a convenience method since many algorithms provide the same
   /// common default or optional port semantics.
   const OutputPort<T>* get_output_port_selection(
-      variant<OutputPortSelection, OutputPortIndex> port_index) const {
-    if (holds_alternative<OutputPortIndex>(port_index)) {
-      return &get_output_port(get<OutputPortIndex>(port_index));
+      std::variant<OutputPortSelection, OutputPortIndex> port_index) const {
+    if (std::holds_alternative<OutputPortIndex>(port_index)) {
+      return &get_output_port(std::get<OutputPortIndex>(port_index));
     }
-    switch (get<OutputPortSelection>(port_index)) {
+    switch (std::get<OutputPortSelection>(port_index)) {
       case OutputPortSelection::kUseFirstOutputIfItExists:
         if (num_output_ports() > 0) {
           return &get_output_port(0);
@@ -1253,9 +1325,9 @@ class System : public SystemBase {
       // If T is a real number (not a symbolic expression), we can bail out
       // early with a diagnostic when the first constraint fails.
       if (scalar_predicate<T>::is_bool && !result) {
-        SPDLOG_DEBUG(drake::log(),
-                     "Context fails to satisfy SystemConstraint {}",
-                     constraint->description());
+        DRAKE_LOGGER_DEBUG(
+            "Context fails to satisfy SystemConstraint {}",
+            constraint->description());
         return result;
       }
     }
@@ -1807,8 +1879,8 @@ class System : public SystemBase {
   /// @throws std::logic_error for a duplicate port name.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      variant<std::string, UseDefaultName> name, PortDataType type, int size,
-      optional<RandomDistribution> random_type = nullopt) {
+      std::variant<std::string, UseDefaultName> name, PortDataType type,
+      int size, std::optional<RandomDistribution> random_type = std::nullopt) {
     const InputPortIndex port_index(num_input_ports());
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
@@ -1836,7 +1908,7 @@ class System : public SystemBase {
   /// in #9447.
   const InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
-      optional<RandomDistribution> random_type = nullopt) {
+      std::optional<RandomDistribution> random_type = std::nullopt) {
     return DeclareInputPort(kUseDefaultName, type, size, random_type);
   }
   //@}

@@ -1,6 +1,5 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
-from __future__ import absolute_import, division, print_function
 
 import numpy as np
 

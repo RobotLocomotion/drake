@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":scalar_view_dense_output",
         ":semi_explicit_euler_integrator",
         ":simulator",
+        ":simulator_status",
         ":stepwise_dense_output",
     ],
 )
@@ -282,12 +283,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "simulator_status",
+    srcs = ["simulator_status.cc"],
+    hdrs = ["simulator_status.h"],
+    deps = [
+        "//systems/framework:system_base",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
     deps = [
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":simulator_status",
         "//common:extract_double",
         "//systems/framework:context",
         "//systems/framework:system",
@@ -295,6 +307,14 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "simulator_status_test",
+    deps = [
+        ":simulator_status",
+        "//common:nice_type_name",
+    ],
+)
 
 drake_cc_googletest(
     name = "simulator_test",
@@ -339,6 +359,7 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
+        "//common/test_utilities:expect_no_throw",
         "//systems/analysis/test_utilities",
     ],
 )
@@ -364,6 +385,7 @@ drake_cc_googletest(
     name = "implicit_integrator_test",
     deps = [
         ":implicit_integrator",
+        "//common/test_utilities:expect_no_throw",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -494,6 +516,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//common/trajectories:piecewise_polynomial",
     ],

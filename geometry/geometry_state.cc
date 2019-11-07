@@ -663,10 +663,12 @@ class MeshIdentifier final : public ShapeReifier {
   bool is_mesh() const { return is_mesh_; }
 
   // Implementation of ShapeReifier interface.
+  using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere&, void*) final {}
   void ImplementGeometry(const Cylinder&, void*) final {}
   void ImplementGeometry(const HalfSpace&, void*) final {}
   void ImplementGeometry(const Box&, void*) final {}
+  void ImplementGeometry(const Capsule&, void*) final {}
   void ImplementGeometry(const Mesh& mesh, void*) final {
     is_mesh_ = true;
     drake::log()->warn("Meshes are _not_ supported for proximity: ({})",
@@ -706,7 +708,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   if (assign == RoleAssign::kNew) {
     if (geometry.is_dynamic()) {
       // Pass the geometry to the engine.
-      geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id);
+      geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id,
+                                           *geometry.proximity_properties());
 
       InternalFrame& frame = frames_[geometry.frame_id()];
 
@@ -753,7 +756,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // If it's not dynamic, it must be anchored. No clique madness required;
       // anchored geometries are not tested against each other by the process.
       geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                            geometry_id);
+                                            geometry_id,
+                                            *geometry.proximity_properties());
     }
   }
   // TODO(SeanCurtis-TRI): Handle the assign == kReplace branch for when
@@ -1105,7 +1109,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // remove itself from its possible parent geometry. If called recursively,
     // it is because the parent geometry is being deleted anyways and removal
     // is implicit in the deletion of that parent geometry.
-    if (optional<GeometryId> parent_id = geometry.parent_id()) {
+    if (std::optional<GeometryId> parent_id = geometry.parent_id()) {
       auto& parent_geometry =
           GetMutableValueOrThrow(*parent_id, &geometries_);
       parent_geometry.remove_child(geometry_id);

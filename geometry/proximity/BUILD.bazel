@@ -20,8 +20,11 @@ drake_cc_package_library(
         ":distance_to_shape_callback",
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
+        ":hydroelastic_internal",
+        ":make_box_field",
         ":make_box_mesh",
         ":make_cylinder_mesh",
+        ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
         ":mesh_field",
         ":mesh_half_space_intersection",
@@ -115,19 +118,35 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter_legacy",
-        ":make_box_mesh",
-        ":make_sphere_mesh",
+        ":hydroelastic_internal",
         ":mesh_intersection",
         ":proximity_utilities",
         ":surface_mesh",
         ":volume_mesh",
         "//common:hash",
-        "//geometry:geometry_roles",
-        "//geometry:internal_geometry",
         "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
         "@fcl",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_internal",
+    srcs = ["hydroelastic_internal.cc"],
+    hdrs = ["hydroelastic_internal.h"],
+    deps = [
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//geometry:geometry_roles",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:proximity_utilities",
         "@fmt",
     ],
 )
@@ -216,6 +235,30 @@ drake_cc_library(
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_ellipsoid_mesh",
+    hdrs = ["make_ellipsoid_mesh.h"],
+    deps = [
+        ":make_sphere_mesh",
+        ":surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_box_field",
+    hdrs = ["make_box_field.h"],
+    deps = [
+        ":distance_to_point_callback",
+        ":volume_mesh",
+        "//common:essential",
+        "//common:unused",
         "//geometry:shape_specification",
     ],
 )
@@ -349,7 +392,6 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape_callback",
         "//common/test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",
         "//geometry:utilities",
         "//math:gradient",
@@ -357,11 +399,22 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hydroelastic_internal_test",
+    deps = [
+        ":hydroelastic_internal",
+        ":proximity_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "@fmt",
+    ],
+)
+
+drake_cc_googletest(
     name = "hydroelastic_callback_test",
     deps = [
         ":hydroelastic_callback",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 
@@ -429,6 +482,22 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_mesh",
         ":sorted_triplet",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_ellipsoid_mesh_test",
+    deps = [
+        ":make_ellipsoid_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_box_field_test",
+    deps = [
+        ":make_box_field",
+        ":make_box_mesh",
+        ":volume_to_surface_mesh",
     ],
 )
 

@@ -37,8 +37,6 @@ Its source lives in
 Python Style
 ============
 
-Drake Python code uses Python 2.7.
-
 Drake strictly follows `PEP 8 -- Style Guide for Python Code
 <https://www.python.org/dev/peps/pep-0008/>`_ except for the specific
 clarifications, exceptions, and additional rules noted below. Since PEP 8

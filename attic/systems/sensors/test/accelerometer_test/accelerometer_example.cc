@@ -3,7 +3,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/sensors/test/accelerometer_test/accelerometer_example_diagram.h"
@@ -28,7 +27,6 @@ namespace {
 
 int exec(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  logging::HandleSpdlogGflags();
 
   DRAKE_DEMAND(FLAGS_simulation_sec >= 0);
   ::drake::lcm::DrakeLcm real_lcm;

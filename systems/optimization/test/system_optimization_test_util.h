@@ -37,7 +37,7 @@ class DummySystem : public LeafSystem<T> {
     this->DeclareNumericParameter(BasicVector<T>(Vector1<T>::Constant(1.0)));
     this->DeclareInputPort("u", PortDataType::kVectorValued, 2);
     this->constraint_index_ = this->DeclareInequalityConstraint(
-        DummySystemConstraintCalc<T>, {Eigen::Vector2d(2, 0), nullopt},
+        DummySystemConstraintCalc<T>, {Eigen::Vector2d(2, 0), std::nullopt},
         "dummy_system_constraint");
     if (with_abstract_state_) {
       this->DeclareAbstractState(AbstractValue::Make<int>(5));

@@ -102,6 +102,12 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
 
+    write_double3(contact_surface.mesh_W().centroid(), surface_msg.centroid_W);
+    write_double3(hydroelastic_contact_info.F_Ac_W().translational(),
+                  surface_msg.force_C_W);
+    write_double3(hydroelastic_contact_info.F_Ac_W().rotational(),
+                  surface_msg.moment_C_W);
+
     // Loop through each contact triangle on the contact surface.
     for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
       lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =

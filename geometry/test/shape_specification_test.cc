@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 
@@ -35,6 +36,14 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
     received_user_data_ = data;
     box_made_ = true;
   }
+  void ImplementGeometry(const Capsule&, void* data) override {
+    received_user_data_ = data;
+    capsule_made_ = true;
+  }
+  void ImplementGeometry(const Ellipsoid&, void* data) override {
+    received_user_data_ = data;
+    ellipsoid_made_ = true;
+  }
   void ImplementGeometry(const Mesh&, void*) override {
     // TODO(SeanCurtis-TRI): Provide body when meshes are meaningfully
     // supported.
@@ -46,6 +55,8 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
   }
   void Reset() {
     box_made_ = false;
+    capsule_made_ = false;
+    ellipsoid_made_ = false;
     sphere_made_ = false;
     half_space_made_ = false;
     cylinder_made_ = false;
@@ -55,6 +66,8 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
 
  protected:
   bool box_made_{false};
+  bool capsule_made_{false};
+  bool ellipsoid_made_{false};
   bool sphere_made_{false};
   bool cylinder_made_{false};
   bool half_space_made_{false};
@@ -79,7 +92,10 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
+  EXPECT_FALSE(ellipsoid_made_);
+  EXPECT_EQ(s.get_radius(), 1.0);
 
   Reset();
 
@@ -89,6 +105,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_TRUE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
 
   Reset();
@@ -99,7 +116,11 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_TRUE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
+  EXPECT_FALSE(ellipsoid_made_);
+  EXPECT_EQ(cylinder.get_radius(), 1);
+  EXPECT_EQ(cylinder.get_length(), 2);
 
   Reset();
 
@@ -109,7 +130,25 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_TRUE(box_made_);
+  EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
+  EXPECT_EQ(box.width(), 1);
+  EXPECT_EQ(box.depth(), 2);
+  EXPECT_EQ(box.height(), 3);
+
+  Reset();
+
+  Capsule capsule{2, 1};
+  capsule.Reify(this);
+  EXPECT_FALSE(sphere_made_);
+  EXPECT_FALSE(half_space_made_);
+  EXPECT_FALSE(cylinder_made_);
+  EXPECT_FALSE(box_made_);
+  EXPECT_TRUE(capsule_made_);
+  EXPECT_FALSE(convex_made_);
+  EXPECT_FALSE(ellipsoid_made_);
+  EXPECT_EQ(capsule.get_radius(), 2);
+  EXPECT_EQ(capsule.get_length(), 1);
 
   Reset();
 
@@ -119,7 +158,24 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(capsule_made_);
   EXPECT_TRUE(convex_made_);
+  EXPECT_FALSE(ellipsoid_made_);
+
+  Reset();
+
+  Ellipsoid ellipsoid{1, 2, 3};
+  ellipsoid.Reify(this);
+  EXPECT_FALSE(sphere_made_);
+  EXPECT_FALSE(half_space_made_);
+  EXPECT_FALSE(cylinder_made_);
+  EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(capsule_made_);
+  EXPECT_FALSE(convex_made_);
+  EXPECT_TRUE(ellipsoid_made_);
+  EXPECT_EQ(ellipsoid.get_a(), 1);
+  EXPECT_EQ(ellipsoid.get_b(), 2);
+  EXPECT_EQ(ellipsoid.get_c(), 3);
 }
 
 // Confirms that the ReifiableShape properly clones the right types.
@@ -147,6 +203,8 @@ TEST_F(ReifierTest, CloningShapes) {
   ASSERT_FALSE(half_space_made_);
   ASSERT_FALSE(cylinder_made_);
   ASSERT_FALSE(box_made_);
+  ASSERT_FALSE(capsule_made_);
+  ASSERT_FALSE(ellipsoid_made_);
 }
 
 
@@ -304,9 +362,9 @@ GTEST_TEST(BoxTest, Cube) {
 
 // Confirms that shape parameters are validated.
 GTEST_TEST(ShapeTest, NumericalValidation) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Sphere(-0.5), std::logic_error, "Sphere radius should be >= 0.+");
-  EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
+  DRAKE_EXPECT_THROWS_MESSAGE(Sphere(-0.5), std::logic_error,
+                              "Sphere radius should be >= 0.+");
+  DRAKE_EXPECT_NO_THROW(Sphere(0));  // Special case for 0 radius.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0, 1), std::logic_error, "Cylinder radius and length should "
@@ -321,17 +379,111 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Box(3, 1, -1), std::logic_error, "Box width, depth, and height should "
       "all be > 0.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Box::MakeCube(0), std::logic_error, "Box width, depth, and height should "
-      "all be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Box::MakeCube(0), std::logic_error,
+                              "Box width, depth, and height should "
+                              "all be > 0.+");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(0, 1), std::logic_error,
+                              "Capsule radius and length should both be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Capsule(0.5, -1), std::logic_error,
+                              "Capsule radius and length should both be > 0.+");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(0, 1, 1), std::logic_error,
+                              "Ellipsoid lengths of principal semi-axes a, b, "
+                              "and c should all be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(1, 0, 1), std::logic_error,
+                              "Ellipsoid lengths of principal semi-axes a, b, "
+                              "and c should all be > 0.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(Ellipsoid(1, 1, 0), std::logic_error,
+                              "Ellipsoid lengths of principal semi-axes a, b, "
+                              "and c should all be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9), std::logic_error,
                               "Mesh .scale. cannot be < 1e-8.");
-  EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0), std::logic_error,
                               "Convex .scale. cannot be < 1e-8.");
-  EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
+}
+
+class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};
+
+// Tests default implementation of virtual functions for each shape.
+TEST_F(DefaultReifierTest, UnsupportedGeometry) {
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Sphere(0.5), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support Sphere.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Cylinder(1, 2), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support Cylinder.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(HalfSpace(), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support HalfSpace.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Box(1, 1, 1), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support Box.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Capsule(1, 2), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support Capsule.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Ellipsoid(1, 1, 1),
+                              nullptr), std::runtime_error,
+                              "This class (.+) does not support Ellipsoid.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Mesh("foo", 1), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support Mesh.");
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Convex("a", 1), nullptr),
+                              std::runtime_error,
+                              "This class (.+) does not support Convex.");
+}
+
+GTEST_TEST(ShapeName, SimpleReification) {
+  ShapeName name;
+
+  EXPECT_EQ(name.name(), "");
+
+  Sphere(0.5).Reify(&name);
+  EXPECT_EQ(name.name(), "Sphere");
+
+  Cylinder(1, 2).Reify(&name);
+  EXPECT_EQ(name.name(), "Cylinder");
+
+  Box(1, 2, 3).Reify(&name);
+  EXPECT_EQ(name.name(), "Box");
+
+  Capsule(1, 2).Reify(&name);
+  EXPECT_EQ(name.name(), "Capsule");
+
+  Ellipsoid(1, 2, 3).Reify(&name);
+  EXPECT_EQ(name.name(), "Ellipsoid");
+
+  HalfSpace().Reify(&name);
+  EXPECT_EQ(name.name(), "HalfSpace");
+
+  Mesh("filepath", 1.0).Reify(&name);
+  EXPECT_EQ(name.name(), "Mesh");
+
+  Convex("filepath", 1.0).Reify(&name);
+  EXPECT_EQ(name.name(), "Convex");
+}
+
+GTEST_TEST(ShapeName, ReifyOnConstruction) {
+  EXPECT_EQ(ShapeName(Sphere(0.5)).name(), "Sphere");
+  EXPECT_EQ(ShapeName(Cylinder(1, 2)).name(), "Cylinder");
+  EXPECT_EQ(ShapeName(Capsule(1, 2)).name(), "Capsule");
+  EXPECT_EQ(ShapeName(Ellipsoid(1, 2, 3)).name(), "Ellipsoid");
+  EXPECT_EQ(ShapeName(Box(1, 2, 3)).name(), "Box");
+  EXPECT_EQ(ShapeName(HalfSpace()).name(), "HalfSpace");
+  EXPECT_EQ(ShapeName(Mesh("filepath", 1.0)).name(), "Mesh");
+  EXPECT_EQ(ShapeName(Convex("filepath", 1.0)).name(), "Convex");
+}
+
+GTEST_TEST(ShapeName, Streaming) {
+  ShapeName name(Sphere(0.5));
+  std::stringstream ss;
+  ss << name;
+  EXPECT_EQ(name.name(), "Sphere");
+  EXPECT_EQ(ss.str(), name.name());
 }
 
 }  // namespace

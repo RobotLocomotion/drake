@@ -9,8 +9,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
-#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -187,7 +185,7 @@ struct Impl {
     using Base = VectorSystem<T>;
 
     VectorSystemPublic(
-        int input_size, int output_size, optional<bool> direct_feedthrough)
+        int input_size, int output_size, std::optional<bool> direct_feedthrough)
         : Base(input_size, output_size, direct_feedthrough) {}
 
     using Base::EvalVectorInput;
@@ -296,17 +294,17 @@ struct Impl {
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("DeclareInputPort",
             overload_cast_explicit<const InputPort<T>&,
-                variant<std::string, UseDefaultName>, PortDataType, int,
-                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+                std::variant<std::string, UseDefaultName>, PortDataType, int,
+                std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
-            py::arg("size"), py::arg("random_type") = nullopt,
+            py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.System.DeclareInputPort.doc_4args)
         .def("DeclareInputPort",
             overload_cast_explicit<  // BR
                 const InputPort<T>&, PortDataType, int,
-                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+                std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("type"), py::arg("size"),
-            py::arg("random_type") = nullopt)
+            py::arg("random_type") = std::nullopt)
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
             doc.System.HasAnyDirectFeedthrough.doc)
@@ -367,6 +365,30 @@ struct Impl {
                 &System<T>::CalcDiscreteVariableUpdates),
             py::arg("context"), py::arg("discrete_state"),
             doc.System.CalcDiscreteVariableUpdates.doc_2args)
+        .def("GetSubsystemContext",
+            overload_cast_explicit<const Context<T>&, const System<T>&,
+                const Context<T>&>(&System<T>::GetSubsystemContext),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
+        .def("GetMutableSubsystemContext",
+            overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
+                &System<T>::GetMutableSubsystemContext),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
+        .def("GetMyContextFromRoot",
+            overload_cast_explicit<const Context<T>&, const Context<T>&>(
+                &System<T>::GetMyContextFromRoot),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
+        .def("GetMyMutableContextFromRoot",
+            overload_cast_explicit<Context<T>&, Context<T>*>(
+                &System<T>::GetMyMutableContextFromRoot),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Sugar.
         .def("GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {
@@ -478,13 +500,13 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
-                optional<RandomDistribution> random_type)
+                std::optional<RandomDistribution> random_type)
                 -> const InputPort<T>& {
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
             py_reference_internal, py::arg("name"), py::arg("model_vector"),
-            py::arg("random_type") = nullopt,
+            py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
@@ -677,18 +699,6 @@ Note: The above is for the C++ documentation. For Python, use
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 3>(),
             doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
-        .def("GetSubsystemContext",
-            overload_cast_explicit<const Context<T>&, const System<T>&,
-                const Context<T>&>(&Diagram<T>::GetSubsystemContext),
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
-        .def("GetMutableSubsystemContext",
-            overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
-                &Diagram<T>::GetMutableSubsystemContext),
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_reference_internal,
             doc.Diagram.GetSubsystemByName.doc);
@@ -700,12 +710,12 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
         LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
         .def(py::init([](int input_size, int output_size,
-                          optional<bool> direct_feedthrough) {
+                          std::optional<bool> direct_feedthrough) {
           return new PyVectorSystem(
               input_size, output_size, direct_feedthrough);
         }),
             py::arg("input_size"), py::arg("output_size"),
-            py::arg("direct_feedthrough") = nullopt,
+            py::arg("direct_feedthrough") = std::nullopt,
             doc.VectorSystem.ctor.doc_3args);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.

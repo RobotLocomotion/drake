@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -32,6 +33,7 @@ using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ImplicitEulerIntegrator;
+using drake::systems::ExplicitEulerIntegrator;
 using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using StatelessSystem = drake::systems::analysis_test::StatelessSystem<double>;
 using Eigen::AutoDiffScalar;
@@ -393,7 +395,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   // Loop, decreasing accuracy as we go.
   while (accuracy > 1e-8) {
     // Verify that the isolation window is computed.
-    optional<double> iso_win = simulator.GetCurrentWitnessTimeIsolation();
+    std::optional<double> iso_win = simulator.GetCurrentWitnessTimeIsolation();
     EXPECT_TRUE(iso_win);
 
     // Verify that the new evaluation is closer to zero than the old one.
@@ -543,7 +545,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     EXPECT_EQ(w1, w2);
 
     // Verify that they are triggering.
-    optional<double> iso_time = simulator->GetCurrentWitnessTimeIsolation();
+    std::optional<double> iso_time =
+        simulator->GetCurrentWitnessTimeIsolation();
     EXPECT_TRUE(iso_time);
     EXPECT_LT(std::abs(w1), iso_time.value());
 
@@ -600,7 +603,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   simulator.get_mutable_context().SetAccuracy(tol);
 
   // Get the isolation interval tolerance.
-  const optional<double> iso_tol = simulator.GetCurrentWitnessTimeIsolation();
+  const std::optional<double> iso_tol =
+      simulator.GetCurrentWitnessTimeIsolation();
   EXPECT_TRUE(iso_tol);
 
   // Simulate to right after the second one should have triggered.
@@ -883,7 +887,8 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   EXPECT_TRUE(simulator.has_context());
   simulator.release_context();
   EXPECT_FALSE(simulator.has_context());
-  EXPECT_THROW(simulator.Initialize(), std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(), std::logic_error,
+      ".*Initialize.*Context.*not.*set.*");
 
   // Create another context.
   auto ucontext = spring_mass.CreateDefaultContext();
@@ -2280,6 +2285,89 @@ GTEST_TEST(SimulatorTest, EvalDerivativesCounter) {
   simulator.AdvanceTo(2.);  // 8 more steps, but only 8 more evaluations.
   EXPECT_EQ(simulator.get_integrator().get_num_steps_taken(), 16);
   EXPECT_EQ(simulator.get_integrator().get_num_derivative_evaluations(), 24);
+}
+
+// Verify correct functioning of the monitor() API and runtime monitor
+// behavior, including correct monitor status reporting from the Simulator.
+GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  spring_mass.set_name("my_spring_mass");
+  Simulator<double> simulator(spring_mass);
+  Context<double>& context = simulator.get_mutable_context();
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass,
+                                                              0.125, &context);
+  std::vector<Eigen::VectorXd> states;
+  const auto monitor = [&states](const Context<double>& root_context) {
+    Eigen::VectorXd vector(1 + root_context.num_continuous_states());
+    vector << root_context.get_time(),
+        root_context.get_continuous_state_vector().CopyToVector();
+    states.push_back(vector);
+    return EventStatus::Succeeded();
+  };
+
+  simulator.set_monitor(monitor);
+  EXPECT_TRUE(simulator.get_monitor());
+
+  SimulatorStatus status = simulator.AdvanceTo(1.);  // Initialize + 8 steps.
+  EXPECT_EQ(status.reason(), SimulatorStatus::kReachedBoundaryTime);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 8);
+  EXPECT_EQ(states.size(), 9u);
+
+  EXPECT_THAT(status.FormatMessage(), ::testing::MatchesRegex(
+      "Simulator successfully reached the boundary time.*1.*"));
+
+  // Check that some of the timestamps are right.
+  EXPECT_EQ(states[0](0), 0.);
+  EXPECT_EQ(states[1](0), 0.125);
+  EXPECT_EQ(states[8](0), 1.);
+
+  simulator.clear_monitor();
+  EXPECT_FALSE(simulator.get_monitor());
+  simulator.AdvanceTo(2.);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 16);
+  EXPECT_EQ(states.size(), 9u);
+
+  simulator.set_monitor(monitor);
+  simulator.AdvanceTo(3.);  // 8 more steps.
+  EXPECT_EQ(simulator.get_num_steps_taken(), 24);
+  EXPECT_EQ(states.size(), 17u);
+  EXPECT_EQ(states[16](0), 3.);
+
+  // This monitor should provide a clean termination that is properly
+  // reported through the Simulator's status return.
+  const auto good_monitor = [](const Context<double>& root_context) {
+    const double time = root_context.get_time();
+    // Don't pass a System to blame for termination.
+    return time < 3.49 ? EventStatus::Succeeded()
+                       : EventStatus::ReachedTermination(nullptr, "All done.");
+  };
+
+  simulator.set_monitor(good_monitor);
+  status = simulator.AdvanceTo(10.);
+  EXPECT_EQ(status.reason(), SimulatorStatus::kReachedTerminationCondition);
+  // Time should be exactly 3.5 due to our choice of step size.
+  EXPECT_EQ(simulator.get_context().get_time(), 3.5);
+  EXPECT_THAT(
+      status.FormatMessage(),
+      ::testing::MatchesRegex(
+          "Simulator returned early.*3\\.5.*because.*requested termination.*"
+          "with message.*All done\\..*"));
+
+  // This monitor produces a hard failure that should cause the Simulator
+  // to throw with a helpful message.
+  const auto bad_monitor = [&spring_mass](const Context<double>& root_context) {
+    const double time = root_context.get_time();
+    // Blame spring_mass for the error.
+    return time < 5.99 ? EventStatus::Succeeded()
+                       : EventStatus::Failed(&spring_mass,
+                           "Something terrible happened.");
+  };
+  simulator.set_monitor(bad_monitor);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      simulator.AdvanceTo(10.), std::runtime_error,
+      ".*Simulator stopped at time 6.*because.*"
+      "SpringMassSystem.*my_spring_mass.*"
+      "failed with message.*Something terrible happened.*");
 }
 
 }  // namespace

@@ -21,14 +21,14 @@ std::string Indent(int depth) {
 // event that we have already heard about. Otherwise, let the subscribers know
 // that things have changed. Update statistics.
 void DependencyTracker::NoteValueChange(int64_t change_event) const {
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' value change event {} ...",
+  DRAKE_LOGGER_DEBUG("Tracker '{}' value change event {} ...",
                      GetPathDescription(), change_event);
   DRAKE_ASSERT(change_event > 0);
 
   ++num_value_change_notifications_received_;
   if (last_change_event_ == change_event) {
     ++num_ignored_notifications_;
-    DRAKE_SPDLOG_DEBUG(log(),
+    DRAKE_LOGGER_DEBUG(
         "... ignoring repeated value change notification same change event.");
     return;
   }
@@ -44,8 +44,8 @@ void DependencyTracker::NotePrerequisiteChange(
     const DependencyTracker& prerequisite,
     int depth) const {
   unused(Indent);  // Avoid warning in non-Debug builds.
-  DRAKE_SPDLOG_DEBUG(
-      log(), "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
+  DRAKE_LOGGER_DEBUG(
+      "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
       Indent(depth), GetPathDescription(), prerequisite.GetPathDescription(),
       change_event);
   DRAKE_ASSERT(change_event > 0);
@@ -54,7 +54,7 @@ void DependencyTracker::NotePrerequisiteChange(
   ++num_prerequisite_notifications_received_;
   if (last_change_event_ == change_event) {
     ++num_ignored_notifications_;
-    DRAKE_SPDLOG_DEBUG(log(),
+    DRAKE_LOGGER_DEBUG(
         "{}... ignoring repeated prereq change notification same change event.",
         Indent(depth));
     return;
@@ -68,7 +68,7 @@ void DependencyTracker::NotePrerequisiteChange(
 
 void DependencyTracker::NotifySubscribers(int64_t change_event,
                                           int depth) const {
-  DRAKE_SPDLOG_DEBUG(log(), "{}... {} downstream subscribers.{}", Indent(depth),
+  DRAKE_LOGGER_DEBUG("{}... {} downstream subscribers.{}", Indent(depth),
                      num_subscribers(),
                      num_subscribers() > 0 ? " Notifying:" : "");
   DRAKE_ASSERT(change_event > 0);
@@ -76,7 +76,7 @@ void DependencyTracker::NotifySubscribers(int64_t change_event,
 
   for (const DependencyTracker* subscriber : subscribers_) {
     DRAKE_ASSERT(subscriber != nullptr);
-    DRAKE_SPDLOG_DEBUG(log(), "{}->{}", Indent(depth),
+    DRAKE_LOGGER_DEBUG("{}->{}", Indent(depth),
                        subscriber->GetPathDescription());
     subscriber->NotePrerequisiteChange(change_event, *this, depth + 1);
   }
@@ -91,7 +91,7 @@ void DependencyTracker::NotifySubscribers(int64_t change_event,
 void DependencyTracker::SubscribeToPrerequisite(
     DependencyTracker* prerequisite) {
   DRAKE_DEMAND(prerequisite != nullptr);
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' subscribing to prerequisite '{}'",
+  DRAKE_LOGGER_DEBUG("Tracker '{}' subscribing to prerequisite '{}'",
                      GetPathDescription(), prerequisite->GetPathDescription());
 
   // Make sure we haven't already added this prerequisite.
@@ -103,7 +103,7 @@ void DependencyTracker::SubscribeToPrerequisite(
 
 void DependencyTracker::AddDownstreamSubscriber(
     const DependencyTracker& subscriber) {
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' adding subscriber '{}'",
+  DRAKE_LOGGER_DEBUG("Tracker '{}' adding subscriber '{}'",
                      GetPathDescription(), subscriber.GetPathDescription());
   // Make sure we haven't already added this subscriber.
   DRAKE_ASSERT(!HasSubscriber(subscriber));  // Expensive.
@@ -135,7 +135,7 @@ void Remove(const T& value, std::vector<T>* to_search) {
 void DependencyTracker::UnsubscribeFromPrerequisite(
     DependencyTracker* prerequisite) {
   DRAKE_DEMAND(prerequisite != nullptr);
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' unsubscribing from prerequisite '{}'",
+  DRAKE_LOGGER_DEBUG("Tracker '{}' unsubscribing from prerequisite '{}'",
                      GetPathDescription(), prerequisite->GetPathDescription());
 
   // Make sure we have already added this prerequisite.
@@ -147,7 +147,7 @@ void DependencyTracker::UnsubscribeFromPrerequisite(
 
 void DependencyTracker::RemoveDownstreamSubscriber(
     const DependencyTracker& subscriber) {
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' removing subscriber '{}'",
+  DRAKE_LOGGER_DEBUG("Tracker '{}' removing subscriber '{}'",
                      GetPathDescription(), subscriber.GetPathDescription());
   // Make sure we already added this subscriber.
   DRAKE_ASSERT(HasSubscriber(subscriber));  // Expensive.
@@ -224,7 +224,7 @@ void DependencyTracker::RepairTrackerPointers(
   if (has_associated_cache_entry_) {
     const CacheIndex source_index(source.cache_value_->cache_index());
     cache_value_ = &cache->get_mutable_cache_entry_value(source_index);
-    DRAKE_SPDLOG_DEBUG(log(),
+    DRAKE_LOGGER_DEBUG(
         "Cloned tracker '{}' repairing cache entry {} invalidation to {:#x}.",
         GetPathDescription(), source.cache_value_->cache_index(),
         size_t(cache_value_));

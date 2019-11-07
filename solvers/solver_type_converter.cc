@@ -50,7 +50,7 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
   DRAKE_UNREACHABLE();
 }
 
-optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
+std::optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
   if (solver_id == CsdpSolver::id()) {
     return SolverType::kCsdp;
   } else if (solver_id == DrealSolver::id()) {
@@ -78,7 +78,7 @@ optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
   } else if (solver_id == UnrevisedLemkeSolverId::id()) {
     return SolverType::kUnrevisedLemke;
   } else {
-    return nullopt;
+    return std::nullopt;
   }
 }
 

@@ -5,9 +5,12 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
-class BodyMotionData {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+BodyMotionData {
  public:  // TODO(tkoolen): would be better to make this private
   int body_or_frame_id;
   drake::trajectories::PiecewisePolynomial<double> trajectory;

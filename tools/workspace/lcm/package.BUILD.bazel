@@ -218,15 +218,11 @@ generate_file(
     content = """
 import ctypes
 import os.path
-import six
 ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
-if six.PY2:
-    execfile(_filename)
-else:
-    with open(_filename) as f:
-        _code = compile(f.read(), _filename, 'exec')
-        exec(_code)
+with open(_filename) as f:
+    _code = compile(f.read(), _filename, 'exec')
+    exec(_code)
 """,
     visibility = ["//visibility:private"],
 )

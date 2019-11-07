@@ -261,17 +261,18 @@ PYBIND11_MODULE(sensors, m) {
         .def("center_x", &Class::center_x, cls_doc.center_x.doc)
         .def("center_y", &Class::center_y, cls_doc.center_y.doc)
         .def("intrinsic_matrix", &Class::intrinsic_matrix,
-            cls_doc.intrinsic_matrix.doc);
-    DefPickle(&cls,
-        [](const Class& self) {
-          return py::make_tuple(self.width(), self.height(), self.focal_x(),
-              self.focal_y(), self.center_x(), self.center_y());
-        },
-        [](py::tuple t) {
-          DRAKE_DEMAND(t.size() == 6);
-          return Class(t[0].cast<int>(), t[1].cast<int>(), t[2].cast<double>(),
-              t[3].cast<double>(), t[4].cast<double>(), t[5].cast<double>());
-        });
+            cls_doc.intrinsic_matrix.doc)
+        .def(py::pickle(
+            [](const Class& self) {
+              return py::make_tuple(self.width(), self.height(), self.focal_x(),
+                  self.focal_y(), self.center_x(), self.center_y());
+            },
+            [](py::tuple t) {
+              DRAKE_DEMAND(t.size() == 6);
+              return Class(t[0].cast<int>(), t[1].cast<int>(),
+                  t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
+                  t[5].cast<double>());
+            }));
   }
 
   {

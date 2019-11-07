@@ -69,6 +69,10 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::Vector3d act_vector(0, 0, 0);
   tree.SetActuationInArray(instance1, Eigen::Vector2d(1, 2), &act_vector);
   tree.SetActuationInArray(instance2, Vector1d(3), &act_vector);
+  EXPECT_TRUE(CompareMatrices(tree.GetActuationFromArray(instance1, act_vector),
+                              Eigen::Vector2d(1, 2)));
+  EXPECT_TRUE(CompareMatrices(tree.GetActuationFromArray(instance2, act_vector),
+                              Vector1d(3)));
   EXPECT_TRUE(CompareMatrices(act_vector, Eigen::Vector3d(1, 2, 3)));
 
   Eigen::VectorXd pos_vector(10);

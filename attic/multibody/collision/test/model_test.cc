@@ -129,7 +129,7 @@ std::vector<ModelType> GetUsableModelTypes() {
   return types;
 }
 
-INSTANTIATE_TEST_CASE_P(AllModelTypesTests, AllModelTypesTests,
+INSTANTIATE_TEST_SUITE_P(AllModelTypesTests, AllModelTypesTests,
                         ::testing::ValuesIn(GetAllModelTypes()));
 
 // Fixture for tests that should only be applied to usable collision model
@@ -157,7 +157,7 @@ TEST_P(UsableModelTypesTests, RemoveElement) {
   RemoveElement(*elem2);
 }
 
-INSTANTIATE_TEST_CASE_P(UsableModelTypesTests, UsableModelTypesTests,
+INSTANTIATE_TEST_SUITE_P(UsableModelTypesTests, UsableModelTypesTests,
                         ::testing::ValuesIn(GetUsableModelTypes()));
 
 #ifndef DRAKE_DISABLE_FCL
@@ -224,7 +224,7 @@ TEST_P(FclModelNotImplementedTests, NotImplemented) {
   EXPECT_THROW(GetParam()(this), std::exception);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     NotImplementedTest, FclModelNotImplementedTests,
     ::testing::Values(
        &FclModelNotImplementedTests::CallAddBox,
@@ -485,13 +485,13 @@ std::vector<ShapeVsShapeTestParam> GenerateSphereVsCylinderParam() {
 }
 
 // Instantiate pairwise test cases.
-INSTANTIATE_TEST_CASE_P(SphereVsSphere, ShapeVsShapeTest,
+INSTANTIATE_TEST_SUITE_P(SphereVsSphere, ShapeVsShapeTest,
                         ::testing::ValuesIn(GenerateSphereVsSphereParam()));
 
-INSTANTIATE_TEST_CASE_P(CylinderVsCylinder, ShapeVsShapeTest,
+INSTANTIATE_TEST_SUITE_P(CylinderVsCylinder, ShapeVsShapeTest,
                         ::testing::ValuesIn(GenerateCylinderVsCylinderParam()));
 
-INSTANTIATE_TEST_CASE_P(SphereVsCylinder, ShapeVsShapeTest,
+INSTANTIATE_TEST_SUITE_P(SphereVsCylinder, ShapeVsShapeTest,
                         ::testing::ValuesIn(GenerateSphereVsCylinderParam()));
 
 // GENERAL REMARKS ON THE TESTS PERFORMED

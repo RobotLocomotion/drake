@@ -290,7 +290,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       // is detected. This will make the Newton-Raphson process in the caller
       // continue iterating until its inevitable failure.
       using std::isnan;
-      if (isnan(dxc[i])) return false;
+      if (isnan(dxc[i]) || isnan(xc[i])) return false;
 
       const T tol = max(abs(xc[i]), T(1)) * eps;
       if (abs(dxc[i]) > tol)
@@ -403,8 +403,7 @@ template <class T>
 void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
     const System<T>& system, const T& t, const VectorX<T>& xt,
     const Context<T>& context, MatrixX<T>* J) {
-  SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute Autodiff Jacobian "
-               "t={}", t);
+  DRAKE_LOGGER_DEBUG("  ImplicitIntegrator Compute Autodiff Jacobian t={}", t);
   // Create AutoDiff versions of the state vector.
   VectorX<AutoDiffXd> a_xt = xt;
 
@@ -459,9 +458,10 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
   // Get the number of continuous state variables xt.
   const int n = context->num_continuous_states();
 
-  SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute Forwarddiff "
-               "{}-Jacobian t={}", n, t);
-  SPDLOG_DEBUG(drake::log(), "  computing from state {}", xt.transpose());
+  DRAKE_LOGGER_DEBUG(
+      "  ImplicitIntegrator Compute Forwarddiff {}-Jacobian t={}", n, t);
+  DRAKE_LOGGER_DEBUG(
+      "  computing from state {}", xt.transpose());
 
   // Initialize the Jacobian.
   J->resize(n, n);
@@ -529,8 +529,8 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
   // Get the number of continuous state variables xt.
   const int n = context->num_continuous_states();
 
-  SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute ",
-               "Centraldiff {}-Jacobian t={}", n, t);
+  DRAKE_LOGGER_DEBUG(
+      "  ImplicitIntegrator Compute Centraldiff {}-Jacobian t={}", n, t);
 
   // Initialize the Jacobian.
   J->resize(n, n);

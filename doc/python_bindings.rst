@@ -32,7 +32,7 @@ First, download and extract an :ref:`available binary package
 <binary-installation>`.
 
 As an example, here is how to download and extract one of the latest releases
-to ``/opt`` (where ``<platform>`` could be ``bionic``, ``xenial``, or ``mac``):
+to ``/opt`` (where ``<platform>`` could be ``bionic`` or ``mac``):
 
 .. code-block:: shell
 
@@ -64,8 +64,7 @@ incorporate its install tree into a ``virtualenv``
 `FHS <https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard>`_-like
 environment.
 
-An example for ``python3``, where you should replace ``<venv_path>`` and
-``<platform>``:
+An example, where you should replace ``<venv_path>`` and ``<platform>``:
 
 .. code-block:: shell
 
@@ -112,8 +111,6 @@ Please note the additional CMake options which affect the Python bindings:
 *   ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
 *   ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
 *   ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
-*   ``-DWITH_PYTHON_VERSION={2, 3}`` - Build with a specific version of
-    Python. Default is 3 on all platforms except Xenial.
 
 ``{...}`` means a list of options, and the option surrounded by ``[...]`` is
 the default option. An example of building ``pydrake`` with both Gurobi and

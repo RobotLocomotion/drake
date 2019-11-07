@@ -546,7 +546,7 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, FeasiblePointTest) {
   TestFeasiblePoint();
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeSos2Test,
     ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
                        ::testing::ValuesIn(std::vector<int>{2, 3}),
@@ -586,7 +586,7 @@ TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest, FeasiblePointTest) {
   TestFeasiblePoint();
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeMultipleChoiceTest,
     ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
                        ::testing::ValuesIn(std::vector<int>{2, 3})));

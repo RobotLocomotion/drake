@@ -39,7 +39,7 @@ template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(
     const Eigen::Ref<const VectorX<T>>& source_value)
     : ConstantVectorSource(
-          SystemTypeTag<systems::ConstantVectorSource>{},
+          SystemTypeTag<ConstantVectorSource>{},
           BasicVector<T>(source_value)) {}
 
 // (N.B. This overload also indirectly supports scalar conversion.)

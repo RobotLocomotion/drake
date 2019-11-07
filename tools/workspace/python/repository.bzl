@@ -35,10 +35,9 @@ load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 # The supported Python versions should match those listed in both the root
-# CMakeLists.txt and doc/developers.rst. The first version is the default.
+# CMakeLists.txt and doc/developers.rst.
 _VERSION_SUPPORT_MATRIX = {
-    "ubuntu:16.04": ["2.7"],
-    "ubuntu:18.04": ["3.6", "2.7"],
+    "ubuntu:18.04": ["3.6"],
     "macos:10.14": ["3.7"],
     "macos:10.15": ["3.7"],
 }
@@ -69,11 +68,9 @@ def repository_python_info(repository_ctx):
         # TODO(eric.cousineau): Make this an error once `.bazelrc` stops using
         # `try-import` for configuration.
         if os_result.is_macos:
-            python_path = "/usr/local/bin/python{}".format(
-                versions_supported[0],
-            )
+            python_path = "/usr/local/bin/python3"
         else:
-            python_path = "/usr/bin/python{}".format(versions_supported[0])
+            python_path = "/usr/bin/python3"
     if not python_path.startswith("/"):
         fail("`--action_env=DRAKE_PYTHON_BIN_PATH` must provide an " +
              "absolute path.")
@@ -110,15 +107,16 @@ def repository_python_info(repository_ctx):
     if which(repository_ctx, python_config) == None:
         fail((
             "Cannot find corresponding config executable: {}\n" +
-            "  For interpreter: {}"
+            "  From interpreter: {}"
         ).format(python_config, python_path))
 
     # Warn if we do not the correct platform support.
     if version not in versions_supported:
         print((
             "\n\nWARNING: Python {} is not a supported / tested version for " +
-            "use with Drake.\n  Supported versions on {}: {}\n\n"
-        ).format(version, os_key, versions_supported))
+            "use with Drake.\n  Supported versions on {}: {}\n  " +
+            "From interpreter: {}\n\n"
+        ).format(version, os_key, versions_supported, python))
 
     site_packages_relpath = "lib/python{}/site-packages".format(version)
     return struct(

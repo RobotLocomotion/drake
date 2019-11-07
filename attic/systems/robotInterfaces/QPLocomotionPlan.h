@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 #include "lcm/lcm-cpp.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/unused.h"
@@ -17,7 +18,9 @@
 #include "drake/systems/controllers/zmpUtil.h"
 #include "drake/systems/robotInterfaces/BodyMotionData.h"
 
-class QuadraticLyapunovFunction {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file
   // TODO(tkoolen): make part of a Lyapunov function class hierarchy
   // TODO(tkoolen): more functionality
@@ -46,7 +49,9 @@ class QuadraticLyapunovFunction {
   }
 };
 
-struct RigidBodySupportStateElement {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+RigidBodySupportStateElement {
   // TODO(tkoolen): turn this into a class with more functionality
   // TODO(tkoolen): consolidate with SupportStateElement?
   int body;  // TODO(tkoolen): should probably be a RigidBody smart pointer
@@ -58,7 +63,9 @@ struct RigidBodySupportStateElement {
 
 typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
 
-enum SupportLogicType {
+enum DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+SupportLogicType {
   REQUIRE_SUPPORT,
   ONLY_IF_FORCE_SENSED,
   ONLY_IF_KINEMATIC,
@@ -66,14 +73,18 @@ enum SupportLogicType {
   PREVENT_SUPPORT
 };
 
-struct KneeSettings {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+KneeSettings {
   double min_knee_angle;
   double knee_kp;
   double knee_kd;
   double knee_weight;
 };
 
-struct QPLocomotionPlanSettings {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+QPLocomotionPlanSettings {
   QPLocomotionPlanSettings() : min_foot_shift_delay(0.1) {}
 
   double duration;
@@ -161,7 +172,9 @@ struct QPLocomotionPlanSettings {
   }
 };
 
-class QPLocomotionPlan {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The robotInterfaces package is being removed.")
+QPLocomotionPlan {
  private:
   RigidBodyTree<double>& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;

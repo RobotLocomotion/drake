@@ -22,7 +22,7 @@ using VariousScalars = ::testing::Types<
 
 template <typename T>
 class UserscalarAcceptanceTest : public ::testing::Test {};
-TYPED_TEST_CASE(UserscalarAcceptanceTest, VariousScalars);
+TYPED_TEST_SUITE(UserscalarAcceptanceTest, VariousScalars);
 
 template <typename T>
 class TestSystem : public LeafSystem<T> {

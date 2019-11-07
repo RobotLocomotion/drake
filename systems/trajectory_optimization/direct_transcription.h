@@ -52,7 +52,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const System<double>* system, const Context<double>& context,
       int num_time_samples,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
+      std::variant<InputPortSelection, InputPortIndex> input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt): Generalize the symbolic short-cutting to handle this case,
@@ -85,7 +85,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const TimeVaryingLinearSystem<double>* system,
       const Context<double>& context, int num_time_samples,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
+      std::variant<InputPortSelection, InputPortIndex> input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt): Support more than just forward Euler integration
@@ -112,7 +112,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const System<double>* system, const Context<double>& context,
       int num_time_samples, TimeStep fixed_timestep,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
+      std::variant<InputPortSelection, InputPortIndex> input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt):  Implement constructor for continuous time systems with
@@ -148,7 +148,7 @@ class DirectTranscription : public MultipleShooting {
   // Aborts if the conversion ToAutoDiffXd fails.
   void AddAutodiffDynamicConstraints(
       const System<double>* system, const Context<double>& context,
-      variant<InputPortSelection, InputPortIndex> input_port_index);
+      std::variant<InputPortSelection, InputPortIndex> input_port_index);
 
   // Constrain the final input to match the penultimate, otherwise the final
   // input is unconstrained.
@@ -164,7 +164,7 @@ class DirectTranscription : public MultipleShooting {
   // and only one (possibly multidimensional) input.
   void ValidateSystem(const System<double>& system,
                       const Context<double>& context,
-                      variant<InputPortSelection, InputPortIndex>
+                      std::variant<InputPortSelection, InputPortIndex>
                       input_port_index =
                       InputPortSelection::kUseFirstInputIfItExists);
 

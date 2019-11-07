@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/perception/estimators/dev/scene.h"
 #include "drake/solvers/cost.h"
 
@@ -14,7 +15,9 @@ namespace estimators {
  * A set of Cartesian errors and their gradients:
  *   {(eᵢ, Jᵢ)}ᵢ₌₁..ₙ
  */
-class ArticulatedIcpErrorSet {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+ArticulatedIcpErrorSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedIcpErrorSet)
   /**
@@ -51,7 +54,9 @@ class ArticulatedIcpErrorSet {
 /**
  * Accumulate errors and render the cost into an appropriate format.
  */
-class ArticulatedIcpErrorCost {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+ArticulatedIcpErrorCost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArticulatedIcpErrorCost)
   explicit ArticulatedIcpErrorCost(const Scene* scene) : scene_(scene) {}
@@ -85,7 +90,9 @@ class ArticulatedIcpErrorCost {
  *   E = ∑ eᵢ'eᵢ
  *   J = ∑ 2 eᵢ'Jᵢ
  */
-class ArticulatedIcpErrorNormCost : public ArticulatedIcpErrorCost {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+ArticulatedIcpErrorNormCost : public ArticulatedIcpErrorCost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArticulatedIcpErrorNormCost)
   /**
@@ -132,7 +139,9 @@ class ArticulatedIcpErrorNormCost : public ArticulatedIcpErrorCost {
  * The total cost is:
  *   E = ∑ eᵢ'eᵢ
  */
-class ArticulatedIcpLinearizedNormCost : public ArticulatedIcpErrorCost {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+ArticulatedIcpLinearizedNormCost : public ArticulatedIcpErrorCost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArticulatedIcpLinearizedNormCost)
   explicit ArticulatedIcpLinearizedNormCost(const Scene* scene)
@@ -173,7 +182,9 @@ class ArticulatedIcpLinearizedNormCost : public ArticulatedIcpErrorCost {
 /**
  * Contains a group of points to be rendered in a linearized ICP cost.
  */
-class ArticulatedIcpBodyPoints {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+ArticulatedIcpBodyPoints {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedIcpBodyPoints)
   /**
@@ -219,7 +230,9 @@ class ArticulatedIcpBodyPoints {
 /**
  * Simple point-to-point correspondence.
  */
-struct PointCorrespondence {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+PointCorrespondence {
   PointCorrespondence() {}
   PointCorrespondence(const Eigen::Vector3d& meas_point_in,
                       const Eigen::Vector3d& model_point_in,
@@ -235,6 +248,7 @@ struct PointCorrespondence {
   double distance{-1};
 };
 
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 typedef std::map<BodyIndex, std::vector<PointCorrespondence>>
     ArticulatedPointCorrespondences;
 
@@ -244,7 +258,9 @@ typedef std::map<BodyIndex, std::vector<PointCorrespondence>>
  * Please see the documentation for each of the fields for how the
  * influences are determined.
  */
-struct ArticulatedBodyInfluence {
+struct DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+ArticulatedBodyInfluence {
   /**
    * @brief Indicate that a correspondence with this body will influence the
    * camera.
@@ -275,6 +291,7 @@ struct ArticulatedBodyInfluence {
   }
 };
 
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 typedef std::vector<ArticulatedBodyInfluence> ArticulatedBodyInfluences;
 
 /**
@@ -282,6 +299,7 @@ typedef std::vector<ArticulatedBodyInfluence> ArticulatedBodyInfluences;
  * formulation (camera or body position).
  * @see ArticulatedBodyInfluence for more information on how this is determined.
  */
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 ArticulatedBodyInfluence IsBodyCorrespondenceInfluential(const Scene& scene,
                                                          BodyIndex);
 
@@ -289,6 +307,7 @@ ArticulatedBodyInfluence IsBodyCorrespondenceInfluential(const Scene& scene,
  * Compute all body correspondences for the entire scene.
  * @see ArticulatedBodyInfluence for more information on how this is determined.
  */
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 void ComputeBodyCorrespondenceInfluences(const Scene& scene,
                                          ArticulatedBodyInfluences* influences);
 
@@ -296,6 +315,7 @@ void ComputeBodyCorrespondenceInfluences(const Scene& scene,
  * Compute point-to-point correspondences from a measured point cloud and a
  * given scene.
  */
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 void ComputeCorrespondences(const SceneState& scene_state,
                             const ArticulatedBodyInfluences& influences,
                             const Eigen::Matrix3Xd& meas_pts_W,
@@ -304,6 +324,7 @@ void ComputeCorrespondences(const SceneState& scene_state,
 /**
  * Compute cost for a given set of correspondences.
  */
+DRAKE_DEPRECATED("2020-02-01", "The attic perception package is being removed.")
 void ComputeCost(const SceneState& scene_state,
                  const ArticulatedPointCorrespondences& correspondence,
                  ArticulatedIcpErrorCost* cost);

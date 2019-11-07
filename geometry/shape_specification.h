@@ -169,6 +169,51 @@ class Box final : public Shape {
   Vector3<double> size_;
 };
 
+/** Definition of a capsule. It is centered in its canonical frame with the
+ length of the capsule parallel with the frame's z-axis. */
+class Capsule final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
+
+  /** Constructs a capsule with the given `radius` and `length`.
+   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   */
+  Capsule(double radius, double length);
+
+  double get_radius() const { return radius_; }
+  double get_length() const { return length_; }
+
+ private:
+  double radius_{};
+  double length_{};
+};
+
+/** Definition of an ellipsoid. It is centered on the origin of its canonical
+ frame with its dimensions aligned with the frame's axes. The standard
+ equation for the ellipsoid is:
+
+          x²/a² + y²/b² + z²/c² = 1,
+ where a,b,c are the lengths of the principal semi-axes of the ellipsoid.
+ The bounding box of the ellipsoid is [-a,a]x[-b,b]x[-c,c].
+*/
+class Ellipsoid final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
+
+  /** Constructs an ellipsoid with the given lengths of its principal
+   semi-axes.
+   @throws std::logic_error if `a`, `b`, or `c` are not strictly positive.
+   */
+  Ellipsoid(double a, double b, double c);
+
+  double get_a() const { return radii_(0); }
+  double get_b() const { return radii_(1); }
+  double get_c() const { return radii_(2); }
+
+ private:
+  Vector3<double> radii_;
+};
+
 /** Definition of a half space. In its canonical frame, the plane defining the
  boundary of the half space is that frame's z = 0 plane. By implication, the
  plane's normal points in the +z direction and the origin lies on the plane.
@@ -313,17 +358,21 @@ class ShapeReifier {
  public:
   virtual ~ShapeReifier() = default;
 
-  virtual void ImplementGeometry(const Sphere& sphere, void* user_data) = 0;
-  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
-  virtual void ImplementGeometry(const HalfSpace& half_space,
-                                 void* user_data) = 0;
-  virtual void ImplementGeometry(const Box& box, void* user_data) = 0;
-  virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
-  virtual void ImplementGeometry(const Convex& convex, void* user_data) = 0;
+  virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
+  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data);
+  virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
+  virtual void ImplementGeometry(const Box& box, void* user_data);
+  virtual void ImplementGeometry(const Capsule& capsule, void* user_data);
+  virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
+  virtual void ImplementGeometry(const Convex& convex, void* user_data);
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
+
+ private:
+  void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
 template <typename S>
@@ -342,6 +391,63 @@ Shape::Shape(ShapeTag<S>) {
     reifier->ImplementGeometry(derived_shape, user_data);
   };
 }
+
+// TODO(SeanCurtis-TRI): Merge this into shape_to_string.h so that there's a
+//  single utility for getting a string from a shape.
+/** Class that reports the name of the type of shape being reified (e.g.,
+ Sphere, Box, etc.)  */
+class ShapeName final : public ShapeReifier {
+ public:
+  ShapeName() = default;
+
+  /** Constructs a %ShapeName from the given `shape` such that `string()`
+   already contains the string representation of `shape`.  */
+  explicit ShapeName(const Shape& shape) {
+    shape.Reify(this);
+  }
+
+  /** @name  Implementation of ShapeReifier interface  */
+  //@{
+
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Sphere&, void*) final {
+    string_ = "Sphere";
+  }
+  void ImplementGeometry(const Cylinder&, void*) final {
+    string_ = "Cylinder";
+  }
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    string_ = "HalfSpace";
+  }
+  void ImplementGeometry(const Box&, void*) final {
+    string_ = "Box";
+  }
+  void ImplementGeometry(const Capsule&, void*) final {
+    string_ = "Capsule";
+  }
+  void ImplementGeometry(const Ellipsoid&, void*) final {
+    string_ = "Ellipsoid";
+  }
+  void ImplementGeometry(const Mesh&, void*) final {
+    string_ = "Mesh";
+  }
+  void ImplementGeometry(const Convex&, void*) final {
+    string_ = "Convex";
+  }
+
+  //@}
+
+  /** Returns the name of the last shape reified. Empty if no shape has been
+   reified yet.  */
+  std::string name() const { return string_; }
+
+ private:
+  std::string string_;
+};
+
+/** @relates ShapeName */
+std::ostream& operator<<(std::ostream& out, const ShapeName& name);
 
 }  // namespace geometry
 }  // namespace drake

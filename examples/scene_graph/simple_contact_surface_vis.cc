@@ -99,9 +99,6 @@ class MovingBall final : public LeafSystem<double> {
                                       make_unique<Sphere>(1.0), "ball"));
 
     ProximityProperties prox_props;
-    // TODO(SeanCurtis-TRI): The fact that I'm pushing two values here is
-    //  unfortunate. I should be able to indicate that I want a linear function
-    //  and have it read the elastic modulus property from the input properties.
     prox_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic, 1e8);
     AddSoftHydroelasticProperties(FLAGS_length, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
@@ -252,6 +249,9 @@ int do_main() {
       make_unique<GeometryInstance>(
           X_WB, make_unique<Box>(edge_len, edge_len, edge_len), "box"));
   ProximityProperties rigid_props;
+  // A rigid hydroelastic geometry must have an infinite elastic modulus.
+  rigid_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic,
+                          std::numeric_limits<double>::infinity());
   AddRigidHydroelasticProperties(edge_len, &rigid_props);
   scene_graph.AssignRole(source_id, ground_id, rigid_props);
   IllustrationProperties illus_props;

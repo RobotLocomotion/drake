@@ -52,7 +52,7 @@ TEST_P(QuadraticProgramTest, TestQP) {
   prob()->RunProblem(&solver);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     OsqpTest, QuadraticProgramTest,
     ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),

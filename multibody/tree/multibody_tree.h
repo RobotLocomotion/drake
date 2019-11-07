@@ -4,6 +4,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -14,7 +15,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
@@ -492,8 +492,10 @@ class MultibodyTree {
   template<template<typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
-      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
+      const Body<T>& parent,
+      const std::optional<math::RigidTransform<double>>& X_PF,
+      const Body<T>& child,
+      const std::optional<math::RigidTransform<double>>& X_BM,
       Args&&... args);
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
@@ -918,7 +920,7 @@ class MultibodyTree {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) const {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
 
@@ -957,7 +959,7 @@ class MultibodyTree {
   template <template <typename> class JointType = Joint>
   JointType<T>& GetMutableJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) {
     const JointType<T>& const_joint =
         GetJointByName<JointType>(name, model_instance);
 
@@ -1029,6 +1031,11 @@ class MultibodyTree {
   /// in this section are convenience accessors for the portion of
   /// those vectors which apply to a single model instance only.
   /// @{
+
+  /// See MultibodyPlant method.
+  VectorX<T> GetActuationFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& u) const;
 
   /// See MultibodyPlant method.
   void SetActuationInArray(
@@ -1416,21 +1423,21 @@ class MultibodyTree {
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* M_B_W_cache) const;
 
-  /// Computes the bias term `b_Bo_W(q, v)` for each body in the model.
-  /// For a body B, this is the bias term `b_Bo_W` in the equation
-  /// `F_BBo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
+  /// Computes the bias term `Fb_Bo_W(q, v)` for each body in the model.
+  /// For a body B, this is the bias term `Fb_Bo_W` in the equation
+  /// `F_BBo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   /// about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   /// `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
   /// @param[in] context
   ///   The context storing the state of the model.
-  /// @param[out] b_Bo_W_cache
-  ///   For each body in the model, entry Body::node_index() in b_Bo_W_cache
-  ///   contains the updated bias term `b_Bo_W(q, v)` for that body. On input it
-  ///   must be a valid pointer to a vector of size num_bodies().
-  /// @throws std::exception if b_Bo_W_cache is nullptr or if its size is not
+  /// @param[out] Fb_Bo_W_cache
+  ///   For each body in the model, entry Body::node_index() in Fb_Bo_W_cache
+  ///   contains the updated bias term `Fb_Bo_W(q, v)` for that body. On input
+  ///   it must be a valid pointer to a vector of size num_bodies().
+  /// @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
   /// num_bodies().
   void CalcDynamicBiasCache(const systems::Context<T>& context,
-                            std::vector<SpatialForce<T>>* b_Bo_W_cache) const;
+                            std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const;
 
   /// Computes all the kinematic quantities that depend on the generalized
   /// accelerations that is, the generalized velocities' time derivatives, and
@@ -2193,8 +2200,8 @@ class MultibodyTree {
     return tree_system_->EvalSpatialInertiaInWorldCache(context);
   }
 
-  // Evaluates the cache entry stored in context with the bias term b_Bo_W(q, v)
-  // for each body. These will be updated as needed.
+  // Evaluates the cache entry stored in context with the bias term
+  // Fb_Bo_W(q, v) for each body. These will be updated as needed.
   const std::vector<SpatialForce<T>>& EvalDynamicBiasCache(
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);

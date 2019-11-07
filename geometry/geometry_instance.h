@@ -1,12 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
@@ -81,17 +81,6 @@ namespace geometry {
 class GeometryInstance {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryInstance)
-
-  /** Constructs a geometry instance specification.
-   @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
-   @param shape  The underlying shape for this geometry instance.
-   @param name   The name of the geometry (must satisfy the name requirements).
-   @throws std::logic_error if the canonicalized version of `name` is empty.
-   */
-  DRAKE_DEPRECATED("2019-11-01",
-      "Please use the RigidTransform-based constructor.")
-  GeometryInstance(const Isometry3<double>& X_PG, std::unique_ptr<Shape> shape,
-                   const std::string& name);
 
   /** Constructs a geometry instance specification.
    @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
@@ -199,9 +188,9 @@ class GeometryInstance {
   std::string name_;
 
   // Optional properties.
-  optional<ProximityProperties> proximity_properties_{};
-  optional<IllustrationProperties> illustration_properties_{};
-  optional<PerceptionProperties> perception_properties_{};
+  std::optional<ProximityProperties> proximity_properties_{};
+  std::optional<IllustrationProperties> illustration_properties_{};
+  std::optional<PerceptionProperties> perception_properties_{};
 };
 
 }  // namespace geometry

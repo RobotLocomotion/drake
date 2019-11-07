@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -13,11 +14,11 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/simulator_status.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/witness_function.h"
@@ -99,7 +100,9 @@ defined in terms of Step below. In general, the length of a step is not known a
 priori and is determined by the Step() algorithm. Each step consists of zero or
 more unrestricted updates, followed by zero or more discrete updates, followed
 by (possibly zero-length) continuous time and state advancement, followed by
-zero or more publishes.
+zero or more publishes, and then a call to the monitor() function if one has
+been defined. Updates, publishes, and the monitor can report errors or detect a
+termination condition; that is not shown in the pseudocode below.
 
 The pseudocode will clarify the effects on time and state of each of the update
 stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
@@ -143,15 +146,18 @@ procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
   // ----------------------------------
 
   DoAnyPublishes(tₑ, x⁻(tₑ))
+  CallMonitor(tₑ, x⁻(tₑ))
 
   return {tₑ, x⁻(tₑ)}
 ```
 
 We can use the notation and pseudocode to flesh out the AdvanceTo(),
-AdvancePendingEvents(), and Initialize() functions:
+AdvancePendingEvents(), and Initialize() functions. Termination and error
+conditions detected by event handlers or the monitor are reported as status
+returns from these methods.
 ```
 // Advance the simulation until time tₘₐₓ.
-procedure AdvanceTo(tₘₐₓ)
+procedure AdvanceTo(tₘₐₓ) → status
   t ← current_time
   while t < tₘₐₓ
     {tₑ, x⁻(tₑ)} ← Step(t, x⁻(t), tₘₐₓ)
@@ -160,15 +166,17 @@ procedure AdvanceTo(tₘₐₓ)
 
 // AdvancePendingEvents() is an advanced method, not commonly used.
 // Perform just the start-of-step update to advance from x⁻(t) to x⁺(t).
-procedure AdvancePendingEvents()
+procedure AdvancePendingEvents() → status
   t ≜ current_time, x⁻(t) ≜ current_state
   x⁺(t) ← DoAnyPendingUpdates(t, x⁻(t)) as in Step()
   x(t) ← x⁺(t)  // No continuous update needed.
+  DoAnyPublishes(t, x(t))
+  CallMonitor(t, x(t))
 
 // Update time and state to {t₀, x⁻(t₀)}, which is the starting value of the
 // trajectory, and thus the value the Context should contain at the start of the
 // first simulation step.
-procedure Initialize(t₀, x₀)
+procedure Initialize(t₀, x₀) → status
   x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
   x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
@@ -177,6 +185,7 @@ procedure Initialize(t₀, x₀)
   // ----------------------------------
 
   DoAnyPublishes(t₀, x⁻(t₀))
+  CallMonitor(t₀, x⁻(t₀))
 ```
 Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
 Step() call as described above. Like Step(), Initialize() first
@@ -185,7 +194,9 @@ performs pending updates (in this case only initialization events can be
 witnesses cannot trigger. Finally, again like Step(), the initial trajectory
 point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
 events. That includes initialization publish events, per-step publish events,
-and periodic or timed publish events that trigger at t₀.
+and periodic or timed publish events that trigger at t₀, followed by a call
+to the monitor() function if one has been defined (a monitor is semantically
+identical to a per-step publish).
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
@@ -235,8 +246,9 @@ class Simulator {
   ///   initial trajectory value `{t₀, x(t₀)}`.
   /// - Then that initial value is provided to the handlers for any publish
   ///   events that have triggered, including initialization and per-step
-  ///   publish events, and periodic or other time-triggered publish events
-  ///   that are scheduled for the initial time t₀.
+  ///   publish events, periodic or other time-triggered publish events
+  ///   that are scheduled for the initial time t₀, and finally a call to the
+  ///   monitor() function if one has been defined.
   ///
   /// See the class documentation for more information. We recommend calling
   /// Initialize() explicitly prior to beginning a simulation so that error
@@ -259,8 +271,12 @@ class Simulator {
   /// This method will throw `std::logic_error` if the combination of options
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
-  /// @see AdvanceTo(), AdvancePendingEvents()
-  void Initialize();
+  ///
+  /// @retval status A SimulatorStatus object indicating success, termination,
+  ///                or an error condition as reported by event handlers or
+  ///                the monitor function.
+  /// @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus
+  SimulatorStatus Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
@@ -279,11 +295,19 @@ class Simulator {
   /// the Context or Simulator options between successive AdvanceTo() calls. See
   /// Initialize() for more information.
   ///
-  /// @param boundary_time The time to advance the context to.
+  /// @param boundary_time The maximum time to which the trajectory will be
+  ///     advanced by this call to %AdvanceTo(). The method may return earlier
+  ///     if an event or the monitor function requests termination or reports
+  ///     an error condition.
+  /// @retval status A SimulatorStatus object indicating success, termination,
+  ///     or an error condition as reported by event handlers or the monitor
+  ///     function. The time in the context will be set either to the
+  ///     boundary_time or the time a termination or error was first detected.
+  ///
   /// @pre The internal Context satisfies all System constraints or will after
   ///      pending Context updates are performed.
-  /// @see Initialize(), AdvancePendingEvents()
-  void AdvanceTo(const T &boundary_time);
+  /// @see Initialize(), AdvancePendingEvents(), SimulatorStatus
+  SimulatorStatus AdvanceTo(const T& boundary_time);
 
   /// (Advanced) Handles discrete and abstract state update events that are
   /// pending from the previous AdvanceTo() call, without advancing time.
@@ -298,10 +322,102 @@ class Simulator {
   ///
   /// This method is equivalent to `AdvanceTo(current_time)`, where
   /// `current_time=simulator.get_context().get_time())`. If there are no
-  /// pending events, nothing happens.
-  /// @see AdvanceTo(), Initialize()
-  void AdvancePendingEvents() {
-    AdvanceTo(get_context().get_time());
+  /// pending events, nothing happens except possibly a final per-step publish
+  /// call (if enabled) followed by a call to the monitor() function (if one
+  /// has been provided).
+  ///
+  /// @retval status A SimulatorStatus object indicating success, termination,
+  ///                or an error condition as reported by event handlers or
+  ///                the monitor function.
+  /// @see AdvanceTo(), Initialize(), SimulatorStatus
+  SimulatorStatus AdvancePendingEvents() {
+    return AdvanceTo(get_context().get_time());
+  }
+
+  /// Provides a monitoring function that will be invoked at the end of
+  /// every step. (See the Simulator class documentation for a precise
+  /// definition of "step".) A monitor() function can be used to capture the
+  /// trajectory, to terminate the simulation, or to detect error conditions.
+  /// The monitor() function is invoked by the %Simulator with a Context whose
+  /// value is a point along the simulated trajectory. The monitor can be any
+  /// functor and should capture any System references it needs to operate
+  /// correctly.
+  ///
+  /// A monitor() function behaves the same as would a per-step Publish event
+  /// handler included in the top-level System or Diagram being simulated. As in
+  /// the case of Publish(), the monitor is called at the end of every step
+  /// taken internally by AdvanceTo(), and also at the end of Initialize() and
+  /// AdvancePendingEvents(). (See the Simulator class documentation for more
+  /// detail about what happens when in these methods.) The monitor receives the
+  /// top-level (root) Context, from which any sub-Context can be obtained using
+  /// `subsystem.GetMyContextFromRoot()`, provided the necessary subsystem
+  /// reference has been captured for use in the monitor.
+  ///
+  /// #### Examples
+  /// Output time and continuous states whenever the trajectory is advanced:
+  /// @code
+  /// simulator.set_monitor([](const Context<T>& root_context) {
+  ///   std::cout << root_context.get_time() << " "
+  ///             << root_context.get_continuous_state_vector()
+  ///             << std::endl;
+  ///   return EventStatus::Succeeded();
+  /// });
+  /// @endcode
+  ///
+  /// Terminate early but successfully on a condition in a subsystem of the
+  /// System diagram being simulated:
+  /// @code
+  /// simulator.set_monitor([&my_subsystem](const Context<T>& root_context) {
+  ///   const Context<T>& subcontext =
+  ///       my_subsystem.GetMyContextFromRoot(root_context);
+  ///   if (my_subsystem.GoalReached(subcontext)) {
+  ///     return EventStatus::ReachedTermination(my_subsystem,
+  ///         "Simulation achieved the desired goal.");
+  ///   }
+  ///   return EventStatus::Succeeded();
+  /// });
+  /// @endcode
+  /// In the above case, the Simulator's AdvanceTo() method will return early
+  /// when the subsystem reports that it has reached its goal. The returned
+  /// status will indicate the termination reason, and a human-readable
+  /// termination message containing the message provided by the monitor can be
+  /// obtained with status.FormatMessage().
+  ///
+  /// Failure due to plant center of mass falling below a threshold:
+  /// @code
+  /// simulator.set_monitor([&plant](const Context<T>& root_context) {
+  ///   const Context<T>& plant_context =
+  ///       plant.GetMyContextFromRoot(root_context);
+  ///   const Vector3<T> com = plant.CalcCenterOfMassPosition(plant_context);
+  ///   if (com[2] < 0.1) {  // Check z height of com.
+  ///     return EventStatus::Failed(plant, "System fell over.");
+  ///   }
+  ///   return EventStatus::Succeeded();
+  /// });
+  /// @endcode
+  /// In the above case the Simulator's AdvanceTo() method will throw an
+  /// std::runtime_error containing a human-readable message including
+  /// the text provided in the monitor.
+  ///
+  /// @note monitor() is called every time the trajectory is advanced by a step,
+  /// which can mean it is called many times during a single AdvanceTo() call.
+  ///
+  /// @note The presence of a monitor has no effect on the step sizes taken,
+  /// so a termination or error condition will be discovered only when first
+  /// observed after a step is complete; it will not be further localized. Use
+  /// witness-triggered events instead if you need precise isolation.
+  void set_monitor(std::function<EventStatus(const Context<T>&)> monitor) {
+    monitor_ = std::move(monitor);
+  }
+
+  /// Removes the monitoring function if there is one.
+  /// @see set_monitor()
+  void clear_monitor() { monitor_ = nullptr; }
+
+  /// Obtains a reference to the monitoring function, which may be empty.
+  /// @see set_monitor()
+  const std::function<EventStatus(const Context<T>&)>& get_monitor() const {
+    return monitor_;
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -531,7 +647,7 @@ class Simulator {
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
-  optional<T> GetCurrentWitnessTimeIsolation() const;
+  std::optional<T> GetCurrentWitnessTimeIsolation() const;
 
   /// Gets a constant reference to the system.
   /// @note a mutable reference is not available.
@@ -558,6 +674,30 @@ class Simulator {
       const EventCollection<DiscreteUpdateEvent<T>>& events);
 
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
+
+  // Invoke the monitor() if there is one. If it wants termination we'll
+  // update the Simulator status accordingly. If it reports failure,
+  // currently we just throw.
+  // TODO(sherm1) Add an option where the Simulator returns failed status
+  // rather than throwing.
+  void CallMonitorUpdateStatusAndMaybeThrow(SimulatorStatus* status) {
+    DRAKE_DEMAND(status);
+    if (!get_monitor()) return;
+    const EventStatus monitor_status = get_monitor()(*context_);
+    if (monitor_status.severity() == EventStatus::kReachedTermination) {
+      status->SetReachedTermination(ExtractDoubleOrThrow(context_->get_time()),
+                                    monitor_status.system(),
+                                    monitor_status.message());
+      return;
+    }
+    if (monitor_status.severity() == EventStatus::kFailed) {
+      status->SetEventHandlerFailed(ExtractDoubleOrThrow(context_->get_time()),
+                                    monitor_status.system(),
+                                    monitor_status.message());
+      throw std::runtime_error(status->FormatMessage());
+    }
+    // For any other condition, leave the status unchanged.
+  }
 
   TimeOrWitnessTriggered IntegrateContinuousState(
       const T& next_publish_dt,
@@ -690,6 +830,9 @@ class Simulator {
   // Mapping of witness functions to pre-allocated events.
   std::unordered_map<const WitnessFunction<T>*, std::unique_ptr<Event<T>>>
       witness_function_events_;
+
+  // Optional monitor() method to capture trajectory, terminate, or fail.
+  std::function<EventStatus(const Context<T>&)> monitor_;
 };
 
 template <typename T>
@@ -790,9 +933,18 @@ T GetPreviousNormalizedValue(const T& value) {
 #endif
 
 template <typename T>
-void Simulator<T>::Initialize() {
+SimulatorStatus Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
+  if (!context_)
+    throw std::logic_error("Initialize(): Context has not been set.");
+
+  // Record the current time so we can restore it later (see below).
+  // *Don't* use a reference here!
+  const T current_time = context_->get_time();
+
+  // Assumes success.
+  SimulatorStatus status(ExtractDoubleOrThrow(current_time));
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -820,7 +972,6 @@ void Simulator<T>::Initialize() {
 
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
-  const T current_time = context_->get_time();
   const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
       current_time);
   context_->SetTime(slightly_before_current_time);
@@ -859,8 +1010,12 @@ void Simulator<T>::Initialize() {
     ++num_publishes_;
   }
 
+  CallMonitorUpdateStatusAndMaybeThrow(&status);
+
   // Initialize runtime variables.
   initialization_done_ = true;
+
+  return status;
 }
 
 // Processes UnrestrictedUpdateEvent events.
@@ -907,10 +1062,17 @@ void Simulator<T>::HandlePublish(
 }
 
 template <typename T>
-void Simulator<T>::AdvanceTo(const T& boundary_time) {
-  if (!initialization_done_) Initialize();
+SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
+  if (!initialization_done_) {
+    const SimulatorStatus initialize_status = Initialize();
+    if (!initialize_status.succeeded())
+      return initialize_status;
+  }
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
+
+  // Assume success.
+  SimulatorStatus status(ExtractDoubleOrThrow(boundary_time));
 
   // Integrate until desired interval has completed.
   auto merged_events = system_.AllocateCompositeEventCollection();
@@ -931,7 +1093,7 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
   while (true) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
-    SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
+    DRAKE_LOGGER_TRACE("Starting a simulation step at {}", step_start_time);
 
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
@@ -998,6 +1160,10 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
       ++num_publishes_;
     }
 
+    CallMonitorUpdateStatusAndMaybeThrow(&status);
+    if (!status.succeeded())
+      break;  // Done.
+
     // Break out of the loop after timed and witnessed events are merged in
     // to the event collection and after any publishes.
     if (context_->get_time() >= boundary_time)
@@ -1006,10 +1172,12 @@ void Simulator<T>::AdvanceTo(const T& boundary_time) {
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
+
+  return status;
 }
 
 template <class T>
-optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
+std::optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   using std::max;
 
   // TODO(edrumwri): Add ability to disable witness time isolation through
@@ -1027,7 +1195,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   const double characteristic_time = 1.0;
 
   // Get the accuracy setting.
-  const optional<double>& accuracy = get_context().get_accuracy();
+  const std::optional<double>& accuracy = get_context().get_accuracy();
 
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
@@ -1037,7 +1205,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
                  T(iso_scale_factor * accuracy.value() *
                      integrator_->get_maximum_step_size()));
     } else {
-      return optional<T>();
+      return std::optional<T>();
     }
   }
 
@@ -1096,7 +1264,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   Context<T>& context = get_mutable_context();
 
   // Get the witness isolation interval length.
-  const optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
+  const std::optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
 
   // Check whether witness functions *are* to be isolated. If not, the witnesses
   // that were triggered on entry will be the set that is returned.
@@ -1118,7 +1286,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   // continue moving leftward as a witness function triggers until the length of
   // the time interval is small. If a witness fails to trigger as c moves
   // leftward, we return, indicating that no witnesses triggered over [t0, c].
-  SPDLOG_DEBUG(drake::log(),
+  DRAKE_LOGGER_DEBUG(
       "Isolating witness functions using isolation window of {} over [{}, {}]",
       witness_iso_len.value(), t0, tf);
   VectorX<T> wc(witnesses.size());
@@ -1127,7 +1295,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   do {
     // Compute the midpoint and evaluate the witness functions at it.
     T c = (a + b) / 2;
-    SPDLOG_DEBUG(drake::log(), "Integrating forward to time {}", c);
+    DRAKE_LOGGER_DEBUG("Integrating forward to time {}", c);
     integrate_forward(c);
 
     // See whether any witness functions trigger.
@@ -1148,7 +1316,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       // events first). That change would avoid handling unnecessary per-step
       // events- we know no other events are to be handled between t0 and tf-
       // but the current logic appears easier to follow.
-      SPDLOG_DEBUG(drake::log(), "No witness functions triggered up to {}", c);
+      DRAKE_LOGGER_DEBUG("No witness functions triggered up to {}", c);
       triggered_witnesses->clear();
       return;  // Time is c.
     } else {
@@ -1297,8 +1465,8 @@ Simulator<T>::IntegrateContinuousState(
 
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
-      SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
-                   fn->description(), context.get_time());
+      DRAKE_LOGGER_DEBUG("Witness function {} crossed zero at time {}",
+          fn->description(), context.get_time());
 
       // Skip witness functions that have no associated event (i.e., skip
       // witness functions whose sole purpose is to insert a break in the

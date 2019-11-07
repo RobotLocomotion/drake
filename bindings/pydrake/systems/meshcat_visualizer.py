@@ -3,7 +3,6 @@ Provides utilities for communicating with the browser-based visualization
 package, Meshcat:
       https://github.com/rdeits/meshcat
 """
-from __future__ import print_function
 import argparse
 import math
 import os

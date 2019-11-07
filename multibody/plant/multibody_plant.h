@@ -3,6 +3,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -13,7 +14,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -72,7 +72,7 @@ enum class ContactModel {
 ///   @input_port{applied_generalized_force}
 ///   @input_port{applied_spatial_force}
 ///   @input_port{geometry_query},
-///   @output_port{continuous_state}
+///   @output_port{state}
 ///   @output_port{<b style="color:orange">
 ///     {model_instance_name[0]}_continuous_state</b>}
 ///   @output_port{...}
@@ -88,8 +88,8 @@ enum class ContactModel {
 /// }
 ///
 /// Note that the outputs in <b style="color:orange">orange</b> are not
-/// allocated for model instances with no state (e.g. the world, or a welded
-/// model which isn't actuated (like a table)).
+/// allocated for @ref model_instances with no state (e.g. the world, or a
+/// welded model which isn't actuated (like a table)).
 ///
 /// %MultibodyPlant provides a user-facing API to:
 ///
@@ -98,15 +98,46 @@ enum class ContactModel {
 /// - create and manipulate its Context,
 /// - perform Context-dependent computational queries.
 ///
-/// @section equations_of_motion System dynamics
+/// @section model_instances Model Instances
 ///
-/// @cond
-/// TODO(amcastro-tri): Update this documentation to include:
-///   - Input actuation and ports and connection to the B matrix.
-///   - Externally applied forces and ports to apply them.
-///   - Bilateral constraints.
-///   - Unilateral constraints and contact.
-/// @endcond
+/// A MultiBodyPlant usually contains one or more _model instance_ and
+/// may contain multiple model instances. Each model instance corresponds to a
+/// set of bodies and their connections (joints). Model instances provide
+/// methods to get or set the state of the set of bodies (e.g., through
+/// GetPositionsAndVelocities() and SetPositionsAndVelocities()), connecting
+/// controllers to certain models in the plant (through get_state_output_port()
+/// and get_actuation_input_port()), and organizing duplicate models (read
+/// through a parser). In fact, many %MultibodyPlant methods are overloaded
+/// to allow operating on the entire plant or just the subset corresponding to
+/// the model instance; for example, one GetPositions() method obtains the
+/// generalized positions for the entire plant while the other obtains the
+/// generalized positions for model instance.
+///
+/// Model instances are frequently defined through SDF files
+/// (using the `model` tag) and are automatically created when SDF
+/// files are parsed (by Parser). There are two special
+/// multibody::ModelInstanceIndex values. The world body is always
+/// multibody::ModelInstanceIndex 0 and multibody::ModelInstanceIndex 1 is
+/// reserved for all elements with no explicit model instance.
+/// multibody::ModelInstanceIndex 1 is generally only relevant for elements
+/// created programmatically (and only when a model instance is not explicitly
+/// specified). Note that Parser creates model instances (resulting in a
+/// multibody::ModelInstanceIndex ≥ 2) as needed.
+///
+/// See num_model_instances(),
+/// num_positions(),
+/// num_velocities(), num_actuated_dofs(),
+/// AddModelInstance() GetPositionsAndVelocities(),
+/// GetPositions(), GetVelocities(),
+/// SetPositionsAndVelocities(),
+/// SetPositions(), SetVelocities(),
+/// GetPositionsFromArray(), GetVelocitiesFromArray(),
+/// SetPositionsInArray(), SetVelocitiesInArray(), SetActuationInArray(),
+/// HasModelInstanceNamed(), GetModelInstanceName(),
+/// get_state_output_port(),
+/// get_actuation_input_port().
+///
+/// @section equations_of_motion System dynamics
 ///
 /// The state of a multibody system `x = [q; v]` is given by its generalized
 /// positions vector q, of size `nq` (see num_positions()), and by its
@@ -128,9 +159,17 @@ enum class ContactModel {
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
 ///
+/// @cond
+/// TODO(amcastro-tri): Update this documentation to include:
+///   - Input actuation and ports and connection to the B matrix.
+///   - Externally applied forces and ports to apply them.
+///   - Bilateral constraints.
+///   - Unilateral constraints and contact.
+/// @endcond
+///
 /// @section sdf_loading Loading models from SDF files
 ///
-/// Drake has the capability of loading multibody models from SDF and URDF
+/// Drake has the capability to load multibody models from SDF and URDF
 /// files.  Consider the example below which loads an acrobot model:
 /// @code
 ///   MultibodyPlant<T> acrobot;
@@ -259,7 +298,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <typename U>
   MultibodyPlant(const MultibodyPlant<U>& other)
       : internal::MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<multibody::MultibodyPlant>{},
+            systems::SystemTypeTag<MultibodyPlant>{},
             other.internal_tree().template CloneToScalar<T>(),
             other.is_discrete()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
@@ -274,16 +313,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
-    for (const optional<math::RigidTransform<U>>& X_WB_other :
-         other.X_WB_free_body_only_list_) {
-      // N.B. `double` is used as an intermediary when converting
-      // `RigidTransform`s from U to T.
-      optional<math::RigidTransform<T>> X_WB_this;
-      if (X_WB_other) {
-        X_WB_this = ExtractDoubleOrThrow(*X_WB_other).template cast<T>();
-      }
-      X_WB_free_body_only_list_.push_back(X_WB_this);
-    }
+    X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
@@ -487,6 +517,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
+  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
+  /// will affect subsequent calls to SetDefaultState(); otherwise, this value
+  /// is effectively ignored.
+  /// @param[in] body
+  ///   Body whose default pose will be set.
+  /// @param[in] X_WB
+  ///   Default pose of the body.
+  void SetDefaultFreeBodyPose(
+      const Body<T>& body, const math::RigidTransform<double>& X_WB) {
+    X_WB_default_list_[body.index()] = X_WB;
+  }
+
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -515,9 +557,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
   }
-
-  // TODO(sammy-tri) We should also be able to set the default pose of a free
-  // body.  See https://github.com/RobotLocomotion/drake/issues/10713
 
   /// Sets the distribution used by SetRandomState() to populate the
   /// x-y-z `position` component of the floating-base state.
@@ -828,8 +867,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     visual_geometries_.emplace_back();
     DRAKE_DEMAND(collision_geometries_.size() == body.index());
     collision_geometries_.emplace_back();
-    DRAKE_DEMAND(X_WB_free_body_only_list_.size() == body.index());
-    X_WB_free_body_only_list_.emplace_back();
+    DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
+    X_WB_default_list_.emplace_back();
     return body;
   }
 
@@ -969,8 +1008,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
-      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
+      const Body<T>& parent,
+      const std::optional<math::RigidTransform<double>>& X_PF,
+      const Body<T>& child,
+      const std::optional<math::RigidTransform<double>>& X_BM,
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
@@ -1268,7 +1309,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) const {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     return internal_tree().template GetJointByName<JointType>(
         name, model_instance);
   }
@@ -1278,7 +1319,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   JointType<T>& GetMutableJointByName(
       const std::string& name,
-      optional<ModelInstanceIndex> model_instance = nullopt) {
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) {
     return this->mutable_tree().template GetMutableJointByName<JointType>(
         name, model_instance);
   }
@@ -1322,6 +1363,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// in this section are convenience accessors for the portion of
   /// those vectors which apply to a single model instance only.
   /// @{
+
+  /// Returns a vector of actuation values for `model_instance` from a
+  /// vector `u` of actuation values for the entire model. This method throws an
+  /// exception if `u` is not of size MultibodyPlant::num_actuated_dofs().
+  VectorX<T> GetActuationFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& u) const {
+    return internal_tree().GetActuationFromArray(model_instance, u);
+  }
 
   /// Given the actuation values `u_instance` for all actuators in
   /// `model_instance`, this method sets the actuation vector u for the entire
@@ -2635,7 +2685,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// only assigned once at the first call of any of this plant's geometry
   /// registration methods, and it does not change after that.
   /// Post-finalize calls will always return the same value.
-  optional<geometry::SourceId> get_source_id() const {
+  std::optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
 
@@ -2681,7 +2731,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
-  optional<geometry::FrameId> GetBodyFrameIdIfExists(
+  std::optional<geometry::FrameId> GetBodyFrameIdIfExists(
       BodyIndex body_index) const {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
@@ -3105,31 +3155,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// (Advanced)
-  /// @param[in] X_WB_disconnected_initial
-  ///   Initial pose of a body if it is entirely disonnected; this will be
-  ///   ignored if there are *any* other bodies that are connected to this via
-  ///   a physical joint. This is to accommodate SDFormat parsing.
-  void InternalSetFreeBodyOnlyPose(
-      const Body<T>& body, const math::RigidTransform<T>& X_WB_initial) {
-    auto& X_WB_initial_actual = X_WB_free_body_only_list_[body.index()];
-    DRAKE_DEMAND(!X_WB_initial_actual.has_value());
-    X_WB_initial_actual = X_WB_initial;
-  }
-
-  /// Sets the `state` so that generalized positions (modulo explicitly
-  /// specified body poses) and velocities are zero.
+  /// Sets `state` according to defaults set by the user for joints (e.g.
+  /// RevoluteJoint::set_default_angle()) and free bodies
+  /// (SetDefaultFreeBodyPose()). If the user does not specify defaults, the
+  /// state corresponds to zero generalized positions and velocities.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
-    for (const auto* body : GetFreeBodies()) {
-      const auto& X_WB = X_WB_free_body_only_list_[body->index()];
-      if (X_WB) {
-        SetFreeBodyPose(context, state, *body, *X_WB);
-      }
+    for (const BodyIndex index : GetFloatingBaseBodies()) {
+      SetFreeBodyPose(
+          context, state, internal_tree().get_body(index),
+          X_WB_default_list_[index].template cast<T>());
     }
   }
 
@@ -3161,6 +3200,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
+  // Structure used in the calculation of hydroelastic contact forces (see
+  // method that follows).
+  struct HydroelasticContactInfoAndBodySpatialForces {
+    explicit HydroelasticContactInfoAndBodySpatialForces(int num_bodies) {
+      F_BBo_W_array.resize(num_bodies);
+    }
+
+    // Forces from hydroelastic contact applied to the origin of each body
+    // (indexed by BodyNodeIndex) in the MultibodyPlant.
+    std::vector<SpatialForce<T>> F_BBo_W_array;
+
+    // Information used for contact reporting collected through the evaluation
+    // of the hydroelastic model.
+    std::vector<HydroelasticContactInfo<T>> contact_info;
+  };
+
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
@@ -3170,7 +3225,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
-    systems::CacheIndex hydro_contact_forces;
+    systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
@@ -3523,13 +3578,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // thrown.
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      HydroelasticContactInfoAndBodySpatialForces* F_BBo_W_array) const;
 
   // Eval version of CalcHydroelasticContactForces().
-  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
-        .template Eval<std::vector<SpatialForce<T>>>(context);
+  const HydroelasticContactInfoAndBodySpatialForces&
+  EvalHydroelasticContactForces(const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.contact_info_and_body_spatial_forces)
+        .template Eval<HydroelasticContactInfoAndBodySpatialForces>(context);
   }
 
   // Helper method to add the contribution of external actuation forces to the
@@ -3631,23 +3687,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
-  std::vector<const Body<T>*> GetFreeBodies() const {
-    std::vector<const Body<T>*> bodies;
-    for (internal::MobilizerIndex index{0};
-         index < internal_tree().num_mobilizers(); ++index) {
-      auto& mobilizer = internal_tree().get_mobilizer(index);
-      if (mobilizer.is_floating()) {
-        DRAKE_DEMAND(&mobilizer.inboard_body() == &world_body());
-        bodies.push_back(&mobilizer.outboard_body());
-      }
-    }
-    return bodies;
-  }
-
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
-  optional<geometry::SourceId> source_id_{nullopt};
+  std::optional<geometry::SourceId> source_id_{std::nullopt};
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
@@ -3672,7 +3715,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     double time_scale{-1.0};
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
-    optional<double> gravity;
+    std::optional<double> gravity;
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
@@ -3845,7 +3888,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
 
-  std::vector<optional<math::RigidTransform<T>>> X_WB_free_body_only_list_;
+  // Vector (with size num_bodies()) of default poses for each body. This is
+  // only used if Body::is_floating() is true.
+  std::vector<math::RigidTransform<double>> X_WB_default_list_;
 };
 
 /// @cond
@@ -3982,7 +4027,7 @@ void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
-    std::vector<SpatialForce<symbolic::Expression>>*) const;
+    HydroelasticContactInfoAndBodySpatialForces*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(

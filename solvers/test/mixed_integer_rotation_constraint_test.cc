@@ -260,7 +260,7 @@ TEST_P(TestMixedIntegerRotationConstraintGenerator, InexactRotationMatrix) {
   TestInexactRotationMatrix();
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestMixedIntegerRotationConstraintGenerator,
     ::testing::Combine(
         ::testing::ValuesIn<
@@ -300,7 +300,7 @@ TEST_P(TestRotationMatrixBoxSphereIntersection, InexactRotationMatrix) {
   TestInexactRotationMatrix();
 }
 
-INSTANTIATE_TEST_CASE_P(RotationTest, TestRotationMatrixBoxSphereIntersection,
+INSTANTIATE_TEST_SUITE_P(RotationTest, TestRotationMatrixBoxSphereIntersection,
                         ::testing::ValuesIn<std::vector<int>>({1, 2}));
 
 // Make sure that no two row or column vectors in R, which satisfies the
@@ -395,7 +395,7 @@ std::array<std::pair<int, int>, 3> vector_indices() {
   return idx;
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestOrthant,
     ::testing::Combine(
         ::testing::ValuesIn<std::vector<int>>(

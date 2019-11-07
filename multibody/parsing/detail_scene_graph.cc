@@ -91,6 +91,17 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY: {
+      // Check for custom geometry tags, e.g. drake:capsule.
+      if (sdf_geometry.Element()->HasElement("drake:capsule")) {
+        const sdf::ElementPtr capsule_element =
+            sdf_geometry.Element()->GetElement("drake:capsule");
+        const double radius =
+            GetChildElementValueOrThrow<double>(*capsule_element, "radius");
+        const double length =
+            GetChildElementValueOrThrow<double>(*capsule_element, "length");
+        return make_unique<geometry::Capsule>(radius, length);
+      }
+
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
     case sdf::GeometryType::BOX: {
@@ -159,8 +170,12 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const math::RigidTransformd& X_LG) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
-    // The file specifies an EMPTY geometry.
-    return std::unique_ptr<GeometryInstance>(nullptr);
+    // The file either specifies an EMPTY geometry or one that isn't recognized
+    // by libsdf. We first check for any custom geometry tags, e.g.
+    // drake:capsule, before we can decide to return a null geometry.
+    if (!sdf_geometry.Element()->HasElement("drake:capsule")) {
+      return std::unique_ptr<GeometryInstance>(nullptr);
+    }
   }
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
@@ -177,7 +192,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   // Note to developers: if needed, update this switch statement to consider
   // other geometry types whenever X_LC != X_LG.
   switch (sdf_geometry.Type()) {
-    case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::EMPTY:  // Also includes custom geometries.
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::MESH:

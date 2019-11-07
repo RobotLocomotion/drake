@@ -70,9 +70,9 @@ void OptimizationProgram::RunProblem(SolverInterface* solver) {
   if (solver->available()) {
     const MathematicalProgramResult result =
         RunSolver(*prog_, *solver, initial_guess());
-    const optional<SolverType> solver_type =
+    const std::optional<SolverType> solver_type =
         SolverTypeConverter::IdToType(result.get_solver_id());
-    ASSERT_TRUE(solver_type != nullopt);
+    ASSERT_TRUE(solver_type != std::nullopt);
     CheckSolution(result);
   }
 }

@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
@@ -78,7 +79,7 @@ typedef ::testing::Types<
     CloneableInt,
     MoveOrCloneInt
     > Implementations;
-TYPED_TEST_CASE(TypedValueTest, Implementations);
+TYPED_TEST_SUITE(TypedValueTest, Implementations);
 
 // Value<T>() should work if and only if T is default-constructible.
 GTEST_TEST(ValueTest, DefaultConstructor) {
@@ -484,7 +485,7 @@ GTEST_TEST(ValueTest, NonTypeTemplateParameter) {
   Value<T1> foo_value;
   Value<T2> bar_value;
   AbstractValue& foo = foo_value;
-  EXPECT_NO_THROW(foo.get_value<T1>());
+  DRAKE_EXPECT_NO_THROW(foo.get_value<T1>());
   EXPECT_THROW(foo.get_value<T2>(), std::exception);
   EXPECT_THROW(foo.get_value<int>(), std::exception);
   EXPECT_THROW(foo.SetFrom(bar_value), std::exception);

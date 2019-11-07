@@ -1,0 +1,35 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# TODO(tehbelinda): Hide symbols, e.g. using `copts = ["-fvisibility=hidden"]`,
+# since this should only be used inside Drake.
+cc_library(
+    name = "vtkCapsuleSource",
+    srcs = [
+        "vtkCapsuleSource.cxx",
+    ],
+    hdrs = ["vtkCapsuleSource.h"],
+    include_prefix = "third_party/com_github_finetjul_bender/",
+    licenses = ["notice"],  # Apache-2.0
+    tags = ["nolint"],
+    visibility = ["//geometry:__subpackages__"],
+    deps = [
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonExecutionModel",
+    ],
+)
+
+install(
+    name = "install",
+    docs = [
+        "LICENSE",
+        "NOTICE",
+    ],
+    doc_dest = "share/doc/bender",
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests()

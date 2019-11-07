@@ -7,11 +7,7 @@ load(
     "install_cmake_config",
 )
 
-licenses(["notice"])  # BSD-2-Clause AND MIT
-
-package(
-    default_visibility = ["//visibility:public"],
-)
+licenses(["notice"])  # MIT
 
 config_setting(
     name = "linux",
@@ -19,23 +15,76 @@ config_setting(
     visibility = ["//visibility:private"],
 )
 
-cc_library(
-    name = "spdlog",
-    hdrs = glob(
-        ["include/spdlog/**"],
-        exclude = ["include/spdlog/fmt/bundled/**"],
-    ),
-    defines = [
-        "HAVE_SPDLOG",
-        "SPDLOG_FMT_EXTERNAL",
+# The public headers are all of the non-inl include files.
+# We use Drake's @fmt external, not the bundled version inside spdlog.
+_HDRS = glob(
+    [
+        "include/spdlog/**",
     ],
-    includes = ["include"],
+    exclude = [
+        "**/*-inl.h",
+        "include/spdlog/fmt/bundled/**",
+    ],
+)
+
+_INCLUDES = ["include"]
+
+_DEFINES = [
+    "HAVE_SPDLOG",
+    # Use the compiled (not header-only) variant of spdlog for build speed and
+    # substantially (20%+) smaller binary sizes.
+    "SPDLOG_COMPILED_LIB",
+    # Use Drake's @fmt external, not the bundled version inside spdlog.
+    "SPDLOG_FMT_EXTERNAL",
+]
+
+# The library sources are the srcs plus the -inl include files.
+# We use Drake's @fmt external, not the bundled version inside spdlog.
+_SRCS = glob(
+    [
+        "include/spdlog/**/*-inl.h",
+        "src/**",
+    ],
+    exclude = [
+        "include/spdlog/fmt/bundled/**",
+    ],
+)
+
+# Upstream's default is to ship static (not shared), but it is difficult to
+# ensure that we obey ODR for libdrake.so if we were to use libspdlog.a.
+# Therefore, we will always use a shared library for spdlog inside Drake.
+# (We can't use the header-only variant of spdlog because it substantially
+# bloats binary sizes by 20% or more in Debug builds, which pushes us over
+# the 2 GiB file size limit.)
+cc_binary(
+    name = "libspdlog.so",
+    srcs = _HDRS + _SRCS,
+    defines = _DEFINES,
+    includes = _INCLUDES,
     linkopts = select({
         ":linux": ["-pthread"],
         # This is a bazel-default rule, and does not need @drake//
         "@//conditions:default": [],
     }),
+    # These two lines are how you tell Bazel to create a shared library.
+    linkshared = True,
+    linkstatic = True,
     deps = ["@fmt"],
+)
+
+cc_library(
+    name = "spdlog",
+    srcs = ["libspdlog.so"],
+    hdrs = _HDRS,
+    defines = _DEFINES,
+    includes = _INCLUDES,
+    linkstatic = True,
+    deps = [
+        # This is valid iff fmt is compiled in header-only mode.  If it gains a
+        # library, we should depend only on the headers here.
+        "@fmt",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 CMAKE_PACKAGE = "spdlog"
@@ -43,7 +92,7 @@ CMAKE_PACKAGE = "spdlog"
 cmake_config(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/spdlog:package-create-cps.py",
-    version_file = "CMakeLists.txt",
+    version_file = "include/spdlog/version.h",
     deps = ["@fmt//:cps"],
 )
 
@@ -52,10 +101,11 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
-    targets = [":spdlog"],
+    targets = [":libspdlog.so"],
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
-    guess_hdrs = "PACKAGE",
+    hdrs = _HDRS,
     docs = ["LICENSE"],
     deps = [":install_cmake_config"],
+    visibility = ["//visibility:public"],
 )

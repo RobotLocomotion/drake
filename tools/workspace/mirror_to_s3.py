@@ -9,7 +9,7 @@ Python 3 on macOS or Ubuntu 18.04 (Bionic Beaver).
 
 To run:
 
-  bazel build --config=python3 //tools/workspace:mirror_to_s3
+  bazel build //tools/workspace:mirror_to_s3
   bazel-bin/tools/workspace/mirror_to_s3 [--no-download] [--no-upload]
 
 The --no-download option implies --no-upload.

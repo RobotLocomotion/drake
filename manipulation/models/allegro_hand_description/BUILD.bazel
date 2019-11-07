@@ -23,6 +23,10 @@ drake_cc_googletest(
     ],
 )
 
-install_data()
+install_data(
+    extra_prod_models = [
+        "LICENSE.TXT",
+    ],
+)
 
 add_lint_tests()

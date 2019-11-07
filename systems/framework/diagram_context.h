@@ -467,7 +467,7 @@ class DiagramContext final : public Context<T> {
   }
 
   // Recursively sets the accuracy on all subcontexts.
-  void DoPropagateAccuracyChange(const optional<double>& accuracy,
+  void DoPropagateAccuracyChange(const std::optional<double>& accuracy,
                                  int64_t change_event) final {
     for (auto& subcontext : contexts_) {
       DRAKE_ASSERT(subcontext != nullptr);

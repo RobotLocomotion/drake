@@ -24,6 +24,7 @@ drake_cc_library(
     name = "atlas_util",
     srcs = ["atlasUtil.cpp"],
     hdrs = ["atlasUtil.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//common:essential",
     ],
@@ -33,6 +34,7 @@ drake_cc_library(
     name = "body_motion_data",
     srcs = ["BodyMotionData.cpp"],
     hdrs = ["BodyMotionData.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
     ],
@@ -48,6 +50,7 @@ drake_cc_library(
     hdrs = [
         "QPLocomotionPlan.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":atlas_util",
         ":body_motion_data",
@@ -72,8 +75,10 @@ drake_cc_library(
     name = "convex_hull",
     srcs = ["convex_hull.cc"],
     hdrs = ["convex_hull.h"],
+    copts = ["-Wno-deprecated-declarations"],
     visibility = [],
     deps = [
+        "//common:essential",
         "@eigen",
     ],
 )
@@ -82,6 +87,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "convex_hull_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":convex_hull",
     ],

@@ -2,7 +2,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -88,9 +87,9 @@ int do_main() {
     const double LAy = 10 * radiusB;  // Inclined plane length in Ay direction.
     const double LAz = radiusB;       // Inclined plane length in Az direction.
     const Vector3<double> LAxyz(LAx, LAy, LAz);
-    const optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? nullopt
-                                           : optional<Vector3<double>>(LAxyz);
+    const std::optional<Vector3<double>> inclined_plane_dimensions =
+        FLAGS_is_inclined_plane_half_space ? std::nullopt
+            : std::optional<Vector3<double>>(LAxyz);
     benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
         gravity, inclined_plane_angle, inclined_plane_dimensions,
         coef_friction_inclined_plane, coef_friction_bodyB,
@@ -108,9 +107,9 @@ int do_main() {
     const double LAz = 0.04;     // Inclined plane A's length in Az direction.
     const Vector3<double> block_dimensions(LBx, LBy, LBz);
     const Vector3<double> LAxyz(LAx, LAy, LAz);
-    const optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? nullopt
-                                           : optional<Vector3<double>>(LAxyz);
+    const std::optional<Vector3<double>> inclined_plane_dimensions =
+        FLAGS_is_inclined_plane_half_space ? std::nullopt
+            : std::optional<Vector3<double>>(LAxyz);
     benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
         gravity, inclined_plane_angle, inclined_plane_dimensions,
         coef_friction_inclined_plane, coef_friction_bodyB,
@@ -191,6 +190,5 @@ int main(int argc, char* argv[]) {
       "\nto use command-line arguments is in the file README.md"
       "\n(which is in the folder associated with this example).\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::multibody::examples::inclined_plane_with_body::do_main();
 }

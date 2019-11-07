@@ -37,6 +37,8 @@ extern const char* const kElastic;        ///< Elastic modulus property name.
 
    - string constants to read and write the indicated properties, and
    - utility functions for declaring consistent hydroelastic properties
+     including
+       - differentiating between a rigid and soft geometry
 
  @todo Add reference to discussion of hydroelastic proximity properties along
  the lines of "For the full discussion of preparing geometry for use in the

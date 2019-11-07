@@ -15,7 +15,7 @@ class TestInstallTestHelperTest(unittest.TestCase):
         self.assertTrue(os.path.isdir(tmp_dir))
 
     def test_get_python_executable(self):
-        self.assertIn("python", install_test_helper.get_python_executable())
+        self.assertIn("python3", install_test_helper.get_python_executable())
 
     def test_run_and_kill(self):
         python = install_test_helper.get_python_executable()

@@ -4,6 +4,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
@@ -349,6 +350,8 @@ class TestGeneral(unittest.TestCase):
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 4)
+        numpy_compare.assert_equal(demux.get_output_ports_sizes(),
+                                   [1, 1, 1, 1])
 
         input_vec = np.array([1., 2., 3., 4.])
         demux.get_input_port(0).FixValue(context, input_vec)
@@ -365,6 +368,7 @@ class TestGeneral(unittest.TestCase):
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 2)
+        numpy_compare.assert_equal(demux.get_output_ports_sizes(), [2, 2])
 
         demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
@@ -383,6 +387,8 @@ class TestGeneral(unittest.TestCase):
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), num_output_ports)
+        numpy_compare.assert_equal(demux.get_output_ports_sizes(),
+                                   output_ports_sizes)
 
         demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
@@ -436,12 +442,17 @@ class TestGeneral(unittest.TestCase):
         # confirms the API works.
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
 
+    def test_constant_vector_source(self):
+        source = ConstantVectorSource(source_value=[1., 2.])
+        context = source.CreateDefaultContext()
+        source.get_source_value(context)
+        source.get_mutable_source_value(context)
+
     def test_ctor_api(self):
         """Tests construction of systems for systems whose executions semantics
         are not tested above.
         """
         ConstantValueSource(AbstractValue.Make("Hello world"))
-        ConstantVectorSource(source_value=[1., 2.])
         DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
         DiscreteTimeDelay(
             update_sec=0.1, delay_timesteps=5,

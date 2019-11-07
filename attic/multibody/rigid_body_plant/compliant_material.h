@@ -1,8 +1,9 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace systems {
@@ -88,10 +89,12 @@ class CompliantMaterial {
    constructed instance will report true. Furthermore, it must
    return true if set_youngs_modulus_to_default() has been called and false if
    set_youngs_modulus() has been called. */
-  bool youngs_modulus_is_default() const { return youngs_modulus_ == nullopt; }
+  bool youngs_modulus_is_default() const {
+    return youngs_modulus_ == std::nullopt;
+  }
 
   /** Reset the elasticity value to report the default value. */
-  void set_youngs_modulus_to_default() { youngs_modulus_ = nullopt; }
+  void set_youngs_modulus_to_default() { youngs_modulus_ = std::nullopt; }
 
   /** Set the dissipation value. Attempting to set a negative value will throw
    an exception. Returns a reference to `*this` so that multiple invocations
@@ -110,10 +113,10 @@ class CompliantMaterial {
    constructed instance will report true. Furthermore, it must
    return true if set_dissipation_to_default() has been called and false if
    set_dissipation() has been called. */
-  bool dissipation_is_default() const { return dissipation_ == nullopt; }
+  bool dissipation_is_default() const { return dissipation_ == std::nullopt; }
 
   /** Reset the dissipation value to report the default value. */
-  void set_dissipation_to_default() { dissipation_ = nullopt; }
+  void set_dissipation_to_default() { dissipation_ = std::nullopt; }
 
   /** Sets *both* coefficients of friction to the same value.
    @throws std::exception if the value is negative.  Returns a reference to
@@ -160,13 +163,13 @@ class CompliantMaterial {
   bool friction_is_default() const {
     // NOTE: Friction values can only be set in tandem; so if one is default,
     // both must be default.
-    return static_friction_ == nullopt;
+    return static_friction_ == std::nullopt;
   }
 
   /** Reset both friction coefficient values to report the default value. */
   void set_friction_to_default() {
-    static_friction_ = nullopt;
-    dynamic_friction_ = nullopt;
+    static_friction_ = std::nullopt;
+    dynamic_friction_ = std::nullopt;
   }
 
   static const double kDefaultYoungsModulus;
@@ -182,10 +185,10 @@ class CompliantMaterial {
   static void ThrowForBadFriction(double static_friction,
                                   double dynamic_friction);
 
-  optional<double> youngs_modulus_;
-  optional<double> dissipation_;
-  optional<double> static_friction_;
-  optional<double> dynamic_friction_;
+  std::optional<double> youngs_modulus_;
+  std::optional<double> dissipation_;
+  std::optional<double> static_friction_;
+  std::optional<double> dynamic_friction_;
 };
 
 }  // namespace systems

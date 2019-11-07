@@ -64,6 +64,7 @@ drake_cc_library(
     name = "simple_tree_visualizer",
     srcs = ["simple_tree_visualizer.cc"],
     hdrs = ["simple_tree_visualizer.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody/rigid_body_plant:create_load_robot_message",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
@@ -79,6 +80,7 @@ drake_cc_binary(
     name = "simple_tree_visualizer_demo",
     srcs = ["simple_tree_visualizer_demo.cc"],
     add_test_rule = 1,
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
@@ -98,6 +100,7 @@ drake_cc_library(
     name = "frame_pose_tracker",
     srcs = ["frame_pose_tracker.cc"],
     hdrs = ["frame_pose_tracker.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant",
@@ -151,6 +154,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "frame_pose_tracker_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = ["//manipulation/models/iiwa_description:models"],
     deps = [
         ":frame_pose_tracker",
