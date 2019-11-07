@@ -29,6 +29,7 @@ drake_cc_package_library(
         ":mesh_field",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
+        ":mesh_to_vtk",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":proximity_utilities",
@@ -346,6 +347,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "mesh_to_vtk",
+    srcs = ["mesh_to_vtk.cc"],
+    hdrs = ["mesh_to_vtk.h"],
+    deps = [
+        ":mesh_field",
+        ":surface_mesh",
+        ":volume_mesh",
+        "@fmt",
+    ],
+)
+
 drake_cc_googletest(
     name = "collisions_exist_callback_test",
     deps = [
@@ -547,6 +560,19 @@ drake_cc_googletest(
     deps = [
         ":make_box_mesh",
         ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_to_vtk_test",
+    deps = [
+        ":make_box_field",
+        ":make_box_mesh",
+        ":mesh_intersection",
+        ":mesh_to_vtk",
+        "//common:temp_directory",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
     ],
 )
 
