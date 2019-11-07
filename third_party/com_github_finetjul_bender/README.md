@@ -6,5 +6,6 @@ This source was adapted from Git SHA
 pulling in the following files:
 
 *   `LICENSE`
+*   `NOTICE`
 *   `Libs/VTK/Filters/Sources/vtkCapsuleSource.h`
 *   `Libs/VTK/Filters/Sources/vtkCapsuleSource.cxx`
