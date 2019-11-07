@@ -27,8 +27,8 @@ void WeldGripperFrames(MultibodyPlant<T>* plant) {
   // frame's origin (Go), lying on the the gripper frame's Y-Z plane. We denote
   // The gripper frame's Y and Z axes as Gy and Gz.
   const double kGripperOriginToBaseDistance = 0.201;
-  const double kFinger1Angle = -M_PI / 3.0;
-  const double kFinger2Angle = M_PI / 3.0;
+  const double kFinger1Angle = M_PI / 3.0;
+  const double kFinger2Angle = -M_PI / 3.0;
   const double kFinger3Angle = M_PI;
 
   // Note: Before welding and with all finger joint angles being zero, all
