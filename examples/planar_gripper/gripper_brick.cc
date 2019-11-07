@@ -84,7 +84,8 @@ GripperBrickHelper<T>::GripperBrickHelper() {
   for (int i = 0; i < 3; ++i) {
     finger_tip_sphere_geometry_ids_[i] = inspector.GetGeometryIdByName(
         plant_->GetBodyFrameIdOrThrow(
-            plant_->GetBodyByName("finger" + std::to_string(i + 1) + "_link2")
+            plant_
+                ->GetBodyByName("finger" + std::to_string(i + 1) + "_tip_link")
                 .index()),
         geometry::Role::kProximity, "gripper::tip_sphere_collision");
   }
@@ -92,8 +93,15 @@ GripperBrickHelper<T>::GripperBrickHelper() {
       inspector.GetShape(finger_tip_sphere_geometry_ids_[0]);
   finger_tip_radius_ =
       dynamic_cast<const geometry::Sphere&>(fingertip_shape).get_radius();
-  p_L2Fingertip_ = inspector.GetPoseInFrame(finger_tip_sphere_geometry_ids_[0])
-                       .translation();
+  const multibody::Frame<double>& l2_frame =
+      plant_->GetBodyByName("finger1_link2").body_frame();
+  const multibody::Frame<double>& tip_frame =
+      plant_->GetBodyByName("finger1_tip_link").body_frame();
+  math::RigidTransform<double> X_L2LTip = plant_->CalcRelativeTransform(
+      *(plant_->CreateDefaultContext()), l2_frame, tip_frame);
+  p_L2Fingertip_ =
+      X_L2LTip * inspector.GetPoseInFrame(finger_tip_sphere_geometry_ids_[0])
+                     .translation();
   const geometry::Shape& brick_shape =
       inspector.GetShape(inspector.GetGeometryIdByName(
           plant_->GetBodyFrameIdOrThrow(
