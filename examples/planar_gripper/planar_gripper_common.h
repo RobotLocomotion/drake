@@ -16,7 +16,7 @@ using Eigen::Vector3d;
 // The planar-gripper coordinate frame G (with origin Go) and finger layout are
 // defined as follows (assuming all finger joint angles are set to zero):
 //
-//       F1_base         F3_base
+//       F1_base         F2_base
 //              \   +Gz    /
 //               \   |   /
 //                \  |  /
@@ -26,7 +26,7 @@ using Eigen::Vector3d;
 //                   |
 //                   |
 //                   |
-//                 F2_base
+//                 F3_base
 //
 // The gripper frame's Y and Z axes are denote Gy and Gz, respectively. When the
 // planar-gripper is welded via WeldGripperFrames(), the coordinate frame G

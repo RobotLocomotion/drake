@@ -67,10 +67,10 @@
         </inertia>
     </inertial>
     <visual name='brick_visual_1'>
-      <pose frame=''>0 0 0.023 0 0 0</pose>
+      <pose frame=''>0 0 0.025 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.05 0.092 0.046</size>
+          <size>0.07 0.1 0.05</size>
         </box>
       </geometry>
       <material>
@@ -78,10 +78,10 @@
       </material>
     </visual>
     <visual name='brick_visual_2'>
-      <pose frame=''>0 0 -0.023 0 0 0</pose>
+      <pose frame=''>0 0 -0.025 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.05 0.092 0.046</size>
+          <size>0.07 0.1 0.05</size>
         </box>
       </geometry>
       <material>
@@ -92,12 +92,12 @@
       <pose>0 0 0 0 0 0</pose>
       <geometry>
         <box>
-          <size>0.05 0.092 0.092</size>
+          <size>0.07 0.1 0.1</size>
         </box>
       </geometry>
     </collision>
     <collision name='sphere1_collision'>
-      <pose>-0.025 0.046 0.046 0 0 0</pose>
+      <pose>-0.035 0.05 0.05 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>.0001</radius>
@@ -105,7 +105,7 @@
       </geometry>
     </collision>
     <collision name='sphere2_collision'>
-      <pose>-0.025 -0.046 0.046 0 0 0</pose>
+      <pose>-0.035 -0.05 0.05 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>.0001</radius>
@@ -113,7 +113,7 @@
       </geometry>
     </collision>
     <collision name='sphere3_collision'>
-      <pose>-0.025 0.046 -0.046 0 0 0</pose>
+      <pose>-0.035 0.05 -0.05 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>.0001</radius>
@@ -121,7 +121,7 @@
       </geometry>
     </collision>
     <collision name='sphere4_collision'>
-      <pose>-0.025 -0.046 -0.046 0 0 0</pose>
+      <pose>-0.035 -0.05 -0.05 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>.0001</radius>
