@@ -10,6 +10,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
@@ -39,8 +40,11 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 // TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
-/** Defines a soft mesh -- a mesh and its linearized pressure field, p̃(e).  */
+/** Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
+ bounding volume hierarchy. This struct retains ownership of the mesh, with
+ the pressure field and bounding volume hierarchy just referencing it. */
 struct SoftMesh {
+  std::unique_ptr<BoundingVolumeHierarchy<VolumeMesh<double>>> bvh;
   std::unique_ptr<VolumeMesh<double>> mesh;
   std::unique_ptr<VolumeMeshField<double, double>> pressure;
 };
@@ -51,10 +55,15 @@ struct SoftMesh {
 class SoftGeometry {
  public:
   /** Constructs a soft geometry from a soft mesh.  */
-  SoftGeometry(
-      std::unique_ptr<VolumeMesh<double>> mesh,
-      std::unique_ptr<VolumeMeshField<double, double>> pressure)
-      : geometry_(SoftMesh{std::move(mesh), std::move(pressure)}) {}
+  SoftGeometry(std::unique_ptr<VolumeMesh<double>> mesh,
+               std::unique_ptr<VolumeMeshField<double, double>> pressure)
+      : geometry_(SoftMesh{
+            std::make_unique<
+                BoundingVolumeHierarchy<VolumeMesh<double>>>(
+                BoundingVolumeHierarchy(mesh.get())),
+            std::move(mesh),
+            std::move(pressure),
+        }) {}
 
   SoftGeometry(const SoftGeometry& g) { *this = g; }
   SoftGeometry& operator=(const SoftGeometry& g);
@@ -75,20 +84,37 @@ class SoftGeometry {
   SoftMesh geometry_;
 };
 
+/** Defines a rigid mesh -- a surface mesh and its bounding volume hierarchy.
+ This struct retains ownership of the mesh, with the bounding volume hierarchy
+ just referencing it.  */
+struct RigidMesh {
+  std::unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
+  std::unique_ptr<SurfaceMesh<double>> mesh;
+};
+
 /** The base representation of rigid geometries. A rigid geometry is represented
- with a SurfaceMesh.  */
+ with a RigidMesh.  */
 class RigidGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
+  RigidGeometry(const RigidGeometry& g) { *this = g; }
+  RigidGeometry& operator=(const RigidGeometry& g);
+  RigidGeometry(RigidGeometry&&) = default;
+  RigidGeometry& operator=(RigidGeometry&&) = default;
 
   /** Constructs a rigid representation from the given surface mesh.  */
-  explicit RigidGeometry(SurfaceMesh<double> mesh) : mesh_(std::move(mesh)) {}
+  explicit RigidGeometry(std::unique_ptr<SurfaceMesh<double>> mesh)
+      : geometry_(RigidMesh{
+            std::make_unique<
+                BoundingVolumeHierarchy<SurfaceMesh<double>>>(
+                BoundingVolumeHierarchy(mesh.get())),
+            std::move(mesh),
+        }) {}
 
   /** Returns a reference to the surface mesh.  */
-  const SurfaceMesh<double>& mesh() const { return mesh_; }
+  const SurfaceMesh<double>& mesh() const { return *geometry_.mesh; }
 
  private:
-  SurfaceMesh<double> mesh_;
+  RigidMesh geometry_;
 };
 
 /** This class stores all instantiated hydroelastic representations of declared

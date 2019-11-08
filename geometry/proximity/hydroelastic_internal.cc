@@ -43,7 +43,23 @@ SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
   // We can't simply copy the mesh field; the copy must contain a pointer to the
   // new mesh. So, we use CloneAndSetMesh() instead.
   auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
-  geometry_ = SoftMesh{move(mesh), move(pressure)};
+  geometry_ =
+      SoftMesh{std::make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(
+                   BoundingVolumeHierarchy(mesh.get())),
+               move(mesh),
+               move(pressure)};
+
+  return *this;
+}
+
+RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
+  if (this == &g) return *this;
+
+  auto mesh = make_unique<SurfaceMesh<double>>(g.mesh());
+  geometry_ =
+      RigidMesh{std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
+          BoundingVolumeHierarchy(mesh.get())),
+          move(mesh)};
 
   return *this;
 }
@@ -224,7 +240,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
   const double edge_length =
       PositiveDouble("Sphere", "rigid").Extract(props, kHydroGroup, kRezHint);
-  SurfaceMesh<double> mesh = MakeSphereSurfaceMesh<double>(sphere, edge_length);
+  auto mesh = std::make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(sphere, edge_length));
 
   return RigidGeometry(move(mesh));
 }
@@ -233,7 +250,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props) {
   const double edge_length =
       PositiveDouble("Box", "rigid").Extract(props, kHydroGroup, kRezHint);
-  SurfaceMesh<double> mesh = MakeBoxSurfaceMesh<double>(box, edge_length);
+  auto mesh = std::make_unique<SurfaceMesh<double>>(
+      MakeBoxSurfaceMesh<double>(box, edge_length));
 
   return RigidGeometry(move(mesh));
 }
