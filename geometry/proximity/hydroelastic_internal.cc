@@ -49,7 +49,16 @@ SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
   // We can't simply copy the mesh field; the copy must contain a pointer to the
   // new mesh. So, we use CloneAndSetMesh() instead.
   auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
-  geometry_ = SoftMesh{move(mesh), move(pressure)};
+  geometry_ = SoftMesh(move(mesh), move(pressure));
+
+  return *this;
+}
+
+RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
+  if (this == &g) return *this;
+
+  auto mesh = make_unique<SurfaceMesh<double>>(g.mesh());
+  geometry_ = RigidMesh(move(mesh));
 
   return *this;
 }
@@ -231,7 +240,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
   PositiveDouble validator("Sphere", "rigid");
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  SurfaceMesh<double> mesh = MakeSphereSurfaceMesh<double>(sphere, edge_length);
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(sphere, edge_length));
 
   return RigidGeometry(move(mesh));
 }
@@ -240,7 +250,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props) {
   PositiveDouble validator("Box", "rigid");
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  SurfaceMesh<double> mesh = MakeBoxSurfaceMesh<double>(box, edge_length);
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeBoxSurfaceMesh<double>(box, edge_length));
 
   return RigidGeometry(move(mesh));
 }
@@ -249,8 +260,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
   PositiveDouble validator("Cylinder", "rigid");
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  SurfaceMesh<double> mesh =
-      MakeCylinderSurfaceMesh<double>(cylinder, edge_length);
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeCylinderSurfaceMesh<double>(cylinder, edge_length));
 
   return RigidGeometry(move(mesh));
 }
@@ -259,8 +270,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
   PositiveDouble validator("Ellipsoid", "rigid");
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  SurfaceMesh<double> mesh =
-      MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length);
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length));
 
   return RigidGeometry(move(mesh));
 }
