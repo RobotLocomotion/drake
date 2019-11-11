@@ -12,7 +12,6 @@ fonts-dejavu-extra
 gdb
 gfortran
 git
-graphviz
 jupyter
 jupyter-notebook
 kcov-35
