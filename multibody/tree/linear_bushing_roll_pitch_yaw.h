@@ -92,15 +92,19 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @param[in] torque_stiffness_constants  the constants `[k₀, k₁, k₂]`
   /// associated with the rotational part `1/2 (k₀q₀² + k₁q₁² + k₂q₂²)` of the
   /// potential energy U, where `[q₀, q₁, q₂]` are the roll, pitch, yaw angles.
+  /// The SI units of `k₀, k₁, k₂` are N*m/rad.
   /// @param[in] torque_damping_constants the constants `[b₀, b₁, b₂]`
   /// associated with the rotational part `1/2 (b₀q̇₀² + b₁q̇₁² + b₂q̇₂²)`
   /// of the dissipation function D.
+  /// The SI units of `b₀, b₁, b₂` are N*m*s/rad.
   /// @param[in] force_stiffness_constants the constants `[kx, ky, kz]`
   /// associated with the translational part `1/2 (kx x² + ky y² + kz z²)` of
   /// the potential energy U, where [x, y, z] are the bushing's displacements.
+  /// The SI units of `kx, ky, kz` are N/m.
   /// @param[in] force_damping_constants the constants `[bx, by, bz]`
   /// associated with the translational part `1/2 (bx ẋ² + by ẏ² + bz ż²)`
   /// of the dissipation function D.
+  /// The SI units of `bx, by, bz` are N*s/m.
   /// @note Refer to the class documentation for details about U, D, q₀, etc.
   /// @note The stiffness constants `[k₀, k₁, k₂]`, `[kx, ky, kz]` and the
   /// damping constants `[b₀, b₁, b₂]`, `[bx, by, bz]` are usually non-negative.
@@ -344,9 +348,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   const Frame<T>& frameAb_;
   const Frame<T>& frameBa_;
 
-  // TODO(Mitiguy) Improve this class by upgrading all data members to type <T>
-  //  -- not specialized to <double>.  There were problems with clone methods
-  //  having to do with converting a symbolic expression to type double.
   const Vector3<double> torque_stiffness_constants_;
   const Vector3<double> torque_damping_constants_;
   const Vector3<double> force_stiffness_constants_;
