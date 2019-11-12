@@ -3059,6 +3059,10 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
 //     - Place a "standing" cylinder at (0, 0, -length/2).
 //     - Rotate the cylinder so that its length axis is parallel with the z = 0
 //       plane and the displace downward (0, 0, -radius). Described as "prone".
+//   - capsule: There are two valid configurations (radius & length >> depth).
+//     - Place a "standing" capsule at (0, 0, -length/2 - radius).
+//     - Rotate the capsule so that its length axis is parallel with the z = 0
+//       plane and the displace downward (0, 0, -radius). Described as "prone".
 //
 // Note: there are an infinite number of orientations that satisfy the
 // configuration described above. They should *all* provide the same collision
@@ -3112,7 +3116,9 @@ class BoxPenetrationTest : public ::testing::Test {
     TangentBox,
     TangentStandingCylinder,
     TangentProneCylinder,
-    TangentConvex
+    TangentConvex,
+    TangentStandingCapsule,
+    TangentProneCapsule
   };
 
   // The test that produces *bad* results based on the box orientation. Not
@@ -3232,6 +3238,10 @@ class BoxPenetrationTest : public ::testing::Test {
         return "prone cylinder";
       case TangentConvex:
         return "convex";
+      case TangentStandingCapsule:
+        return "standing capsule";
+      case TangentProneCapsule:
+        return "prone capsule";
     }
     return "undefined shape";
   }
@@ -3250,6 +3260,9 @@ class BoxPenetrationTest : public ::testing::Test {
         return tangent_cylinder_;
       case TangentConvex:
         return tangent_convex_;
+      case TangentStandingCapsule:
+      case TangentProneCapsule:
+        return tangent_capsule_;
     }
     // GCC considers this function ill-formed - no apparent return value. This
     // exception alleviates its concern.
@@ -3274,7 +3287,11 @@ class BoxPenetrationTest : public ::testing::Test {
       case TangentStandingCylinder:
         pose.set_translation({0, 0, -kLength / 2});
         break;
+      case TangentStandingCapsule:
+        pose.set_translation({0, 0, -kLength / 2 - kRadius});
+        break;
       case TangentProneCylinder:
+      case TangentProneCapsule:
         pose = RigidTransformd(AngleAxisd{M_PI_2, Vector3d::UnitX()},
                                Vector3d{0, 0, -kRadius});
         break;
@@ -3301,6 +3318,7 @@ class BoxPenetrationTest : public ::testing::Test {
   // The file "quad_cube.obj" contains the cube of size 2.0.
   const Convex tangent_convex_{drake::FindResourceOrThrow(
       "drake/geometry/test/quad_cube.obj"), 5.0};
+  const Capsule tangent_capsule_{kRadius, kLength};
 
   const Vector3d p_WC_{0, 0, -kDepth};
   const Vector3d p_BoC_B_{-0.5, -0.5, -0.5};
@@ -3368,13 +3386,28 @@ TEST_F(BoxPenetrationTest, TangentConvex2) {
   TestCollision2(TangentConvex, 1e-3);
 }
 
-// Attempting to add a Capsule should cause an abort.
-GTEST_TEST(ProximityEngineTests, AddCapsule) {
-  ProximityEngine<double> engine;
-  Capsule capsule{0.2, 1.0};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddDynamicGeometry(capsule, GeometryId::get_new_id()),
-      std::exception, ".*The proximity engine does not support capsules yet.*");
+TEST_F(BoxPenetrationTest, TangentStandingCapsule1) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. See related Drake issue 7656.
+  TestCollision1(TangentStandingCapsule, 1e-1);
+}
+
+TEST_F(BoxPenetrationTest, TangentStandingCapsule2) {
+  TestCollision2(TangentStandingCapsule, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentProneCapsule1) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. Largely due to normal
+  // calculation. See related Drake issue 7656.
+  TestCollision1(TangentProneCapsule, 1e-1);
+}
+
+TEST_F(BoxPenetrationTest, TangentProneCapsule2) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. In this case, the largest error
+  // is in the position of the contact points. See related Drake issue 7656.
+  TestCollision2(TangentProneCapsule, 1e-4);
 }
 
 // Attempting to add a dynamic Mesh should cause an abort.

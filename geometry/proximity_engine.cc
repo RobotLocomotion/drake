@@ -315,10 +315,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessHydroelastic(box, user_data);
   }
 
-  void ImplementGeometry(const Capsule&, void*) override {
-    // TODO(tehbelinda - #10153): Add capsule support.
-    throw std::domain_error(
-        "The proximity engine does not support capsules yet");
+  void ImplementGeometry(const Capsule& capsule, void* user_data) override {
+    auto fcl_capsule =
+        make_shared<fcl::Capsuled>(capsule.get_radius(), capsule.get_length());
+    TakeShapeOwnership(fcl_capsule, user_data);
+    ProcessHydroelastic(capsule, user_data);
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
