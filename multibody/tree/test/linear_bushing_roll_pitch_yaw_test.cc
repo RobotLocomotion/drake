@@ -101,15 +101,15 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double q0 = rpy.roll_angle();                              // rad
     const double q1 = rpy.pitch_angle();                             // rad
     const double q2 = rpy.yaw_angle();                               // rad
-    const double wBx = w_AbBa(0), wBy = w_AbBa(1), wBz = w_AbBa(2);  // rad/sec
+    const double wx = w_AbBa(0), wy = w_AbBa(1), wz = w_AbBa(2);     // rad/sec
     const double x = p_AbBa(0), y = p_AbBa(1), z = p_AbBa(2);        // m
     const double xDt = v_AbBa(0), yDt = v_AbBa(1), zDt = v_AbBa(2);  // m/s
 
     const double c1 = cos(q1), s1 = sin(q1), tan1 = s1 / c1;
     const double c2 = cos(q2), s2 = sin(q2);
-    const double q0Dt = c2 / c1 * wBx + s2 / c1 * wBy;
-    const double q1Dt = -s2 * wBx + c2 * wBy;
-    const double q2Dt = c2 * tan1 * wBx + s2 * tan1 * wBy + wBz;
+    const double q0Dt = c2 / c1 * wx + s2 / c1 * wy;
+    const double q1Dt = -s2 * wx + c2 * wy;
+    const double q2Dt = c2 * tan1 * wx + s2 * tan1 * wy + wz;
     const double Fx = -(kx * x + bx * xDt);
     const double Fy = -(ky * y + by * yDt);
     const double Fz = -(kz * z + bz * zDt);
@@ -119,6 +119,12 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double Tx = c2 / c1 * T0 - s2 * T1 + c2 * tan1 * T2;
     const double Ty = s2 / c1 * T0 + c2 * T1 + s2 * tan1 * T2;
     const double Tz = T2;
+    const double MBox =  Tx + 0.5*Fy*z - 0.5*Fz*y;
+    const double MBoy =  Ty + 0.5*Fz*x - 0.5*Fx*z;
+    const double MBoz =  Tz + 0.5*Fx*y - 0.5*Fy*x;
+    const double MAox = -Tx + 0.5*Fy*z - 0.5*Fz*y;
+    const double MAoy = -Ty + 0.5*Fz*x - 0.5*Fx*z;
+    const double MAoz = -Tz + 0.5*Fx*y - 0.5*Fy*x;
     const double potentialTranslation = 0.5 * kx * pow(x, 2)
                                       + 0.5 * ky * pow(y, 2)
                                       + 0.5 * kz * pow(z, 2);
@@ -129,9 +135,13 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double powerConservative_MG = -k0 * q0 * q0Dt - kx * x * xDt
                                        - k1 * q1 * q1Dt - ky * y * yDt
                                        - k2 * q2 * q2Dt - kz * z * zDt;
-    const double powerDissipation_MG = -b0 * pow(q0Dt, 2) - b1 * pow(q1Dt, 2)
-                                      - b2 * pow(q2Dt, 2) - bx * pow(xDt, 2)
-                                      - by * pow(yDt, 2) - bz * pow(zDt, 2);
+    const double powerDissipation_MG = -b0 * pow(q0Dt, 2) - bx * pow(xDt, 2)
+                                      - b1 * pow(q1Dt, 2) - by * pow(yDt, 2)
+                                      - b2 * pow(q2Dt, 2) - bz * pow(zDt, 2);
+    const double powerExtra_MG = 0.5*Fx*(y*wz-z*wy)
+                               + 0.5*Fy*(z*wx-x*wz)
+                               + 0.5*Fz*(x*wy-y*wx);
+    const double powerNonconservative_MG = powerDissipation_MG - powerExtra_MG;
     //---------------- End of MotionGenesis calculations -------------
 
     // Harvest the context for Drake information.
@@ -140,7 +150,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Use the mobilizer to set frame Bᴀ's orientation in frame Aʙ.
     // Use the mobilizer to set Bᴀo's position from Aʙo expressed in frame Aʙ.
     const math::RotationMatrix<double> R_AbBa(rpy);
-    mobilizer_->SetFromRotationMatrix(context, R_AbBa.matrix());
+    mobilizer_->SetFromRotationMatrix(context, R_AbBa);
     mobilizer_->set_position(context, p_AbBa);
 
     // Verify the mobilizer sets the bushing's configuration correctly.
@@ -165,16 +175,40 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     EXPECT_EQ(V_AbBa.rotational(), w_AbBa);
     EXPECT_EQ(V_AbBa.translational(), v_AbBa);
 
-    // Verify the bushing's spatial force (torque and force) calculation.
-    const SpatialForce<double> F_Ab_Ab =
+    // Verify the bushing's spatial force (torque and force) calculation at Bc.
+    const SpatialForce<double> F_Bc_Ab =
+        bushing_->CalcBushingSpatialForceOnBc(*context);
+    const Vector3<double> t_Bc_Ab = F_Bc_Ab.rotational();
+    const Vector3<double> f_Bc_Ab = F_Bc_Ab.translational();
+    const Vector3<double> t_Bc_Ab_expected(Tx, Ty, Tz);
+    const Vector3<double> f_Bc_Ab_expected(Fx, Fy, Fz);
+    EXPECT_TRUE(CompareMatrices(t_Bc_Ab, t_Bc_Ab_expected, 4 * kEpsilon,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(f_Bc_Ab, f_Bc_Ab_expected, 4 * kEpsilon,
+                                MatrixCompareType::relative));
+
+    // Verify the bushing's spatial force (torque and force) calculation at Bᴀₒ.
+    const SpatialForce<double> F_Ba_Ab =
         bushing_->CalcBushingSpatialForceOnBa(*context);
-    const Vector3<double> t_Ba_Ab = F_Ab_Ab.rotational();
-    const Vector3<double> f_Ba_Ab = F_Ab_Ab.translational();
-    const Vector3<double> t_Ba_Ab_expected(Tx, Ty, Tz);
+    const Vector3<double> t_Ba_Ab = F_Ba_Ab.rotational();
+    const Vector3<double> f_Ba_Ab = F_Ba_Ab.translational();
+    const Vector3<double> t_Ba_Ab_expected(MBox, MBoy, MBoz);
     const Vector3<double> f_Ba_Ab_expected(Fx, Fy, Fz);
     EXPECT_TRUE(CompareMatrices(t_Ba_Ab, t_Ba_Ab_expected, 4 * kEpsilon,
                                 MatrixCompareType::relative));
     EXPECT_TRUE(CompareMatrices(f_Ba_Ab, f_Ba_Ab_expected, 4 * kEpsilon,
+                                MatrixCompareType::relative));
+
+    // Verify the bushing's spatial force (torque and force) calculation at Aʙₒ.
+    const SpatialForce<double> F_Ab_Ab =
+        bushing_->CalcBushingSpatialForceOnAb(*context);
+    const Vector3<double> t_Ab_Ab = F_Ab_Ab.rotational();
+    const Vector3<double> f_Ab_Ab = F_Ab_Ab.translational();
+    const Vector3<double> t_Ab_Ab_expected(MAox, MAoy, MAoz);
+    const Vector3<double> f_Ab_Ab_expected(-Fx, -Fy, -Fz);
+    EXPECT_TRUE(CompareMatrices(t_Ab_Ab, t_Ab_Ab_expected, 4 * kEpsilon,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(f_Ab_Ab, f_Ab_Ab_expected, 4 * kEpsilon,
                                 MatrixCompareType::relative));
 
     // TODO(Mitiguy) Fix CalcPotentialEnergy(), CalcConservativePower(), etc.
@@ -200,7 +234,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double non_conservative_power =
         bushing_->CalcNonConservativePower(*context, pc, vc);
     scaled_epsilon = std::abs(powerDissipation_MG) * 8 * kEpsilon;
-    EXPECT_NEAR(non_conservative_power, powerDissipation_MG, scaled_epsilon);
+    EXPECT_NEAR(non_conservative_power, powerNonconservative_MG,
+                scaled_epsilon);
   }
 
  protected:
