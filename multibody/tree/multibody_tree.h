@@ -1656,6 +1656,256 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
+  // TODO(amcastro-tri): fix references to CalcArticulatedBodyForces()
+  // and CalcArticulatedBodyAccelerations() when we push the complete forward
+  // dynamics.
+  /** @name Articulated Body Algorithm Forward Dynamics.
+  The Articulated %Body Algorithm (ABA) implements a forward dynamics
+  computation with O(n) complexity. The algorithm is implemented in terms of
+  three main passes:
+  1. CalcArticulatedBodyInertiaCache(): which performs a tip to base pass to
+     compute the ArticulatedBodyInertia for each body along with other ABA
+     quantities that are configuration dependent only.
+  2. CalcArticulatedBodyForceBiases(): a second tip to base pass which
+     essentially computes the bias terms in the ABA equations. These are a
+     function of the full state x = [q; v] and externally applied actuation and
+     forces.
+  3. CalcArticulatedBodyAccelerations(): which performs a final base to tip
+     recursion to compute the acceleration of each body in the model. These
+     accelerations are a function of the ArticulatedBodyAlgorithmCache
+     previously computed by CalcArticulatedBodyForces(). That is, accelerations
+     are a function of state x and applied forces.
+
+  The Newton-Euler equations governing the motion of a rigid body are: <pre>
+    Fapp_B = M_B * A_WB + Fb_B
+  </pre>
+  which describe the effect of the total applied spatial forces Fapp_B on the
+  spatial acceleration A_WB of a **rigid body** B with spatial inertia M_B.
+  Fb_B is the spatial force bias containing gyroscopic terms. 
+
+  Similarly, it is possible to show that there exists a linear relationship
+  between the spatial acceleration and external forces for a body that belongs
+  to a system of rigid bodies or **articulated body**. In particular, if this
+  body is the root (or handle) of an articulated body system, the reaction force
+  needed to enforce its the motion with acceleration A_WB is given by: <pre>
+    F_B = P_B * A_WB + Z_B                                                   (1)
+  </pre>
+  where F_B is now the spatial force needed to induce the spatial acceleration
+  A_WB of this root body B being part of a larger articulated system. Z_B is
+  the articulated body spatial forces bias term and P_B the articulated body
+  inertia, see documentation in the ArticulatedBodyInertia class. The existence
+  of P_B and Z_B can be proved by induction, see [Jain 2010, §6.2.1] and
+  [Featherstone 2008, §7.2].
+
+  In Drake we closely follow the notation and spatial algebra described in [Jain
+  2010]. However, we follow the algebraic steps of ABA as described in
+  [Featherstone 2008]. The main difference between the two presentations becomes
+  apparent when contrasting [Jain 2010, Eq. 7.34] with [Featherstone, 2008, Eq.
+  7.25] which show how to compute joint reaction forces for an articulated body.
+  A more in depth analysis reveals that this difference stems from a different
+  definition of the articulated force bias, see @ref abi_and_bias_force
+  "Articulated Body Inertia and Bias Force". That is, Featherstone's and Jain's
+  force biases have different numerical values.
+
+  Both algorithms are equivalent but in Drake we like the neat parallelism
+  between the Newton-Euler equations and the ABA equations as presented by
+  [Featherstone, 2008]. That is, with Featherstone's definition of the force
+  bias we can write F_B_W = P_B_W * A_WB + Z_B_W [Featherstone, 2008, Eq. 7.25]
+  while Jain needs to first subtract the acceleration bias as in F_B_W = P_B_W *
+  (A_WB - Ab_WB) + Z_B_W [Jain 2010, Eq. 7.34].
+
+  The section below on @ref forward_dynamics_notation "Notation" summarizes the
+  main differences in notation between [Featherstone, 2008], [Jain, 2010] and
+  Drake, as well as it provides equations numbers for each reference.
+
+  @anchor abi_and_bias_force
+  <h3> Articulated %Body Inertia and Force Bias </h3>
+
+  We can prove the existence of P_B and Z_B for all bodies in a multibody
+  system using an induction argument on Eq. (1). [Featherstone, 2008] does this
+  in a very clear and compact form in Section 7.2.2 while at the same time
+  deriving the recursive relations to compute these quantities. Here we limit
+  ourselves to 1) introduce these equations with Drake's notation, making
+  reference to the respective equations in [Featherstone, 2008], and
+  2) to highlight the differences with the formulation in [Jain, 2010] for
+     reference.
+
+  Articulated body inertias and force biases can be computed by a recursive tip
+  to base assembly process (Eqs. 7.21-7.24 in [Featherstone, 2008]): <pre>
+    P_B_W = M_B_W + Σᵢ Pplus_BCib_W                                          (2)
+    Z_B_W = Fb_B_W - Fapp_B_W + Σᵢ Zplus_Cib_W                               (3)
+  </pre>
+  where M_B_W is the SpatialInertia of body B, P_B_W its
+  ArticulatedBodyInertia, Fapp_B_W are the externally applied forces, and
+  Pplus_BCib_W and Zplus_Cib_W are the effective ABI and force bias of an
+  articulated body with a massless handle at B and including all bodies outboard
+  of Ci. Both Pplus_BCib_W and Zplus_Cib_W are shifted to B and expressed in W.
+  The role of Pplus_BCib_W and Zplus_Cib_W is clearer when considering the
+  equation to compute the reaction force at the mobilizer constraining the
+  motion of body B (Eq. 7.25 in [Featherstone, 2008]): <pre>
+    F_B_W = Pplus_PB_W * Aplus_WB + Zplus_B_W                                (4)
+  </pre>
+  This equation mirrors Eq. (1) but it is written in terms of the rigidly
+  shifted spatial acceleration `Aplus_WB = Φᵀ(p_PB) * A_WP`, or
+  Aplus_WB.Shift(p_PB_W) in code.
+
+  The articulated body inertia Pplus can be computed once P_B_W is obtained from
+  Eq. (2): <pre>
+     Pplus_PB_W = P_B_W - P_B_W * H_PB_W * D_B⁻¹ * H_PB_Wᵀ * P_B_W
+                = P_B_W - g_B_W * U_B_W                                      (5)
+  </pre>
+  where: <pre>
+    D_B = H_PB_Wᵀ * P_B_W * H_PB_W ∈ ℝᵐˣᵐ                                    (6)
+    U_B_W = H_PB_Wᵀ * P_B_W ∈ ℝᵐˣ⁶                                           (7)
+    g_B_W = U_B_Wᵀ * D_B⁻¹ ∈ ℝ⁶ˣᵐ                                            (8)
+  </pre>
+  with m the number of mobilities of body B. U_B_W and g_B_W are useful
+  configuration dependent quantities that appear several times in the ABA. The
+  force bias Zplus across the mobilizer is computed once the Z_B_W is obtained
+  from Eq. (3): <pre>
+    Zplus_B_W = Z_B_W + Pplus_PB_W * Ab_WB + g_B_W * e_B                     (9)
+    e_B = tau_B - H_PB_Wᵀ * Z_B_W                                           (10)
+  </pre>
+  where tau_B are the applied generalized forces on body B's mobilizer. Notice
+  that, given their definition in Eqs. (3) and (9), the ABA force bias terms
+  Z_B_W and Zplus_B_W are not only a function of the velocity dependent
+  gyroscopic terms Ab_WB and Fb_B_W, but also of the externally applied forces
+  and actuation.
+
+  @note Even though we use H as the symbol for the "hinge matrix" ("joint's
+  motion subspace matrix" in Featherstone) as introduced by Jain, this matrix is
+  the **transpose** of Jain's matrix so that it acts as any other Jacobian. For
+  instance in Drake we read `V_PB_W = H_PB_W * v_B` while H_PB_W would be
+  transposed in Jain's book.
+
+  Terms that are only a function of the configuration q such as P_B_W,
+  Pplus_PB_W, D_B, and g_B_W are computed in the first pass of the ABA by
+  CalcArticulatedBodyInertiaCache(). The second pass implemented in
+  CalcArticulatedBodyForces() computes the acceleration bias Ab_WB_W,
+  articulated body force biases Z_B_W, Zplus_B_W, and e_B. These terms are
+  function of the full state including configuration and velocities and of the
+  applied external forcing. Ab_WB_W is zero when velocities are zero. Z_B_W,
+  Zplus_B_W, and e_B are zero when velocities and externally applied forces are
+  zero.
+
+  @note [Featherstone, 2008] and [Jain, 2010] use a different definition of
+  Z_B_W. When comparing the two algorithms, we'll denote with Zj_B_W,
+  Zjplus_B_W, and ej_B the bias terms as defined by Jain. They have different
+  numerical values than those introduced by [Featherstone, 2008] (even after
+  making the conversion from Plücker to Jain's spatial algebra.)
+  A detailed analysis of the two reveals that: <pre>
+    Zjplus_B_W = Zplus_B_W
+    Zj_B_W = Z_B_W + P_B_W * Ab_WB
+    ej_B = e_B - H_PB_Wᵀ * P_B_W * Ab_WB
+  </pre>
+  which then translates into the differences we observe with [Jain, 2010,
+  Algorithm 7.2]: <pre>
+    Zj_B_W = Fb_B_W - Fapp_B_W + Σᵢ Zplus_Cib_W + P_B_W * Ab_WB
+    Z_B_W  = Fb_B_W - Fapp_B_W + Σᵢ Zplus_Cib_W,                    from Eq. (3)
+  </pre>
+  where the term with Ab_WB does not appear in our Eq. (3).
+  <pre>
+    Zjplus_B_W = Zj_B_W + g_B_W * ej_B
+    Zplus_B_W  = Z_B_W  + g_B_W * e_B + Pplus_PB_W * Ab_WB,         from Eq. (9)
+  </pre>
+  where notice our Eq. (9) has the additional term Pplus_PB_W * Ab_WB. However,
+  as mentioned above, the numerical values of Zplus_B_W and Zjplus_B_W are
+  exactly the same given the difference cancels out through the additional terms
+  present in ej_B, see below. Finally:
+  <pre>
+    ej_B = tau_B - H_PB_Wᵀ * Zj_B_W
+    e_B  = tau_B - H_PB_Wᵀ * Z_B_W,                                from Eq. (10)
+  </pre>
+  which is deceivingly the same as our Eq. (10), however the result is
+  different given it has Zj_B_W in it, which numerically differs from Z_B_W.
+  This different definition of the force bias leads to a different expression
+  for the computation of reaction forces in terms of the articulated body
+  quantities: <pre>
+    F_B = P_B * A_WB + Z_B,             [Featherstone, 2008, Eq. 7.25]
+    F_B = P_B * (A_WB - Ab_WB) + Zj_B,  [Jain, 2010, Eq. 7.34]
+  </pre>
+  In Drake we prefer Featherstone's definition of the force bias terms given the
+  parallelism of the joint reaction forces equation with the Newton-Euler
+  equations.
+
+  <h3> Computing Accelerations </h3>
+  Once ABA inertias and force bias terms are computed according to Eqs.
+  (2)-(10), the computation of accelerations is remarkably simple. The last base
+  to tip pass of the algorithm stems from combining the following three
+  equations: <pre>
+    A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B                              (11a)
+    F_B_W = P_B_W * A_WB + Z_B_W                                           (11b)
+    tau_B = H_PB_Wᵀ * F_B_W                                                (11c)
+  </pre>
+  Equation (11a) is the motion constraint imposed by the body's mobilizer,
+  where the spatial acceleration bias Ab_WB = Ac_WB + Ab_PB includes the
+  centrifugal and Coriolis terms Ac_WB documented in
+  SpatialAcceleration::ComposeWithMovingFrameAcceleration() and the bias
+  term across the mobilizer Ab_PB (A_PB = H_PB * vdot_B + Ab_PB.)
+  Equation (11b) is the articulated body force balance from Eq. (1) and Eq.
+  (11c) projects the reaction force F_B to obtain the generalized forces tau_B.
+  We substitute Eqs. (11a) and (11b) into (11c) to obtain: <pre>
+    H_PB_Wᵀ*[P_B_W * (Aplus_WB + Ab_WB + H_PB_W * vdot_B) + Z_B_W] = tau_B  (12)
+  </pre>
+  we then factor out terms grouping vdot_B, acceleration biases and forcing:
+  <pre>
+    (H_PB_Wᵀ*P_B_W*H_PB_W) * vdot_B + (H_PB_Wᵀ*P_B_W) * (Aplus_WB + Ab_WB ) =
+      tau_B - H_PB_Wᵀ * Z_B_W                                               (13)
+  </pre>
+  using the definitions in Eqs. (6)-(8), we can rewrite (13) as: <pre>
+    D_B * vdot_B + U_B_W * (Aplus_WB + Ab_WB) = e_B                         (14)
+  </pre>
+  Therefore the last base to tip pass updates generalized accelerations and
+  spatial accelerations according to: <pre>
+    vdot_B = D_B⁻¹ * e_B - g_B_Wᵀ * (Aplus_WB + Ab_WB)                      (15)
+    A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B                               (16)
+  </pre>
+  This is implemented in CalcArticulatedBodyAccelerations().
+
+  @note Given the different definition of Z and Zplus used by [Featherstone,
+  2008] and [Jain, 2010], the acceleration update used by Jain is: <pre>
+    vdot_B = D_B⁻¹ * e_B  - g_B_Wᵀ * (Aplus_WB + Ab_WB),           from Eq. (15)
+    vdot_B = D_B⁻¹ * ej_B - g_B_Wᵀ * Aplus_WB,            [Jain, 2010. Alg. 7.2]
+  </pre>
+
+  <h3> Notation </h3>
+  @anchor forward_dynamics_notation
+
+  Since we use the ABA algorithm as described in [Featherstone 2008], with
+  spatial algebra and symbols from [Jain, 2010] and monogram notation as
+  described in @ref multibody_notation, here we present a table that compares
+  the different symbols across these three different sources. This is
+  especially useful when studying the particulars of ABA as introduced in
+  [Jain, 2010] and [Featherstone 2008] or as implemented in Drake.
+
+  Quantity                            |    Featherstone 2008 †    |              Jain 2010 ††              | Drake monogram †††
+  ------------------------------------|:-------------------------:|:--------------------------------------:|:-------------------
+  %Body spatial acceleration          |  𝒂ᵢ                       |  α(k)                                  | A_WB
+  Rigidly shifted acceleration        |  N/A                      |  α⁺(k) (6.9)                           | Aplus_WB
+  Hinge matrix                        |  𝑺ᵢ (3.33)                |  H*(k)                                 | H_PB_W
+  Acceleration bias                   |  𝒄ᵢ (7.31)                |  𝔞(k)   (5.21)                         | Ab _WB
+  Outboard body spatial acceleration  | 𝒂ᵢ = 𝒂ₗ + 𝒄ᵢ + 𝑺ᵢq̈ᵢ (7.31) | α(k) = α⁺(k) + 𝔞(k) + H*(k)v(k) (5.21) | A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B
+  Articulated %Body Inertia (ABI)     |  𝑰ᴬᵢ                (7.2)  | P(k)   (6.6)                          | P_B_W
+  ABI across the mobilizer            |  𝑰ᵃᵢ                (7.23) | P⁺(k)  (6.24)                         | Pplus_B_W
+  ABA force bias                      |  𝒑ᴬᵢ                (7.2)  | 𝔷(k)   (6.6)                           | Z_B_W
+  ABA force bias across the mobilizer |  𝒑ᵃᵢ                (7.24) | 𝔷⁺(k)  (6.33)                          | Zplus_B_W
+
+  † Featherstone's spatial vectors are Plücker vectors, see §2.
+
+  †† Jain's spatial vectors are the concatenation of two ordinary
+  three-dimensional vectors.
+
+  ††† In Drake's source we often specify the expressed-in frame explicitly.
+  However we often write derivations in vector form and omit the expressed-in
+  frame.
+
+  - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+                algorithms. Springer Science & Business Media, pp. 123-130.
+  - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics algorithms.
+                        Springer.
+   @{
+  */
+
   /// Computes all the quantities that are required in the final pass of the
   /// articulated body algorithm and stores them in the articulated body cache
   /// `abc`.
@@ -1680,6 +1930,8 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       ArticulatedBodyInertiaCache<T>* abc) const;
+
+  /// @}
 
   /// @}
   // Closes "Computational methods" Doxygen section.
