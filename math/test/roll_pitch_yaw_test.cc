@@ -131,7 +131,7 @@ GTEST_TEST(RollPitchYaw, testToQuaternion) {
 
   // Test SetFromRotationMatrix.
   rpy2.SetFromRotationMatrix(R1);
-  EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));=
+  EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));
 }
 
 // This tests the RollPitchYaw.IsValid() method.
