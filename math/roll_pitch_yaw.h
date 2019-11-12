@@ -126,24 +126,21 @@ class RollPitchYaw {
   /// @throws std::logic_error in debug builds if !IsValid(rpy).
   void SetFromQuaternion(const Eigen::Quaternion<T>& quaternion);
 
-  /// Uses a new high-accuracy efficient algorithm to set the roll-pitch-yaw
-  /// angles `[r, p, y]` that underlie `this` @RollPitchYaw, even when the pitch
-  /// angle p is very near a singularity (when p is within 1E-6 of π/2 or -π/2).
-  /// After calling this method, the underlying roll-pitch-yaw `[r, p, y]` has
-  /// range `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// Uses a %RotationMatrix to set `this` %RollPitchYaw with
+  /// roll-pitch-yaw angles `[r, p, y]` in the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
   /// @param[in] R a %RotationMatrix.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
   void SetFromRotationMatrix(const RotationMatrix<T>& R);
 
   /// Uses a quaternion and its associated rotation matrix `R` to accurately
-  /// and efficiently set the roll-pitch-yaw angles (SpaceXYZ Euler angles)
-  /// that underlie `this` @RollPitchYaw, even when the pitch angle p is very
-  /// near a singularity (e.g., when p is within 1E-6 of π/2 or -π/2).
-  /// After calling this method, the underlying roll-pitch-yaw `[r, p, y]` has
-  /// range `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// set `this` @RollPitchYaw roll-pitch-yaw angles (SpaceXYZ Euler angles),
+  /// even when the pitch angle is within 1E-6 of π/2 or -π/2.
   /// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
   /// @param[in] R The %RotationMatrix corresponding to `quaternion`.
+  /// @return %RollPitchYaw containing angles `[r, p, y]` with range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
   /// @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
   /// @note Aborts in debug builds if `quaternion` does not correspond to `R`.
   void SetFromQuaternionAndRotationMatrix(
@@ -632,16 +629,14 @@ class RollPitchYaw {
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
 
-/// Uses a quaternion and its associated rotation matrix `R` to accurately
-/// and efficiently calculate the roll-pitch-yaw angles (SpaceXYZ Euler angles)
-/// that underlie `this` @RollPitchYaw, even when the pitch angle p is very
-/// near a singularity (e.g., when p is within 1E-6 of π/2 or -π/2).
-/// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
-/// @param[in] R The %RotationMatrix corresponding to `quaternion`.
-/// @return [r, p, y] with `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
-/// @note The caller of this function is responsible for ensuring `quaternion`
-/// satisfies `e0^2 + e1^2 + e2^2 + e3^2 = 1` and that the matrix `R` is the
-/// rotation matrix that corresponds to `quaternion'.
+// Uses a quaternion and its associated rotation matrix `R` to accurately
+// construct roll-pitch-yaw angles (i.e., SpaceXYZ Euler angles) -- even
+// when the pitch angle is within 1E-6 of π/2 or -π/2.
+// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
+// @param[in] R The %RotationMatrix corresponding to `quaternion`.
+// @return %RollPitchYaw containing angles `[r, p, y]` with range
+// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+// @note The caller of this function is responsible for ensure
 template <typename T>
 Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
     const Eigen::Quaternion<T>& quaternion, const Matrix3<T>& R);
