@@ -137,7 +137,7 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  /// @related This method constructs a RotationMatrix from a RollPitchYaw.
+  /// @note This method constructs a RotationMatrix from a RollPitchYaw.
   /// Vice-versa, there are high-accuracy RollPitchYaw constructor/methods that
   /// form a RollPitchYaw from a rotation matrix.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
@@ -577,7 +577,7 @@ class RotationMatrix {
   /// Returns a quaternion q that represents `this` %RotationMatrix.  Since the
   /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
-  /// @related There is a constructor in the RollPitchYaw class that converts
+  /// @note There is a constructor in the RollPitchYaw class that converts
   /// a rotation matrix to roll-pitch-yaw angles.
   Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
 
