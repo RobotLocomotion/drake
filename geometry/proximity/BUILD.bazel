@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":hydroelastic_internal",
         ":make_box_field",
         ":make_box_mesh",
+        ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
@@ -257,6 +258,18 @@ drake_cc_library(
 drake_cc_library(
     name = "make_box_field",
     hdrs = ["make_box_field.h"],
+    deps = [
+        ":distance_to_point_callback",
+        ":volume_mesh",
+        "//common:essential",
+        "//common:unused",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_cylinder_field",
+    hdrs = ["make_cylinder_field.h"],
     deps = [
         ":distance_to_point_callback",
         ":volume_mesh",
@@ -532,6 +545,15 @@ drake_cc_googletest(
     deps = [
         ":make_box_field",
         ":make_box_mesh",
+        ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_cylinder_field_test",
+    deps = [
+        ":make_cylinder_field",
+        ":make_cylinder_mesh",
         ":volume_to_surface_mesh",
     ],
 )
