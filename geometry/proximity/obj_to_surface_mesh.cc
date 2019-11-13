@@ -16,7 +16,8 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
+
+namespace {
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
 //  ProximityEngine.
@@ -111,6 +112,8 @@ void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
 
+}  // namespace
+
 SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& filename,
                                          const double scale) {
   std::ifstream input_stream(filename);
@@ -160,6 +163,5 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
   return SurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
