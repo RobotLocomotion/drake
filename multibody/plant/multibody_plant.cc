@@ -2071,33 +2071,71 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
 
   // Declare one output port for the entire state vector.
-  continuous_state_output_port_ =
+  // TODO(sherm1) Rename this port to just "state" when #12214 is resolved so
+  //              we can deprecate the old port name.
+  state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
                                     BasicVector<T>(num_multibody_states()),
                                     &MultibodyPlant::CopyContinuousStateOut,
                                     {this->all_state_ticket()})
           .get_index();
 
-  // Declare per model instance state output ports.
-  instance_continuous_state_output_ports_.resize(num_model_instances());
+  const auto& generalized_accelerations_cache_entry =
+      this->get_cache_entry(cache_indexes_.generalized_accelerations);
+
+  // Declare one output port for the entire generalized acceleration vector
+  // vdot (length is nv).
+  generalized_acceleration_output_port_ =
+      this->DeclareVectorOutputPort(
+              "generalized_acceleration", BasicVector<T>(num_velocities()),
+              [this](const systems::Context<T>& context,
+                     systems::BasicVector<T>* result) {
+                result->SetFromVector(
+                    this->EvalGeneralizedAccelerations(context));
+              },
+              {generalized_accelerations_cache_entry.ticket()})
+          .get_index();
+
+  // Declare per model instance state and acceleration output ports.
+  instance_state_output_ports_.resize(num_model_instances());
+  instance_generalized_acceleration_output_ports_.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
-    const int instance_num_states =
-        internal_tree().num_states(model_instance_index);
-    if (instance_num_states == 0) {
-      continue;
-    }
+    const std::string& instance_name =
+        internal_tree().GetModelInstanceName(model_instance_index);
 
-    auto calc = [this, model_instance_index](const systems::Context<T>& context,
-                                             systems::BasicVector<T>* result) {
-      this->CopyContinuousStateOut(model_instance_index, context, result);
-    };
-    instance_continuous_state_output_ports_[model_instance_index] =
+    const int instance_num_states =  // Might be zero.
+        internal_tree().num_states(model_instance_index);
+    // TODO(sherm1) Rename these ports to just "_state" when #12214 is resolved
+    //              so we can deprecate the old port names.
+    instance_state_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-                internal_tree().GetModelInstanceName(model_instance_index) +
-                    "_continuous_state",
-                BasicVector<T>(instance_num_states), calc,
+                instance_name + "_continuous_state",
+                BasicVector<T>(instance_num_states),
+                [this, model_instance_index](
+                    const systems::Context<T>& context,
+                    systems::BasicVector<T>* result) {
+                  this->CopyContinuousStateOut(model_instance_index, context,
+                                               result);
+                },
                 {this->all_state_ticket()})
+            .get_index();
+
+    const int instance_num_velocities =  // Might be zero.
+            internal_tree().num_velocities(model_instance_index);
+    instance_generalized_acceleration_output_ports_[model_instance_index] =
+        this->DeclareVectorOutputPort(
+                instance_name + "_generalized_acceleration",
+                BasicVector<T>(instance_num_velocities),
+                [this, model_instance_index](
+                    const systems::Context<T>& context,
+                    systems::BasicVector<T>* result) {
+                  const auto& vdot =
+                      this->EvalGeneralizedAccelerations(context);
+                  result->SetFromVector(this->GetVelocitiesFromArray(
+                      model_instance_index, vdot));
+                },
+                {generalized_accelerations_cache_entry.ticket()})
             .get_index();
   }
 
@@ -2108,9 +2146,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_velocities =
         internal_tree().num_velocities(model_instance_index);
-    if (instance_num_velocities == 0) {
-      continue;
-    }
 
     if (is_discrete()) {
       const auto& tamsi_solver_results_cache_entry =
@@ -2340,8 +2375,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& vdot_cache = cache_value->get_mutable_value<VectorX<T>>();
-        this->CalcGeneralizedAccelerations(context, &vdot_cache);
+        auto& vdot_in_cache = cache_value->get_mutable_value<VectorX<T>>();
+        this->CalcGeneralizedAccelerations(context, &vdot_in_cache);
       },
       // Generalized accelerations depend on both state and inputs.
       // All sources include: time, accuracy, state, input ports, and
@@ -2455,7 +2490,7 @@ MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
 template <typename T>
 const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(continuous_state_output_port_);
+  return this->get_output_port(state_output_port_);
 }
 
 template <typename T>
@@ -2464,9 +2499,26 @@ const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);
   return this->get_output_port(
-      instance_continuous_state_output_ports_.at(model_instance));
+      instance_state_output_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_generalized_acceleration_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(generalized_acceleration_output_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_generalized_acceleration_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  return this->get_output_port(
+      instance_generalized_acceleration_output_ports_.at(model_instance));
 }
 
 template <typename T>
@@ -2476,7 +2528,6 @@ MultibodyPlant<T>::get_generalized_contact_forces_output_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);
   return this->get_output_port(
       instance_generalized_contact_forces_output_ports_.at(model_instance));
 }
