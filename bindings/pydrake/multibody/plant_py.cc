@@ -187,12 +187,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_velocities",
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_velocities),
-            cls_doc.num_velocities.doc_1args)
-        .def("num_multibody_states", &Class::num_multibody_states,
-            cls_doc.num_multibody_states.doc)
+            py::arg("model_instance"), cls_doc.num_velocities.doc_1args)
+        .def("num_multibody_states",
+            overload_cast_explicit<int>(&Class::num_multibody_states),
+            cls_doc.num_multibody_states.doc_0args)
+        .def("num_multibody_states",
+            overload_cast_explicit<int, ModelInstanceIndex>(
+                &Class::num_multibody_states),
+            py::arg("model_instance"), cls_doc.num_multibody_states.doc_1args)
         .def("num_actuated_dofs",
             overload_cast_explicit<int>(&Class::num_actuated_dofs),
-            cls_doc.num_actuated_dofs.doc_0args);
+            cls_doc.num_actuated_dofs.doc_0args)
+        .def("num_actuated_dofs",
+            overload_cast_explicit<int, ModelInstanceIndex>(
+                &Class::num_actuated_dofs),
+            py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
     // Construction.
     cls  // BR
         .def("AddJoint",
