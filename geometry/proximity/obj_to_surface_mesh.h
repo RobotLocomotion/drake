@@ -8,7 +8,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 /**
  Constructs a surface mesh from a Wavefront .obj file and optionally scales
@@ -33,6 +32,5 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& filename,
  */
 SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
                                          double scale = 1.0);
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

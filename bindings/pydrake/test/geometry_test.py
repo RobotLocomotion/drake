@@ -291,3 +291,23 @@ class TestGeometry(unittest.TestCase):
             camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
+
+    def test_read_obj_to_surface_mesh(self):
+        mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
+        mesh = mut.ReadObjToSurfaceMesh(mesh_path)
+        vertices = mesh.vertices()
+
+        # This test relies on the specific content of the file quad_cube.obj.
+        # These coordinates came from the first section of quad_cube.obj.
+        expected_vertices = [
+            [1.000000, -1.000000, -1.000000],
+            [1.000000, -1.000000,  1.000000],
+            [-1.000000, -1.000000,  1.000000],
+            [-1.000000, -1.000000, -1.000000],
+            [1.000000,  1.000000, -1.000000],
+            [1.000000,  1.000000,  1.000001],
+            [-1.000000,  1.000000,  1.000000],
+            [-1.000000,  1.000000, -1.000000],
+        ]
+        for i, expected in enumerate(expected_vertices):
+            self.assertListEqual(list(vertices[i].r_MV()), expected)

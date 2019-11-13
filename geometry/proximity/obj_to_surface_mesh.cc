@@ -16,7 +16,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
 //  ProximityEngine.
@@ -160,6 +159,5 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
   return SurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
