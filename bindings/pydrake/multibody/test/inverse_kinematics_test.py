@@ -7,6 +7,7 @@ import unittest
 
 import numpy as np
 
+import pydrake
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Quaternion
 from pydrake.math import RigidTransform, RotationMatrix
@@ -26,7 +27,7 @@ class TestInverseKinematics(unittest.TestCase):
     """
     def setUp(self):
         builder = DiagramBuilder()
-        self.plant, _ = AddMultibodyPlantSceneGraph(
+        self.plant, self.scene_graph = AddMultibodyPlantSceneGraph(
             builder, MultibodyPlant(time_step=0.01))
         Parser(self.plant).AddModelFromFile(FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
@@ -257,6 +258,57 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
 
+    def test_AddDistanceConstraint(self):
+        ik = self.ik_two_bodies
+        W = self.plant.world_frame()
+        B1 = self.body1_frame
+        B2 = self.body2_frame
+
+        distance_lower = 0.1
+        distance_upper = 0.2
+        tol = 1e-2
+
+        radius1 = 0.1
+        radius2 = 0.2
+
+        inspector = self.scene_graph.model_inspector()
+        frame_id1 = inspector.GetGeometryIdByName(
+            self.plant.GetBodyFrameIdOrThrow(
+                self.plant.GetBodyByName("body1").index()),
+            pydrake.geometry.Role.kProximity, "two_bodies::body1_collision")
+        frame_id2 = inspector.GetGeometryIdByName(
+            self.plant.GetBodyFrameIdOrThrow(
+                self.plant.GetBodyByName("body2").index()),
+            pydrake.geometry.Role.kProximity, "two_bodies::body2_collision")
+        ik.AddDistanceConstraint(
+            geometry_pair=(frame_id1, frame_id2),
+            distance_lower=distance_lower, distance_upper=distance_upper)
+
+        context = self.plant.CreateDefaultContext()
+        self.plant.SetFreeBodyPose(
+            context, B1.body(), RigidTransform([0, 0, 0.01]))
+        self.plant.SetFreeBodyPose(
+            context, B2.body(), RigidTransform([0, 0, -0.01]))
+
+        def get_min_distance_actual():
+            X = partial(self.plant.CalcRelativeTransform, context)
+            distance = np.linalg.norm(
+                X(W, B1).translation() - X(W, B2).translation())
+            return distance - radius1 - radius2
+
+        self.assertLess(get_min_distance_actual(), distance_lower - tol)
+        self.prog.SetInitialGuess(ik.q(), self.plant.GetPositions(context))
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        q_val = result.GetSolution(ik.q())
+        self.plant.SetPositions(context, q_val)
+        self.assertGreater(get_min_distance_actual(), distance_lower - tol)
+        self.assertLess(get_min_distance_actual(), distance_upper + tol)
+
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
+
 
 class TestConstraints(unittest.TestCase):
     """
@@ -265,14 +317,14 @@ class TestConstraints(unittest.TestCase):
     """
     def setUp(self):
         builder_f = DiagramBuilder()
-        plant_f, _ = AddMultibodyPlantSceneGraph(
+        self.plant_f, self.scene_graph_f = AddMultibodyPlantSceneGraph(
             builder_f, MultibodyPlant(time_step=0.01))
-        Parser(plant_f).AddModelFromFile(FindResourceOrThrow(
+        Parser(self.plant_f).AddModelFromFile(FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
-        plant_f.Finalize()
+        self.plant_f.Finalize()
         diagram_f = builder_f.Build()
         diagram_ad = diagram_f.ToAutoDiffXd()
-        plant_ad = diagram_ad.GetSubsystemByName(plant_f.get_name())
+        plant_ad = diagram_ad.GetSubsystemByName(self.plant_f.get_name())
 
         TypeVariables = namedtuple(
             "TypeVariables",
@@ -287,7 +339,7 @@ class TestConstraints(unittest.TestCase):
                 body1_frame=plant_T.GetBodyByName("body1").body_frame(),
                 body2_frame=plant_T.GetBodyByName("body2").body_frame())
 
-        self.variables_f = make_type_variables(plant_f, diagram_f)
+        self.variables_f = make_type_variables(self.plant_f, diagram_f)
         self.variables_ad = make_type_variables(plant_ad, diagram_ad)
 
     def check_type_variables(check_method):
@@ -366,4 +418,21 @@ class TestConstraints(unittest.TestCase):
             frameAbar=variables.body1_frame, R_AbarA=RotationMatrix(),
             frameBbar=variables.body2_frame, R_BbarB=RotationMatrix(),
             theta_bound=0.2 * math.pi, plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_distance_constraint(self, variables):
+        inspector = self.scene_graph_f.model_inspector()
+        frame_id1 = inspector.GetGeometryIdByName(
+            self.plant_f.GetBodyFrameIdOrThrow(
+                self.plant_f.GetBodyByName("body1").index()),
+            pydrake.geometry.Role.kProximity, "two_bodies::body1_collision")
+        frame_id2 = inspector.GetGeometryIdByName(
+            self.plant_f.GetBodyFrameIdOrThrow(
+                self.plant_f.GetBodyByName("body2").index()),
+            pydrake.geometry.Role.kProximity, "two_bodies::body2_collision")
+        constraint = ik.DistanceConstraint(
+            plant=variables.plant, geometry_pair=(frame_id1, frame_id2),
+            distance_lower=0.1, distance_upper=0.2,
+            plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
