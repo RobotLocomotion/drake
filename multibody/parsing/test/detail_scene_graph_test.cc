@@ -183,7 +183,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->get_radius(), 0.5);
@@ -197,14 +198,16 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
       "  <length>1.2</length>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_radius_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_radius_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <radius> is required within element <drake:capsule>.");
   unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_length_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_length_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <length> is required within element <drake:capsule>.");
 }
 
@@ -231,7 +234,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->get_a(), 0.5);
@@ -247,7 +251,8 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_a_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_a_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <a> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -255,7 +260,8 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_b_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_b_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <b> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -263,7 +269,8 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <b>1.2</b>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_c_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_c_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <c> is required within element <drake:ellipsoid>.");
 }
 
