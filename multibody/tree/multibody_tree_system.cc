@@ -166,9 +166,9 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.velocity_kinematics =
       velocity_kinematics_cache_entry.cache_index();
 
-  // Allocate cache entry to store b_Bo_W(q, v) for each body.
+  // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
   auto& dynamic_bias_cache_entry = this->DeclareCacheEntry(
-      std::string("dynamic bias (b_Bo_W)"),
+      std::string("dynamic bias (Fb_Bo_W)"),
       [tree = tree_.get()]() {
         return AbstractValue::Make(
             std::vector<SpatialForce<T>>(tree->num_bodies()));
@@ -180,7 +180,7 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
         tree->CalcDynamicBiasCache(context, &dynamic_bias_cache);
       },
-      // The computation of b_Bo_W(q, v) requires updated values of M_Bo_W(q)
+      // The computation of Fb_Bo_W(q, v) requires updated values of M_Bo_W(q)
       // and V_WB(q, v). We make these prerequisites explicit.
       // Another alternative would be to state the dependence on q and v.
       // However this option is not optimal until #9171 gets resolved.

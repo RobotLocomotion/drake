@@ -112,6 +112,16 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         const double length =
             GetChildElementValueOrThrow<double>(*capsule_element, "length");
         return make_unique<geometry::Capsule>(radius, length);
+      } else if (sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
+        const sdf::ElementPtr ellipsoid_element =
+            sdf_geometry.Element()->GetElement("drake:ellipsoid");
+        const double a =
+            GetChildElementValueOrThrow<double>(*ellipsoid_element, "a");
+        const double b =
+            GetChildElementValueOrThrow<double>(*ellipsoid_element, "b");
+        const double c =
+            GetChildElementValueOrThrow<double>(*ellipsoid_element, "c");
+        return make_unique<geometry::Ellipsoid>(a, b, c);
       }
 
       return std::unique_ptr<geometry::Shape>(nullptr);
@@ -183,7 +193,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     // The file either specifies an EMPTY geometry or one that isn't recognized
     // by libsdf. We first check for any custom geometry tags, e.g.
     // drake:capsule, before we can decide to return a null geometry.
-    if (!sdf_geometry.Element()->HasElement("drake:capsule")) {
+    if (!sdf_geometry.Element()->HasElement("drake:capsule") &&
+        !sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
       return std::unique_ptr<GeometryInstance>(nullptr);
     }
   }

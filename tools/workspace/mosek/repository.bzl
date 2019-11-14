@@ -121,7 +121,7 @@ def _impl(repository_ctx):
             ),
         ]
 
-        linkopts = []
+        linkopts = ["-pthread"]
         srcs = ["{}/{}".format(platform_prefix, file) for file in files]
 
     hdrs = ["{}/h/mosek.h".format(platform_prefix)]

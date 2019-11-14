@@ -101,13 +101,13 @@ class Polynomial {
   ///
   /// @throws std::runtime_error if @p e is not a polynomial in @p
   /// indeterminates.
-  Polynomial(const Expression& e, const Variables& indeterminates);
+  Polynomial(const Expression& e, Variables indeterminates);
 
   /// Returns the indeterminates of this polynomial.
-  Variables indeterminates() const;
+  const Variables& indeterminates() const;
 
   /// Returns the decision variables of this polynomial.
-  Variables decision_variables() const;
+  const Variables& decision_variables() const;
 
   /// Returns the highest degree of this polynomial in a variable @p v.
   int Degree(const Variable& v) const;
@@ -216,7 +216,10 @@ class Polynomial {
   // Throws std::runtime_error if there is a variable appeared in both of
   // decision_variables() and indeterminates().
   void CheckInvariant() const;
+
   MapType monomial_to_coefficient_map_;
+  Variables indeterminates_;
+  Variables decision_variables_;
 };
 
 /// Unary minus operation for polynomial.

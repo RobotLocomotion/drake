@@ -2134,15 +2134,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     }
   }
 
-  // Contact results output port.
-  const auto& contact_results_cache_entry =
-      this->get_cache_entry(cache_indexes_.contact_results);
-  contact_results_port_ = this->DeclareAbstractOutputPort(
-                                  "contact_results", ContactResults<T>(),
-                                  &MultibodyPlant<T>::CopyContactResultsOutput,
-                                  {contact_results_cache_entry.ticket()})
-                              .get_index();
-
   // Joint reaction forces are a function of accelerations, which in turn depend
   // on both state and inputs.
   reaction_forces_port_ =
@@ -2152,6 +2143,15 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               {this->cache_entry_ticket(
                   cache_indexes_.generalized_accelerations)})
           .get_index();
+
+  // Contact results output port.
+  const auto& contact_results_cache_entry =
+      this->get_cache_entry(cache_indexes_.contact_results);
+  contact_results_port_ = this->DeclareAbstractOutputPort(
+                                  "contact_results", ContactResults<T>(),
+                                  &MultibodyPlant<T>::CopyContactResultsOutput,
+                                  {contact_results_cache_entry.ticket()})
+                              .get_index();
 }
 
 template <typename T>

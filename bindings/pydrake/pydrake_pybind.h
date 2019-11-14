@@ -118,7 +118,6 @@ inline void ExecuteExtraPythonCode(py::module m) {
   py::module::import("pydrake").attr("_execute_extra_python_code")(m);
 }
 
-#if PY_MAJOR_VERSION >= 3
 // The following works around pybind11 modules getting reconstructed /
 // reimported in Python3. See pybind/pybind11#1559 for more details.
 // Use this ONLY when necessary (e.g. when using a utility method which imports
@@ -136,35 +135,6 @@ inline void ExecuteExtraPythonCode(py::module m) {
       variable##_original = variable;                                     \
     }                                                                     \
   }
-#else  // PY_MAJOR_VERSION >= 3
-// N.B. Still use the variable to ensure it's valid code.
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
-  { (void)variable; }
-#endif  // PY_MAJOR_VERSION >= 3
-
-// TODO(eric.cousineau): Remove this once Python 2 is gone, and inline
-// `.def(py::pickle(...))` calls.
-/// Define pickling routines, disabling pickling in Python 2.
-template <typename PyClass, typename... Args>
-void DefPickle(PyClass* ppy_class, Args&&... args) {
-#if PY_MAJOR_VERSION >= 3
-  ppy_class->def(py::pickle(std::forward<Args>(args)...));
-#else
-  using Class = typename PyClass::type;
-  (void)(sizeof...(args));
-  // In Python 2, copy_reg._reduce_ex (used for `get_state`) uses
-  // `s = getstate(); if s: ...`, which tries to call `__bool__` which
-  // does not work with NumPy arrays. This could be wrapped with a tuple, but
-  // still causes segfaults in Python 2. Since Python 2 support will soon be
-  // removed, we simply disable pickling.
-  constexpr char msg[] =
-      "Pickling in pydrake is disabled in Python 2. See the documentation of "
-      "`DefPickle` in `pydrake_pybind.h` for more information.";
-  ppy_class->def(py::pickle(
-      [msg](const Class&) -> py::object { throw std::runtime_error(msg); },
-      [msg](py::object) -> Class { throw std::runtime_error(msg); }));
-#endif
-}
 
 }  // namespace pydrake
 }  // namespace drake

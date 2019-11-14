@@ -21,7 +21,7 @@
     <link name="finger1_link1">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
         <inertia>
           <ixx>0.0083</ixx>
@@ -33,10 +33,10 @@
         </inertia>
       </inertial>
       <visual name="link1_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.085</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -45,7 +45,7 @@
         </material>
       </visual>
       <visual name="link1_joint_visual">
-        <pose>0 0 -0.07 0 0 0</pose>
+        <pose>0 0 -0.085 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.0132</radius>
@@ -74,16 +74,11 @@
       </axis>
     </joint>
     <link name="finger1_link2">
-      <!-- The origin of the Link2 frame is defined to be coincident with
-       the origin of the x-z plane in the elbow joint frame. -->
-      <pose>0 0 -0.07 0 0 0</pose>
+      <!-- The origin of the link2 frame is located at the MidJoint. -->
+      <pose>0 0 -0.085 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0299 0 0 0</pose>
         <mass>0.1</mass>
-        <!-- This inertia is based on a solid cylinder with
-               radius=1.0 meters and height=2.0 meters. -->
-        <!-- For this model we could make izz = 0 however, sdformat will throw
-               an exception. -->
         <inertia>
           <ixx>0.0083</ixx>
           <iyy>0.0083</iyy>
@@ -94,10 +89,10 @@
         </inertia>
       </inertial>
       <visual name="link2_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.04</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -105,46 +100,29 @@
           <diffuse>1 0 0 1</diffuse>
         </material>
       </visual>
-      <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.011</radius>
-          </sphere>
-        </geometry>
-        <material>
-          <diffuse>.1 .1 .1 1</diffuse>
-        </material>
-      </visual>
+      <!--The link 2 collision element extends up to (but not including) the
+            sphere fingertip-->
       <collision name="link2_collision">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0299 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0598</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1 0 0 1</diffuse>
+          <diffuse>1 0 1 1</diffuse>
         </material>
       </collision>
-      <collision name="link2_pad_collision">
-        <pose>0 0 -0.086 0 0 0</pose>
+      <visual name="sensor_visual">
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
-          <sphere>
-            <radius>0.015</radius>
-          </sphere>
-        </geometry>
-      </collision>
-      <visual name="link2_pad_visual">
-        <pose>0 0 -0.086 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.015</radius>
-          </sphere>
+          <box>
+            <size>0.02 0.02 0.005</size>
+          </box>
         </geometry>
         <material>
-          <diffuse>1 1 1 1</diffuse>
+          <diffuse>.8 .8 .8 1</diffuse>
         </material>
       </visual>
     </link>
@@ -166,6 +144,77 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
+    <!-- The tip link's mass/inertia values are already included in link 2,
+           which welds to this link. Hence, the values here are set to be
+           (effectively) zero. Note: This fingertip link and its corresponding
+           weld joint allows us to sense forces via MBP's reaction forces
+           output port. -->
+    <link name="finger1_tip_link">
+      <pose>0 0 -0.13 0 0 0</pose>
+      <inertial>
+        <pose>0 0 -0.0074 0 0 0</pose>
+        <mass>1e-7</mass>
+        <inertia>
+          <ixx>1e-7</ixx>
+          <iyy>1e-7</iyy>
+          <izz>1e-7</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="tip_adapter_visual">
+        <pose>0 0 -0.00565 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.0113</length>
+            <radius>0.0145</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.3 .3 .3 1</diffuse>
+        </material>
+      </visual>
+      <visual name="tip_cylinder_visual">
+        <pose>0 0 -0.01305 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.0035</length>
+            <radius>0.01</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.3 .3 .3 1</diffuse>
+        </material>
+      </visual>
+      <visual name="tip_sphere_visual">
+        <pose>0 0 -0.0263 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.015</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+      <collision name="tip_sphere_collision">
+        <pose>0 0 -0.0263 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.015</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </collision>
+    </link>
+    <joint name="finger1_sensor_weldjoint" type="fixed">
+      <parent>finger1_link2</parent>
+      <child>finger1_tip_link</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
     <link name="finger2_base">
       <visual name="base_visual">
         <pose>0 0 0 0 0 0</pose>
@@ -182,7 +231,7 @@
     <link name="finger2_link1">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
         <inertia>
           <ixx>0.0083</ixx>
@@ -194,10 +243,10 @@
         </inertia>
       </inertial>
       <visual name="link1_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.085</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -206,7 +255,7 @@
         </material>
       </visual>
       <visual name="link1_joint_visual">
-        <pose>0 0 -0.07 0 0 0</pose>
+        <pose>0 0 -0.085 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.0132</radius>
@@ -235,16 +284,11 @@
       </axis>
     </joint>
     <link name="finger2_link2">
-      <!-- The origin of the Link2 frame is defined to be coincident with
-       the origin of the x-z plane in the elbow joint frame. -->
-      <pose>0 0 -0.07 0 0 0</pose>
+      <!-- The origin of the link2 frame is located at the MidJoint. -->
+      <pose>0 0 -0.085 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0299 0 0 0</pose>
         <mass>0.1</mass>
-        <!-- This inertia is based on a solid cylinder with
-               radius=1.0 meters and height=2.0 meters. -->
-        <!-- For this model we could make izz = 0 however, sdformat will throw
-               an exception. -->
         <inertia>
           <ixx>0.0083</ixx>
           <iyy>0.0083</iyy>
@@ -255,10 +299,10 @@
         </inertia>
       </inertial>
       <visual name="link2_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.04</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -266,46 +310,29 @@
           <diffuse>1 0 0 1</diffuse>
         </material>
       </visual>
-      <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.011</radius>
-          </sphere>
-        </geometry>
-        <material>
-          <diffuse>.1 .1 .1 1</diffuse>
-        </material>
-      </visual>
+      <!--The link 2 collision element extends up to (but not including) the
+            sphere fingertip-->
       <collision name="link2_collision">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0299 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0598</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1 0 0 1</diffuse>
+          <diffuse>1 0 1 1</diffuse>
         </material>
       </collision>
-      <collision name="link2_pad_collision">
-        <pose>0 0 -0.086 0 0 0</pose>
+      <visual name="sensor_visual">
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
-          <sphere>
-            <radius>0.015</radius>
-          </sphere>
-        </geometry>
-      </collision>
-      <visual name="link2_pad_visual">
-        <pose>0 0 -0.086 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.015</radius>
-          </sphere>
+          <box>
+            <size>0.02 0.02 0.005</size>
+          </box>
         </geometry>
         <material>
-          <diffuse>1 1 1 1</diffuse>
+          <diffuse>.8 .8 .8 1</diffuse>
         </material>
       </visual>
     </link>
@@ -327,6 +354,77 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
+    <!-- The tip link's mass/inertia values are already included in link 2,
+           which welds to this link. Hence, the values here are set to be
+           (effectively) zero. Note: This fingertip link and its corresponding
+           weld joint allows us to sense forces via MBP's reaction forces
+           output port. -->
+    <link name="finger2_tip_link">
+      <pose>0 0 -0.13 0 0 0</pose>
+      <inertial>
+        <pose>0 0 -0.0074 0 0 0</pose>
+        <mass>1e-7</mass>
+        <inertia>
+          <ixx>1e-7</ixx>
+          <iyy>1e-7</iyy>
+          <izz>1e-7</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="tip_adapter_visual">
+        <pose>0 0 -0.00565 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.0113</length>
+            <radius>0.0145</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.3 .3 .3 1</diffuse>
+        </material>
+      </visual>
+      <visual name="tip_cylinder_visual">
+        <pose>0 0 -0.01305 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.0035</length>
+            <radius>0.01</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.3 .3 .3 1</diffuse>
+        </material>
+      </visual>
+      <visual name="tip_sphere_visual">
+        <pose>0 0 -0.0263 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.015</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+      <collision name="tip_sphere_collision">
+        <pose>0 0 -0.0263 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.015</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </collision>
+    </link>
+    <joint name="finger2_sensor_weldjoint" type="fixed">
+      <parent>finger2_link2</parent>
+      <child>finger2_tip_link</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
     <link name="finger3_base">
       <visual name="base_visual">
         <pose>0 0 0 0 0 0</pose>
@@ -343,7 +441,7 @@
     <link name="finger3_link1">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
         <inertia>
           <ixx>0.0083</ixx>
@@ -355,10 +453,10 @@
         </inertia>
       </inertial>
       <visual name="link1_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.085</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -367,7 +465,7 @@
         </material>
       </visual>
       <visual name="link1_joint_visual">
-        <pose>0 0 -0.07 0 0 0</pose>
+        <pose>0 0 -0.085 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.0132</radius>
@@ -396,16 +494,11 @@
       </axis>
     </joint>
     <link name="finger3_link2">
-      <!-- The origin of the Link2 frame is defined to be coincident with
-       the origin of the x-z plane in the elbow joint frame. -->
-      <pose>0 0 -0.07 0 0 0</pose>
+      <!-- The origin of the link2 frame is located at the MidJoint. -->
+      <pose>0 0 -0.085 0 0 0</pose>
       <inertial>
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0299 0 0 0</pose>
         <mass>0.1</mass>
-        <!-- This inertia is based on a solid cylinder with
-               radius=1.0 meters and height=2.0 meters. -->
-        <!-- For this model we could make izz = 0 however, sdformat will throw
-               an exception. -->
         <inertia>
           <ixx>0.0083</ixx>
           <iyy>0.0083</iyy>
@@ -416,10 +509,10 @@
         </inertia>
       </inertial>
       <visual name="link2_visual">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.02 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.04</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
@@ -427,46 +520,29 @@
           <diffuse>1 0 0 1</diffuse>
         </material>
       </visual>
-      <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.011</radius>
-          </sphere>
-        </geometry>
-        <material>
-          <diffuse>.1 .1 .1 1</diffuse>
-        </material>
-      </visual>
+      <!--The link 2 collision element extends up to (but not including) the
+            sphere fingertip-->
       <collision name="link2_collision">
-        <pose>0 0 -0.035 0 0 0</pose>
+        <pose>0 0 -0.0299 0 0 0</pose>
         <geometry>
           <cylinder>
-            <length>0.07</length>
+            <length>0.0598</length>
             <radius>0.011</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1 0 0 1</diffuse>
+          <diffuse>1 0 1 1</diffuse>
         </material>
       </collision>
-      <collision name="link2_pad_collision">
-        <pose>0 0 -0.086 0 0 0</pose>
+      <visual name="sensor_visual">
+        <pose>0 0 -0.0425 0 0 0</pose>
         <geometry>
-          <sphere>
-            <radius>0.015</radius>
-          </sphere>
-        </geometry>
-      </collision>
-      <visual name="link2_pad_visual">
-        <pose>0 0 -0.086 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.015</radius>
-          </sphere>
+          <box>
+            <size>0.02 0.02 0.005</size>
+          </box>
         </geometry>
         <material>
-          <diffuse>1 1 1 1</diffuse>
+          <diffuse>.8 .8 .8 1</diffuse>
         </material>
       </visual>
     </link>
@@ -487,6 +563,77 @@
         </dynamics>
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
+    </joint>
+    <!-- The tip link's mass/inertia values are already included in link 2,
+           which welds to this link. Hence, the values here are set to be
+           (effectively) zero. Note: This fingertip link and its corresponding
+           weld joint allows us to sense forces via MBP's reaction forces
+           output port. -->
+    <link name="finger3_tip_link">
+      <pose>0 0 -0.13 0 0 0</pose>
+      <inertial>
+        <pose>0 0 -0.0074 0 0 0</pose>
+        <mass>1e-7</mass>
+        <inertia>
+          <ixx>1e-7</ixx>
+          <iyy>1e-7</iyy>
+          <izz>1e-7</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="tip_adapter_visual">
+        <pose>0 0 -0.00565 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.0113</length>
+            <radius>0.0145</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.3 .3 .3 1</diffuse>
+        </material>
+      </visual>
+      <visual name="tip_cylinder_visual">
+        <pose>0 0 -0.01305 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.0035</length>
+            <radius>0.01</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.3 .3 .3 1</diffuse>
+        </material>
+      </visual>
+      <visual name="tip_sphere_visual">
+        <pose>0 0 -0.0263 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.015</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+      <collision name="tip_sphere_collision">
+        <pose>0 0 -0.0263 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.015</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </collision>
+    </link>
+    <joint name="finger3_sensor_weldjoint" type="fixed">
+      <parent>finger3_link2</parent>
+      <child>finger3_tip_link</child>
+      <pose>0 0 0 0 0 0</pose>
     </joint>
   </model>
 </sdf>

@@ -27,6 +27,7 @@ fi
 apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
 build-essential
 cmake
+pkg-config
 EOF
 )
 

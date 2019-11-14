@@ -31,7 +31,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     libxt-dev \
     lsb-release \
     ninja-build \
-    python-dev \
     python3-dev \
     qt5-default \
     qttools5-dev \
@@ -62,13 +61,12 @@ RUN git clone --branch v8.2.0 --config advice.detachedHead=false --depth 1 --qui
   && git apply ../vtk_rendering_ospray.patch \
   && cd .. \
   && rm -f vtk_rendering_ospray.patch \
-  && ./dockerfile_build_vtk_binaries /usr/bin/python3 \
-  && ./dockerfile_build_vtk_binaries /usr/bin/python2 \
+  && ./dockerfile_build_vtk_binaries \
   && rm -rf dockerfile_build_vtk_binaries vtk \
   && sed -i 's|VTK_RUNTIME_DIRS "/opt/vtk/bin"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/bin"|g' /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
   && sed -i 's|VTK_RUNTIME_DIRS "/opt/vtk/lib"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/lib"|g' /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
   && sed -i 's|/opt/vtk|${_IMPORT_PREFIX}|g' /opt/vtk/lib/cmake/vtk-*/VTKTargets.cmake \
   && sed -i 's|${_IMPORT_PREFIX}/include/ospray;${_IMPORT_PREFIX}/include/ospray/SDK|${_IMPORT_PREFIX}/include/ospray|g' /opt/vtk/lib/cmake/vtk-*/VTKTargets.cmake \
-  && sed -i 's|VTK_PYTHONPATH "/opt/vtk/lib/python2.7/site-packages"|VTK_PYTHONPATH "${VTK_INSTALL_PREFIX}/lib/python2.7/site-packages"|g' /opt/vtk/lib/cmake/vtk-*/Modules/vtkPython.cmake
+  && sed -i 's|VTK_PYTHONPATH "/opt/vtk/lib/python3.6/site-packages"|VTK_PYTHONPATH "${VTK_INSTALL_PREFIX}/lib/python3.6/site-packages"|g' /opt/vtk/lib/cmake/vtk-*/Modules/vtkPython.cmake
 RUN cd /opt/vtk \
-  && tar -czf vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-$(python2 --version 2>&1 | sed -n -e 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-python-$(python3 --version | sed -n -e 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed -n -e 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64-4.tar.gz *
+  && tar -czf vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-$(python3 --version | sed -n -e 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed -n -e 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64.tar.gz *

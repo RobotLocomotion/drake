@@ -1,5 +1,5 @@
 #!/bin/bash
-me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
+me=$(python3 -c 'import os; print(os.path.realpath("'"$0"'"))')
 mydir=$(dirname "${me}")
 
 # Ensure that newly allocated memory that is not directly initialized by GLib

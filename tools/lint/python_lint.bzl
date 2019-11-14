@@ -20,7 +20,6 @@ def _python_lint(name_prefix, files, ignore, disallow_executable):
         data = files,
         args = ignore_args + locations,
         main = "@pycodestyle//:pycodestyle.py",
-        srcs_version = "PY2AND3",
         tags = ["pycodestyle", "lint"],
     )
 

@@ -1,5 +1,6 @@
 # Note that this script runs in the main context of drake-visualizer,
 # where many modules and variables already exist in the global scope.
+
 from director import lcmUtils
 from director import applogic
 from director import objectmodel as om
@@ -7,7 +8,6 @@ from director import visualization as vis
 from director.debugVis import DebugData
 import numpy as np
 from PythonQt import QtCore, QtGui
-from six import iteritems
 
 import drake as lcmdrakemsg
 
@@ -175,7 +175,7 @@ class ContactVisualizer(object):
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
-        print self._name + " subscriber added."
+        print(self._name + " subscriber added.")
 
     def remove_subscriber(self):
         if self._sub is None:
@@ -184,7 +184,7 @@ class ContactVisualizer(object):
         lcmUtils.removeSubscriber(self._sub)
         self._sub = None
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
-        print self._name + " subscriber removed."
+        print(self._name + " subscriber removed.")
 
     def is_enabled(self):
         return self._enabled
@@ -253,7 +253,7 @@ class ContactVisualizer(object):
         if self.magnitude_mode == ContactVisModes.kAutoScale:
             auto_scale = 1.0 / max_force
 
-        for key, list_of_forces in iteritems(collision_pair_to_forces):
+        for key, list_of_forces in collision_pair_to_forces.items():
             d = DebugData()
             for p, v in list_of_forces:
                 d.addArrow(start=p,

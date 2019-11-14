@@ -57,6 +57,14 @@ GTEST_TEST(TextLoggingTest, SmokeTest) {
                      "OK", obj);
 }
 
+// Check that floating point values format sensibly.  We'll just test fmt
+// directly, since we know that spdlog uses it internally.
+GTEST_TEST(TextLoggingTest, FloatingPoint) {
+  EXPECT_EQ(fmt::format("{}", 1.0), "1.0");
+  // This number is particularly challenging.
+  EXPECT_EQ(fmt::format("{}", 0.009), "0.009");
+}
+
 // Check that the constexpr bool is set correctly.
 GTEST_TEST(TextLoggingTest, ConstantTest) {
   #if TEXT_LOGGING_TEST_SPDLOG

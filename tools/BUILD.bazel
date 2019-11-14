@@ -23,7 +23,6 @@ py_binary(
     data = [
         "//examples:prod_models",
         "@drake_visualizer",
-        "@drake_visualizer//:lcm_python2",
     ],
     main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
     # Python libraries to import.
