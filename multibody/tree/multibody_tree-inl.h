@@ -64,7 +64,7 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
   DRAKE_DEMAND(body->model_instance().is_valid());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyTreeElement altogether.
+  // all. Consider also removing MultibodyElement altogether.
   body->set_parent_tree(this, body_index);
   // MultibodyTree can access selected private methods in Body through its
   // BodyAttorney.
@@ -144,7 +144,7 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
   DRAKE_DEMAND(frame->model_instance().is_valid());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyTreeElement altogether.
+  // all. Consider also removing MultibodyElement altogether.
   frame->set_parent_tree(this, frame_index);
   FrameType<T>* raw_frame_ptr = frame.get();
   frames_.push_back(raw_frame_ptr);
@@ -202,7 +202,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   }
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyTreeElement altogether.
+  // all. Consider also removing MultibodyElement altogether.
   mobilizer->set_parent_tree(this, mobilizer_index);
 
   // Mark free bodies as needed.

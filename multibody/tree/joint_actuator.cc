@@ -9,7 +9,7 @@ namespace multibody {
 template <typename T>
 JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
                                 double effort_limit)
-    : MultibodyTreeElement<JointActuator<T>, JointActuatorIndex>(
+    : MultibodyElement<JointActuator, T, JointActuatorIndex>(
           joint.model_instance()),
       name_(name),
       joint_index_(joint.index()),
