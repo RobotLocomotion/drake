@@ -14,6 +14,8 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
@@ -383,6 +385,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
             doc.PenetrationAsPointPair.depth.doc);
   }
+
+  // SurfaceVertex
+  {
+    using Class = SurfaceVertex<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SurfaceVertex", param, doc.SurfaceVertex.doc);
+    cls  // BR
+        .def(py::init<const Vector3<T>&>(), py::arg("r_MV"),
+            doc.SurfaceVertex.ctor.doc)
+        .def("r_MV", &Class::r_MV, doc.SurfaceVertex.r_MV.doc);
+  }
+
+  // SurfaceMesh
+  {
+    using Class = SurfaceMesh<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SurfaceMesh", param, doc.SurfaceMesh.doc);
+    cls  // BR
+        .def(
+            py::init<std::vector<SurfaceFace>, std::vector<SurfaceVertex<T>>>(),
+            py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
+        .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
+        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc);
+  }
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -487,6 +513,12 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   // Rendering
   def_geometry_render(m.def_submodule("render"));
+
+  m.def("ReadObjToSurfaceMesh",
+      py::overload_cast<const std::string&, double>(
+          &geometry::ReadObjToSurfaceMesh),
+      py::arg("filename"), py::arg("scale") = 1.0,
+      doc.ReadObjToSurfaceMesh.doc_2args_filename_scale);
 }
 
 PYBIND11_MODULE(geometry, m) {
