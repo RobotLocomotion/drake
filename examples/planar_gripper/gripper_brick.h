@@ -87,11 +87,11 @@ class GripperBrickHelper {
     double base_theta;
     switch (finger) {
       case Finger::kFinger1: {
-        base_theta = -1.0 / 3 * M_PI;
+        base_theta = 1.0 / 3 * M_PI;
         break;
       }
       case Finger::kFinger2: {
-        base_theta = 1.0 / 3 * M_PI;
+        base_theta = -1.0 / 3 * M_PI;
         break;
       }
       case Finger::kFinger3: {
