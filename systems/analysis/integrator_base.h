@@ -364,7 +364,7 @@ class IntegratorBase {
    units as the variable. At each time step we therefore need to determine
    an absolute error that would be deemed "good enough", i.e. satisfies
    the user's accuracy requirement. If a variable is maintained to a
-   *relative* accuracy then that "good enough" value is defined to be the
+   _relative_ accuracy then that "good enough" value is defined to be the
    required accuracy `a` (a fraction like 0.001) times the current value of
    the variable, as long as that value
    is far from zero. For variables maintained to an *absolute* accuracy, or
