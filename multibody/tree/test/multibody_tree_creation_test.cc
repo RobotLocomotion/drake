@@ -124,9 +124,9 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 }
 
-// Tests the correctness of MultibodyTreeElement checks to verify one or more
+// Tests the correctness of MultibodyElement checks to verify one or more
 // elements belong to a given MultibodyTree.
-GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
+GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   auto model1 = std::make_unique<MultibodyTree<double>>();
   auto model2 = std::make_unique<MultibodyTree<double>>();
 
