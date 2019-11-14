@@ -83,7 +83,7 @@ Drake requires a compiler running in C++17 mode.
 |                                  |       |       | | GCC 7.4 (default) |                   |        |
 +----------------------------------+       +-------+---------------------+-------------------+--------+
 | macOS Mojave (10.14)             |       | 3.15  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 13 | 3.7    |
-|                                  |       |       | | (Xcode 11.1)      | | (HotSpot JVM)   |        |
+|                                  |       |       | | (Xcode 11.2)      | | (HotSpot JVM)   |        |
 +----------------------------------+       |       |                     |                   |        |
 | macOS Catalina (10.15)           |       |       |                     |                   |        |
 |                                  |       |       |                     |                   |        |

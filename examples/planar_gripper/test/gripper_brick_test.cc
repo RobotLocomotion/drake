@@ -9,11 +9,11 @@ namespace examples {
 namespace planar_gripper {
 GTEST_TEST(GripperBrickHelperTest, Test) {
   GripperBrickHelper<double> dut;
-  EXPECT_TRUE(
-      CompareMatrices(dut.p_L2Fingertip(), Eigen::Vector3d(0, 0, -0.086)));
+  EXPECT_TRUE(CompareMatrices(dut.p_L2Fingertip(),
+                              Eigen::Vector3d(0, 0, -0.0713), 1E-16));
   EXPECT_EQ(dut.finger_tip_radius(), 0.015);
   EXPECT_TRUE(
-      CompareMatrices(dut.brick_size(), Eigen::Vector3d(0.05, 0.092, 0.092)));
+      CompareMatrices(dut.brick_size(), Eigen::Vector3d(0.07, 0.1, 0.1)));
 
   auto diagram_context = dut.diagram().CreateDefaultContext();
   systems::Context<double>* plant_mutable_context =

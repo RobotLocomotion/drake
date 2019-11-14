@@ -27,6 +27,7 @@ using geometry::Box;
 using geometry::Capsule;
 using geometry::Convex;
 using geometry::Cylinder;
+using geometry::Ellipsoid;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
 using geometry::IllustrationProperties;
@@ -220,6 +221,50 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   ASSERT_NE(cylinder, nullptr);
   EXPECT_EQ(cylinder->get_radius(), 0.5);
   EXPECT_EQ(cylinder->get_length(), 1.2);
+}
+
+// Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<drake:ellipsoid>"
+      "  <a>0.5</a>"
+      "  <b>1.2</b>"
+      "  <c>0.9</c>"
+      "</drake:ellipsoid>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
+  ASSERT_NE(ellipsoid, nullptr);
+  EXPECT_EQ(ellipsoid->get_a(), 0.5);
+  EXPECT_EQ(ellipsoid->get_b(), 1.2);
+  EXPECT_EQ(ellipsoid->get_c(), 0.9);
+}
+
+// Verify MakeShapeFromSdfGeometry checks for invalid ellispoids.
+GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
+  unique_ptr<sdf::Geometry> no_a_geometry = MakeSdfGeometryFromString(
+      "<drake:ellipsoid>"
+      "  <b>1.2</b>"
+      "  <c>0.9</c>"
+      "</drake:ellipsoid>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeShapeFromSdfGeometry(*no_a_geometry), std::runtime_error,
+      "Element <a> is required within element <drake:ellipsoid>.");
+  unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
+      "<drake:ellipsoid>"
+      "  <a>0.5</a>"
+      "  <c>0.9</c>"
+      "</drake:ellipsoid>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeShapeFromSdfGeometry(*no_b_geometry), std::runtime_error,
+      "Element <b> is required within element <drake:ellipsoid>.");
+  unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
+      "<drake:ellipsoid>"
+      "  <a>0.5</a>"
+      "  <b>1.2</b>"
+      "</drake:ellipsoid>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeShapeFromSdfGeometry(*no_c_geometry), std::runtime_error,
+      "Element <c> is required within element <drake:ellipsoid>.");
 }
 
 // Verify MakeShapeFromSdfGeometry can make a sphere from an sdf::Geometry.
@@ -961,4 +1006,3 @@ GTEST_TEST(SceneGraphParserDetail,
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

@@ -66,7 +66,7 @@ Expression MakeVolumetricCost(const Polynomial& p, const BoundingBox& b) {
   // Build a moment vector.
   const MapType& map = p.monomial_to_coefficient_map();
   Expression result;
-  const Variables indeterminates = p.indeterminates();
+  const Variables& indeterminates = p.indeterminates();
   for (const auto& monomial : map) {
     const std::map<Variable, int>& powers = monomial.first.get_powers();
     Expression moment{1.};

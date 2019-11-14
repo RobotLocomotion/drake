@@ -24,11 +24,14 @@ drake_cc_package_library(
         ":make_box_field",
         ":make_box_mesh",
         ":make_cylinder_mesh",
+        ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":make_sphere_field",
         ":make_sphere_mesh",
         ":mesh_field",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
+        ":mesh_to_vtk",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":proximity_utilities",
@@ -264,6 +267,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "make_ellipsoid_field",
+    hdrs = ["make_ellipsoid_field.h"],
+    deps = [
+        ":volume_mesh",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_sphere_field",
+    hdrs = ["make_sphere_field.h"],
+    deps = [
+        ":volume_mesh",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
     name = "mesh_intersection",
     srcs = ["mesh_intersection.cc"],
     hdrs = ["mesh_intersection.h"],
@@ -343,6 +366,18 @@ drake_cc_library(
         "//geometry/proximity:sorted_triplet",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_to_vtk",
+    srcs = ["mesh_to_vtk.cc"],
+    hdrs = ["mesh_to_vtk.h"],
+    deps = [
+        ":mesh_field",
+        ":surface_mesh",
+        ":volume_mesh",
+        "@fmt",
     ],
 )
 
@@ -502,6 +537,24 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "make_ellipsoid_field_test",
+    deps = [
+        ":make_ellipsoid_field",
+        ":make_ellipsoid_mesh",
+        ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_sphere_field_test",
+    deps = [
+        ":make_sphere_field",
+        ":make_sphere_mesh",
+        ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
     name = "mesh_intersection_test",
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
@@ -547,6 +600,19 @@ drake_cc_googletest(
     deps = [
         ":make_box_mesh",
         ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_to_vtk_test",
+    deps = [
+        ":make_box_field",
+        ":make_box_mesh",
+        ":mesh_intersection",
+        ":mesh_to_vtk",
+        "//common:temp_directory",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
     ],
 )
 

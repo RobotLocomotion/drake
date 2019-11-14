@@ -132,22 +132,6 @@ GTEST_TEST(RollPitchYaw, testToQuaternion) {
   // Test SetFromRotationMatrix.
   rpy2.SetFromRotationMatrix(R1);
   EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));
-
-  // Test SetFromQuaternionAndRotationMatrix.
-  rpy2.SetFromQuaternionAndRotationMatrix(quat, R1);
-  EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));
-
-  // Test SetFromQuaternionAndRotationMatrix throws exception in debug builds
-  // if quaternion is not consistent with rotation matrix.
-  const char* expected_message =
-      "RollPitchYaw::SetFromQuaternionAndRotationMatrix()"
-      ".*An element of the RotationMatrix R"
-      ".*differs by more than"
-      ".*element of the RotationMatrix formed by the Quaternion.*";
-  const Eigen::Quaterniond quat_inconsistent(1, 0, 0, 0);
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      rpy2.SetFromQuaternionAndRotationMatrix(quat_inconsistent, R1),
-      std::logic_error, expected_message);
 }
 
 // This tests the RollPitchYaw.IsValid() method.

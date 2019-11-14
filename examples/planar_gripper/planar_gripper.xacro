@@ -3,17 +3,24 @@
 <sdf xmlns:xacro="http://www.ros.org/wiki/xacro" version='1.6'>
   <model name='planar_gripper'>
 
+    <!-- Link mass and inertia values are guesses (currently), calculated using
+         a uniform rod model, rotating about its center of mass. -->
     <xacro:property name="base_dim" value=".08" />
-    <xacro:property name="l1_length" value="0.07" />
+    <xacro:property name="l1_length" value="0.085" />
     <xacro:property name="l1_radius" value="0.011" />
     <xacro:property name="l1_mass" value="0.1" />
     <xacro:property name="l1_inertia" value="0.0083" />
-    <xacro:property name="l2_length" value="0.07" />
+    <xacro:property name="l2_length" value="0.040" />
     <xacro:property name="l2_radius" value="0.011" />
     <xacro:property name="l2_mass" value="0.1" />
     <xacro:property name="l2_inertia" value="0.0083" />
-    <xacro:property name="sensor_stack_len" value="0.001" />
-    <xacro:property name="tip_radius" value="0.015" />
+    <xacro:property name="sensor_length" value="0.005" />
+    <xacro:property name="sensor_width" value="0.02" />
+    <xacro:property name="tip_adapter_length" value="0.0113" />
+    <xacro:property name="tip_adapter_radius" value="0.0145" />
+    <xacro:property name="tip_cylinder_length" value="0.0035" />
+    <xacro:property name="tip_cylinder_radius" value="0.01" />
+    <xacro:property name="tip_sphere_radius" value="0.015" />
 
     <xacro:macro name="finger" params="fnum">
       <link name="finger${fnum}_base">
@@ -81,16 +88,11 @@
         </axis>
       </joint>
       <link name="finger${fnum}_link2">
-        <!-- The origin of the Link2 frame is defined to be coincident with
-       the origin of the x-z plane in the elbow joint frame. -->
+        <!-- The origin of the link2 frame is located at the MidJoint. -->
         <pose>0 0 -${l1_length} 0 0 0</pose>
         <inertial>
-          <pose>0 0 -${l2_length/2} 0 0 0</pose>
+          <pose>0 0 -${(l2_length + sensor_length + tip_adapter_length + tip_cylinder_length)/2} 0 0 0</pose>
           <mass>${l2_mass}</mass>
-          <!-- This inertia is based on a solid cylinder with
-               radius=1.0 meters and height=2.0 meters. -->
-          <!-- For this model we could make izz = 0 however, sdformat will throw
-               an exception. -->
           <inertia>
             <ixx>${l2_inertia}</ixx><iyy>${l2_inertia}</iyy><izz>5e-7</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
@@ -108,46 +110,29 @@
             <diffuse>1 0 0 1</diffuse>
           </material>
         </visual>
-        <visual name='link2_sensor'>
-          <pose>0 0 -${l2_length + sensor_stack_len} 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>${l2_radius}</radius>
-            </sphere>
-          </geometry>
-          <material>
-            <diffuse>.1 .1 .1 1</diffuse>
-          </material>
-        </visual>
+        <!--The link 2 collision element extends up to (but not including) the
+            sphere fingertip-->
         <collision name='link2_collision'>
-          <pose>0 0 -${l2_length/2} 0 0 0</pose>
+          <pose>0 0 -${(l2_length + sensor_length + tip_adapter_length + tip_cylinder_length)/2} 0 0 0</pose>
           <geometry>
             <cylinder>
-              <length>${l2_length}</length>
+              <length>${l2_length + sensor_length + tip_adapter_length + tip_cylinder_length}</length>
               <radius>${l2_radius}</radius>
             </cylinder>
           </geometry>
           <material>
-            <diffuse>1 0 0 1</diffuse>
+            <diffuse>1 0 1 1</diffuse>
           </material>
         </collision>
-        <collision name='link2_pad_collision'>
-          <pose>0 0 -${l2_length + sensor_stack_len + tip_radius} 0 0 0</pose>
+        <visual name='sensor_visual'>
+          <pose>0 0 -${l2_length + sensor_length/2.0} 0 0 0</pose>
           <geometry>
-            <sphere>
-              <radius>${tip_radius}</radius>
-            </sphere>
-          </geometry>
-        </collision>
-        <visual name='link2_pad_visual'>
-          <pose>0 0 -${l2_length + sensor_stack_len + tip_radius} 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>${tip_radius}</radius>
-            </sphere>
+            <box>
+              <size>${sensor_width} ${sensor_width} ${sensor_length}</size>
+            </box>
           </geometry>
           <material>
-            <diffuse>1 1 1 1</diffuse>
+            <diffuse>.8 .8 .8 1</diffuse>
           </material>
         </visual>
       </link>
@@ -168,6 +153,73 @@
           </dynamics>
           <use_parent_model_frame>1</use_parent_model_frame>
         </axis>
+      </joint>
+      <!-- The tip link's mass/inertia values are already included in link 2,
+           which welds to this link. Hence, the values here are set to be
+           (effectively) zero. Note: This fingertip link and its corresponding
+           weld joint allows us to sense forces via MBP's reaction forces
+           output port. -->
+      <link name="finger${fnum}_tip_link">
+        <pose>0 0 -${l1_length + l2_length + sensor_length} 0 0 0</pose>
+        <inertial>
+          <pose>0 0 -${(tip_adapter_length + tip_cylinder_length)/2} 0 0 0</pose>
+          <mass>1e-7</mass>
+          <inertia>
+            <ixx>1e-7</ixx><iyy>1e-7</iyy><izz>1e-7</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name="tip_adapter_visual">
+          <pose>0 0 -${tip_adapter_length/2} 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>${tip_adapter_length}</length>
+              <radius>${tip_adapter_radius}</radius>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>.3 .3 .3 1</diffuse>
+          </material>
+        </visual>
+        <visual name="tip_cylinder_visual">
+          <pose>0 0 -${tip_adapter_length + tip_cylinder_length/2} 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>${tip_cylinder_length}</length>
+              <radius>${tip_cylinder_radius}</radius>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>.3 .3 .3 1</diffuse>
+          </material>
+        </visual>
+        <visual name='tip_sphere_visual'>
+          <pose>0 0 -${tip_adapter_length + tip_sphere_radius} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${tip_sphere_radius}</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+          </material>
+        </visual>
+        <collision name='tip_sphere_collision'>
+          <pose>0 0 -${tip_adapter_length + tip_sphere_radius} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${tip_sphere_radius}</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+          </material>
+        </collision>
+      </link>
+      <joint name='finger${fnum}_sensor_weldjoint' type='fixed'>
+        <parent>finger${fnum}_link2</parent>
+        <child>finger${fnum}_tip_link</child>
+        <pose>0 0 0 0 0 0</pose>
       </joint>
     </xacro:macro>
 
