@@ -2,11 +2,11 @@ repositories:
   ign_cmake:
     type: hg
     url: https://bitbucket.org/ignitionrobotics/ign-cmake
-    version: 4215fd9431d7
+    version: 0a97e68c58f1
   ign_math:
     type: hg
     url: https://bitbucket.org/ignitionrobotics/ign-math
-    version: 3ba76d015a13
+    version: cc964ebb48f8
   ign_tools:
     type: hg
     url: https://bitbucket.org/ignitionrobotics/ign-tools
@@ -14,4 +14,4 @@ repositories:
   sdformat:
     type: hg
     url: https://bitbucket.org/osrf/sdformat
-    version: 3c4483b98ea3+
+    version: 93691f46b59e

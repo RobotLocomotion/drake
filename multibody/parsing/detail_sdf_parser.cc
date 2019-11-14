@@ -91,8 +91,6 @@ math::RigidTransformd ResolveRigidTransform(
 Eigen::Vector3d ResolveAxisXyz(const sdf::JointAxis& axis) {
   ignition::math::Vector3d xyz;
   ThrowAnyErrors(axis.ResolveXyz(xyz));
-  // N.B. This will be removed.
-  DRAKE_DEMAND(!axis.UseParentModelFrame());
   return ToVector3(xyz);
 }
 

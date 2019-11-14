@@ -174,9 +174,7 @@ cc_library(
     srcs = [
         "include/sdf/Converter.hh",
         "include/sdf/EmbeddedSdf.hh",
-        "include/sdf/ExceptionPrivate.hh",
         "include/sdf/SDFExtension.hh",
-        "include/sdf/SDFImplPrivate.hh",
         "include/sdf/parser_private.hh",
         "include/sdf/parser_urdf.hh",
         "src/Actor.cc",

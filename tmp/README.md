@@ -13,14 +13,17 @@ For Ubuntu Bionic (may need ROS repos...)
 
 Then update repositories (and record the exact versions afterwards):
 
-    cd drake/tmp
-    mkdir -p repos
-    vcs import ./repos < vcs.repo && vcs export --exact ./repos > vcs-exact.repo
+    cd drake
+    mkdir -p ./tmp/repos
+    vcs import ./tmp/repos < ./tmp/vcs.repo \
+        && vcs export --exact ./tmp/repos > ./tmp/vcs-exact.repo
 
 First, test without Bazel overhead:
 
-    cd drake/tmp/repos
-    colcon build
+    cd ./tmp/repos
+    colcon build \
+        --cmake-args \
+            -DCMAKE_CXX_COMPILER=$(which g++-8)
     colcon test
     # Or just go the build package, and run `make test` / `ctest`.
 
