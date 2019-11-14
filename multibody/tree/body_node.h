@@ -12,7 +12,7 @@
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
@@ -93,7 +93,7 @@ namespace internal {
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
+class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
@@ -116,7 +116,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
            const Body<T>* body, const Mobilizer<T>* mobilizer)
-      : MultibodyTreeElement<BodyNode<T>, BodyNodeIndex>(
+      : MultibodyElement<BodyNode, T, BodyNodeIndex>(
             body->model_instance()),
         parent_node_(parent_node),
         body_(body),
@@ -1443,7 +1443,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     }
   }
 
-  // Implementation for MultibodyTreeElement::DoSetTopology().
+  // Implementation for MultibodyElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {

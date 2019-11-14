@@ -20,6 +20,24 @@
 namespace drake {
 namespace multibody {
 
+class MultibodyElementTester {
+ public:
+  MultibodyElementTester() = delete;
+  template <template <typename> class ElementType, typename T,
+      typename ElementIndexType>
+  static bool has_parent_tree(
+      const MultibodyElement<ElementType, T, ElementIndexType>& element) {
+    return element.has_parent_tree();
+  }
+
+  template <template <typename> class ElementType, typename T,
+      typename ElementIndexType>
+  static const internal::MultibodyTree<T>& get_parent_tree(
+      const MultibodyElement<ElementType, T, ElementIndexType>& element) {
+    return element.get_parent_tree();
+  }
+};
+
 // Friend class for accessing Joint<T> protected/private internals.
 class JointTester {
  public:
@@ -124,9 +142,9 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 }
 
-// Tests the correctness of MultibodyTreeElement checks to verify one or more
+// Tests the correctness of MultibodyElement checks to verify one or more
 // elements belong to a given MultibodyTree.
-GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
+GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   auto model1 = std::make_unique<MultibodyTree<double>>();
   auto model2 = std::make_unique<MultibodyTree<double>>();
 
@@ -173,18 +191,22 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 
   // Tests that the created multibody elements indeed do have a parent
   // MultibodyTree.
-  DRAKE_EXPECT_NO_THROW(body1.HasParentTreeOrThrow());
-  DRAKE_EXPECT_NO_THROW(body2.HasParentTreeOrThrow());
-  DRAKE_EXPECT_NO_THROW(pin1.HasParentTreeOrThrow());
+  EXPECT_TRUE(MultibodyElementTester::has_parent_tree(body1));
+  EXPECT_TRUE(MultibodyElementTester::has_parent_tree(body2));
+  EXPECT_TRUE(MultibodyElementTester::has_parent_tree(pin1));
 
-  // Tests the check to verify that two bodies belong to the same MultibodyTree.
-  EXPECT_THROW(body1.HasSameParentTreeOrThrow(body2), std::logic_error);
-  DRAKE_EXPECT_NO_THROW(model1->world_body().HasSameParentTreeOrThrow(body1));
-  DRAKE_EXPECT_NO_THROW(model2->world_body().HasSameParentTreeOrThrow(body2));
+  // Tests that bodies belong to distinct MultibodyTrees.
+  const auto& body1_tree = MultibodyElementTester::get_parent_tree(body1);
+  const auto& body2_tree = MultibodyElementTester::get_parent_tree(body2);
+  EXPECT_NE(&body1_tree, &body2_tree);
+  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model1->world_body()),
+            &body1_tree);
+  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model2->world_body()),
+            &body2_tree);
 
   // Verifies bodies have the correct parent tree.
-  DRAKE_EXPECT_NO_THROW(body1.HasThisParentTreeOrThrow(model1.get()));
-  DRAKE_EXPECT_NO_THROW(body2.HasThisParentTreeOrThrow(model2.get()));
+  EXPECT_EQ(&body1_tree, model1.get());
+  EXPECT_EQ(&body2_tree, model2.get());
 }
 
 // This unit test builds a MultibodyTree as shown in the schematic below, where

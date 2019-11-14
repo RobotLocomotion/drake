@@ -10,7 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"

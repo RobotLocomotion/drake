@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -43,7 +43,7 @@ namespace multibody {
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class FrameBase : public MultibodyTreeElement<FrameBase<T>, FrameIndex> {
+class FrameBase : public MultibodyElement<FrameBase, T, FrameIndex> {
   // TODO(amcastro-tri): Provide a method with the signature:
   // const math::RigidTransform<T>& get_pose_in_world_frame(
   //     const Context<T>& context) const;
@@ -58,7 +58,7 @@ class FrameBase : public MultibodyTreeElement<FrameBase<T>, FrameIndex> {
   // `measured_in_frame` frame.
  protected:
   explicit FrameBase(ModelInstanceIndex model_instance)
-      : MultibodyTreeElement<FrameBase<T>, FrameIndex>(model_instance) {}
+      : MultibodyElement<FrameBase, T, FrameIndex>(model_instance) {}
 };
 
 }  // namespace multibody
