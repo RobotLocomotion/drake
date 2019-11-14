@@ -27,8 +27,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, -0.07]
+      translation: [0.0, 0.0, -0.085]
     name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.13]
+    name: planar_gripper::finger1_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -48,8 +55,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, -0.07]
+      translation: [0.0, 0.0, -0.085]
     name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.13]
+    name: planar_gripper::finger2_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -69,8 +83,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, -0.07]
+      translation: [0.0, 0.0, -0.085]
     name: planar_gripper::finger3_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, -0.13]
+    name: planar_gripper::finger3_tip_link
   note: Zeros
   q:
     names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
@@ -103,8 +124,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, -0.4161468365471423, -0.9092974268256818]
       - [0.0, 0.9092974268256818, -0.4161468365471423]
-      translation: [0.0, 0.05890296893655276, -0.037821161410769785]
+      translation: [0.0, 0.0715250337086712, -0.045925695998791885]
     name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -0.4161468365471423, -0.9092974268256818]
+      - [0.0, 0.9092974268256818, -0.4161468365471423]
+      translation: [0.0, 0.11244341791582689, -0.02719908835417048]
+    name: planar_gripper::finger1_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -124,8 +152,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, -0.4161468365471423, -0.9092974268256818]
       - [0.0, 0.9092974268256818, -0.4161468365471423]
-      translation: [0.0, 0.05890296893655276, -0.037821161410769785]
+      translation: [0.0, 0.0715250337086712, -0.045925695998791885]
     name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -0.4161468365471423, -0.9092974268256818]
+      - [0.0, 0.9092974268256818, -0.4161468365471423]
+      translation: [0.0, 0.11244341791582689, -0.02719908835417048]
+    name: planar_gripper::finger2_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -145,8 +180,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, -0.4161468365471423, -0.9092974268256818]
       - [0.0, 0.9092974268256818, -0.4161468365471423]
-      translation: [0.0, 0.05890296893655276, -0.037821161410769785]
+      translation: [0.0, 0.0715250337086712, -0.045925695998791885]
     name: planar_gripper::finger3_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -0.4161468365471423, -0.9092974268256818]
+      - [0.0, 0.9092974268256818, -0.4161468365471423]
+      translation: [0.0, 0.11244341791582689, -0.02719908835417048]
+    name: planar_gripper::finger3_tip_link
   note: Ones
   q:
     names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
@@ -179,8 +221,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 0.8775825618903729, -0.47942553860420306]
       - [0.0, 0.47942553860420306, 0.8775825618903729]
-      translation: [0.0, 0.0069883391652779715, -0.06965029156946181]
+      translation: [0.0, 0.008485840414980394, -0.0845753540486322]
     name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.8775825618903729, -0.47942553860420306]
+      - [0.0, 0.47942553860420306, 0.8775825618903729]
+      translation: [0.0, 0.03005998965216953, -0.12406656933369897]
+    name: planar_gripper::finger1_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -200,8 +249,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 0.7648421872844885, -0.644217687237691]
       - [0.0, 0.644217687237691, 0.7648421872844885]
-      translation: [0.0, 0.013906853155654287, -0.06860466044888693]
+      translation: [0.0, 0.016886893117580206, -0.08330565911650555]
     name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.7648421872844885, -0.644217687237691]
+      - [0.0, 0.644217687237691, 0.7648421872844885]
+      translation: [0.0, 0.0458766890432763, -0.11772355754430752]
+    name: planar_gripper::finger2_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -221,8 +277,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 0.6216099682706644, -0.7833269096274834]
       - [0.0, 0.7833269096274834, 0.6216099682706644]
-      translation: [0.0, 0.020686414466293775, -0.06687355423879242]
+      translation: [0.0, 0.025119217566213867, -0.08120360157567652]
     name: planar_gripper::finger3_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 0.6216099682706644, -0.7833269096274834]
+      - [0.0, 0.7833269096274834, 0.6216099682706644]
+      translation: [0.0, 0.06036892849945062, -0.10917605014785642]
+    name: planar_gripper::finger3_tip_link
   note: Incrementing
   q:
     names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
@@ -255,8 +318,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, -1.0, -1.2246467991473532e-16]
       - [0.0, 1.2246467991473532e-16, -1.0]
-      translation: [0.0, 0.07, -4.286263797015737e-18]
+      translation: [0.0, 0.085, -5.204748896376251e-18]
     name: planar_gripper::finger1_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -1.0, -1.2246467991473532e-16]
+      - [0.0, 1.2246467991473532e-16, -1.0]
+      translation: [0.0, 0.085, 0.04499999999999999]
+    name: planar_gripper::finger1_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -276,8 +346,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, -1.0, -1.2246467991473532e-16]
       - [0.0, 1.2246467991473532e-16, -1.0]
-      translation: [0.0, 0.07, -4.286263797015737e-18]
+      translation: [0.0, 0.085, -5.204748896376251e-18]
     name: planar_gripper::finger2_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -1.0, -1.2246467991473532e-16]
+      - [0.0, 1.2246467991473532e-16, -1.0]
+      translation: [0.0, 0.085, 0.04499999999999999]
+    name: planar_gripper::finger2_tip_link
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -297,8 +374,15 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, -1.0, -1.2246467991473532e-16]
       - [0.0, 1.2246467991473532e-16, -1.0]
-      translation: [0.0, 0.07, -4.286263797015737e-18]
+      translation: [0.0, 0.085, -5.204748896376251e-18]
     name: planar_gripper::finger3_link2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, -1.0, -1.2246467991473532e-16]
+      - [0.0, 1.2246467991473532e-16, -1.0]
+      translation: [0.0, 0.085, 0.04499999999999999]
+    name: planar_gripper::finger3_tip_link
   note: Pi/2
   q:
     names: [finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
