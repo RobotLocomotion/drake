@@ -85,9 +85,11 @@ namespace systems {
  to obtain desired performance even though we have attempted to select
  reasonable defaults for many problems.**
 
- See settings for @ref accuracy, @ref maxstep "maximum step size", @ref minstep
- "minimum step size", and @ref weighting-state-errors "weighting state errors"
- for in-depth information about the various performance settings shared across
+ See settings for @ref integrator-accuracy,
+ @ref integrator-maxstep "maximum step size",
+ @ref integrator-minstep "minimum step size", and
+ @ref weighting-state-errors "weighting state errors" for
+ in-depth information about the various performance settings shared across
  integrators.
 
  @section dense-sampling Dense sampling (interpolation)
@@ -162,7 +164,7 @@ class IntegratorBase {
   virtual ~IntegratorBase() = default;
 
   /**
-   @anchor accuracy
+   @anchor integrator-accuracy
    @name Methods for getting and setting integrator accuracy
    The precise meaning of *accuracy* is a complicated discussion, but it
    translates roughly to the number of significant digits you want in the
@@ -225,9 +227,7 @@ class IntegratorBase {
    not attainable or not recommended for the particular integrator.
    */
   double get_accuracy_in_use() const { return accuracy_in_use_; }
-  /**
-   @}
-   */
+  // @}
 
   /**
    @anchor error-estimation-and-control
@@ -247,7 +247,8 @@ class IntegratorBase {
   /**
    Derived classes must override this function to indicate whether the
    integrator supports error estimation. Without error estimation, the target
-   accuracy setting (see @ref accuracy "accuracy settings") will be unused.
+   accuracy setting (see @ref integrator-accuracy "accuracy settings") will be
+   unused.
    */
   virtual bool supports_error_estimation() const = 0;
 
@@ -323,9 +324,7 @@ class IntegratorBase {
   bool get_fixed_step_mode() const {
     return (!supports_error_estimation() || fixed_step_mode_);
   }
-  /**
-   @}
-   */
+  // @}
 
   /**
    @name Methods for weighting state variable errors (in the context of error control)
@@ -575,12 +574,10 @@ class IntegratorBase {
     initialization_done_ = false;
     return z_weight_.head(z_weight_.rows());
   }
-  /**
-   @}
-   */
+  // @}
 
   /**
-   @anchor initial-step-size
+   @anchor integrator-initial-step-size
    @name Methods related to initial step size
    From [Watts 1983], "One of the more critical issues in solving ordinary
    differential equations by a step-by-step process occurs in the starting
@@ -662,12 +659,10 @@ class IntegratorBase {
   const T& get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
-  /**
-   @}
-   */
+  // @}
 
   /**
-   @anchor maxstep
+   @anchor integrator-maxstep
    @name Methods related to maximum integration step size
 
    Sets the _nominal_ maximum step size- the actual maximum step size taken
@@ -678,11 +673,11 @@ class IntegratorBase {
    */
   /**
    Sets the maximum step size that may be taken by this integrator. This setting
-   should be used if you have know the maximum time scale of your problem. The
+   should be used if you know the maximum time scale of your problem. The
    integrator may stretch the maximum step size by as much as 1% to reach a
    discrete event. For fixed step integrators, all steps will be taken at the
    maximum step size *unless* an event would be missed.
-   @warning See @ref initial-step-size "Initial step size selection"
+   @warning See @ref integrator-initial-step-size "Initial step size selection"
    */
   // TODO(edrumwri): Update this comment when stretch size is configurable.
   void set_maximum_step_size(const T& max_step_size) {
@@ -708,12 +703,10 @@ class IntegratorBase {
    @sa IntegrateNoFurtherThanTime()
    */
   double get_stretch_factor() const { return 1.01; }
-  /**
-   @}
-   */
+  // @}
 
   /**
-   @anchor minstep
+   @anchor integrator-minstep
    @name Methods related to minimum integration step size selection and behavior
 
    Variable step integrators reduce their step sizes as needed to achieve
@@ -839,7 +832,7 @@ class IntegratorBase {
     const T smart_minimum = max(tol, get_context().get_time() * tol);
     return max(smart_minimum, req_min_step_size_);
   }
-  //@}
+  // @}
 
   /**
    Resets the integrator to initial values, i.e., default construction
@@ -1173,10 +1166,7 @@ class IntegratorBase {
             evaluations are used).
    */
   void add_derivative_evaluations(double evals) { num_ode_evals_ += evals; }
-
-  /**
-   @}
-   */
+  // @}
 
   /**
    Returns a const reference to the internally-maintained Context holding
@@ -1280,10 +1270,7 @@ class IntegratorBase {
     }
     return std::move(dense_output_);
   }
-
-  /**
-   @}
-   */
+  // @}
 
   /**
    Gets a constant reference to the system that is being integrated (and
