@@ -2729,11 +2729,11 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
 
   auto per_step_events = dut.AllocateCompositeEventCollection();
   dut.GetPerStepEvents(*context, &*per_step_events);
-  all_events->Merge(*per_step_events);
+  all_events->AddToEnd(*per_step_events);
 
   auto timed_events = dut.AllocateCompositeEventCollection();
   dut.CalcNextUpdateTime(*context, &*timed_events);
-  all_events->Merge(*timed_events);
+  all_events->AddToEnd(*timed_events);
 
   dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
