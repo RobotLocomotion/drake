@@ -1471,10 +1471,11 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
 }
 
+// Helper function for the two v-to-qdot and qdot-to-v tests.
 void InitializePlantAndContextForVelocityToQdotMapping(
     MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
-  // This test is purely kinematic. Therefore we leave the spatial inertia
-  // initialized to garbage. It should not affect the results.
+  // This is used in purely kinematic tests. Therefore we leave the spatial
+  // inertia initialized to garbage. It should not affect the results.
   const RigidBody<double>& body =
       plant->AddRigidBody("FreeBody", SpatialInertia<double>());
   plant->Finalize();
