@@ -105,7 +105,7 @@ been defined. Updates, publishes, and the monitor can report errors or detect a
 termination condition; that is not shown in the pseudocode below.
 
 The pseudocode will clarify the effects on time and state of each of the update
-stages above. This algorithm is given a starting Context value `{tₛ, x⁻(t)}`
+stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
 and returns an end Context value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a
 given tₘₐₓ.
 ```
