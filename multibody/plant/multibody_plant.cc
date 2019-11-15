@@ -2061,6 +2061,13 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                     {this->all_state_ticket()})
           .get_index();
 
+  // Declare one output port for the generalized accelerations vector.
+  continuous_accelerations_output_port_ =
+      this->DeclareVectorOutputPort("continuous_accelerations",
+          BasicVector<T>(num_actuators()),
+          &MultibodyPlant::CopyContinuousAccelerationsOut,
+          {this->all_state_ticket()}).get_index();
+
   // Declare per model instance state output ports.
   instance_continuous_state_output_ports_.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
@@ -2369,6 +2376,17 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   state_vector->SetFrom(GetStateVector(context));
+}
+
+template <typename T>
+void MultibodyPlant<T>::CopyContinuousAccelerationsOut(
+    const Context<T>& context, BasicVector<T>* accelerations_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  const auto& accelerations = EvalGeneralizedAccelerations(context);
+  const int num_joints = num_actuators();
+  for (int i = 0; i < num_joints; ++i) {
+    (*accelerations_vector)[i] = accelerations[i];
+  }
 }
 
 template <typename T>

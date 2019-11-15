@@ -3515,6 +3515,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CopyContinuousStateOut(
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
+  // Calc method for the continuous accelerations vector output port.
+  void CopyContinuousAccelerationsOut(
+      const systems::Context<T>& context,
+      systems::BasicVector<T>* accelerations) const;
+
   // Calc method for the per-model-instance continuous state vector output
   // port.
   void CopyContinuousStateOut(
@@ -3874,6 +3879,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::InputPortIndex applied_spatial_force_input_port_;
 
   systems::OutputPortIndex continuous_state_output_port_;
+  systems::OutputPortIndex continuous_accelerations_output_port_;
   // A vector containing state output ports for each model instance indexed by
   // ModelInstanceIndex. An invalid value indicates that the model instance has
   // no state.
