@@ -66,6 +66,14 @@ def pydrake_doc_search():
 
 
 def var_substitution_search(var_name):
+    """Get the regex needed for finding locations to do substitutions for
+       the value of the variables found above.
+
+    Args:
+        var_name: The variable name
+
+    Returns:
+    """
     re_for_search = {
         "start_token": r'[=,]',
         "value_regex": var_name,
@@ -75,6 +83,17 @@ def var_substitution_search(var_name):
 
 
 def get_var_value(re_search, tokens, i):
+    """Gets the list of tokens between re_search["start_tokens"] and
+    re_search["end_tokens"].
+
+    Args:
+        re_search: Dictionary with hash values `start_tokens` and `end_token`.
+        tokens: list of tokens in which to look for `re_search`.
+        i: starting index in the list of tokens.
+
+    Returns: list of tokens found between `re_search["start_tokens"]` and
+    `re_search["end_token"]`.
+    """
     li = []
     i = i + len(re_search["start_tokens"])
     while(i < len(tokens) and tokens[i] != re_search["end_token"]):

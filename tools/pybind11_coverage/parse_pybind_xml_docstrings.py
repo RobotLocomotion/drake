@@ -58,8 +58,6 @@ class Coverage(object):
 
     def __eq__(self, ot): return self.num == ot.num and self.den == ot.den
 
-    def val(self): return (float)(self.num) / self.den
-
     def __getattr__(self, attr):
         raise AttributeError("'{}' object has no attribute '{}'".format(
             self.__class__.__name__, attr))
@@ -84,201 +82,244 @@ class FileName(object):
             self.__class__.__name__, attr))
 
 
-def get_pandas_row_for_nodes(nodes, pybind_strings):
-    """Gets a row of pandas table.  Extracts the kind and doc_var.
+class CommonUtils(object):
+    def get_node_coverage(root_node, pybind_strings):
+        """Go through the children of `root_node`, classify them and find their
+        coverage.
 
-    :param nodes: The nodes for which the kind and doc_var is obtained.
-    :param pybind_strings: The array containing the strings gotten from
-    pybind parser.
-    """
-    found = [0] * len(all_kinds)
-    total = [0] * len(all_kinds)
-    ret = {}
+        Args:
+            root_node (xml node): The root node children of which are needed to
+                be found coverage for.
+            pybind_strings (list): List containing the strings gotten from
+                the bindings' files.
 
-    for node in nodes:
-        kind = node.attrib["kind"]
-        doc_var = node.attrib["doc_var"]
-        ind = all_kinds.index(kind)
-        total[ind] = total[ind] + 1
-        found[ind] = found[ind] + (1 if doc_var in pybind_strings else 0)
+        Returns:
+            dict: A row for pandas dataframe.
+        """
+        found = [0] * len(all_kinds)
+        total = [0] * len(all_kinds)
+        ret = {}
 
-    for kind, f, t in zip(all_kinds, found, total):
-        ret[kind] = Coverage(f, t)
+        for node in root_node:
+            kind = node.attrib["kind"]
+            doc_var = node.attrib["doc_var"]
+            ind = all_kinds.index(kind)
+            total[ind] = total[ind] + 1
+            found[ind] = found[ind] + (1 if doc_var in pybind_strings else 0)
 
-    ret["Coverage"] = Coverage(sum(found), sum(total))
+        for kind, f, t in zip(all_kinds, found, total):
+            ret[kind] = Coverage(f, t)
 
-    return ret
+        ret["Coverage"] = Coverage(sum(found), sum(total))
 
+        return ret
 
-def get_class_coverage(root_node, pybind_strings, df):
-    """Gets the coverage for root_node
+    def prune_dataframe(df, keep_cols):
+        """Get new dataset with columns that we want to print to CSV.
 
-    :root_node: Root node of a class
-    :pybind_strings: Pybind docstring gotten from libclang parser
-    :df: Pandas dataframe, initiated
-    :returns: Pandas dataframe
+        Since we are not printing all the variable types which are read,
+        we will read from the dictionary `print_kinds` and return the
+        dataframe, after summing up relevant columns.
 
-    """
-    for c in root_node:
-        # All nodes which are not ignored and have a doc_var
-        doc_var_nodes = c.xpath(XPATHS["doc_var_xpath"])
-        row = get_pandas_row_for_nodes(doc_var_nodes, pybind_strings)
+        Args:
+            df (pandas dataframe): DataFrame to prune using print_kinds
+            keep_cols (list): The columns that we want to keep in the new
+                dataframe.
 
-        row["ClassName"] = c.attrib["full_name"]
-        df = df.append(row, ignore_index=True)
-    return df
-
-
-def get_file_coverage(file_nodes, pybind_strings, df):
-    """Gets the file-wise coverage.  We first list the nodes inside a header
-    file in a dictionary and then proceed.
-
-    :param file_nodes: All nodes corresponding to a file
-    :pybind_strings: Pybind docstring gotten from libclang parser
-    :param df: Pandas dataframe
-    """
-    file_name_dict = {}
-    for node in file_nodes:
-        file_name = node.attrib["file_name"]
-        if file_name in file_name_dict:
-            file_name_dict[file_name].append(node)
-        else:
-            file_name_dict[file_name] = [node]
-
-    for fn in file_name_dict:
-        # All nodes which are not ignored and have a doc_var
-        doc_nodes = [n for n in file_name_dict[fn] if "doc_var" in n.attrib]
-        assert(len(doc_nodes) == len(file_name_dict[fn]))
-        row = get_pandas_row_for_nodes(doc_nodes, pybind_strings)
-
-        row["FileName"] = FileName(fn)
-        df = df.append(row, ignore_index=True)
-
-    return df
+        Returns:
+            (pandas dataframe): The pruned dataframe
+        """
+        new_df = pandas.DataFrame()
+        new_df = df[keep_cols].copy()
+        for key in print_kinds:
+            val = print_kinds[key]
+            new_df[key] = df.loc[:, val].sum(axis='columns')
+        return new_df
 
 
-def setup_pandas(cols):
-    """Sets up pandas a dataframe using the kinds of elements cindex finds.
+class ClassCoverage(object):
 
-    :returns: A pandas dataframe
+    def __init__(self, xml_file, pybind_strings, class_coverage_csv):
+        """Constructor for `ClassCoverage` instance.
 
-    """
-    df = pandas.DataFrame(columns=cols + [x for x in all_kinds])
+        Args:
+                xml_file (str): XML file to process.
+                pybind_strings (list): List containing the strings gotten from
+                    the bindings' files.
+                class_coverage_csv (str): Name of the CSV file to write class
+                    coverage statistics in.
 
-    return df
+        """
+        self.xml_root = ET.parse(xml_file).getroot()
+        self.pybind_strings = pybind_strings
+        self.csv = class_coverage_csv
+        self.df = None
+        self.df_pruned = None
+
+    def get_coverage(self):
+        """Writes class-wise coverage to a CSV file.
+
+        """
+        class_nodes = self.xml_root.xpath(XPATHS["class_decl"])
+        self.df = pandas.DataFrame(
+                columns=["ClassName", "Coverage"] + all_kinds)
+        self.get_class_coverage(class_nodes)
+
+        self.df_pruned.to_csv(self.csv, index=False)
+
+    def get_class_coverage(self, class_nodes):
+        """Goes through the relevant children of each element of `class_nodes`
+        and then appends one row for each class to `df` with details of
+        coverage of all kind of elements we're looking for
+
+        Args:
+                class_nodes (type): Nodes of class type
+
+        """
+
+        for c in class_nodes:
+            # All nodes which are not ignored and have a doc_var
+            doc_var_nodes = c.xpath(XPATHS["doc_var_xpath"])
+            row = CommonUtils.get_node_coverage(
+                    doc_var_nodes, self.pybind_strings)
+
+            row["ClassName"] = c.attrib["full_name"]
+            self.df = self.df.append(row, ignore_index=True)
+
+        self.df_pruned = CommonUtils.prune_dataframe(
+                self.df, ["ClassName", "Coverage"])
 
 
-def get_all_class_coverage(root, pybind_strings, csv_file, prune=True):
-    class_nodes = root.xpath(XPATHS["class_decl"])
-    df = setup_pandas(["ClassName", "Coverage"])
-    df = get_class_coverage(class_nodes, pybind_strings, df)
-    df_pruned = prune_dataframe(df, ["ClassName", "Coverage"])
-    (df_pruned if prune else df).to_csv(csv_file, index=False)
+class FileCoverage(object):
 
+    def __init__(self, xml_file, pybind_strings, file_coverage_csv):
+        """Constructor for `FileCoverage` instance.
 
-def make_tree(file_coverage, sep="/"):
-    """Makes an XML tree from list of paths.
+        Args:
+                xml_file: XML file to process.
+                pybind_strings (list): Documentation strings parsed from pybind
+                    bindings.
+                file_coverage_csv (str): Name of the CSV file to write file
+                    coverage statistics in.
 
-    :param file_coverage: A dictionary of elements of type:
-        <string> : <Coverage>
-        where, filename is the string and Coverage is its coverage.
-    :param sep: The path separator.
-    """
-    root = ET.Element("Root")
-    SE = ET.SubElement
-    for s in file_coverage:
-        comps = str(s).split(os.sep)
-        r = root
-        for ind, c in enumerate(comps):
-            if r.find(c) is None:
-                num = file_coverage[s].num if c.endswith(".h") else 0
-                den = file_coverage[s].den if c.endswith(".h") else 0
-                r = SE(r, c, {
-                               "num": str(num),
-                               "den": str(den),
-                               "name": (os.sep).join(comps[:ind+1])
-                            })
+        """
+        self.xml_root = ET.parse(xml_file).getroot()
+        self.pybind_strings = pybind_strings
+        self.csv = file_coverage_csv
+        self.df = None
+        self.df_pruned = None
+
+    def get_coverage(self):
+        """Writes file-wise coverage to a CSV file.
+
+        """
+        file_nodes = self.xml_root.xpath(XPATHS["doc_var_xpath"])
+        self.df = pandas.DataFrame(
+                columns=["DirCoverage", "FileName", "Coverage"] + all_kinds)
+
+        self.get_file_coverage(file_nodes)
+
+        df_sorted = self.df.sort_values(by=['FileName'])
+        #  print(self.df.columns)
+        self.df_pruned = CommonUtils.prune_dataframe(df_sorted, [
+            "DirCoverage", "FileName", "Coverage"])
+
+        self.add_directory_coverage()
+        self.df_pruned.to_csv(self.csv, index=False)
+
+    def get_file_coverage(self, file_nodes):
+        """Gets the file-wise coverage.  We first list the nodes inside a
+        header file in a dictionary and then proceed.
+
+        Args:
+                file_nodes: All nodes corresponding to a file.
+
+        """
+        file_name_dict = {}
+        for node in file_nodes:
+            file_name = node.attrib["file_name"]
+            if file_name in file_name_dict:
+                file_name_dict[file_name].append(node)
             else:
-                r = r.find(c)
-    return root
+                file_name_dict[file_name] = [node]
 
+        for fn in file_name_dict:
+            # All nodes which are not ignored and have a doc_var
+            doc_nodes = [n for n in file_name_dict[fn]
+                         if "doc_var" in n.attrib]
 
-def add_directory_coverage(df, csv_file="file_coverage.csv"):
-    """Makes an XML tree from filenames and their coverage and then uses it
-       to get directory coverage whenever there's a change in the immediate
-       parent of the leaf (i.e. the header file) a row of the dataframe.
+            assert(len(doc_nodes) == len(file_name_dict[fn]))
+            row = CommonUtils.get_node_coverage(doc_nodes, self.pybind_strings)
 
-    :param df: Pandas dataframe containing the coverage details.
-    """
-    filenames, coverage = df.loc[:, "FileName"], df.loc[:, "Coverage"]
-    file_coverage = dict(zip(filenames, coverage))
-    root = make_tree(file_coverage)
-    XP = root.xpath
-    dirname = None
-    final_row = {}
+            row["FileName"] = FileName(fn)
+            self.df = self.df.append(row, ignore_index=True)
 
-    for i, row in df.iterrows():
-        total_num, total_den = 0, 0
-        if dirname != os.path.dirname(str(row["FileName"])):
-            dirname = os.path.dirname(str(row["FileName"]))
-            total_num = sum([
-                    int(n) for n in XP('.//{}/*/@num'.format(dirname))
-                ])
-            total_den = sum([
-                    int(d) for d in XP('.//{}/*/@den'.format(dirname))
-                ])
-        row["DirCoverage"] = Coverage(total_num, total_den)
+    def make_tree(self, file_coverage, sep="/"):
+        """Makes an XML tree from list of paths.
 
-    cols = df.columns.tolist()
-    [cols.remove(x) for x in ["FileName", "DirCoverage"]]
+        Args:
+                file_coverage (dict): A dictionary of elements of type:
+                    <string> : <Coverage>
+                    where, filename is the string and Coverage is its coverage.
 
-    for col in cols:
-        final_row[col] = df[col].sum()
+                sep (str): The path separator.
 
-    sum([v for k, v in final_row.items() if k not in ["Coverage"]],
-        Coverage(0, 0)) == final_row["Coverage"]
+        Returns:
+            ET.Element: The root node of the tree created from the paths.
+        """
+        root = ET.Element("Root")
+        SE = ET.SubElement
+        for s in file_coverage:
+            comps = str(s).split(os.sep)
+            r = root
+            for ind, c in enumerate(comps):
+                if r.find(c) is None:
+                    num = file_coverage[s].num if c.endswith(".h") else 0
+                    den = file_coverage[s].den if c.endswith(".h") else 0
+                    r = SE(r, c, {
+                                   "num": str(num),
+                                   "den": str(den),
+                                   "name": (os.sep).join(comps[:ind+1])
+                                })
+                else:
+                    r = r.find(c)
+        return root
 
-    final_row["FileName"] = "TOTAL"
-    df = df.append(final_row, ignore_index=True)
-    print("Coverage = {}".format(str(final_row["Coverage"])))
-    df.to_csv(csv_file, index=False)
-    return df
+    def add_directory_coverage(self):
+        """Makes an XML tree from filenames and their coverage and then uses it
+           to get directory coverage whenever there's a change in the immediate
+           parent of the leaf (i.e. the header file) a row is added to the
+           dataframe.
+        """
+        df = self.df_pruned
+        filenames, coverage = df.loc[:, "FileName"], df.loc[:, "Coverage"]
+        file_coverage = dict(zip(filenames, coverage))
+        root = self.make_tree(file_coverage)
+        XP = root.xpath
+        dirname = None
+        final_row = {}
 
+        # Goes through df row-wise, and whenever there's a change in the parent
+        # of a file, adds coverage.
+        for i, row in df.iterrows():
+            total_num, total_den = 0, 0
+            # When there's a changes in parent.
+            if dirname != os.path.dirname(str(row["FileName"])):
+                dirname = os.path.dirname(str(row["FileName"]))
+                total_num = sum([
+                        int(n) for n in XP('.//{}/*/@num'.format(dirname))
+                    ])
+                total_den = sum([
+                        int(d) for d in XP('.//{}/*/@den'.format(dirname))
+                    ])
+            row["DirCoverage"] = Coverage(total_num, total_den)
 
-def prune_dataframe(df, keep_cols):
-    """Since we are not printing all the variable types which are read, we will
-       read from the dictionary `print_kinds` and return the dataframe.
+        cols = df.columns.tolist()
+        [cols.remove(x) for x in ["FileName", "DirCoverage"]]
 
-    :param df: DataFrame to prune using print_kinds
-    """
-    new_df = pandas.DataFrame()
-    new_df = df[keep_cols].copy()
-    for key in print_kinds:
-        val = print_kinds[key]
-        new_df[key] = df.loc[:, val].sum(axis='columns')
-    return new_df
+        for col in cols:
+            final_row[col] = df[col].sum()
 
-
-def get_all_file_coverage(root, pybind_strings, csv_file, prune=True):
-    file_nodes = root.xpath(XPATHS["doc_var_xpath"])
-    df = setup_pandas(["DirCoverage", "FileName", "Coverage"])
-    df = get_file_coverage(file_nodes, pybind_strings, df)
-    df_sorted = df.sort_values(by=['FileName'])
-    df_pruned = prune_dataframe(df_sorted, [
-        "DirCoverage", "FileName", "Coverage"])
-    final_df = add_directory_coverage(
-            df_pruned if prune else df_sorted, csv_file)
-    return final_df
-
-
-def get_file_and_class_coverage(xml_file, file_coverage_csv,
-                                class_coverage_csv, pybind_strings):
-    tree = ET.parse(xml_file)
-    root = tree.getroot()
-
-    get_all_class_coverage(root, pybind_strings,
-                           class_coverage_csv, prune=True)
-    file_coverage_df = get_all_file_coverage(
-            root, pybind_strings, file_coverage_csv, prune=True)
-
-    return file_coverage_df
+        final_row["FileName"] = "TOTAL"
+        self.df_pruned = df.append(final_row, ignore_index=True)
+        print("Coverage = {}".format(str(final_row["Coverage"])))
