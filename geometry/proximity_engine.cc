@@ -63,6 +63,10 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
       const auto& cylinder = dynamic_cast<const fcl::Cylinderd&>(geometry);
       return make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.lz);
     }
+    case fcl::GEOM_ELLIPSOID: {
+      const auto& ellipsoid = dynamic_cast<const fcl::Ellipsoidd&>(geometry);
+      return make_shared<fcl::Ellipsoidd>(ellipsoid.radii);
+    }
     case fcl::GEOM_HALFSPACE:
       // All half spaces are defined exactly the same.
       return make_shared<fcl::Halfspaced>(0, 0, 1, 0);
@@ -85,7 +89,6 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
           convex.getFaceCount(),
           make_shared<const std::vector<int>>(convex.getFaces()));
     }
-    case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CONE:
     case fcl::GEOM_PLANE:
     case fcl::GEOM_TRIANGLE:
@@ -302,6 +305,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                                     cylinder.get_length());
     TakeShapeOwnership(fcl_cylinder, user_data);
     ProcessHydroelastic(cylinder, user_data);
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override {
+    // Note: Using `shared_ptr` because of FCL API requirements.
+    auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
+        ellipsoid.get_a(), ellipsoid.get_b(), ellipsoid.get_c());
+
+    TakeShapeOwnership(fcl_ellipsoid, user_data);
+    ProcessHydroelastic(ellipsoid, user_data);
   }
 
   void ImplementGeometry(const HalfSpace& half_space,

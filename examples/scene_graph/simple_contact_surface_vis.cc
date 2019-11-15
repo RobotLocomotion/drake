@@ -43,6 +43,7 @@ using Eigen::Vector4d;
 using geometry::Box;
 using geometry::ConnectDrakeVisualizer;
 using geometry::ContactSurface;
+using geometry::Ellipsoid;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -70,10 +71,10 @@ using systems::lcm::LcmPublisherSystem;
 using systems::LeafSystem;
 using systems::Simulator;
 
-DEFINE_double(simulation_time, 10.0,
+DEFINE_double(simulation_time, 100.0,
               "Desired duration of the simulation in seconds.");
 DEFINE_bool(real_time, true, "Set to false to run as fast as possible");
-DEFINE_double(length, 1.0,
+DEFINE_double(length, 3.0,
               "Measure of sphere edge length -- smaller numbers produce a "
               "denser, more expensive mesh");
 
@@ -96,7 +97,8 @@ class MovingBall final : public LeafSystem<double> {
     geometry_id_ = scene_graph->RegisterGeometry(
         source_id_, frame_id_,
         make_unique<GeometryInstance>(RigidTransformd(),
-                                      make_unique<Sphere>(1.0), "ball"));
+                                      make_unique<Ellipsoid>(2.67, 1.67, 1.0),
+                                          "ball"));
 
     ProximityProperties prox_props;
     prox_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic, 1e8);

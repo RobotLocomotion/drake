@@ -400,8 +400,6 @@ TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
 
   EXPECT_EQ(MakeSoftRepresentation(Capsule(1, 1), props), std::nullopt);
 
-  EXPECT_EQ(MakeSoftRepresentation(Ellipsoid(1, 2, 3), props), std::nullopt);
-
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
   EXPECT_EQ(MakeSoftRepresentation(Convex(obj, 1.0), props), std::nullopt);
@@ -456,7 +454,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Zero on outside, 1 on inside.
     const double expected_p = pressure(vertex.r_MV());
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
-                kEps);
+                kEps * E);
   }
 }
 

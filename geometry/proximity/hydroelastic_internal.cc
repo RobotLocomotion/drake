@@ -6,6 +6,9 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_ellipsoid_field.h"
+#include "drake/geometry/proximity/make_ellipsoid_mesh.h"
+#include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
@@ -251,17 +254,27 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       PositiveDouble("Sphere", "soft").Extract(props, kMaterialGroup, kElastic);
 
   // Second, compute the penetration extent and gradient fields.
-  const double r = sphere.get_radius();
-  std::vector<double> p_values;
-  p_values.reserve(mesh->num_vertices());
-  for (const auto& v : mesh->vertices()) {
-    const Vector3d& p_MV = v.r_MV();
-    const double p_MV_len = p_MV.norm();
-    const double extent = 1.0 - p_MV_len / r;
-    p_values.push_back(E * extent);
-  }
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      "pressure", move(p_values), mesh.get());
+      MakeSpherePressureField(sphere, mesh.get(), E));
+
+  return SoftGeometry(move(mesh), move(pressure));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props) {
+  // First, create the mesh.
+  const double edge_length =
+      PositiveDouble("Ellipsoid", "soft").Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length));
+
+  // E is the elastic modulus.
+  const double E =
+      PositiveDouble("Sphere", "soft").Extract(props, kMaterialGroup, kElastic);
+
+  // Second, compute the penetration extent and gradient fields.
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeEllipsoidPressureField(ellipsoid, mesh.get(), E));
 
   return SoftGeometry(move(mesh), move(pressure));
 }

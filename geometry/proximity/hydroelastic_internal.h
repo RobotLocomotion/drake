@@ -268,6 +268,9 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props);
+
 //@}
 
 }  // namespace hydroelastic

@@ -307,6 +307,9 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   Capsule capsule{0.1, 1.0};
   ref_engine.AddDynamicGeometry(capsule, GeometryId::get_new_id());
 
+  Ellipsoid ellipsoid{0.1, 0.2, 0.3};
+  ref_engine.AddDynamicGeometry(ellipsoid, GeometryId::get_new_id());
+
   HalfSpace half_space{};
   ref_engine.AddDynamicGeometry(half_space, GeometryId::get_new_id());
 
