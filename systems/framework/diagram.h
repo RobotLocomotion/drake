@@ -806,8 +806,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
       const ContinuousState<T>& sub_xc = subcontext.get_continuous_state();
 
-      // Select the chunk of generalized_velocity belonging to subsystem i.
+      // Select the chunk of generalized_velocity belonging to subsystem i. It's
+      // possible that the system implements DoMapVelocityToQDot() even when it
+      // has no velocity variables; this can be the case when the system can be
+      // run in both discrete and continuous modes. So we skip this operation
+      // when there are no position variables to allow MapVelocityToQdot() to be
+      // used in both discrete and continuous modes.
       const int num_v = sub_xc.get_generalized_velocity().size();
+      if (num_v == 0) continue;
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
@@ -853,8 +859,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
       const ContinuousState<T>& sub_xc = subcontext.get_continuous_state();
 
-      // Select the chunk of qdot belonging to subsystem i.
+      // Select the chunk of qdot belonging to subsystem i. It's possible that
+      // the system implements DoMapQDotToVelocity() even when it has no
+      // position variables; this can be the case when the system can be run
+      // in both discrete and continuous modes. So we skip this operation when
+      // there are no position variables to allow MapQDotToVelocity() to be used
+      // in both discrete and continuous modes.
       const int num_q = sub_xc.get_generalized_position().size();
+      if (num_q == 0) continue;
       const Eigen::Ref<const VectorX<T>>& dq_slice =
           qdot.segment(q_index, num_q);
 
