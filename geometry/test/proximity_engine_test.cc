@@ -136,12 +136,30 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kSoft);
   }
 
-  // Case: rigid cylinder (unsupported).
+  // Case: rigid cylinder.
   {
     Cylinder cylinder{edge_length, edge_length};
     const GeometryId cylinder_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(cylinder, cylinder_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(cylinder_id, engine),
+              HydroelasticType::kRigid);
+  }
+
+  // Case: rigid ellipsoid.
+  {
+    Ellipsoid ellipsoid{edge_length, edge_length, edge_length};
+    const GeometryId ellipsoid_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(ellipsoid, ellipsoid_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(ellipsoid_id, engine),
+              HydroelasticType::kRigid);
+  }
+
+  // Case: rigid capsule (unsupported).
+  {
+    Capsule capsule{edge_length, edge_length};
+    const GeometryId capsule_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(capsule, capsule_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(capsule_id, engine),
               HydroelasticType::kUndefined);
   }
 
@@ -306,6 +324,9 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
 
   Capsule capsule{0.1, 1.0};
   ref_engine.AddDynamicGeometry(capsule, GeometryId::get_new_id());
+
+  Ellipsoid ellipsoid{0.1, 0.2, 0.3};
+  ref_engine.AddDynamicGeometry(ellipsoid, GeometryId::get_new_id());
 
   HalfSpace half_space{};
   ref_engine.AddDynamicGeometry(half_space, GeometryId::get_new_id());

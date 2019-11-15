@@ -666,6 +666,7 @@ class MeshIdentifier final : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere&, void*) final {}
   void ImplementGeometry(const Cylinder&, void*) final {}
+  void ImplementGeometry(const Ellipsoid&, void*) final {}
   void ImplementGeometry(const HalfSpace&, void*) final {}
   void ImplementGeometry(const Box&, void*) final {}
   void ImplementGeometry(const Capsule&, void*) final {}
