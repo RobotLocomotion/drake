@@ -1471,14 +1471,15 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
 }
 
-GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
-  MultibodyPlant<double> plant;
+void InitializePlantAndContextForVelocityToQdotMapping(
+    MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
   // This test is purely kinematic. Therefore we leave the spatial inertia
   // initialized to garbage. It should not affect the results.
   const RigidBody<double>& body =
-      plant.AddRigidBody("FreeBody", SpatialInertia<double>());
-  plant.Finalize();
-  unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+      plant->AddRigidBody("FreeBody", SpatialInertia<double>());
+  plant->Finalize();
+
+  *context = plant->CreateDefaultContext();
 
   // Set an arbitrary pose of the body in the world.
   const Vector3d p_WB(1, 2, 3);  // Position in world.
@@ -1487,12 +1488,18 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
   const math::RigidTransformd X_WB(AngleAxisd(M_PI / 3.0, axis_W), p_WB);
-  plant.SetFreeBodyPose(context.get(), body, X_WB);
+  plant->SetFreeBodyPose(context->get(), body, X_WB);
 
   // Set an arbitrary, non-zero, spatial velocity of B in W.
   const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),
                                      Vector3d(-1.0, 4.0, -0.5));
-  plant.SetFreeBodySpatialVelocity(context.get(), body, V_WB);
+  plant->SetFreeBodySpatialVelocity(context->get(), body, V_WB);
+}
+
+GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBackContinuous) {
+  MultibodyPlant<double> plant;
+  unique_ptr<Context<double>> context;
+  InitializePlantAndContextForVelocityToQdotMapping(&plant, &context);
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.
@@ -1512,6 +1519,32 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   EXPECT_TRUE(
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
 }
+
+GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBackDiscrete) {
+  const double time_step = 1e-3;
+  MultibodyPlant<double> plant(time_step);
+  unique_ptr<Context<double>> context;
+  InitializePlantAndContextForVelocityToQdotMapping(&plant, &context);
+
+  // Use of MultibodyPlant's mapping to convert generalized velocities to time
+  // derivatives of generalized coordinates.
+  BasicVector<double> qdot(plant.num_positions());
+  BasicVector<double> v(plant.num_velocities());
+  ASSERT_EQ(qdot.size(), 7);
+  ASSERT_EQ(v.size(), 6);
+  v.SetFromVector(plant.GetVelocities(*context));
+  plant.MapVelocityToQDot(*context, v, &qdot);
+
+  // Mapping from qdot back to v should result in the original vector of
+  // generalized velocities. Verify this.
+  BasicVector<double> v_back(plant.num_velocities());
+  plant.MapQDotToVelocity(*context, qdot, &v_back);
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(
+      CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
+}
+
 
 // Test to verify we can still do dynamics even when there are weld joints
 // within the model. This test builds a model from split_pendulum.sdf and
