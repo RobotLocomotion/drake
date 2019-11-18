@@ -1,0 +1,6 @@
+---
+version: "2.4"
+services:
+  drake:
+    build: .
+    image: robotlocomotion/drake:latest

@@ -1,0 +1,8 @@
+---
+version: "2.4"
+services:
+  sut:
+    extends:
+      file: docker-compose.yml
+      service: drake
+    command: python3 -m pydrake.examples.multibody.cart_pole_passive_simulation
