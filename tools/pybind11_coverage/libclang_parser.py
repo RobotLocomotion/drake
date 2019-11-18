@@ -20,7 +20,7 @@ import logging
 # Tested with Python 3
 assert(__import__('sys').version_info[0] == 3)
 cindex.Config.set_library_path("/usr/lib/llvm-6.0/lib/")
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 replace_variables = ["doc", "cls_doc", "var_doc", "enum_doc"]
 
@@ -203,7 +203,7 @@ def get_docstring_for_bindings(filenames):
     array_for_all_files = []
 
     for f in filenames:
-        logging.info("On file: {}".format(f))
+        logging.debug("On file: {}".format(f))
         _, final_array = replace_tokens_in_file(f)
         array_for_all_files = array_for_all_files + final_array
     return [x for x in array_for_all_files if x]

@@ -2,6 +2,9 @@
 from lxml import etree as ET
 import pandas
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 assert(__import__('sys').version_info[0] == 3)
 XPATHS = {
@@ -322,4 +325,4 @@ class FileCoverage(object):
 
         final_row["FileName"] = "TOTAL"
         self.df_pruned = df.append(final_row, ignore_index=True)
-        print("Coverage = {}".format(str(final_row["Coverage"])))
+        logging.debug("Coverage = {}".format(str(final_row["Coverage"])))
