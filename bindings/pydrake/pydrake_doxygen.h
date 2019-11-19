@@ -218,8 +218,8 @@ To browse the generated documentation strings that are available for use (or
 especially, to find out the names for overloaded functions' documentation),
 generate and open the docstring header:
 
-    bazel build //bindings/pydrake:generate_pybind_documentation_header
-    $EDITOR bazel-genfiles/bindings/pydrake/documentation_pybind.h
+    bazel build //bindings/pydrake:documentation_pybind.h
+    $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
 
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
@@ -227,6 +227,17 @@ line corresponding to the symbol that the docstring was pulled from.
 
 @note This file may be large, on the order of ~100K lines; be sure to use an
 efficient editor!
+
+@note If you are debugging a certain file and want quicker generation and a
+smaller generated file, you can hack `mkdoc.py` to focus only on your include
+file of chioce. As an example, debugging `mathematical_program.h`:
+~~~{.py}
+    ...
+    assert len(include_files) > 0  # Existing code.
+    include_files = ["drake/solvers/mathematical_program.h"]  # HACK
+~~~
+This may break the bindings themselves, and should only be used for inspecting
+the output.
 
 For more detail:
 
