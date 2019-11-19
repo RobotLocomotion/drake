@@ -1773,7 +1773,24 @@ void MultibodyPlant<T>::CalcTamsiResults(
   } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
-  DRAKE_DEMAND(info == TamsiSolverResult::kSuccess);
+  if (info != TamsiSolverResult::kSuccess) {
+    const std::string msg = fmt::format(
+        "MultibodyPlant's discrete update solver failed to converge at "
+        "simulation time = {:7.3f} with discrete update period = {:7.3f}. This "
+        "usually means that the plant's discrete update period is too large to "
+        "resolve the system's dynamics for the given simulation conditions. "
+        "This is often the case during abrupt collisions or during complex "
+        "and fast changing contact configurations. Another common cause is the "
+        "use of high gains in the simulation of closed loop systems. These "
+        "might cause numerical instabilities given our discrete solver uses an "
+        "explicit treatment of actuation inputs. Possible solutions include:\n"
+        "  1. reduce the discrete update period set at construction,\n"
+        "  2. decrease the high gains in your controller whenever possible,\n"
+        "  3. switch to a continuous model (discrete update period is zero), "
+        "     though this might affect the simulation run time.",
+        context0.get_time(), this->time_step());
+    throw std::runtime_error(msg);
+  }
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
