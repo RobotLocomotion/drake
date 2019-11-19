@@ -491,6 +491,11 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.AddBoundingBoxConstraint
               .doc_3args_double_double_constEigenMatrixBase)
       .def("AddConstraint",
+          static_cast<Binding<Constraint> (MathematicalProgram::*)(
+              const Binding<Constraint>&)>(&MathematicalProgram::AddConstraint),
+          py::arg("binding"),
+          doc.MathematicalProgram.AddConstraint.doc_1args_binding)
+      .def("AddConstraint",
           [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
