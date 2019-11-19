@@ -25,6 +25,7 @@ import pydrake.symbolic as sym
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
+
 class TestQP:
     def __init__(self):
         # Create a simple QP that uses all deduced linear constraint types,
@@ -118,6 +119,9 @@ class TestMathematicalProgram(unittest.TestCase):
         a = np.array([1.0, 2.0, 3.0])
         prog.AddLinearConstraint(a.dot(x) <= 4)
         prog.AddLinearConstraint(x[0] + x[1], 1, np.inf)
+        prog.AddConstraint(
+            LinearConstraint(np.array([[1., 1.]]), np.array([1]),
+                             np.array([np.inf])), [x[0], x[1]])
         solver = GurobiSolver()
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
