@@ -1131,11 +1131,11 @@ class MathematicalProgram {
   }
 
   /**
-   Adds a generic constraint to the program.  This should
-   only be used if a more specific type of constraint is not
-   available, as it may require the use of a significantly more
-   expensive solver.
-   @pydrake_mkdoc_identifier{2args_con_vars}
+   * Adds a generic constraint to the program.  This should
+   * only be used if a more specific type of constraint is not
+   * available, as it may require the use of a significantly more
+   * expensive solver.
+   * @pydrake_mkdoc_identifier{2args_con_vars}
    */
   template <typename C>
   auto AddConstraint(std::shared_ptr<C> con,
