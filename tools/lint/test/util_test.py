@@ -10,7 +10,7 @@ class UtilTest(unittest.TestCase):
         workspace_dir, relpaths = find_all_sources("drake")
 
         # Sanity-check workspace_dir.
-        self.assertGreater(len(workspace_dir), 10)
+        self.assertGreater(len(workspace_dir), 0)
         workspace = os.path.join(workspace_dir, "WORKSPACE")
         self.assertTrue(os.path.exists(workspace))
         with open(workspace, "r") as workspace_contents:
