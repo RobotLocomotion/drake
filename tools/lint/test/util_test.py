@@ -6,6 +6,7 @@ from drake.tools.lint.util import find_all_sources
 
 class UtilTest(unittest.TestCase):
 
+    @unittest.skipIf(os.path.exists("/.dockerenv"))
     def test_find(self):
         workspace_dir, relpaths = find_all_sources("drake")
 
