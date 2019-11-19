@@ -162,12 +162,6 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const MatrixX<T>& J, const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
-  // ComputeAndFactorImplicitTrapezoidIterationMatrix is NOT USED 
-  //     (I will remove in final PR)
-  static void ComputeAndFactorImplicitTrapezoidIterationMatrix(
-      const MatrixX<T>& J, const T& h,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
-
   void DoInitialize() final;
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
                          VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
@@ -202,6 +196,29 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Jacobian computation
   void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus,
                             const VectorX<T>& qt0, MatrixX<T>* Jv);
+
+  // Computes the Jacobian, Jₗₖ(y), of the function lₖ(y), used in this
+// integrator's residual computation, with respect to y. As defined before, y =
+// (v, z). This Jacobian is then defined as:
+//     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (9)
+//     Jₗₖ(y) = ∂lₖ(y)/∂y                     (10)
+//
+// In this method, we compute the Jacobian Jₗₖ(y) using a first-order forward
+// difference (i.e. numerical differentiation),
+//   Jₗₖ(y)ᵢⱼ = (lₖ(y')ᵢ - lₖ(y)ᵢ )/ δy(j),
+//      where y' = y + δy(j) eⱼ and δy(j) = (√ε) max(1,|yⱼ|).
+// In the code we hereby refer to y as "the baseline" and y' as "prime".
+// @param t refers to tⁿ⁺¹, the time used in the definition of lₖ(y)
+// @param h is the timestep size parameter, h, used in the definition of lₖ(y)
+// @param x is (qₖ, y), the continuous state around which to evaluate Jₗₖ(y)
+// @param qt0 refers to qⁿ, the initial position used in lₖ(y)
+// @param context the Context of the system, at time and continuous state
+//        unknown.
+// @param [out] the Jacobian matrix, Jₗₖ(y).
+// @note The continuous state will be indeterminate on return.
+// For full Newton, we recommend this method to be evaluated at time t = t0 + h
+// and x = xₖ; however, this recommendation is not necessary for the
+// integrator and more optimized versions will modify this.
   void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
                                           const VectorX<T>& xt,
                                           const VectorX<T>& qt0,
