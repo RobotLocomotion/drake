@@ -43,6 +43,13 @@ class GeometryStateCollisionFilterAttorney;
    - distance
    - ray-intersection
 
+ Not all shape queries are fully supported. To add support for a shape:
+ 1. for fcl versions of the specification, modify CopyShapeOrThrow().
+ 2. add an instance of the new shape to the CopySemantics test in
+    proximity_engine_test.cc.
+ 3. for penetration, test the new shape in the class BoxPenetrationTest of
+    proximity_engine_test.cc and document its configuration.
+
  <!-- TODO(SeanCurtis-TRI): Fully document the semantics of the proximity
  properties that will affect the proximity engine -- hydroelastic semantics,
  required properties, etc.
