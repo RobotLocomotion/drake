@@ -21,43 +21,9 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
-from pydrake.autodiffutils import (
-    autoDiffToGradientMatrix,
-    autoDiffToValueMatrix,
-    initializeAutoDiffGivenGradientMatrix,
-)
 
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
-
-class DummyConstraint(pydrake.solvers.mathematicalprogram.Constraint):
-    def __init__(self):
-        pydrake.solvers.mathematicalprogram.Constraint.__init__(
-            self, 2, 3, np.array([1., 2.]), np.array([2., 3.]))
-
-    def Eval(self, x):
-        T = x.dtype
-        if T == np.object:
-            x_val = autoDiffToValueMatrix(x)
-        else:
-            x_val = x
-        y_val = np.array([x_val[0] * x_val[1], x_val[0] + x_val[1]*x_val[2]])
-        if T == np.object:
-            dy_dx = np.array([[x_val[1], x_val[0], 0],
-                              [1., x_val[2], x_val[1]]])
-            return initializeAutoDiffGivenGradientMatrix(
-                y_val, dy_dx.dot(autoDiffToGradientMatrix(x)))
-        else:
-            return y_val
-
-class TestDummyConstraint(unittest.TestCase):
-    def setUp(self):
-        self.dut = DummyConstraint()
-
-    def test_Eval(self):
-        x_val = np.array([2., 3., 4.])
-        y_val = self.dut.Eval(x_val)
-        np.testing.assert_array_equal(y_val, np.array([6., 14.]))
 
 class TestQP:
     def __init__(self):

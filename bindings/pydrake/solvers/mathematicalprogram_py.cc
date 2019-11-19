@@ -517,6 +517,9 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddConstraint),
           doc.MathematicalProgram.AddConstraint.doc_1args_f)
+      .def("AddConstraint",
+          static_cast<Binding<Constraint> (MathematicalProgram::*)(
+            std::shared_ptr<Constraint>, const Eigen::Ref<const VectorXDecisionVariable>& vars)> (&MathematicalProgram::AddConstraint), py::arg("constraint"), py::arg("vars"), doc.MathematicalProgram.AddConstraint.doc_
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
