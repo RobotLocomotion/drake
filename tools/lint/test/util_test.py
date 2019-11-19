@@ -6,6 +6,9 @@ from drake.tools.lint.util import find_all_sources
 
 class UtilTest(unittest.TestCase):
 
+    @unittest.skipIf(
+        os.path.exists("/.dockerenv"),
+        "Path lengths are often shorter than 10 in Docker containers")
     def test_find(self):
         workspace_dir, relpaths = find_all_sources("drake")
 
