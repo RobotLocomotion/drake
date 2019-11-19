@@ -328,6 +328,8 @@ struct Impl {
             doc.System.AllocateContext.doc)
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
             doc.System.CreateDefaultContext.doc)
+        .def("SetDefaultContext", &System<T>::SetDefaultContext,
+            doc.System.SetDefaultContext.doc)
         .def("AllocateOutput",
             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                 &System<T>::AllocateOutput),

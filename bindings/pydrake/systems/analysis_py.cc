@@ -105,6 +105,13 @@ PYBIND11_MODULE(analysis, m) {
             py_reference_internal, doc.Simulator.get_mutable_integrator.doc)
         .def("get_mutable_context", &Simulator<T>::get_mutable_context,
             py_reference_internal, doc.Simulator.get_mutable_context.doc)
+        .def("has_context", &Simulator<T>::has_context,
+            doc.Simulator.has_context.doc)
+        .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
+            // Keep alive, ownership: `context` keeps `self` alive.
+            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
+        // TODO(eric.cousineau): Bind `release_context` once some form of the
+        // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
         .def("reset_integrator",
             [](Simulator<T>* self,
                 std::unique_ptr<IntegratorBase<T>> integrator) {
