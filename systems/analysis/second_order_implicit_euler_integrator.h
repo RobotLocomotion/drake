@@ -295,15 +295,17 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv);
 
-  /// This method evaluates l(y) with y from the context. The context should be
-  /// at the time tf.
+  /// This helper method evaluates l(y) with y from the context. The context
+  /// should be at the time tf.
   /// @param qt0 the generalized position at the beginning of the step
   /// @param h the step size
   /// @param qk the generalized position to evaluate N in l(y)
   /// @param [out] result this is set to l(y) from the evaluation
   /// @post the context state is altered with q = qt0 + N(qk) v
-  void eval_l_with_y_from_context(const VectorX<T>& qt0, const T& h,
-                                  const VectorX<T>& qk, VectorX<T>* result);
+  void eval_l_with_y_from_context_and_iterate_q(const VectorX<T>& qt0,
+                                                const T& h,
+                                                const VectorX<T>& qk,
+                                                VectorX<T>* result);
 
   // The last computed iteration matrix and factorization; the _ie_ is for
   // the large step and the _hie_ is for the small step
