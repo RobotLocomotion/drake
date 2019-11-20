@@ -1566,6 +1566,14 @@ TEST_F(SplitPendulum, MassMatrix) {
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
 }
 
+// Verify that we can obtain the owning MultibodyPlant from one of its
+// MultibodyElements.
+TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
+  const MultibodyPlant<double>& pins_plant =
+      pin_->get_parent_plant();
+  EXPECT_EQ(&pins_plant, &plant_);
+}
+
 // Verifies we can parse link collision geometries and surface friction.
 GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   const std::string full_name = drake::FindResourceOrThrow(

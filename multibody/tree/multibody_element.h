@@ -9,6 +9,9 @@
 namespace drake {
 namespace multibody {
 
+template <typename T>
+class MultibodyPlant;
+
 namespace internal {
 // This is a class used by MultibodyTree internals to create the implementation
 // for a particular joint object.
@@ -57,6 +60,20 @@ class MultibodyElement {
   /// Returns the ModelInstanceIndex of the model instance to which this
   /// element belongs.
   ModelInstanceIndex model_instance() const { return model_instance_;}
+
+  /// Returns the MultibodyPlant that owns this %MultibodyElement.
+  ///
+  /// @note You can only invoke this method if you have a definition of
+  /// %MultibodyPlant available. That is, you must include
+  /// `drake/multibody/plant/multibody_plant.h` in the compilation unit that
+  /// invokes this method; multibody_element.h cannot do that for you.
+  ///
+  /// @pre There is a %MultibodyPlant owner.
+  template <typename MultibodyPlantDeferred = MultibodyPlant<T>>
+  const MultibodyPlantDeferred& get_parent_plant() const {
+    return dynamic_cast<const MultibodyPlantDeferred&>(
+        get_parent_tree().tree_system());
+  }
 
  protected:
   /// Default constructor made protected so that sub-classes can still declare
