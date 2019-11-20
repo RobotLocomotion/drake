@@ -48,9 +48,9 @@ template <typename T>
 VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
                                       double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
-  const double a = ellipsoid.get_a();
-  const double b = ellipsoid.get_b();
-  const double c = ellipsoid.get_c();
+  const double a = ellipsoid.a();
+  const double b = ellipsoid.b();
+  const double c = ellipsoid.c();
   const double r = std::max({a, b, c});
 
   const double unit_sphere_resolution = resolution_hint / r;

@@ -130,7 +130,7 @@ void AddFloor(MultibodyPlant<double>* plant,
               plant->GetBodyByName("brick_link").index()),
           geometry::Role::kProximity, "brick::sphere1_collision"));
   const double sphere_radius =
-      dynamic_cast<const geometry::Sphere&>(sphere_shape).get_radius();
+      dynamic_cast<const geometry::Sphere&>(sphere_shape).radius();
   const math::RigidTransformd X_WS =
       inspector.GetPoseInFrame(inspector.GetGeometryIdByName(
           plant->GetBodyFrameIdOrThrow(

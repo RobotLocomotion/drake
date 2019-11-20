@@ -254,7 +254,7 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
 // octohedron.
 GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
   const Sphere sphere(1.5);
-  const double edge_length = 3 * sphere.get_radius();
+  const double edge_length = 3 * sphere.radius();
   VolumeMesh<double> mesh = MakeSphereVolumeMesh<double>(sphere, edge_length);
   EXPECT_EQ(mesh.num_elements(), 8);
   EXPECT_EQ(mesh.num_vertices(), 7);
@@ -265,7 +265,7 @@ GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
 // produces an octahedron with 8 triangles and 6 vertices.
 GTEST_TEST(MakeSphereSurfaceMesh, GenerateSurface) {
   const Sphere sphere(1.5);
-  const double edge_length = 3 * sphere.get_radius();
+  const double edge_length = 3 * sphere.radius();
   SurfaceMesh<double> surface_mesh =
       MakeSphereSurfaceMesh<double>(sphere, edge_length);
   EXPECT_EQ(surface_mesh.num_faces(), 8);

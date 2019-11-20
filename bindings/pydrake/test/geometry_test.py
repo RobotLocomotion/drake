@@ -9,6 +9,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
@@ -178,15 +179,21 @@ class TestGeometry(unittest.TestCase):
 
     def test_shapes(self):
         sphere = mut.Sphere(radius=1.0)
-        self.assertEqual(sphere.get_radius(), 1.0)
+        self.assertEqual(sphere.radius(), 1.0)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
-        self.assertEqual(cylinder.get_radius(), 1.0)
-        self.assertEqual(cylinder.get_length(), 2.0)
+        self.assertEqual(cylinder.radius(), 1.0)
+        self.assertEqual(cylinder.length(), 2.0)
         box = mut.Box(width=1.0, depth=2.0, height=3.0)
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+
+        # Test for existence of deprecated accessors.
+        with catch_drake_warnings(expected_count=3):
+            cylinder.get_radius()
+            cylinder.get_length()
+            sphere.get_radius()
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
