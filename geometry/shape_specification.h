@@ -36,15 +36,14 @@ struct ShapeTag{};
 
   When you add a new subclass of Shape, you must:
 
-  1. add a pure virtual function ImplementGeometry() for the new shape in
-     ShapeReifier.
-  2. define ImplementGeometry() for the new shape in the subclasses of
-     ShapeReifier.
-  3. modify CopyShapeOrThrow() of ProximityEngine to support the new shape and
-     add an instance of the new shape to the CopySemantics test in
-     proximity_engine_test.cc.
-  4. test the new shape in the class BoxPenetrationTest of
-     proximity_engine_test.cc
+  1. add a virtual function ImplementGeometry() for the new shape in
+     ShapeReifier that invokes the ThrowUnsupportedGeometry method, and add to
+     the test for it in shape_specification_test.cc.
+  2. implement ImplementGeometry in derived ShapeReifiers to continue support
+     if desired, otherwise ensure unimplemented functions are not hidden in new
+     derivations of ShapeReifier with `using`, for example, `using
+     ShapeReifier::ImplementGeometry`. Existing subclasses should already have
+     this.
 
   Otherwise, you might get a runtime error. We do not have an automatic way to
   enforce them at compile time.
