@@ -77,9 +77,10 @@ GTEST_TEST(IntegratorBaseTest, CalcAdjustedStepSizeShrinksOnNaNAndInf) {
   // Arbitrary step size taken.
   const double step_taken = 1.0;
 
-  // Two values for at_minimum_step_size.
-  bool at_minimum_step_size_true = true;
-  bool at_minimum_step_size_false = false;
+  // The two possible values that the at_minimum_step_size input/output
+  // parameter can take on entry.
+  bool at_minimum_step_size_true_on_entry = true;
+  bool at_minimum_step_size_false_on_entry = false;
 
   // Use the spring-mass system (system and context will be unused for this
   // test).
@@ -90,53 +91,49 @@ GTEST_TEST(IntegratorBaseTest, CalcAdjustedStepSizeShrinksOnNaNAndInf) {
   // Verify that there is no shrinkage for zero error.
   std::pair<bool, double> result;
   result = integrator.CalcAdjustedStepSize(zero_error, step_taken,
-                                            &at_minimum_step_size_true);
+                                            &at_minimum_step_size_true_on_entry);
   EXPECT_EQ(result.first, true);
   EXPECT_GE(result.second, step_taken);
   result = integrator.CalcAdjustedStepSize(zero_error, step_taken,
-                                            &at_minimum_step_size_false);
+                                            &at_minimum_step_size_false_on_entry);
   EXPECT_EQ(result.first, true);
   EXPECT_GE(result.second, step_taken);
 
   // Neither should be at the minimum step size.
-  EXPECT_EQ(at_minimum_step_size_true, false);
-  EXPECT_EQ(at_minimum_step_size_false, false);
+  EXPECT_EQ(at_minimum_step_size_true_on_entry, false);
+  EXPECT_EQ(at_minimum_step_size_false_on_entry, false);
 
   // Reset the minimum step size Booleans.
-  at_minimum_step_size_true = true;
-  at_minimum_step_size_false = false;
+  at_minimum_step_size_true_on_entry = true;
+  at_minimum_step_size_false_on_entry = false;
 
   // Verify shrinkage for NaN error.
   result = integrator.CalcAdjustedStepSize(nan_error, step_taken,
-                                            &at_minimum_step_size_true);
+                                            &at_minimum_step_size_true_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
   result = integrator.CalcAdjustedStepSize(nan_error, step_taken,
-                                            &at_minimum_step_size_false);
+                                            &at_minimum_step_size_false_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
 
   // Minimum step size should be unchanged.
-  EXPECT_EQ(at_minimum_step_size_true, true);
-  EXPECT_EQ(at_minimum_step_size_false, false);
-
-  // Reset the minimum step size Booleans.
-  at_minimum_step_size_true = true;
-  at_minimum_step_size_false = false;
+  EXPECT_EQ(at_minimum_step_size_true_on_entry, true);
+  EXPECT_EQ(at_minimum_step_size_false_on_entry, false);
 
   // Verify shrinkage for Inf error.
   result = integrator.CalcAdjustedStepSize(inf_error, step_taken,
-                                            &at_minimum_step_size_true);
+                                            &at_minimum_step_size_true_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
   result = integrator.CalcAdjustedStepSize(inf_error, step_taken,
-                                            &at_minimum_step_size_false);
+                                            &at_minimum_step_size_false_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
 
   // Minimum step size should be unchanged.
-  EXPECT_EQ(at_minimum_step_size_true, true);
-  EXPECT_EQ(at_minimum_step_size_false, false);
+  EXPECT_EQ(at_minimum_step_size_true_on_entry, true);
+  EXPECT_EQ(at_minimum_step_size_false_on_entry, false);
 }
 
 // Tests that CalcStateChangeNorm() propagates NaNs in state.
