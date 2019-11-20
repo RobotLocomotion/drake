@@ -14,6 +14,7 @@ import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
+
 # TODO(seancurtis-TRI) De-duplicate these contact visualization modes (they
 # also exist in show_point_pair_contact.py) and make the dialog box for scaling
 # force arrows in show_point_pair_contact.py accessible to this plugin too.
