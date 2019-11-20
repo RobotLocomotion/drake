@@ -19,8 +19,9 @@ import textwrap
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 from clang import cindex
+import cindex_utils
+
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
-cindex.Config.set_library_path("/usr/lib/llvm-6.0/lib/")
 
 CLASS_KINDS = [
     CursorKind.CLASS_DECL,
@@ -1239,28 +1240,7 @@ def main():
     parameters = ['-x', 'c++', '-D__MKDOC_PY__']
     filenames = []
 
-    library_file = None
-    if platform.system() == 'Darwin':
-        completed_process = subprocess.run(['xcrun', '--find', 'clang'],
-                                           stdout=subprocess.PIPE,
-                                           encoding='utf-8')
-        if completed_process.returncode == 0:
-            toolchain_dir = os.path.dirname(os.path.dirname(
-                completed_process.stdout.strip()))
-            library_file = os.path.join(
-                toolchain_dir, 'lib', 'libclang.dylib')
-        completed_process = subprocess.run(['xcrun', '--show-sdk-path'],
-                                           stdout=subprocess.PIPE,
-                                           encoding='utf-8')
-        if completed_process.returncode == 0:
-            sdkroot = completed_process.stdout.strip()
-            if os.path.exists(sdkroot):
-                parameters.append('-isysroot')
-                parameters.append(sdkroot)
-    elif platform.system() == 'Linux':
-        library_file = '/usr/lib/llvm-6.0/lib/libclang.so'
-    if library_file and os.path.exists(library_file):
-        cindex.Config.set_library_path(os.path.dirname(library_file))
+    cindex_utils.add_library_paths(parameters)
 
     quiet = False
     std = '-std=c++11'

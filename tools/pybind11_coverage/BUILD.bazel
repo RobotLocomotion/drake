@@ -22,12 +22,13 @@ load(
     "generate_pybind_coverage",
 )
 
-drake_py_binary(
+py_binary(
     name = "get_pybind_coverage",
     srcs = [
         "get_pybind_coverage.py",
         "libclang_parser.py",
         "parse_pybind_xml_docstrings.py",
+        "//third_party:com_github_pybind_pybind11/cindex_utils.py",
     ],
     main = "get_pybind_coverage.py",
     visibility = ["//visibility:public"],
