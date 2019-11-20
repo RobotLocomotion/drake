@@ -316,6 +316,16 @@ class QueryObject {
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
 
+  /** A variant of ComputeSignedDistancePairwiseClosestPoints() which computes
+   the signed distance (and witnesses) between a specific pair of geometries
+   indicated by id. This function has the same restrictions on scalar report
+   as ComputeSignedDistancePairwiseClosestPoints().
+
+   @throws if either geometry id is invalid, or if the pair (id_A, id_B) has
+           been marked as filtered.  */
+  SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B) const;
+
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
