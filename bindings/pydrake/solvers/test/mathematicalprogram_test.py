@@ -2,6 +2,7 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
+    LinearConstraint,
     MathematicalProgramResult,
     SolverOptions,
     SolverType,
@@ -21,6 +22,7 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
+
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
@@ -118,6 +120,9 @@ class TestMathematicalProgram(unittest.TestCase):
         a = np.array([1.0, 2.0, 3.0])
         prog.AddLinearConstraint(a.dot(x) <= 4)
         prog.AddLinearConstraint(x[0] + x[1], 1, np.inf)
+        prog.AddConstraint(
+            LinearConstraint(np.array([[1., 1.]]), np.array([1]),
+                             np.array([np.inf])), [x[0], x[1]])
         solver = GurobiSolver()
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())

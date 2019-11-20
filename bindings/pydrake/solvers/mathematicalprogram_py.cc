@@ -512,6 +512,13 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddConstraint),
           doc.MathematicalProgram.AddConstraint.doc_1args_f)
+      .def("AddConstraint",
+          static_cast<Binding<Constraint> (MathematicalProgram::*)(
+              std::shared_ptr<Constraint>,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars)>(
+              &MathematicalProgram::AddConstraint),
+          py::arg("constraint"), py::arg("vars"),
+          doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -977,6 +984,13 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& lb,
+                        const Eigen::VectorXd& ub) {
+        return std::unique_ptr<LinearConstraint>(
+            new LinearConstraint(A, lb, ub));
+      }),
+          py::arg("A"), py::arg("lb"), py::arg("ub"),
+          doc.LinearConstraint.ctor.doc)
       .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
       .def("UpdateCoefficients",
           [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
