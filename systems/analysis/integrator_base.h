@@ -1943,12 +1943,13 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   if (isnan(err) || isinf(err)) {  // e.g., integrand returned NaN.
     new_step_size = kMinShrink * step_taken;
     return std::make_pair(false, new_step_size);
-  }
-  else if (err == 0) {  // A "perfect" step; can happen if no dofs for example.
-    new_step_size = kMaxGrow * step_taken;
-  } else {  // Choose best step for skating just below the desired accuracy.
-    new_step_size = kSafety * step_taken *
-                    pow(get_accuracy_in_use() / err, 1.0 / err_order);
+  } else {
+    if (err == 0) {  // A "perfect" step; can happen if no dofs for example.
+      new_step_size = kMaxGrow * step_taken;
+    } else {  // Choose best step for skating just below the desired accuracy.
+      new_step_size = kSafety * step_taken *
+                      pow(get_accuracy_in_use() / err, 1.0 / err_order);
+    }
   }
 
   // Error indicates that the step size can be increased.

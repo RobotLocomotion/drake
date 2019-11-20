@@ -91,11 +91,11 @@ GTEST_TEST(IntegratorBaseTest, CalcAdjustedStepSizeShrinksOnNaNAndInf) {
   // Verify that there is no shrinkage for zero error.
   std::pair<bool, double> result;
   result = integrator.CalcAdjustedStepSize(zero_error, step_taken,
-                                            &at_minimum_step_size_true_on_entry);
+                                           &at_minimum_step_size_true_on_entry);
   EXPECT_EQ(result.first, true);
   EXPECT_GE(result.second, step_taken);
-  result = integrator.CalcAdjustedStepSize(zero_error, step_taken,
-                                            &at_minimum_step_size_false_on_entry);
+  result = integrator.CalcAdjustedStepSize(
+      zero_error, step_taken, &at_minimum_step_size_false_on_entry);
   EXPECT_EQ(result.first, true);
   EXPECT_GE(result.second, step_taken);
 
@@ -109,11 +109,11 @@ GTEST_TEST(IntegratorBaseTest, CalcAdjustedStepSizeShrinksOnNaNAndInf) {
 
   // Verify shrinkage for NaN error.
   result = integrator.CalcAdjustedStepSize(nan_error, step_taken,
-                                            &at_minimum_step_size_true_on_entry);
+                                           &at_minimum_step_size_true_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
-  result = integrator.CalcAdjustedStepSize(nan_error, step_taken,
-                                            &at_minimum_step_size_false_on_entry);
+  result = integrator.CalcAdjustedStepSize(
+      nan_error, step_taken, &at_minimum_step_size_false_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
 
@@ -123,11 +123,11 @@ GTEST_TEST(IntegratorBaseTest, CalcAdjustedStepSizeShrinksOnNaNAndInf) {
 
   // Verify shrinkage for Inf error.
   result = integrator.CalcAdjustedStepSize(inf_error, step_taken,
-                                            &at_minimum_step_size_true_on_entry);
+                                           &at_minimum_step_size_true_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
-  result = integrator.CalcAdjustedStepSize(inf_error, step_taken,
-                                            &at_minimum_step_size_false_on_entry);
+  result = integrator.CalcAdjustedStepSize(
+      inf_error, step_taken, &at_minimum_step_size_false_on_entry);
   EXPECT_EQ(result.first, false);
   EXPECT_LT(result.second, kShrink * step_taken);
 
