@@ -16,10 +16,12 @@
 from clang import cindex
 import re
 import logging
+import third_party.com_github_pybind_pybind11.cindex_utils as cindex_utils
 
 # Tested with Python 3
 assert(__import__('sys').version_info[0] == 3)
-cindex.Config.set_library_path("/usr/lib/llvm-6.0/lib/")
+
+cindex_utils.add_library_paths()
 logging.basicConfig(level=logging.INFO)
 
 replace_variables = ["doc", "cls_doc", "var_doc", "enum_doc"]

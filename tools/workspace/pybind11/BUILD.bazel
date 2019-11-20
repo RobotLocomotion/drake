@@ -21,6 +21,7 @@ py_binary(
     name = "mkdoc",
     srcs = [
         "//third_party:com_github_pybind_pybind11/mkdoc.py",
+        "//third_party:com_github_pybind_pybind11/cindex_utils.py",
     ],
     visibility = ["//visibility:public"],
     deps = ["@clang_cindex_python3//:clang"],
