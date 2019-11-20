@@ -9,6 +9,24 @@ load("//tools/workspace:default.bzl", "add_default_repositories")
 
 add_default_repositories()
 
+# Load build rules for each language not using native rules
+
+load("@rules_python//python:repositories.bzl", "py_repositories")
+
+py_repositories()
+
+# Register toolchains for each language not using an automatically generated
+# toolchain
+#
+# The Python debug toolchain on Linux is not loaded automatically, but may be
+# used by specifying the command line option
+# --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
+
+register_toolchains(
+    "//tools/py_toolchain:linux_toolchain",
+    "//tools/py_toolchain:macos_toolchain",
+)
+
 # These are test repositories only needed for local testing of `external_data`,
 # and should not be needed for downstream projects.
 load("@drake//tools/external_data/test:external_data_workspace_test.bzl", "add_external_data_test_repositories")  # noqa

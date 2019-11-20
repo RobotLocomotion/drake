@@ -1,14 +1,8 @@
-build --python_path=/usr/bin/python3
-build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3
-
-build:_drd --python_path=/usr/bin/python3-dbg
-build:_drd --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3-dbg
-
-build:_helgrind --python_path=/usr/bin/python3-dbg
-build:_helgrind --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3-dbg
+build:_drd --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
+build:_helgrind --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
 
 # TODO(jamiesnape): Builds with configuration "memcheck" should also use
-# /usr/bin/python3-dbg.
+# //tools/py_toolchain:linux_dbg_toolchain.
 
 # Configure ${PATH} for actions.
 # N.B. Ensure this is consistent with `execute.bzl`.
