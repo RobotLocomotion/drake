@@ -39,8 +39,8 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const Cylinder& cylinder, const VolumeMesh<T>* mesh_C,
     const T elastic_modulus) {
   DRAKE_DEMAND(elastic_modulus > T(0));
-  const double radius = cylinder.get_radius();
-  const double length = cylinder.get_length();
+  const double radius = cylinder.radius();
+  const double length = cylinder.length();
   const double min_half_size = std::min(radius, length / 2.0);
 
   // TODO(DamrongGuoy): Switch to a better implementation in the future. The

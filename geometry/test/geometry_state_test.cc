@@ -255,22 +255,22 @@ class ShapeMatcher final : public ShapeReifier {
 template <>
 template <>
 void ShapeMatcher<Sphere>::TestShapeParameters(const Sphere& test) {
-  if (test.get_radius() != expected_.get_radius()) {
-    error() << "\nExpected sphere radius " << expected_.get_radius() << ", "
-            << "received sphere radius " << test.get_radius();
+  if (test.radius() != expected_.radius()) {
+    error() << "\nExpected sphere radius " << expected_.radius() << ", "
+            << "received sphere radius " << test.radius();
   }
 }
 
 template <>
 template <>
 void ShapeMatcher<Cylinder>::TestShapeParameters(const Cylinder& test) {
-  if (test.get_radius() != expected_.get_radius()) {
-    error() << "\nExpected cylinder radius " << expected_.get_radius() << ", "
-            << "received cylinder radius " << test.get_radius();
+  if (test.radius() != expected_.radius()) {
+    error() << "\nExpected cylinder radius " << expected_.radius() << ", "
+            << "received cylinder radius " << test.radius();
   }
-  if (test.get_length() != expected_.get_length()) {
-    error() << "\nExpected cylinder length " << expected_.get_length()
-            << ", received cylinder length " << test.get_length();
+  if (test.length() != expected_.length()) {
+    error() << "\nExpected cylinder length " << expected_.length()
+            << ", received cylinder length " << test.length();
   }
 }
 
@@ -294,13 +294,13 @@ void ShapeMatcher<Box>::TestShapeParameters(const Box& test) {
 template <>
 template <>
 void ShapeMatcher<Capsule>::TestShapeParameters(const Capsule& test) {
-  if (test.get_radius() != expected_.get_radius()) {
-    error() << "\nExpected capsule radius " << expected_.get_radius() << ", "
-            << "received capsule radius " << test.get_radius();
+  if (test.radius() != expected_.radius()) {
+    error() << "\nExpected capsule radius " << expected_.radius() << ", "
+            << "received capsule radius " << test.radius();
   }
-  if (test.get_length() != expected_.get_length()) {
-    error() << "\nExpected capsule length " << expected_.get_length()
-            << ", received capsule length " << test.get_length();
+  if (test.length() != expected_.length()) {
+    error() << "\nExpected capsule length " << expected_.length()
+            << ", received capsule length " << test.length();
   }
 }
 

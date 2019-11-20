@@ -251,7 +251,7 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   // TODO(amcastro-tri): Make this a user setable parameter.
   const int refinement_level = 2;
   auto sphere_field =
-      MakeSphereHydroelasticField<T>(refinement_level, sphere.get_radius());
+      MakeSphereHydroelasticField<T>(refinement_level, sphere.radius());
   auto model = std::make_unique<HydroelasticGeometry<T>>(
       std::move(sphere_field), elastic_modulus, dissipation);
   model_data_.geometry_id_to_model_[specs.id] = std::move(model);
