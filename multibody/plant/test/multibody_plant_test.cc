@@ -1566,6 +1566,27 @@ TEST_F(SplitPendulum, MassMatrix) {
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
 }
 
+// Verify that we can obtain the owning MultibodyPlant from one of its
+// MultibodyElements, and that we get a proper error message if we try
+// this for an element that isn't owned by a MultibodyPlant.
+TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
+  const MultibodyPlant<double>& pins_plant = pin_->GetParentPlant();
+  EXPECT_EQ(&pins_plant, &plant_);
+
+  // Create an element-owning MBTreeSystem that _is not_ an MBPlant.
+  struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
+    MyMBSystem() {
+      rigid_body = &mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+      Finalize();
+    }
+    const RigidBody<double>* rigid_body{};
+  } mb_system;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mb_system.rigid_body->GetParentPlant(), std::logic_error,
+      ".*multibody element.*not owned by.*MultibodyPlant.*");
+}
+
 // Verifies we can parse link collision geometries and surface friction.
 GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   const std::string full_name = drake::FindResourceOrThrow(

@@ -2331,6 +2331,13 @@ class MultibodyTree {
   }
   //@}
 
+  /// Returns the MultibodyTreeSystem that owns this MultibodyTree.
+  /// @pre There is an owning MultibodyTreeSystem.
+  const MultibodyTreeSystem<T>& tree_system() const {
+    DRAKE_DEMAND(tree_system_ != nullptr);
+    return *tree_system_;
+  }
+
   /// (Internal use only) Informs the MultibodyTree how to access its resources
   /// within a Context.
   void set_tree_system(MultibodyTreeSystem<T>* tree_system) {
