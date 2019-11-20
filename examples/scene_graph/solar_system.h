@@ -146,7 +146,7 @@ class SolarSystem : public systems::LeafSystem<T> {
   int geometry_pose_port_{-1};
 
   // Solar system specification
-  const int kBodyCount = 6;
+  const int kBodyCount = 7;
   // The ids for each celestial body frame
   std::vector<geometry::FrameId> body_ids_;
   // The axes around each body revolves (expressed in its parent's frame)
