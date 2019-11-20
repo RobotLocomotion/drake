@@ -226,15 +226,14 @@ void RenderEngineVtk::RenderLabelImage(const CameraProperties& camera,
 
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkSphereSource> vtk_sphere;
-  SetSphereOptions(vtk_sphere.GetPointer(), sphere.get_radius());
+  SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
                                         void* user_data) {
   vtkNew<vtkCylinderSource> vtk_cylinder;
-  SetCylinderOptions(vtk_cylinder, cylinder.get_length(),
-                     cylinder.get_radius());
+  SetCylinderOptions(vtk_cylinder, cylinder.length(), cylinder.radius());
 
   // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
   // to rotate it to be z-axis aligned because that is what Drake uses.
@@ -263,8 +262,7 @@ void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  CreateVtkCapsule(transform_filter, capsule.get_radius(),
-                   capsule.get_length());
+  CreateVtkCapsule(transform_filter, capsule.radius(), capsule.length());
   ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
 

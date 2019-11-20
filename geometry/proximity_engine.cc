@@ -291,15 +291,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_sphere = make_shared<fcl::Sphered>(sphere.get_radius());
+    auto fcl_sphere = make_shared<fcl::Sphered>(sphere.radius());
     TakeShapeOwnership(fcl_sphere, user_data);
     ProcessHydroelastic(sphere, user_data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.get_radius(),
-                                                    cylinder.get_length());
+    auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.radius(),
+                                                    cylinder.length());
     TakeShapeOwnership(fcl_cylinder, user_data);
     ProcessHydroelastic(cylinder, user_data);
   }
@@ -320,7 +320,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
     auto fcl_capsule =
-        make_shared<fcl::Capsuled>(capsule.get_radius(), capsule.get_length());
+        make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
     TakeShapeOwnership(fcl_capsule, user_data);
     ProcessHydroelastic(capsule, user_data);
   }

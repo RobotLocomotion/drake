@@ -95,7 +95,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
   EXPECT_FALSE(ellipsoid_made_);
-  EXPECT_EQ(s.get_radius(), 1.0);
+  EXPECT_EQ(s.radius(), 1.0);
 
   Reset();
 
@@ -119,8 +119,8 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
   EXPECT_FALSE(ellipsoid_made_);
-  EXPECT_EQ(cylinder.get_radius(), 1);
-  EXPECT_EQ(cylinder.get_length(), 2);
+  EXPECT_EQ(cylinder.radius(), 1);
+  EXPECT_EQ(cylinder.length(), 2);
 
   Reset();
 
@@ -147,8 +147,8 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_TRUE(capsule_made_);
   EXPECT_FALSE(convex_made_);
   EXPECT_FALSE(ellipsoid_made_);
-  EXPECT_EQ(capsule.get_radius(), 2);
-  EXPECT_EQ(capsule.get_length(), 1);
+  EXPECT_EQ(capsule.radius(), 2);
+  EXPECT_EQ(capsule.length(), 1);
 
   Reset();
 
@@ -173,9 +173,9 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(capsule_made_);
   EXPECT_FALSE(convex_made_);
   EXPECT_TRUE(ellipsoid_made_);
-  EXPECT_EQ(ellipsoid.get_a(), 1);
-  EXPECT_EQ(ellipsoid.get_b(), 2);
-  EXPECT_EQ(ellipsoid.get_c(), 3);
+  EXPECT_EQ(ellipsoid.a(), 1);
+  EXPECT_EQ(ellipsoid.b(), 2);
+  EXPECT_EQ(ellipsoid.c(), 3);
 }
 
 // Confirms that the ReifiableShape properly clones the right types.
@@ -195,7 +195,7 @@ TEST_F(ReifierTest, CloningShapes) {
     cloned_shape = local_sphere.Clone();
     Sphere* raw_sphere = static_cast<Sphere*>(cloned_shape.get());
     // Confirm it's an appropriate copy.
-    ASSERT_EQ(raw_sphere->get_radius(), local_sphere.get_radius());
+    ASSERT_EQ(raw_sphere->radius(), local_sphere.radius());
   }
   // Now confirm it's still alive. I should be able to reify it into a sphere.
   cloned_shape->Reify(this);

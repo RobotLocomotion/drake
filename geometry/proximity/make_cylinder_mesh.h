@@ -451,8 +451,8 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 template <typename T>
 VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
                                      double resolution_hint) {
-  const double length = cylinder.get_length();
-  const double radius = cylinder.get_radius();
+  const double length = cylinder.length();
+  const double radius = cylinder.radius();
   std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> pair =
       MakeCylinderMeshLevel0<T>(length, radius);
   VolumeMesh<T>& mesh = pair.first;

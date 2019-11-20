@@ -441,7 +441,7 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
        ℒ = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
    */
   DRAKE_DEMAND(resolution_hint > 0.0);
-  const double r = sphere.get_radius();
+  const double r = sphere.radius();
   // Make sure the arcsin doesn't blow up.
   const double edge_length = std::min(resolution_hint, 2.0 * r);
   const int L = std::max(

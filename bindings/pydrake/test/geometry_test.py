@@ -178,10 +178,10 @@ class TestGeometry(unittest.TestCase):
 
     def test_shapes(self):
         sphere = mut.Sphere(radius=1.0)
-        self.assertEqual(sphere.get_radius(), 1.0)
+        self.assertEqual(sphere.radius(), 1.0)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
-        self.assertEqual(cylinder.get_radius(), 1.0)
-        self.assertEqual(cylinder.get_length(), 2.0)
+        self.assertEqual(cylinder.radius(), 1.0)
+        self.assertEqual(cylinder.length(), 2.0)
         box = mut.Box(width=1.0, depth=2.0, height=3.0)
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
