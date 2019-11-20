@@ -137,6 +137,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # the workaround overloads from `pydrake.math`.
         prog.AddLinearConstraint(ge(x, 1))
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        prog.AddQuadraticCost(np.eye(2), np.zeros(2), 1, x)
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
