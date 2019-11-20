@@ -380,7 +380,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   inline void increment_num_iter_factorizations() {
     ++num_iter_factorizations_;
   }
-  inline void increment_jacobian_function_evaluations(int count) {
+  inline void increment_jacobian_computation_derivative_evaluations(int count) {
     num_jacobian_function_evaluations_ += count;
   }
   inline void increment_jacobian_evaluations() {

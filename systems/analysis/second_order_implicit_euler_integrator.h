@@ -24,10 +24,10 @@ namespace systems {
  * Instantiated templates for the following kinds of T's are provided:
  *
  * - double
- * 
+ *
  * TODO(antequ): support AutodiffXd
  * TODO(antequ): update this documentation to match the google doc.
- * 
+ *
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))
  * </pre>
@@ -166,16 +166,23 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
                          VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
 
-  // StepAbstract is NOT USED (I will remove in final PR)
-  bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
-                    const std::function<VectorX<T>()>& g,
-                    const std::function<
-                        void(const MatrixX<T>&, const T&,
-                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
-                        compute_and_factor_iteration_matrix,
-                    VectorX<T>* xtplus, int trial = 1);
-
   bool DoImplicitIntegratorStep(const T& h) final;
+
+  /// Steps the system forward by a single step of at most h using the
+  /// Second-Order Implicit Euler method.
+  /// @param t0 the time at the left end of the integration interval.
+  /// @param h the maximum time increment to step forward.
+  /// @param xt0 the continuous state at t0.
+  /// @param xtplus_guess the starting guess for x(t0+h).
+  /// @param [out] xtplus the computed value for `x(t0+h)` on successful return.
+  /// @param [in, out] iteration_matrix the cached iteration matrix
+  /// @param [in, out] iteration_matrix the cached velocity Jacobian
+  /// @param trial the attempt for this approach (1-4). StepImplicitEuler() uses
+  ///        more computationally expensive methods as the trial numbers
+  ///        increase.
+  /// @returns `true` if the step of size `h` was successful, `false` otherwise.
+  /// @note The time and continuous state in the context are indeterminate upon
+  ///       exit.
   bool StepImplicitEuler(
       const T& t0, const T& h, const VectorX<T>& xt0,
       const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
@@ -187,44 +194,97 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv);
 
-  // velocity Jacobians for implicit euler and half implicit euler
+  /// velocity Jacobians for implicit euler and half implicit euler
   MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
   MatrixX<T>& get_mutable_velocity_jacobian_half_implicit_euler() {
     return Jv_hie_;
   }
 
-  // Jacobian computation
+  /// Compute the partial derivative of the ordinary differential equations with
+  /// respect to the y variables of a given x(t). In particular, we compute the
+  /// Jacobian, Jₗₖ(y), of the function lₖ(y), used in this integrator's
+  /// residual computation, with respect to y. As defined before, y = (v,z) and
+  /// x = (q,v,z). This Jacobian is then defined as:
+  ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (9)
+  ///     Jₗₖ(y) = ∂lₖ(y)/∂y                     (10)
+  /// @param t refers to tⁿ⁺¹, the time used in the definition of lₖ(y)
+  /// @param h is the timestep size parameter, h, used in the definition of
+  ///        lₖ(y)
+  /// @param x is (qₖ, y), the continuous state around which to evaluate Jₗₖ(y)
+  /// @param qt0 refers to qⁿ, the initial position used in lₖ(y)
+  /// @param [out] Jv is the Jacobian matrix, Jₗₖ(y).
+  /// @post the context's time and continuous state will be temporarily set
+  ///       during this call (and then reset to their original values) on
+  ///       return.
   void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus,
                             const VectorX<T>& qt0, MatrixX<T>* Jv);
 
-  // Computes the Jacobian, Jₗₖ(y), of the function lₖ(y), used in this
-// integrator's residual computation, with respect to y. As defined before, y =
-// (v, z). This Jacobian is then defined as:
-//     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (9)
-//     Jₗₖ(y) = ∂lₖ(y)/∂y                     (10)
-//
-// In this method, we compute the Jacobian Jₗₖ(y) using a first-order forward
-// difference (i.e. numerical differentiation),
-//   Jₗₖ(y)ᵢⱼ = (lₖ(y')ᵢ - lₖ(y)ᵢ )/ δy(j),
-//      where y' = y + δy(j) eⱼ and δy(j) = (√ε) max(1,|yⱼ|).
-// In the code we hereby refer to y as "the baseline" and y' as "prime".
-// @param t refers to tⁿ⁺¹, the time used in the definition of lₖ(y)
-// @param h is the timestep size parameter, h, used in the definition of lₖ(y)
-// @param x is (qₖ, y), the continuous state around which to evaluate Jₗₖ(y)
-// @param qt0 refers to qⁿ, the initial position used in lₖ(y)
-// @param context the Context of the system, at time and continuous state
-//        unknown.
-// @param [out] the Jacobian matrix, Jₗₖ(y).
-// @note The continuous state will be indeterminate on return.
-// For full Newton, we recommend this method to be evaluated at time t = t0 + h
-// and x = xₖ; however, this recommendation is not necessary for the
-// integrator and more optimized versions will modify this.
+  /// Uses first-order forward differencing to compute the Jacobian, Jₗₖ(y), of
+  /// the function lₖ(y), used in this integrator's residual computation, with
+  /// respect to y. As defined before, y = (v, z). This Jacobian is then defined
+  /// as:
+  ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (9)
+  ///     Jₗₖ(y) = ∂lₖ(y)/∂y                     (10)
+  //
+  /// In this method, we compute the Jacobian Jₗₖ(y) using a first-order forward
+  /// difference (i.e. numerical differentiation),
+  ///   Jₗₖ(y)ᵢⱼ = (lₖ(y')ᵢ - lₖ(y)ᵢ )/ δy(j),
+  ///      where y' = y + δy(j) eⱼ and δy(j) = (√ε) max(1,|yⱼ|).
+  /// In the code we hereby refer to y as "the baseline" and y' as "prime".
+  /// @param t refers to tⁿ⁺¹, the time used in the definition of lₖ(y)
+  /// @param h is the timestep size parameter, h, used in the definition of
+  ///        lₖ(y)
+  /// @param x is (qₖ, y), the continuous state around which to evaluate Jₗₖ(y)
+  /// @param qt0 refers to qⁿ, the initial position used in lₖ(y)
+  /// @param context the Context of the system, at time and continuous state
+  ///        unknown.
+  /// @param [out] Jv is the Jacobian matrix, Jₗₖ(y).
+  /// @note The continuous state will be indeterminate on return.
+  /// For full Newton, we recommend this method to be evaluated at time t = t0 +
+  /// h and x = xₖ; however, this recommendation is not necessary for the
+  /// integrator and the logic in MaybeFreshenVelocityMatrices modifies this.
   void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
                                           const VectorX<T>& xt,
                                           const VectorX<T>& qt0,
                                           Context<T>* context, MatrixX<T>* Jv);
 
-  // method containing the logic for sometimes refreshing the Jacobians
+  /// Computes necessary matrices (Jacobian and iteration matrix) for
+  /// Newton-Raphson (NR) iterations, as necessary. This method is based off of
+  /// ImplicitIntegrator<T>::MaybeFreshenMatrices. We implement our own version
+  /// here to use a specialized Velocity Jacobian. The aformentioned method was
+  /// designed for use in DoImplicitIntegratorStep() processes that follow this
+  /// model:
+  /// 1. DoImplicitIntegratorStep(h) is called;
+  /// 2. One or more NR iterations is performed until either (a) convergence is
+  ///    identified, (b) the iteration is found to diverge, or (c) too many
+  ///    iterations were taken. In the case of (a), DoImplicitIntegratorStep(h)
+  ///    will return success. Otherwise, the Newton-Raphson process is attempted
+  ///    again with (i) a recomputed and refactored iteration matrix and (ii) a
+  ///    recomputed Jacobian and a recomputed an refactored iteration matrix, in
+  ///    that order. The process stage of that NR algorithm is indicated by the
+  ///    `trial` parameter below. In this model, DoImplicitIntegratorStep()
+  ///    returns failure if the NR iterations reach a fourth trial.
+  ///
+  /// Note that the sophisticated logic above only applies when the Jacobian
+  /// reuse is activated (default, see get_reuse()).
+  ///
+  /// @param t the time at which to compute the Jacobian.
+  /// @param xt the continuous state at which the Jacobian is computed.
+  /// @param qt0 the generalized position state at the beginning of the step
+  /// @param h the integration step size
+  /// @param trial which trial (1-4) the Newton-Raphson process is in when
+  ///        calling this method.
+  /// @param compute_and_factor_iteration_matrix a function pointer for
+  ///        computing and factoring the iteration matrix.
+  /// @param [out] iteration_matrix the updated and factored iteration matrix on
+  ///             return.
+  /// @param [out] Jv the updated and factored velocity Jacobian matrix on
+  ///             return.
+  /// @returns `false` if the calling stepping method should indicate failure;
+  ///          `true` otherwise.
+  /// @pre 1 <= `trial` <= 4.
+  /// @post the state in the internal context may or may not be altered on
+  ///       return; if altered, it will be set to (t, xt).
   bool MaybeFreshenVelocityMatrices(
       const T& t, const VectorX<T>& xt, const VectorX<T>& qt0, const T& h,
       int trial,
@@ -235,9 +295,14 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv);
 
-  // This function evaluates g(y) with y from the context. Context should be at
-  // the time tf
-  void eval_g_with_y_from_context(const VectorX<T>& qt0, const T& h,
+  /// This method evaluates l(y) with y from the context. The context should be
+  /// at the time tf.
+  /// @param qt0 the generalized position at the beginning of the step
+  /// @param h the step size
+  /// @param qk the generalized position to evaluate N in l(y)
+  /// @param [out] result this is set to l(y) from the evaluation
+  /// @post the context state is altered with q = qt0 + N(qk) v
+  void eval_l_with_y_from_context(const VectorX<T>& qt0, const T& h,
                                   const VectorX<T>& qk, VectorX<T>* result);
 
   // The last computed iteration matrix and factorization; the _ie_ is for
