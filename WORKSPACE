@@ -15,6 +15,10 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 
 py_repositories()
 
+load("@rules_python//python:pip.bzl", "pip_repositories")
+
+pip_repositories()
+
 # Register toolchains for each language not using an automatically generated
 # toolchain
 #

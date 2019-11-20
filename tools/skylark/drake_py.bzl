@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@rules_python//python:defs.bzl", "py_library")
+
 def drake_py_library(
         name,
         deps = None,
@@ -8,7 +10,7 @@ def drake_py_library(
 
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
-    native.py_library(
+    py_library(
         name = name,
         deps = deps,
         **kwargs
