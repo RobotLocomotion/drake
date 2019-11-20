@@ -7,10 +7,6 @@ import %workspace%/tools/lint/bazel.rc
 # than a toolchain in Bazel 0.27 and above until #11660 is resolved.
 build --incompatible_use_python_toolchains=false
 
-# Continue to use --whole-archive for cc_binary rules that have linkshared = 1
-# and either linkstatic = 1 or -static in linkopts in Bazel 1.0 and above.
-build --incompatible_remove_legacy_whole_archive=false
-
 # Default to an optimized build.
 build -c opt
 

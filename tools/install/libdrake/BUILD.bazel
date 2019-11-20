@@ -16,7 +16,10 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
-load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
 
 # TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
 # such that no downstream users can use it?
@@ -30,15 +33,23 @@ install_cmake_config(
     versioned = 0,
 )
 
-# The Drake binary package. libdrake.so contains all the symbols from all the
-# LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
-# that the binary package will not contain any references to shared libraries
-# inside the build tree.
-drake_cc_binary(
+# Annotate all of the LIBDRAKE_COMPONENTS as `alwayslink = True`, so that we
+# use the --whole-archive linker flag on them when creating libdrake.so
+cc_whole_archive_library(
+    name = "libdrake_components_whole_archive",
+    deps = LIBDRAKE_COMPONENTS,
+)
+
+# The Drake binary package libdrake.so contains all the symbols from all the
+# LIBDRAKE_COMPONENTS plus the statically-linked Drake externals used by the
+# LIBDRAKE_COMPONENTS.  We use linkstatic=1 here so that the library will not
+# contain any references to constituent shared libraries inside the build tree.
+cc_binary(
     name = "libdrake.so",
     linkshared = 1,
     linkstatic = 1,
-    deps = LIBDRAKE_COMPONENTS + [
+    deps = [
+        ":libdrake_components_whole_archive",
         ":libdrake_runtime_so_deps",
     ],
 )
