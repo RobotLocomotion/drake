@@ -68,6 +68,7 @@ drake_transitive_installed_hdrs_filegroup(
         # (For CMake details, refer to //tools/install/libdrake:drake.cps.in.)
         "lcmtypes/",
     ],
+    visibility = ["//bindings/pydrake:__pkg__"],
     deps = LIBDRAKE_COMPONENTS,
 )
 

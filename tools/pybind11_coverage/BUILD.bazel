@@ -40,10 +40,16 @@ drake_cc_library(
     srcs = ["test/test.h"],
 )
 
+filegroup(
+    name = "headers_without_attic",
+    srcs = ["test/test.h"],
+)
+
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header_test",
     testonly = 1,
     out = "documentation_pybind_test.h",
+    headers_without_attic = ":headers_without_attic",
     out_xml = "documentation_pybind_test.xml",
     root_name = "pydrake_doc",
     targets = [":pybind_coverage_test"],

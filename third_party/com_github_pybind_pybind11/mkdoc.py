@@ -128,182 +128,14 @@ def eprint(*args):
     print(*args, file=sys.stderr)
 
 
-# // NOLINTNEXTLINE(whitespace/line_length)
-# bazel query \
-# 'labels("hdrs", //attic/... except filter(".*lint$", //attic/...))' \
-# > /tmp/output.txt && \
-# sed  -i /tmp/output.txt -e 's/\/\/attic/drake/' -e 's/:/\//'  && \
-# sort /tmp/output.txt
-attic_list = [
-    "drake/manipulation/dev/quasistatic_system.h",
-    "drake/manipulation/dev/remote_tree_viewer_wrapper.h",
-    "drake/manipulation/planner/constraint_relaxing_ik.h",
-    "drake/manipulation/planner/rbt_differential_inverse_kinematics.h",
-    "drake/manipulation/scene_generation/random_clutter_generator.h",
-    "drake/manipulation/scene_generation/simulate_plant_to_rest.h",
-    "drake/manipulation/sensors/xtion.h",
-    "drake/manipulation/util/frame_pose_tracker.h",
-    "drake/manipulation/util/robot_state_msg_translator.h",
-    "drake/manipulation/util/sim_diagram_builder.h",
-    "drake/manipulation/util/simple_tree_visualizer.h",
-    "drake/manipulation/util/world_sim_tree_builder.h",
-    "drake/multibody/alias_groups.pb.h",
-    "drake/multibody/collision/bullet_model.h",
-    "drake/multibody/collision/collision_filter.h",
-    "drake/multibody/collision/drake_collision.h",
-    "drake/multibody/collision/element.h",
-    "drake/multibody/collision/fcl_model.h",
-    "drake/multibody/collision/model.h",
-    "drake/multibody/collision/point_pair.h",
-    "drake/multibody/collision/unusable_model.h",
-    "drake/multibody/constraint_wrappers.h",
-    "drake/multibody/dev/test/global_inverse_kinematics_test_util.h",
-    "drake/multibody/force_torque_measurement.h",
-    "drake/multibody/global_inverse_kinematics.h",
-    "drake/multibody/ik_options.h",
-    "drake/multibody/ik_trajectory_helper.h",
-    "drake/multibody/inverse_kinematics_backend.h",
-    "drake/multibody/joints/drake_joint.h",
-    "drake/multibody/joints/drake_joint_impl.h",
-    "drake/multibody/joints/drake_joints.h",
-    "drake/multibody/joints/fixed_axis_one_dof_joint.h",
-    "drake/multibody/joints/fixed_joint.h",
-    "drake/multibody/joints/floating_base_types.h",
-    "drake/multibody/joints/helical_joint.h",
-    "drake/multibody/joints/prismatic_joint.h",
-    "drake/multibody/joints/quaternion_ball_joint.h",
-    "drake/multibody/joints/quaternion_floating_joint.h",
-    "drake/multibody/joints/revolute_joint.h",
-    "drake/multibody/joints/roll_pitch_yaw_floating_joint.h",
-    "drake/multibody/joints/test/joint_compare_to_clone.h",
-    "drake/multibody/kinematic_path.h",
-    "drake/multibody/kinematics_cache.h",
-    "drake/multibody/kinematics_cache_helper.h",
-    "drake/multibody/kinematics_cache-inl.h",
-    "drake/multibody/material_map.h",
-    "drake/multibody/parsers/model_instance_id_table.h",
-    "drake/multibody/parsers/package_map.h",
-    "drake/multibody/parsers/parser_common.h",
-    "drake/multibody/parsers/sdf_parser.h",
-    "drake/multibody/parsers/urdf_parser.h",
-    "drake/multibody/parsers/xml_util.h",
-    "drake/multibody/pose_map.h",
-    "drake/multibody/resolve_center_of_pressure.h",
-    "drake/multibody/rigid_body_actuator.h",
-    "drake/multibody/rigid_body_constraint.h",
-    "drake/multibody/rigid_body_distance_constraint.h",
-    "drake/multibody/rigid_body_frame.h",
-    "drake/multibody/rigid_body.h",
-    "drake/multibody/rigid_body_ik.h",
-    "drake/multibody/rigid_body_loop.h",
-    "drake/multibody/rigid_body_plant/compliant_contact_model.h",
-    "drake/multibody/rigid_body_plant/compliant_material.h",
-    "drake/multibody/rigid_body_plant/contact_detail.h",
-    "drake/multibody/rigid_body_plant/contact_force.h",
-    "drake/multibody/rigid_body_plant/contact_info.h",
-    "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h",
-    "drake/multibody/rigid_body_plant/contact_results.h",
-    "drake/multibody/rigid_body_plant/contact_results_to_lcm.h",
-    "drake/multibody/rigid_body_plant/create_load_robot_message.h",
-    "drake/multibody/rigid_body_plant/drake_visualizer.h",
-    "drake/multibody/rigid_body_plant/frame_visualizer.h",
-    "drake/multibody/rigid_body_plant/kinematics_results.h",
-    "drake/multibody/rigid_body_plant/point_contact_detail.h",
-    "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h",
-    "drake/multibody/rigid_body_plant/rigid_body_plant.h",
-    "drake/multibody/rigid_body_plant/test/contact_result_test_common.h",
-    "drake/multibody/rigid_body_plant/viewer_draw_translator.h",
-    "drake/multibody/rigid_body_tree_alias_groups.h",
-    "drake/multibody/rigid_body_tree_construction.h",
-    "drake/multibody/rigid_body_tree.h",
-    "drake/multibody/shapes/drake_shapes.h",
-    "drake/multibody/shapes/element.h",
-    "drake/multibody/shapes/geometry.h",
-    "drake/multibody/shapes/visual_element.h",
-    "drake/multibody/test/rigid_body_actuator_compare_to_clone.h",
-    "drake/multibody/test/rigid_body_compare_to_clone.h",
-    "drake/multibody/test/rigid_body_frame_compare_to_clone.h",
-    "drake/multibody/test/rigid_body_loop_compare_to_clone.h",
-    "drake/multibody/test/rigid_body_tree/rigid_body_tree_compare_to_clone.h",
-    "drake/perception/estimators/dev/articulated_icp.h",
-    "drake/perception/estimators/dev/pose_closed_form.h",
-    "drake/perception/estimators/dev/scene.h",
-    "drake/perception/estimators/dev/test/test_util.h",
-    "drake/perception/rigid_body_point_cloud_filter.h",
-    "drake/perception/transform_point_cloud.h",
-    "drake/systems/controllers/controlUtil.h",
-    "drake/systems/controllers/InstantaneousQPController.h",
-    "drake/systems/controllers/plan_eval/generic_plan.h",
-    "drake/systems/controllers/plan_eval/manipulator_move_end_effector_plan.h",
-    "drake/systems/controllers/plan_eval/plan_eval_base_system.h",
-    "drake/systems/controllers/plan_eval/test/test_common.h",
-    "drake/systems/controllers/polynomial_encode_decode.h",
-    "drake/systems/controllers/QPCommon.h",
-    "drake/systems/controllers/qp_inverse_dynamics/deprecated.h",
-    "drake/systems/controllers/qp_inverse_dynamics/id_controller_config.pb.h",
-    "drake/systems/controllers/qp_inverse_dynamics/lcm_utils.h",
-    "drake/systems/controllers/qp_inverse_dynamics/param_parser.h",
-    "drake/systems/controllers/qp_inverse_dynamics/"
-    "qp_inverse_dynamics_common.h",
-    "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h",
-    "drake/systems/controllers/qp_inverse_dynamics/"
-    "qp_inverse_dynamics_system.h",
-    "drake/systems/controllers/qp_inverse_dynamics/"
-    "qp_output_translator_system.h",
-    "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h",
-    "drake/systems/controllers/qp_inverse_dynamics/"
-    "robot_kinematic_state_translator_system.h",
-    "drake/systems/controllers/rbt_inverse_dynamics_controller.h",
-    "drake/systems/controllers/rbt_inverse_dynamics.h",
-    "drake/systems/controllers/side.h",
-    "drake/systems/controllers/test/rbt_compute_torque.h",
-    "drake/systems/controllers/yaml_util.h",
-    "drake/systems/controllers/zmpUtil.h",
-    "drake/systems/estimators/dev/rotation.h",
-    "drake/systems/rendering/drake_visualizer_client.h",
-    "drake/systems/robotInterfaces/atlasUtil.h",
-    "drake/systems/robotInterfaces/BodyMotionData.h",
-    "drake/systems/robotInterfaces/convex_hull.h",
-    "drake/systems/robotInterfaces/QPLocomotionPlan.h",
-    "drake/systems/robotInterfaces/verify_subtype_sizes.h",
-    "drake/systems/sensors/accelerometer.h",
-    "drake/systems/sensors/accelerometer_output.h",
-    "drake/systems/sensors/depth_sensor.h",
-    "drake/systems/sensors/depth_sensor_output.h",
-    "drake/systems/sensors/depth_sensor_specification.h",
-    "drake/systems/sensors/depth_sensor_to_lcm_point_cloud_message.h",
-    "drake/systems/sensors/depth_shaders.h",
-    "drake/systems/sensors/gyroscope.h",
-    "drake/systems/sensors/gyroscope_output.h",
-    "drake/systems/sensors/rgbd_camera.h",
-    "drake/systems/sensors/rgbd_renderer.h",
-    "drake/systems/sensors/rgbd_renderer_ospray.h",
-    "drake/systems/sensors/rgbd_renderer_vtk.h",
-    "drake/systems/sensors/test/accelerometer_test/"
-    "accelerometer_example_diagram.h",
-    "drake/systems/sensors/test/accelerometer_test/"
-    "accelerometer_test_logger.h",
-    "drake/systems/sensors/test/rgbd_renderer_test_util.h",
-    "drake/systems/trajectory_optimization/"
-    "generalized_constraint_force_evaluator.h",
-    "drake/systems/trajectory_optimization/"
-    "joint_limit_constraint_force_evaluator.h",
-    "drake/systems/trajectory_optimization/"
-    "position_constraint_force_evaluator.h",
-    "drake/systems/trajectory_optimization/test/"
-    "generalized_constraint_force_evaluator_test_util.h",
-    "drake/util/drakeGeometryUtil.h",
-    "drake/util/drakeUtil.h",
-]
-
 ignore_directories = (
     "drake/automotive", "drake/common/proto", "drake/common/yaml",
     "drake/examples"
 )
 
 
-def ignore_files(file_name):
-    return (file_name in attic_list) or \
+def ignore_files(file_name, headers_without_attic):
+    return (file_name not in headers_without_attic) or \
         (file_name.startswith(ignore_directories))
 
 
@@ -1111,7 +943,7 @@ tree_parser_doc = []
 tree_parser_xpath = [ET.Element("Root")]
 
 
-def print_symbols(f, name, node, level=0):
+def print_symbols(f, name, node, headers_without_attic, level=0):
     """
     Prints C++ code for relevant documentation.
     """
@@ -1171,7 +1003,7 @@ def print_symbols(f, name, node, level=0):
         symbol_include_xpath.append(symbol.include)
 
         # Check if the symbol must be ignored.
-        if (not ignore_files(symbol.include) and
+        if (not ignore_files(symbol.include, headers_without_attic) and
                 set({"internal", "dev"}).isdisjoint(set(name_chain[:-1]))):
             ignore_xpath.append(str(0))
         else:
@@ -1195,7 +1027,7 @@ def print_symbols(f, name, node, level=0):
     keys = sorted(node.children_map.keys())
     for key in keys:
         child = node.children_map[key]
-        print_symbols(f, key, child, level=level + 1)
+        print_symbols(f, key, child, headers_without_attic, level=level + 1)
     iprint('}} {};'.format(name_var))
 
     tree_parser_doc.pop()
@@ -1239,7 +1071,7 @@ def prettify(elem):
 def main():
     parameters = ['-x', 'c++', '-D__MKDOC_PY__']
     filenames = []
-
+    headers_without_attic = []
     cindex_utils.add_library_paths(parameters)
 
     quiet = False
@@ -1263,6 +1095,9 @@ def main():
             root_name = item[len('-root-name='):]
         elif item.startswith('-exclude-hdr-patterns='):
             ignore_patterns.append(item[len('-exclude-hdr-patterns='):])
+        elif item.startswith("-headers_without_attic="):
+            full_str = item[len('-headers_without_attic='):]
+            headers_without_attic = full_str.split(",")
         elif item.startswith('-'):
             parameters.append(item)
         else:
@@ -1354,7 +1189,7 @@ def main():
     if not quiet:
         eprint("Writing header file...")
     try:
-        print_symbols(f, root_name, symbol_tree.root)
+        print_symbols(f, root_name, symbol_tree.root, headers_without_attic)
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print("""

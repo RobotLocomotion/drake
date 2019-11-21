@@ -66,6 +66,8 @@ generate_pybind_documentation_header(
         # docstrings.
         "drake/lcmtypes/**",
     ],
+    headers_without_attic =
+        "//tools/install/libdrake:libdrake_headers_no_attic",
     out_xml = "documentation_pybind.xml",
     root_name = "pydrake_doc",
     targets = [

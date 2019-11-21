@@ -335,12 +335,20 @@ def _generate_pybind_documentation_header_impl(ctx):
     transitive_headers = depset(transitive = transitive_headers_depsets)
     package_headers = depset(transitive = package_headers_depsets)
 
+    hdrs_path_without_attic = []
+
     args = ctx.actions.args()
+
+    if getattr(ctx.attr, "headers_without_attic"):
+        for f in ctx.attr.headers_without_attic.files.to_list():
+            hdrs_path_without_attic.append("drake/" + f.path)
+
     args.add_all(compile_flags, uniquify = True)
     args.add("-output=" + ctx.outputs.out.path)
     args.add("-output_xml=" + ctx.outputs.out_xml.path)
     args.add("-quiet")
     args.add("-root-name=" + ctx.attr.root_name)
+    args.add("-headers_without_attic=" + ",".join(hdrs_path_without_attic))
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
     args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
@@ -366,6 +374,10 @@ generate_pybind_documentation_header = rule(
     attrs = {
         "targets": attr.label_list(
             mandatory = True,
+        ),
+        "headers_without_attic": attr.label(
+            allow_files = True,
+            mandatory = False,
         ),
         "_mkdoc": attr.label(
             default = Label("//tools/workspace/pybind11:mkdoc"),
