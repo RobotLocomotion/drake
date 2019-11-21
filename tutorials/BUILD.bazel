@@ -33,4 +33,12 @@ drake_jupyter_py_binary(
     ],
 )
 
+drake_jupyter_py_binary(
+    name = "rendering_multibody_plant",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 add_lint_tests()
