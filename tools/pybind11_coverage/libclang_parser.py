@@ -18,11 +18,7 @@ import re
 import logging
 import third_party.com_github_pybind_pybind11.cindex_utils as cindex_utils
 
-# Tested with Python 3
-assert(__import__('sys').version_info[0] == 3)
-
 cindex_utils.add_library_paths()
-logging.basicConfig(level=logging.INFO)
 
 replace_variables = ["doc", "cls_doc", "var_doc", "enum_doc"]
 
@@ -157,12 +153,7 @@ def write_to_file(arr, file_name):
 
 
 def get_tokens(filename):
-    # We don't particulary need to set the std, but it looks like a bug in
-    # cindex used by us.  (Not in llvm-mirror's version of `cindex.py`.
-    # `args_array` can be uninitialized.)
-    # // NOLINTNEXTLINE(whitespace/line_length).
-    # https://github.com/wjakob/clang-cindex-python3/blob/6a00cbc4a9b8e68b71caf7f774b3f9c753ae84d5/cindex.py#L2514-L2533
-    tu = cindex.TranslationUnit.from_source(filename, ["-std=c++11"])
+    tu = cindex.TranslationUnit.from_source(filename, ["-std=c++17"])
     FILE = tu.get_file(bytes(filename, 'utf8'))
 
     with open(filename, "r") as f:
@@ -203,6 +194,7 @@ def get_docstring_for_bindings(filenames):
     """
 
     array_for_all_files = []
+    logging.basicConfig(level=logging.INFO)
 
     for f in filenames:
         logging.debug("On file: {}".format(f))

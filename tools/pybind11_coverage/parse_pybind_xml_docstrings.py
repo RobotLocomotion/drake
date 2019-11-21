@@ -4,9 +4,7 @@ import pandas
 import os
 import logging
 
-logging.basicConfig(level=logging.INFO)
 
-assert(__import__('sys').version_info[0] == 3)
 XPATHS = {
     "class_decl": ".//Node[@kind='CursorKind.CLASS_DECL' or "
     "@kind='CursorKind.CLASS_TEMPLATE' or @kind='CursorKind.STRUCT_DECL']"
@@ -294,6 +292,7 @@ class FileCoverage(object):
            parent of the leaf (i.e. the header file) a row is added to the
            dataframe.
         """
+        logging.basicConfig(level=logging.INFO)
         df = self.df_pruned
         filenames, coverage = df.loc[:, "FileName"], df.loc[:, "Coverage"]
         file_coverage = dict(zip(filenames, coverage))
