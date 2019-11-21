@@ -1,51 +1,125 @@
-load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
-    "drake_py_test",
-    "drake_py_unittest",
-)
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_library",
-)
-load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+# -*- python -*-
+
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "generate_pybind_coverage",
     "generate_pybind_documentation_header",
 )
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load(
-    "@drake//tools/pybind11_coverage:transitive_rule.bzl",
-    "add_pybind_coverage_data",
-    "generate_pybind_coverage",
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+exports_files(
+    ["package-create-cps.py"],
+    visibility = ["@pybind11//:__pkg__"],
+)
+
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = ["//tools/workspace:module_py"],
+)
+
+py_library(
+    name = "libclang_setup_py",
+    srcs = ["libclang_setup.py"],
+    # More conservative?
+    visibility = ["//visibility:public"],
+    deps = [
+        ":module_py",
+        "@clang_cindex_python3//:clang",
+    ],
 )
 
 py_binary(
-    name = "get_pybind_coverage",
-    srcs = [
-        "get_pybind_coverage.py",
-        "libclang_parser.py",
-        "parse_pybind_xml_docstrings.py",
-        "//third_party:com_github_pybind_pybind11/cindex_utils.py",
-    ],
-    main = "get_pybind_coverage.py",
+    name = "mkdoc",
+    srcs = ["//third_party:com_github_pybind_pybind11/mkdoc.py"],
     visibility = ["//visibility:public"],
-    deps = ["@clang_cindex_python3//:clang"],
+    deps = [
+        ":libclang_setup_py",
+        "@clang_cindex_python3//:clang",
+    ],
 )
 
 drake_cc_library(
-    name = "pybind_coverage_test",
+    name = "sample_header",
+    testonly = 1,
+    hdrs = ["test/sample_header.h"],
+    deps = [
+        "//common",
+    ],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_sample_header",
+    testonly = 1,
+    out = "test/sample_header_documentation.h",
+    out_xml = "test/sample_header_documentation.xml",
+    root_name = "sample_header_doc",
+    targets = [
+        ":sample_header",
+    ],
+)
+
+drake_cc_library(
+    name = "sample_header_documentation",
+    testonly = 1,
+    hdrs = ["test/sample_header_documentation.h"],
+    tags = ["nolint"],
+)
+
+drake_cc_googletest(
+    name = "sample_header_documentation_cc_test",
+    deps = [
+        ":sample_header_documentation",
+    ],
+)
+
+drake_py_unittest(
+    name = "sample_header_documentation_py_test",
+    data = [
+        "test/sample_header_documentation.expected.h",
+        "test/sample_header_documentation.h",
+    ],
+)
+
+py_library(
+    name = "pybind_coverage_py",
+    srcs = [
+        "pybind_coverage_libclang_parser.py",
+        "pybind_coverage_xml_parser.py",
+        "//third_party:com_github_pybind_pybind11/cindex_utils.py",
+    ],
+    deps = [
+        ":libclang_setup_py",
+        "@clang_cindex_python3//:clang",
+    ],
+)
+
+py_binary(
+    name = "generate_pybind_coverage",
+    srcs = ["generate_pybind_coverage.py"],
+    visibility = ["//visibility:public"],
+    deps = [":pybind_coverage_py"],
+)
+
+drake_cc_library(
+    name = "pybind_coverage_test_header",
     srcs = ["test/test.h"],
 )
 
+# TODO(mmanu): Merge this with the above test.
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header_test",
     testonly = 1,
     out = "documentation_pybind_test.h",
     out_xml = "documentation_pybind_test.xml",
     root_name = "pydrake_doc",
-    targets = [":pybind_coverage_test"],
+    targets = [":pybind_coverage_test_header"],
 )
 
 filegroup(
@@ -54,34 +128,39 @@ filegroup(
 )
 
 generate_pybind_coverage(
-    name = "generate_pybind_coverage",
-    class_coverage = ":class_coverage_test.csv",
-    file_coverage = ":file_coverage_test.csv",
+    name = "generate_pybind_coverage_example",
+    class_coverage = "class_coverage_test.csv",
+    file_coverage = "file_coverage_test.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
-    xml_docstrings = ":documentation_pybind_test.xml",
+    xml_docstrings = "documentation_pybind_test.xml",
 )
 
 filegroup(
-    name = "data_for_pybind_coverage_test",
+    name = "pybind_coverage_test_expected_data",
+    testonly = 1,
     data = [
         "test/class_coverage.csv",
         "test/documentation_pybind.xml",
         "test/file_coverage.csv",
-        "test/test_py.cc",
+    ],
+)
+
+filegroup(
+    name = "pybind_coverage_test_actual_data",
+    testonly = 1,
+    data = [
+        ":class_coverage_test.csv",
+        ":documentation_pybind_test.xml",
+        ":file_coverage_test.csv",
     ],
 )
 
 drake_py_unittest(
     name = "generate_pybind_coverage_test",
     data = [
-        "libclang_parser.py",
-        ":class_coverage_test.csv",
-        ":data_for_pybind_coverage_test",
-        ":documentation_pybind_test.xml",
-        ":file_coverage_test.csv",
-    ],
-    deps = [
-        ":get_pybind_coverage",
+        "test/test_py.cc",
+        ":pybind_coverage_test_actual_data",
+        ":pybind_coverage_test_expected_data",
     ],
 )
 

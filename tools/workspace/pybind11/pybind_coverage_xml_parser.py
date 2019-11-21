@@ -1,4 +1,3 @@
-# Tested with Python 3
 from lxml import etree as ET
 import pandas
 import os
@@ -46,7 +45,9 @@ print_kinds = {
 
 
 class Coverage(object):
-    def __init__(self, num=0, den=0): self.num, self.den = num, den
+    def __init__(self, num=0, den=0):
+        self.num = num
+        self.den = den
 
     def __str__(self):
         if self.num == 0 and self.den == 0:
@@ -157,7 +158,7 @@ class ClassCoverage(object):
         self.df = None
         self.df_pruned = None
 
-    def get_coverage(self):
+    def write_coverage(self):
         """Writes class-wise coverage to a CSV file.
 
         """
@@ -210,7 +211,7 @@ class FileCoverage(object):
         self.df = None
         self.df_pruned = None
 
-    def get_coverage(self):
+    def write_coverage(self):
         """Writes file-wise coverage to a CSV file.
 
         """

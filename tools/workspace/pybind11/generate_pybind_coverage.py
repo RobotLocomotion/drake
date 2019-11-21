@@ -1,6 +1,12 @@
-import parse_pybind_xml_docstrings
 import argparse
-import libclang_parser
+
+from drake.tools.workspace.pybind11.pybind_coverage_libclang_parser import (
+    get_docstrings_from_bindings,
+)
+from drake.tools.workspace.pybind11.pybind_coverage_xml_parser import (
+    ClassCoverage,
+    FileCoverage,
+)
 
 
 def parse_arguments():
@@ -19,16 +25,15 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    pybind_strings = \
-        libclang_parser.get_docstring_for_bindings(args.pybind_source_files)
+    pybind_strings = get_docstrings_from_bindings(args.pybind_source_files)
 
-    class_coverage = parse_pybind_xml_docstrings.ClassCoverage(
+    class_coverage = ClassCoverage(
             args.xml_docstrings, pybind_strings, args.class_coverage)
-    class_coverage.get_coverage()
+    class_coverage.write_coverage()
 
-    file_coverage = parse_pybind_xml_docstrings.FileCoverage(
-            args.xml_docstrings, pybind_strings, args.file_coverage)
-    file_coverage.get_coverage()
+    file_coverage = FileCoverage(
+        args.xml_docstrings, pybind_strings, args.file_coverage)
+    file_coverage.write_coverage()
 
 
 if __name__ == "__main__":

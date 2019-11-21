@@ -19,9 +19,10 @@ import textwrap
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 from clang import cindex
-import cindex_utils
-
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
+
+from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
+
 
 CLASS_KINDS = [
     CursorKind.CLASS_DECL,
@@ -134,9 +135,8 @@ ignore_directories = (
 )
 
 
-def ignore_files(file_name, headers_without_attic):
-    return (file_name not in headers_without_attic) or \
-        (file_name.startswith(ignore_directories))
+def ignore_files(file_name):
+    return file_name.startswith(ignore_directories)
 
 
 def is_accepted_cursor(cursor, name_chain):
@@ -232,7 +232,7 @@ def extract_comment(cursor, deprecations):
 
     # Append the deprecation text.
     result += (
-        " (Deprecated.) \deprecated {} " +
+        r" (Deprecated.) \deprecated {} " +
         "This will be removed from Drake on or after {}.").format(
             message, removal_date)
 
@@ -943,7 +943,7 @@ tree_parser_doc = []
 tree_parser_xpath = [ET.Element("Root")]
 
 
-def print_symbols(f, name, node, headers_without_attic, level=0):
+def print_symbols(f, name, node, level=0):
     """
     Prints C++ code for relevant documentation.
     """
@@ -1003,7 +1003,7 @@ def print_symbols(f, name, node, headers_without_attic, level=0):
         symbol_include_xpath.append(symbol.include)
 
         # Check if the symbol must be ignored.
-        if (not ignore_files(symbol.include, headers_without_attic) and
+        if (not ignore_files(symbol.include) and
                 set({"internal", "dev"}).isdisjoint(set(name_chain[:-1]))):
             ignore_xpath.append(str(0))
         else:
@@ -1027,7 +1027,7 @@ def print_symbols(f, name, node, headers_without_attic, level=0):
     keys = sorted(node.children_map.keys())
     for key in keys:
         child = node.children_map[key]
-        print_symbols(f, key, child, headers_without_attic, level=level + 1)
+        print_symbols(f, key, child, level=level + 1)
     iprint('}} {};'.format(name_var))
 
     tree_parser_doc.pop()
@@ -1070,9 +1070,8 @@ def prettify(elem):
 
 def main():
     parameters = ['-x', 'c++', '-D__MKDOC_PY__']
+    add_library_paths(parameters)
     filenames = []
-    headers_without_attic = []
-    cindex_utils.add_library_paths(parameters)
 
     quiet = False
     std = '-std=c++11'
@@ -1095,9 +1094,6 @@ def main():
             root_name = item[len('-root-name='):]
         elif item.startswith('-exclude-hdr-patterns='):
             ignore_patterns.append(item[len('-exclude-hdr-patterns='):])
-        elif item.startswith("-headers_without_attic="):
-            full_str = item[len('-headers_without_attic='):]
-            headers_without_attic = full_str.split(",")
         elif item.startswith('-'):
             parameters.append(item)
         else:
@@ -1111,7 +1107,9 @@ def main():
         sys.exit(1)
 
     f = open(output_filename, 'w', encoding='utf-8')
-    f_xml = open(output_filename_xml, 'w')
+    f_xml = None
+    if output_filename_xml is not None:
+        f_xml = open(output_filename_xml, 'w')
 
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
@@ -1189,7 +1187,7 @@ def main():
     if not quiet:
         eprint("Writing header file...")
     try:
-        print_symbols(f, root_name, symbol_tree.root, headers_without_attic)
+        print_symbols(f, root_name, symbol_tree.root)
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print("""
@@ -1205,7 +1203,8 @@ If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
 #pragma GCC diagnostic pop
 #endif
 ''')
-    f_xml.write(prettify(tree_parser_xpath[0]))
+    if f_xml is not None:
+        f_xml.write(prettify(tree_parser_xpath[0]))
 
 
 if __name__ == '__main__':

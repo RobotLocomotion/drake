@@ -299,11 +299,11 @@ def drake_pybind_cc_googletest(
         allow_import_unittest = True,
     )
 
-def _generate_pybind_documentation_header_impl(ctx):
+def _collect_cc_header_info(targets):
     compile_flags = []
     transitive_headers_depsets = []
     package_headers_depsets = []
-    for target in ctx.attr.targets:
+    for target in targets:
         if CcInfo in target:
             compilation_context = target[CcInfo].compilation_context
 
@@ -332,32 +332,46 @@ def _generate_pybind_documentation_header_impl(ctx):
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))
 
-    transitive_headers = depset(transitive = transitive_headers_depsets)
-    package_headers = depset(transitive = package_headers_depsets)
+    return struct(
+        compile_flags = compile_flags,
+        transitive_headers = depset(transitive = transitive_headers_depsets),
+        package_headers = depset(transitive = package_headers_depsets),
+    )
 
-    hdrs_path_without_attic = []
+def _generate_pybind_documentation_header_impl(ctx):
+    targets = _collect_cc_header_info(ctx.attr.targets)
+
+    # N.B. We take this approach, rather than `target_exclude`, because it's
+    # easier to add depsets together rather than subtract them.
+    target_deps = _collect_cc_header_info(ctx.attr.target_deps)
 
     args = ctx.actions.args()
-
-    if getattr(ctx.attr, "headers_without_attic"):
-        for f in ctx.attr.headers_without_attic.files.to_list():
-            hdrs_path_without_attic.append("drake/" + f.path)
-
-    args.add_all(compile_flags, uniquify = True)
+    args.add_all(
+        targets.compile_flags + target_deps.compile_flags,
+        uniquify = True,
+    )
+    outputs = [ctx.outputs.out]
     args.add("-output=" + ctx.outputs.out.path)
-    args.add("-output_xml=" + ctx.outputs.out_xml.path)
+    out_xml = getattr(ctx.outputs, "out_xml", None)
+    if out_xml != None:
+        outputs.append(out_xml)
+        args.add("-output_xml=" + out_xml.path)
     args.add("-quiet")
     args.add("-root-name=" + ctx.attr.root_name)
-    args.add("-headers_without_attic=" + ",".join(hdrs_path_without_attic))
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
     args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
     args.add("-w")
-    args.add_all(package_headers)
+
+    # N.B. This is for `targets` only.
+    args.add_all(targets.package_headers)
 
     ctx.actions.run(
-        outputs = [ctx.outputs.out, ctx.outputs.out_xml],
-        inputs = transitive_headers,
+        outputs = outputs,
+        inputs = depset(transitive = [
+            targets.transitive_headers,
+            target_deps.transitive_headers,
+        ]),
         arguments = [args],
         executable = ctx.executable._mkdoc,
     )
@@ -367,6 +381,8 @@ def _generate_pybind_documentation_header_impl(ctx):
 # transitive headers of the given targets.
 # @param targets Targets with header files that should have documentation
 # strings generated.
+# @param target_deps Dependencies for `targets` (necessary for compilation /
+# parsing), but should not have documentation generated.
 # @param root_name Name of the root struct in generated file.
 # @param exclude_hdr_patterns Headers whose symbols should be ignored. Can be
 # glob patterns.
@@ -375,10 +391,7 @@ generate_pybind_documentation_header = rule(
         "targets": attr.label_list(
             mandatory = True,
         ),
-        "headers_without_attic": attr.label(
-            allow_files = True,
-            mandatory = False,
-        ),
+        "target_deps": attr.label_list(default = []),
         "_mkdoc": attr.label(
             default = Label("//tools/workspace/pybind11:mkdoc"),
             allow_files = True,
@@ -386,11 +399,76 @@ generate_pybind_documentation_header = rule(
             executable = True,
         ),
         "out": attr.output(mandatory = True),
-        "out_xml": attr.output(mandatory = True),
+        "out_xml": attr.output(mandatory = False),
         "root_name": attr.string(default = "pydrake_doc"),
         "exclude_hdr_patterns": attr.string_list(),
     },
     fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
     output_to_genfiles = True,
+)
+
+def add_pybind_coverage_data(
+        name = "pybind_coverage_data",
+        subpackages = []):
+    """Gathers necessary source files so that we can have access to them for
+    coverage analysis (Bazel does not like inter-package globs). This should be
+    added to each package where coverage is desired."""
+    native.filegroup(
+        name = name,
+        srcs = native.glob(["*_py*.cc"]),
+        data = [
+            subpackage + ":pybind_coverage_data"
+            for subpackage in subpackages
+        ],
+        visibility = ["//bindings/pydrake:__pkg__"],
+    )
+
+def _generate_pybind_coverage_impl(ctx):
+    source_files = depset(
+        transitive = [x.files for x in ctx.attr.pybind_coverage_data],
+    )
+    (xml_file,) = ctx.attr.xml_docstrings.files.to_list()
+    args = ctx.actions.args()
+    args.add("--file_coverage=" + ctx.outputs.file_coverage.path)
+    args.add("--class_coverage=" + ctx.outputs.class_coverage.path)
+    args.add("--xml_docstrings=" + xml_file.path)
+    args.add_all(source_files)
+    ctx.actions.run(
+        outputs = [ctx.outputs.file_coverage, ctx.outputs.class_coverage],
+        inputs = depset(transitive = [
+            source_files,
+            ctx.attr.xml_docstrings.files,
+        ]),
+        arguments = [args],
+        executable = ctx.executable._script,
+    )
+
+"""
+Generates coverage for a given set of pybind coverage data. Outputs file-wise
+and class-wise coverage data.
+
+@param pybind_coverage_data Source files (declared using
+    add_pybind_coverage_data()).
+@param xml_docstrings Input XML docstrings emitted by mkdoc.
+@param file_coverage Output file coverage *.csv file.
+@param class_coverage Output class coverage *.csv file.
+"""
+
+generate_pybind_coverage = rule(
+    implementation = _generate_pybind_coverage_impl,
+    attrs = {
+        "pybind_coverage_data": attr.label_list(allow_files = True),
+        "_script": attr.label(
+            default = Label(
+                "//tools/workspace/pybind11:generate_pybind_coverage",
+            ),
+            allow_files = True,
+            executable = True,
+            cfg = "host",
+        ),
+        "file_coverage": attr.output(mandatory = True),
+        "class_coverage": attr.output(mandatory = True),
+        "xml_docstrings": attr.label(allow_single_file = True),
+    },
 )

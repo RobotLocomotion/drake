@@ -11,6 +11,7 @@ load(
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
+    "drake_cc_library",
     "drake_cc_test",
     "drake_transitive_installed_hdrs_filegroup",
 )
@@ -70,6 +71,14 @@ drake_transitive_installed_hdrs_filegroup(
     ],
     visibility = ["//bindings/pydrake:__pkg__"],
     deps = LIBDRAKE_COMPONENTS,
+)
+
+cc_library(
+    name = "libdrake_headers_attic_lib",
+    hdrs = [":libdrake_headers_only_attic"],
+    include_prefix = "drake",
+    strip_include_prefix = "/",
+    visibility = ["//bindings/pydrake:__pkg__"],
 )
 
 # Install libdrake.so along with all transitive headers in the same workspace
@@ -180,6 +189,36 @@ cc_library(
     ],
 )
 
+# Combine non-attic headers into a library with necessary dependencies, but not
+# object code. (For use with pybind documentation generation.)
+cc_library(
+    name = "drake_headers_no_attic",
+    hdrs = [":libdrake_headers_no_attic"],
+    include_prefix = "drake",
+    strip_include_prefix = "/",
+    visibility = [
+        "//bindings/pydrake:__pkg__",
+        "//bindings/pydrake/attic:__pkg__",
+    ],
+    deps = [
+        ":libdrake_header_only_deps",
+        ":libdrake_runtime_so_deps",
+    ],
+)
+
+# Combine attic-only headers into a library, *without* necessary dependencies
+# (for use with pybind documentation generation.) We exclude the dependency on
+# `drake_headers_no_attic` for simplicity. See note in `pybind.bzl`.
+# Include headers that are stored in the attic by stripping off the "attic/"
+# component of the pathname.
+cc_library(
+    name = "drake_headers_attic_only",
+    hdrs = [":libdrake_headers_only_attic"],
+    include_prefix = "drake",
+    strip_include_prefix = "/attic",
+    visibility = ["//bindings/pydrake/attic:__pkg__"],
+)
+
 # Provide a cc_library target that provides libdrake.so, its headers, its
 # header-only dependencies, and its required *.so's.  This is aliased by
 # `//:drake_shared_library`, which is what downstream users will consume if
@@ -187,17 +226,13 @@ cc_library(
 cc_library(
     name = "drake_shared_library",
     srcs = [":libdrake.so"],
-    hdrs = [":libdrake_headers_no_attic"],
     # N.B. To pull in transitive `data` dependencies, we must list
     # `libdrake.so` as a data target.
     data = [":libdrake.so"],
-    include_prefix = "drake",
-    strip_include_prefix = "/",
     visibility = ["//:__pkg__"],
     deps = [
-        ":libdrake_header_only_deps",
-        ":libdrake_headers_only_attic_cc_library",
-        ":libdrake_runtime_so_deps",
+        ":drake_headers_attic_only",
+        ":drake_headers_no_attic",
     ],
 )
 
@@ -242,15 +277,6 @@ cc_library(
         "@lcmtypes_robotlocomotion",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
-)
-
-# Include headers that are stored in the attic by stripping off the "attic/"
-# component of the pathname.
-cc_library(
-    name = "libdrake_headers_only_attic_cc_library",
-    hdrs = [":libdrake_headers_only_attic"],
-    include_prefix = "drake",
-    strip_include_prefix = "/attic",
 )
 
 drake_cc_test(

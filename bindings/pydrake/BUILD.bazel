@@ -15,18 +15,15 @@ load(
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "add_pybind_coverage_data",
     "drake_pybind_cc_googletest",
     "drake_pybind_library",
+    "generate_pybind_coverage",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
-load(
-    "@drake//tools/pybind11_coverage:transitive_rule.bzl",
-    "add_for_pybind_coverage",
-    "generate_pybind_coverage",
-)
 
 package(default_visibility = [
     "//bindings:__subpackages__",
@@ -66,12 +63,12 @@ generate_pybind_documentation_header(
         # docstrings.
         "drake/lcmtypes/**",
     ],
-    headers_without_attic =
-        "//tools/install/libdrake:libdrake_headers_no_attic",
     out_xml = "documentation_pybind.xml",
     root_name = "pydrake_doc",
     targets = [
-        "//:drake_shared_library",
+        # TODO(eric.cousineau): Replace `drake_headers_no_attic` with
+        # `drake_shared_library` once the attic is removed.
+        "//tools/install/libdrake:drake_headers_no_attic",
         "//examples/compass_gait:compass_gait",
         "//examples/manipulation_station:manipulation_station",
         "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
@@ -279,6 +276,19 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/systems",
     "//bindings/pydrake/third_party",
     "//bindings/pydrake/visualization",
+]
+
+# TODO(mmanu): Make this parallel the packages shown above (so that it's in one
+# place?).
+PYBIND_SUBPACKAGES_FOR_COVERAGE = [
+    "//bindings/pydrake/common",
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/manipulation",
+    "//bindings/pydrake/multibody",
+    "//bindings/pydrake/solvers",
+    "//bindings/pydrake/systems",
+    # "//bindings/pydrake/third_party",
+    # "//bindings/pydrake/visualization",
 ]
 
 PY_LIBRARIES = [
@@ -513,28 +523,21 @@ drake_py_unittest(
     tags = ["lint"],
 )
 
+generate_pybind_coverage(
+    name = "generate_pybind_coverage",
+    class_coverage = ":class_coverage.csv",
+    file_coverage = ":file_coverage.csv",
+    pybind_coverage_data = [":pybind_coverage_data"],
+    xml_docstrings = ":documentation_pybind.xml",
+)
+
+add_pybind_coverage_data(
+    subpackages = PYBIND_SUBPACKAGES_FOR_COVERAGE,
+)
+
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
         ":test/common_install_test.py",
     ],
 )
-
-generate_pybind_coverage(
-    name = "generate_pybind_coverage",
-    class_coverage = ":class_coverage.csv",
-    file_coverage = ":file_coverage.csv",
-    script = "//tools/pybind11_coverage:get_pybind_coverage",
-    xml_docstrings = ":documentation_pybind.xml",
-    deps = [
-        ":cc_glob",
-        "//bindings/pydrake/common:cc_glob",
-        "//bindings/pydrake/examples:cc_glob",
-        "//bindings/pydrake/manipulation:cc_glob",
-        "//bindings/pydrake/multibody:cc_glob",
-        "//bindings/pydrake/solvers:cc_glob",
-        "//bindings/pydrake/systems:cc_glob",
-    ],
-)
-
-add_for_pybind_coverage()

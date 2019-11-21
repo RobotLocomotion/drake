@@ -20,6 +20,7 @@ class UtilTest(unittest.TestCase):
         # len() like we check just below) could live within find_all_sources,
         # but projects other than Drake might need different heuristics.
         self.assertGreater(len(relpaths), 1_000)
+        # TODO(eric): This now fails... Why? I messed something up in the shuffle.
         self.assertLess(len(relpaths), 10_000)
         self.assertTrue('.bazelproject' in relpaths)
         self.assertTrue('setup/ubuntu/install_prereqs.sh' in relpaths)

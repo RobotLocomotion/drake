@@ -1,46 +1,32 @@
-import unittest
 import filecmp
-from tools.pybind11_coverage import libclang_parser
-print(__import__('glob').glob("**/*", recursive=True))
+import os
+import unittest
+
+
+def _read(filename):
+    with open(filename) as f:
+        return f.read()
 
 
 class TestLibclangParser(unittest.TestCase):
-    def setUp(self):
-        self.docstrings = ["pydrake_doc.drake.solvers." + x for x in [
-            'OsqpSolver.doc',
-            'OsqpSolver.ctor.doc',
-            'OsqpSolverDetails.doc',
-            'OsqpSolverDetails.iter.doc',
-            'OsqpSolverDetails.status_val.doc',
-            'OsqpSolverDetails.primal_res.doc',
-            'OsqpSolverDetails.dual_res.doc',
-            'OsqpSolverDetails.setup_time.doc',
-            'OsqpSolverDetails.solve_time.doc',
-            'OsqpSolverDetails.polish_time.doc',
-            'OsqpSolverDetails.run_time.doc'
-        ]]
+    def assert_file_equal(self, actual_file, expected_file):
+        actual = _read(actual_file)
+        expected = _read(expected_file)
+        self.assertMultiLineEqual(actual, expected, actual_file)
 
-    def assert_file_equal(self, f1, f2):
-        return self.assertTrue(filecmp.cmp(f1, f2, shallow=False))
+    def get_test_file(self, relpath):
+        return os.path.join("tools/workspace/pybind11", relpath)
 
     def test_parser(self):
-        filenames = ["tools/pybind11_coverage/test/test_py.cc"]
-        pybind_docstrings = \
-            libclang_parser.get_docstring_for_bindings(filenames)
-        self.assertEqual(len(pybind_docstrings), len(self.docstrings))
-        self.assertEqual(set(pybind_docstrings), set(self.docstrings))
-
         self.assert_file_equal(
-            "tools/pybind11_coverage/file_coverage_test.csv",
-            "tools/pybind11_coverage/test/file_coverage.csv",
+            self.get_test_file("file_coverage_test.csv"),
+            self.get_test_file("test/file_coverage.csv"),
         )
-
         self.assert_file_equal(
-            "tools/pybind11_coverage/class_coverage_test.csv",
-            "tools/pybind11_coverage/test/class_coverage.csv",
+            self.get_test_file("class_coverage_test.csv"),
+            self.get_test_file("test/class_coverage.csv"),
         )
-
         self.assert_file_equal(
-            "tools/pybind11_coverage/documentation_pybind_test.xml",
-            "tools/pybind11_coverage/test/documentation_pybind.xml",
+            self.get_test_file("documentation_pybind_test.xml"),
+            self.get_test_file("test/documentation_pybind.xml"),
         )

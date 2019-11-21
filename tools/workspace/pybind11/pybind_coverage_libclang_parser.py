@@ -9,18 +9,19 @@
 #    example: There's a function to which the documentation variable is passed,
 #    and the function is defined _before_ the call.  There can be other cases
 #    well.
-# 4. The replaced variables are from the list `replace_variables`.
+# 4. The replaced variables are from the list `REPLACE_VARIABLES`.
 # 5. The doc variables used like so (ignore the whitespaces):
 #    `, <doc_variable> )`
 
-from clang import cindex
-import re
 import logging
-import third_party.com_github_pybind_pybind11.cindex_utils as cindex_utils
+import re
 
-cindex_utils.add_library_paths()
+from clang import cindex
 
-replace_variables = ["doc", "cls_doc", "var_doc", "enum_doc"]
+from .libclang_setup import add_library_paths
+
+
+REPLACE_VARIABLES = ["doc", "cls_doc", "var_doc", "enum_doc"]
 
 
 def var_value_search(var_name):
@@ -174,7 +175,7 @@ def replace_tokens_in_file(filename):
     token_spellings_original = get_tokens(filename)
     token_spellings = token_spellings_original[:]
 
-    for x in replace_variables:
+    for x in REPLACE_VARIABLES:
         replace_tokens(token_spellings, x)
     pydoc_strings = get_pydoc_strings(token_spellings)
 
@@ -183,19 +184,20 @@ def replace_tokens_in_file(filename):
     return token_spellings, pydoc_strings
 
 
-def get_docstring_for_bindings(filenames):
-    """Given a list of pybind filenames, get thes docstrings used in them
+def get_docstrings_from_bindings(filenames):
+    """Given a list of pybind filenames, get the docstrings used in them
 
     Args:
         filenames: Names of the files
 
     Returns:
-        list: List of the docstrings used
+        List of the docstrings used
     """
-
-    array_for_all_files = []
+    # TODO(eric.cousineau): Hoist side effects to main file?
+    add_library_paths()
     logging.basicConfig(level=logging.INFO)
 
+    array_for_all_files = []
     for f in filenames:
         logging.debug("On file: {}".format(f))
         _, final_array = replace_tokens_in_file(f)

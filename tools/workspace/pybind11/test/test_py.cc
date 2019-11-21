@@ -38,7 +38,7 @@ PYBIND11_MODULE(osqp, m) {
       .def_readwrite("dual_res", &OsqpSolverDetails::dual_res,
           cls_doc.dual_res.doc)
       .def_readwrite("setup_time", &OsqpSolverDetails::setup_time,
-          cls_doc. // BR Comment to test
+          cls_doc.  // BR Comment to test
           setup_time.doc)
       .def_readwrite("solve_time", &OsqpSolverDetails::solve_time,
           cls_doc.solve_time.doc)
