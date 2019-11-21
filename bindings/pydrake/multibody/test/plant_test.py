@@ -29,6 +29,8 @@ from pydrake.multibody.tree import (
     UnitInertia_,
     WeldJoint_,
     world_index,
+    world_model_instance,
+    default_model_instance
 )
 from pydrake.multibody.math import (
     SpatialForce_,
@@ -124,6 +126,8 @@ class TestPlant(unittest.TestCase):
 
     def test_type_safe_indices(self):
         self.assertEqual(world_index(), BodyIndex(0))
+        self.assertEqual(world_model_instance(), ModelInstanceIndex(0))
+        self.assertEqual(default_model_instance(), ModelInstanceIndex(1))
 
     def assert_sane(self, x, nonzero=True):
         self.assertTrue(np.all(np.isfinite(numpy_compare.to_float(x))))

@@ -71,6 +71,10 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
+  m.def("world_model_instance", &world_model_instance,
+      doc.world_model_instance.doc);
+  m.def("default_model_instance", &default_model_instance,
+      doc.default_model_instance.doc);
 
   {
     using Enum = JacobianWrtVariable;
