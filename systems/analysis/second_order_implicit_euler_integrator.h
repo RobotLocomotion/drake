@@ -295,17 +295,21 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv);
 
-  /// This helper method evaluates l(y) with y from the context. The context
-  /// should be at the time tf.
-  /// @param qt0 the generalized position at the beginning of the step
-  /// @param h the step size
-  /// @param qk the generalized position to evaluate N in l(y)
-  /// @param [out] result this is set to l(y) from the evaluation
-  /// @post the context state is altered with q = qt0 + N(qk) v
-  void eval_l_with_y_from_context_and_iterate_q(const VectorX<T>& qt0,
-                                                const T& h,
-                                                const VectorX<T>& qk,
-                                                VectorX<T>* result);
+  /// This helper method evaluates the Newton-Raphson residual R(y), defined as
+  /// the following:
+  ///   R(y)  = y - yⁿ - h lₖ(y),
+  ///   lₖ(y) = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (9)
+  ///  with tⁿ⁺¹, qₖ, y derived from the context and qⁿ, yⁿ, h passed in.
+  /// @param qt0 is qⁿ, the generalized position at the beginning of the step
+  /// @param yt0 is yⁿ, the generalized velocity and miscellaneous states at the
+  ///        beginning of the step
+  /// @param h is the step size
+  /// @param [out] result is set to R(y)
+  /// @post The position of the context is first altered and then restored to
+  ///       the original position. This might invalidate some caches that depend
+  ///       on the position.
+  VectorX<T> ResidualR(const VectorX<T>& qt0, const VectorX<T>& yt0,
+                       const T& h);
 
   // The last computed iteration matrix and factorization; the _ie_ is for
   // the large step and the _hie_ is for the small step

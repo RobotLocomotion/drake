@@ -388,36 +388,51 @@ bool SecondOrderImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
   }
 }
 
-/// This helper method evaluates l(y) with y from the context. The context
-/// should be at the time tf.
-/// @param qt0 the generalized position at the beginning of the step
-/// @param h the step size
-/// @param qk the generalized position to evaluate N in l(y)
-/// @param [out] result this is set to l(y) from the evaluation
-/// @post the context state is altered with q = qt0 + N(qk) v
+/// This helper method evaluates the Newton-Raphson residual R(y), defined as
+/// the following:
+///   R(y)  = y - yⁿ - h lₖ(y),
+///   lₖ(y) = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (9)
+///  with tⁿ⁺¹, qₖ, y derived from the context and qⁿ, yⁿ, h passed in.
+/// @param qt0 is qⁿ, the generalized position at the beginning of the step
+/// @param yt0 is yⁿ, the generalized velocity and miscellaneous states at the
+///        beginning of the step
+/// @param h is the step size
+/// @param [out] result is set to R(y)
+/// @post The position of the context is first altered and then restored to
+///       the original position. This might invalidate some caches that depend
+///       on the position.
 template <class T>
-void SecondOrderImplicitEulerIntegrator<
-    T>::eval_l_with_y_from_context_and_iterate_q(const VectorX<T>& qt0,
-                                                 const T& h,
-                                                 const VectorX<T>& qk,
-                                                 VectorX<T>* result) {
+VectorX<T> SecondOrderImplicitEulerIntegrator<T>::ResidualR(
+    const VectorX<T>& qt0, const VectorX<T>& yt0, const T& h) {
   Context<T>* context = this->get_mutable_context();
   const systems::ContinuousState<T>& cstate = context->get_continuous_state();
-  // compute q = qt0 + h N(qk) vt
-  context->get_mutable_continuous_state()
-      .get_mutable_generalized_position()
-      .SetFromVector(qk);
-  BasicVector<T> qdot(qt0.rows());
+  // Save the initial qk, yk to reset at the end of this method.
+  const VectorX<T> xk = cstate.CopyToVector();
+  int nq = qt0.rows();
+  int ny = yt0.rows();
+
+  const auto& qk = xk.head(nq);
+  const auto& yk = xk.tail(ny);
+
+  // Suppose context has state (qk, v, z).
+  // Compute q = qt0 + h N(qk) v
+  BasicVector<T> qdot(nq);
   this->get_system().MapVelocityToQDot(
       *context, cstate.get_generalized_velocity(), &qdot);
   const VectorX<T> q = qt0 + h * qdot.get_value();
 
-  // evaluate g from q
+  // Evaluate l = f(q, v, z)
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
       .SetFromVector(q);
   const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
-  *result = xc_deriv.CopyToVector().tail(xc_deriv.num_v() + xc_deriv.num_z());
+  const VectorX<T> l_of_y = xc_deriv.CopyToVector().tail(ny);
+
+  // reset the context back.
+  context->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(qk);
+  return (yk - yt0 - h * l_of_y).eval();
 }
 
 /// Steps the system forward by a single step of at most h using the
@@ -467,22 +482,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
   //   so use Eigen::Ref to refer to qtplus
   Eigen::Ref<VectorX<T>> qtplus = xtplus->head(nq);
   // this reference is just for readibility: qk is qtplus.
-  const auto& qk = qtplus;
+  // const auto& qk = qtplus;
 
   // Note: velocity_residual_R iterates qk into q_k+1.
-  std::function<VectorX<T>(const VectorX<T>&, const VectorX<T>&,
-                           const VectorX<T>&, const T&, Context<T>*)>
-      velocity_residual_R_and_iterate_q =
-          [nq, nv, nz, this](const VectorX<T>& in_qt0, const VectorX<T>& in_yt0,
-                             const VectorX<T>& in_qk, const T& in_h,
-                             Context<T>* in_context) {
-            const VectorX<T> y =
-                in_context->get_continuous_state().CopyToVector().tail(nv + nz);
-            VectorX<T> l_of_y(nv + nz);
-            this->eval_l_with_y_from_context_and_iterate_q(in_qt0, in_h, in_qk,
-                                                           &l_of_y);
-            return (y - in_yt0 - in_h * l_of_y).eval();
-          };
 
   // references to y, v, and z portions of xtplus for readibility
   Eigen::Ref<VectorX<T>> ytplus = xtplus->tail(nv + nz);
@@ -505,6 +507,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
   // convergence.
   VectorX<T> dx(xt0.size());
   T last_dx_norm = std::numeric_limits<double>::infinity();
+
+  // Refresh Jacobians and iteration matrices.
+
   // Full Newton: Calculate Jacobian and iteration matrices (and
   // factorizations), as needed, around (tf, xtplus).
 #ifdef FULL_NEWTON
@@ -516,11 +521,12 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
           ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix, Jv)) {
     return false;
   }
+
   // Evaluate the residual error for equation (11) from Ante's doc:
   // (I - h Jₗₖ) Δy = yⁿ - yₖ + h lₖ(yₖ), Δy = yₖ₊₁ - yₖ
-  // This also updates q by one iteration.
-  VectorX<T> residual =
-      velocity_residual_R_and_iterate_q(qt0, yt0, qk, h, context);
+  // This also updates q by one explicit iteration.
+  VectorX<T> residual = ResidualR(qt0, yt0, h);
+
   int num_nr_iterations_at_beginning = num_nr_iterations_;
 
   // Do the Newton-Raphson iterations.
@@ -539,6 +545,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
     // assuming context has the last qk, evaluate N(qk) and update q
     // In reality we iterate q twice: once here and once in
     // velocity_residual_R().
+
     system.MapVelocityToQDot(*context, vtplus, &qdot);
     // last_qtplus = qtplus;
     // Update the q portion of xtplus
@@ -590,7 +597,6 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
     }
     last_dx_norm = dx_norm;
     last_qtplus = qtplus;
-    residual = velocity_residual_R_and_iterate_q(qt0, yt0, qk, h, context);
 
 #ifdef FULL_NEWTON
     // update the Jacobian for full newton
@@ -601,6 +607,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
       return false;
     }
 #endif
+    residual = ResidualR(qt0, yt0, h);
   }
 
   DRAKE_LOGGER_DEBUG("SOIE convergence failed");
