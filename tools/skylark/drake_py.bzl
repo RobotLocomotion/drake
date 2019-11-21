@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+
 def drake_py_library(
         name,
         deps = None,
@@ -8,7 +10,7 @@ def drake_py_library(
 
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
-    native.py_library(
+    py_library(
         name = name,
         deps = deps,
         **kwargs
@@ -106,7 +108,6 @@ def drake_py_binary(
         data = [],
         deps = None,
         isolate = False,
-        tags = [],
         add_test_rule = 0,
         test_rule_args = [],
         test_rule_data = [],
@@ -130,16 +131,20 @@ def drake_py_binary(
         main = srcs[0]
     _py_target_isolated(
         name = name,
-        py_target = native.py_binary,
+        py_target = py_binary,
         isolate = isolate,
         srcs = srcs,
         main = main,
         data = data,
         deps = deps,
-        tags = tags,
         **kwargs
     )
     if add_test_rule:
+        if "tags" in kwargs and kwargs["tags"] != None:
+            kwargs["tags"] += ["nolint"]
+        else:
+            kwargs["tags"] = ["nolint"]
+
         drake_py_test(
             name = name + "_test",
             srcs = srcs,
@@ -151,7 +156,6 @@ def drake_py_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
-            tags = tags + ["nolint"],
             # N.B. Same as the warning in `drake_pybind_cc_googletest`: numpy
             # imports unittest unconditionally.
             allow_import_unittest = True,
@@ -188,7 +192,6 @@ def drake_py_test(
         deps = None,
         isolate = True,
         allow_import_unittest = False,
-        tags = [],
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -219,16 +222,18 @@ def drake_py_test(
         deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    if "py" not in tags:
-        tags = tags + ["py"]
+    if "tags" in kwargs and kwargs["tags"] != None:
+        kwargs["tags"] += ["py"]
+    else:
+        kwargs["tags"] = ["py"]
+
     _py_target_isolated(
         name = name,
-        py_target = native.py_test,
+        py_target = py_test,
         isolate = isolate,
         size = size,
         srcs = srcs,
         deps = deps,
-        tags = tags,
         **kwargs
     )
 
@@ -240,7 +245,7 @@ def py_test_isolated(
     """
     _py_target_isolated(
         name = name,
-        py_target = native.py_test,
+        py_target = py_test,
         isolate = True,
         **kwargs
     )

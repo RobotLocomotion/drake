@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
 
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
@@ -25,7 +26,7 @@ def pybind_py_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
-        py_library_rule = native.py_library,
+        py_library_rule = py_library,
         **kwargs):
     """Declares a pybind11 Python library with C++ and Python portions.
 
@@ -249,12 +250,17 @@ def drake_pybind_cc_googletest(
         py_deps = [],
         args = [],
         visibility = None,
-        tags = []):
+        **kwargs):
     """Defines a C++ test (using `pybind`) which has access to Python
     libraries. """
     cc_name = name + "_cc"
     if not cc_srcs:
         cc_srcs = ["test/{}.cc".format(name)]
+    if "tags" in kwargs and kwargs["tags"] != None:
+        tags = kwargs["tags"]
+    else:
+        tags = []
+
     drake_cc_googletest(
         name = cc_name,
         srcs = cc_srcs,
@@ -292,11 +298,11 @@ def drake_pybind_cc_googletest(
         data = [cc_name],
         args = ["$(location {})".format(cc_name)] + args,
         deps = [py_name],
-        tags = tags,
         visibility = visibility,
         # The C++ test isn't going to `import unittest`, but test dependencies
         # such as numpy(!!) do so unconditionally.  We should allow that.
         allow_import_unittest = True,
+        **kwargs
     )
 
 def _generate_pybind_documentation_header_impl(ctx):
