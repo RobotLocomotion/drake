@@ -13,6 +13,8 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_properties.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
@@ -529,7 +531,71 @@ void DoScalarIndependentDefinitions(py::module m) {
             "set_pose", &Class::set_pose, py::arg("X_PG"), cls_doc.set_pose.doc)
         .def("shape", &Class::shape, py_reference_internal, cls_doc.shape.doc)
         .def("release_shape", &Class::release_shape, cls_doc.release_shape.doc)
-        .def("name", &Class::name, cls_doc.name.doc);
+        .def("name", &Class::name, cls_doc.name.doc)
+        .def("set_proximity_properties", &Class::set_proximity_properties,
+            py::arg("properties"), cls_doc.set_proximity_properties.doc)
+        .def("set_illustration_properties", &Class::set_illustration_properties,
+            py::arg("properties"), cls_doc.set_illustration_properties.doc)
+        .def("set_perception_properties", &Class::set_perception_properties,
+            py::arg("properties"), cls_doc.set_perception_properties.doc)
+        .def("mutable_proximity_properties",
+            &Class::mutable_proximity_properties, py_reference_internal,
+            cls_doc.mutable_proximity_properties.doc)
+        .def("proximity_properties", &Class::proximity_properties,
+            py_reference_internal, cls_doc.proximity_properties.doc)
+        .def("mutable_illustration_properties",
+            &Class::mutable_illustration_properties, py_reference_internal,
+            cls_doc.mutable_illustration_properties.doc)
+        .def("illustration_properties", &Class::illustration_properties,
+            py_reference_internal, cls_doc.illustration_properties.doc)
+        .def("mutable_perception_properties",
+            &Class::mutable_perception_properties, py_reference_internal,
+            cls_doc.mutable_perception_properties.doc)
+        .def("perception_properties", &Class::perception_properties,
+            py_reference_internal, cls_doc.perception_properties.doc);
+  }
+
+  // Geometry Properties
+  {
+    py::class_<GeometryProperties>(
+        m, "GeometryProperties", doc.GeometryProperties.doc)
+        .def("HasGroup", &GeometryProperties::HasGroup, py::arg("group_name"),
+            doc.GeometryProperties.HasGroup.doc)
+        .def("num_groups", &GeometryProperties::num_groups,
+            doc.GeometryProperties.num_groups.doc)
+        .def("GetPropertiesInGroup", &GeometryProperties::GetPropertiesInGroup,
+            py::arg("group_name"),
+            doc.GeometryProperties.GetPropertiesInGroup.doc)
+        .def("GetGroupNames", &GeometryProperties::GetGroupNames,
+            doc.GeometryProperties.GetGroupNames.doc)
+        // .def("AddProperty", &GeometryProperties::AddProperty,
+        //     py::arg("group_name"), py::arg("name"), py::arg("value"),
+        //     doc.GeometryProperties.AddProperty.doc)
+        .def("HasProperty", &GeometryProperties::HasProperty,
+            py::arg("group_name"), py::arg("name"),
+            doc.GeometryProperties.HasProperty.doc)
+        // .def("GetProperty", &GeometryProperties::GetProperty,
+        //     py::arg("group_name"), py::arg("name"),
+        //     doc.GeometryProperties.GetProperty.doc)
+        // .def("GetPropertyOrDefault",
+        //     &GeometryProperties::GetPropertyOrDefault,
+        //     py::arg("group_name"), py::arg("name"), py::arg("default_value"),
+        //     doc.GeometryProperties.GetPropertyOrDefault.doc)
+        .def_static("default_group_name",
+            &GeometryProperties::default_group_name,
+            doc.GeometryProperties.default_group_name.doc);
+    py::class_<ProximityProperties, GeometryProperties>(
+        m, "ProximityProperties", doc.ProximityProperties.doc)
+        .def(py::init<>(), doc.ProximityProperties.ctor.doc);
+    py::class_<IllustrationProperties, GeometryProperties>(
+        m, "IllustrationProperties", doc.IllustrationProperties.doc)
+        .def(py::init<>(), doc.IllustrationProperties.ctor.doc);
+    py::class_<PerceptionProperties, GeometryProperties>(
+        m, "PerceptionProperties", doc.PerceptionProperties.doc)
+        .def(py::init<>(), doc.PerceptionProperties.ctor.doc);
+    m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
+        py_reference_internal, py::arg("diffuse"),
+        doc.MakePhongIllustrationProperties.doc);
   }
 
   // Rendering

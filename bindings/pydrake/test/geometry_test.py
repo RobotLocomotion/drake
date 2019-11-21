@@ -212,6 +212,42 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(geometry.shape(), mut.Shape)
         self.assertIsInstance(geometry.release_shape(), mut.Shape)
         self.assertEqual(geometry.name(), "sphere")
+        geometry.set_proximity_properties(mut.ProximityProperties())
+        geometry.set_illustration_properties(mut.IllustrationProperties())
+        geometry.set_perception_properties(mut.PerceptionProperties())
+        self.assertIsInstance(geometry.mutable_proximity_properties(),
+                              mut.ProximityProperties)
+        self.assertIsInstance(geometry.proximity_properties(),
+                              mut.ProximityProperties)
+        self.assertIsInstance(geometry.mutable_illustration_properties(),
+                              mut.IllustrationProperties)
+        self.assertIsInstance(geometry.illustration_properties(),
+                              mut.IllustrationProperties)
+        self.assertIsInstance(geometry.mutable_perception_properties(),
+                              mut.PerceptionProperties)
+        self.assertIsInstance(geometry.perception_properties(),
+                              mut.PerceptionProperties)
+
+    def test_geometry_properties_api(self):
+        self.assertIsInstance(
+            mut.MakePhongIllustrationProperties([0, 0, 1, 1]),
+            mut.IllustrationProperties)
+        prop = mut.ProximityProperties()
+        default_group = prop.default_group_name()
+        self.assertTrue(prop.HasGroup(group_name=default_group))
+        self.assertEqual(prop.num_groups(), 1)
+        self.assertTrue(default_group in prop.GetGroupNames())
+        # prop.AddProperty(group_name=default_group, name="test", value=3)
+        # self.assertTrue(prop.HasProperty(group_name=default_group,
+        #                                  name="test"))
+        # self.assertEqual(
+        #     prop.GetProperty(group_name=default_group, name="test"), 3)
+        # self.assertEqual(
+        #     prop.GetPropertyOrDefault(group_name=default_group, name="empty",
+        #         default_value=5),
+        #     5)
+        # print(prop.GetPropertiesInGroup(group_name=default_group))
+        # self.assertTrue(False)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
