@@ -44,9 +44,10 @@ exports_files(
 exports_files(
     glob(["com_github_pybind_pybind11/**"]),
     licenses = ["notice"],  # BSD-3-Clause
-    visibility = ["//tools/workspace/pybind11:__pkg__",
-                  "//tools/pybind11_coverage:__pkg__"
-                ],
+    visibility = [
+        "//tools/pybind11_coverage:__pkg__",
+        "//tools/workspace/pybind11:__pkg__",
+    ],
 )
 
 add_lint_tests(
