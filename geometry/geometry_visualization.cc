@@ -75,9 +75,9 @@ class ShapeToLcm : public ShapeReifier {
   void ImplementGeometry(const Ellipsoid& ellipsoid, void*) override {
     geometry_data_.type = geometry_data_.ELLIPSOID;
     geometry_data_.num_float_data = 3;
-    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.get_a()));
-    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.get_b()));
-    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.get_c()));
+    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.a()));
+    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.b()));
+    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.c()));
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void*) override {
