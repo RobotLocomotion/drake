@@ -172,6 +172,15 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
 
+  /** Implementation of
+   GeometryState::ComputeSignedDistancePairClosestPoints().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B,
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const;
+
   /** Implementation of GeometryState::ComputeSignedDistanceToPoint().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */

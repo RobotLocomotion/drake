@@ -122,6 +122,16 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
 }
 
 template <typename T>
+SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
+    GeometryId id_A, GeometryId id_B) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeSignedDistancePairClosestPoints(id_A, id_B);
+}
+
+template <typename T>
 std::vector<SignedDistanceToPoint<T>>
 QueryObject<T>::ComputeSignedDistanceToPoint(
     const Vector3<T>& p_WQ,

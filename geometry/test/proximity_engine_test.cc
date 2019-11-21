@@ -439,6 +439,70 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMaxDistance) {
   }
 }
 
+// Tests the computation of signed distance for a single geometry pair. Confirms
+// successful case as well as failure case.
+GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
+  ProximityEngine<double> engine;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId bad_id = GeometryId::get_new_id();
+  unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_A, RigidTransformd::Identity()}, {id_B, RigidTransformd::Identity()}};
+
+  const double radius = 0.5;
+  Sphere sphere{radius};
+  engine.AddDynamicGeometry(sphere, id_A);
+  engine.AddDynamicGeometry(sphere, id_B);
+
+  const double kDistance = 1.0;
+  const double kCenterDistance = kDistance + radius + radius;
+  // Displace B the desired distance in an arbitrary direction.
+  const Vector3d p_WB = Vector3d(2, 3, 4).normalized() * kCenterDistance;
+  X_WGs[id_B].set_translation(p_WB);
+  engine.UpdateWorldPoses(X_WGs);
+
+  // Case: good case produces the correct value.
+  {
+    const SignedDistancePair<double> result =
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs);
+    EXPECT_EQ(result.id_A, id_A);
+    EXPECT_EQ(result.id_B, id_B);
+    EXPECT_NEAR(result.distance, kDistance,
+                std::numeric_limits<double>::epsilon());
+    // We're not testing *all* the fields. The callback is setting the fields,
+    // we assume if ids and distance are correct, the previously tested callback
+    // code does it all correctly.
+  }
+
+  // Case: the first id is invalid.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
+        std::runtime_error,
+        fmt::format("The geometry given by id {} does not reference .+ used in "
+                    "a signed distance query", bad_id));
+  }
+
+  // Case: the second id is invalid.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
+        std::runtime_error,
+        fmt::format("The geometry given by id {} does not reference .+ used in "
+                    "a signed distance query", bad_id));
+  }
+
+  // Case: the pair is filtered.
+  {
+    engine.ExcludeCollisionsWithin({id_A, id_B}, {});
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
+        std::runtime_error,
+        fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
+                    "distance query", id_A, id_B));
+  }
+}
+
 // ComputeSignedDistanceToPoint tests
 
 // Test the broad-phase part of ComputeSignedDistanceToPoint.
