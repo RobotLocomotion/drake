@@ -1,4 +1,5 @@
 #include "pybind11/eigen.h"
+#include "pybind11/eval.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
@@ -532,9 +533,6 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("name", &Class::name, cls_doc.name.doc);
   }
 
-  // Rendering
-  def_geometry_render(m.def_submodule("render"));
-
   m.def("ReadObjToSurfaceMesh",
       py::overload_cast<const std::string&, double>(
           &geometry::ReadObjToSurfaceMesh),
@@ -542,11 +540,26 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc.ReadObjToSurfaceMesh.doc_2args_filename_scale);
 }
 
-PYBIND11_MODULE(geometry, m) {
-  py::module::import("pydrake.systems.lcm");
+void def_geometry(py::module m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
+}
+
+void def_geometry_all(py::module m) {
+  py::dict vars = m.attr("__dict__");
+  py::exec(
+      "from pydrake.geometry import *\n"
+      "from pydrake.geometry.render import *\n",
+      py::globals(), vars);
+}
+
+PYBIND11_MODULE(geometry, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
+  py::module::import("pydrake.systems.lcm");
+  def_geometry(m);
+  def_geometry_render(m.def_submodule("render"));
+  def_geometry_all(m.def_submodule("all"));
 }
 
 }  // namespace
