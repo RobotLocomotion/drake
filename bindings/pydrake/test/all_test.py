@@ -101,6 +101,8 @@ class TestAll(unittest.TestCase):
             "cos",
             # geometry
             "SceneGraph",
+            # - render
+            "CameraProperties",
             # lcm
             "DrakeLcm",
             # symbolic
