@@ -257,24 +257,12 @@ class GeometryProperties {
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    auto iter = values_.find(group_name);
-    if (iter == values_.end()) {
-      auto result = values_.insert({group_name, Group{}});
-      DRAKE_DEMAND(result.second);
-      iter = result.first;
-    }
-
-    Group& group = iter->second;
-    auto value_iter = group.find(name);
-    if (value_iter == group.end()) {
-      group[name] = std::make_unique<Value<ValueType>>(value);
-      return;
-    }
-    throw std::logic_error(fmt::format(
-        "AddProperty(): Trying to add property '{}' to group '{}'; "
-        "a property with that name already exists",
-        name, group_name));
+    AddPropertyAbstract(group_name, name, Value<ValueType>(value));
   }
+
+  void AddPropertyAbstract(
+      const std::string& group_name, const std::string& name,
+      const AbstractValue& value);
 
   /** Reports if the property exists in the group.
 
@@ -297,33 +285,13 @@ class GeometryProperties {
   template <typename ValueType>
   const ValueType& GetProperty(const std::string& group_name,
                                const std::string& name) const {
-    const auto iter = values_.find(group_name);
-    if (iter == values_.end()) {
-      throw std::logic_error(
-          fmt::format("GetProperty(): Trying to read property '{}' from group "
-                      "'{}'. But the group does not exist.",
-                      name, group_name));
-    }
-
-    const Group& group = iter->second;
-    const auto value_iter = group.find(name);
-    if (value_iter == group.end()) {
-      throw std::logic_error(
-          fmt::format("GetProperty(): There is no property '{}' in group '{}'.",
-                      name, group_name));
-    }
-
-    const ValueType* value = value_iter->second->maybe_get_value<ValueType>();
-    if (value == nullptr) {
-      throw std::logic_error(fmt::format(
-          "GetProperty(): The property '{}' in group '{}' exists, "
-          "but is of a different type. Requested '{}', but found '{}'",
-          name, group_name, NiceTypeName::Get<ValueType>(),
-          value_iter->second->GetNiceTypeName()));
-    }
-
-    return *value;
+    const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
+    return GetValueOrThrow<ValueType>(
+        "GetProperty", group_name, name, abstract);
   }
+
+  const AbstractValue& GetPropertyAbstract(
+      const std::string& group_name, const std::string& name) const;
 
   /** Retrieves the typed value from the set of properties (if it exists),
    otherwise returns the given default value. The given `default_value` is
@@ -353,25 +321,15 @@ class GeometryProperties {
   ValueType GetPropertyOrDefault(const std::string& group_name,
                                  const std::string& name,
                                  ValueType default_value) const {
-    const auto iter = values_.find(group_name);
-    if (iter != values_.end()) {
-      const Group& group = iter->second;
-      const auto value_iter = group.find(name);
-      if (value_iter != group.end()) {
-        const ValueType* value =
-            value_iter->second->maybe_get_value<ValueType>();
-        if (value == nullptr) {
-          throw std::logic_error(fmt::format(
-              "GetPropertyOrDefault(): The property '{}' in group '{}' exists, "
-              "but is of a different type. Requested '{}', but found '{}'",
-              name, group_name, NiceTypeName::Get<ValueType>(),
-              value_iter->second->GetNiceTypeName()));
-        }
-        // This incurs the cost of copying a stored value.
-        return *value;
-      }
+    const AbstractValue* abstract =
+        GetPropertyAbstractMaybe(group_name, name, false);
+    if (!abstract) {
+      return default_value;
+    } else {
+      // This incurs the cost of copying a stored value.
+      return GetValueOrThrow<ValueType>(
+          "GetPropertyOrDefault", group_name, name, *abstract);
     }
-    return default_value;
   }
 
   /** Returns the default group name. There is no guarantee as to _what_ string
@@ -408,6 +366,25 @@ class GeometryProperties {
   GeometryProperties() {
     values_.emplace(default_group_name(), Group{});
   }
+
+  template <typename ValueType>
+  static const ValueType& GetValueOrThrow(
+      const std::string& method, const std::string& group_name,
+      const std::string& name, const AbstractValue& abstract) {
+    const ValueType* value = abstract.maybe_get_value<ValueType>();
+    if (value == nullptr) {
+      throw std::logic_error(fmt::format(
+          "{}(): The property '{}' in group '{}' exists, "
+          "but is of a different type. Requested '{}', but found '{}'",
+          method, name, group_name, NiceTypeName::Get<ValueType>(),
+          abstract.GetNiceTypeName()));
+    }
+    return *value;
+  }
+
+  const AbstractValue* GetPropertyAbstractMaybe(
+      const std::string& group_name, const std::string& name,
+      bool throw_for_bad_group) const;
 
   // Final subclasses are allowed to make copy/move/assign public.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryProperties)
