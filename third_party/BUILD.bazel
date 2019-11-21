@@ -48,5 +48,10 @@ exports_files(
 )
 
 add_lint_tests(
-    python_lint_extra_srcs = ["com_github_pybind_pybind11/mkdoc.py"],
+    bazel_lint_extra_srcs = [
+        "com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    ],
+    python_lint_extra_srcs = [
+        "com_github_pybind_pybind11/mkdoc.py",
+    ],
 )
