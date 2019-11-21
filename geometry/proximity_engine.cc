@@ -311,7 +311,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
-        ellipsoid.get_a(), ellipsoid.get_b(), ellipsoid.get_c());
+        ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
 
     TakeShapeOwnership(fcl_ellipsoid, user_data);
     ProcessHydroelastic(ellipsoid, user_data);
