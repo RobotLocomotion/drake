@@ -592,7 +592,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    These methods include the model- and context-modifying variants.  */
   //@{
 
-  /** Assigns the proximity role to the geometry indicated by `geometry_id`.  */
+  /** Assigns the proximity role to the geometry indicated by `geometry_id`.
+   @pydrake_mkdoc_identifier{proximity_direct}
+   */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   ProximityProperties properties,
                   RoleAssign assign = RoleAssign::kNew);
@@ -600,12 +602,15 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** systems::Context-modifying variant of
    @ref AssignRole(SourceId,GeometryId,ProximityProperties) "AssignRole()" for
    proximity properties. Rather than modifying %SceneGraph's model, it modifies
-   the copy of the model stored in the provided context.  */
+   the copy of the model stored in the provided context.
+   @pydrake_mkdoc_identifier{proximity_context}
+   */
   void AssignRole(systems::Context<T>* context, SourceId source_id,
                   GeometryId geometry_id, ProximityProperties properties,
                   RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the perception role to the geometry indicated by `geometry_id`.
+   @pydrake_mkdoc_identifier{perception_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   PerceptionProperties properties,
@@ -614,12 +619,15 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** systems::Context-modifying variant of
    @ref AssignRole(SourceId,GeometryId,PerceptionProperties) "AssignRole()" for
    perception properties. Rather than modifying %SceneGraph's model, it modifies
-   the copy of the model stored in the provided context.  */
+   the copy of the model stored in the provided context.
+   @pydrake_mkdoc_identifier{perception_context}
+   */
   void AssignRole(systems::Context<T>* context, SourceId source_id,
                   GeometryId geometry_id, PerceptionProperties properties,
                   RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the illustration role to the geometry indicated by `geometry_id`.
+   @pydrake_mkdoc_identifier{illustration_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties,
@@ -628,7 +636,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** systems::Context-modifying variant of
    @ref AssignRole(SourceId,GeometryId,IllustrationProperties) "AssignRole()"
    for illustration properties. Rather than modifying %SceneGraph's model, it
-   modifies the copy of the model stored in the provided context.  */
+   modifies the copy of the model stored in the provided context.
+   @pydrake_mkdoc_identifier{illustration_context}
+   */
   void AssignRole(systems::Context<T>* context, SourceId source_id,
                   GeometryId geometry_id, IllustrationProperties properties,
                   RoleAssign assign = RoleAssign::kNew) const;
