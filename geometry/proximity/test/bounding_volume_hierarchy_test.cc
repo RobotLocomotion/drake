@@ -178,6 +178,59 @@ TEST_F(BVHTest, TestCopy) {
   check_copy(BVHTester::GetBVTree(bvh_), BVHTester::GetBVTree(bvh_copy));
 }
 
+// Tests colliding the bvh.
+TEST_F(BVHTest, TestCollide) {
+  // Every bound is touching so the resulting pairs number n^2.
+  BoundingVolumeHierarchy<SurfaceMesh<double>> copy(bvh_);
+  auto pairs = bvh_.GetCollidingPairs(copy);
+  EXPECT_EQ(pairs.size(), mesh_.num_elements() * mesh_.num_elements());
+
+  // The mesh is completely separate so the result should be empty.
+  auto separate_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  math::RigidTransformd X_WV{Vector3<double>{4, 4, 4}};
+  separate_mesh.TransformVertices(X_WV);
+  BoundingVolumeHierarchy<SurfaceMesh<double>> separate(separate_mesh);
+  pairs = bvh_.GetCollidingPairs(separate);
+  EXPECT_EQ(pairs.size(), 0);
+
+  // The two octahedrons are just touching so there should be 4 elements each
+  // that are touching, resulting in 4^2 = 16.
+  auto tangent_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  X_WV = math::RigidTransformd{Vector3<double>{3, 0, 0}};
+  tangent_mesh.TransformVertices(X_WV);
+  BoundingVolumeHierarchy<SurfaceMesh<double>> tangent(tangent_mesh);
+  pairs = bvh_.GetCollidingPairs(tangent);
+  EXPECT_EQ(pairs.size(), 16);
+}
+
+// Tests colliding the bvh with early exit.
+TEST_F(BVHTest, TestCollideEarlyExit) {
+  BoundingVolumeHierarchy<SurfaceMesh<double>> copy(bvh_);
+  int count{0};
+  // This callback should only be run once before the early exit kicks in.
+  auto callback = [&count](SurfaceFaceIndex a, SurfaceFaceIndex b) -> bool {
+    ++count;
+    return true;
+  };
+  bvh_.Collide(copy, callback);
+  EXPECT_EQ(count, 1);
+}
+
+// Tests colliding the bvh with different mesh types.
+TEST_F(BVHTest, TestCollideSurfaceVolume) {
+  // The two octahedrons are tangentially touching along the X-axis, so there
+  // should be 4 elements each that are colliding, resulting in 4^2 = 16.
+  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1.5, 2., 3.), 6);
+  BoundingVolumeHierarchy<VolumeMesh<double>> tet_bvh(volume_mesh);
+  auto surface_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  math::RigidTransformd X_WV{Vector3<double>{3, 0, 0}};
+  surface_mesh.TransformVertices(X_WV);
+  BoundingVolumeHierarchy<SurfaceMesh<double>> tri_bvh(surface_mesh);
+
+  auto pairs = tet_bvh.GetCollidingPairs(tri_bvh);
+  EXPECT_EQ(pairs.size(), 16);
+}
+
 // Tests computing the centroid of an element.
 GTEST_TEST(BoundingVolumeHierarchyTest, TestComputeCentroid) {
   // Set resolution at double so that we get the coarsest mesh of 8 elements.

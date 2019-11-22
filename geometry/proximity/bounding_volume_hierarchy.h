@@ -4,6 +4,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <stack>
 #include <utility>
 #include <vector>
 
@@ -12,6 +13,7 @@
 #include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -133,7 +135,76 @@ class BoundingVolumeHierarchy {
   BoundingVolumeHierarchy(BoundingVolumeHierarchy&&) = default;
   BoundingVolumeHierarchy& operator=(BoundingVolumeHierarchy&&) = default;
 
+  /** Perform a query of this bvh's mesh elements against the given bvh's mesh
+   elements and runs the callback for each colliding pair. The callback return
+   value is a bool for deciding whether to exit early.  */
+  template <class OtherMeshType>
+  void Collide(const BoundingVolumeHierarchy<OtherMeshType>& bvh,
+               std::function<bool(typename MeshType::ElementIndex,
+                                  typename OtherMeshType::ElementIndex)>
+                   callback) const {
+    std::stack<std::pair<const BvNode<MeshType>&, const BvNode<OtherMeshType>&>>
+        node_stack;
+    node_stack.emplace(*root_node_, *(bvh.root_node_));
+
+    while (!node_stack.empty()) {
+      auto[node_a, node_b] = node_stack.top();
+      node_stack.pop();
+
+      // Check if the bounding volumes overlap.
+      // TODO(tehbelinda): Use transform and switch to using OBB overlap test.
+      Vector3<double> center_offset =
+          (node_a.aabb.center() - node_b.aabb.center()).cwiseAbs();
+      Vector3<double> half_widths =
+          node_a.aabb.half_width() + node_b.aabb.half_width();
+      if (center_offset[0] > half_widths[0] ||
+          center_offset[1] > half_widths[1] ||
+          center_offset[2] > half_widths[2]) {
+        continue;
+      }
+
+      // Run the callback on the pair if they are both leaf nodes, otherwise
+      // check each branch.
+      if (node_a.left == nullptr && node_a.right == nullptr &&
+          node_b.left == nullptr && node_b.right == nullptr) {
+        bool result = callback(node_a.element_index, node_b.element_index);
+        if (result) return;  // Exit early.
+      } else {
+        if (node_b.left == nullptr && node_b.right == nullptr) {
+          node_stack.emplace(*(node_a.left), node_b);
+          node_stack.emplace(*(node_a.right), node_b);
+        } else {
+          node_stack.emplace(node_a, *(node_b.left));
+          node_stack.emplace(node_a, *(node_b.right));
+        }
+      }
+    }
+  }
+
+  /** Wrapper around `Collide` with a callback that accumulates each colliding
+   pair and returns them all.
+   @return Vector of element index pairs whose bounding volumes collide.  */
+  template <class OtherMeshType>
+  std::vector<std::pair<typename MeshType::ElementIndex,
+                        typename OtherMeshType::ElementIndex>>
+  GetCollidingPairs(const BoundingVolumeHierarchy<OtherMeshType>& bvh) const {
+    auto result =
+        std::vector<std::pair<typename MeshType::ElementIndex,
+                              typename OtherMeshType::ElementIndex>>();
+    auto callback = [&result](typename MeshType::ElementIndex a,
+                              typename OtherMeshType::ElementIndex b) -> bool {
+      result.emplace_back(a, b);
+      return false;
+    };
+    Collide(bvh, callback);
+    return result;
+  }
+
  private:
+  // For colliding with other mesh types.
+  template <class OtherMeshType>
+  friend class BoundingVolumeHierarchy;
+
   // Convenience class for testing.
   friend class BVHTester;
 
