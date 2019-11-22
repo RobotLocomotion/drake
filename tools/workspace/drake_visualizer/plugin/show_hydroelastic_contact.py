@@ -13,45 +13,11 @@ from PythonQt import QtCore, QtGui
 import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
+from show_point_pair_contact import ContactVisModes
 
 
-# TODO(seancurtis-TRI) De-duplicate these contact visualization modes (they
-# also exist in show_point_pair_contact.py) and make the dialog box for scaling
-# force arrows in show_point_pair_contact.py accessible to this plugin too.
-class ContactVisModes:
-    '''Common specification of contact visualization modes'''
-    @staticmethod
-    def get_mode_string(mode):
-        if mode == ContactVisModes.kFixedLength:
-            return "Fixed Length"
-        elif mode == ContactVisModes.kScaled:
-            return "Scaled"
-        elif mode == ContactVisModes.kAutoScale:
-            return "Auto-scale"
-        else:
-            return "Unrecognized mode"
-
-    @staticmethod
-    def get_modes():
-        return (ContactVisModes.kFixedLength, ContactVisModes.kScaled,
-                ContactVisModes.kAutoScale)
-
-    @staticmethod
-    def get_mode_docstring(mode):
-        if mode == ContactVisModes.kFixedLength:
-            return "force vectors have fixed length equal to global scale"
-        elif mode == ContactVisModes.kScaled:
-            return "simply scaled by global scale"
-        elif mode == ContactVisModes.kAutoScale:
-            return "largest force has fixed length and all other "\
-                   "forces with proportional length on a per-message basis"
-        else:
-            return "unrecognized mode"
-
-    kFixedLength = 0
-    kScaled = 1
-    kAutoScale = 2
-
+# TODO(seancurtis-TRI) Make the dialog box for scaling force arrows in
+# show_point_pair_contact.py accessible to this plugin too.
 
 # TODO(seancurtis-TRI) Convert the modal dialog to a mode-less dialog to allow
 # continual tweaking of the visualization.
@@ -387,6 +353,8 @@ class HydroelasticContactVisualizer(object):
         self.show_pressure = True
         self.max_pressure_observed = 0
         self.show_spatial_force = True
+        # TODO(SeanCurtis-TRI): Make these variables settable through a dialog
+        #  box.
         self.magnitude_mode = ContactVisModes.kFixedLength
         self.global_scale = 0.3
         self.min_magnitude = 1e-4
@@ -500,6 +468,10 @@ class HydroelasticContactVisualizer(object):
                 if moment_mag > max_moment:
                     max_moment = moment_mag
 
+            # TODO(sean-curtis-TRI) Remove the following comment when this
+            # code can be exercised.
+            # The following code is not exercised presently because the
+            # magnitude mode is always set to kFixedLength.
             if self.magnitude_mode == ContactVisModes.kAutoScale:
                 auto_force_scale = 1.0 / max_force
                 auto_moment_scale = 1.0 / max_force
