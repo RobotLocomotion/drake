@@ -610,7 +610,7 @@ class Simulator {
   /// example usage is:
   /// @code
   /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-  ///               (sys, DT, context).
+  ///               (sys, h, context).
   /// @endcode
   /// See the base overload for `reset_integrator` for more details.
   template <class U, typename... Args>
@@ -700,10 +700,10 @@ class Simulator {
   }
 
   TimeOrWitnessTriggered IntegrateContinuousState(
-      const T& next_publish_dt,
-      const T& next_update_dt,
+      const T& next_publish_h,
+      const T& next_update_h,
       const T& time_of_next_timed_event,
-      const T& boundary_dt,
+      const T& boundary_h,
       CompositeEventCollection<T>* events);
 
   // Private methods related to witness functions.

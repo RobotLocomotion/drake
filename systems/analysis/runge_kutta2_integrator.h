@@ -53,7 +53,7 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
 
 /**
  * Integrates the system forward in time from the current time t₀ to
- * t₁ = t₀ + dt. The value of dt is determined by IntegratorBase::Step().
+ * t₁ = t₀ + h. The value of h is determined by IntegratorBase::Step().
  *
  * The Butcher tableau for this integrator follows: <pre>
  *

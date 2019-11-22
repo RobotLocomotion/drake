@@ -102,18 +102,18 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   // Create the integrator using two stages.
   RadauIntegrator<double, 2> radau3(cubic, context.get());
 
-  const double dt = 1.0;
-  radau3.set_maximum_step_size(dt);
+  const double h = 1.0;
+  radau3.set_maximum_step_size(h);
   radau3.set_fixed_step_mode(true);
 
   // Integrate the system
   radau3.Initialize();
-  ASSERT_TRUE(radau3.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(radau3.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the solution.
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], cubic.Evaluate(dt),
+  EXPECT_NEAR(state[0], cubic.Evaluate(h),
       std::numeric_limits<double>::epsilon());
 
   // Reset the state.
@@ -124,15 +124,15 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(cubic, context.get());
   euler.set_fixed_step_mode(true);
-  euler.set_maximum_step_size(dt);
+  euler.set_maximum_step_size(h);
 
   // Integrate the system
   euler.Initialize();
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the integrator failed to produce the solution.
   state = context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_GT(std::abs(state[0] - cubic.Evaluate(dt)),
+  EXPECT_GT(std::abs(state[0] - cubic.Evaluate(h)),
       1e9 * std::numeric_limits<double>::epsilon());
 }
 
@@ -151,18 +151,18 @@ GTEST_TEST(RadauIntegratorTest, LinearSystem) {
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(linear, context.get());
 
-  const double dt = 1.0;
-  euler.set_maximum_step_size(dt);
+  const double h = 1.0;
+  euler.set_maximum_step_size(h);
 
   // Integrate the system
   euler.Initialize();
   euler.set_fixed_step_mode(true);
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the solution.
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], linear.Evaluate(dt),
+  EXPECT_NEAR(state[0], linear.Evaluate(h),
       std::numeric_limits<double>::epsilon());
 }
 

@@ -138,10 +138,10 @@ GTEST_TEST(SimulatorTest, NoUnexpectedDoCalcTimeDerivativesCall) {
   // time step.
   StatelessSystemPlusDerivs system;
   const double final_time = 1.0;
-  const double dt = 1e-3;
+  const double h = 1e-3;
   Simulator<double> simulator(system);
   Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, h,
                                                             &context);
   simulator.AdvanceTo(final_time);
 
@@ -160,10 +160,10 @@ GTEST_TEST(SimulatorTest, NoContinuousStateYieldsSingleStep) {
 
   // Construct the simulation using the RK2 (fixed step) integrator with a small
   // time step.
-  const double dt = 1e-3;
+  const double h = 1e-3;
   Simulator<double> simulator(system);
   Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, h,
       &context);
   simulator.AdvanceTo(final_time);
 
@@ -186,10 +186,10 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
     publish_time = context.get_time();
   });
 
-  const double dt = 1;
+  const double h = 1;
   Simulator<double> simulator(system);
   Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, h,
                                                             &context);
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
@@ -319,12 +319,12 @@ void DisableDefaultPublishing(Simulator<double>* s) {
 
 // Initializes the Simulator's integrator to fixed step mode for witness
 // function related tests.
-void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double dt) {
+void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double h) {
   const System<double>& system = s->get_system();
   Context<double>& context = s->get_mutable_context();
-  s->reset_integrator<RungeKutta2Integrator<double>>(system, dt, &context);
+  s->reset_integrator<RungeKutta2Integrator<double>>(system, h, &context);
   s->get_mutable_integrator().set_fixed_step_mode(true);
-  s->get_mutable_integrator().set_maximum_step_size(dt);
+  s->get_mutable_integrator().set_maximum_step_size(h);
   DisableDefaultPublishing(s);
 }
 
@@ -348,19 +348,19 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
     publish_time = context.get_time();
   });
 
-  const double dt = 1e-3;
+  const double h = 1e-3;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
 
   Context<double>& context = simulator.get_mutable_context();
   context.get_mutable_continuous_state()[0] = -1;
-  simulator.AdvanceTo(dt);
+  simulator.AdvanceTo(h);
 
   // Verify that no witness isolation is done.
   EXPECT_FALSE(simulator.GetCurrentWitnessTimeIsolation());
 
-  // Verify that the witness function triggered at dt.
-  EXPECT_EQ(publish_time, dt);
+  // Verify that the witness function triggered at h.
+  EXPECT_EQ(publish_time, h);
 }
 
 // Tests the witness function isolation window gets smaller *when Simulator
@@ -423,9 +423,9 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
     publish_time = context.get_time();
   });
 
-  const double dt = 10;
+  const double h = 10;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
   Context<double>& context = simulator.get_mutable_context();
 
   // Get the (one) witness function.
@@ -445,8 +445,8 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
     // (Re)set the time and initial state.
     context.SetTime(0);
 
-    // Simulate to dt.
-    simulator.AdvanceTo(dt);
+    // Simulate to h.
+    simulator.AdvanceTo(h);
 
     // CalcWitnessValue the witness function.
     context.SetTime(publish_time);
@@ -493,12 +493,12 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
     }
   });
 
-  const double dt = 1e-3;
+  const double h = 1e-3;
   Simulator<double> simulator(system);
   DisableDefaultPublishing(&simulator);
   simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system,
                                               &simulator.get_mutable_context());
-  simulator.get_mutable_integrator().set_maximum_step_size(dt);
+  simulator.get_mutable_integrator().set_maximum_step_size(h);
   simulator.get_mutable_integrator().set_target_accuracy(0.1);
 
   // Set initial time and state.
@@ -554,10 +554,10 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     published = true;
   });
 
-  const double dt = 2;
+  const double h = 2;
   simulator = std::make_unique<Simulator<double>>(system);
   DisableDefaultPublishing(simulator.get());
-  simulator->get_mutable_integrator().set_maximum_step_size(dt);
+  simulator->get_mutable_integrator().set_maximum_step_size(h);
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-12;
@@ -593,10 +593,10 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
     publish_times.push_back(context.get_time());
   });
 
-  const double dt = 3;
+  const double h = 3;
   Simulator<double> simulator(system);
   DisableDefaultPublishing(&simulator);
-  simulator.get_mutable_integrator().set_maximum_step_size(dt);
+  simulator.get_mutable_integrator().set_maximum_step_size(h);
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-12;
@@ -631,9 +631,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
     num_publishes++;
   });
 
-  const double dt = 1;
+  const double h = 1;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
   Context<double>& context = simulator.get_mutable_context();
   context.SetTime(0);
   simulator.AdvanceTo(1);
@@ -655,9 +655,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
     num_publishes++;
   });
 
-  const double dt = 1;
+  const double h = 1;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
   Context<double>& context = simulator.get_mutable_context();
   context.SetTime(0);
   simulator.AdvanceTo(1);
@@ -678,9 +678,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
     num_publishes++;
   });
 
-  const double dt = 1;
+  const double h = 1;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
   Context<double>& context = simulator.get_mutable_context();
   context.SetTime(0);
   simulator.AdvanceTo(2);
@@ -701,9 +701,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
     num_publishes++;
   });
 
-  const double dt = 1;
+  const double h = 1;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
   Context<double>& context = simulator.get_mutable_context();
   context.SetTime(-1);
   simulator.AdvanceTo(1);
@@ -724,9 +724,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
     num_publishes++;
   });
 
-  const double dt = 1e-6;
+  const double h = 1e-6;
   Simulator<double> simulator(system);
-  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, h);
   Context<double>& context = simulator.get_mutable_context();
   context.get_mutable_continuous_state()[0] = -1;
   simulator.AdvanceTo(1e-4);
@@ -851,13 +851,13 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
   EXPECT_TRUE(std::isnan(simulator.get_actual_realtime_rate()));
 
   // Set the integrator default step size.
-  const double dt = 1e-3;
+  const double h = 1e-3;
 
   // Get the context.
   Context<double>& context = simulator.get_mutable_context();
 
   // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, dt,
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, h,
                                                               &context);
 
   // Initialize the simulator first.
@@ -869,13 +869,13 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set the integrator default step size.
-  const double dt = 1e-3;
+  const double h = 1e-3;
 
   // Get the context.
   Context<double>& context = simulator.get_mutable_context();
 
   // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, dt,
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, h,
                                                               &context);
 
   // Initialize the simulator first.
@@ -906,7 +906,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   const double kMass = 2.0;      // kg
 
   // Set the integrator default step size.
-  const double dt = 1e-3;
+  const double h = 1e-3;
 
   analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
@@ -918,7 +918,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   Context<double>& context = simulator.get_mutable_context();
 
   // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, dt,
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, h,
                                                               &context);
 
   simulator.set_target_realtime_rate(0.5);
@@ -949,7 +949,7 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   const double kMass = 2.0;      // kg
 
   // set the integrator default step size
-  const double dt = 1e-3;
+  const double h = 1e-3;
 
   analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
@@ -963,7 +963,7 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   // Create the integrator with the simple spelling.
   auto euler_integrator =
       std::make_unique<ExplicitEulerIntegrator<double>>(
-          spring_mass, dt, &context);
+          spring_mass, h, &context);
   simulator.reset_integrator(std::move(euler_integrator));
 
   // set the integrator and initialize the simulator
@@ -974,7 +974,7 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
 
   // Reset the integrator.
   simulator.reset_integrator<RungeKutta2Integrator<double>>(
-      simulator.get_system(), dt, &simulator.get_mutable_context());
+      simulator.get_system(), h, &simulator.get_mutable_context());
 
   // Simulate to 1 second..
   simulator.AdvanceTo(1.);
@@ -1032,7 +1032,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   const double kMass = 2.0;      // kg
 
   // Set the integrator default step size.
-  const double dt = 1e-3;
+  const double h = 1e-3;
 
   // Create the mass spring system and the simulator.
   analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.);
@@ -1046,7 +1046,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 
   // Create the integrator and initialize it.
   auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      spring_mass, dt, &context);
+      spring_mass, h, &context);
   integrator->Initialize();
 
   // Set the integrator and initialize the simulator.
@@ -1917,7 +1917,7 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   const double accuracy = 1e-1;
 
   // Requested step size should start out two orders of magnitude larger than
-  // desired_dt (defined below), in order to prime the ideal next step size.
+  // desired_h (defined below), in order to prime the ideal next step size.
   const double req_initial_step_size = 1e-2;
 
   // Initialize the error controlled integrator and the simulator.
@@ -1945,12 +1945,12 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
 
   // Set the time to right before an event, which should trigger artificial
   // limiting.
-  const double desired_dt = req_initial_step_size * 1e-2;
-  simulator.get_mutable_context().SetTime(event_time - desired_dt);
+  const double desired_h = req_initial_step_size * 1e-2;
+  simulator.get_mutable_context().SetTime(event_time - desired_h);
 
   // Step to the event time.
   integrator.IntegrateNoFurtherThanTime(
-    inf, context.get_time() + desired_dt, inf);
+    inf, context.get_time() + desired_h, inf);
 
   // Verify that the context is at the event time.
   EXPECT_EQ(context.get_time(), event_time);
@@ -2018,7 +2018,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
 
 // Tests per step publish, discrete and unrestricted update actions. Each
 // action handler logs the context time when it's called, and the test compares
-// the time stamp against the integrator's dt.
+// the time stamp against the integrator's h.
 GTEST_TEST(SimulatorTest, PerStepAction) {
   class PerStepActionTestSystem : public LeafSystem<double> {
    public:
@@ -2122,8 +2122,8 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   sim.Initialize();
   sim.AdvanceTo(0.1);
 
-  const double dt = sim.get_integrator().get_maximum_step_size();
-  const int N = static_cast<int>(0.1 / dt);
+  const double h = sim.get_integrator().get_maximum_step_size();
+  const int N = static_cast<int>(0.1 / h);
   // Step size was set to 1ms above; make sure we don't have roundoff trouble.
   EXPECT_EQ(N, 100);
   ASSERT_EQ(sim.get_num_steps_taken(), N);
@@ -2137,12 +2137,12 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   for (int i = 0; i < N; ++i) {
     // Publish happens at the end of a step (including end of Initialize());
     // unrestricted and discrete updates happen at the beginning of a step.
-    EXPECT_NEAR(publish_times[i], i * dt, 1e-12);
-    EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
-    EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(publish_times[i], i * h, 1e-12);
+    EXPECT_NEAR(discrete_update_times[i], i * h, 1e-12);
+    EXPECT_NEAR(unrestricted_update_times[i], i * h, 1e-12);
   }
   // There is a final end-of-step publish, but no final updates.
-  EXPECT_NEAR(publish_times[N], N * dt, 1e-12);
+  EXPECT_NEAR(publish_times[N], N * h, 1e-12);
 }
 
 // Tests initialization from the simulator.
@@ -2250,7 +2250,7 @@ class WastefulIntegrator final : public IntegratorBase<double> {
   int get_error_estimate_order() const final { return 0; }
 
  private:
-  bool DoStep(const double& dt) final {
+  bool DoStep(const double& h) final {
     Context<double>& context = *this->get_mutable_context();
     this->EvalTimeDerivatives(context);  // Unused, but now up-to-date.
 
@@ -2259,8 +2259,8 @@ class WastefulIntegrator final : public IntegratorBase<double> {
         this->EvalTimeDerivatives(context);
     const VectorBase<double>& xcdot0 = xc_deriv.get_vector();
     VectorBase<double>& xc = context.SetTimeAndGetMutableContinuousStateVector(
-        context.get_time() + dt);
-    xc.PlusEqScaled(dt, xcdot0);
+        context.get_time() + h);
+    xc.PlusEqScaled(h, xcdot0);
     return true;
   }
 };

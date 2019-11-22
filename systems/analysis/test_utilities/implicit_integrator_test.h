@@ -67,9 +67,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Test that setting the target accuracy and initial step size target is
     // successful.
-    integrator.set_maximum_step_size(dt_);
+    integrator.set_maximum_step_size(h_);
     integrator.set_target_accuracy(1.0);
-    integrator.request_initial_step_size_target(dt_);
+    integrator.request_initial_step_size_target(h_);
     integrator.Initialize();
 
     // Verifies that setting accuracy too loose (from above) makes the working
@@ -92,8 +92,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Set integrator parameters.
     T integrator(*stiff_double_system_, dspring_context_.get());
-    integrator.set_maximum_step_size(large_dt_);
-    integrator.request_initial_step_size_target(large_dt_);
+    integrator.set_maximum_step_size(large_h_);
+    integrator.request_initial_step_size_target(large_h_);
     integrator.set_target_accuracy(1e-5);
     integrator.set_reuse(reuse_type_to_bool(type));
 
@@ -128,8 +128,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void SpringMassDamperStiffTest(ReuseType type) {
     // Create the integrator.
     T integrator(*spring_damper_, context_.get());
-    integrator.set_maximum_step_size(large_dt_);
-    integrator.set_requested_minimum_step_size(small_dt_);
+    integrator.set_maximum_step_size(large_h_);
+    integrator.set_requested_minimum_step_size(small_h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
     integrator.set_reuse(reuse_type_to_bool(type));
 
@@ -211,8 +211,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
     v_final = xc_final.GetAtIndex(1);
 
     // Verify that error control was used by making sure that the minimum step
-    // size was smaller than large_dt_.
-    EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_dt_);
+    // size was smaller than large_h_.
+    EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_h_);
 
     // Verify that integrator statistics and outputs are valid.
     EXPECT_NEAR(x_final_true, x_final, xtol);
@@ -225,7 +225,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void DiscontinuousSpringMassDamperTest(ReuseType type) {
     // Create the integrator.
     T integrator(*mod_spring_damper_, context_.get());
-    integrator.set_maximum_step_size(dt_);
+    integrator.set_maximum_step_size(h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
     integrator.set_target_accuracy(1e-5);
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -327,8 +327,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Set integrator parameters; we want error control to initially "fail",
     // necessitating step size adjustment.
     T integrator(spring_mass, context_.get());
-    integrator.set_maximum_step_size(large_dt_);
-    integrator.request_initial_step_size_target(large_dt_);
+    integrator.set_maximum_step_size(large_h_);
+    integrator.request_initial_step_size_target(large_h_);
     integrator.set_target_accuracy(5e-5);
     integrator.set_requested_minimum_step_size(1e-6);
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -424,7 +424,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Set the integrator to operate in fixed step mode.
     T integrator(spring_mass, context_.get());
-    integrator.set_maximum_step_size(large_dt_);
+    integrator.set_maximum_step_size(large_h_);
     integrator.set_fixed_step_mode(true);
     integrator.set_reuse(reuse_type_to_bool(type));
 
@@ -437,12 +437,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
     const double initial_position[n_initial_conditions] = {0.1, 1.0, 0.0};
     const double initial_velocity[n_initial_conditions] = {0.01, 1.0, -10.0};
 
-    // Create the integration step size array. NOTE: dt values greater than 1e-2
-    // (or so) results in very poor error estimates. dt values smaller than 1e-8
+    // Create the integration step size array. NOTE: h values greater than 1e-2
+    // (or so) results in very poor error estimates. h values smaller than 1e-8
     // (or so) results in NaN relative errors (indicating that solution matches
     // ideal one to very high accuracy).
-    const int n_dts = 4;
-    const double dts[n_dts] = {1e-8, 1e-4, 1e-3, 1e-2};
+    const int n_h = 4;
+    const double h[n_h] = {1e-8, 1e-4, 1e-3, 1e-2};
 
     // Take all the defaults.
     integrator.Initialize();
@@ -454,11 +454,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // starting from 1e-2 for a step size of 1e-2 and then multiply be 1e-2 for
     // each order of magnitude decrease in step size. This yields a quadratic
     // reduction in error, as expected.
-    const double atol[n_dts] = {1e-14, 1e-6, 1e-4, 0.01};
+    const double atol[n_h] = {1e-14, 1e-6, 1e-4, 0.01};
 
     // Iterate the specified number of initial conditions.
     // Iterate over the number of integration step sizes.
-    for (int j = 0; j < n_dts; ++j) {
+    for (int j = 0; j < n_h; ++j) {
       for (int i = 0; i < n_initial_conditions; ++i) {
         // Reset the time.
         context_->SetTime(0.0);
@@ -469,10 +469,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
         // Integrate for the desired step size.
         ASSERT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(
-            context_->get_time() + dts[j]));
+            context_->get_time() + h[j]));
 
         // Check the time.
-        EXPECT_NEAR(context_->get_time(), dts[j], ttol);
+        EXPECT_NEAR(context_->get_time(), h[j], ttol);
 
         // Get the error estimate.
         const double est_err =
@@ -485,7 +485,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
         // Get the true position.
         double x_final_true, v_final_true;
         spring_mass.GetClosedFormSolution(initial_position[i],
-                                          initial_velocity[i], dts[j],
+                                          initial_velocity[i], h[j],
                                           &x_final_true, &v_final_true);
 
         // Check the relative error on position.
@@ -507,8 +507,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Spring-mass system is necessary only to setup the problem.
     T integrator(spring_mass, context_.get());
-    integrator.set_maximum_step_size(large_dt_);
-    integrator.set_requested_minimum_step_size(small_dt_);
+    integrator.set_maximum_step_size(large_h_);
+    integrator.set_requested_minimum_step_size(small_h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
     integrator.set_target_accuracy(1e-4);
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -529,11 +529,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Get the actual solution.
     double x_final_true, v_final_true;
     spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
-                                      large_dt_, &x_final_true, &v_final_true);
+                                      large_h_, &x_final_true, &v_final_true);
 
     // Integrate exactly one step.
     integrator.IntegrateWithMultipleStepsToTime(context_->get_time() +
-                                                large_dt_);
+                                                large_h_);
 
     // Get the positional error.
     const double pos_err = std::abs(
@@ -549,13 +549,13 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass.set_position(context_.get(), initial_position);
     spring_mass.set_velocity(context_.get(), initial_velocity);
     integrator.IntegrateWithMultipleStepsToTime(context_->get_time() +
-                                                large_dt_);
+                                                large_h_);
     EXPECT_GT(std::abs(x_final_true -
                        context_->get_continuous_state_vector().GetAtIndex(0)),
               pos_err);
   }
 
-  double dt() const { return dt_; }
+  double h() const { return h_; }
   const SpringMassSystem<double>& spring() const { return *spring_; }
   Context<double>& context() { return *context_; }
   double constant_force_magnitude() const { return constant_force_mag_; }
@@ -608,9 +608,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
       stiff_double_system_;
 
-  const double dt_ = 1e-3;                // Default integration step size.
-  const double large_dt_ = 1e-1;          // Large integration step size.
-  const double small_dt_ = 1e-6;          // Smallest integration step size.
+  const double h_ = 1e-3;                // Default integration step size.
+  const double large_h_ = 1e-1;          // Large integration step size.
+  const double small_h_ = 1e-6;          // Smallest integration step size.
   const double mass_ = 2.0;               // Default particle mass.
   const double constant_force_mag_ = 10;  // Magnitude of the constant force.
 
@@ -662,14 +662,14 @@ TYPED_TEST_P(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
 
   // Relatively large step size that we know fails to converge from the initial
   // state.
-  const double dt = 1e-2;
+  const double h = 1e-2;
 
   // Create the integrator.
   using Integrator = TypeParam;
   Integrator integrator(*robertson, context.get());
 
   // Make sure integrator can take the size we want.
-  integrator.set_maximum_step_size(dt);
+  integrator.set_maximum_step_size(h);
 
   // Enable fixed stepping.
   integrator.set_fixed_step_mode(true);
@@ -682,7 +682,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   // large step.
   integrator.Initialize();
   EXPECT_FALSE(
-      integrator.IntegrateWithSingleFixedStepToTime(context->get_time() + dt));
+      integrator.IntegrateWithSingleFixedStepToTime(context->get_time() + h));
 }
 
 TYPED_TEST_P(ImplicitIntegratorTest, ContextAccess) {
@@ -695,7 +695,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, ContextAccess) {
   EXPECT_EQ(this->context().get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  const double t_final = this->context().get_time() + this->dt();
+  const double t_final = this->context().get_time() + this->h();
   EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final),
                std::logic_error);
 }
@@ -709,7 +709,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   EXPECT_EQ(integrator.supports_error_estimation(), true);
   DRAKE_EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
   DRAKE_EXPECT_NO_THROW(
-      integrator.request_initial_step_size_target(this->dt()));
+      integrator.request_initial_step_size_target(this->h()));
 }
 
 

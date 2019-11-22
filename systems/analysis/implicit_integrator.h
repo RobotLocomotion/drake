@@ -215,7 +215,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
     // A simple LU factorization is all that is needed for ImplicitIntegrator
     // templated on scalar type `double`; robustness in the solve
-    // comes naturally as dt << 1. Keeping this data in the class definition
+    // comes naturally as h << 1. Keeping this data in the class definition
     // serves to minimize heap allocations and deallocations.
     Eigen::PartialPivLU<MatrixX<double>> LU_;
 
