@@ -243,6 +243,7 @@ class TestGeometry(unittest.TestCase):
         value = 10
         obj = RenderLabel(value)
 
+        self.assertIs(value, int(obj))
         self.assertEqual(value, obj)
         self.assertEqual(obj, value)
 
