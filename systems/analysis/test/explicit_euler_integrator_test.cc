@@ -210,39 +210,39 @@ GTEST_TEST(IntegratorTest, StepSize) {
 
   // The step ends on the next publish time.
   {
-    const double publish_h = 0.005;
-    const double publish_time = context->get_time() + publish_h;
-    const double update_h = 0.007;
-    const double update_time = context->get_time() + update_h;
+    const double publish_dt = 0.005;
+    const double publish_time = context->get_time() + publish_dt;
+    const double update_dt = 0.007;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
         integrator.IntegrateNoFurtherThanTime(
             publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedPublishTime, result);
-    EXPECT_EQ(publish_h, context->get_time());
+    EXPECT_EQ(publish_dt, context->get_time());
     t = context->get_time();
   }
 
   // The step ends on the next update time.
   {
-    const double publish_h = 0.0013;
-    const double publish_time = context->get_time() + publish_h;
-    const double update_h = 0.0011;
-    const double update_time = context->get_time() + update_h;
+    const double publish_dt = 0.0013;
+    const double publish_time = context->get_time() + publish_dt;
+    const double update_dt = 0.0011;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
         integrator.IntegrateNoFurtherThanTime(
             publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
-    EXPECT_EQ(t + update_h, context->get_time());
+    EXPECT_EQ(t + update_dt, context->get_time());
     t = context->get_time();
   }
 
   // The step ends on the max step time, because both the publish and update
   // times are too far in the future.
   {
-    const double publish_h = 0.17;
-    const double publish_time = context->get_time() + publish_h;
-    const double update_h = 0.19;
-    const double update_time = context->get_time() + update_h;
+    const double publish_dt = 0.17;
+    const double publish_time = context->get_time() + publish_dt;
+    const double update_dt = 0.19;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
         integrator.IntegrateNoFurtherThanTime(
             publish_time, update_time, infinity);
@@ -257,60 +257,60 @@ GTEST_TEST(IntegratorTest, StepSize) {
   //                 "factor" is 1%. Update when stretch is programmatically
   //                 settable.
   {
-    const double publish_h = 42.0;
-    const double publish_time = context->get_time() + publish_h;
-    const double update_h = 0.01001;
-    const double update_time = context->get_time() + update_h;
+    const double publish_dt = 42.0;
+    const double publish_time = context->get_time() + publish_dt;
+    const double update_dt = 0.01001;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
         integrator.IntegrateNoFurtherThanTime(
             publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
-    EXPECT_EQ(t + update_h, context->get_time());
+    EXPECT_EQ(t + update_dt, context->get_time());
     t = context->get_time();
   }
 
   // The step ends on the simulation end time.
   {
-    const double boundary_h = 0.0009;
-    const double boundary_time = context->get_time() + boundary_h;
+    const double boundary_dt = 0.0009;
+    const double boundary_time = context->get_time() + boundary_dt;
     ASSERT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(boundary_time));
-    EXPECT_EQ(t + boundary_h, context->get_time());
+    EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
   }
 
   // The step ends on the simulation end time because it's shortest.
   {
-    const double publish_h = 0.0013;
-    const double publish_time = context->get_time() + publish_h;
-    const double update_h = 0.0011;
-    const double update_time = context->get_time() + update_h;
-    const double boundary_h = 0.0009;
-    const double boundary_time = context->get_time() + boundary_h;
+    const double publish_dt = 0.0013;
+    const double publish_time = context->get_time() + publish_dt;
+    const double update_dt = 0.0011;
+    const double update_time = context->get_time() + update_dt;
+    const double boundary_dt = 0.0009;
+    const double boundary_time = context->get_time() + boundary_dt;
     typename IntegratorBase<double>::StepResult result =
         integrator.IntegrateNoFurtherThanTime(
             publish_time, update_time, boundary_time);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
-    EXPECT_EQ(t + boundary_h, context->get_time());
+    EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
   }
 
   // The step must still end on the desired step end time. This tests that
-  // no stretching to update_h is done.
+  // no stretching to update_dt is done.
   // TODO(edrumwri): This test is brittle because it assumes that the stretch
   //                 "factor" is 1%. Update when stretch is programmatically
   //                 settable.
   {
-    const double publish_h = 42.0;
-    const double publish_time = context->get_time() + publish_h;
-    const double update_h = 0.01001;
-    const double update_time = context->get_time() + update_h;
-    const double boundary_h = 0.01;
-    const double boundary_time = context->get_time() + boundary_h;
+    const double publish_dt = 42.0;
+    const double publish_time = context->get_time() + publish_dt;
+    const double update_dt = 0.01001;
+    const double update_time = context->get_time() + update_dt;
+    const double boundary_dt = 0.01;
+    const double boundary_time = context->get_time() + boundary_dt;
     typename IntegratorBase<double>::StepResult result =
         integrator.IntegrateNoFurtherThanTime(
             publish_time, update_time, boundary_time);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
-    EXPECT_EQ(t + boundary_h, context->get_time());
+    EXPECT_EQ(t + boundary_dt, context->get_time());
   }
 }
 

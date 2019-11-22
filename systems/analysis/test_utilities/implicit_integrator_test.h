@@ -608,9 +608,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
       stiff_double_system_;
 
-  const double h_ = 1e-3;                // Default integration step size.
-  const double large_h_ = 1e-1;          // Large integration step size.
-  const double small_h_ = 1e-6;          // Smallest integration step size.
+  const double h_ = 1e-3;                 // Default integration step size.
+  const double large_h_ = 1e-1;           // Large integration step size.
+  const double small_h_ = 1e-6;           // Smallest integration step size.
   const double mass_ = 2.0;               // Default particle mass.
   const double constant_force_mag_ = 10;  // Magnitude of the constant force.
 

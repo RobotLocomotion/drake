@@ -2027,14 +2027,14 @@ typename IntegratorBase<T>::StepResult
   const T t0 = context_->get_time();
 
   // Verify that h's are non-negative.
-  const T publish_h = publish_time - t0;
-  const T update_h = update_time - t0;
-  const T boundary_h = boundary_time - t0;
-  if (publish_h < 0.0)
+  const T publish_dt = publish_time - t0;
+  const T update_dt = update_time - t0;
+  const T boundary_dt = boundary_time - t0;
+  if (publish_dt < 0.0)
     throw std::logic_error("Publish h is negative.");
-  if (update_h < 0.0)
+  if (update_dt < 0.0)
     throw std::logic_error("Update h is negative.");
-  if (boundary_h < 0.0)
+  if (boundary_dt < 0.0)
     throw std::logic_error("Boundary h is negative.");
 
   // The size of the integration step is the minimum of the time until the next
