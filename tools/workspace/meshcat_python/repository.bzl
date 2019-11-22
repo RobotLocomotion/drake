@@ -17,6 +17,7 @@ Example:
         meshcat_python_repository(name = "foo", mirrors = DEFAULT_MIRRORS)
 
     BUILD:
+        load("//tools/skylark:py.bzl", "py_library")
         py_library(
             name = "foobar",
             deps = ["@foo//:meshcat"],

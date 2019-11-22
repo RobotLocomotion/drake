@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/skylark:py.bzl", "py_binary", "py_library")
 
 licenses(["notice"])  # MIT
 

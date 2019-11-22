@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools/skylark:py.bzl", "py_binary", "py_test")
+
 licenses(["notice"])  # BSD-3-Clause
 
 package(default_visibility = ["//visibility:public"])

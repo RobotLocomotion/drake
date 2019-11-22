@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+
 def drake_py_library(
         name,
         deps = None,
@@ -8,7 +10,7 @@ def drake_py_library(
 
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
-    native.py_library(
+    py_library(
         name = name,
         deps = deps,
         **kwargs
@@ -130,13 +132,13 @@ def drake_py_binary(
         main = srcs[0]
     _py_target_isolated(
         name = name,
-        py_target = native.py_binary,
+        py_target = py_binary,
         isolate = isolate,
         srcs = srcs,
         main = main,
         data = data,
         deps = deps,
-        tags = tags,
+        tags = tags + [],
         **kwargs
     )
     if add_test_rule:
@@ -219,16 +221,14 @@ def drake_py_test(
         deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    if "py" not in tags:
-        tags = tags + ["py"]
     _py_target_isolated(
         name = name,
-        py_target = native.py_test,
+        py_target = py_test,
         isolate = isolate,
         size = size,
         srcs = srcs,
         deps = deps,
-        tags = tags,
+        tags = tags + ["py"],
         **kwargs
     )
 
@@ -240,7 +240,7 @@ def py_test_isolated(
     """
     _py_target_isolated(
         name = name,
-        py_target = native.py_test,
+        py_target = py_test,
         isolate = True,
         **kwargs
     )
