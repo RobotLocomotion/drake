@@ -50,6 +50,8 @@ drake_cc_library(
     hdrs = ["bounding_volume_hierarchy.h"],
     deps = [
         "//common",
+        "//geometry:utilities",
+        "//math:geometric_transform",
     ],
 )
 
