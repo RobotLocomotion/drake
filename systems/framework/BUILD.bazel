@@ -697,6 +697,7 @@ drake_cc_googletest(
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:pack_value",
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
