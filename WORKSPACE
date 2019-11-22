@@ -5,9 +5,9 @@
 
 workspace(name = "drake")
 
-load("//tools/workspace:default.bzl", "add_default_repositories")
+load("//tools/workspace:default.bzl", "add_default_workspace")
 
-add_default_repositories()
+add_default_workspace()
 
 # These are test repositories only needed for local testing of `external_data`,
 # and should not be needed for downstream projects.
