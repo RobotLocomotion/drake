@@ -1993,8 +1993,8 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = internal_tree().num_positions();
-  const int nv = internal_tree().num_velocities();
+  const int nq = num_positions();
+  const int nv = num_velocities();
 
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
@@ -2010,8 +2010,8 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  const int nq = internal_tree().num_positions();
-  const int nv = internal_tree().num_velocities();
+  const int nq = num_positions();
+  const int nv = num_velocities();
 
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
