@@ -41,12 +41,6 @@ class BVHTester {
     return BoundingVolumeHierarchy<MeshType>::ComputeBoundingVolume(mesh, start,
                                                                     end);
   }
-
-  template <class MeshType>
-  static BvNode<MeshType>& GetBVTree(
-      const BoundingVolumeHierarchy<MeshType>& bvh) {
-    return *bvh.root_node_;
-  }
 };
 
 namespace {
@@ -100,26 +94,26 @@ TEST_F(BVHTest, TestBuildBVTree) {
   // depth can be found using 2^d = num_elements. The octahedron has 8 elements
   // so we should end up with a balanced tree of depth 3 where each level's
   // volume is less than its parent's volume.
-  BvNode<SurfaceMesh<double>>& bv_tree = BVHTester::GetBVTree(bvh_);
+  const BvNode<SurfaceMesh<double>>& bv_tree = bvh_.GetBvt();
   int num_elements = mesh_.num_elements();
   std::set<SurfaceFaceIndex> element_indices;
   std::function<void(const BvNode<SurfaceMesh<double>>&, int)> check_node;
   check_node = [&check_node, &element_indices, num_elements](
                    const BvNode<SurfaceMesh<double>>& node, int depth) {
     if (depth < 3) {
-      double node_volume = node.aabb.CalcVolume();
-      Vector3d node_bounds_upper = node.aabb.upper();
-      Vector3d node_bounds_lower = node.aabb.lower();
+      double node_volume = node.aabb().CalcVolume();
+      Vector3d node_bounds_upper = node.aabb().upper();
+      Vector3d node_bounds_lower = node.aabb().lower();
 
       auto check_child = [&check_node, &node_volume, &node_bounds_upper,
                           &node_bounds_lower,
                           &depth](const BvNode<SurfaceMesh<double>>& child) {
         // Check the volume is less than the parent.
-        double child_volume = child.aabb.CalcVolume();
+        double child_volume = child.aabb().CalcVolume();
         EXPECT_LT(child_volume, node_volume);
         // Check the bounds are within the parent.
-        Vector3d child_bounds_upper = child.aabb.upper();
-        Vector3d child_bounds_lower = child.aabb.lower();
+        Vector3d child_bounds_upper = child.aabb().upper();
+        Vector3d child_bounds_lower = child.aabb().lower();
         // Instead of comparing each element, we can use the coefficient-wise
         // min and max functions. If the child box is inside the parent box,
         // then the child's maximum extents must be less than or equal to the
@@ -135,17 +129,15 @@ TEST_F(BVHTest, TestBuildBVTree) {
         // Check each of the branches at increasing depth.
         check_node(child, depth + 1);
       };
-      check_child(*(node.left));
-      check_child(*(node.right));
+      check_child(node.left());
+      check_child(node.right());
     } else {
       // At depth 3, we should reach the leaf node with a valid and unique
       // element instead of more branches.
-      EXPECT_EQ(node.left, nullptr);
-      EXPECT_EQ(node.right, nullptr);
-      EXPECT_GE(node.element_index, 0);
-      EXPECT_LT(node.element_index, num_elements);
-      EXPECT_EQ(element_indices.count(node.element_index), 0);
-      element_indices.insert(node.element_index);
+      EXPECT_GE(node.element_index(), 0);
+      EXPECT_LT(node.element_index(), num_elements);
+      EXPECT_EQ(element_indices.count(node.element_index()), 0);
+      element_indices.insert(node.element_index());
     }
   };
   check_node(bv_tree, 0);
@@ -164,18 +156,68 @@ TEST_F(BVHTest, TestCopy) {
   check_copy = [&check_copy](const BvNode<SurfaceMesh<double>>& orig,
                              const BvNode<SurfaceMesh<double>>& copy) {
     EXPECT_NE(&orig, &copy);
-    if (orig.left == nullptr) {
-      EXPECT_EQ(copy.left, nullptr);
+    if (orig.IsLeaf()) {
+      EXPECT_EQ(orig.element_index(), copy.element_index());
     } else {
-      check_copy(*(orig.left), *(copy.left));
-    }
-    if (orig.right == nullptr) {
-      EXPECT_EQ(copy.right, nullptr);
-    } else {
-      check_copy(*(orig.right), *(copy.right));
+      check_copy(orig.left(), copy.left());
+      check_copy(orig.right(), copy.right());
     }
   };
-  check_copy(BVHTester::GetBVTree(bvh_), BVHTester::GetBVTree(bvh_copy));
+  check_copy(bvh_.GetBvt(), bvh_copy.GetBvt());
+}
+
+// Tests colliding the bvh.
+TEST_F(BVHTest, TestCollide) {
+  // Every bound is touching so the resulting pairs number n^2.
+  BoundingVolumeHierarchy<SurfaceMesh<double>> copy(bvh_);
+  auto pairs = bvh_.GetCollidingPairs(copy);
+  EXPECT_EQ(pairs.size(), mesh_.num_elements() * mesh_.num_elements());
+
+  // The mesh is completely separate so the result should be empty.
+  auto separate_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  math::RigidTransformd X_WV{Vector3<double>{4, 4, 4}};
+  separate_mesh.TransformVertices(X_WV);
+  BoundingVolumeHierarchy<SurfaceMesh<double>> separate(separate_mesh);
+  pairs = bvh_.GetCollidingPairs(separate);
+  EXPECT_EQ(pairs.size(), 0);
+
+  // The two octahedrons are just touching so there should be 4 elements each
+  // that are touching, resulting in 4^2 = 16.
+  auto tangent_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  X_WV = math::RigidTransformd{Vector3<double>{3, 0, 0}};
+  tangent_mesh.TransformVertices(X_WV);
+  BoundingVolumeHierarchy<SurfaceMesh<double>> tangent(tangent_mesh);
+  pairs = bvh_.GetCollidingPairs(tangent);
+  EXPECT_EQ(pairs.size(), 16);
+}
+
+// Tests colliding the bvh with early exit.
+TEST_F(BVHTest, TestCollideEarlyExit) {
+  BoundingVolumeHierarchy<SurfaceMesh<double>> copy(bvh_);
+  int count{0};
+  // This callback should only be run once before the early exit kicks in.
+  auto callback = [&count](SurfaceFaceIndex a,
+                           SurfaceFaceIndex b) -> BvttCallbackResult {
+    ++count;
+    return BvttCallbackResult::Terminate;
+  };
+  bvh_.Collide(copy, callback);
+  EXPECT_EQ(count, 1);
+}
+
+// Tests colliding the bvh with different mesh types.
+TEST_F(BVHTest, TestCollideSurfaceVolume) {
+  // The two octahedrons are tangentially touching along the X-axis, so there
+  // should be 4 elements each that are colliding, resulting in 4^2 = 16.
+  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1.5, 2., 3.), 6);
+  BoundingVolumeHierarchy<VolumeMesh<double>> tet_bvh(volume_mesh);
+  auto surface_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  math::RigidTransformd X_WV{Vector3<double>{3, 0, 0}};
+  surface_mesh.TransformVertices(X_WV);
+  BoundingVolumeHierarchy<SurfaceMesh<double>> tri_bvh(surface_mesh);
+
+  auto pairs = tet_bvh.GetCollidingPairs(tri_bvh);
+  EXPECT_EQ(pairs.size(), 16);
 }
 
 // Tests computing the centroid of an element.
