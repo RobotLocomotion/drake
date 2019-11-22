@@ -14,6 +14,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
@@ -309,10 +310,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override {
+    drake::log()->warn("ProximityEngine. Ellipsoid is primarily for "
+                       "ComputeContactSurfaces in hydroelastic contact model. "
+                       "The accuracy of other collision queries and signed "
+                       "distance queries are not guaranteed.");
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
         ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-
     TakeShapeOwnership(fcl_ellipsoid, user_data);
     ProcessHydroelastic(ellipsoid, user_data);
   }

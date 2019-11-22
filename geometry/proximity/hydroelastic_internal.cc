@@ -276,7 +276,6 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double E =
       PositiveDouble("Sphere", "soft").Extract(props, kMaterialGroup, kElastic);
 
-  // Second, compute the penetration extent and gradient fields.
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(sphere, mesh.get(), E));
 
@@ -295,7 +294,6 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double E =
       PositiveDouble("Box", "soft").Extract(props, kMaterialGroup, kElastic);
 
-  // Second, compute the penetration extent and gradient fields.
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeBoxPressureField(box, mesh.get(), E));
 
@@ -314,7 +312,6 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double E = PositiveDouble("Cylinder", "soft")
                        .Extract(props, kMaterialGroup, kElastic);
 
-  // Second, compute the penetration extent and gradient fields.
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(cylinder, mesh.get(), E));
 
@@ -333,7 +330,6 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double E =
       PositiveDouble("Sphere", "soft").Extract(props, kMaterialGroup, kElastic);
 
-  // Second, compute the penetration extent and gradient fields.
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeEllipsoidPressureField(ellipsoid, mesh.get(), E));
 

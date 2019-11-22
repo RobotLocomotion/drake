@@ -127,6 +127,9 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
                               std::numeric_limits<double>::infinity());
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
+  // The compliance choice (rigid or soft) is immaterial for this test. We
+  // pick one arbitrary compliance for each shape.
+
   // Case: soft sphere.
   {
     Sphere sphere{edge_length};
@@ -134,51 +137,6 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     engine.AddDynamicGeometry(sphere, sphere_id, soft_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere_id, engine),
               HydroelasticType::kSoft);
-  }
-
-  // Case: soft box.
-  {
-    Box box{edge_length, edge_length, edge_length};
-    const GeometryId box_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(box, box_id, soft_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
-              HydroelasticType::kSoft);
-  }
-
-  // Case: soft cylinder.
-  {
-    Cylinder cylinder{edge_length, edge_length};
-    const GeometryId cylinder_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(cylinder, cylinder_id, soft_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(cylinder_id, engine),
-              HydroelasticType::kSoft);
-  }
-
-  // Case: soft ellipsoid.
-  {
-    Ellipsoid ellipsoid{edge_length, edge_length, edge_length};
-    const GeometryId ellipsoid_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(ellipsoid, ellipsoid_id, soft_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(ellipsoid_id, engine),
-              HydroelasticType::kSoft);
-  }
-
-  // Case: rigid sphere.
-  {
-    Sphere sphere{edge_length};
-    const GeometryId sphere_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(sphere, sphere_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere_id, engine),
-              HydroelasticType::kRigid);
-  }
-
-  // Case: rigid box.
-  {
-    Box box{edge_length, edge_length, edge_length};
-    const GeometryId box_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(box, box_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
-              HydroelasticType::kRigid);
   }
 
   // Case: rigid cylinder.
@@ -199,6 +157,15 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kRigid);
   }
 
+  // Case: rigid capsule (unsupported).
+  {
+    Capsule capsule{edge_length, edge_length};
+    const GeometryId capsule_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(capsule, capsule_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(capsule_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
   // Case: rigid half_space (unsupported).
   {
     HalfSpace half_space;
@@ -206,6 +173,15 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     engine.AddDynamicGeometry(half_space, half_space_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(half_space_id, engine),
               HydroelasticType::kUndefined);
+  }
+
+  // Case: rigid box.
+  {
+    Box box{edge_length, edge_length, edge_length};
+    const GeometryId box_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(box, box_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
+              HydroelasticType::kRigid);
   }
 
   // TODO(SeanCurtis-TRI): Add test for rigid mesh when ProximityEngine no

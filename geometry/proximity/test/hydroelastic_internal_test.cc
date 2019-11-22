@@ -283,6 +283,7 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
 TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   // Lengths of the three semi-principal axes of the ellipsoid:
   //     (x/a)^2 + (y/b)^2 + (z/c)^2 = 1
+  // The ellipsoid fits the bounding box of 10 x 16 x 6 centimeters.
   const double a = 0.05;
   const double b = 0.08;
   const double c = 0.03;
