@@ -21,6 +21,14 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
+    linux_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:linux platform.
+        Defaults to /usr/bin/python3 to match
+        //tools/py_toolchain:linux_toolchain.
+    macos_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:osx (macOS)
+        platform. Defaults to /usr/local/bin/python3 to match
+        //tools/py_toolchain:macos_toolchain.
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
@@ -70,6 +78,19 @@ cc_library(
 
 numpy_repository = repository_rule(
     _impl,
-    environ = ["DRAKE_PYTHON_BIN_PATH"],
+    attrs = {
+        # The value of this argument should match the interpreter_path for
+        # the py_runtime in the registered Python toolchain on the
+        # @platforms//os:linux platform.
+        "linux_interpreter_path": attr.string(
+            default = "/usr/bin/python3",
+        ),
+        # The value of this argument should match the interpreter_path for
+        # the py_runtime in the registered Python toolchain on the
+        # @platforms//os:osx platform.
+        "macos_interpreter_path": attr.string(
+            default = "/usr/local/bin/python3",
+        ),
+    },
     local = True,
 )
