@@ -1546,7 +1546,6 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBackDiscrete) {
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
 }
 
-
 // Test to verify we can still do dynamics even when there are weld joints
 // within the model. This test builds a model from split_pendulum.sdf and
 // therefore it must be kept in sync with that file. The model consists of a
