@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary")
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")
 load(
@@ -794,7 +795,7 @@ def cmake_config(
         if cps_file_name:
             fail("cps_file_name should not be set if " +
                  "script and version_file are set.")
-        native.py_binary(
+        py_binary(
             name = "create-cps",
             srcs = [script],
             main = script,
