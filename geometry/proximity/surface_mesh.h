@@ -204,6 +204,9 @@ class SurfaceMesh {
         vertices_(std::move(vertices)),
         area_(faces_.size()),  // Pre-allocate here, not yet calculated.
         face_normals_(faces_.size()) {  // Pre-allocate, not yet calculated.
+    if (faces_.empty()) {
+      throw std::logic_error("A mesh must contain at least one triangle");
+    }
     CalcAreasNormalsAndCentroid();
   }
 
@@ -444,4 +447,3 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
 
 }  // namespace geometry
 }  // namespace drake
-
