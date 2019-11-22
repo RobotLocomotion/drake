@@ -588,7 +588,7 @@ class HydroelasticContactVisualizer(object):
 
             # Conditional necessary to keep DrakeVisualizer from spewing
             # messages to the console when the contact surface is empty.
-            if len(surface.triangles) > 0:
+            if len(msg.hydroelastic_contacts) > 0:
                 item.colorBy('RGB255')
 
 
