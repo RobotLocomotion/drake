@@ -49,7 +49,11 @@ drake_cc_library(
     srcs = ["bounding_volume_hierarchy.cc"],
     hdrs = ["bounding_volume_hierarchy.h"],
     deps = [
+        ":surface_mesh",
+        ":volume_mesh",
         "//common",
+        "//geometry:utilities",
+        "//math:geometric_transform",
     ],
 )
 
