@@ -1,4 +1,5 @@
 #include "pybind11/eigen.h"
+#include "pybind11/eval.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
@@ -14,6 +15,8 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
@@ -109,6 +112,7 @@ void def_geometry_render(py::module m) {
     render_label
         .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
         .def("is_reserved", &RenderLabel::is_reserved)
+        .def("__int__", [](const RenderLabel& self) -> int { return self; })
         // EQ(==).
         .def(py::self == py::self)
         .def(py::self == int{})
@@ -383,6 +387,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
             doc.PenetrationAsPointPair.depth.doc);
   }
+
+  // SurfaceVertex
+  {
+    using Class = SurfaceVertex<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SurfaceVertex", param, doc.SurfaceVertex.doc);
+    cls  // BR
+        .def(py::init<const Vector3<T>&>(), py::arg("r_MV"),
+            doc.SurfaceVertex.ctor.doc)
+        .def("r_MV", &Class::r_MV, doc.SurfaceVertex.r_MV.doc);
+  }
+
+  // SurfaceMesh
+  {
+    using Class = SurfaceMesh<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SurfaceMesh", param, doc.SurfaceMesh.doc);
+    cls  // BR
+        .def(
+            py::init<std::vector<SurfaceFace>, std::vector<SurfaceVertex<T>>>(),
+            py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
+        .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
+        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc);
+  }
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -432,12 +460,33 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
-        .def("get_radius", &Sphere::get_radius, doc.Sphere.get_radius.doc);
+        .def("get_radius",
+            [](Sphere* self) {
+              WarnDeprecated(
+                  "Deprecated and will be removed on or around 2020-03-01. Use "
+                  "radius() instead.");
+              return self->radius();
+            })
+        .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc)
-        .def("get_radius", &Cylinder::get_radius, doc.Cylinder.get_radius.doc)
-        .def("get_length", &Cylinder::get_length, doc.Cylinder.get_length.doc);
+        .def("get_radius",
+            [](Cylinder* self) {
+              WarnDeprecated(
+                  "Deprecated and will be removed on or around 2020-03-01. Use "
+                  "radius() instead.");
+              return self->radius();
+            })
+        .def("get_length",
+            [](Cylinder* self) {
+              WarnDeprecated(
+                  "Deprecated and will be removed on or around 2020-03-01. Use "
+                  "length() instead.");
+              return self->length();
+            })
+        .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
+        .def("length", &Cylinder::length, doc.Cylinder.length.doc);
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),
             py::arg("depth"), py::arg("height"), doc.Box.ctor.doc)
@@ -485,15 +534,33 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("name", &Class::name, cls_doc.name.doc);
   }
 
-  // Rendering
-  def_geometry_render(m.def_submodule("render"));
+  m.def("ReadObjToSurfaceMesh",
+      py::overload_cast<const std::string&, double>(
+          &geometry::ReadObjToSurfaceMesh),
+      py::arg("filename"), py::arg("scale") = 1.0,
+      doc.ReadObjToSurfaceMesh.doc_2args_filename_scale);
 }
 
-PYBIND11_MODULE(geometry, m) {
-  py::module::import("pydrake.systems.lcm");
+void def_geometry(py::module m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
+}
+
+void def_geometry_all(py::module m) {
+  py::dict vars = m.attr("__dict__");
+  py::exec(
+      "from pydrake.geometry import *\n"
+      "from pydrake.geometry.render import *\n",
+      py::globals(), vars);
+}
+
+PYBIND11_MODULE(geometry, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
+  py::module::import("pydrake.systems.lcm");
+  def_geometry(m);
+  def_geometry_render(m.def_submodule("render"));
+  def_geometry_all(m.def_submodule("all"));
 }
 
 }  // namespace

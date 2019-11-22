@@ -2954,8 +2954,8 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
 // MyEventTestSystem. sys4 is configured to have per step events, and all
 // the others should have periodic publish events. Tests
 // Diagram::CalcNextUpdateTime, Diagram::GetPerStepEvents, and
-// CompositeEventCollection::Merge. The result should be sys1, sys2, sys3, sys4
-// fired their proper callbacks.
+// CompositeEventCollection::AddToEnd. The result should be sys1, sys2, sys3,
+// sys4 fired their proper callbacks.
 GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   std::unique_ptr<Diagram<double>> sub_diagram;
   std::vector<const MyEventTestSystem*> sys(5);
@@ -2986,8 +2986,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   double time = dut->CalcNextUpdateTime(*context, periodic_events.get());
   dut->GetPerStepEvents(*context, perstep_events.get());
 
-  events->Merge(*periodic_events);
-  events->Merge(*perstep_events);
+  events->AddToEnd(*periodic_events);
+  events->AddToEnd(*perstep_events);
 
   context->SetTime(time);
   dut->Publish(*context, events->get_publish_events());

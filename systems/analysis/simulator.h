@@ -998,9 +998,9 @@ SimulatorStatus Simulator<T>::Initialize() {
   // events to precede any per-step or timed events in the merged collection.
   // Note that per-step and timed discrete/unrestricted update events are *not*
   // processed here; just publish events.
-  init_events->Merge(*per_step_events_);
+  init_events->AddToEnd(*per_step_events_);
   if (time_or_witness_triggered_ & kTimeTriggered)
-    init_events->Merge(*timed_events_);
+    init_events->AddToEnd(*timed_events_);
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
@@ -1082,13 +1082,13 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
   // Clear events for the loop iteration.
   merged_events->Clear();
-  merged_events->Merge(*per_step_events_);
+  merged_events->AddToEnd(*per_step_events_);
 
   // Merge in timed and witnessed events, if necessary.
   if (time_or_witness_triggered_ & kTimeTriggered)
-    merged_events->Merge(*timed_events_);
+    merged_events->AddToEnd(*timed_events_);
   if (time_or_witness_triggered_ & kWitnessTriggered)
-    merged_events->Merge(*witnessed_events_);
+    merged_events->AddToEnd(*witnessed_events_);
 
   while (true) {
     // Starting a new step on the trajectory.
@@ -1142,13 +1142,13 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     merged_events->Clear();
 
     // Merge in per-step events.
-    merged_events->Merge(*per_step_events_);
+    merged_events->AddToEnd(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
     if (time_or_witness_triggered_ & kTimeTriggered)
-      merged_events->Merge(*timed_events_);
+      merged_events->AddToEnd(*timed_events_);
     if (time_or_witness_triggered_ & kWitnessTriggered)
-      merged_events->Merge(*witnessed_events_);
+      merged_events->AddToEnd(*witnessed_events_);
 
     // Handle any publish events at the end of the loop.
     HandlePublish(merged_events->get_publish_events());

@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <algorithm>
+#include <limits>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -291,15 +292,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_sphere = make_shared<fcl::Sphered>(sphere.get_radius());
+    auto fcl_sphere = make_shared<fcl::Sphered>(sphere.radius());
     TakeShapeOwnership(fcl_sphere, user_data);
     ProcessHydroelastic(sphere, user_data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.get_radius(),
-                                                    cylinder.get_length());
+    auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.radius(),
+                                                    cylinder.length());
     TakeShapeOwnership(fcl_cylinder, user_data);
     ProcessHydroelastic(cylinder, user_data);
   }
@@ -320,7 +321,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
     auto fcl_capsule =
-        make_shared<fcl::Capsuled>(capsule.get_radius(), capsule.get_length());
+        make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
     TakeShapeOwnership(fcl_capsule, user_data);
     ProcessHydroelastic(capsule, user_data);
   }
@@ -498,6 +499,45 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             &anchored_tree_),
         &data, shape_distance::Callback<T>);
     return witness_pairs;
+  }
+
+  SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    std::vector<SignedDistancePair<T>> witness_pairs;
+    double max_distance = std::numeric_limits<double>::infinity();
+    // All these quantities are aliased in the callback data.
+    shape_distance::CallbackData<T> data{&collision_filter_, &X_WGs,
+                                         max_distance, &witness_pairs};
+    data.request.enable_nearest_points = true;
+    data.request.enable_signed_distance = true;
+    data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    data.request.distance_tolerance = distance_tolerance_;
+
+    auto find_geometry = [this](GeometryId id) -> CollisionObjectd* {
+      auto iter = dynamic_objects_.find(id);
+      if (iter == dynamic_objects_.end()) {
+        iter = anchored_objects_.find(id);
+        if (iter == anchored_objects_.end()) {
+          throw std::runtime_error(fmt::format(
+              "The geometry given by id {} does not reference a "
+              "geometry that can be used in a signed distance query",
+              id));
+        }
+      }
+      return const_cast<CollisionObjectd*>(iter->second.get());
+    };
+
+    CollisionObjectd* object_A = find_geometry(id_A);
+    CollisionObjectd* object_B = find_geometry(id_B);
+    shape_distance::Callback<T>(object_A, object_B, &data, max_distance);
+
+    if (witness_pairs.size() == 0) {
+      throw std::runtime_error(fmt::format(
+          "The geometry pair ({}, {}) does not support a signed distance query",
+          id_A, id_B));
+    }
+    return witness_pairs[0];
   }
 
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
@@ -933,6 +973,15 @@ ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double max_distance) const {
   return impl_->ComputeSignedDistancePairwiseClosestPoints(X_WGs, max_distance);
+}
+
+template <typename T>
+SignedDistancePair<T>
+ProximityEngine<T>::ComputeSignedDistancePairClosestPoints(
+    GeometryId id_A, GeometryId id_B,
+    const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+    const {
+  return impl_->ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs);
 }
 
 template <typename T>

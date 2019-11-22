@@ -11,4 +11,6 @@ fi
 capture_cc_env="$1"
 source "$capture_cc_env"
 
+[[ ! -z "$BAZEL_CC" ]]
+BAZEL_CC=$(python3 -c 'import os; print(os.path.realpath("'"$BAZEL_CC"'"))')
 "$BAZEL_CC" --version

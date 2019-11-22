@@ -68,31 +68,35 @@ enum class ContactModel {
 /// concepts/notation.
 ///
 /// @system{MultibodyPlant,
-///   @input_port{{model_instance_name[0]}_actuation}
-///   @input_port{...}
-///   @input_port{{model_instance_name[N-1]}_actuation}
 ///   @input_port{applied_generalized_force}
 ///   @input_port{applied_spatial_force}
-///   @input_port{geometry_query},
+///   @input_port{<em style="color:gray">
+///     model_instance_name[i]</em>_actuation}
+///   @input_port{<span style="color:green">geometry_query</span>},
 ///   @output_port{continuous_state}
-///   @output_port{<b style="color:orange">
-///     {model_instance_name[0]}_continuous_state</b>}
-///   @output_port{...}
-///   @output_port{<b style="color:orange">
-///     {model_instance_name[N-1]}_continuous_state</b>}
-///   @output_port{<b style="color:orange">
-///     {model_instance_name[0]}_generalized_contact_forces</b>}
-///   @output_port{...}
-///   @output_port{<b style="color:orange">
-///     {model_instance_name[N-1]}_generalized_contact_forces</b>}
+///   @output_port{generalized_acceleration}
 ///   @output_port{reaction_forces}
 ///   @output_port{contact_results}
-///   @output_port{geometry_pose}
+///   @output_port{<em style="color:gray">
+///     model_instance_name[i]</em>_continuous_state}
+///   @output_port{<em style="color:gray">
+///     model_instance_name[i]</em>_generalized_acceleration}
+///   @output_port{<em style="color:gray">
+///     model_instance_name[i]</em>_generalized_contact_forces}
+///   @output_port{<span style="color:green">geometry_pose</span>}
 /// }
 ///
-/// Note that the outputs in <b style="color:orange">orange</b> are not
-/// allocated for @ref model_instances with no state (e.g. the world, or a
-/// welded model which isn't actuated, like a workbench bolted to the floor).
+/// The ports whose names begin with <em style="color:gray">
+/// model_instance_name[i]</em> represent groups of ports, one for each of the
+/// @ref model_instances "model instances", with i ∈ {0, ..., N-1} for the N
+/// model instances. If a model instance does not contain any data of the
+/// indicated type the port will still be present but its value will be a
+/// zero-length vector. (Model instances `world_model_instance()` and
+/// `default_model_instance()` always exist.)
+///
+/// The ports shown in <span style="color:green">
+/// green</span> are for communication with Drake's
+/// @ref geometry::SceneGraph "SceneGraph" system for dealing with geometry.
 ///
 /// %MultibodyPlant provides a user-facing API for:
 ///
@@ -365,25 +369,39 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns a constant reference to the output port for the full state
-  /// `x = [q v]` of the model.
+  /// x = [q v] of the model.
   /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_state_output_port() const;
 
-  /// Returns a constant reference to the output port for the state of a
-  /// specific model instance.
+  /// Returns a constant reference to the output port for the state
+  /// xᵢ = [qᵢ vᵢ] of model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.)
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize() or if the model
-  /// instance does not have any state.
+  /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
   const systems::OutputPort<T>& get_state_output_port(
+      ModelInstanceIndex model_instance) const;
+
+  /// Returns a constant reference to the output port for generalized
+  /// accelerations v̇ of the model.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
+  const systems::OutputPort<T>& get_generalized_acceleration_output_port()
+      const;
+
+  /// Returns a constant reference to the output port for the generalized
+  /// accelerations v̇ᵢ ⊆ v̇ for model instance i.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
+  /// @throws std::exception if the model instance does not exist.
+  const systems::OutputPort<T>& get_generalized_acceleration_output_port(
       ModelInstanceIndex model_instance) const;
 
   /// Returns a constant reference to the output port of generalized contact
   /// forces for a specific model instance.
   ///
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize() or if the model
-  /// instance does not have any generalized velocities.
+  /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
@@ -2648,12 +2666,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().topology_is_valid(); }
 
-  // N.B. The state in the Context may at some point contain values such as
-  // integrated power and other discrete states, hence the specific name.
-  /// Returns the size of the multibody system state vector `x = [q; v]`. This
-  /// will be num_positions() plus num_velocities().
-  int num_multibody_states() const { return internal_tree().num_states(); }
-
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return internal_tree().world_body();
@@ -3026,22 +3038,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetModelInstanceByName(name);
   }
 
-  /// Returns the size of the generalized position vector `q` for this model.
+  /// Returns the size of the generalized position vector q for this model.
   int num_positions() const { return internal_tree().num_positions(); }
 
-  /// Returns the size of the generalized position vector `q` for a specific
-  /// model instance.
+  /// Returns the size of the generalized position vector qᵢ for model
+  /// instance i.
   int num_positions(ModelInstanceIndex model_instance) const {
     return internal_tree().num_positions(model_instance);
   }
 
-  /// Returns the size of the generalized velocity vector `v` for this model.
+  /// Returns the size of the generalized velocity vector v for this model.
   int num_velocities() const { return internal_tree().num_velocities(); }
 
-  /// Returns the size of the generalized velocity vector `v` for a specific
-  /// model instance.
+  /// Returns the size of the generalized velocity vector vᵢ for model
+  /// instance i.
   int num_velocities(ModelInstanceIndex model_instance) const {
     return internal_tree().num_velocities(model_instance);
+  }
+
+  // N.B. The state in the Context may at some point contain values such as
+  // integrated power and other discrete states, hence the specific name.
+  /// Returns the size of the multibody system state vector x = [q v]. This
+  /// will be `num_positions()` plus `num_velocities()`.
+  int num_multibody_states() const { return internal_tree().num_states(); }
+
+  /// Returns the size of the multibody system state vector xᵢ = [qᵢ vᵢ] for
+  /// model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.)
+  /// will be `num_positions(model_instance)` plus
+  /// `num_velocities(model_instance)`.
+  int num_multibody_states(ModelInstanceIndex model_instance) const {
+    return internal_tree().num_states(model_instance);
   }
 
   /// Returns a vector of size `num_positions()` containing the lower position
@@ -3859,25 +3885,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::SceneGraph<T>* scene_graph_{nullptr};
 
   // Input/Output port indexes:
+
   // A vector containing actuation ports for each model instance indexed by
-  // ModelInstanceIndex.
+  // ModelInstanceIndex. Every model instance has a corresponding port even
+  // if that instance has no actuators.
   std::vector<systems::InputPortIndex> instance_actuation_ports_;
 
   // If only one model instance has actuated dofs, remember it here.  If
   // multiple instances have actuated dofs, this index will not be valid.
   ModelInstanceIndex actuated_instance_;
 
-  // A port for externally applied generalized forces.
+  // A port for externally applied generalized forces u.
   systems::InputPortIndex applied_generalized_force_input_port_;
 
-  // Port for externally applied spatial forces.
+  // Port for externally applied spatial forces F.
   systems::InputPortIndex applied_spatial_force_input_port_;
 
-  systems::OutputPortIndex continuous_state_output_port_;
-  // A vector containing state output ports for each model instance indexed by
-  // ModelInstanceIndex. An invalid value indicates that the model instance has
-  // no state.
-  std::vector<systems::OutputPortIndex> instance_continuous_state_output_ports_;
+  // A port presenting state x=[q v] for the whole system, and a vector of
+  // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,
+  // indexed by ModelInstanceIndex. Every model instance has a corresponding
+  // port even if it has no states.
+  systems::OutputPortIndex state_output_port_;
+  std::vector<systems::OutputPortIndex> instance_state_output_ports_;
+
+  // A port presenting generalized accelerations v̇ for the whole system, and
+  // a vector of ports presenting acceleration subsets v̇ᵢ ⊆ v̇ for each model
+  // instance i, indexed by ModelInstanceIndex. Every model instance has a
+  // corresponding port even if it has no states.
+  systems::OutputPortIndex generalized_acceleration_output_port_;
+  std::vector<systems::OutputPortIndex>
+      instance_generalized_acceleration_output_ports_;
 
   // Index for the output port of ContactResults.
   systems::OutputPortIndex contact_results_port_;

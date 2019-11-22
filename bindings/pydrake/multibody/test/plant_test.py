@@ -213,9 +213,18 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(
             plant.num_velocities(), benchmark.num_velocities())
         self.assertEqual(
+            plant.num_velocities(model_instance=model_instance),
+            benchmark.num_velocities())
+        self.assertEqual(
             plant.num_multibody_states(), benchmark.num_multibody_states())
         self.assertEqual(
+            plant.num_multibody_states(model_instance=model_instance),
+            benchmark.num_multibody_states())
+        self.assertEqual(
             plant.num_actuated_dofs(), benchmark.num_actuated_dofs())
+        self.assertEqual(
+            plant.num_actuated_dofs(model_instance=model_instance),
+            benchmark.num_actuated_dofs())
         self.assertTrue(plant.is_finalized())
         self.assertTrue(plant.HasBodyNamed(name="Link1"))
         self.assertTrue(plant.HasBodyNamed(

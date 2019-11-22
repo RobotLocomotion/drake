@@ -1165,17 +1165,26 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper, &lower));
 }
 
-// Utility to verify that the only port of MultibodyPlant that is a feedthrough
-// is the port for joint reaction forces.
-bool OnlyJointReactionForcesFeedthrough(const MultibodyPlant<double>& plant) {
+// Utility to verify that the only ports of MultibodyPlant that are feedthrough
+// are acceleration and reaction force ports.
+bool OnlyAccelerationAndReactionPortsFeedthrough(
+    const MultibodyPlant<double>& plant) {
+  // Whitelist the indices of all ports that can be feedthrough.
+  std::set<int> ok_to_feedthrough;
+  ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
+  ok_to_feedthrough.insert(
+      plant.get_generalized_acceleration_output_port().get_index());
+  for (ModelInstanceIndex i(0); i < plant.num_model_instances(); ++i)
+    ok_to_feedthrough.insert(
+        plant.get_generalized_acceleration_output_port(i).get_index());
+
+  // Now find all the feedthrough ports and make sure they are on the whitelist.
   const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
-  bool only_reaction_forces_feedthrough = true;
-  for (auto inout_pair : feedthroughs) {
-    if (inout_pair.second !=
-        plant.get_reaction_forces_output_port().get_index())
-      only_reaction_forces_feedthrough = false;
+  for (const auto& inout_pair : feedthroughs) {
+    if (ok_to_feedthrough.count(inout_pair.second) == 0)
+      return false;  // Found a spurious feedthrough port.
   }
-  return only_reaction_forces_feedthrough;
+  return true;
 }
 
 // Verifies the process of collision geometry registration with a
@@ -1218,9 +1227,9 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // We are done defining the model.
   plant.Finalize();
 
-  // Only joint reaction forces feedthrough, even with the new ports
-  // related to SceneGraph interaction.
-  EXPECT_TRUE(OnlyJointReactionForcesFeedthrough(plant));
+  // Only accelerations and joint reaction forces feedthrough, even with the
+  // new ports related to SceneGraph interaction.
+  EXPECT_TRUE(OnlyAccelerationAndReactionPortsFeedthrough(plant));
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
@@ -1437,7 +1446,7 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
 }
 
-TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
+TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
   EXPECT_EQ(plant_->num_visual_geometries(), 3);
   EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
@@ -1445,14 +1454,16 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   // The default context gets initialized by a call to SetDefaultState(), which
   // for a MultibodyPlant sets all revolute joints to have zero angles and zero
   // angular velocity.
-  unique_ptr<systems::Context<double>> context =
-      plant_->CreateDefaultContext();
+  unique_ptr<systems::Context<double>> diagram_context =
+      diagram_->CreateDefaultContext();
+  Context<double>& context =
+      plant_->GetMyMutableContextFromRoot(diagram_context.get());
 
   // Set some non-zero state:
-  shoulder_->set_angle(context.get(), M_PI / 3.0);
-  elbow_->set_angle(context.get(), -0.2);
-  shoulder_->set_angular_rate(context.get(), -0.5);
-  elbow_->set_angular_rate(context.get(), 2.5);
+  shoulder_->set_angle(&context, M_PI / 3.0);
+  elbow_->set_angle(&context, -0.2);
+  shoulder_->set_angular_rate(&context, -0.5);
+  elbow_->set_angular_rate(&context, 2.5);
 
   unique_ptr<AbstractValue> state_value =
       plant_->get_state_output_port().Allocate();
@@ -1462,13 +1473,46 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
 
   // Compute the poses for each geometry in the model.
-  plant_->get_state_output_port().Calc(*context, state_value.get());
+  plant_->get_state_output_port().Calc(context, state_value.get());
 
   // Get continuous state_out from context.
-  const VectorBase<double>& state = context->get_continuous_state_vector();
+  const VectorBase<double>& state = context.get_continuous_state_vector();
 
   // Verify state_out indeed matches state.
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
+
+  // Now calculate accelerations and make sure they show up on the
+  // all-vdot port and on the appropriate model instance port.
+
+  plant_->get_actuation_input_port().FixValue(&context, 0.0);
+  // Time derivatives includes both qdot and vdot.
+  const auto& derivs = plant_->EvalTimeDerivatives(context);
+  const auto& vdot = derivs.get_generalized_velocity();
+  EXPECT_EQ(vdot.size(), plant_->num_velocities());
+  const auto& accel = plant_->get_generalized_acceleration_output_port()
+      .Eval<BasicVector<double>>(context);
+  EXPECT_EQ(accel.size(), plant_->num_velocities());
+  EXPECT_EQ(accel.CopyToVector(), vdot.CopyToVector());
+
+  // All the elements should be in the same model instance, so just ask one.
+  const ModelInstanceIndex instance = shoulder_->model_instance();
+  const auto& accel_instance =
+      plant_->get_generalized_acceleration_output_port(instance)
+      .Eval<BasicVector<double>>(context);
+  EXPECT_EQ(accel_instance.size(), plant_->num_velocities());
+  EXPECT_EQ(accel_instance.CopyToVector(), vdot.CopyToVector());
+
+  // Check that unused model instance ports are present and produce 0-length
+  // results.
+  const auto& accel_default_instance =
+      plant_->get_generalized_acceleration_output_port(default_model_instance())
+          .Eval<BasicVector<double>>(context);
+  EXPECT_EQ(accel_default_instance.size(), 0);
+
+  const auto& state_world_instance =
+      plant_->get_state_output_port(world_model_instance())
+          .Eval<BasicVector<double>>(context);
+  EXPECT_EQ(state_world_instance.size(), 0);
 }
 
 // Helper function for the two v-to-qdot and qdot-to-v tests.
@@ -1597,6 +1641,27 @@ TEST_F(SplitPendulum, MassMatrix) {
 
   // We can only expect values within the precision specified in the sdf file.
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+}
+
+// Verify that we can obtain the owning MultibodyPlant from one of its
+// MultibodyElements, and that we get a proper error message if we try
+// this for an element that isn't owned by a MultibodyPlant.
+TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
+  const MultibodyPlant<double>& pins_plant = pin_->GetParentPlant();
+  EXPECT_EQ(&pins_plant, &plant_);
+
+  // Create an element-owning MBTreeSystem that _is not_ an MBPlant.
+  struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
+    MyMBSystem() {
+      rigid_body = &mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+      Finalize();
+    }
+    const RigidBody<double>* rigid_body{};
+  } mb_system;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mb_system.rigid_body->GetParentPlant(), std::logic_error,
+      ".*multibody element.*not owned by.*MultibodyPlant.*");
 }
 
 // Verifies we can parse link collision geometries and surface friction.
@@ -2097,9 +2162,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
                            plant_->GetFrameByName("iiwa_link_0"));
     plant_->Finalize();
 
-    // Only joint reaction forces feedthrough, for either continuous or
-    // discrete plants.
-    EXPECT_TRUE(OnlyJointReactionForcesFeedthrough(*plant_));
+    // Only accelerations and joint reaction forces feedthrough, for either
+    // continuous or discrete plants.
+    EXPECT_TRUE(OnlyAccelerationAndReactionPortsFeedthrough(*plant_));
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);
@@ -2221,6 +2286,11 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
 
   EXPECT_EQ(plant_->num_positions(), 14);
   EXPECT_EQ(plant_->num_velocities(), 14);
+  EXPECT_EQ(plant_->num_multibody_states(), 28);
+
+  EXPECT_EQ(plant_->num_positions(arm2), 7);
+  EXPECT_EQ(plant_->num_velocities(arm2), 7);
+  EXPECT_EQ(plant_->num_multibody_states(arm2), 14);
 
   // Re-create the context.
   context_ = plant_->CreateDefaultContext();

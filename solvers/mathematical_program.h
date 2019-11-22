@@ -909,8 +909,6 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x + c
    * Applied to subset of the variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -1137,8 +1135,7 @@ class MathematicalProgram {
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{2args_con_vars}
    */
   template <typename C>
   auto AddConstraint(std::shared_ptr<C> con,
