@@ -15,7 +15,10 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+using Eigen::AngleAxisd;
 using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 
 // Friend class for accessing BoundingVolumeHierarchy's protected/private
 // functionality.
@@ -40,12 +43,6 @@ class BVHTester {
           end) {
     return BoundingVolumeHierarchy<MeshType>::ComputeBoundingVolume(mesh, start,
                                                                     end);
-  }
-
-  template <class MeshType>
-  static BvNode<MeshType>& GetBVTree(
-      const BoundingVolumeHierarchy<MeshType>& bvh) {
-    return *bvh.root_node_;
   }
 };
 
@@ -100,26 +97,26 @@ TEST_F(BVHTest, TestBuildBVTree) {
   // depth can be found using 2^d = num_elements. The octahedron has 8 elements
   // so we should end up with a balanced tree of depth 3 where each level's
   // volume is less than its parent's volume.
-  BvNode<SurfaceMesh<double>>& bv_tree = BVHTester::GetBVTree(bvh_);
-  int num_elements = mesh_.num_elements();
+  const BvNode<SurfaceMesh<double>>& bv_tree = bvh_.root_node();
+  const int num_elements = mesh_.num_elements();
   std::set<SurfaceFaceIndex> element_indices;
   std::function<void(const BvNode<SurfaceMesh<double>>&, int)> check_node;
   check_node = [&check_node, &element_indices, num_elements](
                    const BvNode<SurfaceMesh<double>>& node, int depth) {
     if (depth < 3) {
-      double node_volume = node.aabb.CalcVolume();
-      Vector3d node_bounds_upper = node.aabb.upper();
-      Vector3d node_bounds_lower = node.aabb.lower();
+      const double node_volume = node.aabb().CalcVolume();
+      const Vector3d node_bounds_upper = node.aabb().upper();
+      const Vector3d node_bounds_lower = node.aabb().lower();
 
       auto check_child = [&check_node, &node_volume, &node_bounds_upper,
                           &node_bounds_lower,
                           &depth](const BvNode<SurfaceMesh<double>>& child) {
         // Check the volume is less than the parent.
-        double child_volume = child.aabb.CalcVolume();
+        const double child_volume = child.aabb().CalcVolume();
         EXPECT_LT(child_volume, node_volume);
         // Check the bounds are within the parent.
-        Vector3d child_bounds_upper = child.aabb.upper();
-        Vector3d child_bounds_lower = child.aabb.lower();
+        const Vector3d child_bounds_upper = child.aabb().upper();
+        const Vector3d child_bounds_lower = child.aabb().lower();
         // Instead of comparing each element, we can use the coefficient-wise
         // min and max functions. If the child box is inside the parent box,
         // then the child's maximum extents must be less than or equal to the
@@ -135,17 +132,15 @@ TEST_F(BVHTest, TestBuildBVTree) {
         // Check each of the branches at increasing depth.
         check_node(child, depth + 1);
       };
-      check_child(*(node.left));
-      check_child(*(node.right));
+      check_child(node.left());
+      check_child(node.right());
     } else {
       // At depth 3, we should reach the leaf node with a valid and unique
       // element instead of more branches.
-      EXPECT_EQ(node.left, nullptr);
-      EXPECT_EQ(node.right, nullptr);
-      EXPECT_GE(node.element_index, 0);
-      EXPECT_LT(node.element_index, num_elements);
-      EXPECT_EQ(element_indices.count(node.element_index), 0);
-      element_indices.insert(node.element_index);
+      EXPECT_GE(node.element_index(), 0);
+      EXPECT_LT(node.element_index(), num_elements);
+      EXPECT_EQ(element_indices.count(node.element_index()), 0);
+      element_indices.insert(node.element_index());
     }
   };
   check_node(bv_tree, 0);
@@ -164,18 +159,94 @@ TEST_F(BVHTest, TestCopy) {
   check_copy = [&check_copy](const BvNode<SurfaceMesh<double>>& orig,
                              const BvNode<SurfaceMesh<double>>& copy) {
     EXPECT_NE(&orig, &copy);
-    if (orig.left == nullptr) {
-      EXPECT_EQ(copy.left, nullptr);
+    if (orig.is_leaf()) {
+      EXPECT_EQ(orig.element_index(), copy.element_index());
     } else {
-      check_copy(*(orig.left), *(copy.left));
-    }
-    if (orig.right == nullptr) {
-      EXPECT_EQ(copy.right, nullptr);
-    } else {
-      check_copy(*(orig.right), *(copy.right));
+      check_copy(orig.left(), copy.left());
+      check_copy(orig.right(), copy.right());
     }
   };
-  check_copy(BVHTester::GetBVTree(bvh_), BVHTester::GetBVTree(bvh_copy));
+  check_copy(bvh_.root_node(), bvh_copy.root_node());
+}
+
+// Tests colliding while traversing through the bvh trees. We want to ensure
+// that the case of no overlap is covered as well as the 4 cases of branch and
+// leaf comparisons, i.e:
+//  1. branch : branch
+//  2. branch : leaf
+//  3. leaf : branch
+//  4. leaf : leaf
+TEST_F(BVHTest, TestCollide) {
+  // The two trees are completely separate so no bounding volumes overlap and
+  // all pairs should be culled. The resulting vector should thus be empty.
+  auto separate_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  RigidTransformd X_WV{Vector3d{4, 4, 4}};
+  BoundingVolumeHierarchy<SurfaceMesh<double>> separate(separate_mesh);
+  std::vector<std::pair<SurfaceFaceIndex, SurfaceFaceIndex>> pairs =
+      bvh_.GetCollisionCandidates(separate, X_WV);
+  EXPECT_EQ(pairs.size(), 0);
+
+  // Create a higher resolution mesh so we have a different number of elements
+  // across the bvh trees, i.e. 8 in our coarse octahedron and 32 here. We
+  // place the meshes such that they are touching at one corner, so the
+  // traversal will reach end leaf-leaf cases (4.) since there are potentially
+  // colliding pairs. Since the trees have different depths, the traversal
+  // will cover branch-leaf cases (2.) on its way. Swapping the order then
+  // catches the opposing leaf-branch cases (3.). Since the trees have multiple
+  // depths then at higher levels, for example at the root, the branch-branch
+  // cases (1.) will be covered.
+  auto tangent_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 2);
+  X_WV = RigidTransformd{Vector3d{3, 0, 0}};
+  BoundingVolumeHierarchy<SurfaceMesh<double>> tangent(tangent_mesh);
+  pairs = bvh_.GetCollisionCandidates(tangent, X_WV);
+  EXPECT_EQ(pairs.size(), 16);
+  pairs = tangent.GetCollisionCandidates(bvh_, X_WV);
+  EXPECT_EQ(pairs.size(), 16);
+}
+
+// Tests colliding while traversing through the bvh trees but with early exit.
+// We want to ensure that the trees are not fully traversed. One way to test
+// this is to count towards a limit as the condition for the exit. If we
+// specify a limit that is less than the number of potentially colliding pairs,
+// we can verify that the traversal has exited since our result can be no more
+// than this limit.
+TEST_F(BVHTest, TestCollideEarlyExit) {
+  int count{0};
+  int limit{1};
+  // This callback should only be run as many times as the specified limit
+  // before the early exit kicks in.
+  auto callback = [&count, &limit](SurfaceFaceIndex a,
+                                   SurfaceFaceIndex b) -> BvttCallbackResult {
+    ++count;
+    return count < limit ? BvttCallbackResult::Continue
+                         : BvttCallbackResult::Terminate;
+  };
+  // Since we're colliding bvh against itself there should be up to n^2
+  // potentially colliding pairs, but we max out at our limit of 1.
+  bvh_.Collide(bvh_, math::RigidTransformd::Identity(), callback);
+  EXPECT_EQ(count, 1);
+
+  count = 0;
+  limit = 5;
+  // Updating the limit to 5 should get further in the traversal with a result
+  // of 5 pairs.
+  bvh_.Collide(bvh_, math::RigidTransformd::Identity(), callback);
+  EXPECT_EQ(count, 5);
+}
+
+// Tests colliding the bvh trees with different mesh types, i.e. mixing tris
+// and tets by colliding surface and volume meshes.
+TEST_F(BVHTest, TestCollideSurfaceVolume) {
+  // The two octahedrons are tangentially touching along the X-axis, so there
+  // should be 4 elements each that are colliding, resulting in 4^2 = 16.
+  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1.5, 2., 3.), 6);
+  BoundingVolumeHierarchy<VolumeMesh<double>> tet_bvh(volume_mesh);
+  auto surface_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  RigidTransformd X_WV{Vector3d{3, 0, 0}};
+  BoundingVolumeHierarchy<SurfaceMesh<double>> tri_bvh(surface_mesh);
+
+  auto pairs = tet_bvh.GetCollisionCandidates(tri_bvh, X_WV);
+  EXPECT_EQ(pairs.size(), 16);
 }
 
 // Tests computing the centroid of an element.
@@ -212,6 +283,206 @@ GTEST_TEST(AABBTest, TestBounds) {
   Aabb aabb = Aabb(Vector3d(-1, 2, 1), Vector3d(2, 0.5, 2.7));
   EXPECT_TRUE(CompareMatrices(aabb.upper(), Vector3d(1, 2.5, 3.7)));
   EXPECT_TRUE(CompareMatrices(aabb.lower(), Vector3d(-3, 1.5, -1.7), 1e-15));
+}
+
+// We want to compute X_AB such that B is posed relative to A as documented in
+// TestObbOverlap. We can do so by generating the rotation component, R_AB, such
+// that Bq has a minimum value along the chosen axis, and we can solve for
+// the translation component, p_AoBo = p_AoAf + p_AfBq + p_BqBo_A.
+auto calc_corner_transform = [](const Aabb& a, const Aabb& b, const int axis,
+                                const bool expect_overlap) -> RigidTransformd {
+  const int axis1 = (axis + 1) % 3;
+  const int axis2 = (axis + 2) % 3;
+  // Construct the rotation matrix, R_AB, that has meaningful (non-zero)
+  // values everywhere for the remaining 2 axes and no symmetry.
+  RotationMatrixd R_AB =
+      RotationMatrixd {AngleAxisd(M_PI / 5, Vector3d::Unit(axis1))} *
+      RotationMatrixd {AngleAxisd(-M_PI / 5, Vector3d::Unit(axis2))};
+  // We define p_BoBq in Frame A by taking the minimum corner and applying
+  // the constructed rotation.
+  Vector3d p_BoBq_A = R_AB * (b.center() - b.half_width());
+  // Reality check that the center (p_BoBc_A) and the maximum corner
+  // (p_BoBqprime_A) are strictly increasing along the given axis.
+  Vector3d p_BoBc_A = R_AB * b.center();
+  Vector3d p_BoBqprime_A = R_AB * (b.center() + b.half_width());
+  DRAKE_DEMAND(p_BoBc_A[axis] > p_BoBq_A[axis]);
+  DRAKE_DEMAND(p_BoBqprime_A[axis] > p_BoBc_A[axis]);
+  // We construct Bq to be a small relative offset either side of Af along the
+  // given axis, depending on whether we expect the boxes to overlap.
+  Vector3d p_AfBq{0, 0, 0};
+  p_AfBq[axis] = expect_overlap ? -0.01 : 0.01;
+  // We construct Af by taking the maximum corner and offsetting it along the
+  // remaining 2 axes, e.g. by a quarter across. This ensures we thoroughly
+  // exercise all bits instead of simply using any midpoints or corners.
+  // z
+  // ^
+  // |  -------------
+  // |  |     |  o  |
+  // |  |------------
+  // |  |     |     |
+  // |  -------------
+  // -----------------> y
+  Vector3d p_AoAf = a.half_width();
+  p_AoAf[axis1] /= 2;
+  p_AoAf[axis2] /= 2;
+  p_AoAf += a.center();
+  // We can rewrite +p_BqBo as -p_BoBq, thus solving for p_AoBo = p_AoAf +
+  // p_AfBq - p_BoBq_A.
+  Vector3d p_AoBo = p_AoAf + p_AfBq - p_BoBq_A;
+  // Finally we combine the components to form the transform X_AB.
+  return RigidTransformd(R_AB, p_AoBo);
+};
+
+// We want to compute X_AB such that B is posed relative to A as documented
+// in TestObbOverlap. We can do so by generating the rotation component, R_AB,
+// such that Bq lies on the minimum edge along the chosen axis, and we can solve
+// for the translation component, p_AoBo = p_AoAf + p_AfBq + p_BqBo_A.
+auto calc_edge_transform = [](const Aabb& a, const Aabb& b, const int a_axis,
+                              const int b_axis,
+                              const bool expect_overlap) -> RigidTransformd {
+  const int a_axis1 = (a_axis + 1) % 3;
+  const int a_axis2 = (a_axis + 2) % 3;
+  const int b_axis1 = (b_axis + 1) % 3;
+  const int b_axis2 = (b_axis + 2) % 3;
+  // Construct a rotation matrix that has meaningful (non-zero) values
+  // everywhere for the remaining 2 axes and no symmetry. Depending on the
+  // combination of axes, we need to rotate around different axes to ensure
+  // the edge remains as the minimum.
+  RotationMatrixd R_AB;
+  const double theta = M_PI / 5;
+  // For cases Ax × Bx, Ay × By, and Az × Bz.
+  if (a_axis == b_axis) {
+    R_AB = RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis1))} *
+           RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis2))};
+  // For cases Ax × By, Ay × Bz, and Az × Bx.
+  } else if (a_axis1 == b_axis) {
+    R_AB = RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis1))} *
+           RotationMatrixd {AngleAxisd(-theta, Vector3d::Unit(b_axis2))};
+  // For cases Ax × Bz, Ay × Bx, and Az × By.
+  } else {
+    R_AB = RotationMatrixd {AngleAxisd(-theta, Vector3d::Unit(b_axis2))} *
+           RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis1))};
+  }
+  // We define p_BoBq in Frame B taking a point on the minimum edge aligned
+  // with the given axis, offset it to be without symmetry, then convert it
+  // to Frame A by applying the rotation.
+  Vector3d p_BoBQ_B = b.center() - b.half_width();
+  p_BoBQ_B[b_axis] += b.half_width()[b_axis] / 2;
+  Vector3d p_BoBq_A = R_AB * p_BoBQ_B;
+  // Reality check that the center (p_BoBc_A) and the point on the opposite
+  // edge (p_BoBqprime_A) are strictly increasing along the remaining 2 axes.
+  Vector3d p_BoBc_A = R_AB * b.center();
+  Vector3d p_BoBqprime_B = b.center() + b.half_width();
+  p_BoBqprime_B[b_axis] -= b.half_width()[b_axis] / 2;
+  Vector3d p_BoBqprime_A = R_AB * p_BoBqprime_B;
+  DRAKE_DEMAND(p_BoBc_A[a_axis1] > p_BoBq_A[a_axis1]);
+  DRAKE_DEMAND(p_BoBqprime_A[a_axis1] > p_BoBc_A[a_axis1]);
+  DRAKE_DEMAND(p_BoBc_A[a_axis2] > p_BoBq_A[a_axis2]);
+  DRAKE_DEMAND(p_BoBqprime_A[a_axis2] > p_BoBc_A[a_axis2]);
+  // We construct Bq to be a small relative offset either side of Af along the
+  // given axis, depending on whether we expect the boxes to overlap.
+  Vector3d p_AfBq{0, 0, 0};
+  const double offset = expect_overlap ? -0.01 : 0.01;
+  p_AfBq[a_axis1] = offset;
+  p_AfBq[a_axis2] = offset;
+  // We construct Af by taking the maximum corner and offsetting it along the
+  // given edge to thoroughly exercise all bits.
+  Vector3d p_AoAf = a.center() + a.half_width();
+  p_AoAf[a_axis] -= a.half_width()[a_axis] / 2;
+  // We can rewrite +p_BqBo as -p_BoBq, thus solving for p_AoBo = p_AoAf +
+  // p_AfBq - p_BoBq_A.
+  Vector3d p_AoBo = p_AoAf + p_AfBq - p_BoBq_A;
+  // Finally we combine the components to form the transform X_AB.
+  return RigidTransformd(R_AB, p_AoBo);
+};
+
+// Tests whether OBBs overlap. There are 15 cases to test, each covering a
+// separating axis between the two bounding boxes. The first 3 cases use the
+// axes of Frame A, the next 3 cases use the axes of Frame B, and the remaining
+// 9 cases use the axes defined by the cross product of axes from Frame A and
+// Frame B. We also test that it is robust for the case of parallel boxes.
+GTEST_TEST(AABBTest, TestObbOverlap) {
+  // One box is fully contained in the other and they are parallel.
+  Aabb a = Aabb(Vector3d(1, 2, 3), Vector3d(1, 2, 1));
+  Aabb b = Aabb(Vector3d(1, 2, 3), Vector3d(0.5, 1, 0.5));
+  RigidTransformd X_AB = RigidTransformd::Identity();
+  EXPECT_TRUE(Aabb::HasOverlap(a, b, X_AB));
+
+  // To cover the cases of the axes of Frame A, we need to pose box B along
+  // each axis. For example, in the case of the x-axis, in a 2D view they would
+  // look like:
+  // y
+  // ^
+  // |  -----------------       *
+  // |  |               |     *   *
+  // |  |      Ao       Af Bq   Bo  *
+  // |  |               |     *       *
+  // |  |               |       *   *
+  // |  -----------------         *
+  // -----------------------------------> x
+  //
+  // For this test, we define Point Bq as the minimum corner of the box B (i.e.,
+  // center - half width). We want to pose box B so Bq is the uniquely closest
+  // point to box A at a Point Af in the interior of its +x face. The rest of
+  // the box extends farther along the +x axis (as suggested in the above
+  // illustration). Point Bq will be a small epsilon away from the nearby face
+  // either outside (if expect_overlap is false) or inside (if true).
+  a = Aabb(Vector3d(1, 2, 3), Vector3d(2, 4, 3));
+  b = Aabb(Vector3d(2, 0.5, 4), Vector3d(3.5, 2, 1.5));
+  for (int axis = 0; axis < 3; ++axis) {
+    X_AB = calc_corner_transform(a, b, axis, false /* expect_overlap */);
+    EXPECT_FALSE(Aabb::HasOverlap(a, b, X_AB));
+    X_AB = calc_corner_transform(a, b, axis, true /* expect_overlap */);
+    EXPECT_TRUE(Aabb::HasOverlap(a, b, X_AB));
+  }
+
+  // To cover the local axes out of B, we can use the same method by swapping
+  // the order of the boxes and then using the inverse of the transform.
+  for (int axis = 0; axis < 3; ++axis) {
+    X_AB =
+        calc_corner_transform(b, a, axis, false /* expect_overlap */).inverse();
+    EXPECT_FALSE(Aabb::HasOverlap(a, b, X_AB));
+    X_AB =
+        calc_corner_transform(b, a, axis, true /* expect_overlap */).inverse();
+    EXPECT_TRUE(Aabb::HasOverlap(a, b, X_AB));
+  }
+
+  // To cover the remaining 9 cases, we need to pose an edge from box B along
+  // an edge from box A. The axes that the edges are aligned with form the
+  // two inputs into the cross product for the separating axis. For example,
+  // in the following illustration, Af lies on the edge aligned with A's y-axis.
+  // Assuming that Bq lies on an edge aligned with B's x-axis, this would form
+  // the case testing the separating axis Ay × Bx.
+  //                       _________
+  //   +z                 /________/\              .
+  //    ^                 \        \ \             .
+  //    |   ______________ Bq       \ \            .
+  //    |  |\             Af \  Bo   \ \           .
+  //    |  | \ _____________\ \       \ \          .
+  // +y |  | |      Ao      |  \_______\/          .
+  //  \ |  \ |              |                      .
+  //   \|   \|______________|                      .
+  //    -----------------------------------> +x
+  //
+  // For this test, we define point Bq on the minimum edge of the box in its
+  // own frame (i.e., center - half width + an offset along the edge). We want
+  // to pose box B so Bq is the uniquely closest point to A at a Point Af on the
+  // edge between the +x and +z face of box A. The rest of the box extends
+  // farther along the +x and +z axis (as suggested in the above illustration).
+  // Point Bq will be a small epsilon away from the nearby edge either outside
+  // (if expect_overlap is false) or inside (if true).
+  for (int a_axis = 0; a_axis < 3; ++a_axis) {
+    for (int b_axis = 0; b_axis < 3; ++b_axis) {
+      X_AB =
+          calc_edge_transform(a, b, a_axis, b_axis, false /* expect_overlap */);
+      // Separate along a's y-axis and b's x-axis.
+      EXPECT_FALSE(Aabb::HasOverlap(a, b, X_AB));
+      X_AB =
+          calc_edge_transform(a, b, a_axis, b_axis, true  /* expect_overlap */);
+      // Separate along a's y-axis and b's x-axis.
+      EXPECT_TRUE(Aabb::HasOverlap(a, b, X_AB));
+    }
+  }
 }
 
 }  // namespace
