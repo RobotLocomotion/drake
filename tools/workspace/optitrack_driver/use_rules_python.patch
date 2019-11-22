@@ -1,0 +1,34 @@
+diff --git src/BUILD.bazel src/BUILD.bazel
+index d177d5a..89533b7 100644
+--- src/BUILD.bazel
++++ src/BUILD.bazel
+@@ -1,6 +1,8 @@
+ # -*- python -*-
+ # This file contains rules for the Bazel build system; see https://bazel.build.
+ 
++load("@rules_python//python:defs.bzl", "py_binary", "py_library")
++
+ licenses(["notice"])
+ 
+ package(default_visibility = ["//visibility:public"])
+diff --git tools/lcm.bzl tools/lcm.bzl
+index bd814c6..e5bbc13 100644
+--- tools/lcm.bzl
++++ tools/lcm.bzl
+@@ -3,6 +3,7 @@
+ # Based on commit ba51fb5cb845e97017e802fb2b6c74853cb3d6f0 of
+ # https://github.com/RobotLocomotion/drake/blob/master/tools/workspace/lcm/lcm.bzl
+ 
++load("@rules_python//python:defs.bzl", "py_library")
+ load("//tools:pathutils.bzl", "basename", "dirname", "join_paths")
+ 
+ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
+@@ -195,7 +196,7 @@ def lcm_py_library(
+         if "." not in imports:
+             imports = imports + ["."]
+ 
+-    native.py_library(
++    py_library(
+         name = name,
+         srcs = outs + extra_srcs,
+         imports = imports,
