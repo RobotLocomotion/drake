@@ -85,13 +85,13 @@ GTEST_TEST(ImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
 
   // Relatively large step size that we know fails to converge from the initial
   // state.
-  const double dt = 1e-2;
+  const double h = 1e-2;
 
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*robertson, context.get());
 
   // Make sure integrator can take the size we want.
-  integrator.set_maximum_step_size(dt);
+  integrator.set_maximum_step_size(h);
 
   // Enable fixed stepping.
   integrator.set_fixed_step_mode(true);
@@ -104,7 +104,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
   // large step.
   integrator.Initialize();
   EXPECT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(
-      context->get_time() + dt));
+      context->get_time() + h));
 }
 
 // Tests accuracy for integrating linear systems (with the state at time t

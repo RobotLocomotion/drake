@@ -610,7 +610,7 @@ class Simulator {
   /// example usage is:
   /// @code
   /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-  ///               (sys, DT, context).
+  ///               (sys, h, context).
   /// @endcode
   /// See the base overload for `reset_integrator` for more details.
   template <class U, typename... Args>

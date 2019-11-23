@@ -650,7 +650,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
       "h={}, trial={}", t0, h, trial);
 
   // Advance the context time; this means that all derivatives will be computed
-  // at t+dt.
+  // at t+h.
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
 

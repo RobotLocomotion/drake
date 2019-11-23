@@ -1042,8 +1042,8 @@ class IntegratorBase {
     using std::max;
     using std::abs;
 
-    const T dt = t_target - context_->get_time();
-    if (dt < 0) {
+    const T h = t_target - context_->get_time();
+    if (h < 0) {
       throw std::logic_error("IntegrateWithSingleFixedStepToTime() called with "
                              "a negative step size.");
     }
@@ -1051,10 +1051,10 @@ class IntegratorBase {
       throw std::logic_error("IntegrateWithSingleFixedStepToTime() requires "
                              "fixed stepping.");
 
-    if (!Step(dt))
+    if (!Step(h))
       return false;
 
-    UpdateStepStatistics(dt);
+    UpdateStepStatistics(h);
 
     // Correct any round-off error that has occurred. Formula below requires
     // that time be non-negative.
@@ -1383,13 +1383,13 @@ class IntegratorBase {
 
   /**
    Default code for advancing the continuous state of the system by a single
-   step of @p dt_max (or smaller, depending on error control). This particular
+   step of @p h_max (or smaller, depending on error control). This particular
    function is designed to be called directly by an error estimating
    integrator's DoStep() method to effect error-controlled integration.
    The integrator can effect error controlled integration without calling this
    method, if the implementer so chooses, but this default method is expected
    to function well in most circumstances.
-   @param[in] dt_max The maximum step size to be taken. The integrator may
+   @param[in] h_max The maximum step size to be taken. The integrator may
                  take a smaller step than specified to satisfy accuracy
                  requirements, to resolve integrator convergence problems, or
                  to respect the integrator's maximum step size.
@@ -1398,10 +1398,10 @@ class IntegratorBase {
    @note This function will shrink the integration step as necessary whenever
          the integrator's DoStep() fails to take the requested step
          e.g., due to integrator convergence failure.
-   @returns `true` if the full step of size @p dt_max is taken and `false`
-            otherwise (i.e., a smaller step than @p dt_max was taken).
+   @returns `true` if the full step of size @p h_max is taken and `false`
+            otherwise (i.e., a smaller step than @p h_max was taken).
    */
-  bool StepOnceErrorControlledAtMost(const T& dt_max);
+  bool StepOnceErrorControlledAtMost(const T& h_max);
 
   /**
    Computes the infinity norm of a change in continuous state. We use the
@@ -1483,44 +1483,44 @@ class IntegratorBase {
 
   /**
    Derived classes must implement this method to (1) integrate the continuous
-   portion of this system forward by a single step of size @p dt and
+   portion of this system forward by a single step of size @p h and
    (2) set the error estimate (via get_mutable_error_estimate()). This
    method is called during the integration process (via
    StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
    IntegrateWithSingleFixedStepToTime()).
-   @param dt The integration step to take.
+   @param h The integration step to take.
    @returns `true` if successful, `false` if the integrator was unable to take
-             a single step of size @p dt (due to, e.g., an integrator
+             a single step of size @p h (due to, e.g., an integrator
              convergence failure).
    @post If the time on entry is denoted `t`, the time and state will be
-         advanced to `t+dt` if the method returns `true`; otherwise, the
+         advanced to `t+h` if the method returns `true`; otherwise, the
          time and state should be reset to those at `t`.
    @warning It is expected that DoStep() will return `true` for some, albeit
-            possibly very small, positive value of @p dt. The derived
+            possibly very small, positive value of @p h. The derived
             integrator's stepping algorithm can make this guarantee, for
             example, by switching to an algorithm not subject to convergence
             failures (e.g., explicit Euler) for very small step sizes.
    */
-  virtual bool DoStep(const T& dt) = 0;
+  virtual bool DoStep(const T& h) = 0;
 
   // TODO(hidmic): Make pure virtual and override on each subclass, as
   // the 'optimal' dense output scheme is only known by the specific
   // integration scheme being implemented.
   /**
    Derived classes may implement this method to (1) integrate the continuous
-   portion of this system forward by a single step of size @p dt, (2) set the
+   portion of this system forward by a single step of size @p h, (2) set the
    error estimate (via get_mutable_error_estimate()) and (3) update their own
    dense output implementation (via get_mutable_dense_output()).  This
    method is called during the integration process (via
    StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
    IntegrateWithSingleFixedStepToTime()).
-   @param dt The integration step to take.
+   @param h The integration step to take.
    @returns `true` if successful, `false` if either the integrator was
-             unable to take a single step of size @p dt or to advance
+             unable to take a single step of size @p h or to advance
              its dense output an equal step.
    @sa DoStep()
    */
-  virtual bool DoDenseStep(const T& dt) {
+  virtual bool DoDenseStep(const T& h) {
     const ContinuousState<T>& state = context_->get_continuous_state();
     // Makes a null (i.e. zero size) dense output step with initial
     // time and state, before the actual integration step. This will later
@@ -1531,7 +1531,7 @@ class IntegratorBase {
         derivatives_->CopyToVector());
 
     // Performs the integration step.
-    if (!DoStep(dt)) return false;
+    if (!DoStep(h)) return false;
 
     // Extends dense output step to the end of the integration step, using
     // the post-step values.
@@ -1558,25 +1558,25 @@ class IntegratorBase {
   ContinuousState<T>* get_mutable_error_estimate() { return err_est_.get(); }
 
   // Sets the actual initial step size taken.
-  void set_actual_initial_step_size_taken(const T& dt) {
-    actual_initial_step_size_taken_ = dt;
+  void set_actual_initial_step_size_taken(const T& h) {
+    actual_initial_step_size_taken_ = h;
   }
 
   /**
    *  Sets the size of the smallest-step-taken statistic as the result of a
    *  controlled integration step adjustment.
    */
-  void set_smallest_adapted_step_size_taken(const T& dt) {
-    smallest_adapted_step_size_taken_ = dt;
+  void set_smallest_adapted_step_size_taken(const T& h) {
+    smallest_adapted_step_size_taken_ = h;
   }
 
   // Sets the largest-step-size-taken statistic.
-  void set_largest_step_size_taken(const T& dt) {
-    largest_step_size_taken_ = dt;
+  void set_largest_step_size_taken(const T& h) {
+    largest_step_size_taken_ = h;
   }
 
   // Sets the "ideal" next step size (typically done via error control).
-  void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
+  void set_ideal_next_step_size(const T& h) { ideal_next_step_size_ = h; }
 
  private:
   // Validates that a smaller step size does not fall below the working minimum
@@ -1597,21 +1597,21 @@ class IntegratorBase {
   }
 
   // Updates the integrator statistics, accounting for a step just taken of
-  // size dt.
-  void UpdateStepStatistics(const T& dt) {
+  // size h.
+  void UpdateStepStatistics(const T& h) {
     // Handle first step specially.
     if (++num_steps_taken_ == 1) {
-      set_actual_initial_step_size_taken(dt);
-      set_largest_step_size_taken(dt);
+      set_actual_initial_step_size_taken(h);
+      set_largest_step_size_taken(h);
     } else {
-      if (dt > get_largest_step_size_taken()) set_largest_step_size_taken(dt);
+      if (h > get_largest_step_size_taken()) set_largest_step_size_taken(h);
     }
 
     // Update the previous step size.
-    prev_step_size_ = dt;
+    prev_step_size_ = h;
   }
 
-  // Steps the system forward exactly by @p dt, if possible, by calling DoStep
+  // Steps the system forward exactly by @p h, if possible, by calling DoStep
   // or DoDenseStep depending on whether dense integration was started or not.
   // Does necessary pre-initialization and post-cleanup. This method does not
   // update general integrator statistics (which are updated in the calling
@@ -1622,11 +1622,11 @@ class IntegratorBase {
   // @note The working minimum step size does not apply here- see @link Minstep.
   // @sa DoStep()
   // @sa DoDenseStep()
-  bool Step(const T& dt) {
+  bool Step(const T& h) {
     if (get_dense_output()) {
-      return DoDenseStep(dt);
+      return DoDenseStep(h);
     }
-    return DoStep(dt);
+    return DoStep(h);
   }
 
   // Reference to the system being simulated.
@@ -1718,7 +1718,7 @@ class IntegratorBase {
 };
 
 template <class T>
-bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
+bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
   using std::isnan;
   using std::min;
 
@@ -1764,18 +1764,18 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     const double near_enough_larger = 1.001;
 
     // If we lose more than a small fraction of the step size we wanted
-    // to take due to a need to stop at dt_max, make a note of that so the
+    // to take due to a need to stop at h_max, make a note of that so the
     // step size adjuster won't try to grow from the current step.
-    bool dt_was_artificially_limited = false;
-    if (dt_max < near_enough_smaller * step_size_to_attempt) {
-      // dt_max much smaller than current step size.
-      dt_was_artificially_limited = true;
-      step_size_to_attempt = dt_max;
+    bool h_was_artificially_limited = false;
+    if (h_max < near_enough_smaller * step_size_to_attempt) {
+      // h_max much smaller than current step size.
+      h_was_artificially_limited = true;
+      step_size_to_attempt = h_max;
     } else {
-      if (dt_max < near_enough_larger * step_size_to_attempt) {
-        // dt_max is roughly current step. Make it the step size to prevent
+      if (h_max < near_enough_larger * step_size_to_attempt) {
+        // h_max is roughly current step. Make it the step size to prevent
         // creating a small sliver (the remaining step).
-        step_size_to_attempt = dt_max;
+        step_size_to_attempt = h_max;
       }
     }
 
@@ -1817,7 +1817,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     if (step_succeeded) {
       // Only update the next step size (retain the previous one) if the
       // step size was not artificially limited.
-      if (!dt_was_artificially_limited)
+      if (!h_was_artificially_limited)
         ideal_next_step_size_ = next_step_size;
 
       if (isnan(get_actual_initial_step_size_taken()))
@@ -1826,7 +1826,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       // Record the adapted step size taken.
       if (isnan(get_smallest_adapted_step_size_taken()) ||
           (step_size_to_attempt < get_smallest_adapted_step_size_taken() &&
-                step_size_to_attempt < dt_max))
+                step_size_to_attempt < h_max))
           set_smallest_adapted_step_size_taken(step_size_to_attempt);
     } else {
       ++num_shrinkages_from_error_control_;
@@ -1844,7 +1844,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       }
     }
   } while (!step_succeeded);
-  return (step_size_to_attempt == dt_max);
+  return (step_size_to_attempt == h_max);
 }
 
 template <class T>
@@ -2030,16 +2030,16 @@ typename IntegratorBase<T>::StepResult
   // time.
   const T t0 = context_->get_time();
 
-  // Verify that dt's are non-negative.
+  // Verify that h's are non-negative.
   const T publish_dt = publish_time - t0;
   const T update_dt = update_time - t0;
   const T boundary_dt = boundary_time - t0;
   if (publish_dt < 0.0)
-    throw std::logic_error("Publish dt is negative.");
+    throw std::logic_error("Publish h is negative.");
   if (update_dt < 0.0)
-    throw std::logic_error("Update dt is negative.");
+    throw std::logic_error("Update h is negative.");
   if (boundary_dt < 0.0)
-    throw std::logic_error("Boundary dt is negative.");
+    throw std::logic_error("Boundary h is negative.");
 
   // The size of the integration step is the minimum of the time until the next
   // update event, the time until the next publish event, the boundary time
@@ -2123,31 +2123,31 @@ typename IntegratorBase<T>::StepResult
   // publish or an update.
   const bool reached_boundary =
       (candidate_result == IntegratorBase<T>::kReachedBoundaryTime);
-  const T& max_dt = this->get_maximum_step_size();
-  const T max_integrator_time = t0 + max_dt;
+  const T& max_h = this->get_maximum_step_size();
+  const T max_integrator_time = t0 + max_h;
   if ((reached_boundary && max_integrator_time < target_time) ||
-      (!reached_boundary && t0 + max_dt * get_stretch_factor() < target_time)) {
+      (!reached_boundary && t0 + max_h * get_stretch_factor() < target_time)) {
     candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
     target_time = max_integrator_time;
   }
 
-  T dt = target_time - t0;
-  if (dt < 0.0) throw std::logic_error("Negative dt.");
+  T h = target_time - t0;
+  if (h < 0.0) throw std::logic_error("Negative h.");
 
   // If error control is disabled, call the generic stepper. Otherwise, use
   // the error controlled method.
   bool full_step = true;
   if (this->get_fixed_step_mode()) {
-    T adjusted_dt = dt;
-    while (!Step(adjusted_dt)) {
+    T adjusted_h = h;
+    while (!Step(adjusted_h)) {
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
-      adjusted_dt *= subdivision_factor_;
-      ValidateSmallerStepSize(dt, adjusted_dt);
+      adjusted_h *= subdivision_factor_;
+      ValidateSmallerStepSize(h, adjusted_h);
       full_step = false;
     }
   } else {
-    full_step = StepOnceErrorControlledAtMost(dt);
+    full_step = StepOnceErrorControlledAtMost(h);
   }
   if (get_dense_output()) {
     // Consolidates current dense output, merging the step
@@ -2156,8 +2156,8 @@ typename IntegratorBase<T>::StepResult
   }
 
   // Update generic statistics.
-  const T actual_dt = context_->get_time() - t0;
-  UpdateStepStatistics(actual_dt);
+  const T actual_h = context_->get_time() - t0;
+  UpdateStepStatistics(actual_h);
 
   if (full_step || context_->get_time() >= target_time) {
     // Correct any rounding error that may have caused the time to overrun
