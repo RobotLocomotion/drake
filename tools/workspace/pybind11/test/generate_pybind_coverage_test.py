@@ -27,6 +27,6 @@ class TestLibclangParser(unittest.TestCase):
             self.get_test_file("test/class_coverage.csv"),
         )
         self.assert_file_equal(
-            self.get_test_file("documentation_pybind_test.xml"),
+            self.get_test_file("sample_header_documentation_test.xml"),
             self.get_test_file("test/documentation_pybind.xml"),
         )

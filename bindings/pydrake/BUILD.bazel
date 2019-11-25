@@ -258,6 +258,15 @@ drake_pybind_library(
     ],
 )
 
+PYBIND_SUBPACKAGES_FOR_COVERAGE = [
+    "//bindings/pydrake/common",
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/manipulation",
+    "//bindings/pydrake/multibody",
+    "//bindings/pydrake/solvers",
+    "//bindings/pydrake/systems",
+]
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":geometry_py",
@@ -268,28 +277,13 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":symbolic_py",
     ":trajectories_py",
     "//bindings/pydrake/attic",
-    "//bindings/pydrake/common",
-    "//bindings/pydrake/examples",
-    "//bindings/pydrake/manipulation",
-    "//bindings/pydrake/multibody",
-    "//bindings/pydrake/solvers",
-    "//bindings/pydrake/systems",
     "//bindings/pydrake/third_party",
     "//bindings/pydrake/visualization",
-]
+] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
-# TODO(mmanu): Make this parallel the packages shown above (so that it's in one
-# place?).
-PYBIND_SUBPACKAGES_FOR_COVERAGE = [
-    "//bindings/pydrake/common",
-    "//bindings/pydrake/examples",
-    "//bindings/pydrake/manipulation",
-    "//bindings/pydrake/multibody",
-    "//bindings/pydrake/solvers",
-    "//bindings/pydrake/systems",
-    # "//bindings/pydrake/third_party",
-    # "//bindings/pydrake/visualization",
-]
+add_pybind_coverage_data(
+    subpackages = PYBIND_SUBPACKAGES_FOR_COVERAGE,
+)
 
 PY_LIBRARIES = [
     ":module_py",
@@ -529,10 +523,6 @@ generate_pybind_coverage(
     file_coverage = ":file_coverage.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
     xml_docstrings = ":documentation_pybind.xml",
-)
-
-add_pybind_coverage_data(
-    subpackages = PYBIND_SUBPACKAGES_FOR_COVERAGE,
 )
 
 add_lint_tests_pydrake(

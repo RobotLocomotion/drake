@@ -10,8 +10,13 @@ from clang import cindex
 
 
 def add_library_paths(parameters=None):
-    """
-    TODO(mmanu): Fill this out, if possible?
+    """Set library paths for finding libclang on supported platforms.
+
+    Args:
+        parameters(list): If not None, it's used for adding parameters which
+            are used in `mkdoc.py`.
+
+    Returns:
     """
     library_file = None
     if platform.system() == 'Darwin':

@@ -54,17 +54,6 @@ drake_cc_library(
     ],
 )
 
-generate_pybind_documentation_header(
-    name = "generate_sample_header",
-    testonly = 1,
-    out = "test/sample_header_documentation.h",
-    out_xml = "test/sample_header_documentation.xml",
-    root_name = "sample_header_doc",
-    targets = [
-        ":sample_header",
-    ],
-)
-
 drake_cc_library(
     name = "sample_header_documentation",
     testonly = 1,
@@ -112,14 +101,16 @@ drake_cc_library(
     srcs = ["test/test.h"],
 )
 
-# TODO(mmanu): Merge this with the above test.
 generate_pybind_documentation_header(
-    name = "generate_pybind_documentation_header_test",
+    name = "generate_sample_header",
     testonly = 1,
-    out = "documentation_pybind_test.h",
-    out_xml = "documentation_pybind_test.xml",
+    out = "test/sample_header_documentation.h",
+    out_xml = "sample_header_documentation_test.xml",
     root_name = "pydrake_doc",
-    targets = [":pybind_coverage_test_header"],
+    targets = [
+        ":sample_header",
+        ":pybind_coverage_test_header",
+    ],
 )
 
 filegroup(
@@ -132,7 +123,7 @@ generate_pybind_coverage(
     class_coverage = "class_coverage_test.csv",
     file_coverage = "file_coverage_test.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
-    xml_docstrings = "documentation_pybind_test.xml",
+    xml_docstrings = "sample_header_documentation_test.xml",
 )
 
 filegroup(
@@ -150,8 +141,8 @@ filegroup(
     testonly = 1,
     data = [
         ":class_coverage_test.csv",
-        ":documentation_pybind_test.xml",
         ":file_coverage_test.csv",
+        ":sample_header_documentation_test.xml",
     ],
 )
 
