@@ -1,0 +1,4 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+workspace(name = "drake_bazel_workspace_loader")

@@ -1,0 +1,34 @@
+# -*- python -*-
+# vi: set ft=python :
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+install(
+    name = "install",
+    install_tests = [
+        "test/drake_bazel_installed_test.py",
+    ],
+    data = [
+        "drake__BUILD.bazel",
+        "drake__WORKSPACE",
+        "drake__bindings__pydrake__BUILD.bazel",
+        "loader__BUILD.bazel",
+        "loader__WORKSPACE",
+        "loader__repo.bzl",
+    ],
+    data_dest = "share/drake_bazel_workspace_loader",
+    rename = {
+        "share/drake_bazel_workspace_loader/loader__BUILD.bazel": "BUILD.bazel",  # noqa
+        "share/drake_bazel_workspace_loader/loader__WORKSPACE": "WORKSPACE",
+        "share/drake_bazel_workspace_loader/loader__repo.bzl": "repo.bzl",
+    },
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "test/drake_bazel_installed_test.py",
+    ],
+)
