@@ -17,6 +17,7 @@ fi
 # Make sure we know what C++ compiler to use.
 source "$capture_cc_env"
 [[ ! -z "$BAZEL_CC" ]]
+BAZEL_CC=$(python3 -c 'import os; print(os.path.realpath("'"$BAZEL_CC"'"))')
 command -v "$BAZEL_CC"
 "$BAZEL_CC" --version
 

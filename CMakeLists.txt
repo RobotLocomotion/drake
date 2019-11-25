@@ -30,10 +30,10 @@ set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS 18)
-     message(FATAL_ERROR
-       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
-       "18.x (macOS Mojave) or Darwin 19.x (macOS Catalina)."
-     )
+    message(FATAL_ERROR
+      "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
+      "18.x (macOS Mojave) or Darwin 19.x (macOS Catalina)."
+    )
   endif()
 else()
   find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
@@ -55,9 +55,9 @@ else()
   endif()
 
   if(NOT UNIX_DISTRIBUTION_ID STREQUAL Ubuntu)
-     message(FATAL_ERROR
-       "Distribution ${UNIX_DISTRIBUTION_ID} is NOT supported"
-     )
+    message(FATAL_ERROR
+      "Distribution ${UNIX_DISTRIBUTION_ID} is NOT supported"
+    )
   endif()
 
   string(TOLOWER "${UNIX_DISTRIBUTION_ID}" UNIX_DISTRIBUTION_ID)
@@ -77,10 +77,10 @@ else()
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
   if(NOT UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
-     message(FATAL_ERROR
-       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-       "Ubuntu 18.04 (Bionic)."
-     )
+    message(FATAL_ERROR
+      "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
+      "Ubuntu 18.04 (Bionic)."
+    )
   endif()
 endif()
 
@@ -154,7 +154,9 @@ else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
   set(FLAG_STD_CXX17 -std=c++17)
-  check_cxx_compiler_flag(${FLAG_STD_CXX17} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
+  check_cxx_compiler_flag(${FLAG_STD_CXX17}
+    CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17
+  )
   if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX17)
     message(FATAL_ERROR
       "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it "
@@ -448,7 +450,9 @@ if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo
       "symbols because support for SNOPT is enabled"
     )
   else()
-    list(INSERT BAZEL_TARGETS_ARGS 0 "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>")
+    list(INSERT BAZEL_TARGETS_ARGS 0
+      "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>"
+    )
   endif()
 endif()
 

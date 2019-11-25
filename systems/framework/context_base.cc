@@ -9,6 +9,12 @@ namespace drake {
 namespace systems {
 
 std::unique_ptr<ContextBase> ContextBase::Clone() const {
+  if (!is_root_context()) {
+      throw std::logic_error(fmt::format(
+          "Context::Clone(): Cannot clone a non-root Context; "
+          "this Context was created by '{}'.", system_name_));
+  }
+
   std::unique_ptr<ContextBase> clone_ptr(CloneWithoutPointers(*this));
   ContextBase& clone = *clone_ptr;
 

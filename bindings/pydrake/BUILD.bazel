@@ -418,6 +418,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "geometry_test",
     data = [
+        "//geometry:test_obj_files",
         "//systems/sensors:test_models",
     ],
     deps = [

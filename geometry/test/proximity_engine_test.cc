@@ -439,6 +439,70 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMaxDistance) {
   }
 }
 
+// Tests the computation of signed distance for a single geometry pair. Confirms
+// successful case as well as failure case.
+GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
+  ProximityEngine<double> engine;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId bad_id = GeometryId::get_new_id();
+  unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_A, RigidTransformd::Identity()}, {id_B, RigidTransformd::Identity()}};
+
+  const double radius = 0.5;
+  Sphere sphere{radius};
+  engine.AddDynamicGeometry(sphere, id_A);
+  engine.AddDynamicGeometry(sphere, id_B);
+
+  const double kDistance = 1.0;
+  const double kCenterDistance = kDistance + radius + radius;
+  // Displace B the desired distance in an arbitrary direction.
+  const Vector3d p_WB = Vector3d(2, 3, 4).normalized() * kCenterDistance;
+  X_WGs[id_B].set_translation(p_WB);
+  engine.UpdateWorldPoses(X_WGs);
+
+  // Case: good case produces the correct value.
+  {
+    const SignedDistancePair<double> result =
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs);
+    EXPECT_EQ(result.id_A, id_A);
+    EXPECT_EQ(result.id_B, id_B);
+    EXPECT_NEAR(result.distance, kDistance,
+                std::numeric_limits<double>::epsilon());
+    // We're not testing *all* the fields. The callback is setting the fields,
+    // we assume if ids and distance are correct, the previously tested callback
+    // code does it all correctly.
+  }
+
+  // Case: the first id is invalid.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
+        std::runtime_error,
+        fmt::format("The geometry given by id {} does not reference .+ used in "
+                    "a signed distance query", bad_id));
+  }
+
+  // Case: the second id is invalid.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
+        std::runtime_error,
+        fmt::format("The geometry given by id {} does not reference .+ used in "
+                    "a signed distance query", bad_id));
+  }
+
+  // Case: the pair is filtered.
+  {
+    engine.ExcludeCollisionsWithin({id_A, id_B}, {});
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
+        std::runtime_error,
+        fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
+                    "distance query", id_A, id_B));
+  }
+}
+
 // ComputeSignedDistanceToPoint tests
 
 // Test the broad-phase part of ComputeSignedDistanceToPoint.
@@ -924,8 +988,8 @@ GenDistTestDataCylinderBoundaryCircle(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   const RotationMatrixd& R_WG = X_WG.rotation();
   auto cylinder = make_shared<Cylinder>(3.0, 5.0);
-  const double radius = cylinder->get_radius();
-  const double half_length = cylinder->get_length() / 2.0;
+  const double radius = cylinder->radius();
+  const double half_length = cylinder->length() / 2.0;
   // We want the test to cover all the combinations of positive, negative,
   // and zero values of both x and y coordinates on the two boundary circles
   // of the cylinder. Furthermore, each (x,y) has |x| ≠ |y| to avoid
@@ -972,8 +1036,8 @@ GenDistTestDataCylinderBoundarySurface(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   const RotationMatrixd& R_WG = X_WG.rotation();
   auto cylinder = make_shared<Cylinder>(3.0, 5.0);
-  const double radius = cylinder->get_radius();
-  const double half_length = cylinder->get_length() / 2.0;
+  const double radius = cylinder->radius();
+  const double half_length = cylinder->length() / 2.0;
   // We want the test to cover all the combinations of positive, negative,
   // and zero values of both x and y coordinates on some circles on the
   // barrel or on the caps. Furthermore, each (x,y) has |x| ≠ |y| to avoid
@@ -1143,7 +1207,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderCenter(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   const RotationMatrixd& R_WG = X_WG.rotation();
   auto long_cylinder = make_shared<Cylinder>(1.0, 20.0);
-  const double radius = long_cylinder->get_radius();
+  const double radius = long_cylinder->radius();
   const GeometryId id = GeometryId::get_new_id();
   // The query point Q is at the center of the cylinder.
   const Vector3d p_GQ(0., 0., 0.);
@@ -2014,8 +2078,8 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(1.0);
   auto sphere_B = make_shared<const Sphere>(2.0);
-  double radius_A = sphere_A->get_radius();
-  double radius_B = sphere_B->get_radius();
+  double radius_A = sphere_A->radius();
+  double radius_B = sphere_B->radius();
   // Set up R_AB and R_BA from X_WA and R_WB.
   const RotationMatrixd& R_WA = X_WA.rotation();
   const RotationMatrixd R_AW = R_WA.transpose();
@@ -2110,7 +2174,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereNonAligned(
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(2.25);
   auto sphere_B = make_shared<const Sphere>(9.);
-  const double radius_A = sphere_A->get_radius();
+  const double radius_A = sphere_A->radius();
   // Set up Ca and Bo in A's frame.
   const Vector3d p_ACa(0.25, 1., 2.);
   const Vector3d p_ABo(1., 4., 8.);
@@ -2165,7 +2229,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBox(
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(2.);
   auto box_B = make_shared<const Box>(16., 12., 8.);
-  const double radius = sphere_A->get_radius();
+  const double radius = sphere_A->radius();
   const double half_x = box_B->size()(0) / 2.;
   struct Configuration {
     Vector3d p_BAo;
@@ -2269,7 +2333,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxBoundary(
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(2.);
   auto box_B = make_shared<const Box>(16., 12., 8.);
-  const double radius_A = sphere_A->get_radius();
+  const double radius_A = sphere_A->radius();
   const Vector3d half_B = box_B->size() / 2.;
   std::vector<SignedDistancePairTestData> test_data;
   // We use sign_x, sign_y, and sign_z to parameterize the positions on the
@@ -2335,8 +2399,8 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinder(
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(2.);
   auto cylinder_B = make_shared<const Cylinder>(12., 16.);
-  const double radius_A = sphere_A->get_radius();
-  const double half_length = cylinder_B->get_length() / 2.;
+  const double radius_A = sphere_A->radius();
+  const double half_length = cylinder_B->length() / 2.;
   struct Configuration {
     Vector3d p_BAo;
     double pair_distance;
@@ -2435,9 +2499,9 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(4.);
   auto cylinder_B = make_shared<const Cylinder>(8., 16.);
-  const double r_A = sphere_A->get_radius();
-  const double r_B = cylinder_B->get_radius();
-  const double h = cylinder_B->get_length() / 2.;
+  const double r_A = sphere_A->radius();
+  const double r_B = cylinder_B->radius();
+  const double h = cylinder_B->length() / 2.;
   std::vector<SignedDistancePairTestData> test_data;
   for (const double i : {-2., -1., 0., 1., 2.}) {
     for (const double j : {-2., -1., 0., 1., 2.}) {
@@ -2817,7 +2881,7 @@ GenDistPairTestSphereBoxConcentric(
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(2.);
   auto box_B = make_shared<const Box>(4., 8., 16.);
-  const double radius_A = sphere_A->get_radius();
+  const double radius_A = sphere_A->radius();
   const Vector3d half_B = box_B->size() / 2.;
   const RigidTransformd X_WB(R_WB, X_WA.translation());
   const RigidTransformd X_AW = X_WA.inverse();

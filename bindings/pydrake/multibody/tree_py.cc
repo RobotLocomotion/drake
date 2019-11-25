@@ -39,16 +39,16 @@ This API using Isometry3 is / will be deprecated soon with the resolution of
 
 namespace {
 
-// Binds `MultibodyTreeElement` methods.
+// Binds `MultibodyElement` methods.
 // N.B. We do this rather than inheritance because this template is more of a
 // mixin than it is a parent class (since it is not used for its dynamic
 // polymorphism).
 // TODO(jamiesnape): Add documentation for bindings generated with this
 // function.
 template <typename PyClass>
-void BindMultibodyTreeElementMixin(PyClass* pcls) {
+void BindMultibodyElementMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
-  // TODO(eric.cousineau): Fix docstring generation for `MultibodyTreeElement`.
+  // TODO(eric.cousineau): Fix docstring generation for `MultibodyElement`.
   auto& cls = *pcls;
   cls  // BR
       .def("index", &Class::index)
@@ -71,6 +71,10 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
+  m.def("world_model_instance", &world_model_instance,
+      doc.world_model_instance.doc);
+  m.def("default_model_instance", &default_model_instance,
+      doc.default_model_instance.doc);
 
   {
     using Enum = JacobianWrtVariable;
@@ -101,7 +105,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Frame;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Frame", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body", &Class::body, py_reference_internal, cls_doc.body.doc)
@@ -145,7 +149,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Body;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Body", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
@@ -180,7 +184,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Joint;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Joint", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("parent_body", &Class::parent_body, py_reference_internal,
@@ -292,7 +296,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.JointActuator;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "JointActuator", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc);
@@ -304,7 +308,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.ForceElement;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ForceElement", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
   }
 
   {

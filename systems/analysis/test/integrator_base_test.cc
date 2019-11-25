@@ -20,14 +20,121 @@ class DummyIntegrator : public IntegratorBase<T> {
   // Necessary implementations of pure virtual methods.
   bool supports_error_estimation() const override { return true; }
   int get_error_estimate_order() const override { return 1; }
+  std::pair<bool, T> CalcAdjustedStepSize(const T& err, const T& step_taken,
+                                          bool* at_minimum_step_size) const {
+    return IntegratorBase<T>::CalcAdjustedStepSize(err, step_taken,
+                                                   at_minimum_step_size);
+  }
 
   // Promote CalcStateChangeNorm() to public.
   using IntegratorBase<T>::CalcStateChangeNorm;
 
  private:
-  // Should not be called.
-  bool DoStep(const T&) override { DRAKE_UNREACHABLE(); }
+  // We want the Step function to fail whenever the step size is greater than
+  // or equal to unity (see FixedStepFailureIndicatesSubstepFailure).
+  bool DoStep(const T& step_size) override { return (step_size < 1.0); }
 };
+
+// Tests that IntegratorBase::IntegrateNoFurtherThanTime(.) records a substep
+// failure when running in fixed step mode and stepping fails.
+GTEST_TEST(IntegratorBaseTest, FixedStepFailureIndicatesSubstepFailure) {
+  // Use the spring-mass system because we need some system (and this one will
+  // do as well as any other).
+  SpringMassSystem<double> spring_mass(10.0, 1.0, false);
+  std::unique_ptr<Context<double>> context = spring_mass.CreateDefaultContext();
+  DummyIntegrator<double> integrator(spring_mass, context.get());
+
+  // Set the integrator to fixed step mode.
+  integrator.set_fixed_step_mode(true);
+
+  // Verify the statistics are clear before integrating.
+  EXPECT_EQ(integrator.get_num_step_shrinkages_from_substep_failures(), 0);
+  EXPECT_EQ(integrator.get_num_substep_failures(), 0);
+
+  // Call the integration function.
+  const double arbitrary_time = 1.0;
+  integrator.Initialize();
+  integrator.IntegrateNoFurtherThanTime(arbitrary_time, arbitrary_time,
+                                        arbitrary_time);
+
+  // Verify the step statistics have been updated. We expect DoStep() to be
+  // called just twice.
+  EXPECT_EQ(integrator.get_num_step_shrinkages_from_substep_failures(), 1);
+  EXPECT_EQ(integrator.get_num_substep_failures(), 1);
+}
+
+// Tests that CalcAdjustedStepSize() shrinks the step size when encountering
+// NaN and Inf.
+GTEST_TEST(IntegratorBaseTest, CalcAdjustedStepSizeShrinksOnNaNAndInf) {
+  // We expect the shrinkage to be *at least* a factor of two.
+  const double kShrink = 0.5;
+
+  // Various "errors" that will be passed into CalcAdjustedStepSize.
+  const double zero_error = 0.0;
+  const double nan_error = std::numeric_limits<double>::quiet_NaN();
+  const double inf_error = std::numeric_limits<double>::infinity();
+
+  // Arbitrary step size taken.
+  const double step_taken = 1.0;
+
+  // The two possible values that the at_minimum_step_size input/output
+  // parameter can take on entry.
+  bool at_minimum_step_size_true_on_entry = true;
+  bool at_minimum_step_size_false_on_entry = false;
+
+  // Use the spring-mass system (system and context will be unused for this
+  // test).
+  SpringMassSystem<double> spring_mass(10.0, 1.0, false);
+  std::unique_ptr<Context<double>> context = spring_mass.CreateDefaultContext();
+  DummyIntegrator<double> integrator(spring_mass, context.get());
+
+  // Verify that there is no shrinkage for zero error.
+  std::pair<bool, double> result;
+  result = integrator.CalcAdjustedStepSize(zero_error, step_taken,
+                                           &at_minimum_step_size_true_on_entry);
+  EXPECT_EQ(result.first, true);
+  EXPECT_GE(result.second, step_taken);
+  result = integrator.CalcAdjustedStepSize(
+      zero_error, step_taken, &at_minimum_step_size_false_on_entry);
+  EXPECT_EQ(result.first, true);
+  EXPECT_GE(result.second, step_taken);
+
+  // Neither should be at the minimum step size.
+  EXPECT_EQ(at_minimum_step_size_true_on_entry, false);
+  EXPECT_EQ(at_minimum_step_size_false_on_entry, false);
+
+  // Reset the minimum step size Booleans.
+  at_minimum_step_size_true_on_entry = true;
+  at_minimum_step_size_false_on_entry = false;
+
+  // Verify shrinkage for NaN error.
+  result = integrator.CalcAdjustedStepSize(nan_error, step_taken,
+                                           &at_minimum_step_size_true_on_entry);
+  EXPECT_EQ(result.first, false);
+  EXPECT_LT(result.second, kShrink * step_taken);
+  result = integrator.CalcAdjustedStepSize(
+      nan_error, step_taken, &at_minimum_step_size_false_on_entry);
+  EXPECT_EQ(result.first, false);
+  EXPECT_LT(result.second, kShrink * step_taken);
+
+  // Minimum step size should be unchanged.
+  EXPECT_EQ(at_minimum_step_size_true_on_entry, true);
+  EXPECT_EQ(at_minimum_step_size_false_on_entry, false);
+
+  // Verify shrinkage for Inf error.
+  result = integrator.CalcAdjustedStepSize(inf_error, step_taken,
+                                           &at_minimum_step_size_true_on_entry);
+  EXPECT_EQ(result.first, false);
+  EXPECT_LT(result.second, kShrink * step_taken);
+  result = integrator.CalcAdjustedStepSize(
+      inf_error, step_taken, &at_minimum_step_size_false_on_entry);
+  EXPECT_EQ(result.first, false);
+  EXPECT_LT(result.second, kShrink * step_taken);
+
+  // Minimum step size should be unchanged.
+  EXPECT_EQ(at_minimum_step_size_true_on_entry, true);
+  EXPECT_EQ(at_minimum_step_size_false_on_entry, false);
+}
 
 // Tests that CalcStateChangeNorm() propagates NaNs in state.
 GTEST_TEST(IntegratorBaseTest, DoubleStateChangeNormPropagatesNaN) {

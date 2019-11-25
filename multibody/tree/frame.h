@@ -211,7 +211,7 @@ class Frame : public FrameBase<T> {
   /// @}
 
  private:
-  // Implementation for MultibodyTreeElement::DoSetTopology().
+  // Implementation for MultibodyElement::DoSetTopology().
   void DoSetTopology(const internal::MultibodyTreeTopology& tree_topology)
   final {
     topology_ = tree_topology.get_frame(this->index());

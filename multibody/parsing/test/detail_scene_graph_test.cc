@@ -187,8 +187,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
       *sdf_geometry, NoopResolveFilename);
   const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
-  EXPECT_EQ(capsule->get_radius(), 0.5);
-  EXPECT_EQ(capsule->get_length(), 1.2);
+  EXPECT_EQ(capsule->radius(), 0.5);
+  EXPECT_EQ(capsule->length(), 1.2);
 }
 
 // Verify MakeShapeFromSdfGeometry checks for invalid capsules.
@@ -222,8 +222,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
       *sdf_geometry, NoopResolveFilename);
   const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
   ASSERT_NE(cylinder, nullptr);
-  EXPECT_EQ(cylinder->get_radius(), 0.5);
-  EXPECT_EQ(cylinder->get_length(), 1.2);
+  EXPECT_EQ(cylinder->radius(), 0.5);
+  EXPECT_EQ(cylinder->length(), 1.2);
 }
 
 // Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
@@ -238,9 +238,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
       *sdf_geometry, NoopResolveFilename);
   const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
-  EXPECT_EQ(ellipsoid->get_a(), 0.5);
-  EXPECT_EQ(ellipsoid->get_b(), 1.2);
-  EXPECT_EQ(ellipsoid->get_c(), 0.9);
+  EXPECT_EQ(ellipsoid->a(), 0.5);
+  EXPECT_EQ(ellipsoid->b(), 1.2);
+  EXPECT_EQ(ellipsoid->c(), 0.9);
 }
 
 // Verify MakeShapeFromSdfGeometry checks for invalid ellispoids.
@@ -284,7 +284,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
       *sdf_geometry, NoopResolveFilename);
   const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
   ASSERT_NE(sphere, nullptr);
-  EXPECT_EQ(sphere->get_radius(), 0.5);
+  EXPECT_EQ(sphere->radius(), 0.5);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a half space from an sdf::Geometry.

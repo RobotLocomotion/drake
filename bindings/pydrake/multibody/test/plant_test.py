@@ -29,6 +29,8 @@ from pydrake.multibody.tree import (
     UnitInertia_,
     WeldJoint_,
     world_index,
+    world_model_instance,
+    default_model_instance
 )
 from pydrake.multibody.math import (
     SpatialForce_,
@@ -124,6 +126,8 @@ class TestPlant(unittest.TestCase):
 
     def test_type_safe_indices(self):
         self.assertEqual(world_index(), BodyIndex(0))
+        self.assertEqual(world_model_instance(), ModelInstanceIndex(0))
+        self.assertEqual(default_model_instance(), ModelInstanceIndex(1))
 
     def assert_sane(self, x, nonzero=True):
         self.assertTrue(np.all(np.isfinite(numpy_compare.to_float(x))))
@@ -213,9 +217,18 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(
             plant.num_velocities(), benchmark.num_velocities())
         self.assertEqual(
+            plant.num_velocities(model_instance=model_instance),
+            benchmark.num_velocities())
+        self.assertEqual(
             plant.num_multibody_states(), benchmark.num_multibody_states())
         self.assertEqual(
+            plant.num_multibody_states(model_instance=model_instance),
+            benchmark.num_multibody_states())
+        self.assertEqual(
             plant.num_actuated_dofs(), benchmark.num_actuated_dofs())
+        self.assertEqual(
+            plant.num_actuated_dofs(model_instance=model_instance),
+            benchmark.num_actuated_dofs())
         self.assertTrue(plant.is_finalized())
         self.assertTrue(plant.HasBodyNamed(name="Link1"))
         self.assertTrue(plant.HasBodyNamed(

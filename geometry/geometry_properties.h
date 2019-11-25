@@ -257,24 +257,20 @@ class GeometryProperties {
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    auto iter = values_.find(group_name);
-    if (iter == values_.end()) {
-      auto result = values_.insert({group_name, Group{}});
-      DRAKE_DEMAND(result.second);
-      iter = result.first;
-    }
-
-    Group& group = iter->second;
-    auto value_iter = group.find(name);
-    if (value_iter == group.end()) {
-      group[name] = std::make_unique<Value<ValueType>>(value);
-      return;
-    }
-    throw std::logic_error(fmt::format(
-        "AddProperty(): Trying to add property '{}' to group '{}'; "
-        "a property with that name already exists",
-        name, group_name));
+    AddPropertyAbstract(group_name, name, Value(value));
   }
+
+  /** Adds a property with the given `name` and type-erased `value` to the the
+   named property group. Adds the group if it doesn't already exist.
+
+   @param group_name   The group name.
+   @param name         The name of the property -- must be unique in the group.
+   @param value        The value to assign to the property.
+   @throws std::logic_error if `name` already exists in the group
+                            `group_name`.  */
+  void AddPropertyAbstract(
+      const std::string& group_name, const std::string& name,
+      const AbstractValue& value);
 
   /** Reports if the property exists in the group.
 
@@ -297,33 +293,19 @@ class GeometryProperties {
   template <typename ValueType>
   const ValueType& GetProperty(const std::string& group_name,
                                const std::string& name) const {
-    const auto iter = values_.find(group_name);
-    if (iter == values_.end()) {
-      throw std::logic_error(
-          fmt::format("GetProperty(): Trying to read property '{}' from group "
-                      "'{}'. But the group does not exist.",
-                      name, group_name));
-    }
-
-    const Group& group = iter->second;
-    const auto value_iter = group.find(name);
-    if (value_iter == group.end()) {
-      throw std::logic_error(
-          fmt::format("GetProperty(): There is no property '{}' in group '{}'.",
-                      name, group_name));
-    }
-
-    const ValueType* value = value_iter->second->maybe_get_value<ValueType>();
-    if (value == nullptr) {
-      throw std::logic_error(fmt::format(
-          "GetProperty(): The property '{}' in group '{}' exists, "
-          "but is of a different type. Requested '{}', but found '{}'",
-          name, group_name, NiceTypeName::Get<ValueType>(),
-          value_iter->second->GetNiceTypeName()));
-    }
-
-    return *value;
+    const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
+    return GetValueOrThrow<ValueType>(
+        "GetProperty", group_name, name, abstract);
   }
+
+  /** Retrieves that type-erased value from this set of properties.
+
+   @param group_name  The name of the group to which the property belongs.
+   @param name        The name of the desired property.
+   @throws std::logic_error if a) the group name is invalid, or
+                            b) the property name is invalid. */
+  const AbstractValue& GetPropertyAbstract(
+      const std::string& group_name, const std::string& name) const;
 
   /** Retrieves the typed value from the set of properties (if it exists),
    otherwise returns the given default value. The given `default_value` is
@@ -353,25 +335,15 @@ class GeometryProperties {
   ValueType GetPropertyOrDefault(const std::string& group_name,
                                  const std::string& name,
                                  ValueType default_value) const {
-    const auto iter = values_.find(group_name);
-    if (iter != values_.end()) {
-      const Group& group = iter->second;
-      const auto value_iter = group.find(name);
-      if (value_iter != group.end()) {
-        const ValueType* value =
-            value_iter->second->maybe_get_value<ValueType>();
-        if (value == nullptr) {
-          throw std::logic_error(fmt::format(
-              "GetPropertyOrDefault(): The property '{}' in group '{}' exists, "
-              "but is of a different type. Requested '{}', but found '{}'",
-              name, group_name, NiceTypeName::Get<ValueType>(),
-              value_iter->second->GetNiceTypeName()));
-        }
-        // This incurs the cost of copying a stored value.
-        return *value;
-      }
+    const AbstractValue* abstract =
+        GetPropertyAbstractMaybe(group_name, name, false);
+    if (!abstract) {
+      return default_value;
+    } else {
+      // This incurs the cost of copying a stored value.
+      return GetValueOrThrow<ValueType>(
+          "GetPropertyOrDefault", group_name, name, *abstract);
     }
-    return default_value;
   }
 
   /** Returns the default group name. There is no guarantee as to _what_ string
@@ -415,6 +387,30 @@ class GeometryProperties {
  private:
   // The collection of property groups.
   std::unordered_map<std::string, Group> values_;
+
+  // Return value or nullptr if it does not exist.
+  // If `throw_for_bad_group` is true, an error will be thrown if `group_name`
+  // does not exist.
+  const AbstractValue* GetPropertyAbstractMaybe(
+      const std::string& group_name, const std::string& name,
+      bool throw_for_bad_group) const;
+
+  // Get the wrapped value from an AbstractValue, or throw an error message
+  // that is easily traceable to this class.
+  template <typename ValueType>
+  static const ValueType& GetValueOrThrow(
+      const std::string& method, const std::string& group_name,
+      const std::string& name, const AbstractValue& abstract) {
+    const ValueType* value = abstract.maybe_get_value<ValueType>();
+    if (value == nullptr) {
+      throw std::logic_error(fmt::format(
+          "{}(): The property '{}' in group '{}' exists, "
+          "but is of a different type. Requested '{}', but found '{}'",
+          method, name, group_name, NiceTypeName::Get<ValueType>(),
+          abstract.GetNiceTypeName()));
+    }
+    return *value;
+  }
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const GeometryProperties& props);

@@ -17,15 +17,15 @@ namespace systems {
  *     q(t₀+h) = q(t₀) + dq/dt * h
  * </pre>
  * where `v` are the generalized velocity variables and `q` are generalized
- * coordinates. `h` is the integration step size, and `N` is a matrix 
- * (dependent upon `q(t₀)`) that maps velocities to time derivatives of 
+ * coordinates. `h` is the integration step size, and `N` is a matrix
+ * (dependent upon `q(t₀)`) that maps velocities to time derivatives of
  * generalized coordinates. For rigid body systems in 2D, for example, `N`
  * will generally be an identity matrix. For a single rigid body in 3D, `N` and
  * its pseudo-inverse (`N` is generally non-square but always left invertible)
- * are frequently used to transform between time derivatives of Euler 
- * parameters (unit quaternions) and angular velocities (and vice versa), 
+ * are frequently used to transform between time derivatives of Euler
+ * parameters (unit quaternions) and angular velocities (and vice versa),
  * [Nikravesh 1988].
- * 
+ *
  * Note that these equations imply that the velocity variables are updated
  * first and that these new velocities are then used to update the generalized
  * coordinates (compare to ExplicitEulerIntegrator, where the generalized
@@ -45,21 +45,21 @@ namespace systems {
  * integrator:</h4>
  * Though many time stepping approaches use the formulations above, these
  * equations do not represent a "time stepping scheme". The semi-explicit
- * Euler integration equations can be applied from one point in state space to 
+ * Euler integration equations can be applied from one point in state space to
  * another, assuming smoothness in between, just like any other integrator using
- * the following process: 
- * (1) a simulator integrates to discontinuities, (2) the state of the ODE/DAE 
+ * the following process:
+ * (1) a simulator integrates to discontinuities, (2) the state of the ODE/DAE
  * is re-initialized, and (3) integration continues.
  *
  * In contrast, time stepping schemes enforce all constraints at a single
  * time in the integration process: though a billiard break may consist of tens
  * of collisions occurring sequentially over a millisecond of time, a time
  * stepping method will treat all of these collisions as occurring
- * simultaneously. 
+ * simultaneously.
  *
- * - [Nikravesh 1988]  P. Nikravesh. Computer-Aided Analysis of Mechanical 
+ * - [Nikravesh 1988]  P. Nikravesh. Computer-Aided Analysis of Mechanical
  *                       Systems. Prentice Hall. New Jersey, 1988.
- * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and 
+ * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and
  *                       Impact. SIAM Review, 42:1, 2000.
  */
 template <class T>
@@ -108,7 +108,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
 };
 
 /**
- * Integrates the system forward in time by dt. This value is determined
+ * Integrates the system forward in time by h. This value is determined
  * by IntegratorBase::StepOnce().
  */
 template <class T>

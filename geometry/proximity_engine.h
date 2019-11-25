@@ -43,6 +43,13 @@ class GeometryStateCollisionFilterAttorney;
    - distance
    - ray-intersection
 
+ Not all shape queries are fully supported. To add support for a shape:
+ 1. for fcl versions of the specification, modify CopyShapeOrThrow().
+ 2. add an instance of the new shape to the CopySemantics test in
+    proximity_engine_test.cc.
+ 3. for penetration, test the new shape in the class BoxPenetrationTest of
+    proximity_engine_test.cc and document its configuration.
+
  <!-- TODO(SeanCurtis-TRI): Fully document the semantics of the proximity
  properties that will affect the proximity engine -- hydroelastic semantics,
  required properties, etc.
@@ -164,6 +171,15 @@ class ProximityEngine {
   ComputeSignedDistancePairwiseClosestPoints(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
+
+  /** Implementation of
+   GeometryState::ComputeSignedDistancePairClosestPoints().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B,
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const;
 
   /** Implementation of GeometryState::ComputeSignedDistanceToPoint().
    This includes `X_WGs`, the current poses of all geometries in World in the

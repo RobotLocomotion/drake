@@ -14,7 +14,7 @@ with warnings.catch_warnings():  # noqa
 
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion
-from pydrake.geometry import DispatchLoadMessage
+from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh
 from pydrake.lcm import DrakeMockLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import AbstractValue
@@ -230,6 +230,10 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                              radius*math.sin(pt),
                              length/2.]]).T
                          for pt in sample_pts])
+
+                elif geom.type == geom.MESH:
+                    mesh = ReadObjToSurfaceMesh(geom.string_data)
+                    patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
 
                 else:
                     print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(

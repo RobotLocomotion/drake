@@ -131,8 +131,8 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   const geometry::Capsule* capsule =
       dynamic_cast<const geometry::Capsule*>(&capsule_visual.shape());
   ASSERT_TRUE(capsule);
-  EXPECT_EQ(capsule->get_radius(), 0.2);
-  EXPECT_EQ(capsule->get_length(), 0.5);
+  EXPECT_EQ(capsule->radius(), 0.2);
+  EXPECT_EQ(capsule->length(), 0.5);
 
   const geometry::IllustrationProperties* properties =
       visual.illustration_properties();
@@ -162,8 +162,8 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   const geometry::Cylinder* cylinder =
       dynamic_cast<const geometry::Cylinder*>(&visual.shape());
   ASSERT_TRUE(cylinder);
-  EXPECT_EQ(cylinder->get_radius(), 0.1);
-  EXPECT_EQ(cylinder->get_length(), 0.6);
+  EXPECT_EQ(cylinder->radius(), 0.1);
+  EXPECT_EQ(cylinder->length(), 0.6);
 
   const auto& mesh_visual = visual_instances_.back();
   const geometry::Mesh* mesh =
@@ -181,7 +181,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   const geometry::Sphere* sphere =
       dynamic_cast<const geometry::Sphere*>(&collision.shape());
   ASSERT_TRUE(sphere);
-  EXPECT_EQ(sphere->get_radius(), 0.2);
+  EXPECT_EQ(sphere->radius(), 0.2);
 }
 
 TEST_F(UrdfGeometryTests, TestParseMaterial3) {

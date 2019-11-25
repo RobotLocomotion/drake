@@ -251,7 +251,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       PositiveDouble("Sphere", "soft").Extract(props, kMaterialGroup, kElastic);
 
   // Second, compute the penetration extent and gradient fields.
-  const double r = sphere.get_radius();
+  const double r = sphere.radius();
   std::vector<double> p_values;
   p_values.reserve(mesh->num_vertices());
   for (const auto& v : mesh->vertices()) {

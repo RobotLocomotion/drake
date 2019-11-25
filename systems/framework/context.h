@@ -757,6 +757,7 @@ class Context : public ContextBase {
   //@{
 
   /// Returns a deep copy of this Context.
+  /// @throws std::logic_error if this is not the root context.
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
   std::unique_ptr<Context<T>> Clone() const {
