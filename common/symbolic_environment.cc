@@ -70,6 +70,21 @@ void Environment::insert(const key_type& key, const mapped_type& elem) {
   map_.emplace(key, elem);
 }
 
+void Environment::insert(const MatrixX<key_type>& keys,
+                         const MatrixX<mapped_type>& elements) {
+  if (keys.rows() != elements.rows() || keys.cols() != elements.cols()) {
+    throw runtime_error(
+        "symbolic::Environment::insert: The size of keys and elements should "
+        "be the same.");
+  }
+
+  for (Eigen::Index i = 0; i < keys.cols(); ++i) {
+    for (Eigen::Index j = 0; j < keys.rows(); ++j) {
+      insert(keys(j, i), elements(j, i));
+    }
+  }
+}
+
 Variables Environment::domain() const {
   Variables dom;
   for (const auto& p : map_) {
