@@ -13,7 +13,12 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
-from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
+from pydrake.systems.framework import (
+    AbstractValue,
+    DiagramBuilder_,
+    InputPort_,
+    OutputPort_,
+)
 from pydrake.systems.sensors import (
     ImageRgba8U,
     ImageDepth32F,
@@ -62,12 +67,36 @@ class TestGeometry(unittest.TestCase):
         scene_graph.AddRenderer("test_renderer",
                                 mut.render.MakeRenderEngineVtk(
                                     mut.render.RenderEngineVtkParams()))
+        self.assertTrue(scene_graph.HasRenderer("test_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 1)
 
         # Test SceneGraphInspector API
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_frames(), 3)
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_geometries(), 3)
+
+        # Check AssignRole bits.
+        proximity = mut.ProximityProperties()
+        perception = mut.PerceptionProperties()
+        perception.AddProperty("label", "id", mut.render.RenderLabel(0))
+        illustration = mut.IllustrationProperties()
+        props = [
+            proximity,
+            perception,
+            illustration,
+        ]
+        context = scene_graph.CreateDefaultContext()
+        for prop in props:
+            # Check SceneGraph mutating variant.
+            scene_graph.AssignRole(
+                source_id=global_source, geometry_id=global_geometry,
+                properties=prop, assign=mut.RoleAssign.kNew)
+            # Check Context mutating variant.
+            scene_graph.AssignRole(
+                context=context, source_id=global_source,
+                geometry_id=global_geometry, properties=prop,
+                assign=mut.RoleAssign.kNew)
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
@@ -212,6 +241,45 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(geometry.shape(), mut.Shape)
         self.assertIsInstance(geometry.release_shape(), mut.Shape)
         self.assertEqual(geometry.name(), "sphere")
+        geometry.set_proximity_properties(mut.ProximityProperties())
+        geometry.set_illustration_properties(mut.IllustrationProperties())
+        geometry.set_perception_properties(mut.PerceptionProperties())
+        self.assertIsInstance(geometry.mutable_proximity_properties(),
+                              mut.ProximityProperties)
+        self.assertIsInstance(geometry.proximity_properties(),
+                              mut.ProximityProperties)
+        self.assertIsInstance(geometry.mutable_illustration_properties(),
+                              mut.IllustrationProperties)
+        self.assertIsInstance(geometry.illustration_properties(),
+                              mut.IllustrationProperties)
+        self.assertIsInstance(geometry.mutable_perception_properties(),
+                              mut.PerceptionProperties)
+        self.assertIsInstance(geometry.perception_properties(),
+                              mut.PerceptionProperties)
+
+    def test_geometry_properties_api(self):
+        self.assertIsInstance(
+            mut.MakePhongIllustrationProperties([0, 0, 1, 1]),
+            mut.IllustrationProperties)
+        prop = mut.ProximityProperties()
+        self.assertEqual(str(prop), "[__default__]")
+        default_group = prop.default_group_name()
+        self.assertTrue(prop.HasGroup(group_name=default_group))
+        self.assertEqual(prop.num_groups(), 1)
+        self.assertTrue(default_group in prop.GetGroupNames())
+        prop.AddProperty(group_name=default_group, name="test", value=3)
+        self.assertTrue(prop.HasProperty(group_name=default_group,
+                                         name="test"))
+        self.assertEqual(
+            prop.GetProperty(group_name=default_group, name="test"), 3)
+        self.assertEqual(
+            prop.GetPropertyOrDefault(
+                group_name=default_group, name="empty", default_value=5),
+            5)
+        group_values = prop.GetPropertiesInGroup(group_name=default_group)
+        for name, value in group_values.items():
+            self.assertIsInstance(name, str)
+            self.assertIsInstance(value, AbstractValue)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
