@@ -93,9 +93,8 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/triangle_quadrature",
     "//perception",
     "//solvers",
-    "//solvers/fbstab:fbstab_algorithm",  # unpackaged
-    "//solvers/fbstab:fbstab_dense",  # unpackaged
-    "//solvers/fbstab:fbstab_mpc",  # unpackaged
+    "//solvers/fbstab",
+    "//solvers/fbstab/components",
     "//systems/analysis",
     "//systems/controllers",
     "//systems/estimators",
@@ -107,14 +106,4 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //solvers/fbstab/components:dense_data (indirectly)
-    # //solvers/fbstab/components:dense_feasibility (indirectly)
-    # //solvers/fbstab/components:dense_linear_solver (indirectly)
-    # //solvers/fbstab/components:dense_residual (indirectly)
-    # //solvers/fbstab/components:dense_variable (indirectly)
-    # //solvers/fbstab/components:mpc_data (indirectly)
-    # //solvers/fbstab/components:mpc_feasibility (indirectly)
-    # //solvers/fbstab/components:mpc_residual (indirectly)
-    # //solvers/fbstab/components:mpc_variable (indirectly)
-    # //solvers/fbstab/components:riccati_linear_solver (indirectly)
 ]
