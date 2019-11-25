@@ -98,6 +98,17 @@ class TestGeometry(unittest.TestCase):
                 geometry_id=global_geometry, properties=prop,
                 assign=mut.RoleAssign.kNew)
 
+        # Check property accessors.
+        self.assertIsInstance(
+            inspector.GetProximityProperties(geometry_id=global_geometry),
+            mut.ProximityProperties)
+        self.assertIsInstance(
+            inspector.GetIllustrationProperties(geometry_id=global_geometry),
+            mut.IllustrationProperties)
+        self.assertIsInstance(
+            inspector.GetPerceptionProperties(geometry_id=global_geometry),
+            mut.PerceptionProperties)
+
     def test_connect_drake_visualizer(self):
         # Test visualization API.
         # Use a mockable so that we can make a smoke test without side

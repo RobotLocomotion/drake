@@ -148,39 +148,44 @@ void DoScalarDependentDefinitions(py::module m, T) {
   //  SceneGraphInspector
   {
     using Class = SceneGraphInspector<T>;
+    constexpr auto& cls_doc = doc.SceneGraphInspector;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SceneGraphInspector", param, doc.SceneGraphInspector.doc);
+        m, "SceneGraphInspector", param, cls_doc.doc);
     cls  // BR
-        .def("num_sources", &SceneGraphInspector<T>::num_sources,
-            doc.SceneGraphInspector.num_sources.doc)
-        .def("num_frames", &SceneGraphInspector<T>::num_frames,
-            doc.SceneGraphInspector.num_frames.doc)
-        .def("num_geometries", &SceneGraphInspector<T>::num_geometries,
-            doc.SceneGraphInspector.num_geometries.doc)
-        .def("GetAllGeometryIds", &SceneGraphInspector<T>::GetAllGeometryIds,
-            doc.SceneGraphInspector.GetAllGeometryIds.doc)
-        .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
-            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc)
-        .def("GetGeometryIdByName",
-            &SceneGraphInspector<T>::GetGeometryIdByName, py::arg("frame_id"),
-            py::arg("role"), py::arg("name"),
-            doc.SceneGraphInspector.GetGeometryIdByName.doc)
+        .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
+        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
+        .def("num_geometries", &Class::num_geometries,
+            cls_doc.num_geometries.doc)
+        .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
+            cls_doc.GetAllGeometryIds.doc)
+        .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
+            cls_doc.GetFrameId.doc)
+        .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
+            py::arg("frame_id"), py::arg("role"), py::arg("name"),
+            cls_doc.GetGeometryIdByName.doc)
         .def("GetNameByFrameId",
             overload_cast_explicit<const std::string&, FrameId>(
-                &SceneGraphInspector<T>::GetName),
+                &Class::GetName),
             py_reference_internal, py::arg("frame_id"),
-            doc.SceneGraphInspector.GetName.doc_1args_frame_id)
+            cls_doc.GetName.doc_1args_frame_id)
         .def("GetNameByGeometryId",
             overload_cast_explicit<const std::string&, GeometryId>(
-                &SceneGraphInspector<T>::GetName),
+                &Class::GetName),
             py_reference_internal, py::arg("geometry_id"),
-            doc.SceneGraphInspector.GetName.doc_1args_geometry_id)
-        .def("GetPoseInFrame", &SceneGraphInspector<T>::GetPoseInFrame,
+            cls_doc.GetName.doc_1args_geometry_id)
+        .def("GetShape", &Class::GetShape, py_reference_internal,
+            py::arg("geometry_id"), cls_doc.GetShape.doc)
+        .def("GetPoseInFrame", &Class::GetPoseInFrame, py_reference_internal,
+            py::arg("geometry_id"), cls_doc.GetPoseInFrame.doc)
+        .def("GetProximityProperties", &Class::GetProximityProperties,
             py_reference_internal, py::arg("geometry_id"),
-            doc.SceneGraphInspector.GetPoseInFrame.doc)
-        .def("GetShape", &SceneGraphInspector<T>::GetShape,
+            cls_doc.GetProximityProperties.doc)
+        .def("GetIllustrationProperties", &Class::GetIllustrationProperties,
             py_reference_internal, py::arg("geometry_id"),
-            doc.SceneGraphInspector.GetShape.doc);
+            cls_doc.GetIllustrationProperties.doc)
+        .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
+            py_reference_internal, py::arg("geometry_id"),
+            cls_doc.GetPerceptionProperties.doc);
   }
 
   //  SceneGraph
