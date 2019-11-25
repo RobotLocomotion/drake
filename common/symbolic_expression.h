@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
@@ -1432,6 +1433,15 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   // structural equality between two expressions.
   return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
 }
+
+/** Evaluates @p m using a given environment (by default, an empty environment).
+ *
+ * @throws std::runtime_error if there exists a non-random variable in @p m.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Eigen::SparseMatrix<double> Evaluate(
+    const Eigen::SparseMatrix<symbolic::Expression>& m,
+    const Environment& env = Environment{});
 
 }  // namespace symbolic
 
