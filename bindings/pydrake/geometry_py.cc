@@ -273,6 +273,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
             doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
+        .def("ComputeSignedDistancePairClosestPoints",
+            &QueryObject<T>::ComputeSignedDistancePairClosestPoints,
+            py::arg("id_A"), py::arg("id_B"),
+            doc.QueryObject.ComputeSignedDistancePairClosestPoints.doc)
         .def("ComputePointPairPenetration",
             &QueryObject<T>::ComputePointPairPenetration,
             doc.QueryObject.ComputePointPairPenetration.doc)
