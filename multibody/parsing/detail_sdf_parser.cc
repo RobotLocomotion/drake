@@ -80,11 +80,15 @@ void ThrowAnyErrors(const sdf::Errors& errors) {
   }
 }
 
-template <typename Class, typename... Args>
 math::RigidTransformd ResolveRigidTransform(
-    const Class& element, Args... args) {
+    const sdf::SemanticPose& semantic_pose,
+    const std::string& relative_to = "") {
   ignition::math::Pose3d pose;
-  ThrowAnyErrors(element.ResolvePose(args..., pose));
+  if (relative_to.empty()) {
+    ThrowAnyErrors(semantic_pose.Resolve(pose));
+  } else {
+    ThrowAnyErrors(semantic_pose.Resolve(relative_to, pose));
+  }
   return ToRigidTransform(pose);
 }
 
@@ -288,12 +292,12 @@ void AddJointFromSpecification(
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
-  const RigidTransformd X_CJ = ResolveRigidTransform(
-      joint_spec, joint_spec.ChildLinkName());
+  const RigidTransformd X_CJ =
+      ResolveRigidTransform(joint_spec.SemanticPose());
 
   // Get the pose of the child link C in the model frame M.
   const RigidTransformd X_MC = ResolveRigidTransform(
-      *model_spec.LinkByName(joint_spec.ChildLinkName()));
+      model_spec.LinkByName(joint_spec.ChildLinkName())->SemanticPose());
 
   // Pose of the joint frame J in the model frame M.
   const RigidTransformd X_MJ = X_MC * X_CJ;
@@ -308,7 +312,7 @@ void AddJointFromSpecification(
   } else {
     // Get the pose of the parent link P in the model frame M.
     const RigidTransformd X_MP = ResolveRigidTransform(
-        *model_spec.LinkByName(joint_spec.ParentLinkName()));
+        model_spec.LinkByName(joint_spec.ParentLinkName())->SemanticPose());
     X_PJ = X_MP.inverse() * X_MJ;
   }
 
@@ -427,7 +431,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     // Register information.
-    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
+    const RigidTransformd X_ML = ResolveRigidTransform(link.SemanticPose());
     const RigidTransformd X_WL = X_WM * X_ML;
     link_infos.push_back(LinkInfo{&body, X_WL});
 
@@ -453,7 +457,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
         const RigidTransformd X_LG = ResolveRigidTransform(
-            sdf_visual);
+            sdf_visual.SemanticPose());
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
                 sdf_visual, resolve_filename, X_LG);
@@ -480,7 +484,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           // ... Yuck?
           const RigidTransformd X_LG_init = ResolveRigidTransform(
-              sdf_collision);
+              sdf_collision.SemanticPose());
           const RigidTransformd X_LG =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG_init);
           std::unique_ptr<geometry::Shape> shape =
@@ -505,11 +509,12 @@ const Frame<double>& AddFrameFromSpecification(
   // `__world__`?
   RigidTransformd X_PF;
   const Frame<double>* parent_frame{};
+  const sdf::SemanticPose& semantic_pose = frame_spec.SemanticPose();
   if (frame_spec.AttachedTo().empty()) {
-    X_PF = ResolveRigidTransform(frame_spec);
+    X_PF = ResolveRigidTransform(semantic_pose);
     parent_frame = &model_frame;
   } else {
-    X_PF = ResolveRigidTransform(frame_spec, frame_spec.AttachedTo());
+    X_PF = ResolveRigidTransform(semantic_pose, frame_spec.AttachedTo());
     parent_frame = &plant->GetFrameByName(
         frame_spec.AttachedTo(), model_instance);
   }
@@ -546,7 +551,7 @@ ModelInstanceIndex AddModelFromSpecification(
   // frame is not the world. At present, we assume the parent frame is the
   // world.
   ThrowIfPoseFrameSpecified(model.Element());
-  const RigidTransformd X_WM = ToRigidTransform(model.Pose());
+  const RigidTransformd X_WM = ToRigidTransform(model.RawPose());
 
   drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
@@ -562,7 +567,7 @@ ModelInstanceIndex AddModelFromSpecification(
   const Frame<double>& canonical_link_frame = plant->GetFrameByName(
       canonical_link_name, model_instance);
   const RigidTransformd X_MLc = ResolveRigidTransform(
-      *model.LinkByName(canonical_link_name));
+      model.LinkByName(canonical_link_name)->SemanticPose());
 
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.

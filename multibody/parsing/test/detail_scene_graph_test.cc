@@ -355,7 +355,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
-          ToRigidTransform(sdf_visual->Pose()));
+          ToRigidTransform(sdf_visual->RawPose()));
 
   const RigidTransformd X_LC(geometry_instance->pose());
 
@@ -497,7 +497,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
-          ToRigidTransform(sdf_visual->Pose()));
+          ToRigidTransform(sdf_visual->RawPose()));
 
   // Verify we do have a plane geometry.
   const HalfSpace* shape =
@@ -536,7 +536,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
-          ToRigidTransform(sdf_visual->Pose()));
+          ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
 }
 
@@ -800,7 +800,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
       "  </geometry>"
       "</collision>");
   const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(
-      *sdf_collision, ToRigidTransform(sdf_collision->Pose()));
+      *sdf_collision, ToRigidTransform(sdf_collision->RawPose()));
 
   // These are the expected values as specified by the string above.
   const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
@@ -832,7 +832,7 @@ GTEST_TEST(SceneGraphParserDetail,
       "  </geometry>"
       "</collision>");
   const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(
-      *sdf_collision, ToRigidTransform(sdf_collision->Pose()));
+      *sdf_collision, ToRigidTransform(sdf_collision->RawPose()));
 
   // The expected coordinates of the normal vector in the link frame L.
   const Vector3d normal_L_expected = Vector3d(1.0, 2.0, 3.0).normalized();
