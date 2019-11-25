@@ -394,6 +394,23 @@ GTEST_TEST(TestAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
+
+  const auto decision_variable_index = prog.decision_variable_index();
+  {
+    const auto it = decision_variable_index.find(x0.get_id());
+    ASSERT_TRUE(it != decision_variable_index.end());
+    EXPECT_EQ(it->second, prog.FindDecisionVariableIndex(x0));
+  }
+  {
+    const auto it = decision_variable_index.find(x1.get_id());
+    ASSERT_TRUE(it != decision_variable_index.end());
+    EXPECT_EQ(it->second, prog.FindDecisionVariableIndex(x1));
+  }
+  {
+    const auto it = decision_variable_index.find(x2.get_id());
+    ASSERT_TRUE(it != decision_variable_index.end());
+    EXPECT_EQ(it->second, prog.FindDecisionVariableIndex(x2));
+  }
 }
 
 GTEST_TEST(TestAddDecisionVariables, AddVariable2) {
@@ -490,9 +507,17 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {
   prog.AddIndeterminates(VectorIndeterminate<3>(x0, x1, x2));
   const VectorIndeterminate<3> indeterminates_expected(x0, x1, x2);
   EXPECT_EQ(prog.indeterminates().rows(), 3);
+
+  const auto indeterminates_index = prog.indeterminates_index();
   for (int i = 0; i < 3; ++i) {
     EXPECT_TRUE(prog.indeterminates()(i).equal_to(indeterminates_expected(i)));
     EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates_expected(i)), i);
+
+    const auto it =
+        indeterminates_index.find(indeterminates_expected(i).get_id());
+    ASSERT_TRUE(it != indeterminates_index.end());
+    EXPECT_EQ(it->second,
+              prog.FindIndeterminateIndex(indeterminates_expected(i)));
   }
 }
 

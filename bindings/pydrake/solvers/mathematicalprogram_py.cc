@@ -750,10 +750,15 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
+      .def("decision_variable_index",
+          &MathematicalProgram::decision_variable_index,
+          doc.MathematicalProgram.decision_variable_index.doc)
       .def("indeterminates", &MathematicalProgram::indeterminates,
           doc.MathematicalProgram.indeterminates.doc)
       .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
           doc.MathematicalProgram.indeterminate.doc)
+      .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
+          doc.MathematicalProgram.indeterminates_index.doc)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
