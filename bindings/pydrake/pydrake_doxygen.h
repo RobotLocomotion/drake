@@ -94,6 +94,12 @@ When testing the values of NumPy matrices, please review the documentation in
 
 - `*_py`: A Python library (can be pure Python or pybind)
   - File Names: `*.py`, `*_py.cc`
+    - The `*_py.cc` files should only define one module, but can define
+    multiple submodules.
+    - *Note*: If you need to split up a `{module}_py.cc` file for compilation
+    speed  and clarity, use `{module}_py_{part}.cc` for source and
+    `{module}_py_{part}.h` for headers, and then include the headers into the
+    original module source file. `{part}` may not necessarily be a submodule.
 
 - `*_pybind`: A C++ library for adding pybind-specific utilities to be consumed
   by C++.
