@@ -366,7 +366,7 @@ Removal of deprecated APIs
 
   * Only the Fortran build flavor is supported from now on.
 
-This release provides pre-compiled binaries named ``drake-20191108-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
+This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.12.0>`__ named ``drake-20191108-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
