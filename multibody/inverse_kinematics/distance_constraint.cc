@@ -11,10 +11,6 @@ namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
 
-namespace {
-const double kInf = std::numeric_limits<double>::infinity();
-}  // namespace
-
 DistanceConstraint::DistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     SortedPair<geometry::GeometryId> geometry_pair,
