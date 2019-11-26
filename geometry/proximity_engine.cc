@@ -14,6 +14,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
@@ -64,6 +65,10 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
       const auto& cylinder = dynamic_cast<const fcl::Cylinderd&>(geometry);
       return make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.lz);
     }
+    case fcl::GEOM_ELLIPSOID: {
+      const auto& ellipsoid = dynamic_cast<const fcl::Ellipsoidd&>(geometry);
+      return make_shared<fcl::Ellipsoidd>(ellipsoid.radii);
+    }
     case fcl::GEOM_HALFSPACE:
       // All half spaces are defined exactly the same.
       return make_shared<fcl::Halfspaced>(0, 0, 1, 0);
@@ -86,7 +91,6 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
           convex.getFaceCount(),
           make_shared<const std::vector<int>>(convex.getFaces()));
     }
-    case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CONE:
     case fcl::GEOM_PLANE:
     case fcl::GEOM_TRIANGLE:
@@ -305,6 +309,18 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessHydroelastic(cylinder, user_data);
   }
 
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override {
+    static const logging::Warn log_once(
+        "Ellipsoid is primarily for ComputeContactSurfaces in hydroelastic "
+        "contact model. The accuracy of other collision queries and signed "
+        "distance queries are not guaranteed.");
+    // Note: Using `shared_ptr` because of FCL API requirements.
+    auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
+        ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
+    TakeShapeOwnership(fcl_ellipsoid, user_data);
+    ProcessHydroelastic(ellipsoid, user_data);
+  }
+
   void ImplementGeometry(const HalfSpace& half_space,
                          void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
@@ -320,6 +336,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
+    static const logging::Warn log_once(
+        "Capsule is currently not supported in hydroelastic contact model. "
+        "It is available for collision queries and pairwise signed distance "
+        "queries.");
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
     TakeShapeOwnership(fcl_capsule, user_data);

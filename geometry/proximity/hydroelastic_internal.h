@@ -249,6 +249,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
+/** Rigid cylinder support. Requires the ('hydroelastic', 'resolution_hint')
+ property.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Cylinder& cylinder, const ProximityProperties& props);
+
+/** Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
+ property.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 /** Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
@@ -267,6 +276,24 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
+
+/** Creates a soft box (assuming the proximity properties has sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Box& box, const ProximityProperties& props);
+
+/** Creates a soft cylinder (assuming the proximity properties has sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Cylinder& cylinder, const ProximityProperties& props);
+
+/** Creates a soft ellipsoid (assuming the proximity properties has sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 //@}
 

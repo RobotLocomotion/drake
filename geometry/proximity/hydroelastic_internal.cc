@@ -5,7 +5,13 @@
 
 #include <fmt/format.h>
 
+#include "drake/geometry/proximity/make_box_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_cylinder_field.h"
+#include "drake/geometry/proximity/make_cylinder_mesh.h"
+#include "drake/geometry/proximity/make_ellipsoid_field.h"
+#include "drake/geometry/proximity/make_ellipsoid_mesh.h"
+#include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
@@ -167,6 +173,7 @@ HydroelasticType Classify(const ProximityProperties& props) {
 template <typename ValueType>
 class Validator {
  public:
+  // Parameters `shape_name` and `compliance` are only for error messages.
   Validator(const char* shape_name, const char* compliance)
       : shape_name_(shape_name), compliance_(compliance) {}
 
@@ -189,10 +196,10 @@ class Validator {
     return value;
   }
 
+ protected:
   const char* shape_name() const { return shape_name_; }
   const char* compliance() const { return compliance_; }
 
- protected:
   // Does the work of validating the given value. Sub-classes should throw if
   // the provided value is not valid. The first parameter is the value to
   // validate; the second is the full name of the property.
@@ -206,8 +213,8 @@ class Validator {
 // Validator that extracts *positive doubles*.
 class PositiveDouble : public Validator<double> {
  public:
-  PositiveDouble(const char* shape_name, const char* compliance)
-      : Validator<double>(shape_name, compliance) {}
+  // Inherit the constructor from the base class.
+  using Validator<double>::Validator;
 
  protected:
   void ValidateValue(const double& value,
@@ -222,8 +229,8 @@ class PositiveDouble : public Validator<double> {
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  const double edge_length =
-      PositiveDouble("Sphere", "rigid").Extract(props, kHydroGroup, kRezHint);
+  PositiveDouble validator("Sphere", "rigid");
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   SurfaceMesh<double> mesh = MakeSphereSurfaceMesh<double>(sphere, edge_length);
 
   return RigidGeometry(move(mesh));
@@ -231,37 +238,97 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props) {
-  const double edge_length =
-      PositiveDouble("Box", "rigid").Extract(props, kHydroGroup, kRezHint);
+  PositiveDouble validator("Box", "rigid");
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   SurfaceMesh<double> mesh = MakeBoxSurfaceMesh<double>(box, edge_length);
+
+  return RigidGeometry(move(mesh));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Cylinder& cylinder, const ProximityProperties& props) {
+  PositiveDouble validator("Cylinder", "rigid");
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  SurfaceMesh<double> mesh =
+      MakeCylinderSurfaceMesh<double>(cylinder, edge_length);
+
+  return RigidGeometry(move(mesh));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props) {
+  PositiveDouble validator("Ellipsoid", "rigid");
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  SurfaceMesh<double> mesh =
+      MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length);
 
   return RigidGeometry(move(mesh));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
+  PositiveDouble validator("Sphere", "soft");
   // First, create the mesh.
-  const double edge_length =
-      PositiveDouble("Sphere", "soft").Extract(props, kHydroGroup, kRezHint);
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeSphereVolumeMesh<double>(sphere, edge_length));
 
-  // E is the elastic modulus.
-  const double E =
-      PositiveDouble("Sphere", "soft").Extract(props, kMaterialGroup, kElastic);
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
 
-  // Second, compute the penetration extent and gradient fields.
-  const double r = sphere.radius();
-  std::vector<double> p_values;
-  p_values.reserve(mesh->num_vertices());
-  for (const auto& v : mesh->vertices()) {
-    const Vector3d& p_MV = v.r_MV();
-    const double p_MV_len = p_MV.norm();
-    const double extent = 1.0 - p_MV_len / r;
-    p_values.push_back(E * extent);
-  }
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      "pressure", move(p_values), mesh.get());
+      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+
+  return SoftGeometry(move(mesh), move(pressure));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Box& box, const ProximityProperties& props) {
+  PositiveDouble validator("Box", "soft");
+  // First, create the mesh.
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeBoxVolumeMesh<double>(box, edge_length));
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeBoxPressureField(box, mesh.get(), elastic_modulus));
+
+  return SoftGeometry(move(mesh), move(pressure));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Cylinder& cylinder, const ProximityProperties& props) {
+  PositiveDouble validator("Cylinder", "soft");
+  // First, create the mesh.
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeCylinderVolumeMesh<double>(cylinder, edge_length));
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeCylinderPressureField(cylinder, mesh.get(), elastic_modulus));
+
+  return SoftGeometry(move(mesh), move(pressure));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props) {
+  PositiveDouble validator("Ellipsoid", "soft");
+  // First, create the mesh.
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length));
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeEllipsoidPressureField(ellipsoid, mesh.get(), elastic_modulus));
 
   return SoftGeometry(move(mesh), move(pressure));
 }
