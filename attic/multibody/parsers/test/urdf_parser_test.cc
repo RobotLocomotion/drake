@@ -94,20 +94,31 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 }
 
 GTEST_TEST(URDFParserTest, TestParseMaterial) {
-  const string resource_dir{
-    "drake/multibody/parsing/test/urdf_parser_test/"};
+  // As the modern URDF parser moves beyond the attic parser's functionality,
+  // we are eroding the ability to re-use the same URDF files in both sets of
+  // tests. Where we can, we use the same files. Otherwise, those that are only
+  // compatible with the attic parser are preserved in the attic (to be deleted
+  // with the parser).
+  // The path to parsing resource files used by the modern urdf parser.
+  const string resource_dir_main{
+      "drake/multibody/parsing/test/urdf_parser_test/"};
+  // The path to parsing resource files used solely by the attic parser.
+  const string resource_dir_local{
+    "drake/attic/multibody/parsers/test/urdf_parser_test_models/"};
   const string file_no_conflict_1 = FindResourceOrThrow(
-      resource_dir + "non_conflicting_materials_1.urdf");
+      resource_dir_local + "non_conflicting_materials_1.urdf");
   const string file_no_conflict_2 = FindResourceOrThrow(
-      resource_dir + "non_conflicting_materials_2.urdf");
+      resource_dir_local + "non_conflicting_materials_2.urdf");
   const string file_no_conflict_3 = FindResourceOrThrow(
-      resource_dir + "non_conflicting_materials_3.urdf");
+      resource_dir_main + "non_conflicting_materials_3.urdf");
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_no_conflict_1, tree.get()));
 
   tree = make_unique<RigidBodyTree<double>>();
+  AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_no_conflict_2, tree.get());
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_no_conflict_2, tree.get()));
 
@@ -116,13 +127,14 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_no_conflict_3, tree.get()));
 
   // This URDF defines the same color multiple times in different links.
+  // TODO(SeanCurtis-TRI): Delete this URDF when attic is removed; attic
+  //  is the only one using it. MBP parsing uses its own variant.
   const string file_same_color_diff_links = FindResourceOrThrow(
-      resource_dir + "duplicate_but_same_materials.urdf");
+      resource_dir_main + "duplicate_but_same_materials.urdf");
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_same_color_diff_links, tree.get()));
 }
-
 
 GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
   const string resource_dir{
@@ -214,7 +226,7 @@ GTEST_TEST(URDFParserTest,
 // This prevents a regression of #5928.
 GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfStringWeldToFrame) {
   const string resource_dir{
-    "drake/multibody/parsing/test/urdf_parser_test/"};
+    "drake/attic/multibody/parsers/test/urdf_parser_test_models/"};
   const string model_file = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
   const string model_string = ReadTextFile(model_file);
