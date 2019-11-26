@@ -1,0 +1,10 @@
+--- BUILD.bazel.orig	2020-01-10 17:19:19.769041040 -0800
++++ BUILD.bazel	2020-01-10 17:21:40.698828535 -0800
+@@ -18,6 +18,7 @@
+         exclude = ["src/benchmark_main.cc"],
+     ),
+     hdrs = ["include/benchmark/benchmark.h"],
++    copts = ["-Wno-deprecated-declarations"],
+     linkopts = select({
+         ":windows": ["-DEFAULTLIB:shlwapi.lib"],
+         "//conditions:default": ["-pthread"],
