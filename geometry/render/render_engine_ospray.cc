@@ -16,7 +16,7 @@
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkProperty.h>
-#include <vtkSphereSource.h>
+#include <vtkTexturedSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
@@ -172,7 +172,7 @@ void RenderEngineOspray::ImplementGeometry(const Sphere& sphere,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive sphere; find some way to
   //  exercise *that* instead of needlessly tessellating.
-  vtkNew<vtkSphereSource> vtk_sphere;
+  vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }

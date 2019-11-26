@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
@@ -66,6 +67,9 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   PerceptionProperties perception_properties;
   perception_properties.AddProperty("phong", "diffuse",
                                     Vector4d{0.8, 0.8, 0.8, 1.0});
+  perception_properties.AddProperty(
+      "phong", "diffuse_map",
+      FindResourceOrThrow("drake/examples/scene_graph/rainbow.png"));
   perception_properties.AddProperty("label", "id",
                                     RenderLabel(ball_id_.get_value()));
   scene_graph->AssignRole(source_id, ball_id_, perception_properties);

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -48,7 +49,7 @@ class UrdfGeometryTests : public testing::Test {
     for (const XMLElement* material_node = node->FirstChildElement("material");
          material_node;
          material_node = material_node->NextSiblingElement("material")) {
-      ParseMaterial(material_node, &materials_);
+      ParseMaterial(material_node, true, package_map_, root_dir_, &materials_);
     }
 
     // Parses geometry out of the model's link elements.
@@ -106,13 +107,16 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   ASSERT_EQ(materials_.size(), 3);
 
   Vector4d brown(0.93333333333, 0.79607843137, 0.67843137254, 1);
-  EXPECT_TRUE(CompareMatrices(materials_.at("brown"), brown, 1e-10));
+  EXPECT_TRUE(materials_.at("brown").rgba);
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("brown").rgba), brown, 1e-10));
 
   Vector4d red(0.93333333333, 0.2, 0.2, 1);
-  EXPECT_TRUE(CompareMatrices(materials_.at("red"), red, 1e-10));
+  EXPECT_TRUE(materials_.at("red").rgba);
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("red").rgba), red, 1e-10));
 
   Vector4d green(0, 1, 0, 1);
-  EXPECT_TRUE(CompareMatrices(materials_.at("green"), green, 1e-10));
+  EXPECT_TRUE(materials_.at("green").rgba);
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("green").rgba), green, 1e-10));
 
   ASSERT_EQ(visual_instances_.size(), 2);
   const auto& visual = visual_instances_.front();
@@ -140,7 +144,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   EXPECT_TRUE(properties->HasProperty("phong", "diffuse"));
   EXPECT_TRUE(
       CompareMatrices(properties->GetProperty<Vector4d>("phong", "diffuse"),
-          materials_.at("green")));
+                      *(materials_.at("green").rgba)));
 }
 
 TEST_F(UrdfGeometryTests, TestParseMaterial2) {
@@ -198,7 +202,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
     "drake/multibody/parsing/test/urdf_parser_test/"};
   // This URDF defines the same color multiple times in different links.
   const std::string file_same_color_diff_links = FindResourceOrThrow(
-      resource_dir + "duplicate_but_same_materials.urdf");
+      resource_dir + "duplicate_but_same_materials_with_texture.urdf");
   DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_same_color_diff_links));
 
   ASSERT_GE(visual_instances_.size(), 1);
@@ -242,9 +246,10 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   const XMLElement* node = xml_doc_.FirstChildElement("robot");
   ASSERT_TRUE(node);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ParseMaterial(node, &materials_), std::runtime_error,
-      "Expected material element, got robot");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseMaterial(node, false, package_map_,
+                                                      root_dir_, &materials_),
+                              std::runtime_error,
+                              "Expected material element, got robot");
 
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
