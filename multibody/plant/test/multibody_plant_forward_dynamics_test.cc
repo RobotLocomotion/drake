@@ -42,7 +42,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
       const Eigen::Ref<const VectorX<double>>& v,
       EigenPtr<VectorX<double>> vdot) {
     // Update joint positions and velocities.
-    VectorX<double> x(plant_->num_multibody_states());
+    VectorX<double> x(q.size() + v.size());
     x << q, v;
     SetState(x);
     *vdot =
@@ -60,7 +60,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
       const Eigen::Ref<const VectorX<double>>& v,
       EigenPtr<VectorX<double>> vdot) {
     // Update joint positions and velocities.
-    VectorX<double> x(plant_->num_multibody_states());
+    VectorX<double> x(q.size() + v.size());
     x << q, v;
     SetState(x);
 
