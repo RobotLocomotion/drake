@@ -362,6 +362,17 @@ class TestGeometry(unittest.TestCase):
         results = query_object.FindCollisionCandidates()
         self.assertEqual(len(results), 0)
 
+        # ComputeSignedDistancePairClosestPoints() requires two valid geometry
+        # ids. There are none in this SceneGraph instance. Rather than
+        # populating the SceneGraph, we look for the exception thrown in
+        # response to invalid ids as evidence of correct binding.
+        self.assertRaisesRegex(
+            RuntimeError,
+            "The geometry given by id \\d+ does not reference a geometry" +
+            " that can be used in a signed distance query",
+            query_object.ComputeSignedDistancePairClosestPoints,
+            mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())
+
         # Confirm rendering API returns images of appropriate type.
         d_camera = mut.render.DepthCameraProperties(
             width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
