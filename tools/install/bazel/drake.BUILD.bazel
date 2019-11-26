@@ -1,0 +1,42 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load(":.vars.bzl", "resources_data_files", "resources_data_subdirs")
+
+# TODO(jwnimmer-tri) Compute the subdirs at Drake-install time, so we never
+# have to glob as part of installed BUILD files.
+filegroup(
+    name = "resources",
+    data = resources_data_files + glob([
+        x + "/**"
+        for x in resources_data_subdirs
+    ]),
+)
+
+# TODO(jwnimmer-tri) Use the correct cc_import phrasing.
+filegroup(
+    name = "drake_shared_library",
+    data = glob([
+        ".lib/*.so",
+        ".lib/*.so.*",
+    ]),
+)
+
+_IMPORT = ".lib/python3.6/site-packages"
+
+py_library(
+    name = "pydrake",
+    srcs = glob(include = [
+        _IMPORT + "/**/*.py",
+    ]),
+    data = glob(include = [
+        _IMPORT + "/**/*.so",
+    ]) + [
+        ":drake_shared_library",
+        ":resources",
+    ],
+    imports = [
+        _IMPORT,
+    ],
+    visibility = ["//bindings/pydrake:__pkg__"],
+)

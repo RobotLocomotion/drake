@@ -1,0 +1,52 @@
+# -*- python -*-
+# vi: set ft=python :
+
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_py_binary(
+    name = "repo_gen",
+    srcs = ["repo_gen.py"],
+    data = [
+        "drake.BUILD.bazel",
+        "drake__bindings__pydrake.BUILD.bazel",
+        "repo.bzl",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+genrule(
+    name = "repo_bzl_genrule",
+    outs = ["repo_gen.bzl"],
+    cmd = "$(execpath :repo_gen) --output=$@",
+    tools = [":repo_gen"],
+)
+
+install(
+    name = "install",
+    install_tests = [
+        "test/drake_bazel_installed_test.py",
+    ],
+    data = [
+        ":repo_gen.bzl",
+    ],
+    data_dest = "share/drake",
+    rename = {
+        "share/drake/repo_gen.bzl": "repo.bzl",
+    },
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "test/drake_bazel_installed_test.py",
+    ],
+)
