@@ -51,6 +51,7 @@ string GetFullPath(const string& file_name) {
 }
 
 namespace {
+
 // Searches for key package in package_map. If the key exists, returns the
 // associated value; else prints a warning and returns nullopt.
 std::optional<string> GetPackagePath(
@@ -71,8 +72,7 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
 
   // Parse the given URI into pieces.
   static const never_destroyed<std::regex> uri_matcher{
-    "^([a-z0-9+.-]+)://([^/]*)/+(.*)"
-  };
+      "^([a-z0-9+.-]+)://([^/]*)/+(.*)"};
   std::smatch match;
   if (std::regex_match(uri, match, uri_matcher.access())) {
     // The `uri` was actually a URI (not a bare filename).
@@ -107,11 +107,14 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
     }
   }
 
+  result = result.lexically_normal();
+
   if (!filesystem::exists(result)) {
     drake::log()->warn("URI '{}' resolved to '{}' which could not be found.",
                        uri, result.string());
     return {};
   }
+
   return result.string();
 }
 

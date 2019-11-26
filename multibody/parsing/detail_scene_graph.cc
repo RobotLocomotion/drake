@@ -7,6 +7,7 @@
 
 #include <sdf/sdf.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
@@ -240,15 +241,22 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       X_LC, MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename),
       sdf_visual.Name());
   instance->set_illustration_properties(
-      MakeVisualPropertiesFromSdfVisual(sdf_visual));
+      MakeVisualPropertiesFromSdfVisual(sdf_visual, resolve_filename));
   return instance;
 }
 
 IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-    const sdf::Visual& sdf_visual) {
-  // TODO(SeanCurtis-TRI): Update this to use the sdf API when
-  // https://bitbucket.org/osrf/sdformat/pull-requests/445/material-dom/diff
-  // merges.
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename) {
+  // This doesn't directly use the sdf::Material API on purpose. In the current
+  // version, if a parameter (e.g., diffuse) is missing it will *not* be
+  // included in the geometry properties. Using the sdf::Material, it is
+  // impossible to tell if this is happening. If the material exists, then
+  // diffuse, ambient, etc., all have default values and those values will be
+  // written to the geometry properties. This breaks the ability of the
+  // downstream consumer to supply its own defaults (because it can't
+  // distinguish between a value that was specified by the user and one that was
+  // provided by sdformat's default value.
+
   // The existence of a visual element will *always* require an
   // IllustrationProperties instance. How we populate it depends on the material
   // values.
@@ -263,8 +271,22 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
       MaybeGetChildElement(*visual_element, "material");
 
   if (material_element != nullptr) {
-    auto add_property = [material_element](
-        const char* property, IllustrationProperties* props) {
+    if (material_element->HasElement("drake:diffuse_map")) {
+      auto[texture_name, has_value] =
+          material_element->Get<std::string>("drake:diffuse_map", {});
+      if (has_value) {
+        const std::string resolved_path =
+            resolve_filename(texture_name);
+        if (resolved_path.empty()) {
+          throw std::runtime_error(fmt::format(
+              "Unable to locate the texture file: {}", texture_name));
+        }
+        properties.AddProperty("phong", "diffuse_map", resolved_path);
+      }
+    }
+
+    auto add_property = [material_element](const char* property,
+                                           IllustrationProperties* props) {
       if (!material_element->HasElement(property)) return;
       using ignition::math::Color;
       const std::pair<Color, bool> value_pair =
