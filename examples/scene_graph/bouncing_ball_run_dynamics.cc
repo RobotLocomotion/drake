@@ -1,6 +1,7 @@
 #include <memory>
 #include <utility>
 
+#include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
 
 #include "drake/examples/scene_graph/bouncing_ball_plant.h"
