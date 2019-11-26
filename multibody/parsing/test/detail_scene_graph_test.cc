@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 #include "fmt/ostream.h"
 
+#include "drake/common/filesystem.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
@@ -356,6 +358,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
       "    </cylinder>"
       "  </geometry>"
       "</visual>");
+
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
@@ -498,6 +501,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
       "    </plane>"
       "  </geometry>"
       "</visual>");
+
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
@@ -537,11 +541,47 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
       "    <empty/>"
       "  </geometry>"
       "</visual>");
+
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
+}
+
+// Reports if the indicated typed geometry property matches expectations.
+// The expectation is given by an optional `expected_value`. If nullopt, we
+// expect the property to be absent. If provided, we expect the property to
+// exist with the given type and have the same value.
+template <typename T, typename Compare>
+::testing::AssertionResult HasExpectedProperty(
+    const char* group, const char* property, std::optional<T> expected_value,
+    const IllustrationProperties& properties, Compare matches) {
+  ::testing::AssertionResult failure = ::testing::AssertionFailure();
+  const bool has_property = properties.HasProperty(group, property);
+  if (expected_value.has_value()) {
+    if (has_property) {
+      // This will throw if the property is of the wrong type.
+      const T& value = properties.GetProperty<T>(group, property);
+      if (matches(value, *expected_value)) {
+        return ::testing::AssertionSuccess();
+      } else {
+        failure << "\nIncorrect values for ('" << group << "', " << property
+                << "'):" << "\n  expected: " << (*expected_value)
+                << "\n  found:    " << value;
+      }
+    } else {
+      failure << "\n  missing expected property ('" << group << "', '"
+              << property << "')";
+    }
+  } else {
+    if (!has_property) return ::testing::AssertionSuccess();
+
+    failure << "\n  found unexpected property ('" << group << "', '" << property
+            << "')";
+  }
+  failure << "\n";
+  return failure;
 }
 
 // Verify visual material parsing: default for unspecified, and diffuse color
@@ -551,57 +591,57 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
 
   // Searches the illustration properties for an optional phong material
   // specification with optional color values.
-  auto expect_phong = [](
-      const IllustrationProperties& dut, bool has_group,
-      const std::optional<Vector4d> diffuse,
-      const std::optional<Vector4d> specular,
-      const std::optional<Vector4d> ambient,
-      const std::optional<Vector4d> emissive) -> ::testing::AssertionResult {
+  auto expect_phong = [](const IllustrationProperties& dut,
+                         bool must_have_group,
+                         const std::optional<Vector4d> diffuse,
+                         const std::optional<Vector4d> specular,
+                         const std::optional<Vector4d> ambient,
+                         const std::optional<Vector4d> emissive,
+                         const std::optional<std::string> diffuse_map)
+      -> ::testing::AssertionResult {
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
+    failure << "\nKnown failure conditions:";
     bool success = true;
-    if (has_group) {
+    auto test_color = [&failure, &success, &dut](
+                          const char* name,
+                          const std::optional<Vector4d> ref_color) {
+      auto result =
+          HasExpectedProperty("phong", name, ref_color, dut,
+                              [](const Vector4d& a, const Vector4d& b) {
+                                return static_cast<bool>(CompareMatrices(a, b));
+                              });
+      if (!result) {
+        failure << result.message();
+        success = false;
+      }
+    };
+    if (must_have_group) {
       if (dut.HasGroup("phong")) {
-        auto test_color = [&failure, &success, &dut](
-            const char* name, const std::optional<Vector4d> ref_color) {
-          const bool has_property = dut.HasProperty("phong", name);
-          if (ref_color) {
-            if (has_property) {
-              const Vector4d& color = dut.GetProperty<Vector4d>("phong", name);
-              auto result = CompareMatrices(*ref_color, color);
-              if (result == ::testing::AssertionFailure()) {
-                success = false;
-                failure << "Incorrect values for '" << name << "':"
-                        << "\n expected: " << (*ref_color)
-                        << "\n found:    " << color;
-              }
-            } else {
-              success = false;
-              failure << ", missing expected property '" << name << "'";
-            }
-          } else {
-            if (has_property) {
-              success = false;
-              failure << ", found unexpected property '" << name << "'";
-            }
-          }
-        };
         test_color("diffuse", diffuse);
         test_color("specular", specular);
         test_color("ambient", ambient);
         test_color("emissive", emissive);
+        auto result = HasExpectedProperty(
+            "phong", "diffuse_map", diffuse_map, dut,
+            [](const std::string& a, const std::string& b) { return a == b; });
+        if (!result) {
+          failure << result;
+          success = false;
+        }
       } else {
-        failure << ", missing the expected 'phong' group";
+        failure << "\n  missing the expected 'phong' group";
         success = false;
       }
     } else {
       if (dut.HasGroup("phong")) {
-        failure << ", found unexpected 'phong' group";
+        failure << "\n  found unexpected 'phong' group";
         success = false;
       }
     }
     if (success) {
       return ::testing::AssertionSuccess();
     } else {
+      failure << "\n";
       return failure;
     }
   };
@@ -609,7 +649,8 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   // Builds a visual XML tag with an optional <material> tag and optional
   // color values.
   auto make_xml = [](bool has_material, Vector4d* diffuse, Vector4d* specular,
-                     Vector4d* ambient, Vector4d* emissive) {
+                     Vector4d* ambient, Vector4d* emissive,
+                     const std::string& texture_name) {
     std::stringstream ss;
     ss << "<visual name='some_link_visual'>"
        << "  <pose>0 0 0 0 0 0</pose>"
@@ -627,6 +668,10 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         }
       };
       ss << "  <material>";
+      if (!texture_name.empty()) {
+        ss << "    <drake:diffuse_map>" << texture_name
+           << "</drake:diffuse_map>";
+      }
       write_color("diffuse", diffuse);
       write_color("specular", specular);
       write_color("ambient", ambient);
@@ -638,25 +683,29 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     return ss.str();
   };
 
+  // We need a root directory to an actually existing file we can reference.
+  const std::string file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/urdf_parser_test/empty.png");
+  const std::string root_dir =
+      filesystem::path(file_path).parent_path().string();
+
   // Case: No material defined -- empty illustration properties.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(false, nullptr, nullptr, nullptr, nullptr));
+        make_xml(false, nullptr, nullptr, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, false, {}, {}, {}, {}));
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
   }
 
   // Case: Material tag defined, but no material properties -- empty
   // illustration properties.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(true, nullptr, nullptr, nullptr, nullptr));
+        make_xml(true, nullptr, nullptr, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, false, {}, {}, {}, {}));
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
   }
 
   Vector4<double> diffuse{0.25, 0.5, 0.75, 1.0};
@@ -667,51 +716,64 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   // Case: Only valid diffuse material.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(true, &diffuse, nullptr, nullptr, nullptr));
+        make_xml(true, &diffuse, nullptr, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, true, diffuse, {}, {}, {}));
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(expect_phong(material, true, diffuse, {}, {}, {}, {}));
   }
 
   // Case: Only valid specular defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(true, nullptr, &specular, nullptr, nullptr));
+        make_xml(true, nullptr, &specular, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, true, {}, specular, {}, {}));
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(expect_phong(material, true, {}, specular, {}, {}, {}));
   }
 
   // Case: Only valid ambient defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(true, nullptr, nullptr, &ambient, nullptr));
+        make_xml(true, nullptr, nullptr, &ambient, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, true, {}, {}, ambient, {}));
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(expect_phong(material, true, {}, {}, ambient, {}, {}));
   }
 
   // Case: Only valid emissive defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(true, nullptr, nullptr, nullptr, &emissive));
+        make_xml(true, nullptr, nullptr, nullptr, &emissive, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, true, {}, {}, {}, emissive));
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(expect_phong(material, true, {}, {}, {}, emissive, {}));
   }
 
-  // Case: All four
+  // Case: All four.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        make_xml(true, &diffuse, &specular, &ambient, &emissive));
+        make_xml(true, &diffuse, &specular, &ambient, &emissive, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
     EXPECT_TRUE(
-        expect_phong(material, true, diffuse, specular, ambient, emissive));
+        expect_phong(material, true, diffuse, specular, ambient, emissive, {}));
+  }
+
+  // Case: With diffuse map.
+  {
+    // Note: we only test with a local map; we rely on the tests for resolving
+    // URIs to do the right thing with other URI formats.
+    const std::string kLocalMap = "empty.png";
+    const std::string xml =
+        make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap);
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    // Note: The "no-op" filename resolver will just return kLocalMap as the
+    // property name.
+    EXPECT_TRUE(expect_phong(material, true, diffuse, specular, ambient,
+                             emissive, kLocalMap));
   }
 
   // TODO(SeanCurtis-TRI): The following tests capture current behavior for
@@ -741,9 +803,9 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "  </material>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
     Vector4<double> expected_diffuse{0.25, 1, 0.5, 0.25};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 
   // Case: Too few channel values -- fill in with 0 for b and 1 for alpha.
@@ -761,9 +823,9 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "  </material>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
     Vector4<double> expected_diffuse{0, 1, 0, 1};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 
   // Case: Values out of range:
@@ -785,9 +847,9 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "  </material>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
     Vector4<double> expected_diffuse{0, 1, 255, 1};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 }
 
@@ -814,8 +876,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(X_LG.rotation().IsNearlyEqualTo(R_LG_expected, kTolerance));
-  EXPECT_TRUE(CompareMatrices(X_LG.translation(), p_LGo_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_LG.translation(), p_LGo_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // Verify MakeGeometryPoseFromSdfCollision can make the pose X_LG of the

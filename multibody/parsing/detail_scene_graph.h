@@ -41,12 +41,13 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  geometry::IllustrationProperties as follows:
 
  <!-- NOTE: Lines longer than 80 columns required for the doxygen tables. -->
- | Group |   Name   |      Type       | Description |
- | :---: | :------: | :-------------: | :---------- |
- | phong | diffuse  | Vector4<double> | The normalized rgba values for the diffuse color |
- | phong | ambient  | Vector4<double> | The normalized rgba values for the ambient color |
- | phong | specular | Vector4<double> | The normalized rgba values for the specular color |
- | phong | emissive | Vector4<double> | The normalized rgba values for the emissive color |
+ | Group |    Name     |      Type       | Description |
+ | :---: | :---------: | :-------------: | :---------- |
+ | phong | diffuse     | Vector4<double> | The normalized rgba values for the diffuse color |
+ | phong | ambient     | Vector4<double> | The normalized rgba values for the ambient color |
+ | phong | specular    | Vector4<double> | The normalized rgba values for the specular color |
+ | phong | emissive    | Vector4<double> | The normalized rgba values for the emissive color |
+ | phong | diffuse_map | string          | A resolvable URI to a png image that will be applied as a diffuse map. |
 
  These are properties to be used in the
  <a href="https://en.wikipedia.org/wiki/Phong_reflection_model">Phong
@@ -81,7 +82,7 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  there is no material tag, no material property tags, or no successfully
  parsed material property tags, the property set will be empty.  */
 geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-    const sdf::Visual& sdf_visual);
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
 
 /** Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
  relative to the link L containing the collision, given an `sdf_collision`

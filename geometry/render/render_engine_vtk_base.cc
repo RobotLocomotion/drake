@@ -25,7 +25,7 @@ void CreateVtkCapsule(vtkTransformPolyDataFilter* transform_filter,
   transform_filter->Update();
 }
 
-void SetSphereOptions(vtkSphereSource* vtk_sphere, double radius) {
+void SetSphereOptions(vtkTexturedSphereSource* vtk_sphere, double radius) {
   vtk_sphere->SetRadius(radius);
   // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
   vtk_sphere->SetThetaResolution(50);

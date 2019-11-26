@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -24,6 +25,7 @@ namespace {
 using std::make_unique;
 using std::unique_ptr;
 
+using Eigen::Vector4d;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -73,7 +75,7 @@ class UrdfGeometryTests : public testing::Test {
     for (const XMLElement* material_node = node->FirstChildElement("material");
          material_node;
          material_node = material_node->NextSiblingElement("material")) {
-      ParseMaterial(material_node, &materials_);
+      ParseMaterial(material_node, true, package_map_, root_dir_, &materials_);
     }
 
     // Parses geometry out of the model's link elements.
@@ -119,7 +121,6 @@ class UrdfGeometryTests : public testing::Test {
 // This test dives into more detail for some things than other tests.  We
 // assume if parsing certain things works here that it will keep working.
 TEST_F(UrdfGeometryTests, TestParseMaterial1) {
-  using Eigen::Vector4d;
   const std::string resource_dir{
     "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_no_conflict_1 = FindResourceOrThrow(
@@ -127,36 +128,45 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
 
   DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
 
-  ASSERT_EQ(materials_.size(), 3);
+  ASSERT_EQ(materials_.size(), 5);
 
-  Vector4d brown(0.93333333333, 0.79607843137, 0.67843137254, 1);
-  EXPECT_TRUE(CompareMatrices(materials_.at("brown"), brown, 1e-10));
+  const Vector4d brown(0.93333333333, 0.79607843137, 0.67843137254, 1);
+  EXPECT_TRUE(materials_.at("brown").rgba.has_value());
+  EXPECT_FALSE(materials_.at("brown").diffuse_map.has_value());
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("brown").rgba), brown, 1e-10));
 
-  Vector4d red(0.93333333333, 0.2, 0.2, 1);
-  EXPECT_TRUE(CompareMatrices(materials_.at("red"), red, 1e-10));
+  const Vector4d red(0.93333333333, 0.2, 0.2, 1);
+  EXPECT_TRUE(materials_.at("red").rgba.has_value());
+  EXPECT_FALSE(materials_.at("red").diffuse_map.has_value());
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("red").rgba), red, 1e-10));
 
-  Vector4d green(0, 1, 0, 1);
-  EXPECT_TRUE(CompareMatrices(materials_.at("green"), green, 1e-10));
+  const Vector4d green(0, 1, 0, 1);
+  EXPECT_TRUE(materials_.at("green").rgba.has_value());
+  EXPECT_FALSE(materials_.at("green").diffuse_map.has_value());
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("green").rgba), green, 1e-10));
 
-  ASSERT_EQ(visual_instances_.size(), 2);
-  const auto& visual = visual_instances_.front();
+  const Vector4d black(0, 0, 0, 0);
+  EXPECT_TRUE(materials_.at("textured").rgba.has_value());
+  EXPECT_TRUE(materials_.at("textured").diffuse_map.has_value());
+  const std::string& file_name1 = *(materials_.at("textured").diffuse_map);
+  EXPECT_EQ("empty.png", file_name1.substr(file_name1.size() - 9));
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("textured").rgba), black, 1e-10));
+
+  EXPECT_TRUE(materials_.at("texture_and_color").rgba.has_value());
+  EXPECT_TRUE(materials_.at("texture_and_color").diffuse_map.has_value());
+  const std::string& file_name2 =
+      *(materials_.at("texture_and_color").diffuse_map);
+  EXPECT_EQ("empty.png", file_name2.substr(file_name2.size() - 9));
+  EXPECT_TRUE(
+      CompareMatrices(*(materials_.at("texture_and_color").rgba), green));
+
+  ASSERT_EQ(visual_instances_.size(), 4);
+  const auto& visual = visual_instances_[0];
   const std::string name_base = "non_conflicting_materials_1";
   EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
 
   EXPECT_TRUE(CompareMatrices(
       visual.pose().GetAsMatrix34(), RigidTransformd().GetAsMatrix34()));
-
-  const geometry::Box* box =
-      dynamic_cast<const geometry::Box*>(&visual.shape());
-  ASSERT_TRUE(box);
-  EXPECT_TRUE(CompareMatrices(box->size(), Eigen::Vector3d(0.2, 0.2, 0.2)));
-
-  const auto& capsule_visual = visual_instances_.back();
-  const geometry::Capsule* capsule =
-      dynamic_cast<const geometry::Capsule*>(&capsule_visual.shape());
-  ASSERT_TRUE(capsule);
-  EXPECT_EQ(capsule->radius(), 0.2);
-  EXPECT_EQ(capsule->length(), 0.5);
 
   const geometry::IllustrationProperties* properties =
       visual.illustration_properties();
@@ -164,7 +174,25 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   EXPECT_TRUE(properties->HasProperty("phong", "diffuse"));
   EXPECT_TRUE(
       CompareMatrices(properties->GetProperty<Vector4d>("phong", "diffuse"),
-          materials_.at("green")));
+                      *(materials_.at("green").rgba)));
+
+  const geometry::Box* box =
+      dynamic_cast<const geometry::Box*>(&visual.shape());
+  ASSERT_TRUE(box);
+  EXPECT_TRUE(CompareMatrices(box->size(), Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+  const auto& capsule_visual = visual_instances_[1];
+  const geometry::Capsule* capsule =
+      dynamic_cast<const geometry::Capsule*>(&capsule_visual.shape());
+  ASSERT_TRUE(capsule);
+  EXPECT_EQ(capsule->radius(), 0.2);
+  EXPECT_EQ(capsule->length(), 0.5);
+
+  const auto& sphere_visual = visual_instances_[2];
+  const geometry::Sphere* sphere =
+      dynamic_cast<const geometry::Sphere*>(&sphere_visual.shape());
+  ASSERT_TRUE(sphere);
+  EXPECT_EQ(sphere->radius(), 0.25);
 }
 
 TEST_F(UrdfGeometryTests, TestParseMaterial2) {
@@ -176,9 +204,19 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_2));
   EXPECT_EQ(materials_.size(), 1);
 
-  ASSERT_EQ(visual_instances_.size(), 2);
-  const auto& visual = visual_instances_.front();
+  const Vector4d brown{0.93333333333, 0.79607843137, 0.67843137254, 1};
+  EXPECT_TRUE(materials_.at("brown").rgba.has_value());
+  EXPECT_TRUE(CompareMatrices(*(materials_.at("brown").rgba), brown, 1e-14));
 
+  ASSERT_EQ(visual_instances_.size(), 3);
+
+  const auto& visual = visual_instances_[0];
+  EXPECT_TRUE(
+      visual.illustration_properties()->HasProperty("phong", "diffuse"));
+  EXPECT_TRUE(
+      CompareMatrices(visual.illustration_properties()->GetProperty<Vector4d>(
+                          "phong", "diffuse"),
+                      brown, 1e-14));
   const RigidTransformd expected_pose(Eigen::Vector3d(0, 0, 0.3));
   EXPECT_TRUE(CompareMatrices(
       visual.pose().GetAsMatrix34(), expected_pose.GetAsMatrix34()));
@@ -189,7 +227,8 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   EXPECT_EQ(cylinder->radius(), 0.1);
   EXPECT_EQ(cylinder->length(), 0.6);
 
-  const auto& mesh_visual = visual_instances_.back();
+  const auto& mesh_visual = visual_instances_[1];
+  // Mesh has a "default" material.
   const geometry::Mesh* mesh =
       dynamic_cast<const geometry::Mesh*>(&mesh_visual.shape());
   ASSERT_TRUE(mesh);
@@ -198,6 +237,14 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   std::string obj_name = "tri_cube.obj";
   EXPECT_EQ(mesh_filename.rfind(obj_name),
             mesh_filename.size() - obj_name.size());
+
+  const auto& sphere_visual = visual_instances_[2];
+  EXPECT_TRUE(
+      sphere_visual.illustration_properties()->HasProperty("phong", "diffuse"));
+  EXPECT_TRUE(CompareMatrices(
+      sphere_visual.illustration_properties()->GetProperty<Vector4d>("phong",
+                                                                     "diffuse"),
+      brown, 1e-14));
 
   ASSERT_EQ(collision_instances_.size(), 1);
   const auto& collision = collision_instances_.front();
@@ -222,7 +269,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
     "drake/multibody/parsing/test/urdf_parser_test/"};
   // This URDF defines the same color multiple times in different links.
   const std::string file_same_color_diff_links = FindResourceOrThrow(
-      resource_dir + "duplicate_but_same_materials.urdf");
+      resource_dir + "duplicate_but_same_materials_with_texture.urdf");
   DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_same_color_diff_links));
 
   ASSERT_GE(visual_instances_.size(), 1);
@@ -266,9 +313,10 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   const XMLElement* node = xml_doc_.FirstChildElement("robot");
   ASSERT_TRUE(node);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ParseMaterial(node, &materials_), std::runtime_error,
-      "Expected material element, got robot");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseMaterial(node, false, package_map_,
+                                                      root_dir_, &materials_),
+                              std::runtime_error,
+                              "Expected material element, got <robot>");
 
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
