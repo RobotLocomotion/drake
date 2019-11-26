@@ -2700,12 +2700,21 @@ class MathematicalProgram {
   }
 
   /**
-   * Returns the mapping from a decision variable to its index in the vector,
-   * containing all the decision variables in the optimization program.
+   * Returns the mapping from a decision variable ID to its index in the vector
+   * containing all the decision variables in the mathematical program.
    */
   const std::unordered_map<symbolic::Variable::Id, int>&
   decision_variable_index() const {
     return decision_variable_index_;
+  }
+
+  /**
+   * Returns the mapping from an indeterminate ID to its index in the vector
+   * containing all the indeterminates in the mathematical program.
+   */
+  const std::unordered_map<symbolic::Variable::Id, int>& indeterminates_index()
+      const {
+    return indeterminates_index_;
   }
 
  private:
