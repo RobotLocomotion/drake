@@ -1391,10 +1391,13 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   EXPECT_EQ(render_engine.num_registered(), 2);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
-  Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
+  IllustrationProperties sphere2_props;
+  const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
+  sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
+  sphere2_props.AddProperty("phong", "diffuse_map", "empty.png");
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "visual", sphere2_diffuse);
+      "visual", sphere2_props);
   EXPECT_EQ(render_engine.num_registered(), 3);
 
   // We are done defining the model.
@@ -1440,6 +1443,11 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
     const Vector4<double>& test_diffuse = get_diffuse_color(sphere2_id);
     EXPECT_TRUE(CompareMatrices(test_diffuse, sphere2_diffuse, 0.0,
                                 MatrixCompareType::absolute));
+    const IllustrationProperties* material =
+        inspector.GetIllustrationProperties(sphere2_id);
+    ASSERT_TRUE(material->HasProperty("phong", "diffuse_map"));
+    EXPECT_EQ(material->GetProperty<std::string>("phong", "diffuse_map"),
+        "empty.png");
   }
 }
 

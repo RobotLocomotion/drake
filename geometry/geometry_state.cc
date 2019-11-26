@@ -752,6 +752,13 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   IllustrationProperties properties,
                                   RoleAssign assign) {
+  if (properties.HasProperty("phong", "diffuse_map")) {
+    static logging::Warn log_once(
+        "Explicitly defined values for the ('phong', 'diffuse_map') property "
+        "are not currently used in illustration roles -- only perception "
+        "roles");
+  }
+
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
   // TODO(SeanCurtis-TRI): Ideally, if assign == RoleAssign::kReplace, this

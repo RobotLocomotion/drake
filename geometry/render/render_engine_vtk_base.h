@@ -2,7 +2,7 @@
 
 #include <vtkCylinderSource.h>
 #include <vtkSmartPointer.h>
-#include <vtkSphereSource.h>
+#include <vtkTexturedSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
@@ -15,7 +15,7 @@ void CreateVtkCapsule(vtkTransformPolyDataFilter* transform_filter,
                       double radius, double length);
 
 // Sets common sphere options such as its dimensions and resolution.
-void SetSphereOptions(vtkSphereSource* vtk_sphere, double radius);
+void SetSphereOptions(vtkTexturedSphereSource* vtk_sphere, double radius);
 
 // Sets common cylinder options such as its dimensions and resolution.
 void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,

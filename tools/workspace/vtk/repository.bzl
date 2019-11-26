@@ -419,6 +419,7 @@ licenses([
             "vtkFiltersSourcesModule.h",
             "vtkPlaneSource.h",
             "vtkSphereSource.h",
+            "vtkTexturedSphereSource.h",
         ],
         deps = [
             ":vtkCommonComputationalGeometry",

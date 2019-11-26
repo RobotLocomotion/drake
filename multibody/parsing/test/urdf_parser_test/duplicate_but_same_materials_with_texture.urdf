@@ -5,8 +5,6 @@ Defines a URDF model in which two links have the same material definition. This
 should NOT be a problem.
 -->
 
-<!-- TODO(SeanCurtis-TRI): Delete this file when attic goes away.  -->
-
 <robot name="duplicate_but_same_materials" xmlns:xacro="http://ros.org/wiki/xacro">
   <link name="link1">
     <inertial>
@@ -20,6 +18,25 @@ should NOT be a problem.
       </geometry>
       <material name="foo_color">
         <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 1.57 0" xyz=".01429 0 0"/>
+      <geometry>
+        <cylinder length=".02858" radius="0.001"/>
+      </geometry>
+      <material name="bar_material">
+        <texture filename="empty.png"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 1.57 0" xyz=".01429 0 0"/>
+      <geometry>
+        <cylinder length=".02858" radius="0.001"/>
+      </geometry>
+      <material name="foobar_material">
+        <color rgba=".6353 .6353 .6353 1"/>
+        <texture filename="empty.png"/>
       </material>
     </visual>
   </link>
@@ -36,6 +53,25 @@ should NOT be a problem.
       </geometry>
       <material name="foo_color">
         <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 1.57 0" xyz=".01429 0 0"/>
+      <geometry>
+        <cylinder length=".02858" radius="0.001"/>
+      </geometry>
+      <material name="bar_material">
+        <texture filename="empty.png"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 1.57 0" xyz=".01429 0 0"/>
+      <geometry>
+        <cylinder length=".02858" radius="0.001"/>
+      </geometry>
+      <material name="foobar_material">
+        <color rgba=".6353 .6353 .6353 1"/>
+        <texture filename="empty.png"/>
       </material>
     </visual>
   </link>
