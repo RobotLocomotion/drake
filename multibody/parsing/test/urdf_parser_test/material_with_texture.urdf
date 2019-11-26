@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+
+<robot name="material_with_texture">
+    <!-- TODO(SeanCurtis-TRI): Once textures are stored in the material map,
+    include pre-defined materials with textures.  -->
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size=".2 .2 .2" />
+            </geometry>
+            <material name="local">
+                <texture filename="local.png" />
+            </material>
+        </visual>
+        <visual>
+            <geometry>
+                <sphere radius="0.2"/>
+            </geometry>
+            <material name="relative">
+                <texture filename="../one_dir_up.png" />
+            </material>
+        </visual>
+        <visual>
+            <geometry>
+                <capsule radius="0.2" length="1.5" />
+            </geometry>
+            <material name="absolute">
+                <texture filename="/absolute.png" />
+            </material>
+        </visual>
+        <visual>
+            <geometry>
+                <sphere radius="0.2"/>
+            </geometry>
+            <!-- If both are provided, only texture data is used.  -->
+            <material name="texture_and_color">
+                <color rgba="0 1 0 1" />
+                <texture filename="/absolute.png" />
+            </material>
+        </visual>
+    </link>
+</robot>

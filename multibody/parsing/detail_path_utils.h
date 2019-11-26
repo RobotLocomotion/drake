@@ -19,6 +19,28 @@ std::string GetFullPath(const std::string& file_name);
 
 /// Resolves the full path of a URI. If @p uri starts with
 /// "package:" or "model:", the ROS packages specified in @p package_map are
+/// searched.  Otherwise, @p uri is appended to the end of @p root_dir (if it's
+/// not already an absolute path). The resource of the path is not tested for
+/// validity. Produces the lesically normalized version of the path (i.e.,
+/// a path like `/some//path/to/ignored/../file.txt` would have the duplicate
+/// slashes, directory changes, etc. boiled down to `/some/path/to/file.txt`.
+///
+/// @param[in] uri The name of the resource to find.
+///
+/// @param[in] package_map A map where the keys are ROS package names and the
+/// values are the paths to the packages. This is only used if @p filename
+/// starts with "package:"or "model:".
+///
+/// @param[in] root_dir The root directory to look in. This is only used when
+/// @p filename does not start with "package:".
+///
+/// @return The file's full path, lexically normalized (unchecked).
+std::string ResolveUriUnchecked(const std::string& uri,
+                                const PackageMap& package_map,
+                                const std::string& root_dir);
+
+/// Resolves the full path of a URI. If @p uri starts with
+/// "package:" or "model:", the ROS packages specified in @p package_map are
 /// searched.  Otherwise, @p uri is appended to the end of @p
 /// root_dir (if it's not already an absolute path) and checked for
 /// existence. If the file does not exist or is not found, a warning

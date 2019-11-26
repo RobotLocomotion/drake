@@ -34,12 +34,14 @@ drake_cc_binary(
     name = "bouncing_ball_run_dynamics",
     srcs = ["bouncing_ball_run_dynamics.cc"],
     add_test_rule = 1,
+    data = ["rainbow.png"],
     tags = vtk_test_tags(),
     test_rule_args = [
         "--simulation_time=0.1",
     ],
     deps = [
         ":bouncing_ball_plant",
+        "//common",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//geometry/render:render_engine_vtk",

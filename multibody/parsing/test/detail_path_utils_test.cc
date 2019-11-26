@@ -49,6 +49,32 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
   EXPECT_THROW(GetFullPath(""), std::runtime_error);
 }
 
+// Verifies that the path returned is a normalized path. This is not an
+// exhaustive list of all ways a valid path can be unnormalized. Ultimately,
+// we're relying on std::filesystem to get the job done and these are just
+// indicators (representing common cases) that show it's actually happening.
+GTEST_TEST(ResoluveUriUncheckedTest, NormalizedPath) {
+  // Use an empty package map.
+  PackageMap package_map;
+
+  // We're intentionally putting a final slash on the root directory to increase
+  // work on normalization.
+  const std::string root_dir{"/fake/root/"};
+
+  // Case: Simple concatenation would produce /fake/root/./file.txt.
+  {
+    std::string path = ResolveUriUnchecked("./file.txt", package_map, root_dir);
+    EXPECT_EQ(path, root_dir + "file.txt");
+  }
+
+  // Case: Moving up one directory.
+  {
+    std::string path =
+        ResolveUriUnchecked("../file.txt", package_map, root_dir);
+    EXPECT_EQ(path, "/fake/file.txt");
+  }
+}
+
 // Verifies that ResolveUri() resolves the proper file using the scheme
 // 'file://'
 GTEST_TEST(ResolveUriTest, TestFile) {

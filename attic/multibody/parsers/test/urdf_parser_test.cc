@@ -116,6 +116,8 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_no_conflict_3, tree.get()));
 
   // This URDF defines the same color multiple times in different links.
+  // TODO(SeanCurtis-TRI): Delete this URDF when attic is removed; attic
+  //  is the only one using it. MBP parsing uses its own variant.
   const string file_same_color_diff_links = FindResourceOrThrow(
       resource_dir + "duplicate_but_same_materials.urdf");
   tree = make_unique<RigidBodyTree<double>>();

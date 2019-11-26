@@ -28,7 +28,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  This method returns nullptr when the given SDF specification corresponds
  to a geometry of type `sdf::GeometryType::EMPTY` (<empty/> SDF tag.)  */
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual);
+    const sdf::Visual& sdf_visual, const PackageMap& package_map,
+    const std::string& root_dir);
 
 /** Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
@@ -36,12 +37,13 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  geometry::IllustrationProperties as follows:
 
  <!-- NOTE: Lines longer than 80 columns required for the doxygen tables. -->
- | Group |   Name   |      Type       | Description |
- | :---: | :------: | :-------------: | :---------- |
- | phong | diffuse  | Vector4<double> | The normalized rgba values for the diffuse color |
- | phong | ambient  | Vector4<double> | The normalized rgba values for the ambient color |
- | phong | specular | Vector4<double> | The normalized rgba values for the specular color |
- | phong | emissive | Vector4<double> | The normalized rgba values for the emissive color |
+ | Group |    Name     |      Type       | Description |
+ | :---: | :---------: | :-------------: | :---------- |
+ | phong | diffuse     | Vector4<double> | The normalized rgba values for the diffuse color |
+ | phong | ambient     | Vector4<double> | The normalized rgba values for the ambient color |
+ | phong | specular    | Vector4<double> | The normalized rgba values for the specular color |
+ | phong | emissive    | Vector4<double> | The normalized rgba values for the emissive color |
+ | phong | diffuse_map | string          | A resolvable URI to a png image that will be applied as a diffuse map. |
 
  These are properties to be used in the
  <a href="https://en.wikipedia.org/wiki/Phong_reflection_model">Phong
@@ -76,7 +78,8 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  there is no material tag, no material property tags, or no successfully
  parsed material property tags, the property set will be empty.  */
 geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-    const sdf::Visual& sdf_visual);
+    const sdf::Visual& sdf_visual, const PackageMap& package_map,
+    const std::string& root_dir);
 
 /** Given `sdf_collision` stemming from the parsing of a `<collision>` element
  in an SDF file, this method makes the pose `X_LG` of frame G for the geometry
