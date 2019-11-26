@@ -506,7 +506,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         const sdf::Visual sdf_visual = ResolveMeshUri(
             *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
-            MakeGeometryInstanceFromSdfVisual(sdf_visual);
+            MakeGeometryInstanceFromSdfVisual(sdf_visual, package_map,
+                                              root_dir);
         ThrowIfPoseFrameSpecified(sdf_visual.Element());
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.

@@ -21,5 +21,22 @@
         <capsule length="0.5" radius="0.2"/>
       </geometry>
     </visual>
+    <visual>
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+      <material name="textured">
+        <texture filename="empty.png" />
+      </material>
+    </visual>
+    <visual>
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+      <material name="texture_and_color">
+        <texture filename="empty.png" />
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>
   </link>
 </robot>
