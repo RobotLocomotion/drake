@@ -101,7 +101,7 @@ Removal of deprecated APIs
 Binaries
 --------
 
-This release provides pre-compiled binaries named ``drake-20191002-{bionic|xenial|mac}.tar.gz``. See https://drake.mit.edu/from\_binary.html#nightly-releases for instructions on how to use them.
+This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0>`__ named ``drake-20191002-{bionic|xenial|mac}.tar.gz``. See https://drake.mit.edu/from\_binary.html#nightly-releases for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
