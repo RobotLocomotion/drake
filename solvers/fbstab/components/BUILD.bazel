@@ -1,11 +1,34 @@
+# -*- python -*-
+
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//solvers/fbstab:__pkg__"])
+
+drake_cc_package_library(
+    name = "components",
+    visibility = [
+        "//solvers/fbstab:__pkg__",
+        "//tools/install/libdrake:__pkg__",
+    ],
+    deps = [
+        ":dense_data",
+        ":dense_feasibility",
+        ":dense_linear_solver",
+        ":dense_residual",
+        ":dense_variable",
+        ":mpc_data",
+        ":mpc_feasibility",
+        ":mpc_residual",
+        ":mpc_variable",
+        ":riccati_linear_solver",
+    ],
+)
 
 drake_cc_library(
     name = "dense_data",
