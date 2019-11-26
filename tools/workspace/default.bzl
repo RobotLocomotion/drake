@@ -29,6 +29,7 @@ load("@drake//tools/workspace/github3_py:repository.bzl", "github3_py_repository
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
 load("@drake//tools/workspace/godotengine:repository.bzl", "godotengine_repository")  # noqa
+load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
@@ -153,6 +154,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         glib_repository(name = "glib")
     if "godotengine" not in excludes:
         godotengine_repository(name = "godotengine", mirrors = mirrors)
+    if "googlebenchmark" not in excludes:
+        googlebenchmark_repository(name = "googlebenchmark", mirrors = mirrors)
     if "gtest" not in excludes:
         gtest_repository(name = "gtest", mirrors = mirrors)
     if "gurobi" not in excludes:
