@@ -185,7 +185,7 @@ class QueryObject {
       const;
 
   /**
-   Reports pair-wise intersections and characterizes each non-empty
+   Reports pairwise intersections and characterizes each non-empty
    intersection as a ContactSurface. The computation is subject to collision
    filtering.
 
@@ -193,23 +193,21 @@ class QueryObject {
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
    `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
-   In the current incarnation, this function represents the most bare-bones
-   implementation possible.
+   In the current incarnation, this function represents a simple implementation.
 
-     - Only collision between spheres and boxes is supported. If an unfiltered
-       geometry pair of any other type pairing cannot be culled in the
-       broadphase an error will be thrown.
-     - The sphere will *always* be considered soft, and the box rigid.
-     - The elasticity modulus for the sphere is hard-coded and arbitrary (but
-       consistent with being a medium rubber).
-     - The sphere's pressure function is is simply: p_0(e) = Ee. Where
-       E = 1e8 N/m^2.
-     - The tessellation of the corresponding meshes will be coarse.
+     - Only collision between spheres, boxes, cylinders, and ellipsoids is
+       supported. If an unfiltered geometry pair of any other type pairing
+       cannot be culled in the broadphase an error will be thrown.
+     - One geometry must be soft, and the other must be rigid. There is no
+       support for soft-soft collision.
+     - The elasticity modulus E (N/m^2) of each geometry is set in
+       ProximityProperties (see proximity_properties.cc). A rigid geometry must
+       have E = ∞.
+     - The tessellation of the corresponding meshes is controlled by the
+       resolution hint, as defined by AddSoftHydroelasticProperties() and
+       AddRigidHydroelasticProperties().
      - Attempting to invoke this method with T = AutoDiffXd will throw an
        exception if there are *any* geometry pairs that couldn't be culled.
-
-   In the near future, this behavior will extend to be configurable and more
-   general.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
