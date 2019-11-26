@@ -201,12 +201,12 @@ class QueryObject {
      - One geometry must be soft, and the other must be rigid. There is no
        support for soft-soft collision.
      - The elasticity modulus E (N/m^2) of each geometry is set in
-       ProximityProperties (see proximity_properties.h). A rigid geometry must
+       ProximityProperties (see proximity_properties.cc). A rigid geometry must
        have E = ∞.
      - The pressure function is simply: p_0(e) = Ee. Where e ∈ [0,1] is the
        extent field based on the distance to boundary.
      - The tessellation of the corresponding meshes is controlled by setting
-       the resolution hint in ProximityProperties (see proximity_properties.h).
+       the resolution hint in ProximityProperties (see proximity_properties.cc).
      - Attempting to invoke this method with T = AutoDiffXd will throw an
        exception if there are *any* geometry pairs that couldn't be culled.
 
