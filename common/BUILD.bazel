@@ -227,6 +227,7 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         ":random",
+        "@fmt",
     ],
 )
 
