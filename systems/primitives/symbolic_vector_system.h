@@ -156,6 +156,19 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
     return parameter_vars_;
   }
   const VectorX<symbolic::Expression>& dynamics() const { return dynamics_; }
+  const symbolic::Expression& dynamics_for_variable(
+      const symbolic::Variable& var) const {
+    auto it = state_var_to_index_.find(var.get_id());
+    if (it != state_var_to_index_.end()) {
+      return dynamics_[it->second];
+    } else {
+      throw std::out_of_range{
+          fmt::format("This SymbolicVectorSystem does not have a dynamics for "
+                      "the given variable {}",
+                      var)};
+    }
+  }
+
   const VectorX<symbolic::Expression>& output() const { return output_; }
   /// @}
 
@@ -189,6 +202,8 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 
   symbolic::Environment env_{};
   const double time_period_{0.0};
+
+  std::unordered_map<symbolic::Variable::Id, int> state_var_to_index_;
 
   // Storage for Jacobians (empty unless T == AutoDiffXd).
   MatrixX<symbolic::Expression> dynamics_jacobian_{};
@@ -227,7 +242,7 @@ class SymbolicVectorSystemBuilder {
   SymbolicVectorSystemBuilder state(const symbolic::Variable& v) {
     return state(Vector1<symbolic::Variable>{v});
   }
-  /// Sets the state variables (vector version).
+  /// Sets the state variables (Eigen::Vector version).
   SymbolicVectorSystemBuilder state(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
     state_vars_ = vars;
@@ -237,18 +252,30 @@ class SymbolicVectorSystemBuilder {
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
+  /// Sets the state variables (std::vector version).
+  SymbolicVectorSystemBuilder state(
+      const std::vector<symbolic::Variable>& vars) {
+    return state(Eigen::Map<const VectorX<symbolic::Variable>>(vars.data(),
+                                                               vars.size()));
+  }
   /// Sets the input variable (scalar version).
   SymbolicVectorSystemBuilder input(const symbolic::Variable& v) {
     input_vars_ = Vector1<symbolic::Variable>{v};
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
-  /// Sets the input variables (vector version).
+  /// Sets the input variables (Eigen::Vector version).
   SymbolicVectorSystemBuilder input(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
     input_vars_ = vars;
     SymbolicVectorSystemBuilder result = *this;
     return result;
+  }
+  /// Sets the input variables (std::vector version).
+  SymbolicVectorSystemBuilder input(
+      const std::vector<symbolic::Variable>& vars) {
+    return input(Eigen::Map<const VectorX<symbolic::Variable>>(vars.data(),
+                                                               vars.size()));
   }
   /// Sets the parameter variable (scalar version).
   SymbolicVectorSystemBuilder parameter(const symbolic::Variable& v) {
@@ -256,12 +283,18 @@ class SymbolicVectorSystemBuilder {
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
-  /// Sets the parameter variables (vector version).
+  /// Sets the parameter variables (Eigen::Vector version).
   SymbolicVectorSystemBuilder parameter(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
     parameter_vars_ = vars;
     SymbolicVectorSystemBuilder result = *this;
     return result;
+  }
+  /// Sets the parameter variables (std::vector version).
+  SymbolicVectorSystemBuilder parameter(
+      const std::vector<symbolic::Variable>& vars) {
+    return parameter(Eigen::Map<const VectorX<symbolic::Variable>>(
+        vars.data(), vars.size()));
   }
   /// Sets the dynamics method (scalar version).
   SymbolicVectorSystemBuilder dynamics(const symbolic::Expression& e) {
@@ -269,12 +302,18 @@ class SymbolicVectorSystemBuilder {
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
-  /// Sets the dynamics method (vector version).
+  /// Sets the dynamics method (Eigen::Vector version).
   SymbolicVectorSystemBuilder dynamics(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& e) {
     dynamics_ = e;
     SymbolicVectorSystemBuilder result = *this;
     return result;
+  }
+  /// Sets the dynamics variables (std::vector version).
+  SymbolicVectorSystemBuilder dynamics(
+      const std::vector<symbolic::Expression>& e) {
+    return dynamics(
+        Eigen::Map<const VectorX<symbolic::Expression>>(e.data(), e.size()));
   }
   /// Sets the output method (scalar version).
   SymbolicVectorSystemBuilder output(const symbolic::Expression& e) {
@@ -282,13 +321,20 @@ class SymbolicVectorSystemBuilder {
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
-  /// Sets the output method (vector version).
+  /// Sets the output method (Eigen::Vector version).
   SymbolicVectorSystemBuilder output(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& e) {
     output_ = e;
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
+  /// Sets the output variables (std::vector version).
+  SymbolicVectorSystemBuilder output(
+      const std::vector<symbolic::Expression>& e) {
+    return output(
+        Eigen::Map<const VectorX<symbolic::Expression>>(e.data(), e.size()));
+  }
+
   /// Sets the time period (0 is continuous time).
   SymbolicVectorSystemBuilder time_period(double p) {
     time_period_ = p;

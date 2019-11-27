@@ -42,11 +42,15 @@ TEST_F(SymbolicVectorSystemTest, BuilderBasicPattern) {
   EXPECT_TRUE(
       SymbolicVectorSystemBuilder().state(x_).state()[1].equal_to(x_[1]));
 
+  EXPECT_EQ(SymbolicVectorSystemBuilder().state({x_[0], x_[1]}).state(), x_);
+
   EXPECT_TRUE(
       SymbolicVectorSystemBuilder().input(u_[1]).input()[0].equal_to(u_[1]));
 
   EXPECT_TRUE(
       SymbolicVectorSystemBuilder().input(u_).input()[1].equal_to(u_[1]));
+
+  EXPECT_EQ(SymbolicVectorSystemBuilder().input({u_[0], u_[1]}).input(), u_);
 
   EXPECT_TRUE(
       SymbolicVectorSystemBuilder().parameter(p_[1]).parameter()[0].equal_to(
@@ -55,6 +59,9 @@ TEST_F(SymbolicVectorSystemTest, BuilderBasicPattern) {
   EXPECT_TRUE(
       SymbolicVectorSystemBuilder().parameter(p_).parameter()[1].equal_to(
           p_[1]));
+
+  EXPECT_EQ(SymbolicVectorSystemBuilder().parameter({p_[0], p_[1]}).parameter(),
+            p_);
 
   EXPECT_TRUE(SymbolicVectorSystemBuilder()
                   .dynamics(x_[0] + u_[0] + p_[0])
@@ -75,6 +82,16 @@ TEST_F(SymbolicVectorSystemTest, BuilderBasicPattern) {
                   .output(Vector1<Expression>{x_[0] + u_[0] + p_[0]})
                   .output()[0]
                   .EqualTo(x_[0] + u_[0] + p_[0]));
+
+  EXPECT_TRUE(SymbolicVectorSystemBuilder()
+                  .output({x_[0] + u_[0] + p_[0], x_[1]})
+                  .output()[0]
+                  .EqualTo(x_[0] + u_[0] + p_[0]));
+
+  EXPECT_TRUE(SymbolicVectorSystemBuilder()
+                  .output({x_[0] + u_[0] + p_[0], x_[1]})
+                  .output()[1]
+                  .EqualTo(x_[1]));
 
   EXPECT_EQ(SymbolicVectorSystemBuilder().time_period(3.2).time_period(), 3.2);
 
@@ -101,6 +118,18 @@ TEST_F(SymbolicVectorSystemTest, BuilderBasicPattern) {
                    .dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))
                    .dynamics_for_variable(u_[0]),
                std::out_of_range);
+
+  EXPECT_TRUE(SymbolicVectorSystemBuilder()
+                  .state(x_)
+                  .dynamics({-x_[1], -x_[0] + 3})
+                  .dynamics_for_variable(x_[0])
+                  .EqualTo(-x_[1]));
+
+  EXPECT_TRUE(SymbolicVectorSystemBuilder()
+                  .state(x_)
+                  .dynamics({-x_[1], -x_[0] + 3})
+                  .dynamics_for_variable(x_[1])
+                  .EqualTo(-x_[0] + 3));
 }
 
 // This test will fail on valgrind if we have dangling references.
@@ -136,7 +165,8 @@ TEST_F(SymbolicVectorSystemTest, CubicPolyViaBuilder) {
   EXPECT_EQ(system->parameter_vars()[0], p);
 
   ASSERT_EQ(system->dynamics().size(), 1);
-  EXPECT_EQ(system->dynamics()[0], -x + pow(x, 3) + p);
+  EXPECT_PRED2(ExprEqual, system->dynamics()[0], -x + pow(x, 3) + p);
+  EXPECT_PRED2(ExprEqual, system->dynamics_for_variable(x), -x + pow(x, 3) + p);
 
   ASSERT_EQ(system->output().size(), 1);
   EXPECT_EQ(system->output()[0], x * p);
@@ -306,7 +336,10 @@ TEST_F(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
 
   ASSERT_EQ(system->dynamics().size(), 2);
   EXPECT_PRED2(ExprEqual, system->dynamics()[0], t_);
+  EXPECT_PRED2(ExprEqual, system->dynamics_for_variable(x_[0]), t_);
   EXPECT_PRED2(ExprEqual, system->dynamics()[1], x_[1] + u_[1] + p_[1]);
+  EXPECT_PRED2(ExprEqual, system->dynamics_for_variable(x_[1]),
+               x_[1] + u_[1] + p_[1]);
 
   ASSERT_EQ(system->output().size(), 2);
   EXPECT_PRED2(ExprEqual, system->output()[0], x_[0] + u_[0] + p_[0]);
@@ -352,7 +385,10 @@ TEST_F(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
 
   ASSERT_EQ(system->dynamics().size(), 2);
   EXPECT_PRED2(ExprEqual, system->dynamics()[0], t_);
+  EXPECT_PRED2(ExprEqual, system->dynamics_for_variable(x_[0]), t_);
   EXPECT_PRED2(ExprEqual, system->dynamics()[1], x_[1] + u_[1] + p_[1]);
+  EXPECT_PRED2(ExprEqual, system->dynamics_for_variable(x_[1]),
+               x_[1] + u_[1] + p_[1]);
 
   ASSERT_EQ(system->output().size(), 2);
   EXPECT_PRED2(ExprEqual, system->output()[0], x_[0] + u_[0] + p_[0]);
