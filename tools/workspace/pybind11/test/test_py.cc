@@ -1,53 +1,47 @@
 #include "pybind11/pybind11.h"
 
-#include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/solvers/osqp_solver.h"
+namespace namespace_1 {
+namespace namespace_2 {
 
-namespace drake {
-namespace pydrake {
-
-PYBIND11_MODULE(osqp, m) {
+PYBIND11_MODULE(dummy_module, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::solvers;
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  using namespace namespace_1::namespace_2;
+  constexpr auto& doc = pydrake_doc.namespace_1.namespace_2;
 
-  m.doc() = "OSQP solver bindings for MathematicalProgram";
+  m.doc() = "Et nunc. Nullam vehicula fermentum risus.";
 
-  py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework").attr("AbstractValue");
+  py::module::import("namespace_1.namespace_2.Struct2");
 
-  constexpr auto& cls_doc = doc.OsqpSolver;
-  py::class_<OsqpSolver, SolverInterface>(m, "OsqpSolver", cls_doc.doc)
+  constexpr auto& cls_doc = doc.DummyClass;
+  py::class_<DummyClass>(m, "DummyClass", cls_doc.doc)
       .def(py::init<>(), cls_doc.ctor.doc);
 
   constexpr auto& cls_doc = doc.
-      OsqpSolverDetails;
+    Struct1;
 
-  py::class_<OsqpSolverDetails>(
-      m, "OsqpSolverDetails", cls_doc.doc)
+  py::class_<Struct1>(
+      m, "Struct1", cls_doc.doc)
       .def_readwrite(
-          "iter", &OsqpSolverDetails::iter, cls_doc.iter.doc)
-      .def_readwrite("status_val", &OsqpSolverDetails::status_val,
+          "var_1", &Struct1::var_1, cls_doc.var_1.doc)
+      .def_readwrite("var_2", &Struct1::var_2,
           cls_doc.
-          status_val.doc)
-      .def_readwrite("primal_res", &OsqpSolverDetails::primal_res,
-          cls_doc.primal_res
+          var_2.doc)
+      .def_readwrite("var_3", &Struct1::var_3,
+          cls_doc.var_3
           .doc)
-      .def_readwrite("dual_res", &OsqpSolverDetails::dual_res,
-          cls_doc.dual_res.doc)
-      .def_readwrite("setup_time", &OsqpSolverDetails::setup_time,
+      .def_readwrite("var_4", &Struct1::var_4,
+          cls_doc.var_4.doc)
+      .def_readwrite("var_5", &Struct1::var_5,
           cls_doc.  // BR Comment to test
-          setup_time.doc)
-      .def_readwrite("solve_time", &OsqpSolverDetails::solve_time,
-          cls_doc.solve_time.doc)
-      .def_readwrite("polish_time", &OsqpSolverDetails::polish_time,
-          cls_doc.polish_time.doc)
-      .def_readwrite("run_time", &OsqpSolverDetails::run_time,
-          cls_doc.run_time.doc);
-  AddValueInstantiation<OsqpSolverDetails>(m);
+          var_5.doc)
+      .def_readwrite("var_6", &Struct1::var_6,
+          cls_doc.var_6.doc)
+      .def_readwrite("var_7", &Struct1::var_7,
+          cls_doc.var_7.doc)
+      .def_readwrite("var_8", &Struct1::var_8,
+          cls_doc.var_8.doc)
+  AddValueInstantiation<Struct1>(m);
 }
 
-}  // namespace pydrake
-}  // namespace drake
+}  // namespace namespace_2
+}  // namespace namespace_1

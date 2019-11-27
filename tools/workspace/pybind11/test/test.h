@@ -1,74 +1,76 @@
 #pragma once
 
-#define DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Classname)      \
-  Classname(const Classname&) = delete;                 \
-  void operator=(const Classname&) = delete;            \
-  Classname(Classname&&) = delete;                      \
-  void operator=(Classname&&) = delete;
+#define DUMMY_MACRO(DummyClassname)      \
+  DummyClassname(const DummyClassname&) = delete;                 \
+  void operator=(const DummyClassname&) = delete;            \
+  DummyClassname(DummyClassname&&) = delete;                      \
+  void operator=(DummyClassname&&) = delete;
 
-namespace drake {
-namespace solvers {
-/**
- * The OSQP solver details after calling Solve() function. The user can call
- * MathematicalProgramResult::get_solver_details<OsqpSolver>() to obtain the
- * details.
+namespace namespace_1 {
+namespace namespace_2 {
+/** Quam odio at est.
+ *
+ * Proin eleifend nisi et nibh. Maecenas a lacus. Mauris porta quam non massa
+ * molestie scelerisque. Nulla sed ante at lorem suscipit rutrum. Nam quis
+ * tellus. Cras elit nisi, ornare a, condimentum vitae, rutrum sit amet, tellus.
+ * Maecenas
  */
-struct OsqpSolverDetails {
-  /// Number of iterations taken.
-  int iter{};
-  /// Status of the solver at termination. Please refer to
-  /// https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h
-  int status_val{};
-  /// Norm of primal residue.
-  double primal_res{};
-  /// Norm of dual residue.
-  double dual_res{};
-  /// Time taken for setup phase (seconds).
-  double setup_time{};
-  /// Time taken for solve phase (seconds).
-  double solve_time{};
-  /// Time taken for polish phase (seconds).
-  double polish_time{};
-  /// Total OSQP time (seconds).
-  double run_time{};
+
+struct Struct1 {
+  /// Et, ornare sagittis, tellus. Fusce felis.
+  int var_1{};
+  /// Nulla a augue. Pellentesque sed est.
+  int var_2{};
+  /// Imperdiet tristique, interdum a, dolor.
+  double var_3{};
+  /// Tempor lobortis turpis. Sed tellus velit, ullamcorper.
+  double var_4{};
+  /// Id, rutrum auctor, ullamcorper sed, orci. In.
+  double var_5{};
+  /// Fames ac turpis egestas. Sed vitae eros. Nulla.
+  double var_6{};
+  /// Condimentum. Donec arcu quam, dictum accumsan, convallis.
+  double var_7{};
+  /// Volutpat. Donec non tortor. Vivamus posuere nisi mollis.
+  double var_8{};
 };
 
-struct SolverId {};
-struct MathematicalProgram {};
-struct MathematicalProgramResult {};
-struct VectorXd {};
-struct SolverOptions {};
+struct Struct2 {};
+struct Struct3 {};
+struct Struct4 {};
+struct Struct5 {};
+struct Struct6{};
 
-class OsqpSolver {
+class DummyClass {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver)
+  DUMMY_MACRO(DummyClass)
 
-  /// Type of details stored in MathematicalProgramResult.
-  using Details = OsqpSolverDetails;
+  /// Ligula. Nunc turpis. Mauris vitae sapien. Nunc.
+  using Details = Struct1;
 
-  OsqpSolver();
-  ~OsqpSolver();
+  DummyClass();
+  ~DummyClass();
 
-  /// @name Static versions of the instance methods with similar names.
+  /// @Litgn Phasellus in odio. Duis lobortis, metus eu.
   //@{
-  static SolverId id();
-  static bool is_available();
-  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  static Struct2 struct_2();
+  static bool static_function_1();
+  static bool static_function_2(const Struct3&);
   //@}
 
  private:
-  void DoSolve(const MathematicalProgram&, const VectorXd&,
-               const SolverOptions&, MathematicalProgramResult*) const;
+  void DoSolve(const Struct3&, const Struct4&,
+               const Struct5&, Struct6*) const;
 };
-}  // namespace solvers
+}  // namespace namespace_2
 
 namespace dev {
 // Must be ignored
-struct OsqpSolverDetails1 {
-  int iter{};
-  int status_val{};
-  double primal_res{};
+struct IgnoredStruct {
+  int var_1{};
+  int var_2{};
+  double var_3{};
 };
 
 }
-}  // namespace drake
+}  // namespace namespace_1

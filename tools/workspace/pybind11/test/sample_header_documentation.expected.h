@@ -62,29 +62,6 @@ ornare lectus sit amet est.
 Version:
     1.0.)""";
     } MidLevelSymbol;
-    // Symbol: drake::dev
-    struct /* dev */ {
-      // Symbol: drake::dev::OsqpSolverDetails1
-      struct /* OsqpSolverDetails1 */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:67
-        const char* doc = R"""()""";
-        // Symbol: drake::dev::OsqpSolverDetails1::iter
-        struct /* iter */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:68
-          const char* doc = R"""()""";
-        } iter;
-        // Symbol: drake::dev::OsqpSolverDetails1::primal_res
-        struct /* primal_res */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:70
-          const char* doc = R"""()""";
-        } primal_res;
-        // Symbol: drake::dev::OsqpSolverDetails1::status_val
-        struct /* status_val */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:69
-          const char* doc = R"""()""";
-        } status_val;
-      } OsqpSolverDetails1;
-    } dev;
     // Symbol: drake::mkdoc_test
     struct /* mkdoc_test */ {
       // Symbol: drake::mkdoc_test::AnonymousConstant
@@ -455,116 +432,149 @@ Parameter ``param``:
     pellentesque sit. End input/output parameter.)""";
       } func;
     } mkdoc_test;
-    // Symbol: drake::solvers
-    struct /* solvers */ {
-      // Symbol: drake::solvers::MathematicalProgram
-      struct /* MathematicalProgram */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:37
+  } drake;
+  // Symbol: namespace_1
+  struct /* namespace_1 */ {
+    // Symbol: namespace_1::dev
+    struct /* dev */ {
+      // Symbol: namespace_1::dev::IgnoredStruct
+      struct /* IgnoredStruct */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:69
         const char* doc = R"""()""";
-      } MathematicalProgram;
-      // Symbol: drake::solvers::MathematicalProgramResult
-      struct /* MathematicalProgramResult */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:38
+        // Symbol: namespace_1::dev::IgnoredStruct::var_1
+        struct /* var_1 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:70
+          const char* doc = R"""()""";
+        } var_1;
+        // Symbol: namespace_1::dev::IgnoredStruct::var_2
+        struct /* var_2 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:71
+          const char* doc = R"""()""";
+        } var_2;
+        // Symbol: namespace_1::dev::IgnoredStruct::var_3
+        struct /* var_3 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:72
+          const char* doc = R"""()""";
+        } var_3;
+      } IgnoredStruct;
+    } dev;
+    // Symbol: namespace_1::namespace_2
+    struct /* namespace_2 */ {
+      // Symbol: namespace_1::namespace_2::DummyClass
+      struct /* DummyClass */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:44
         const char* doc = R"""()""";
-      } MathematicalProgramResult;
-      // Symbol: drake::solvers::OsqpSolver
-      struct /* OsqpSolver */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:42
-        const char* doc = R"""()""";
-        // Symbol: drake::solvers::OsqpSolver::Details
+        // Symbol: namespace_1::namespace_2::DummyClass::Details
         struct /* Details */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:47
+          // Source: drake/tools/workspace/pybind11/test/test.h:49
           const char* doc =
-R"""(Type of details stored in MathematicalProgramResult.)""";
+R"""(Ligula. Nunc turpis. Mauris vitae sapien. Nunc.)""";
         } Details;
-        // Symbol: drake::solvers::OsqpSolver::OsqpSolver
+        // Symbol: namespace_1::namespace_2::DummyClass::DummyClass
         struct /* ctor */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:44
+          // Source: drake/tools/workspace/pybind11/test/test.h:46
           const char* doc = R"""()""";
         } ctor;
-        // Symbol: drake::solvers::OsqpSolver::ProgramAttributesSatisfied
-        struct /* ProgramAttributesSatisfied */ {
+        // Symbol: namespace_1::namespace_2::DummyClass::static_function_1
+        struct /* static_function_1 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:57
+          const char* doc = R"""()""";
+        } static_function_1;
+        // Symbol: namespace_1::namespace_2::DummyClass::static_function_2
+        struct /* static_function_2 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:58
+          const char* doc = R"""()""";
+        } static_function_2;
+        // Symbol: namespace_1::namespace_2::DummyClass::struct_2
+        struct /* struct_2 */ {
           // Source: drake/tools/workspace/pybind11/test/test.h:56
           const char* doc = R"""()""";
-        } ProgramAttributesSatisfied;
-        // Symbol: drake::solvers::OsqpSolver::id
-        struct /* id */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:54
-          const char* doc = R"""()""";
-        } id;
-        // Symbol: drake::solvers::OsqpSolver::is_available
-        struct /* is_available */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:55
-          const char* doc = R"""()""";
-        } is_available;
-      } OsqpSolver;
-      // Symbol: drake::solvers::OsqpSolverDetails
-      struct /* OsqpSolverDetails */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:16
+        } struct_2;
+      } DummyClass;
+      // Symbol: namespace_1::namespace_2::Struct1
+      struct /* Struct1 */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:19
         const char* doc =
-R"""(The OSQP solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<OsqpSolver>() to
-obtain the details.)""";
-        // Symbol: drake::solvers::OsqpSolverDetails::dual_res
-        struct /* dual_res */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:25
-          const char* doc = R"""(Norm of dual residue.)""";
-        } dual_res;
-        // Symbol: drake::solvers::OsqpSolverDetails::iter
-        struct /* iter */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:18
-          const char* doc = R"""(Number of iterations taken.)""";
-        } iter;
-        // Symbol: drake::solvers::OsqpSolverDetails::polish_time
-        struct /* polish_time */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:31
-          const char* doc = R"""(Time taken for polish phase (seconds).)""";
-        } polish_time;
-        // Symbol: drake::solvers::OsqpSolverDetails::primal_res
-        struct /* primal_res */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:23
-          const char* doc = R"""(Norm of primal residue.)""";
-        } primal_res;
-        // Symbol: drake::solvers::OsqpSolverDetails::run_time
-        struct /* run_time */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:33
-          const char* doc = R"""(Total OSQP time (seconds).)""";
-        } run_time;
-        // Symbol: drake::solvers::OsqpSolverDetails::setup_time
-        struct /* setup_time */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:27
-          const char* doc = R"""(Time taken for setup phase (seconds).)""";
-        } setup_time;
-        // Symbol: drake::solvers::OsqpSolverDetails::solve_time
-        struct /* solve_time */ {
-          // Source: drake/tools/workspace/pybind11/test/test.h:29
-          const char* doc = R"""(Time taken for solve phase (seconds).)""";
-        } solve_time;
-        // Symbol: drake::solvers::OsqpSolverDetails::status_val
-        struct /* status_val */ {
+R"""(Quam odio at est.
+
+Proin eleifend nisi et nibh. Maecenas a lacus. Mauris porta quam non
+massa molestie scelerisque. Nulla sed ante at lorem suscipit rutrum.
+Nam quis tellus. Cras elit nisi, ornare a, condimentum vitae, rutrum
+sit amet, tellus. Maecenas)""";
+        // Symbol: namespace_1::namespace_2::Struct1::var_1
+        struct /* var_1 */ {
           // Source: drake/tools/workspace/pybind11/test/test.h:21
           const char* doc =
-R"""(Status of the solver at termination. Please refer to
-https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h)""";
-        } status_val;
-      } OsqpSolverDetails;
-      // Symbol: drake::solvers::SolverId
-      struct /* SolverId */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:36
+R"""(Et, ornare sagittis, tellus. Fusce felis.)""";
+        } var_1;
+        // Symbol: namespace_1::namespace_2::Struct1::var_2
+        struct /* var_2 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:23
+          const char* doc = R"""(Nulla a augue. Pellentesque sed est.)""";
+        } var_2;
+        // Symbol: namespace_1::namespace_2::Struct1::var_3
+        struct /* var_3 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:25
+          const char* doc = R"""(Imperdiet tristique, interdum a, dolor.)""";
+        } var_3;
+        // Symbol: namespace_1::namespace_2::Struct1::var_4
+        struct /* var_4 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:27
+          const char* doc =
+R"""(Tempor lobortis turpis. Sed tellus velit, ullamcorper.)""";
+        } var_4;
+        // Symbol: namespace_1::namespace_2::Struct1::var_5
+        struct /* var_5 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:29
+          const char* doc =
+R"""(Id, rutrum auctor, ullamcorper sed, orci. In.)""";
+        } var_5;
+        // Symbol: namespace_1::namespace_2::Struct1::var_6
+        struct /* var_6 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:31
+          const char* doc =
+R"""(Fames ac turpis egestas. Sed vitae eros. Nulla.)""";
+        } var_6;
+        // Symbol: namespace_1::namespace_2::Struct1::var_7
+        struct /* var_7 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:33
+          const char* doc =
+R"""(Condimentum. Donec arcu quam, dictum accumsan, convallis.)""";
+        } var_7;
+        // Symbol: namespace_1::namespace_2::Struct1::var_8
+        struct /* var_8 */ {
+          // Source: drake/tools/workspace/pybind11/test/test.h:35
+          const char* doc =
+R"""(Volutpat. Donec non tortor. Vivamus posuere nisi mollis.)""";
+        } var_8;
+      } Struct1;
+      // Symbol: namespace_1::namespace_2::Struct2
+      struct /* Struct2 */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:38
         const char* doc = R"""()""";
-      } SolverId;
-      // Symbol: drake::solvers::SolverOptions
-      struct /* SolverOptions */ {
-        // Source: drake/tools/workspace/pybind11/test/test.h:40
-        const char* doc = R"""()""";
-      } SolverOptions;
-      // Symbol: drake::solvers::VectorXd
-      struct /* VectorXd */ {
+      } Struct2;
+      // Symbol: namespace_1::namespace_2::Struct3
+      struct /* Struct3 */ {
         // Source: drake/tools/workspace/pybind11/test/test.h:39
         const char* doc = R"""()""";
-      } VectorXd;
-    } solvers;
-  } drake;
+      } Struct3;
+      // Symbol: namespace_1::namespace_2::Struct4
+      struct /* Struct4 */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:40
+        const char* doc = R"""()""";
+      } Struct4;
+      // Symbol: namespace_1::namespace_2::Struct5
+      struct /* Struct5 */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:41
+        const char* doc = R"""()""";
+      } Struct5;
+      // Symbol: namespace_1::namespace_2::Struct6
+      struct /* Struct6 */ {
+        // Source: drake/tools/workspace/pybind11/test/test.h:42
+        const char* doc = R"""()""";
+      } Struct6;
+    } namespace_2;
+  } namespace_1;
 } pydrake_doc;
 
 #if defined(__GNUG__)
