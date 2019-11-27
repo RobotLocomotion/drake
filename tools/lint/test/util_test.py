@@ -16,11 +16,7 @@ class UtilTest(unittest.TestCase):
         self.assertTrue('workspace(name = "drake")\n' in workspace_lines)
 
         # Sanity-check relpaths.
-        # TODO(jwnimmer-tri) Ideally, sanity checking of the paths (e.g., their
-        # len() like we check just below) could live within find_all_sources,
-        # but projects other than Drake might need different heuristics.
         self.assertGreater(len(relpaths), 1_000)
-        self.assertLess(len(relpaths), 10_000)
         self.assertTrue('.bazelproject' in relpaths)
         self.assertTrue('setup/ubuntu/install_prereqs.sh' in relpaths)
         THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND = [
