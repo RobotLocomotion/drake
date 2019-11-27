@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
@@ -1325,6 +1326,16 @@ Evaluate(const Eigen::MatrixBase<Derived>& m,
     });
   }
 }
+
+/** Evaluates @p m using a given environment (by default, an empty environment).
+ *
+ * @throws std::runtime_error if there exists a variable in @p m whose value is
+ *                            not provided by @p env.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Eigen::SparseMatrix<double> Evaluate(
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
+    const Environment& env = Environment{});
 
 /// Substitutes a symbolic matrix @p m using a given substitution @p subst.
 ///

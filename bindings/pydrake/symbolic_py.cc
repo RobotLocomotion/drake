@@ -369,7 +369,7 @@ PYBIND11_MODULE(symbolic, m) {
         return Evaluate(M, Environment{env}, random_generator);
       },
       py::arg("m"), py::arg("env") = Environment::map{},
-      py::arg("generator") = nullptr, doc.Evaluate.doc);
+      py::arg("generator") = nullptr, doc.Evaluate.doc_3args);
 
   m.def("Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {
