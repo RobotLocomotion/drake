@@ -1,4 +1,7 @@
+#pragma once
+
 #include <memory>
+#include <string>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
