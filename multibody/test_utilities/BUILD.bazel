@@ -23,12 +23,11 @@ drake_cc_library(
         "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
-        "//multibody/plant",
         "//multibody/parsing",
+        "//multibody/plant",
         "//systems/framework",
     ],
 )
-
 
 drake_cc_library(
     name = "floating_body_plant",
