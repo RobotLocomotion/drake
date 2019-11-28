@@ -31,6 +31,7 @@
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
+#include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -1516,7 +1517,7 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
 }
 
 // Helper function for the two v-to-qdot and qdot-to-v tests.
-void InitializePlantAndContextForVelocityToQdotMapping(
+void InitializePlantAndContextForVelocityToQDotMapping(
     MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
   // This is used in purely kinematic tests. Therefore we leave the spatial
   // inertia initialized to garbage. It should not affect the results.
@@ -1541,10 +1542,24 @@ void InitializePlantAndContextForVelocityToQdotMapping(
   plant->SetFreeBodySpatialVelocity(context->get(), body, V_WB);
 }
 
-GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBackContinuous) {
+// Tests the qdot-to-v mapping when all objects in the world are fixed (have
+// no degrees-of-freedom).
+GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackFixedWorld) {
+  MultibodyPlant<double> plant;
+  test::AddFixedObjectsToPlant(&plant);
+  plant.Finalize();
+  unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Make sure that the mapping functions do not throw.
+  BasicVector<double> qdot(0), v(0);
+  ASSERT_NO_THROW(plant.MapVelocityToQDot(*context, v, &qdot));
+  ASSERT_NO_THROW(plant.MapQDotToVelocity(*context, qdot, &v));
+}
+
+GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackContinuous) {
   MultibodyPlant<double> plant;
   unique_ptr<Context<double>> context;
-  InitializePlantAndContextForVelocityToQdotMapping(&plant, &context);
+  InitializePlantAndContextForVelocityToQDotMapping(&plant, &context);
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.
@@ -1565,11 +1580,11 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBackContinuous) {
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
 }
 
-GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBackDiscrete) {
+GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackDiscrete) {
   const double time_step = 1e-3;
   MultibodyPlant<double> plant(time_step);
   unique_ptr<Context<double>> context;
-  InitializePlantAndContextForVelocityToQdotMapping(&plant, &context);
+  InitializePlantAndContextForVelocityToQDotMapping(&plant, &context);
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.
