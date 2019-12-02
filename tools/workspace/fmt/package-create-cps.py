@@ -17,7 +17,7 @@ content = """
   "Components": {
     "fmt-header-only": {
       "Type": "interface",
-      "Definitions": ["FMT_HEADER_ONLY=1", "FMT_USE_GRISU=1"],
+      "Definitions": ["FMT_HEADER_ONLY=1"],
       "Includes": ["@prefix@/include/fmt"]
     }
   }

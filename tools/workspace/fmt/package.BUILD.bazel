@@ -29,9 +29,6 @@ cc_library(
         "FMT_HEADER_ONLY=1",
         # Avoid macro pollution.
         "FMT_NO_FMT_STRING_ALIAS=1",
-        # Use sensible floating-point formatting.  (As of 6.0.0 this isn't the
-        # default upstream, but it is promised to be in a forthcoming release.)
-        "FMT_USE_GRISU=1",
     ],
     includes = ["include"],
 )
