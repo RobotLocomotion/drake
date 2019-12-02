@@ -501,15 +501,14 @@ class Context : public ContextBase {
   /// Records the user's requested accuracy, which is a unit-less quantity
   /// designed for use with simulation and other numerical studies. Since
   /// accuracy is unit-less, algorithms and systems are free to interpret this
-  /// quantity as they wish. The only requirement is that the amount of
-  /// computational work must increase (actually, it need only not decrease) as
-  /// the accuracy setting becomes tighter (closer to zero). If no accuracy is
-  /// requested, computations are free to choose suitable defaults, or to refuse
-  /// to proceed without an explicit accuracy setting. The accuracy of a
-  /// complete simulation or other numerical study depends on the accuracy of
-  /// _all_ contributing computations, so it is important that each computation
-  /// is done in accordance with the requested accuracy. Some examples of where
-  /// this is needed:
+  /// quantity as they wish. The intention is that more computational work is
+  /// acceptable as the accuracy setting is tightened (set closer to zero). If
+  /// no accuracy is requested, computations are free to choose suitable
+  /// defaults, or to refuse to proceed without an explicit accuracy setting.
+  /// The accuracy of a complete simulation or other numerical study depends on
+  /// the accuracy of _all_ contributing computations, so it is important that
+  /// each computation is done in accordance with the requested accuracy. Some
+  /// examples of where this is needed:
   /// - Error-controlled numerical integrators use the accuracy setting to
   ///   decide what step sizes to take.
   /// - The Simulator employs a numerical integrator, but also uses accuracy to
