@@ -7,7 +7,7 @@ repositories:
   ign_math:
     type: hg
     url: https://bitbucket.org/ignitionrobotics/ign-math
-    version: ign-math6
+    version: ignition-math6_6.4.0
   sdformat:
     type: hg
     url: https://bitbucket.org/osrf/sdformat
