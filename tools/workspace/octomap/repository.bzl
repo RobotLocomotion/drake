@@ -8,11 +8,8 @@ def octomap_repository(
     github_archive(
         name = name,
         repository = "OctoMap/octomap",
-        commit = "v1.9.0",
-        sha256 = "5f81c9a8cbc9526b2e725251cd3a829e5222a28201b394314002146d8b9214dd",  # noqa
+        commit = "v1.9.1",
+        sha256 = "9abce615d9f3f97a15ba129a10e3a01f9bef9aad178f2ef398f9a925f793c7b9",  # noqa
         build_file = "@drake//tools/workspace/octomap:package.BUILD.bazel",
         mirrors = mirrors,
-        patches = [
-            "@drake//tools/workspace/octomap:do_not_use_random_shuffle.patch",
-        ],
     )
