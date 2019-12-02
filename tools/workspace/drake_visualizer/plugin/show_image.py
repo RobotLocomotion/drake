@@ -218,7 +218,7 @@ class ImageArrayWidget(object):
     def __init__(self, handlers):
         # Create widget and layouts
         self._widget = QtGui.QWidget()
-        self._image_widgets = map(ImageWidget, handlers)
+        self._image_widgets = list(map(ImageWidget, handlers))
         self._layout = QtGui.QHBoxLayout(self._widget)
         for image_widget in self._image_widgets:
             self._layout.addWidget(image_widget.get_widget())

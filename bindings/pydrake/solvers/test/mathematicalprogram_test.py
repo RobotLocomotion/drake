@@ -173,6 +173,8 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertEqual(prog.FindDecisionVariableIndices(vars=[x[0], x[1]]),
                          [0, 1])
+        self.assertEqual(prog.decision_variable_index()[x[0].get_id()], 0)
+        self.assertEqual(prog.decision_variable_index()[x[1].get_id()], 1)
 
         for binding in prog.GetAllCosts():
             self.assertIsInstance(binding.evaluator(), mp.Cost)
@@ -378,10 +380,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # d(0) + d(1) = 1
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
+        self.assertEqual(prog.indeterminates_index()[x[0].get_id()], 0)
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)
         y = prog.NewIndeterminates(1, "y")
+        self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])))
         d = prog.NewContinuousVariables(2, "d")

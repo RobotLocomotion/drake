@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proximity",
     deps = [
+        ":bounding_volume_hierarchy",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
         ":distance_to_point_callback",
@@ -40,6 +41,15 @@ drake_cc_package_library(
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "bounding_volume_hierarchy",
+    srcs = ["bounding_volume_hierarchy.cc"],
+    hdrs = ["bounding_volume_hierarchy.h"],
+    deps = [
+        "//common",
     ],
 )
 
@@ -141,6 +151,7 @@ drake_cc_library(
     srcs = ["hydroelastic_internal.cc"],
     hdrs = ["hydroelastic_internal.h"],
     deps = [
+        ":bounding_volume_hierarchy",
         ":surface_mesh",
         ":volume_mesh",
         "//common:essential",
@@ -148,7 +159,13 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
+        "//geometry/proximity:make_box_field",
         "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:make_cylinder_field",
+        "//geometry/proximity:make_cylinder_mesh",
+        "//geometry/proximity:make_ellipsoid_field",
+        "//geometry/proximity:make_ellipsoid_mesh",
+        "//geometry/proximity:make_sphere_field",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/proximity:proximity_utilities",
         "@fmt",
@@ -391,6 +408,19 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bounding_volume_hierarchy_test",
+    deps = [
+        ":bounding_volume_hierarchy",
+        ":make_ellipsoid_mesh",
+        ":make_sphere_mesh",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:shape_specification",
     ],
 )
 

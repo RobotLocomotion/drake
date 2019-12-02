@@ -6,10 +6,12 @@
 #include <unordered_map>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
@@ -39,10 +41,25 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 // TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
-/** Defines a soft mesh -- a mesh and its linearized pressure field, p̃(e).  */
+/** Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
+ bounding volume hierarchy. While this struct retains ownership of the mesh,
+ we assume that both the pressure field and the bounding volume hierarchy
+ are derived from the mesh. */
 struct SoftMesh {
   std::unique_ptr<VolumeMesh<double>> mesh;
   std::unique_ptr<VolumeMeshField<double, double>> pressure;
+  std::unique_ptr<BoundingVolumeHierarchy<VolumeMesh<double>>> bvh;
+
+  SoftMesh() = default;
+
+  SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh_in,
+           std::unique_ptr<VolumeMeshField<double, double>> pressure_in)
+      : mesh(std::move(mesh_in)),
+        pressure(std::move(pressure_in)),
+        // TODO(tehbelinda): Create BVH once we start using it.
+        bvh(nullptr) {
+    DRAKE_ASSERT(mesh.get() == &pressure->mesh());
+  }
 };
 
 /** Definition of a soft geometry for hydroelastic implementations. Today, the
@@ -51,10 +68,9 @@ struct SoftMesh {
 class SoftGeometry {
  public:
   /** Constructs a soft geometry from a soft mesh.  */
-  SoftGeometry(
-      std::unique_ptr<VolumeMesh<double>> mesh,
-      std::unique_ptr<VolumeMeshField<double, double>> pressure)
-      : geometry_(SoftMesh{std::move(mesh), std::move(pressure)}) {}
+  SoftGeometry(std::unique_ptr<VolumeMesh<double>> mesh,
+               std::unique_ptr<VolumeMeshField<double, double>> pressure)
+      : geometry_(SoftMesh(std::move(mesh), std::move(pressure))) {}
 
   SoftGeometry(const SoftGeometry& g) { *this = g; }
   SoftGeometry& operator=(const SoftGeometry& g);
@@ -75,20 +91,39 @@ class SoftGeometry {
   SoftMesh geometry_;
 };
 
+/** Defines a rigid mesh -- a surface mesh and its bounding volume hierarchy.
+ This struct retains ownership of the mesh, with the bounding volume hierarchy
+ just referencing it.  */
+struct RigidMesh {
+  std::unique_ptr<SurfaceMesh<double>> mesh;
+  std::unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
+
+  RigidMesh() = default;
+
+  explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh_in)
+      : mesh(std::move(mesh_in)),
+        // TODO(tehbelinda): Create BVH once we start using it.
+        bvh(nullptr) {}
+};
+
 /** The base representation of rigid geometries. A rigid geometry is represented
- with a SurfaceMesh.  */
+ with a RigidMesh.  */
 class RigidGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
-
   /** Constructs a rigid representation from the given surface mesh.  */
-  explicit RigidGeometry(SurfaceMesh<double> mesh) : mesh_(std::move(mesh)) {}
+  explicit RigidGeometry(std::unique_ptr<SurfaceMesh<double>> mesh)
+      : geometry_(RigidMesh(std::move(mesh))) {}
+
+  RigidGeometry(const RigidGeometry& g) { *this = g; }
+  RigidGeometry& operator=(const RigidGeometry& g);
+  RigidGeometry(RigidGeometry&&) = default;
+  RigidGeometry& operator=(RigidGeometry&&) = default;
 
   /** Returns a reference to the surface mesh.  */
-  const SurfaceMesh<double>& mesh() const { return mesh_; }
+  const SurfaceMesh<double>& mesh() const { return *geometry_.mesh; }
 
  private:
-  SurfaceMesh<double> mesh_;
+  RigidMesh geometry_;
 };
 
 /** This class stores all instantiated hydroelastic representations of declared
@@ -249,6 +284,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
+/** Rigid cylinder support. Requires the ('hydroelastic', 'resolution_hint')
+ property.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Cylinder& cylinder, const ProximityProperties& props);
+
+/** Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
+ property.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 /** Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
@@ -267,6 +311,24 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
+
+/** Creates a soft box (assuming the proximity properties has sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Box& box, const ProximityProperties& props);
+
+/** Creates a soft cylinder (assuming the proximity properties has sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Cylinder& cylinder, const ProximityProperties& props);
+
+/** Creates a soft ellipsoid (assuming the proximity properties has sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 //@}
 

@@ -7,12 +7,12 @@ def ignition_math_repository(
         mirrors = None):
     # When updating this commit, also remember to adjust the PROJECT_*
     # constants in ./package.BUILD.bazel to match the new version number.
-    commit = "cc964ebb48f8"  # ign-math6 DNM non-default!
+    commit = "11bba67b3176"  # tag/ignition-math6_6.4.0
     bitbucket_archive(
         name = name,
         repository = "ignitionrobotics/ign-math",
         commit = commit,
-        sha256 = "2a94901a7217768fd467ea60f22d8efcabd87b6be4bb7f7d198cf7c906cfe4b1",  # noqa
+        sha256 = "5b9835f07771946dbc051c4677928bf578a874464d8ada1d6b4d6fa5881e5427",  # noqa
         strip_prefix = "ignitionrobotics-ign-math-%s" % (commit),
         build_file = "@drake//tools/workspace/ignition_math:package.BUILD.bazel",  # noqa
         mirrors = mirrors,

@@ -98,6 +98,17 @@ class TestGeometry(unittest.TestCase):
                 geometry_id=global_geometry, properties=prop,
                 assign=mut.RoleAssign.kNew)
 
+        # Check property accessors.
+        self.assertIsInstance(
+            inspector.GetProximityProperties(geometry_id=global_geometry),
+            mut.ProximityProperties)
+        self.assertIsInstance(
+            inspector.GetIllustrationProperties(geometry_id=global_geometry),
+            mut.IllustrationProperties)
+        self.assertIsInstance(
+            inspector.GetPerceptionProperties(geometry_id=global_geometry),
+            mut.PerceptionProperties)
+
     def test_connect_drake_visualizer(self):
         # Test visualization API.
         # Use a mockable so that we can make a smoke test without side
@@ -350,6 +361,17 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(len(results), 0)
         results = query_object.FindCollisionCandidates()
         self.assertEqual(len(results), 0)
+
+        # ComputeSignedDistancePairClosestPoints() requires two valid geometry
+        # ids. There are none in this SceneGraph instance. Rather than
+        # populating the SceneGraph, we look for the exception thrown in
+        # response to invalid ids as evidence of correct binding.
+        self.assertRaisesRegex(
+            RuntimeError,
+            "The geometry given by id \\d+ does not reference a geometry" +
+            " that can be used in a signed distance query",
+            query_object.ComputeSignedDistancePairClosestPoints,
+            mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())
 
         # Confirm rendering API returns images of appropriate type.
         d_camera = mut.render.DepthCameraProperties(

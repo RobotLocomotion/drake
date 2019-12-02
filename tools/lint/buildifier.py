@@ -53,7 +53,7 @@ def _find_buildifier_sources(workspace_name):
     workspace, sources_relpath = find_all_sources(workspace_name)
     exact_filenames = ["BUILD", "WORKSPACE"]
     extensions = ["bazel", "bzl", "BUILD"]
-    return [
+    return workspace, [
         os.path.join(workspace, relpath)
         for relpath in sources_relpath
         if os.path.splitext(relpath)[1][1:] in extensions or
@@ -101,10 +101,15 @@ def main(workspace_name="drake"):
         print("ERROR: no input files; did you want '--all'?")
         return 1
     if find_all:
-        found = _find_buildifier_sources(workspace_name)
+        workspace_dir, found = _find_buildifier_sources(workspace_name)
         if len(found) == 0:
             print("ERROR: '--all' could not find anything")
             return 1
+        print(f"This will reformat {len(found)} files "
+              f"within {workspace_dir}")
+        if input("Are you sure [y/N]? ") not in ["y", "Y"]:
+            print("... canceled")
+            sys.exit(1)
         argv.extend(found)
 
     # Provide helpful diagnostics when in check mode.  Buildifier's -mode=check

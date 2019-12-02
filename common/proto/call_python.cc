@@ -157,7 +157,15 @@ void PublishCall(
     google::protobuf::io::CodedOutputStream output(&raw_output);
 
     // Write the size.
+#if GOOGLE_PROTOBUF_VERSION < 3011000
     const int size = message.ByteSize();
+#else
+    const size_t size = message.ByteSizeLong();
+    if (size > std::numeric_limits<int>::max()) {
+      throw std::runtime_error(
+          "Message size is greater than the maximum finite value of int");
+    }
+#endif
     output.WriteVarint32(size);
 
     uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
