@@ -237,6 +237,8 @@ static std::unique_ptr<System<T>> Make(
     throw std::runtime_error(msg.str());
   }
   const S<U>& my_other = dynamic_cast<const S<U>&>(other);
+  // N.B. This logic should be reflected in `TemplateSystem._make_converter` in
+  // the file `scalar_conversion.py`.
   auto result = std::make_unique<S<T>>(my_other);
   // We manually propagate the name from the old System to the new.  The name
   // is the only extrinsic property of the System and LeafSystem base classes

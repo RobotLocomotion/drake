@@ -210,8 +210,13 @@ class TemplateSystem(TemplateClass):
             T, U = T_pair
 
             def conversion(system):
+                # This should mirror the logic in
+                # `system_scalar_converter_internal::Make` under the file
+                # `system_scalar_converter.h`.
                 assert isinstance(system, self[U])
-                return self[T](system)
+                result = self[T](system)
+                result.set_name(system.get_name())
+                return result
 
             converter.Add[T, U](conversion)
 
