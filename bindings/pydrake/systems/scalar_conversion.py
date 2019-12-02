@@ -182,6 +182,9 @@ class TemplateSystem(TemplateClass):
             if template._check_if_copying(self, *args, **kwargs):
                 other = args[0]
                 cls._construct_copy(self, other, converter=converter)
+                # Copy name iff it's unset.
+                if self.get_name() == "":
+                    self.set_name(other.get_name())
             else:
                 cls._construct(
                     self, *args, converter=converter, **kwargs)
