@@ -187,6 +187,12 @@ double Expression::Evaluate(RandomGenerator* const random_generator) const {
   return Evaluate(Environment{}, random_generator);
 }
 
+Eigen::SparseMatrix<double> Evaluate(
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
+    const Environment& env) {
+  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
+}
+
 Expression Expression::EvaluatePartial(const Environment& env) const {
   if (env.empty()) {
     return *this;
@@ -1037,15 +1043,26 @@ Expression TaylorExpand(const Expression& f, const Environment& a,
   return factory.GetExpression();
 }
 
-Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
-  Variables vars{};
-  // Note: Default storage order for Eigen is column-major.
-  for (int j = 0; j < v.cols(); j++) {
-    for (int i = 0; i < v.rows(); i++) {
-      vars.insert(v(i, j).GetVariables());
-    }
+namespace {
+// Visitor used in the implementation of the GetDistinctVariables function
+// defined below.
+struct GetDistinctVariablesVisitor {
+  // called for the first coefficient
+  void init(const Expression& value, Eigen::Index, Eigen::Index) {
+    variables += value.GetVariables();
   }
-  return vars;
+  // called for all other coefficients
+  void operator()(const Expression& value, Eigen::Index, Eigen::Index) {
+    variables += value.GetVariables();
+  }
+  Variables variables;
+};
+}  // namespace
+
+Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
+  GetDistinctVariablesVisitor visitor;
+  v.visit(visitor);
+  return visitor.variables;
 }
 
 }  // namespace symbolic
