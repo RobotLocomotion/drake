@@ -1,0 +1,13 @@
+package drake;
+
+struct lcmt_planar_gripper_finger_command
+{
+  // Only used when the planar gripper is in joint position control mode.
+  // Otherwise, ignored.
+  double joint_position[2];
+  double joint_velocity[2];
+
+  // Only used when the planar gripper is in joint torque control mode.
+  // Otherwise, ignored.
+  double joint_torque[2];
+}

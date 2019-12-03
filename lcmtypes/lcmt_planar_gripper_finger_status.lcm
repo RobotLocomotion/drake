@@ -1,0 +1,10 @@
+package drake;
+
+struct lcmt_planar_gripper_finger_status
+{
+  double joint_position[2];
+  double joint_velocity[2];
+
+  // Torques here are ignored.
+  lcmt_force_torque fingertip_force;
+}
