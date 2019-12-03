@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file
-/// Helpers for defining scalars and values.
+/// Helpers for defining instantiations of drake::Value<>.
 
 #include <string>
 
@@ -14,8 +14,8 @@
 namespace drake {
 namespace pydrake {
 
-/// Defines an instantiation of `pydrake.systems.framework.Value[...]`. This is
-/// only meant to bind `Value<T>` (or specializations thereof).
+/// Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
+/// meant to bind `Value<T>` (or specializations thereof).
 /// @prereq `T` must have already been exposed to `pybind11`.
 /// @param scope Parent scope.
 /// @tparam T Inner parameter of `Value<T>`.
@@ -24,11 +24,11 @@ namespace pydrake {
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     py::module scope) {
+  py::module py_common = py::module::import("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
-  py::module py_framework = py::module::import("pydrake.systems.framework");
-  AddTemplateClass(py_framework, "Value", py_class, GetPyParam<T>());
+  AddTemplateClass(py_common, "Value", py_class, GetPyParam<T>());
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
   // simplified by always copying.

@@ -923,6 +923,7 @@ PYBIND11_MODULE(plant, m) {
   m.doc() = "Bindings for MultibodyPlant and related classes.";
 
   py::module::import("pydrake.geometry");
+  py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.math");
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
