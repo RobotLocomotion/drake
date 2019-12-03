@@ -3,19 +3,14 @@
 #include <sstream>
 
 #include "pybind11/eigen.h"
-#include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/math/rigid_transform.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
@@ -24,32 +19,6 @@ using std::string;
 
 namespace drake {
 namespace pydrake {
-
-namespace {
-
-// Add instantiations of primitive types on an as-needed basis; Please be
-// conservative.
-void AddPrimitiveValueInstantiations(py::module m) {
-  AddValueInstantiation<string>(m);
-  AddValueInstantiation<bool>(m);
-}
-
-// Same as above, but for templated types.
-template <typename T>
-void AddPrimitiveValueTemplateInstantiations(py::module m) {
-  // Imports for the relevant types.
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.math");
-  // TODO(eric): When `Value[]` moves to `pydrake.common`, move these to their
-  // respective modules.
-  AddValueInstantiation<math::RigidTransform<T>>(m);
-  AddValueInstantiation<math::RotationMatrix<T>>(m);
-  // TODO(eric): Consider deprecating / removing `Isometry3` pending resolution
-  // of #9865.
-  AddValueInstantiation<Isometry3<T>>(m);
-}
-
-}  // namespace
 
 void DefineFrameworkPyValues(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -121,39 +90,6 @@ void DefineFrameworkPyValues(py::module m) {
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 
-  // `AddValueInstantiation` will define methods specific to `T` for
-  // `Value<T>`. Since Python is nominally dynamic, these methods are
-  // effectively "virtual".
-  auto abstract_stub = [](const std::string& method) {
-    return [method](const AbstractValue* self, py::args, py::kwargs) {
-      string type_name = NiceTypeName::Get(*self);
-      throw std::runtime_error(
-          "This derived class of `AbstractValue`, `" + type_name + "`, " +
-          "is not exposed to pybind11, so `" + method + "` cannot be " +
-          "called. See `AddValueInstantiation` for how to bind it.");
-    };
-  };
-
-  // TODO(jwnimmer-tri) Move Value<> bindings into pydrake.common module.
-  py::class_<AbstractValue> abstract_value(m, "AbstractValue");
-  DefClone(&abstract_value);
-  abstract_value
-      .def("SetFrom", &AbstractValue::SetFrom,
-          pydrake_doc.drake.AbstractValue.SetFrom.doc)
-      .def("get_value", abstract_stub("get_value"),
-          pydrake_doc.drake.AbstractValue.get_value.doc)
-      .def("get_mutable_value", abstract_stub("get_mutable_value"),
-          pydrake_doc.drake.AbstractValue.get_mutable_value.doc)
-      .def("set_value", abstract_stub("set_value"),
-          pydrake_doc.drake.AbstractValue.set_value.doc);
-
-  // Add value instantiations for nominal data types. Types that require more
-  // pizazz are listed below.
-  AddPrimitiveValueInstantiations(m);
-  // TODO(eric.cousineau): Move inside loop once bindings support other
-  // scalars.
-  AddPrimitiveValueTemplateInstantiations<double>(m);
-
   // Add `Value<>` instantiations for basic vectors templated on common scalar
   // types.
   auto bind_abstract_basic_vectors = [m](auto dummy) {
@@ -173,42 +109,6 @@ void DefineFrameworkPyValues(py::module m) {
             py::arg("value"));
   };
   type_visit(bind_abstract_basic_vectors, CommonScalarPack{});
-
-  // Add `Value[object]` instantiation.
-  // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,
-  // then this should turn into a specialization of `Value<>`, rather than an
-  // extension.
-  class PyObjectValue : public drake::Value<py::object> {
-   public:
-    using Base = Value<py::object>;
-    using Base::Base;
-    // Override `Value<py::object>::Clone()` to perform a deep copy on the
-    // object.
-    std::unique_ptr<AbstractValue> Clone() const override {
-      py::object py_copy = py::module::import("copy").attr("deepcopy");
-      return std::make_unique<PyObjectValue>(py_copy(get_value()));
-    }
-  };
-  AddValueInstantiation<py::object, PyObjectValue>(m);
-
-  py::object py_type_func = py::eval("type");
-  py::object py_object_type = py::eval("object");
-  // `Value` was defined by the first call to `AddValueInstantiation`.
-  py::object py_value_template = m.attr("Value");
-  abstract_value.def_static("Make",
-      [py_type_func, py_value_template, py_object_type](py::object value) {
-        // Try to infer type from the object. If that does not work, just return
-        // `Value[object]`.
-        py::object py_type = py_type_func(value);
-        py::tuple py_result =
-            py_value_template.attr("get_instantiation")(py_type, false);
-        py::object py_value_class = py_result[0];
-        if (py_value_class.is_none()) {
-          py_value_class = py_value_template[py_object_type];
-        }
-        return py_value_class(value);
-      },
-      pydrake_doc.drake.AbstractValue.Make.doc);
 }
 
 }  // namespace pydrake
