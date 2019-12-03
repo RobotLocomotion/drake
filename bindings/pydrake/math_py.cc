@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -133,6 +134,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCast<T>(&cls, cls_doc.cast.doc);
     // .def("IsNearlyEqualTo", ...)
     // .def("IsExactlyEqualTo", ...)
+    AddValueInstantiation<RigidTransform<T>>(m);
   }
 
   {
@@ -198,6 +200,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
+    AddValueInstantiation<RotationMatrix<T>>(m);
   }
 
   {

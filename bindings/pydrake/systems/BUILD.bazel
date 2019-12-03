@@ -54,6 +54,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
+    cc_so_name = "_framework",
     cc_srcs = [
         "framework_py.cc",
         "framework_py_semantics.cc",
@@ -71,7 +72,9 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:value_py",
     ],
+    py_srcs = ["framework.py"],
 )
 
 drake_py_library(
@@ -429,7 +432,6 @@ drake_py_unittest(
     name = "value_test",
     deps = [
         ":framework_py",
-        ":test_util_py",
     ],
 )
 

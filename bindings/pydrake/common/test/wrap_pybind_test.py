@@ -2,7 +2,7 @@ import copy
 import gc
 import unittest
 
-from pydrake.common.wrap_test_util import (
+from pydrake.common.test.wrap_test_util import (
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,

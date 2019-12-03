@@ -17,10 +17,10 @@ with warnings.catch_warnings():  # noqa
 
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import AbstractValue
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 from pydrake.systems.rendering import PoseBundle
 
