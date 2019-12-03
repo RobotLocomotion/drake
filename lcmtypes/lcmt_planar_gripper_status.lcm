@@ -1,0 +1,16 @@
+package drake;
+
+// The current status of a planar-gripper.  All angular
+// positions/velocities are expressed in radians and radians/second.
+struct lcmt_planar_gripper_status
+{
+  // The timestamp in microseconds (this is typically the wall clock
+  // time of the sender https://en.wikipedia.org/wiki/Unix_time )
+  int64_t utime;
+
+  // The planar gripper consists of N fingers, each finger consists of two
+  // actuated joints.
+  int8_t num_fingers;
+
+  lcmt_planar_gripper_finger_status finger_status[num_fingers];
+}

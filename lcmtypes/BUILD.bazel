@@ -200,6 +200,18 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "planar_gripper",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_planar_gripper_command.lcm",
+        "lcmt_planar_gripper_status.lcm",
+        "lcmt_planar_gripper_finger_command.lcm",
+        "lcmt_planar_gripper_finger_status.lcm",
+        "lcmt_force_torque.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "resolved_contact",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_resolved_contact.lcm"],
@@ -335,6 +347,7 @@ LCMTYPES_CC = [
     ":manipulator_plan_move_end_effector",
     ":piecewise_polynomial",
     ":planar_manipuland_status",
+    ":planar_gripper",
     ":plan_eval_debug_info",
     ":point_pair_contact_info_for_viz",
     ":polynomial",
