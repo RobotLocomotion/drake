@@ -27,6 +27,7 @@ void trigger_an_assertion_failure() {
 }  // namespace
 
 PYBIND11_MODULE(_module_py, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for //common:common";
 
   constexpr auto& doc = pydrake_doc.drake;

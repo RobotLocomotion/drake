@@ -169,6 +169,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:type_pack",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
@@ -177,6 +178,7 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:value_py",
     ],
     py_srcs = ["_math_extra.py"],
 )
@@ -191,7 +193,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
