@@ -2,28 +2,21 @@
 
 import copy
 import unittest
+
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.eigen_geometry import Isometry3
-from pydrake.math import RigidTransform, RotationMatrix
+from pydrake.common.value import AbstractValue, Value
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector, BasicVector_,
     Parameters,
-    Value,
     VectorBase,
     )
-from pydrake.systems.test.test_util import (
-    make_unknown_abstract_value,
-    MoveOnlyType,
-)
 
 
 def pass_through(x):
     return x
-
 
 # TODO(eric.cousineau): Add negative (or positive) test cases for AutoDiffXd
 # and Symbolic once they are in the bindings.
@@ -81,85 +74,7 @@ class TestValue(unittest.TestCase):
         value.SetAtIndex(1, 5.)
         self.assertEqual(value.GetAtIndex(1), 5.)
 
-    def test_abstract_value_copyable(self):
-        expected = "Hello world"
-        value = Value[str](expected)
-        self.assertIsInstance(value, AbstractValue)
-        self.assertEqual(value.get_value(), expected)
-        expected_new = "New value"
-        value.set_value(expected_new)
-        self.assertEqual(value.get_value(), expected_new)
-        # Test docstring.
-        self.assertFalse("unique_ptr" in value.set_value.__doc__)
-
-    def test_abstract_value_move_only(self):
-        obj = MoveOnlyType(10)
-        # This *always* clones `obj`.
-        self.assertEqual(
-            str(Value[MoveOnlyType]),
-            "<class 'pydrake.systems.framework.Value[MoveOnlyType]'>")
-        value = Value[MoveOnlyType](obj)
-        self.assertTrue(value.get_value() is not obj)
-        self.assertEqual(value.get_value().x(), 10)
-        # Set value.
-        value.get_mutable_value().set_x(20)
-        self.assertEqual(value.get_value().x(), 20)
-        # Test custom emplace constructor.
-        emplace_value = Value[MoveOnlyType](30)
-        self.assertEqual(emplace_value.get_value().x(), 30)
-        # Test docstring.
-        self.assertTrue("unique_ptr" in value.set_value.__doc__)
-
-    def test_abstract_value_py_object(self):
-        expected = {"x": 10}
-        value = Value[object](expected)
-        # Value is by reference, *not* by copy.
-        self.assertTrue(value.get_value() is expected)
-        # Update mutable version.
-        value.get_mutable_value()["y"] = 30
-        self.assertEqual(value.get_value(), expected)
-        # Cloning the value should perform a deep copy of the Python object.
-        value_clone = copy.deepcopy(value)
-        self.assertEqual(value_clone.get_value(), expected)
-        self.assertTrue(value_clone.get_value() is not expected)
-        # Using `set_value` on the original value changes object reference.
-        expected_new = {"a": 20}
-        value.set_value(expected_new)
-        self.assertEqual(value.get_value(), expected_new)
-        self.assertTrue(value.get_value() is not expected)
-
-    def test_abstract_value_make(self):
-        value = AbstractValue.Make("Hello world")
-        self.assertIsInstance(value, Value[str])
-        value = AbstractValue.Make(MoveOnlyType(10))
-        self.assertIsInstance(value, Value[MoveOnlyType])
-        value = AbstractValue.Make({"x": 10})
-        self.assertIsInstance(value, Value[object])
-        for T in [float, AutoDiffXd, Expression]:
-            value = AbstractValue.Make(BasicVector_[T](size=1))
-            self.assertIsInstance(value, Value[BasicVector_[T]])
-
-    def test_abstract_value_unknown(self):
-        value = make_unknown_abstract_value()
-        self.assertIsInstance(value, AbstractValue)
-        with self.assertRaises(RuntimeError) as cm:
-            value.get_value()
-        self.assertTrue(all(
-            s in str(cm.exception) for s in [
-                "AbstractValue",
-                "UnknownType",
-                "get_value",
-                "AddValueInstantiation",
-            ]), cm.exception)
-
     def test_value_registration(self):
-        # Existience check.
-        Value[object]
-        Value[str]
-        Value[bool]
-        Value[RigidTransform]
-        Value[RotationMatrix]
-        Value[Isometry3]
         for T in [float, AutoDiffXd, Expression]:
             Value[BasicVector_[T]]
 

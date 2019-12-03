@@ -12,13 +12,12 @@ import webbrowser
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
+from pydrake.common.value import AbstractValue
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import (
-    AbstractValue, LeafSystem, PublishEvent, TriggerType
-)
+from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
 from pydrake.systems.rendering import PoseBundle
 from pydrake.multibody.plant import ContactResults
 import pydrake.perception as mut
