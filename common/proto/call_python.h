@@ -7,7 +7,6 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/proto/python_remote_message.pb.h"
 
@@ -49,32 +48,6 @@ void ToPythonRemoteData(double scalar, PythonRemoteData* data);
 void ToPythonRemoteData(int scalar, PythonRemoteData* data);
 
 void ToPythonRemoteData(const std::string& str, PythonRemoteData* data);
-
-using MatlabRPC
-    DRAKE_DEPRECATED("2019-12-01", "Use PythonRemoteMessage instead.")
-    = PythonRemoteMessage;
-
-using MatlabArray
-    DRAKE_DEPRECATED("2019-12-01", "Use PythonRemoteData instead.")
-    = PythonRemoteData;
-
-DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
-void ToMatlabArray(const PythonRemoteVariable& variable,
-                   PythonRemoteData* data);
-
-template <typename Derived>
-DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
-void ToMatlabArray(const Eigen::MatrixBase<Derived>& mat,
-                   PythonRemoteData* data);
-
-DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
-void ToMatlabArray(double scalar, PythonRemoteData* data);
-
-DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
-void ToMatlabArray(int scalar, PythonRemoteData* data);
-
-DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
-void ToMatlabArray(const std::string& str, PythonRemoteData* data);
 
 namespace internal {
 
@@ -299,13 +272,6 @@ void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
                         PythonRemoteData* data) {
   const bool is_vector = (Derived::ColsAtCompileTime == 1);
   return internal::ToPythonRemoteDataMatrix(mat, data, is_vector);
-}
-
-template <typename Derived>
-DRAKE_DEPRECATED("2019-12-01", "Use ToPythonRemoteData() instead.")
-void ToMatlabArray(const Eigen::MatrixBase<Derived>& mat,
-                   PythonRemoteData* data) {
-  ToPythonRemoteData(mat, data);
 }
 
 }  // namespace common

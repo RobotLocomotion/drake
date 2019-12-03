@@ -60,27 +60,6 @@ void ToPythonRemoteData(const std::string& str, PythonRemoteData* data) {
   data->set_data(str.data(), num_bytes);
 }
 
-// DRAKE_DEPRECATED 2019-12-01
-void ToMatlabArray(const PythonRemoteVariable& variable,
-                   PythonRemoteData* data) {
-  ToPythonRemoteData(variable, data);
-}
-
-// DRAKE_DEPRECATED 2019-12-01
-void ToMatlabArray(double scalar, PythonRemoteData* data) {
-  ToPythonRemoteData(scalar, data);
-}
-
-// DRAKE_DEPRECATED 2019-12-01
-void ToMatlabArray(int scalar, PythonRemoteData* data) {
-  ToPythonRemoteData(scalar, data);
-}
-
-// DRAKE_DEPRECATED 2019-12-01
-void ToMatlabArray(const std::string& str, PythonRemoteData* data) {
-  ToPythonRemoteData(str, data);
-}
-
 namespace internal {
 
 void ToPythonRemoteDataMatrix(const Eigen::Ref<const MatrixX<bool>>& mat,
