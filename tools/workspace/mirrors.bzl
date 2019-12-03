@@ -21,8 +21,8 @@
 DEFAULT_MIRRORS = {
     "bitbucket": [
         "https://bitbucket.org/{repository}/get/{commit}.tar.gz",
-        "https://drake-mirror.csail.mit.edu/bitbucket/{repository}/{commit}.tar.gz",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/bitbucket/{repository}/{commit}.tar.gz",  # noqa
+        # "https://drake-mirror.csail.mit.edu/bitbucket/{repository}/{commit}.tar.gz",  # noqa
+        # "https://s3.amazonaws.com/drake-mirror/bitbucket/{repository}/{commit}.tar.gz",  # noqa
     ],
     "buildifier": [
         "https://drake-mirror.csail.mit.edu/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
