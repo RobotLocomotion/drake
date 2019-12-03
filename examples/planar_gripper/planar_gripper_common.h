@@ -54,10 +54,10 @@ void WeldGripperFrames(MultibodyPlant<T>* plant);
  * @param[out] brick_initial_pose A vector containing the initial brick pose,
  * expressed in the gripper frame G.
  * @return A std::pair containing a matrix of finger joint position keyframes
- * (each matrix row represents a single keyframe containing values for all joint
- * positions) and a std::map containing the mapping between each finger joint
- * name and the corresponding column index in the keyframe matrix containing the
- * data for that joint.
+ * (each matrix column represents a single keyframe containing values for all
+ * joint positions) and a std::map containing the mapping between each finger
+ * joint name and the corresponding row index in the keyframe matrix containing
+ * the data for that joint.
  * @pre The file should begin with a header row that indicates the joint
  * ordering for keyframes. Header names should consist of three finger base
  * joints, three finger mid joints, and three brick joints (9 total):
@@ -71,7 +71,25 @@ void WeldGripperFrames(MultibodyPlant<T>* plant);
  * behavior of parsing is undefined if these conditions are not met.
  */
 std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
-    const std::string& name, EigenPtr<Vector3<double>> brick_initial_pose);
+    const std::string& name, EigenPtr<Vector3<double>> brick_initial_pose =
+                                 EigenPtr<Vector3<double>>(nullptr));
+
+/**
+ * Reorders the joint keyframe matrix data contained in @p keyframes such that
+ * joint keyframes (rows) are ordered according to the @ plant's joint velocity
+ * index ordering, making it compatible with the inverse dynamics controller's
+ * desired state input port ordering.
+ * @param[in] plant The Multibodyplant providing the velocity index ordering.
+ * @param[in] keyframes The planar gripper keyframes.
+ * @param[out] finger_joint_name_to_row_index_map A std::map which contains the
+ * incoming joint name to row index ordering. This map is updated to reflect the
+ * new keyframe reordering.
+ * @return A MatrixX containing the reordered keyframes.
+ */
+MatrixX<double> ReorderKeyframesForPlant(
+    const MultibodyPlant<double> &plant,
+    MatrixX<double> keyframes,
+    std::map<std::string, int> *finger_joint_name_to_row_index_map);
 
 /// Returns the planar gripper frame G's transform w.r.t. the world frame W.
 const math::RigidTransformd X_WGripper();

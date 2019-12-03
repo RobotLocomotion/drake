@@ -83,6 +83,27 @@ drake_cc_library(
 )
 
 drake_cc_binary(
+    name = "planar_gripper_trajectory_publisher",
+    srcs = ["planar_gripper_trajectory_publisher.cc"],
+    data = [
+        "//examples/planar_gripper:planar_gripper.sdf",
+        "//examples/planar_gripper:postures.txt",
+    ],
+    deps = [
+        ":planar_gripper_common",
+        ":planar_gripper_lcm",
+        "//common:find_resource",
+        "//lcm",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:trajectory_source",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "planar_gripper_simulation",
     srcs = ["planar_gripper_simulation.cc"],
     add_test_rule = 1,
@@ -97,21 +118,16 @@ drake_cc_binary(
     ],
     deps = [
         ":planar_gripper_common",
-        "//common:add_text_logging_gflags",
+        ":planar_gripper_lcm",
         "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial",
         "//geometry:geometry_visualization",
-        "//lcm:drake_lcm",
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
-        "//systems/primitives:constant_vector_source",
-        "//systems/primitives:trajectory_source",
         "@gflags",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
