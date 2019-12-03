@@ -242,6 +242,7 @@ drake_cc_googletest(
     deps = [
         ":hydroelastic_traction",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],
 )

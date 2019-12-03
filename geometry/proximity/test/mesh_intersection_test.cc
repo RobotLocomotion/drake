@@ -133,6 +133,10 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
         {2., 0., 0.},
     };
     // clang-format on
+    // NOTE: By construction, we know the expected output polygon is planar
+    // (i.e., z = 0 for all vertices). There is no need to test this explicitly.
+    // Also, by construction, the winding matches, so we will also not be
+    // explicitly testing that.
     const std::vector<Vector3d> output_polygon =
         mesh_intersection::ClipPolygonByHalfSpace(input_polygon, half_space);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
@@ -149,6 +153,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
         {0., 0., 1.}
     };
     // clang-format on
+    // Because we expect the output polygon to *be* the input polygon, we don't
+    // need to explicitly test planarity or winding.
     const std::vector<Vector3d> output_polygon =
         mesh_intersection::ClipPolygonByHalfSpace(input_polygon, half_space);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
@@ -165,6 +171,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
         {3., 0., 1.}
     };
     // clang-format on
+    // Empty polygons have no winding and no planarity.
     const std::vector<Vector3d> output_polygon =
         mesh_intersection::ClipPolygonByHalfSpace(input_polygon, half_space);
     const std::vector<Vector3d> empty_polygon;
@@ -181,6 +188,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
         {2., 0., 1.}
     };
     // clang-format on
+    // Because we expect the output polygon to *be* the input polygon, we don't
+    // need to explicitly test planarity or winding.
     const std::vector<Vector3d> output_polygon =
         mesh_intersection::ClipPolygonByHalfSpace(input_polygon, half_space);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
@@ -203,6 +212,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
         {2., 2., 0.},
     };
     // clang-format on
+    // By construction, expected output is planar (z = 0 for all vertices). It
+    // has no area, so winding is immaterial.
     const std::vector<Vector3d> output_polygon =
         mesh_intersection::ClipPolygonByHalfSpace(input_polygon, half_space);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
@@ -223,6 +234,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
         {2., 0., 0.}
     };
     // clang-format on
+    // By construction, expected output is planar (z = 0 for all vertices). It
+    // has no area, so winding is immaterial.
     const std::vector<Vector3d> output_polygon =
         mesh_intersection::ClipPolygonByHalfSpace(input_polygon, half_space);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
@@ -681,10 +694,9 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
 
   unique_ptr<SurfaceMesh<double>> surface;
   unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
-  unique_ptr<SurfaceMeshFieldLinear<Vector3d, double>> grad_h_field;
   mesh_intersection::SampleVolumeFieldOnSurface(
       *volume_field_M, *rigid_N, X_MN,
-      &surface, &e_field, &grad_h_field);
+      &surface, &e_field);
 
   const double kEps = std::numeric_limits<double>::epsilon();
   EXPECT_EQ(3, surface->num_faces());
@@ -701,9 +713,6 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   const double e = e_field->Evaluate(face0, centroid);
   const double expect_e = 0.5;
   EXPECT_NEAR(expect_e, e, kEps);
-  const auto grad_h = grad_h_field->Evaluate(face0, centroid);
-  const auto expect_grad_h = Vector3d::UnitZ();
-  EXPECT_NEAR((grad_h - expect_grad_h).norm(), 0., kEps);
 }
 
 // Generates a volume mesh of an octahedron comprising of eight tetrahedral
@@ -879,11 +888,6 @@ void TestComputeContactSurfaceSoftRigid() {
   const SurfaceFaceIndex f_index(0);
   EXPECT_EQ(contact_SR->EvaluateE_MN(f_index, centroid),
             contact_RS->EvaluateE_MN(f_index, centroid));
-
-  // The gradient fields are related by only a reflection around the origin.
-  EXPECT_TRUE(CompareMatrices(
-      contact_SR->EvaluateGrad_h_MN_W(f_index, centroid),
-      -contact_RS->EvaluateGrad_h_MN_W(f_index, centroid)));
 }
 
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidDouble) {
@@ -970,10 +974,8 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     ASSERT_TRUE(found);
     const auto epsilon_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
     EXPECT_NEAR(1.0, epsilon_SR, kEps);
-    const auto grad_h_W = contact_SR_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
-    const Vector3d expect_grad_h_W = Vector3d::UnitZ();
-    EXPECT_TRUE(CompareMatrices(expect_grad_h_W, grad_h_W, kEps));
   }
+
   // Tests rotation. First we rotate the rigid pyramid 90 degrees around
   // X-axis, so it will fit the left half of the soft octahedron, instead of
   // the top half of the octahedron.  The pyramid vertices will look like this:
@@ -1014,9 +1016,6 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     ASSERT_TRUE(found);
     const auto e_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
     EXPECT_NEAR(0.5, e_SR, kEps);
-    const auto grad_h_W = contact_SR_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
-    const Vector3d expect_grad_h_W = X_WS * Vector3d::UnitY();
-    EXPECT_NEAR((expect_grad_h_W - grad_h_W).norm(), 0., kEps);
   }
 }
 
