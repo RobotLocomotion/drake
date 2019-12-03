@@ -77,6 +77,20 @@ def _setattr_kwargs(obj, kwargs):
         setattr(obj, name, value)
 
 
+def _import_cc_module_vars(cc_module, py_module_name):
+    # Imports symbols and renames the __module__ attribute when appropriate.
+    py_module = sys.modules[py_module_name]
+    var_list = []
+    for name, value in cc_module.__dict__.items():
+        if name.startswith("_"):
+            continue
+        if getattr(value, "__module__", None) == cc_module.__name__:
+            value.__module__ = py_module_name
+        setattr(py_module, name, value)
+        var_list.append(name)
+    return var_list
+
+
 class _DrakeImportWarning(Warning):
     pass
 

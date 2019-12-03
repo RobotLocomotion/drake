@@ -20,6 +20,8 @@ import warnings
 
 # TODO(eric.cousineau): Make autocomplete ignore `ModuleShim` attributes
 # (e.g. `install`).
+# TODO(eric.cousineau): Remove ModuleShim once Drake requires Python >= 3.7
+# (for PEP 562).
 
 
 class ModuleShim(object):
