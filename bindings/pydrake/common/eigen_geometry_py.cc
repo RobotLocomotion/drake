@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_throw.h"
@@ -186,6 +187,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
+    // TODO(eric): Consider deprecating / removing `Value[Isometry3]` pending
+    // resolution of #9865.
+    AddValueInstantiation<Isometry3<T>>(m);
   }
 
   // Quaternion.

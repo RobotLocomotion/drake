@@ -46,9 +46,12 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_so_name = "_module_py",
-    cc_srcs = ["module_py.cc"],
+    cc_srcs = [
+        "module_py.cc",
+    ],
     package_info = PACKAGE_INFO,
     py_srcs = [
         "__init__.py",
@@ -134,6 +137,21 @@ drake_cc_library(
     ],
 )
 
+drake_pybind_library(
+    name = "value_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
+    cc_so_name = "value",
+    cc_srcs = ["value_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":cpp_template_py",
+    ],
+)
+
 # N.B. Any C++ libraries that include this must include `cpp_template_py` when
 # being used in Python.
 drake_cc_library(
@@ -177,12 +195,14 @@ drake_pybind_library(
         ":deprecation_pybind",
         ":eigen_geometry_pybind",
         ":type_pack",
+        ":value_pybind",
     ],
     cc_srcs = ["eigen_geometry_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
         ":cpp_template_py",
+        ":value_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
@@ -292,6 +312,7 @@ drake_py_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":_init_py",
     ":eigen_geometry_py",
+    ":value_py",
 ]
 
 PY_LIBRARIES = [
@@ -517,10 +538,31 @@ drake_py_unittest(
 )
 
 drake_pybind_library(
+    name = "value_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":value_pybind"],
+    cc_so_name = "test/value_test_util",
+    cc_srcs = ["test/value_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    visibility = ["//visibility:private"],
+)
+
+drake_py_unittest(
+    name = "value_test",
+    deps = [
+        ":module_py",
+        ":value_py",
+        ":value_test_util_py",
+    ],
+)
+
+drake_pybind_library(
     name = "wrap_test_util_py",
     testonly = 1,
     add_install = False,
     cc_deps = [":wrap_pybind"],
+    cc_so_name = "test/wrap_test_util",
     cc_srcs = ["test/wrap_test_util_py.cc"],
     package_info = PACKAGE_INFO,
     visibility = ["//visibility:private"],

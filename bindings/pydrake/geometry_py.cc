@@ -710,7 +710,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = GeometryProperties;
     constexpr auto& cls_doc = doc.GeometryProperties;
     py::handle abstract_value_cls =
-        py::module::import("pydrake.systems.framework").attr("AbstractValue");
+        py::module::import("pydrake.common.value").attr("AbstractValue");
     py::class_<Class>(m, "GeometryProperties", cls_doc.doc)
         .def("HasGroup", &Class::HasGroup, py::arg("group_name"),
             cls_doc.HasGroup.doc)

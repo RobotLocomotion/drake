@@ -64,6 +64,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
     GeometryId,
@@ -81,7 +82,6 @@ from pydrake.math import (
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector_,
     DiagramBuilder_,
     System_,
