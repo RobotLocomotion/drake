@@ -276,25 +276,6 @@ GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
   }
 }
 
-// Tests making a RigidTransform from a 4x4 matrix.
-GTEST_TEST(RigidTransform, FromMatrix4) {
-  const RotationMatrixd R = GetRotationMatrixB();
-  const Vector3<double> position(4, 5, 6);
-  Matrix4<double> pose;
-  pose << R.matrix(), position,
-          0, 0, 0, 1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const RigidTransformd X = RigidTransformd::FromMatrix4(pose);
-  EXPECT_TRUE(CompareMatrices(X.GetAsMatrix4(), pose));
-
-  if (kDrakeAssertIsArmed) {
-    pose(3, 3) += 1E-5;  // Corrupt the final "1" element in the matrix.
-    EXPECT_THROW((RigidTransformd::FromMatrix4(pose)), std::logic_error);
-  }
-#pragma GCC diagnostic pop
-}
-
 // Tests getting a 4x4 and 3x4 matrix from a RigidTransform.
 GTEST_TEST(RigidTransform, GetAsMatrices) {
   const RotationMatrix<double> R = GetRotationMatrixB();

@@ -140,9 +140,6 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(pose=p_I), X_I_np)
         check_equality(RigidTransform(pose=X_I_np), X_I_np)
         check_equality(RigidTransform(pose=X_I_np[:3]), X_I_np)
-        with catch_drake_warnings(expected_count=2):
-            check_equality(RigidTransform(matrix=X_I_np), X_I_np)
-            check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.

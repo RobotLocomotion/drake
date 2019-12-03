@@ -217,9 +217,6 @@ class ContactSurface {
     return grad_h_MN_W_->EvaluateAtVertex(vertex);
   }
 
-  DRAKE_DEPRECATED("2019-12-01", "Use mesh_W() instead.")
-  const SurfaceMesh<T>& mesh() const { return mesh_W(); }
-
   /** Returns a reference to the surface mesh whose vertex
    positions are measured and expressed in the world frame.
    */

@@ -113,15 +113,6 @@ class TestEigenGeometry(unittest.TestCase):
         vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(
             q_AB.multiply(vector=vlist_B), vlist_A)
-        # Test deprecation.
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(q_AB.multiply(position=v_B).shape, v_B.shape)
-            self.assertEqual(
-                q_AB.multiply(position=vlist_B).shape, vlist_B.shape)
-        with catch_drake_warnings(expected_count=0):
-            # No deprecation should happen with position arguments.
-            self.assertEqual(q_AB.multiply(v_B).shape, v_B.shape)
-            self.assertEqual(q_AB.multiply(vlist_B).shape, vlist_B.shape)
 
         q_AB_conj = q_AB.conjugate()
         numpy_compare.assert_float_equal(

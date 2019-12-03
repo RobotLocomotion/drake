@@ -108,29 +108,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("num_contacts",
-            [](Class* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around "
-                  "2019-12-01. Use num_point_pair_contacts() instead.");
-              return self->num_point_pair_contacts();
-            },
-            (std::string("(Deprecated.) ") +
-                cls_doc.num_point_pair_contacts.doc)
-                .c_str())
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
-        .def("contact_info",
-            [](Class* self, int i) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around "
-                  "2019-12-01. Use point_pair_contact_info() instead.");
-              return self->point_pair_contact_info(i);
-            },
-            py::arg("i"),
-            (std::string("(Deprecated. )") +
-                cls_doc.point_pair_contact_info.doc)
-                .c_str())
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
     AddValueInstantiation<Class>(m);
