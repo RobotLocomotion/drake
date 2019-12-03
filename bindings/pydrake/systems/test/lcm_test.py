@@ -13,10 +13,10 @@ import numpy as np
 from robotlocomotion import header_t, quaternion_t
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (
-    AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
+from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
 from pydrake.systems.primitives import ConstantVectorSource, LogOutput
 
 
