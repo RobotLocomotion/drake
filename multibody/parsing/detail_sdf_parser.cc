@@ -84,11 +84,7 @@ math::RigidTransformd ResolveRigidTransform(
     const sdf::SemanticPose& semantic_pose,
     const std::string& relative_to = "") {
   ignition::math::Pose3d pose;
-  if (relative_to.empty()) {
-    ThrowAnyErrors(semantic_pose.Resolve(pose));
-  } else {
-    ThrowAnyErrors(semantic_pose.Resolve(relative_to, pose));
-  }
+  ThrowAnyErrors(semantic_pose.Resolve(pose, relative_to));
   return ToRigidTransform(pose);
 }
 
