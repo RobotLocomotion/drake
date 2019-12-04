@@ -1014,6 +1014,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
           = child->get_Pplus_PB_W(*abic);
 
       // Shift Pplus_BC_W to Pplus_BCb_W.
+      // This is known to be one of the most expensive operations of ABA and
+      // not be overlooked. Refer to #12435 for details.
       const ArticulatedBodyInertia<T> Pplus_BCb_W = Pplus_BC_W.Shift(p_CoBo_W);
 
       // Add Pplus_BCb_W contribution to articulated body inertia.
@@ -1064,7 +1066,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
       // inertia of this body B as felt by body P and expressed in frame W.
       // Symmetrize the computation to reduce floating point errors.
-      // TODO(bobbyluig): Only compute lower-triangular region.
+      // TODO(amcastro-tri): Notice that the line below makes the implicit
+      // assumption that g_PB_W * U_B_W is SPD and only the lower triangular
+      // portion is used, see the documentation for ArticulatedBodyInertia's
+      // constructor. This assumption is only asserted during debug builds. This
+      // "might" be an issue and further investigation is required.
       Pplus_PB_W -= ArticulatedBodyInertia<T>(g_PB_W * U_B_W);
     }
   }
@@ -1112,6 +1118,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>* vc,
       const SpatialInertia<T>& M_B_W,
+      const SpatialForce<T>& Fb_Bo_W,
       const ArticulatedBodyInertiaCache<T>& abic,
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
@@ -1131,7 +1138,6 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     const math::RotationMatrix<T>& R_WB = X_WB.rotation();
 
     SpatialAcceleration<T>& Ab_WB = get_mutable_Ab_WB(aba_force_bias_cache);
-    SpatialForce<T> Fb_Bo_W = SpatialForce<T>::Zero();
     Ab_WB.SetZero();
     if (vc != nullptr) {
       // B's mass.
@@ -1145,14 +1151,6 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const SpatialVelocity<T>& V_WB = get_V_WB(*vc);
       const Vector3<T>& w_WB = V_WB.rotational();
       const Vector3<T>& v_WB = V_WB.translational();
-
-      // Compute the force bias in the Newton-Euler equations ;
-      //   Fapp_Bo_W = M_B * A_WB + Fb_Bo_W.
-      // TODO(amcastro-tri): Get value from cache when available, since this is
-      // computed in
-      // BodyNode::CalcBodySpatialForceGivenItsSpatialAcceleration().
-      Fb_Bo_W = mass * SpatialForce<T>(w_WB.cross(G_B_W * w_WB),
-                                       w_WB.cross(w_WB.cross(p_BoBcm_W)));
 
       // Inboard frame F and outboard frame M of this node's mobilizer.
       const Frame<T>& frame_F = inboard_frame();

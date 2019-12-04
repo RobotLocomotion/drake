@@ -257,7 +257,8 @@ class ArticulatedBodyInertia {
 
     // Update J according to J + (p×)Fᵀ - Fp(p×) = J - ((F(p×))ᵀ + Fp(p×)).
     // Costs 66 flops (54 for cross product and 12 for triangular addition).
-    // TODO(bobbyluig): Optimize to only compute lower triangular region.
+    // TODO(bobbyluig): Optimize to only compute lower triangular region. See
+    // #12435.
     J -= (F.rowwise().cross(px).transpose() + Fp.rowwise().cross(px));
 
     // Overwrite F (in the lower left) with Fp. M doesn't change.

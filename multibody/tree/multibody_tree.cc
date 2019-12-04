@@ -1695,8 +1695,13 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+
+  // Eval spatial inertia M_B_W(q) and force bias Fb_B_W(q, v) as they appear on
+  // the Newton-Euler equation: M_B_W * A_WB + Fb_B_W = Fapp_B_W.
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
+  const std::vector<SpatialForce<T>>& dynamic_bias_cache =
+      EvalDynamicBiasCache(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -1709,15 +1714,17 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
               generalized_forces);
       const SpatialForce<T>& Fapplied_Bo_W = body_forces[body_node_index];
 
-      // Get hinge matrix and spatial inertia references for this node.
+      // Get references to the hinge matrix, spatial inertia and force bias for
+      // this node.
       Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
           node.GetJacobianFromArray(H_PB_W_cache);
       const SpatialInertia<T>& M_B_W =
           spatial_inertia_in_world_cache[body_node_index];
+      const SpatialForce<T>& Fb_B_W = dynamic_bias_cache[body_node_index];
 
       node.CalcArticulatedBodyForceBiasCache_TipToBase(
-          context, pc, &vc, M_B_W, abic, Fapplied_Bo_W, tau_applied, H_PB_W,
-          aba_force_bias_cache);
+          context, pc, &vc, M_B_W, Fb_B_W, abic, Fapplied_Bo_W, tau_applied,
+          H_PB_W, aba_force_bias_cache);
     }
   }
 }
