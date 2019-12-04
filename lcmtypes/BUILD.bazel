@@ -194,6 +194,12 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "planar_manipuland_status",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_planar_manipuland_status.lcm"],
+)
+
+drake_lcm_cc_library(
     name = "resolved_contact",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_resolved_contact.lcm"],
@@ -328,6 +334,7 @@ LCMTYPES_CC = [
     ":joint_pd_override",
     ":manipulator_plan_move_end_effector",
     ":piecewise_polynomial",
+    ":planar_manipuland_status",
     ":plan_eval_debug_info",
     ":point_pair_contact_info_for_viz",
     ":polynomial",
