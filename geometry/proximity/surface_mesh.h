@@ -181,13 +181,6 @@ class SurfaceMesh {
     return vertices_[v];
   }
 
-  /**
-   Gets the set of triangles that refer to the specified vertex.
-   */
-  const std::set<SurfaceFaceIndex>& referring_triangles(VertexIndex v) const {
-    return referring_triangles_[v];
-  }
-
   /** Returns the number of vertices in the mesh.
    */
   int num_vertices() const { return vertices_.size(); }
@@ -211,7 +204,6 @@ class SurfaceMesh {
         vertices_(std::move(vertices)),
         area_(faces_.size()),  // Pre-allocate here, not yet calculated.
         face_normals_(faces_.size()) {  // Pre-allocate, not yet calculated.
-    SetReferringTriangles();
     CalcAreasNormalsAndCentroid();
   }
 
@@ -395,26 +387,12 @@ class SurfaceMesh {
   // and the centroid of the surface.
   void CalcAreasNormalsAndCentroid();
 
-  // Determines the triangular faces that refer to each vertex.
-  void SetReferringTriangles() {
-    referring_triangles_.resize(num_vertices());
-
-    for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
-      const int kNumVerticesPerFace = 3;
-      for (int j = 0; j < kNumVerticesPerFace; ++j)
-        referring_triangles_[element(i).vertex(j)].insert(i);
-    }
-  }
-
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
   // The vertices that are shared among the triangles.
   std::vector<SurfaceVertex<T>> vertices_;
 
   // Computed in initialization.
-
-  // Triangles that reference each vertex.
-  std::vector<std::set<SurfaceFaceIndex>> referring_triangles_;
 
   // Area of the triangles.
   std::vector<T> area_;
