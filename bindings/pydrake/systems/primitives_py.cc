@@ -254,7 +254,10 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("dynamics") = Vector0<Expression>{},
             py::arg("output") = Vector0<Expression>{},
             py::arg("time_period") = 0.0,
-            doc.SymbolicVectorSystem.ctor.doc_7args);
+            doc.SymbolicVectorSystem.ctor.doc_7args)
+        .def("dynamics_for_variable",
+            &SymbolicVectorSystem<T>::dynamics_for_variable, py::arg("var"),
+            doc.SymbolicVectorSystem.dynamics_for_variable.doc);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)

@@ -308,6 +308,10 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.get_output_port(0).size(), 1)
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(context.num_numeric_parameter_groups(), 0)
+        self.assertTrue(system.dynamics_for_variable(x[0])
+                        .EqualTo(x[0] + x[1]))
+        self.assertTrue(system.dynamics_for_variable(x[1])
+                        .EqualTo(t))
 
     def test_symbolic_vector_system_parameters(self):
         t = Variable("t")
@@ -328,6 +332,10 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(context.num_numeric_parameter_groups(), 1)
         self.assertEqual(context.get_numeric_parameter(0).size(), 2)
+        self.assertTrue(system.dynamics_for_variable(x[0])
+                        .EqualTo(p[0] * x[0] + x[1] + p[1]))
+        self.assertTrue(system.dynamics_for_variable(x[1])
+                        .EqualTo(t))
 
     def test_wrap_to_system(self):
         system = WrapToSystem(2)

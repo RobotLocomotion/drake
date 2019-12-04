@@ -49,6 +49,9 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
   if (input_vars_.size() > 0) {
     this->DeclareInputPort(kVectorValued, input_vars_.size());
   }
+  for (int i = 0; i < state_vars_.size(); i++) {
+    state_var_to_index_.emplace(state_vars_[i].get_id(), i);
+  }
   if (state_vars_.size() > 0) {
     for (int i = 0; i < dynamics_.size(); i++) {
       DRAKE_ASSERT(dynamics_[i].GetVariables().IsSubsetOf(all_vars));

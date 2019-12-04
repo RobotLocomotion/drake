@@ -498,28 +498,17 @@ class Context : public ContextBase {
 
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
-  /// Records the user's requested accuracy. If no accuracy is requested,
-  /// computations are free to choose suitable defaults, or to refuse to
-  /// proceed without an explicit accuracy setting. Any accuracy-dependent
-  /// computation in this Context and its subcontexts may be invalidated
-  /// by a change to the accuracy setting, so out of date notifications are
-  /// sent to all such computations (at least if the accuracy setting has
-  /// actually changed). Accuracy must have the same value in every subcontext
-  /// within the same context tree so may only be modified at the root context
-  /// of a tree.
-  ///
-  /// @throws std::logic_error if this is not the root context.
-  ///
-  /// Requested accuracy is stored in the %Context for two reasons:
-  /// - It permits all computations performed over a System to see the _same_
-  ///   accuracy request since accuracy is stored in one shared place, and
-  /// - it allows us to notify accuracy-dependent cached results that they are
-  ///   out of date when the accuracy setting changes.
-  ///
+  /// Records the user's requested accuracy, which is a unit-less quantity
+  /// designed for use with simulation and other numerical studies. Since
+  /// accuracy is unit-less, algorithms and systems are free to interpret this
+  /// quantity as they wish. The intention is that more computational work is
+  /// acceptable as the accuracy setting is tightened (set closer to zero). If
+  /// no accuracy is requested, computations are free to choose suitable
+  /// defaults, or to refuse to proceed without an explicit accuracy setting.
   /// The accuracy of a complete simulation or other numerical study depends on
   /// the accuracy of _all_ contributing computations, so it is important that
-  /// each computation is done in accordance with the overall requested
-  /// accuracy. Some examples of where this is needed:
+  /// each computation is done in accordance with the requested accuracy. Some
+  /// examples of where this is needed:
   /// - Error-controlled numerical integrators use the accuracy setting to
   ///   decide what step sizes to take.
   /// - The Simulator employs a numerical integrator, but also uses accuracy to
@@ -532,6 +521,21 @@ class Context : public ContextBase {
   /// The common thread among these examples is that they all share the
   /// same %Context, so by keeping accuracy here it can be used effectively to
   /// control all accuracy-dependent computations.
+  ///
+  /// Any accuracy-dependent computation in this Context and its subcontexts may
+  /// be invalidated by a change to the accuracy setting, so out of date
+  /// notifications are sent to all such computations (at least if the accuracy
+  /// setting has actually changed). Accuracy must have the same value in every
+  /// subcontext within the same context tree so may only be modified at the
+  /// root context of a tree.
+  ///
+  /// Requested accuracy is stored in the %Context for two reasons:
+  /// - It permits all computations performed over a System to see the _same_
+  ///   accuracy request since accuracy is stored in one shared place, and
+  /// - it allows us to notify accuracy-dependent cached results that they are
+  ///   out of date when the accuracy setting changes.
+  ///
+  /// @throws std::logic_error if this is not the root context.
   void SetAccuracy(const std::optional<double>& accuracy) {
     ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();

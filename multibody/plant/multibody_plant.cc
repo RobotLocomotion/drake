@@ -1382,9 +1382,12 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
     const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
 
-    // Pack everything for the calculator needs.
+    // Pack everything calculator needs. The contact surface has normals
+    // pointing *into* geometry N, so it leads to the traction acting on body B.
+    // So, we order the parameters here as B, A and compute the force on B
+    // below.
     typename internal::HydroelasticTractionCalculator<T>::Data data(
-        X_WA, X_WB, V_WA, V_WB, &surface);
+        X_WB, X_WA, V_WB, V_WA, &surface);
 
     // Combined Hunt & Crossley dissipation.
     const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
@@ -1392,14 +1395,14 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Integrate the hydroelastic traction field over the contact surface.
     std::vector<HydroelasticQuadraturePointData<T>> traction_output;
-    SpatialForce<T> F_Ac_W;
+    SpatialForce<T> F_Bc_W;
     traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
+        data, dissipation, dynamic_friction, &traction_output, &F_Bc_W);
 
     // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
     traction_calculator.ShiftSpatialForcesAtCentroidToBodyOrigins(
-        data, F_Ac_W, &F_Ao_W, &F_Bo_W);
+        data, F_Bc_W, &F_Bo_W, &F_Ao_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array.at(bodyA.node_index()) += F_Ao_W;
@@ -1410,7 +1413,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
+    contact_info.emplace_back(&surface, F_Bc_W, std::move(traction_output));
   }
 }
 

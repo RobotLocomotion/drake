@@ -44,7 +44,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // inside drake/math/rigid_transform.h.
     const char* doc_rigid_transform_linear_matrix_deprecation =
         "DO NOT USE! We offer this API for backwards compatibility with "
-        "Isometry3, but it will be removed on or around 2019-12-01. "
+        "Isometry3, but it will be removed on or around 2020-04-01. "
         "See drake issue #9865 for details.";
 
     using Class = RigidTransform<T>;
@@ -71,23 +71,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_pose)
         .def(py::init<const MatrixX<T>&>(), py::arg("pose"),
-            cls_doc.ctor.doc_1args_constEigenMatrixBase);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    constexpr char deprecated_matrix_ctor_doc[] =
-        "Please use ``RigidTransfrom(pose=...)`` constructor. This will be "
-        "removed on or around 2019-11-15.";
-    cls  // BR
-        .def(py_init_deprecated(deprecated_matrix_ctor_doc,
-                 [](const Matrix4<T>& matrix) {
-                   return Class::FromMatrix4(matrix);
-                 }),
-            py::arg("matrix"), deprecated_matrix_ctor_doc)
-        .def_static("FromMatrix4",
-            WrapDeprecated(deprecated_matrix_ctor_doc, &Class::FromMatrix4),
-            py::arg("matrix"), deprecated_matrix_ctor_doc);
-#pragma GCC diagnostic pop
-    cls  // BR
+            cls_doc.ctor.doc_1args_constEigenMatrixBase)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)
