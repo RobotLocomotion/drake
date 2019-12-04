@@ -142,42 +142,6 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /// Adds in a spatial force to `this` spatial force.
-  /// @param[in] F_Sp_E
-  ///   A spatial force to be added to `this` spatial force. It must be on the
-  ///   same system or body S on which `this` spatial force is applied and at
-  ///   the same point P as `this` spatial force, and expressed in the
-  ///   same frame E.
-  /// @returns
-  ///   A reference to `this` spatial force, which has been updated to include
-  ///   the given spatial force `F_Sp_E`.
-  ///
-  /// @warning This operation is only valid if both spatial forces are applied
-  /// on the same system or body S, at the same point P and expressed in the
-  /// same frame E.
-  SpatialForce<T>& operator+=(const SpatialForce<T>& F_Sp_E) {
-    this->get_coeffs() += F_Sp_E.get_coeffs();
-    return *this;
-  }
-
-  /// Subtracts a spatial force from `this` spatial force.
-  /// @param[in] F_Sp_E
-  ///   A spatial force to be subtracted from `this` spatial force. It must be
-  ///   on the same system or body S on which `this` spatial force is applied
-  ///   and at the same point P as `this` spatial force, and expressed in the
-  ///   same frame E.
-  /// @returns
-  ///   A reference to `this` spatial force, which has been updated to exclude
-  ///   the given spatial force `F_Sp_E`.
-  ///
-  /// @warning This operation is only valid if both spatial forces are applied
-  /// on the same system or body S, at the same point P and expressed in the
-  /// same frame E.
-  SpatialForce<T>& operator-=(const SpatialForce<T>& F_Sp_E) {
-    this->get_coeffs() -= F_Sp_E.get_coeffs();
-    return *this;
-  }
-
   /// Given `this` spatial force `F_Bp_E` applied at point P of body B and
   /// expressed in a frame E, this method computes the 6-dimensional dot
   /// product with the spatial velocity `V_IBp_E` of body B at point P,
@@ -200,10 +164,27 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 ///   The resultant spatial force on system or body S from combining `F1_Sp_E`
 ///   and `F2_Sp_E`, applied at the same point P and in the same expressed-in
 ///   frame E as the operand spatial forces.
+///
+/// @relates SpatialForce
 template <typename T>
-inline SpatialForce<T> operator+(
-    const SpatialForce<T>& F1_Sp_E, const SpatialForce<T>& F2_Sp_E) {
-  return SpatialForce<T>(F1_Sp_E.get_coeffs() + F2_Sp_E.get_coeffs());
+inline SpatialForce<T> operator+(const SpatialForce<T>& F1_Sp_E,
+                                 const SpatialForce<T>& F2_Sp_E) {
+  // N.B. We use SpatialVector's implementation, though we provide the overload
+  // for specific documentation purposes.
+  return SpatialForce<T>(F1_Sp_E) += F2_Sp_E;
+}
+
+/// Subtracts spatial force `F2_Sp_E ` from `F1_Sp_E`. Both spatial forces act
+/// on the same system or body S, at point P and are expressed in the same frame
+/// E.
+///
+/// @relates SpatialForce
+template <typename T>
+inline SpatialForce<T> operator-(const SpatialForce<T>& F1_Sp_E,
+                                 const SpatialForce<T>& F2_Sp_E) {
+  // N.B. We use SpatialVector's implementation, though we provide the overload
+  // for specific documentation purposes.
+  return SpatialForce<T>(F1_Sp_E) -= F2_Sp_E;
 }
 
 }  // namespace multibody

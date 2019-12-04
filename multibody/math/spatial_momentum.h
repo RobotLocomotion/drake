@@ -160,38 +160,6 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     return SpatialMomentum<T>(*this).ShiftInPlace(p_PQ_E);
   }
 
-  /// Adds in a spatial momentum to `this` spatial momentum.
-  /// @param[in] L_NSp_E
-  ///   A spatial momentum to be added to `this` spatial momentum. It must be
-  ///   about the same point P as this spatial momentum and expressed in the
-  ///   same frame E.
-  /// @returns
-  ///   A reference to `this` spatial momentum, which has been updated to
-  ///   include the given spatial momentum `L_NSp_E`.
-  ///
-  /// @warning This operation is only valid if both spatial momenta are applied
-  /// about same point P and expressed in the same frame E.
-  SpatialMomentum<T>& operator+=(const SpatialMomentum<T>& L_NSp_E) {
-    this->get_coeffs() += L_NSp_E.get_coeffs();
-    return *this;
-  }
-
-  /// Subtracts a spatial momentum from `this` spatial momentum.
-  /// @param[in] L_NSp_E
-  ///   A spatial momentum to be subtracted from `this` spatial momentum. It
-  ///   must be about the same point P as this spatial momentum and expressed in
-  ///   the same frame E.
-  /// @returns
-  ///   A reference to `this` spatial momentum, which has been updated to
-  ///   exclude the given spatial momentum `L_NSp_E`.
-  ///
-  /// @warning This operation is only valid if both spatial momenta are applied
-  /// about same point P and expressed in the same frame E.
-  SpatialMomentum<T>& operator-=(const SpatialMomentum<T>& L_NSp_E) {
-    this->get_coeffs() -= L_NSp_E.get_coeffs();
-    return *this;
-  }
-
   /// Given `this` spatial momentum `L_NBp_E` of a rigid body B, about point P
   /// and, expressed in a frame E, this method computes the dot
   /// product with the spatial velocity `V_NBp_E` of body B frame shifted to
@@ -218,10 +186,28 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
 ///   The combined spatial momentum of system S from combining `L1_NSp_E`
 ///   and `L2_NSp_E`, applied about the same point P, and in the same
 ///   expressed-in frame E as the operand spatial momenta.
+///
+/// @relates SpatialMomentum
 template <typename T>
-inline SpatialMomentum<T> operator+(
-    const SpatialMomentum<T>& L1_NSp_E, const SpatialMomentum<T>& L2_NSp_E) {
-  return SpatialMomentum<T>(L1_NSp_E.get_coeffs() + L2_NSp_E.get_coeffs());
+inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_NSp_E,
+                                    const SpatialMomentum<T>& L2_NSp_E) {
+  // N.B. We use SpatialVector's implementation, though we provide the overload
+  // for specific documentation purposes.
+  return SpatialMomentum<T>(L1_NSp_E) += L2_NSp_E;
+}
+
+/// Spatial momentum is additive, see
+/// operator+(const SpatialMomentum<T>&, const SpatialMomentum<T>&). This
+/// operator subtracts L2_NSp_E from the total momentum in L1_NSp_E. The momenta
+/// in both operands as well as the result are for the same system S, about the
+/// same point P and expressed in the same frame E.
+/// @relates SpatialMomentum
+template <typename T>
+inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_NSp_E,
+                                    const SpatialMomentum<T>& L2_NSp_E) {
+  // N.B. We use SpatialVector's implementation, though we provide the overload
+  // for specific documentation purposes.
+  return SpatialMomentum<T>(L1_NSp_E) -= L2_NSp_E;
 }
 
 }  // namespace multibody

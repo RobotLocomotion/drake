@@ -256,12 +256,11 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///                               centrifugal         Coriolis
   /// </pre>
   /// The equation above shows that composing spatial accelerations cannot be
-  /// simply accomplished by adding `A_WP` with `A_PB` (this is the reason why
-  /// this class does not overload the `operator+()` and provides this method
-  /// instead). Moreover, we see that, unlike with angular velocities, angular
-  /// accelerations cannot be added in order to compose them. That is
-  /// `w_AC = w_AB + w_BC` but `alpha_AC ≠ alpha_AB + alpha_BC` due to the cross
-  /// term `w_AC x w_BC`. See the derivation below for more details.
+  /// simply accomplished by adding `A_WP` with `A_PB`. Moreover, we see that,
+  /// unlike with angular velocities, angular accelerations cannot be added in
+  /// order to compose them. That is `w_AC = w_AB + w_BC` but `alpha_AC ≠
+  /// alpha_AB + alpha_BC` due to the cross term `w_AC x w_BC`. See the
+  /// derivation below for more details.
   ///
   /// @see SpatialVelocity::ComposeWithMovingFrameVelocity() for the composition
   /// of SpatialVelocity quantities.
@@ -418,6 +417,36 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     return A_WB_E;
   }
 };
+
+/// (Advanced) Addition operator. Implements the addition of A1 and A2 as
+/// elements in ℝ⁶.
+/// @warning Composing spatial accelerations A1 and A2 cannot be simply
+/// accomplished by adding them with this operator. The composition of
+/// accelerations involves additional centrifugal and Coriolis terms, see
+/// SpatialAcceleration::ComposeWithMovingFrameAcceleration() for details.
+/// @relates SpatialAcceleration
+template <typename T>
+inline SpatialAcceleration<T> operator+(const SpatialAcceleration<T>& A1,
+                                        const SpatialAcceleration<T>& A2) {
+  // N.B. We use SpatialVector's implementation, though we provide the overload
+  // for specific documentation purposes.
+  return SpatialAcceleration<T>(A1) += A2;
+}
+
+/// (Advanced) Subtraction operator. Implements the subtraction of A1 and A2 as
+/// elements in ℝ⁶.
+/// @warning With `As = A1 - A2`, `A1 = As + A2` does not correspond to the
+/// physical composition of spatial accelerations As and A2. Please refere to
+/// operator+(const SpatialAcceleration<T>&, const SpatialAcceleration<T>&) for
+/// details.
+/// @relates SpatialAcceleration
+template <typename T>
+inline SpatialAcceleration<T> operator-(const SpatialAcceleration<T>& A1,
+                                        const SpatialAcceleration<T>& A2) {
+  // N.B. We use SpatialVector's implementation, though we provide the overload
+  // for specific documentation purposes.
+  return SpatialAcceleration<T>(A1) -= A2;
+}
 
 }  // namespace multibody
 }  // namespace drake
