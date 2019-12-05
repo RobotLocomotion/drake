@@ -115,7 +115,6 @@ class RenderEngineOspray final
   }
 
   using RenderEngine::default_render_label;
-
   //@}
 
  private:
@@ -142,7 +141,7 @@ class RenderEngineOspray final
   RenderEngineOspray(const RenderEngineOspray& other);
 
   // Initializes the VTK pipelines.
-  void InitializePipelines(int samples_per_pixel);
+  void InitializePipelines(int samples_per_pixel, bool use_shadows);
 
   // Common interface for loading an obj file -- used for both mesh and convex
   // shapes.
@@ -174,6 +173,8 @@ class RenderEngineOspray final
   // allows mutation via the contained vtkNew pointers.
   void UpdateWindow(const CameraProperties& camera, bool show_window,
                     const RenderingPipeline* p, const char* name) const;
+
+  void SetDefaultLightPosition(const Vector3<double>& X_DL);
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 

@@ -14,6 +14,7 @@ def googlebenchmark_repository(
         patches = [
             # Suppress warnings from compiling Google Benchmark due to the
             # deprecated CSVReporter.
+            # See: https://github.com/google/benchmark/issues/927.
             "@drake//tools/workspace/googlebenchmark:no_deprecated_declarations.patch",  # noqa
         ],
     )
