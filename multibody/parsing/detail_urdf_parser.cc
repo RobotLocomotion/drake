@@ -134,13 +134,12 @@ void ParseBody(const multibody::PackageMap& package_map,
     for (XMLElement* collision_node = node->FirstChildElement("collision");
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {
-      CoulombFriction<double> friction;
       geometry::GeometryInstance geometry_instance =
-          ParseCollision(body_name, package_map, root_dir, collision_node,
-                         &friction);
-      plant->RegisterCollisionGeometry(body, geometry_instance.pose(),
-                                       geometry_instance.shape(),
-                                       geometry_instance.name(), friction);
+          ParseCollision(body_name, package_map, root_dir, collision_node);
+      DRAKE_DEMAND(geometry_instance.proximity_properties());
+      plant->RegisterCollisionGeometry(
+          body, geometry_instance.pose(), geometry_instance.shape(),
+          geometry_instance.name(), *geometry_instance.proximity_properties());
     }
   }
 }
