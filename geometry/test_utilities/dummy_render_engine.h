@@ -62,6 +62,8 @@ class DummyRenderEngine final : public render::RenderEngine {
   void ImplementGeometry(const Capsule& capsule, void* user_data) final {}
   void ImplementGeometry(const Mesh& mesh, void* user_data) final {}
   void ImplementGeometry(const Convex& convex, void* user_data) final {}
+
+  void SetDefaultLightPosition(const Vector3<double>& position) final {}
   //@}
 
   /** @name  Functions for supporting tests.  */

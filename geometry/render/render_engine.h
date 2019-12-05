@@ -201,6 +201,10 @@ class RenderEngine : public ShapeReifier {
    use.  */
   RenderLabel default_render_label() const { return default_render_label_; }
 
+  /** Provides access to the light for manual configuration since it's currently
+   bound to the camera position.  */
+  virtual void SetDefaultLightPosition(const Vector3<double>& position) = 0;
+
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)

@@ -385,6 +385,15 @@ void RenderEngineVtk::InitializePipelines() {
   const vtkSmartPointer<vtkTransform> vtk_identity =
       ConvertToVtkTransform(RigidTransformd::Identity());
 
+  // TODO(SeanCurtis-TRI): Things like configuring lights should *not* be part
+  //  of initializing the pipelines. When we support light declaration, this
+  //  will get moved out.
+  light_->SetLightTypeToCameraLight();
+  light_->SetConeAngle(45.0);
+  light_->SetAttenuationValues(1.0, 0.0, 0.0);
+  light_->SetIntensity(1);
+  light_->SetTransformMatrix(vtk_identity->GetMatrix());
+
   // Generic configuration of pipelines.
   for (auto& pipeline : pipelines_) {
     // Multisampling disabled by design for label and depth. It's turned off for
@@ -415,6 +424,8 @@ void RenderEngineVtk::InitializePipelines() {
     pipeline->filter->SetInputBufferTypeToRGBA();
     pipeline->exporter->SetInputData(pipeline->filter->GetOutput());
     pipeline->exporter->ImageLowerLeftOff();
+
+    pipeline->renderer->AddLight(light_);
   }
 
   // Pipeline-specific tweaks.
@@ -553,6 +564,10 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
 
   // Take ownership of the actors.
   actors_.insert({data.id, std::move(actors)});
+}
+
+void RenderEngineVtk::SetDefaultLightPosition(const Vector3<double>& position) {
+  light_->SetPosition(position[0], position[1], position[2]);
 }
 
 void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
