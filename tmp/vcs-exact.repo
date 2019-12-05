@@ -14,4 +14,4 @@ repositories:
   sdformat:
     type: hg
     url: https://bitbucket.org/osrf/sdformat
-    version: ae13ac5f8b65
+    version: 66db8dfef441
