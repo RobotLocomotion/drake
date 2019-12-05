@@ -226,7 +226,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Compute articulated body cache.
   ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
-  tree.CalcArticulatedBodyInertiaCache(*context, pc,  &abc);
+  tree.CalcArticulatedBodyInertiaCache(*context, &abc);
 
   // Get expected projected articulated body inertia of cylinder.
   Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();
@@ -314,7 +314,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Compute articulated body cache.
   ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
-  tree.CalcArticulatedBodyInertiaCache(*context, pc,  &abc);
+  tree.CalcArticulatedBodyInertiaCache(*context,  &abc);
 
   // Rotate the spatial inertia about the y-axis to match the rotation of
   // q_WB.

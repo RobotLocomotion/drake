@@ -3267,15 +3267,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
+    systems::CacheIndex aba_accelerations;
+    systems::CacheIndex aba_force_bias_cache;
+    systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
-    systems::CacheIndex contact_info_and_body_spatial_forces;
+    systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
-    systems::CacheIndex point_pairs;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -3367,6 +3369,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   //  - Joint limits.
   void CalcAppliedForces(const drake::systems::Context<T>& context,
                          MultibodyForces<T>* forces) const;
+
+  // Given the state x and inputs u in `context`, this method uses the `O(n)`
+  // Articulated Body Algorithm (ABA) to compute accelerations.
+  // N.B. Please refer to @ref internal_forward_dynamics for further details on
+  // the algorithm and implementation.
+  void CalcForwardDynamics(const systems::Context<T>& context,
+                           internal::AccelerationKinematicsCache<T>* ac) const;
+
+  // Eval version of the method CalcForwardDynamics().
+  const internal::AccelerationKinematicsCache<T>& EvalForwardDynamics(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.aba_accelerations)
+        .template Eval<internal::AccelerationKinematicsCache<T>>(context);
+  }
+
+  // Performs an O(n) tip-to-base recursion to compute bias forces Z_B and
+  // Zplus_B, among other quantities needed by ABA.
+  // N.B. Please refer to @ref internal_forward_dynamics for further details on
+  // the algorithm and implementation.
+  void CalcArticulatedBodyForceBiasCache(
+      const systems::Context<T>& context,
+      internal::ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const;
+
+  // Eval version of the method CalcArticulatedBodyForceBiasCache().
+  const internal::ArticulatedBodyForceBiasCache<T>&
+  EvalArticulatedBodyForceBiasCache(const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.aba_force_bias_cache)
+        .template Eval<internal::ArticulatedBodyForceBiasCache<T>>(context);
+  }
 
   // Implements the system dynamics according to this class's documentation.
   void DoCalcTimeDerivatives(

@@ -207,7 +207,22 @@ void MultibodyTreeSystem<T>::Finalize() {
       {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
   cache_indexes_.across_node_jacobians = H_PB_W_cache_entry.cache_index();
 
-  // TODO(sherm1) Allocate articulated body inertia cache.
+  // Allocate articulated body inertia cache.
+  auto& abi_cache_entry = this->DeclareCacheEntry(
+      std::string("Articulated Body Inertia"),
+      [tree = tree_.get()]() {
+        return AbstractValue::Make(
+            ArticulatedBodyInertiaCache<T>(tree->get_topology()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& abi_cache =
+            cache_value->get_mutable_value<ArticulatedBodyInertiaCache<T>>();
+        tree->CalcArticulatedBodyInertiaCache(context, &abi_cache);
+      },
+      {this->configuration_ticket()});
+  cache_indexes_.abi_cache_index = abi_cache_entry.cache_index();
 
   already_finalized_ = true;
 }

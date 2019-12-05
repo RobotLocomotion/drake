@@ -23,15 +23,14 @@ namespace internal {
 /// Acceleration kinematics results include:
 /// - Spatial acceleration `A_WB` for each body B in the model as measured and
 ///   expressed in the world frame W.
+/// - Generalized accelerations `vdot` for the entire model.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
-///
 /// - double
 /// - AutoDiffXd
-/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
@@ -52,6 +51,7 @@ class AccelerationKinematicsCache {
     // to the world body and is defined in multibody_tree_indexes.h.
     // World's acceleration is always zero.
     A_WB_pool_[world_index()].SetZero();
+    vdot_.setZero();
   }
 
   /// Returns a constant reference to the spatial acceleration `A_WB` of the
@@ -87,6 +87,17 @@ class AccelerationKinematicsCache {
     return A_WB_pool_;
   }
 
+  /// Returns a constant reference to the generalized accelerations `vdot` for
+  /// the entire model.
+  const VectorX<T>& get_vdot() const {
+    return vdot_;
+  }
+
+  /// Mutable version of get_vdot().
+  VectorX<T>& get_mutable_vdot() {
+    return vdot_;
+  }
+
  private:
   // Pools store entries in the same order that multibody tree nodes are
   // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
@@ -106,7 +117,8 @@ class AccelerationKinematicsCache {
   void Allocate(const MultibodyTreeTopology& topology) {
     const int num_nodes = topology.num_bodies();
     A_WB_pool_.resize(num_nodes);
-    DRAKE_ASSERT(static_cast<int>(A_WB_pool_.size()) == num_nodes);
+    const int num_velocities = topology.num_velocities();
+    vdot_.resize(num_velocities);
   }
 
   // Initializes all pools to have NaN values to ease bug detection when entries
@@ -120,6 +132,7 @@ class AccelerationKinematicsCache {
 
   // Number of body nodes in the corresponding MultibodyTree.
   SpatialAcceleration_PoolType A_WB_pool_;   // Indexed by BodyNodeIndex.
+  VectorX<T> vdot_;
 };
 
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(AccelerationKinematicsCache);
