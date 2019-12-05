@@ -8,6 +8,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -22,6 +23,7 @@ using std::make_unique;
 
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
+using geometry::ProximityProperties;
 using math::RigidTransformd;
 
 namespace {
@@ -348,6 +350,87 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     }
   }
   return X_LC;
+}
+
+ProximityProperties MakeProximityPropertiesForCollision(
+    const sdf::Collision& sdf_collision) {
+  geometry::ProximityProperties properties;
+  const sdf::ElementPtr collision_element = sdf_collision.Element();
+  DRAKE_DEMAND(collision_element != nullptr);
+
+  const sdf::Element* const drake_element =
+      MaybeGetChildElement(*collision_element, "drake:proximity_properties");
+
+  if (drake_element != nullptr) {
+    auto read_double = [drake_element, &properties](const char* element_name,
+                                                    const char* group_name,
+                                                    const char* property_name) {
+      if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
+        const double value =
+            GetChildElementValueOrThrow<double>(*drake_element, element_name);
+        properties.AddProperty(group_name, property_name, value);
+      }
+    };
+
+    read_double("drake:mesh_resolution_hint", geometry::internal::kHydroGroup,
+                geometry::internal::kRezHint);
+    read_double("drake:elastic_modulus", geometry::internal::kMaterialGroup,
+                geometry::internal::kElastic);
+    read_double("drake:hunt_crossley_dissipation",
+                geometry::internal::kMaterialGroup,
+                geometry::internal::kHcDissipation);
+
+    auto[mu_dynamic, dynamic_read] =
+        drake_element->Get<double>("drake:mu_dynamic", -1.0);
+    auto[mu_static, static_read] =
+        drake_element->Get<double>("drake:mu_static", -1.0);
+    // Note: we rely on the constructor of CoulombFriction to detect negative
+    // values and bad relationship between static and dynamic coefficients.
+    if (dynamic_read && static_read) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             geometry::internal::kFriction,
+                             CoulombFriction<double>{mu_static, mu_dynamic});
+    } else if (dynamic_read) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             geometry::internal::kFriction,
+                             CoulombFriction<double>{mu_dynamic, mu_dynamic});
+    } else if (static_read) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             geometry::internal::kFriction,
+                             CoulombFriction<double>{mu_static, mu_static});
+    }
+  }
+
+  if (!properties.HasProperty(geometry::internal::kMaterialGroup,
+                              geometry::internal::kFriction)) {
+    properties.AddProperty(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
+        MakeCoulombFrictionFromSdfCollisionOde(sdf_collision));
+  } else {
+    // We parsed friction from <drake:proximity_properties>; test for the
+    // existence of the legacy mechanism and warn we're not using it.
+    const sdf::Element* const surface_element =
+        MaybeGetChildElement(*collision_element, "surface");
+    if (surface_element) {
+      const sdf::Element* friction_element =
+          MaybeGetChildElement(*surface_element, "friction");
+      if (friction_element) {
+        const sdf::Element* ode_element =
+            MaybeGetChildElement(*friction_element, "ode");
+        if (MaybeGetChildElement(*ode_element, "mu") ||
+        MaybeGetChildElement(*ode_element, "mu2")) {
+          logging::Warn one_time(
+              "When drake contact parameters are fully specified in the "
+              "<drake:proximity_properties> tag, the <surface><friction><ode>"
+              "<mu*> tags are ignored. While parsing, there was at least one "
+              "instance where friction coefficients were defined in both "
+              "locations.");
+        }
+      }
+    }
+  }
+
+  return properties;
 }
 
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
