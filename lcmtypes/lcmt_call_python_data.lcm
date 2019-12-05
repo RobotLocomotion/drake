@@ -1,0 +1,28 @@
+package drake;
+
+// Generic data structure to wrap Python data types, for use with CallPython.
+// For historical reasons, interface is modeled on mxArray (see
+// https://www.mathworks.com/help/matlab/matlab_external/matlab-data.html).
+struct lcmt_call_python_data {
+  // For data_type.
+  const int8_t
+    REMOTE_VARIABLE_REFERENCE = 0,
+    DOUBLE = 1,
+    CHAR = 2,
+    LOGICAL = 3,
+    INT = 4;
+
+  // For shape_type.
+  const int8_t
+    MATRIX = 0,
+    VECTOR = 1,
+    SCALAR = 2;
+
+  int8_t data_type;
+  int8_t shape_type;
+  int32_t rows;
+  int32_t cols;
+
+  int32_t num_bytes;
+  byte data[num_bytes];
+}

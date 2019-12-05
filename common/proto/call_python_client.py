@@ -48,13 +48,9 @@ from threading import Thread
 import time
 import traceback
 
-# Hacky, but this is the simplest route right now.
-# @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
-from google.protobuf.internal.decoder import _DecodeVarint32
 import numpy as np
 
-from drake.common.proto.python_remote_message_pb2 import (
-    PythonRemoteData, PythonRemoteMessage)
+from drake import lcmt_call_python, lcmt_call_python_data
 
 
 def _ensure_sigint_handler():
@@ -335,17 +331,17 @@ class CallPythonClient(object):
         self._file = None
 
     def _to_array(self, arg, dtype):
-        # Converts a protobuf argument to the appropriate NumPy array (or
-        # scalar).
+        # Converts a lcmt_call_python argument to the appropriate NumPy array
+        # (or scalar).
         np_raw = np.frombuffer(arg.data, dtype=dtype)
-        if arg.shape_type == PythonRemoteData.SCALAR:
+        if arg.shape_type == lcmt_call_python_data.SCALAR:
             assert arg.cols == 1 and arg.rows == 1
             return np_raw[0]
-        elif arg.shape_type == PythonRemoteData.VECTOR:
+        elif arg.shape_type == lcmt_call_python_data.VECTOR:
             assert arg.cols == 1
             return np_raw.reshape(arg.rows)
         elif arg.shape_type is None or \
-                arg.shape_type == PythonRemoteData.MATRIX:
+                arg.shape_type == lcmt_call_python_data.MATRIX:
             # TODO(eric.cousineau): Figure out how to ensure `np.frombuffer`
             # creates a column-major array?
             return np_raw.reshape(arg.cols, arg.rows).T
@@ -366,27 +362,25 @@ class CallPythonClient(object):
     def _execute_message_impl(self, msg):
         # Executes relevant portions of a message.
         # Create input arguments.
-        args = msg.rhs
-        nargs = len(args)
         inputs = []
         kwargs = None
-        for i, arg in enumerate(args):
-            arg_raw = arg.data
+        for i, arg in enumerate(msg.rhs):
             value = None
-            if arg.type == PythonRemoteData.REMOTE_VARIABLE_REFERENCE:
-                id = np.frombuffer(arg_raw, dtype=np.uint64).reshape(1)[0]
+            if (arg.data_type ==
+                    lcmt_call_python_data.REMOTE_VARIABLE_REFERENCE):
+                id = np.frombuffer(arg.data, dtype=np.uint64).reshape(1)[0]
                 if id not in self._client_vars:
                     raise RuntimeError("Unknown local variable. " +
                                        "Dropping message.")
                 value = self._client_vars[id]
-            elif arg.type == PythonRemoteData.DOUBLE:
+            elif arg.data_type == lcmt_call_python_data.DOUBLE:
                 value = self._to_array(arg, np.double)
-            elif arg.type == PythonRemoteData.CHAR:
+            elif arg.data_type == lcmt_call_python_data.CHAR:
                 assert arg.rows == 1
-                value = arg_raw.decode('utf8')
-            elif arg.type == PythonRemoteData.LOGICAL:
+                value = arg.data.decode('utf8')
+            elif arg.data_type == lcmt_call_python_data.LOGICAL:
                 value = self._to_array(arg, np.bool)
-            elif arg.type == PythonRemoteData.INT:
+            elif arg.data_type == lcmt_call_python_data.INT:
                 value = self._to_array(arg, np.int32)
             else:
                 assert False
@@ -400,10 +394,6 @@ class CallPythonClient(object):
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
         assert isinstance(function_name, str), type(function_name)
-        out_id = None
-        if len(msg.lhs) > 0:
-            assert len(msg.lhs) == 1
-            out_id = msg.lhs[0]
 
         self.scope_locals.update(_tmp_args=inputs, _tmp_kwargs=kwargs or {})
         # N.B. No try-catch block here. Can change this if needed.
@@ -417,7 +407,7 @@ class CallPythonClient(object):
                        self.scope_globals, self.scope_locals)
         self.scope_locals.update(_tmp_out=out)
         # Update outputs.
-        self._client_vars[out_id] = out
+        self._client_vars[msg.lhs] = out
 
     def run(self):
         """Runs the client code.
@@ -523,16 +513,9 @@ class CallPythonClient(object):
             self._execute_message(msg)
 
     def _read_next_message(self):
-        # Returns a new incoming message using a generator.
+        """Returns incoming messages using a generator."""
         while not self._done:
-            f = self._get_file()
-            while not self._done:
-                msg = PythonRemoteMessage()
-                status = _read_next(f, msg)
-                if status == _READ_GOOD:
-                    yield msg
-                elif status == _READ_END:
-                    break
+            fifo = self._get_file()
             # Close the file if we reach the end, NOT when exiting the scope
             # (which is why `with` is not used here).
             # This way the user can read a few messages at a time, with the
@@ -540,9 +523,41 @@ class CallPythonClient(object):
             # @note We must close / reopen the file when looping because the
             # C++ program will effectively send a EOF signal when it closes
             # the pipe.
+            while not self._done:
+                message = self._read_fifo_message(fifo)
+                if message is not None:
+                    yield message
             self._close_file()
             if not self._loop:
                 break
+
+    def _read_fifo_message(self, fifo):
+        """Reads at most one message from the given fifo."""
+        # Read the datagram size.  (The C++ code encodes the datagram_size
+        # integer as an ASCII string.)
+        datagram_size = None
+        buffer = bytearray()
+        while not self._done:
+            byte = fifo.read(1)
+            if not byte:  # EOF
+                return None
+            if byte == b'\0':  # EOM
+                datagram_size = int(buffer.decode())
+                break
+            else:
+                buffer.extend(byte)
+
+        # Read the payload.
+        buffer[:] = ()
+        while not self._done:
+            byte = fifo.read(1)
+            if not byte:  # EOF
+                return None
+            buffer.extend(byte)
+            if len(buffer) == datagram_size:
+                byte = fifo.read(1)
+                assert byte == b'\0'  # EOM
+                return lcmt_call_python.decode(bytes(buffer))
 
     def _get_file(self):
         # Gets file handle, opening if needed.
@@ -561,30 +576,6 @@ def _is_fifo(filepath):
     # Determine if a file is a FIFO named pipe or not.
     # @ref https://stackoverflow.com/a/8558940/7829525
     return stat.S_ISFIFO(os.stat(filepath).st_mode)
-
-
-_READ_GOOD = 1
-_READ_END = 2
-
-
-def _read_next(f, msg):
-    # Reads next message from the given file, following suite with C++.
-    # Number of bytes we need to consume so that we may still use
-    # `_DecodeVarint32`.
-    peek_size = 4
-    peek = f.read(peek_size)
-    if len(peek) == 0:
-        # We have reached the end.
-        return _READ_END
-    msg_size, peek_end = _DecodeVarint32(peek, 0)
-    peek_left = peek_size - peek_end
-    # Read remaining and concatenate.
-    remaining = f.read(msg_size - peek_left)
-    msg_raw = peek[peek_end:] + remaining
-    assert len(msg_raw) == msg_size
-    # Now read the message.
-    msg.ParseFromString(msg_raw)
-    return _READ_GOOD
 
 
 def main(argv):
