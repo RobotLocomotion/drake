@@ -5,6 +5,7 @@
 
 #include <sdf/sdf.hh>
 
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -84,6 +85,44 @@ geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision);
 
+/** Parses the drake-relevant collision properties from a <collision> element.
+
+ Specifically, looks for <drake:drake> tag to find drake-specific geometry
+ collision (or "proximity") properties. The set of tags are enumerated in the
+ table below. Each tag should be of the form:
+
+   `<tag>real_value</tag>`
+
+ As long as no exceptions are thrown, the function is guaranteed to return
+ a valid instance of ProximityProperties.
+
+ Mapping from SDF tag to geometry property.
+ | SDF Tag                            | Group        | Property                  | Notes                                          |
+ | :--------------------------------: | :----------: | :-----------------------: | :--------------------------------------------: |
+ | drake:hydroelastic_resolution_hint | hydroelastic | resolution_hint           | Required for hydroelastic contact.             |
+ | drake:elastic_modulus              | material     | elastic_modulus           | ∞ for rigid hydroleastic models; < ∞ for soft. |
+ | drake:dissipation                  | material     | hunt_crossley_dissipation |                                                |
+ | drake:mu_dynamic                   | material     | coulomb_friction          | See note below on friction.                    |
+
+ <h3>Coefficients of friction</h3>
+
+ Parsing coefficients of friction has a relatively complicated protocol:
+
+   1. If the `<drake:mu_dynamic>` tag is present, it will be used to instantiate
+      a property with a value of type CoulombFriction<double> (where both
+      coefficients are equal to the parsed value).
+        a. If the value is negative, an exception will be thrown.
+   2. If there is no `<drake:mu_dynamic>` tag, it will look for two coefficients
+      in the SDF tag path: `<surface><friction><ode><mu>` and
+      `<surface><friction><ode><mu2>`.
+        a. See MakeCoulombFrictionFromSdfCollisionOde() for failure modes.
+   3. If no meaningful friction coefficients are found in either XML path for
+      1 or 2, a default value will be created.
+ As long as no exception is thrown, the resulting ProximityProperties will have
+ the ('material', 'coulomb_friction') property. */
+geometry::ProximityProperties MakeProximityPropertiesForCollision(
+        const sdf::Collision& sdf_collision);
+
 /** Parses friction coefficients from `sdf_collision`.
  This method looks for the definitions specific to ODE, as given by the SDF
  specification in `<collision><surface><friction><ode>`. Drake understands
@@ -101,8 +140,8 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
      </surface>
    </collision>
  ```
- If a `<surface>` is not found, it returns the coefficients for a
- frictionless surface. If `<surface>` is found, all other nested elements
+ If a `<surface>` is not found, it returns arbitrary default coefficients
+ (typically mu = mu2 = 1). If `<surface>` is found, all other nested elements
  are required and an exception is thrown if not present.  */
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);

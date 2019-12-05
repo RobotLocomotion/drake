@@ -6,9 +6,12 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
@@ -377,26 +380,89 @@ geometry::GeometryInstance ParseVisual(
   return instance;
 }
 
+// This is the backwards-compatible fallback for defining friciton; it reads
+// the soon-to-be-deprecated <drake_compliance> tag for data. Throwing errors
+// for malformed values and returning a friction (either the valid friction
+// defined in the tag or the default).
+//
+// It incidentally propagates some warnings about unused tags from the rigid
+// body tree days.
+CoulombFriction<double> CoulombFrictionFromDrakeCompliance(
+    const std::string& parent_element_name, const XMLElement* node) {
+  const XMLElement* compliant_node =
+      node->FirstChildElement("drake_compliance");
+  if (compliant_node) {
+    // TODO(SeanCurtis-TRI): Ultimately, we want to kill <drake_compliance>
+    //  and these will go along with it. These values are only used in rigid
+    //  body tree; with no real expectation we'll re-use them in MBP.
+    if (compliant_node->FirstChildElement("youngs_modulus")) {
+      drake::log()->warn("Ignoring youngs_modulus for link " +
+                         parent_element_name);
+    }
+
+    if (compliant_node->FirstChildElement("dissipation")) {
+      drake::log()->warn("Ignoring dissipation for link " +
+                         parent_element_name);
+    }
+
+    double static_friction{-1};
+    double dynamic_friction{-1};
+    bool static_friction_present{false};
+    bool dynamic_friction_present{false};
+
+    const XMLElement* friction_node =
+        compliant_node->FirstChildElement("static_friction");
+    if (friction_node) {
+      static_friction_present = true;
+      if (friction_node->QueryDoubleText(&static_friction)) {
+        throw std::runtime_error("Unable to parse static_friction for link " +
+                                 parent_element_name);
+      }
+    }
+
+    friction_node = compliant_node->FirstChildElement("dynamic_friction");
+    if (friction_node) {
+      dynamic_friction_present = true;
+      if (friction_node->QueryDoubleText(&dynamic_friction)) {
+        throw std::runtime_error("Unable to parse dynamic_friction for link " +
+                                 parent_element_name);
+      }
+    }
+
+    if (static_friction_present != dynamic_friction_present) {
+      throw std::runtime_error(
+          fmt::format("Link '{}': When specifying coefficient of friction, "
+                      "both static and dynamic coefficients must be defined",
+                      parent_element_name));
+    }
+
+    if (static_friction_present) {
+      return CoulombFriction<double>(static_friction, dynamic_friction);
+    }
+  }
+  return default_friction();
+}
+
 // Parses a "collision" element in @p node.
 //
 // @param[out] friction Coulomb friction for the associated geometry.
 geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
     const PackageMap& package_map,
-    const std::string& root_dir, const XMLElement* node,
-    CoulombFriction<double>* friction) {
+    const std::string& root_dir, const XMLElement* node) {
   if (std::string(node->Name()) != "collision") {
     throw std::runtime_error(
-        "In link " + parent_element_name +
-        " expected collision element, got " + node->Name());
+        fmt::format("In link '{}' expected collision element, got {}",
+                    parent_element_name, node->Name()));
   }
 
   // Ensures there is a geometry child element. Since this is a required
   // element, throws an exception if a geometry element does not exist.
   const XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
-    throw std::runtime_error("Link " + parent_element_name +
-                             " has a collision element without geometry.");
+    throw std::runtime_error(
+        fmt::format("Link '{}' has a collision element without geometry",
+                    parent_element_name));
   }
 
   // Obtains the reference frame of the visualization relative to the
@@ -417,53 +483,65 @@ geometry::GeometryInstance ParseCollision(
   std::unique_ptr<geometry::Shape> shape =
       ParseGeometry(geometry_node, package_map, root_dir);
 
-  *friction = default_friction();
-  const XMLElement* compliant_node =
-      node->FirstChildElement("drake_compliance");
-  if (compliant_node) {
-    double static_friction{-1};
-    double dynamic_friction{-1};
-    bool static_friction_present = false;
-    bool dynamic_friction_present = false;
+  // Parse the properties from <drake:drake>.
+  geometry::ProximityProperties props;
+  const XMLElement* drake_element = node->FirstChildElement("drake:drake");
+  if (drake_element) {
+    auto read_double = [drake_element, &props](const char* element_name,
+                                               const char* group_name,
+                                               const char* property_name) {
+      const XMLElement* value_node =
+          drake_element->FirstChildElement(element_name);
+      if (value_node != nullptr) {
+        double value{};
+        if (ParseScalarAttribute(value_node, "value", &value)) {
+          props.AddProperty(group_name, property_name, value);
+        } else {
+          throw std::runtime_error(fmt::format(
+              "Unable to read the value for the <{}}> tag on line {}",
+              element_name, value_node->GetLineNum()));
+        }
+      }
+    };
+
+    read_double("drake:hydroelastic_resolution_hint", geometry::kHydroGroup,
+                geometry::kRezHint);
+    read_double("drake:elastic_modulus", geometry::kMaterialGroup,
+                geometry::kElastic);
+    read_double("drake:dissipation", geometry::kMaterialGroup,
+                geometry::kDissipation);
 
     const XMLElement* friction_node =
-        compliant_node->FirstChildElement("static_friction");
+        drake_element->FirstChildElement("drake:mu_dynamic");
     if (friction_node) {
-      static_friction_present = true;
-      if (friction_node->QueryDoubleText(&static_friction)) {
+      double mu{};
+      if (ParseScalarAttribute(friction_node, "value", &mu)) {
+        props.AddProperty(geometry::kMaterialGroup, geometry::kFriction,
+                          CoulombFriction<double>(mu, mu));
+      } else {
         throw std::runtime_error(
-            "Unable to parse static_friction for link " + parent_element_name);
+            fmt::format("Unable to read the value for the <drake:mu_dynamic> "
+                        "tag on line {}",
+                        friction_node->GetLineNum()));
       }
     }
+  }
 
-    friction_node = compliant_node->FirstChildElement("dynamic_friction");
-    if (friction_node) {
-      dynamic_friction_present = true;
-      if (friction_node->QueryDoubleText(&dynamic_friction)) {
-        throw std::runtime_error(
-            "Unable to parse dynamic_friction for link " + parent_element_name);
-      }
-    }
-
-    if (static_friction_present != dynamic_friction_present) {
-        throw std::runtime_error(
-            "Link " + parent_element_name +
-            ": When specifying coefficient of friction, "
-            "both static and dynamic coefficients must be defined");
-    }
-
-    if (static_friction_present) {
-      *friction = CoulombFriction<double>(static_friction, dynamic_friction);
-    }
-
-    if (compliant_node->FirstChildElement("youngs_modulus")) {
-      drake::log()->warn("Ignoring youngs_modulus for link " +
-                         parent_element_name);
-    }
-
-    if (compliant_node->FirstChildElement("dissipation")) {
-      drake::log()->warn("Ignoring dissipation for link " +
-                         parent_element_name);
+  // Now test to see how we should handle a potential <drake_compliance> tag.
+  if (!props.HasProperty(geometry::kMaterialGroup, geometry::kFriction)) {
+    // We have no friction from <drake:drake> so we need the old tag.
+    CoulombFriction<double> friction =
+        CoulombFrictionFromDrakeCompliance(parent_element_name, node);
+    props.AddProperty(geometry::kMaterialGroup, geometry::kFriction, friction);
+  } else {
+    // We parsed friction from <drake:drake>; test for the existence of
+    // <drake_compliance> and warn that it won't be used.
+    if (node->FirstChildElement("drake_compliance")) {
+      drake::log()->warn(fmt::format(
+          "Drake contact parameters are fully specified by the <drake:drake> "
+          "tag for the '{}' link. The <drake_compliance> tag is ignored. "
+          "Consider removing  it.",
+          parent_element_name));
     }
   }
 
@@ -472,8 +550,10 @@ geometry::GeometryInstance ParseCollision(
     geometry_name = MakeGeometryName(parent_element_name + "_Collision", node);
   }
 
-  return geometry::GeometryInstance(T_element_to_link, std::move(shape),
+  geometry::GeometryInstance instance(T_element_to_link, std::move(shape),
                                     geometry_name);
+  instance.set_proximity_properties(std::move(props));
+  return instance;
 }
 
 }  // namespace internal
