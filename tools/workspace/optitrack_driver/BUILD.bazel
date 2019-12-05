@@ -11,6 +11,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["use_rules_python.patch"])
+
 install_files(
     name = "install_optitrack_client",
     dest = "bin",

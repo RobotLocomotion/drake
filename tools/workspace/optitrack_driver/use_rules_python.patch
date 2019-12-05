@@ -1,0 +1,85 @@
+From 31735814808491491b5a1dfcebc2d0aa262bb792 Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Fri, 22 Nov 2019 16:04:33 -0500
+Subject: [PATCH] Load Python rules from starlark
+
+---
+ WORKSPACE       | 10 ++++++++++
+ src/BUILD.bazel |  2 ++
+ tools/lcm.BUILD |  3 ++-
+ tools/lcm.bzl   |  3 ++-
+ 4 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/WORKSPACE b/WORKSPACE
+index cdf53f37bb6bec3cd389ef65da0179fc19a0303c..2c8af9cc0c0daeac5b27072d84622ec8972b29b9 100644
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -68,3 +68,13 @@ java_import_external(
+ )
+ 
+ python_repository(name = "python")
++
++http_archive(
++    name = "rules_python",
++    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
++    sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
++)
++
++load("@rules_python//python:repositories.bzl", "py_repositories")
++
++py_repositories()
+diff --git a/src/BUILD.bazel b/src/BUILD.bazel
+index d177d5adec0e2b545c071259a9debfec32018a70..89533b7f01b04fa688d61569d9fe505161104c80 100644
+--- a/src/BUILD.bazel
++++ b/src/BUILD.bazel
+@@ -1,6 +1,8 @@
+ # -*- python -*-
+ # This file contains rules for the Bazel build system; see https://bazel.build.
+ 
++load("@rules_python//python:defs.bzl", "py_binary", "py_library")
++
+ licenses(["notice"])
+ 
+ package(default_visibility = ["//visibility:public"])
+diff --git a/tools/lcm.BUILD b/tools/lcm.BUILD
+index 92eeefa4387b700d936b2a50cb00377028bc893e..d83c0c70916250c89f5ed82f15b675716cedd92b 100644
+--- a/tools/lcm.BUILD
++++ b/tools/lcm.BUILD
+@@ -4,6 +4,7 @@
+ # Based on commit 758822db27e1d023b81f89b3fd2a7ebcdcb24d9c of
+ # https://github.com/RobotLocomotion/drake/blob/master/tools/workspace/lcm/package.BUILD.bazel
+ 
++load("@rules_python//python:defs.bzl", "py_library")
+ load("@//tools:generate_file.bzl", "generate_file")
+ load("@//tools:generate_export_header.bzl", "generate_export_header")
+ 
+@@ -13,7 +14,7 @@ package(default_visibility = ["//visibility:public"])
+ 
+ config_setting(
+     name = "linux",
+-    values = {"cpu": "k8"},
++    constraint_values = ["@platforms//os:linux"],
+     visibility = ["//visibility:private"],
+ )
+ 
+diff --git a/tools/lcm.bzl b/tools/lcm.bzl
+index bd814c6aa6c995516dbfe1d275c1de4096ea5040..e5bbc1322e1fe9757bd3f5d9f048d0b346be8b07 100644
+--- a/tools/lcm.bzl
++++ b/tools/lcm.bzl
+@@ -3,6 +3,7 @@
+ # Based on commit ba51fb5cb845e97017e802fb2b6c74853cb3d6f0 of
+ # https://github.com/RobotLocomotion/drake/blob/master/tools/workspace/lcm/lcm.bzl
+ 
++load("@rules_python//python:defs.bzl", "py_library")
+ load("//tools:pathutils.bzl", "basename", "dirname", "join_paths")
+ 
+ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
+@@ -195,7 +196,7 @@ def lcm_py_library(
+         if "." not in imports:
+             imports = imports + ["."]
+ 
+-    native.py_library(
++    py_library(
+         name = name,
+         srcs = outs + extra_srcs,
+         imports = imports,
