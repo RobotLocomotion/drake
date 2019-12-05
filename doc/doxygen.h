@@ -42,6 +42,7 @@ only updated nightly.</p>
   @defgroup systems Modeling Dynamical Systems
   @defgroup multibody Multibody Kinematics and Dynamics
   @defgroup algorithms Algorithms
+  @defgroup geometry Geometric Representations
   @defgroup technical_notes Technical Notes
 */
 
@@ -84,4 +85,3 @@ only updated nightly.</p>
 
  @}
 */
-
