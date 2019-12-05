@@ -58,6 +58,7 @@ def python_lint(
     Example:
         BUILD:
             load("//tools/lint:python_lint.bzl", "python_lint")
+            load("//tools/skylark:py.bzl", "py_library")
 
             py_library(
                 name = "foo",

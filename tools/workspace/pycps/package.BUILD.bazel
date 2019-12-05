@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools/skylark:py.bzl", "py_binary", "py_library")
+
 licenses(["restricted"])  # LGPL-3.0+
 
 genrule(

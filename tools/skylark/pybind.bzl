@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
 
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
@@ -25,7 +26,7 @@ def pybind_py_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
-        py_library_rule = native.py_library,
+        py_library_rule = py_library,
         **kwargs):
     """Declares a pybind11 Python library with C++ and Python portions.
 

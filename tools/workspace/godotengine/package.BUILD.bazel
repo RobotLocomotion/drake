@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools/skylark:py.bzl", "py_binary")
+
 licenses([
     "notice",  # Apache-2.0 AND BSD-3-Clause AND ISC AND MIT AND Zlib
     "unencumbered",  # Public-Domain

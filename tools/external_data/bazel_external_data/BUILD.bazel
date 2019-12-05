@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_test")
 load("//tools/external_data:expose_all_files.bzl", "expose_all_files")
 
 # For macro testing.

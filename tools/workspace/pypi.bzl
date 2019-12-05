@@ -35,6 +35,7 @@ def pypi_archive(
             )
 
         foo.BUILD:
+            load("//tools/skylark:py.bzl", "py_library")
             py_library(
                 name = "foo",
                 srcs = [
@@ -45,6 +46,7 @@ def pypi_archive(
             )
 
         BUILD:
+            load("//tools/skylark:py.bzl", "py_binary")
             py_binary(
                 name = "foobar",
                 deps = ["@foo//:foo"],
