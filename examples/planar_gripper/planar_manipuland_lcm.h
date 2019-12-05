@@ -19,7 +19,8 @@ namespace planar_gripper {
 /// Value object templated on type `lcmt_planar_manipuland_status`.
 ///
 /// This system has one vector valued output port which reports
-/// measured pose (y, z, theta) and velocity of the manipuland.
+/// measured pose (y, z, theta) and velocity (ydot, zdot, thetadot) of the
+/// manipuland.
 ///
 /// All ports will continue to output their initial state (typically
 /// zero) until a message is received.
@@ -49,7 +50,7 @@ class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
  * Creates and outputs lcmt_planar_manipuland_status messages.
  *
  * This system has one vector-valued input port containing the current pose
- * (y, z, theta) and velocity (ẏ, ż,  θ̇) of the manipuland, in the order
+ * (y, z, theta) and velocity (ẏ, ż, thetadot) of the manipuland, in the order
  * (y, z, theta, ydot, zdot, thetadot).
  *
  * This system has one abstract valued output port that contains a Value obect

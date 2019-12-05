@@ -6,7 +6,7 @@ namespace planar_gripper {
 PlanarManipulandStatusDecoder::PlanarManipulandStatusDecoder() {
   this->DeclareVectorOutputPort(systems::BasicVector<double>(6),
                                 &PlanarManipulandStatusDecoder::OutputStatus);
-  this->DeclareAbstractInputPort(systems::kUseDefaultName,
+  this->DeclareAbstractInputPort("manipuland_state",
                                  Value<lcmt_planar_manipuland_status>{});
   this->DeclareDiscreteState(6);
   this->DeclarePeriodicDiscreteUpdateEvent(
