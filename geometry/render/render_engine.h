@@ -291,6 +291,12 @@ class RenderEngine : public ShapeReifier {
 
   //@}
 
+  /** Provides access to the light for manual configuration since it's currently
+   bound to the camera position. This is a temporary measure to facilitate
+   benchmarking and create visible shadows, and should not be used publicly.
+   @param X_CL The pose of the light in the camera frame.  */
+  virtual void SetDefaultLightPosition(const Vector3<double>& X_CL);
+
  private:
   friend class RenderEngineTester;
 
