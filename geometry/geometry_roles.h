@@ -10,8 +10,7 @@
 namespace drake {
 namespace geometry {
 
-/** @defgroup geometry_roles Geometry Roles
- @ingroup scene_graph_module
+/** @addtogroup geometry_roles
 
  Geometry roles help define how a real-world object is modeled in Drake.
 
@@ -140,7 +139,9 @@ namespace geometry {
 
  Generally, any code that is dependent on geometry roles, should document the
  type of role that it depends on, and the properties (if any) associated with
- that role that it requires/prefers.  */
+ that role that it requires/prefers.
+
+ Next topic: @ref proximity_queries  */
 
 /** The set of properties for geometry used in a _proximity_ role.
 
