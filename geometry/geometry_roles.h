@@ -144,6 +144,8 @@ namespace geometry {
 
 /** The set of properties for geometry used in a _proximity_ role.
 
+ <!-- TODO(SeanCurtis-TRI): When the hydroelastic geometry module is written,
+  put a reference to the discussion of ProximityProperties here.  -->
  Examples of functionality that depends on the proximity role:
    - n/a
  */
