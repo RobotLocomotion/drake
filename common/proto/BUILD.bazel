@@ -12,11 +12,6 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
-load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_cc_proto_library",
-    "drake_py_proto_library",
-)
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -27,25 +22,8 @@ drake_cc_package_library(
     deps = [
         ":call_python",
         ":protobuf",
-        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
     ],
-)
-
-drake_cc_proto_library(
-    name = "python_remote_message_proto",
-    srcs = [
-        "python_remote_message.proto",
-    ],
-    visibility = ["//visibility:private"],
-)
-
-drake_py_proto_library(
-    name = "python_remote_message_proto_py",
-    srcs = [
-        "python_remote_message.proto",
-    ],
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_library(
@@ -68,10 +46,9 @@ drake_cc_library(
     srcs = ["call_python.cc"],
     hdrs = ["call_python.h"],
     deps = [
-        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
-        "//common:copyable_unique_ptr",
         "//common:essential",
+        "//lcmtypes:call_python",
     ],
 )
 
@@ -80,7 +57,7 @@ drake_py_library(
     srcs = ["call_python_client.py"],
     imports = ["."],
     deps = [
-        ":python_remote_message_proto_py",
+        "//lcmtypes:lcmtypes_drake_py",
     ],
 )
 

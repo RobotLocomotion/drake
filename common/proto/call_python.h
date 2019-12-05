@@ -1,14 +1,9 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/proto/python_remote_message.pb.h"
+#include "drake/lcmt_call_python.hpp"
 
 /// @file
 /// @brief Utilities for calling Python from C++
@@ -21,33 +16,33 @@
 namespace drake {
 namespace common {
 
-// begin forward declarations
-// These are necessary for `PythonApi`.
+/// Initializes `CallPython` for a given file.
+/// If this function is not called, then the file defaults to `/tmp/python_rpc`.
+/// @throws std::runtime_error If either this function or `CallPython` have
+/// already been called.
+void CallPythonInit(const std::string& filename);
 
+/// Presents variable stored in Python side.
 class PythonRemoteVariable;
 
+/// Calls a Python client with a given function and arguments, returning
+/// a handle to the result.
 template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
                                 Types... args);
 
+/// Creates a tuple in Python.
 template <typename... Types>
 PythonRemoteVariable ToPythonTuple(Types... args);
 
-template <typename T>
-PythonRemoteVariable NewPythonVariable(T value);
+/// Creates a keyword-argument list to be unpacked.
+/// @param args Argument list in the form of (key1, value1, key2, value2, ...).
+template <typename... Types>
+PythonRemoteVariable ToPythonKwargs(Types... args);
 
-void ToPythonRemoteData(const PythonRemoteVariable& variable,
-                        PythonRemoteData* data);
-
-template <typename Derived>
-void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
-                        PythonRemoteData* data);
-
-void ToPythonRemoteData(double scalar, PythonRemoteData* data);
-
-void ToPythonRemoteData(int scalar, PythonRemoteData* data);
-
-void ToPythonRemoteData(const std::string& str, PythonRemoteData* data);
+// ===========================================================================
+// All code below this point is implementation details.
+// ===========================================================================
 
 namespace internal {
 
@@ -55,8 +50,6 @@ class PythonItemPolicy;
 class PythonAttrPolicy;
 template <typename Policy>
 class PythonAccessor;
-
-// end forward declarations
 
 using PythonItemAccessor = PythonAccessor<PythonItemPolicy>;
 using PythonAttrAccessor = PythonAccessor<PythonAttrPolicy>;
@@ -90,7 +83,6 @@ class PythonApi {
 
 }  // namespace internal
 
-/// Presents variable stored in Python side.
 class PythonRemoteVariable : public internal::PythonApi<PythonRemoteVariable> {
  public:
   PythonRemoteVariable();
@@ -103,6 +95,12 @@ class PythonRemoteVariable : public internal::PythonApi<PythonRemoteVariable> {
 };
 
 namespace internal {
+
+/// Creates a new remote variable with the corresponding value set.
+template <typename T>
+PythonRemoteVariable NewPythonVariable(T value) {
+  return CallPython("pass_through", value);
+}
 
 // Gets/sets an object's attribute.
 class PythonAttrPolicy {
@@ -136,7 +134,7 @@ class PythonItemPolicy {
 
 // API-consistent mechanism to access a portion of an object (item or attr).
 template <typename Policy>
-class PythonAccessor : public internal::PythonApi<PythonAccessor<Policy>> {
+class PythonAccessor : public PythonApi<PythonAccessor<Policy>> {
  public:
   using KeyType = typename Policy::KeyType;
 
@@ -203,75 +201,77 @@ PythonItemAccessor PythonApi<Derived>::slice(Types... args) const {
   return {derived(), CallPython("make_slice_arg", args...)};
 }
 
-inline void AssembleRemoteMessage(PythonRemoteMessage*) {
+void ToPythonRemoteData(const PythonRemoteVariable& variable,
+                        lcmt_call_python_data* data);
+
+template <typename Derived>
+void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
+                        lcmt_call_python_data* data);
+
+void ToPythonRemoteData(double scalar,
+                        lcmt_call_python_data* data);
+
+void ToPythonRemoteData(int scalar,
+                        lcmt_call_python_data* data);
+
+void ToPythonRemoteData(const std::string& str, lcmt_call_python_data* data);
+
+void ToPythonRemoteDataMatrix(
+    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
+        mat, lcmt_call_python_data* data, bool is_vector);
+
+void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXd>& mat,
+                              lcmt_call_python_data* data, bool is_vector);
+
+void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXi>& mat,
+                              lcmt_call_python_data* data, bool is_vector);
+
+template <typename Derived>
+void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
+                        lcmt_call_python_data* data) {
+  const bool is_vector = (Derived::ColsAtCompileTime == 1);
+  return ToPythonRemoteDataMatrix(mat, data, is_vector);
+}
+
+inline void AssembleRemoteMessage(lcmt_call_python*) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
 template <typename T, typename... Types>
-void AssembleRemoteMessage(PythonRemoteMessage* message, T first,
+void AssembleRemoteMessage(lcmt_call_python* message, T first,
                            Types... args) {
-  ToPythonRemoteData(first, message->add_rhs());
+  message->rhs.emplace_back();
+  ToPythonRemoteData(first, &(message->rhs.back()));
   AssembleRemoteMessage(message, args...);
 }
 
-void ToPythonRemoteDataMatrix(
-    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
-        mat, PythonRemoteData* data, bool is_vector);
-
-void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXd>& mat,
-                              PythonRemoteData* data, bool is_vector);
-
-void ToPythonRemoteDataMatrix(const Eigen::Ref<const Eigen::MatrixXi>& mat,
-                              PythonRemoteData* data, bool is_vector);
-
-void PublishCallPython(const PythonRemoteMessage& message);
+void PublishCallPython(const lcmt_call_python& message);
 
 }  // namespace internal
 
-/// Initializes `CallPython` for a given file.
-/// If this function is not called, then the file defaults to `/tmp/python_rpc`.
-/// @throws std::runtime_error If either this function or `CallPython` have
-/// already been called.
-void CallPythonInit(const std::string& filename);
+// These items are forward-declared atop the file.
 
-/// Calls a Python client with a given function and arguments, returning
-/// a handle to the result.
 template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
                                 Types... args) {
   PythonRemoteVariable output;
-  PythonRemoteMessage message;
-  message.add_lhs(output.unique_id());
+  lcmt_call_python message{};
+  message.lhs = output.unique_id();
   internal::AssembleRemoteMessage(&message, args...);
-  message.set_function_name(function_name);
+  message.num_rhs = message.rhs.size();
+  message.function_name = function_name;
   internal::PublishCallPython(message);
   return output;
 }
 
-/// Creates a tuple in Python.
 template <typename... Types>
 PythonRemoteVariable ToPythonTuple(Types... args) {
   return CallPython("make_tuple", args...);
 }
 
-/// Creates a keyword-argument list to be unpacked.
-/// @param args Argument list in the form of (key1, value1, key2, value2, ...).
 template <typename... Types>
 PythonRemoteVariable ToPythonKwargs(Types... args) {
   return CallPython("make_kwargs", args...);
-}
-
-/// Creates a new remote variable with the corresponding value set.
-template <typename T>
-PythonRemoteVariable NewPythonVariable(T value) {
-  return CallPython("pass_through", value);
-}
-
-template <typename Derived>
-void ToPythonRemoteData(const Eigen::MatrixBase<Derived>& mat,
-                        PythonRemoteData* data) {
-  const bool is_vector = (Derived::ColsAtCompileTime == 1);
-  return internal::ToPythonRemoteDataMatrix(mat, data, is_vector);
 }
 
 }  // namespace common
