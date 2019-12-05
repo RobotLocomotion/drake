@@ -11,6 +11,24 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "add_fixed_objects_to_plant",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["add_fixed_objects_to_plant.h"],
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/simple_gripper:simple_gripper_models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "floating_body_plant",
     testonly = 1,
     srcs = ["floating_body_plant.cc"],
