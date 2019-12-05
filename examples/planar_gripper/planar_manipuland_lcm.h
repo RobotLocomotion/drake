@@ -53,10 +53,10 @@ class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
  * (y, z, theta) and velocity (ẏ, ż, thetadot) of the manipuland, in the order
  * (y, z, theta, ydot, zdot, thetadot).
  *
- * This system has one abstract valued output port that contains a Value obect
+ * This system has one abstract valued output port that contains a Value object
  * templated on type `lcmt_planar_manipuland_status`. Note that this system
  * does NOT actually send this message on an LCM channel. To send the message,
- * the output of this system should be connected to an input prot of a
+ * the output of this system should be connected to an input port of a
  * systems::lcm::LcmPublisherSystem that accepts a Value object templated on
  * type `lcmt_planar_manipuland_status`.
  */

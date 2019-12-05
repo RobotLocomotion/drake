@@ -7,7 +7,7 @@ struct lcmt_planar_manipuland_status
 
   // The translational position of the manipuland.
   double position[2];
-  // The angle of the manipuland
+  // The angle of the manipuland.
   double theta;
   // The translational velocity of the manipuland.
   double velocity[2];
