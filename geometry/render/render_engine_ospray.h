@@ -115,6 +115,7 @@ class RenderEngineOspray final
 
   using RenderEngine::default_render_label;
 
+  void SetDefaultLightPosition(const Vector3<double>& X_WL) final;
   //@}
 
  private:
@@ -141,7 +142,7 @@ class RenderEngineOspray final
   RenderEngineOspray(const RenderEngineOspray& other);
 
   // Initializes the VTK pipelines.
-  void InitializePipelines(int samples_per_pixel);
+  void InitializePipelines(int samples_per_pixel, bool use_shadows);
 
   // Common interface for loading an obj file -- used for both mesh and convex
   // shapes.
