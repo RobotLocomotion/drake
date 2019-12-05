@@ -51,8 +51,8 @@ class TimeVisualizer(object):
 
         # Since the plugin can remain open during multiple simulations, we
         # clear the lists of times if we receive a message with a time earlier
-        # than the last time received (which indicates that a new simulation has
-        # been run).
+        # than the last time received (which indicates that a new simulation
+        # has been run).
         if len(self._msg_time) > 0 and self._msg_time[-1] > msg_time:
             self._real_time.clear()
             self._msg_time.clear()
