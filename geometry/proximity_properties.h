@@ -24,6 +24,10 @@ namespace geometry {
 
 extern const char* const kMaterialGroup;  ///< The contact material group name.
 extern const char* const kElastic;        ///< Elastic modulus property name.
+extern const char* const kFriction;       ///< Friction coefficients property
+                                          ///< name.
+extern const char* const kHCDissipation;  ///< Hunt-Crossley dissipation
+                                          ///< property name.
 
 //@}
 
