@@ -1,17 +1,33 @@
 .. _docker_entry:
 
-Building Drake in a Docker Container
-************************************
+Drake in Docker Containers
+**************************
+
+.. _docker_hub:
+
+Using Published Images on Docker Hub
+====================================
+
+Drake's CI has nightly jobs that publishes binary archives that are described
+in the :ref:`nightly-releases` section. The Ubuntu Bionic nightly release is
+also used to publish a Docker image on Docker Hub. You can see the available
+nightlies here:
+
+https://hub.docker.com/r/robotlocomotion/drake/tags
+
+Build Drake using Bazel in Docker
+=================================
 
 .. note::
 
-  These instructions and the Drake Docker images are provided as a courtesy for
+  These instructions for Bazel in Docker are provided as a courtesy for
   developers and users and are not covered by continuous integration. Support
   is on a best-effort basis.
 
   However, there are alternative downstream usages of Drake within a Docker
   container:
 
+  * The published images shown above.
   * `MIT 6.832 (Underactuated Robotics) Spring 2019 Drake Docker Instructions <http://underactuated.csail.mit.edu/Spring2019/install_drake_docker.html>`_
   * `MIT 6.881 (Intelligent Robot Manipulation) Fall 2018 Drake Docker Instructions <http://manipulation.csail.mit.edu/install_drake_docker.html>`_
   * `Spartan's Docker Build <https://github.com/RobotLocomotion/spartan/blob/master/setup/docker/README.md>`_
@@ -19,12 +35,12 @@ Building Drake in a Docker Container
 .. _installing_docker_and_building_and_running_a_drake_docker_image:
 
 Installing Docker and Building and Running a Drake Docker Image
-===============================================================
+---------------------------------------------------------------
 
 .. _ubuntu_1804_bionic_beaver:
 
 Ubuntu 18.04 (Bionic Beaver)
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install Docker from the Ubuntu package archive:
 
@@ -48,7 +64,7 @@ build and run a Drake Docker image:
 .. _ubuntu_1804_bionic_beaver_with_proprietary_nvidia_driver_390_and_cuda_91_support:
 
 Ubuntu 18.04 (Bionic Beaver) with Proprietary NVIDIA Driver 390 and CUDA 9.1 Support
-------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
@@ -119,7 +135,7 @@ build and run a Drake Docker image:
 .. _other_platforms:
 
 Other Platforms
----------------
+~~~~~~~~~~~~~~~
 
 Follow the instructions on the Docker website to
 `install stable Docker Community Edition <https://docs.docker.com/install/>`_.
