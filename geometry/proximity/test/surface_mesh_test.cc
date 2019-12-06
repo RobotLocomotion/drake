@@ -365,6 +365,13 @@ GTEST_TEST(SurfaceMeshTest, TestEqual) {
   EXPECT_FALSE(triangle_mesh->Equal(*empty_mesh));
 }
 
+GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {
+  auto mesh = TestSurfaceMesh<double>();
+  const auto[center, size] = mesh->CalcBoundingBox();
+  EXPECT_EQ(center, Vector3d(7.5, 7.5, 0));
+  EXPECT_EQ(size, Vector3d(15, 15, 0));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

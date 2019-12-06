@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <limits>
 #include <set>
 #include <utility>
 #include <vector>
@@ -355,6 +356,29 @@ class SurfaceMesh {
   // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
+  // TODO(DamrongGuoy): Consider sharing this code with
+  //  bounding_volume_hierarchy.h. Currently we have a problem that
+  //  SurfaceMesh and its vertices are templated on T, but Aabb in
+  //  bounding_volume_hierarchy.h is for double only.
+  /**
+   Calculates the axis-aligned bounding box of this surface mesh M.
+   @returns the center and the size vector of the box expressed in M's frame.
+   */
+  std::pair<Vector3<T>, Vector3<T>> CalcBoundingBox() const {
+    Vector3<T> min_extent =
+        Vector3<T>::Constant(std::numeric_limits<double>::max());
+    Vector3<T> max_extent =
+        Vector3<T>::Constant(std::numeric_limits<double>::lowest());
+    for (SurfaceVertexIndex i(0); i < num_vertices(); ++i) {
+      Vector3<T> vertex = this->vertex(i).r_MV();
+      min_extent = min_extent.cwiseMin(vertex);
+      max_extent = max_extent.cwiseMax(vertex);
+    }
+    Vector3<T> center = (max_extent + min_extent) / 2.0;
+    Vector3<T> size = max_extent - min_extent;
+    return std::make_pair(center, size);
+  }
+
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given SurfaceMesh object is equal via deep
    exact comparison. NaNs are treated as not equal as per the IEEE standard.
@@ -441,6 +465,9 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   if (total_area_ != T(0.))
     p_MSc_ /= (3. * total_area_);
 }
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class SurfaceMesh)
 
 }  // namespace geometry
 }  // namespace drake

@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity_properties.h"
@@ -198,8 +199,6 @@ TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
   EXPECT_EQ(MakeRigidRepresentation(Convex(obj, 1.0), props), std::nullopt);
-
-  EXPECT_EQ(MakeRigidRepresentation(Mesh(obj, 1.0), props), std::nullopt);
 }
 
 // Confirm support for a rigid Sphere. Tests that a hydroelastic representation
@@ -307,6 +306,27 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   }
 }
 
+// Confirm support for a rigid Mesh. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Mesh) {
+  std::string file =
+    FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+  const double scale = 1.1;
+  // Empty props since its contents do not matter.
+  ProximityProperties props;
+
+  std::optional<RigidGeometry> mesh_rigid_geometry =
+      MakeRigidRepresentation(Mesh(file, scale), props);
+  EXPECT_NE(mesh_rigid_geometry, std::nullopt);
+
+  // We only check that the obj file was read by verifying the number of
+  // vertices and triangles, which depend on the specific content of
+  // the obj file.
+  const SurfaceMesh<double>& surface_mesh = mesh_rigid_geometry->mesh();
+  EXPECT_EQ(surface_mesh.num_vertices(), 5);
+  EXPECT_EQ(surface_mesh.num_faces(), 6);
+}
+
 // Template magic to instantiate a particular kind of shape at compile time.
 template <typename ShapeType>
 ShapeType make_default_shape() {
@@ -323,6 +343,16 @@ Sphere make_default_shape<Sphere>() {
 template <>
 Box make_default_shape<Box>() {
   return Box(0.5, 1.25, 3.5);
+}
+
+template <>
+Cylinder make_default_shape<Cylinder>() {
+  return Cylinder(0.5, 1.25);
+}
+
+template <>
+Ellipsoid make_default_shape<Ellipsoid>() {
+  return Ellipsoid(0.5, 0.8, 0.3);
 }
 
 // Boilerplate for testing error conditions relating to properties. Its purpose
@@ -407,7 +437,7 @@ void TestPropertyErrors(
 // Test suite for testing the common failure conditions for generating rigid
 // geometry. Specifically, they just need to be tessellated into a triangle mesh
 // and, therefore, only depend on the (hydroelastic, characteristic_length)
-// value. This actively excludes half spaces because they don't get
+// value. This actively excludes HalfSpace and Mesh because they don't get
 // tessellated (see the `RigidErrorShapeTypes` declaration below.) It should
 // include every *other* supported rigid shape type.
 template <typename ShapeType>
@@ -429,7 +459,7 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadCharacteristicLength) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
                            BadCharacteristicLength);
-typedef ::testing::Types<Sphere, Box> RigidErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                               RigidErrorShapeTypes);
 
@@ -594,10 +624,10 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
 
 // Test suite for testing the common failure conditions for generating soft
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes half spaces because they
-// are treated specially (they don't get tessellated).
-// (See the `RigidErrorShapeTypes` declaration below.) It should include every
-// *other* supported rigid shape type.
+// and define a pressure field. This actively excludes HalfSpace and Mesh
+// because they are treated specially (they don't get tessellated).
+// (See the `SoftErrorShapeTypes` declaration below.) It should include every
+// *other* supported soft shape type.
 template <typename ShapeType>
 class HydroelasticSoftGeometryErrorTests : public ::testing::Test {};
 
@@ -632,7 +662,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                            BadCharacteristicLength, BadElasticModulus);
-typedef ::testing::Types<Sphere> SoftErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                               SoftErrorShapeTypes);
 

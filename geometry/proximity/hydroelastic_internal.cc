@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
 namespace drake {
@@ -272,6 +273,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length));
+
+  return RigidGeometry(move(mesh));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Mesh& mesh_spec, const ProximityProperties&) {
+  // Mesh does not use any properties.
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      ReadObjToSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
 
   return RigidGeometry(move(mesh));
 }

@@ -180,14 +180,15 @@ class QueryObject {
    -->
 
    @returns A vector populated with all detected penetrations characterized as
-            point pairs. */
+            point pairs.
+   @note    Silently ignore Mesh geometries. */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
   /**
    Reports pairwise intersections and characterizes each non-empty
-   intersection as a ContactSurface. The computation is subject to collision
-   filtering.
+   intersection as a ContactSurface for hydroelastic contact model.
+   The computation is subject to collision filtering.
 
    For two intersecting geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
@@ -195,11 +196,21 @@ class QueryObject {
 
    In the current incarnation, this function represents a simple implementation.
 
-     - Only collision between spheres, boxes, cylinders, and ellipsoids is
-       supported. If an unfiltered geometry pair of any other type pairing
-       cannot be culled in the broadphase an error will be thrown.
+     - This table shows the supported shapes and compliance modes.
+
+       |   Shape   | Soft  | Rigid |
+       | :-------: | :---: | :---- |
+       | Sphere    |  yes  |  yes  |
+       | Cylinder  |  yes  |  yes  |
+       | Box       |  yes  |  yes  |
+       | Capsule   |  no   |  no   |
+       | Ellipsoid |  yes  |  yes  |
+       | HalfSpace |  no   |  no   |
+       | Mesh      |  no   |  yes  |
+       | Convex    |  no   |  no   |
+
      - One geometry must be soft, and the other must be rigid. There is no
-       support for soft-soft collision.
+       support for soft-soft collision or rigid-rigid collision.
      - The elasticity modulus E (N/m^2) of each geometry is set in
        ProximityProperties (see proximity_properties.cc). A rigid geometry must
        have E = ∞.
@@ -219,11 +230,13 @@ class QueryObject {
    b) *known* to be separated. The caller is responsible for confirming that
    the remaining, unculled geometry pairs are *actually* in collision.
 
-   @returns A vector populated with collision pair candidates. */
+   @returns A vector populated with collision pair candidates.
+   @note    Silently ignore Mesh geometries. */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
-   world.  */
+   world.
+   @note Silently ignore Mesh geometries. */
   bool HasCollisions() const;
 
   //@}
