@@ -19,10 +19,10 @@ GTEST_TEST(GripperLcmTest, GripperCommandPassthroughTest) {
   systems::DiagramBuilder<double> builder;
   auto command_encoder = builder.AddSystem<GripperCommandEncoder>(kNumFingers);
   auto command_decoder = builder.AddSystem<GripperCommandDecoder>(kNumFingers);
-  builder.Connect(command_decoder->get_output_port(0),
-                  command_encoder->get_input_port(0));
-  builder.Connect(command_decoder->get_output_port(1),
-                  command_encoder->get_input_port(1));
+  builder.Connect(command_decoder->get_state_output_port(),
+                  command_encoder->get_state_input_port());
+  builder.Connect(command_decoder->get_torques_output_port(),
+                  command_encoder->get_torques_input_port());
   builder.ExportInput(command_decoder->get_input_port(0));
   builder.ExportOutput(command_encoder->get_output_port(0));
   auto diagram = builder.Build();
@@ -70,10 +70,10 @@ GTEST_TEST(GripperLcmTest, GripperStatusPassthroughTest) {
   systems::DiagramBuilder<double> builder;
   auto status_encoder = builder.AddSystem<GripperStatusEncoder>(kNumFingers);
   auto status_decoder = builder.AddSystem<GripperStatusDecoder>(kNumFingers);
-  builder.Connect(status_decoder->get_output_port(0),
-                  status_encoder->get_input_port(0));
-  builder.Connect(status_decoder->get_output_port(1),
-                  status_encoder->get_input_port(1));
+  builder.Connect(status_decoder->get_state_output_port(),
+                  status_encoder->get_state_input_port());
+  builder.Connect(status_decoder->get_force_output_port(),
+                  status_encoder->get_force_input_port());
   builder.ExportInput(status_decoder->get_input_port(0));
   builder.ExportOutput(status_encoder->get_output_port(0));
   auto diagram = builder.Build();

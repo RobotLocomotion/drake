@@ -165,6 +165,15 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "planar_gripper_lcm_test",
+    deps = [
+        ":planar_gripper_lcm",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
 install_data()
 
 add_lint_tests()

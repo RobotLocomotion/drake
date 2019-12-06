@@ -20,12 +20,14 @@ GripperCommandDecoder::GripperCommandDecoder(int num_fingers) :
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
       Value<lcmt_planar_gripper_command>{});
-  this->DeclareVectorOutputPort("state",
-      systems::BasicVector<double>(num_joints_ * 2),
-      &GripperCommandDecoder::OutputStateCommand);
-  this->DeclareVectorOutputPort("torques",
-      systems::BasicVector<double>(num_joints_),
-      &GripperCommandDecoder::OutputTorqueCommand);
+  state_output_port_ = this->DeclareVectorOutputPort(
+      "state", systems::BasicVector<double>(num_joints_ * 2),
+      &GripperCommandDecoder::OutputStateCommand).get_index();
+  torques_output_port_ =
+      this->DeclareVectorOutputPort("torques",
+                                    systems::BasicVector<double>(num_joints_),
+                                    &GripperCommandDecoder::OutputTorqueCommand)
+          .get_index();
   this->DeclarePeriodicDiscreteUpdateEvent(
       kGripperLcmStatusPeriod, 0., &GripperCommandDecoder::UpdateDiscreteState);
   // Register a forced discrete state update event. It is added for unit test,
@@ -94,8 +96,12 @@ void GripperCommandDecoder::OutputTorqueCommand(
 
 GripperCommandEncoder::GripperCommandEncoder(int num_fingers) :
       num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
-  this->DeclareInputPort("state", systems::kVectorValued, num_joints_ * 2);
-  this->DeclareInputPort("torque", systems::kVectorValued, num_joints_);
+  state_input_port_ =
+      this->DeclareInputPort("state", systems::kVectorValued, num_joints_ * 2)
+          .get_index();
+  torques_input_port_ =
+      this->DeclareInputPort("torque", systems::kVectorValued, num_joints_)
+          .get_index();
   this->DeclareAbstractOutputPort(&GripperCommandEncoder::OutputCommand);
 }
 
@@ -130,12 +136,16 @@ void GripperCommandEncoder::OutputCommand(
 
 GripperStatusDecoder::GripperStatusDecoder(int num_fingers) :
       num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
-  this->DeclareVectorOutputPort("state",
-      systems::BasicVector<double>(num_joints_ * 2),
-      &GripperStatusDecoder::OutputStateStatus);
-  this->DeclareVectorOutputPort("fingertip_force",
-      systems::BasicVector<double>(num_fingers_ * 2),
-      &GripperStatusDecoder::OutputForceStatus);
+  state_output_port_ =
+      this->DeclareVectorOutputPort(
+              "state", systems::BasicVector<double>(num_joints_ * 2),
+              &GripperStatusDecoder::OutputStateStatus)
+          .get_index();
+  force_output_port_ =
+      this->DeclareVectorOutputPort(
+              "fingertip_force", systems::BasicVector<double>(num_fingers_ * 2),
+              &GripperStatusDecoder::OutputForceStatus)
+          .get_index();
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
       Value<lcmt_planar_gripper_status>{});
@@ -193,9 +203,13 @@ void GripperStatusDecoder::OutputForceStatus(
 
 GripperStatusEncoder::GripperStatusEncoder(int num_fingers)
     : num_fingers_(num_fingers), num_joints_(num_fingers * 2) {
-  this->DeclareInputPort("state", systems::kVectorValued, num_joints_ * 2);
-  this->DeclareInputPort("fingertip_force", systems::kVectorValued,
-                         num_fingers_ * 2);
+  state_input_port_ =
+      this->DeclareInputPort("state", systems::kVectorValued, num_joints_ * 2)
+          .get_index();
+  force_input_port_ =
+      this->DeclareInputPort("fingertip_force", systems::kVectorValued,
+                             num_fingers_ * 2)
+          .get_index();
   this->DeclareAbstractOutputPort(&GripperStatusEncoder::MakeOutputStatus,
                                   &GripperStatusEncoder::OutputStatus);
 }
@@ -228,6 +242,8 @@ void GripperStatusEncoder::OutputStatus(
         state_value(num_joints_ + st_index);
     output->finger_status[i].joint_velocity[1] =
         state_value(num_joints_ + st_index + 1);
+    output->finger_status[i].fingertip_force.timestamp =
+        context.get_time() * 1e3;
     output->finger_status[i].fingertip_force.fy = force_value(st_index);
     output->finger_status[i].fingertip_force.fz = force_value(st_index + 1);
 

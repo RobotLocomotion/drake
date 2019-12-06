@@ -21,6 +21,9 @@ namespace drake {
 namespace examples {
 namespace planar_gripper {
 
+using systems::OutputPortIndex;
+using systems::InputPortIndex;
+
 // By default the planar gripper has 3 fingers.
 constexpr int kGripperDefaultNumFingers = 3;
 
@@ -32,8 +35,9 @@ constexpr double kGripperLcmStatusPeriod = 0.010;
 /// This system has one abstract valued input port which expects a
 /// Value object templated on type `lcmt_planar_gripper_command`.
 ///
-/// This system has a single output port which reports the commanded position
-/// and velocity for all joints.
+/// This system has two output ports. The first reports the commanded position
+/// and velocity for all joints, and the second reports the commanded joint
+/// torques.
 class GripperCommandDecoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandDecoder)
@@ -51,6 +55,14 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
       systems::Context<double>* context,
       const Eigen::Ref<const VectorX<double>> x) const;
 
+  const systems::OutputPort<double>& get_state_output_port() const {
+    return this->get_output_port(state_output_port_);
+  }
+
+  const systems::OutputPort<double>& get_torques_output_port() const {
+    return this->get_output_port(torques_output_port_);
+  }
+
  private:
   void OutputStateCommand(const systems::Context<double>& context,
                      systems::BasicVector<double>* output) const;
@@ -65,12 +77,15 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
 
   const int num_fingers_;
   const int num_joints_;
+  OutputPortIndex state_output_port_{};
+  OutputPortIndex torques_output_port_{};
 };
 
 /// Creates and outputs lcmt_planar_gripper_command messages
 ///
-/// This system has one vector-valued input port containing the
-/// desired position and velocity or torque, depending on the mode of control.
+/// This system has two vector-valued input ports containing the
+/// desired position and velocity in the first port, and commanded torque on the
+/// second port.
 ///
 /// This system has one abstract valued output port that contains a
 /// Value object templated on type `lcmt_planar_gripper_command`. Note
@@ -86,12 +101,22 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
   /// @param num_joints The total number of joints across all fingers.
   explicit GripperCommandEncoder(int num_fingers = kGripperDefaultNumFingers);
 
+  const systems::InputPort<double>& get_state_input_port() const {
+    return this->get_input_port(state_input_port_);
+  }
+
+  const systems::InputPort<double>& get_torques_input_port() const {
+    return this->get_input_port(torques_input_port_);
+  }
+
  private:
   void OutputCommand(const systems::Context<double>& context,
                      lcmt_planar_gripper_command* output) const;
 
   const int num_fingers_;
   const int num_joints_;
+  InputPortIndex state_input_port_{};
+  InputPortIndex torques_input_port_{};
 };
 
 /// Handles lcmt_planar_gripper_status messages from a LcmSubscriberSystem.
@@ -99,8 +124,8 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
 /// This system has one abstract valued input port which expects a
 /// Value object templated on type `lcmt_planar_gripper_status`.
 ///
-/// This system has one vector valued output port which reports
-/// measured position and velocity for each joint.
+/// This system has two vector valued output ports which report
+/// measured position and velocity (state) as well as fingertip forces (fy, fz).
 ///
 /// All ports will continue to output their initial state (typically
 /// zero) until a message is received.
@@ -110,6 +135,14 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
 
   /// @param num_joints The total number of joints across all fingers.
   explicit GripperStatusDecoder(int num_fingers = kGripperDefaultNumFingers);
+
+  const systems::OutputPort<double>& get_state_output_port() const {
+    return this->get_output_port(state_output_port_);
+  }
+
+  const systems::OutputPort<double>& get_force_output_port() const {
+    return this->get_output_port(force_output_port_);
+  }
 
  private:
   void OutputStateStatus(const systems::Context<double>& context,
@@ -125,12 +158,14 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
 
   const int num_fingers_;
   const int num_joints_;
+  OutputPortIndex state_output_port_{};
+  OutputPortIndex force_output_port_{};
 };
 
 /// Creates and outputs lcmt_planar_gripper_status messages.
 ///
-/// This system has one vector-valued input port containing the
-/// current position and velocity.
+/// This system has two vector-valued input ports containing the
+/// current position and velocity (state) as well as fingertip forces (fy, fz).
 ///
 /// This system has one abstract valued output port that contains a
 /// Value object templated on type `lcmt_planar_gripper_status`. Note that this
@@ -145,6 +180,14 @@ class GripperStatusEncoder : public systems::LeafSystem<double> {
   /// @param num_joints The total number of joints across all fingers.
   explicit GripperStatusEncoder(int num_fingers = kGripperDefaultNumFingers);
 
+  const systems::InputPort<double>& get_state_input_port() const {
+    return this->get_input_port(state_input_port_);
+  }
+
+  const systems::InputPort<double>& get_force_input_port() const {
+    return this->get_input_port(force_input_port_);
+  }
+
  private:
   // This is the method to use for the output port allocator.
   lcmt_planar_gripper_status MakeOutputStatus() const;
@@ -155,6 +198,8 @@ class GripperStatusEncoder : public systems::LeafSystem<double> {
 
   const int num_fingers_;
   const int num_joints_;
+  systems::InputPortIndex state_input_port_{};
+  systems::InputPortIndex force_input_port_{};
 };
 
 }  // namespace planar_gripper
