@@ -162,22 +162,22 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 
   // Compute the Jacobian.
 
-  // Define x' = (qⁿ + h N(qₖ) v, y), to compute the baseline l(y), and then
-  // reuse x' = (qⁿ + h N(qₖ) v', y') to compute each prime l(y')
+  // Define x' = (qⁿ + h N(qₖ) v, y), to compute the baseline lₖ(y), and then
+  // reuse x' = (qⁿ + h N(qₖ) v', y') to compute each prime lₖ(y')
   VectorX<T> x_prime = x;
   Eigen::Ref<VectorX<T>> q_prime = x_prime.head(nq);
   Eigen::Ref<VectorX<T>> v_prime = x_prime.segment(nq, nv);
   Eigen::Ref<VectorX<T>> y_prime = x_prime.tail(ny);
   q_prime = qt0_plus_hNv;
 
-  // Initialize the finite-difference baseline, l(y), by
-  //  evaluating the context at l(y) = f(t, qⁿ + h N(qₖ) v, y) = f(t,x).
+  // Initialize the finite-difference baseline, lₖ(y), by
+  //  evaluating the context at lₖ(y) = f(t, qⁿ + h N(qₖ) v, y) = f(t,x).
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
       .SetFromVector(q_prime);
   const VectorX<T> l_of_y = this->EvalTimeDerivatives(*context).CopyToVector();
 
-  // Now evaluate each l(y') where y' modifies one value of y at a time
+  // Now evaluate each lₖ(y') where y' modifies one value of y at a time
   for (int j = 0; j < ny; ++j) {
     // Compute a good increment, δy(j), to dimension j of y using approximately
     // log(1/√ε) digits of precision. Note that if |yⱼ| is large, the increment
@@ -207,7 +207,7 @@ void SecondOrderImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     // TODO(sherm1) This is invalidating q, v, and z but we only changed a
     //              subset. Switch to a method that invalides just the relevant
     //              partition, and ideally modify only the changed elements.
-    // Compute l(y') and set the relevant column of the Jacobian matrix.
+    // Compute lₖ(y') and set the relevant column of the Jacobian matrix.
     context->SetTimeAndContinuousState(t, x_prime);
     Jv->col(j) =
         (this->EvalTimeDerivatives(*context).CopyToVector() - l_of_y).tail(ny) /
@@ -306,7 +306,7 @@ void SecondOrderImplicitEulerIntegrator<T>::CalcVelocityJacobian(
 ///
 /// @param t the time at which to compute the Jacobian.
 /// @param xt the continuous state at which the Jacobian is computed.
-/// @param qt0 the generalized position state at the beginning of the step
+/// @param qt0 the generalized position at the beginning of the step
 /// @param h the integration step size
 /// @param trial which trial (1-4) the Newton-Raphson process is in when
 ///        calling this method.
@@ -402,7 +402,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
 ///       the original position. This might invalidate some caches that depend
 ///       on the position.
 template <class T>
-VectorX<T> SecondOrderImplicitEulerIntegrator<T>::ResidualR(
+VectorX<T> SecondOrderImplicitEulerIntegrator<T>::ComputeResidualR(
     const VectorX<T>& qt0, const VectorX<T>& yt0, const T& h) {
   Context<T>* context = this->get_mutable_context();
   const systems::ContinuousState<T>& cstate = context->get_continuous_state();
@@ -443,7 +443,7 @@ VectorX<T> SecondOrderImplicitEulerIntegrator<T>::ResidualR(
 /// @param xtplus_guess the starting guess for x(t0+h).
 /// @param [out] xtplus the computed value for `x(t0+h)` on successful return.
 /// @param [in, out] iteration_matrix the cached iteration matrix
-/// @param [in, out] iteration_matrix the cached velocity Jacobian
+/// @param [in, out] Jv the cached velocity Jacobian
 /// @param trial the attempt for this approach (1-4). StepImplicitEuler() uses
 ///        more computationally expensive methods as the trial numbers
 ///        increase.
@@ -467,9 +467,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
   DRAKE_ASSERT(xtplus != nullptr && xtplus->size() == xt0.size() &&
                xtplus_guess.size() == xt0.size());
 
+  // Initialize xtplus to the guess
   *xtplus = xtplus_guess;
 
-  // set up a residual evaluator called velocity_residual_R
   Context<T>* context = this->get_mutable_context();
   const systems::ContinuousState<T>& cstate = context->get_continuous_state();
   int nq = cstate.num_q();
@@ -477,16 +477,9 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
   int nz = cstate.num_z();
   const auto& qt0 = xt0.head(nq);
   const auto& yt0 = xt0.tail(nv + nz);
-  // const Vector<T>& doesn't keep a live reference (it forces eigen to copy
-  // it),
-  //   so use Eigen::Ref to refer to qtplus
+
+  // Define references to q, y, v, and z portions of xtplus for readibility.
   Eigen::Ref<VectorX<T>> qtplus = xtplus->head(nq);
-  // this reference is just for readibility: qk is qtplus.
-  // const auto& qk = qtplus;
-
-  // Note: velocity_residual_R iterates qk into q_k+1.
-
-  // references to y, v, and z portions of xtplus for readibility
   Eigen::Ref<VectorX<T>> ytplus = xtplus->tail(nv + nz);
   const auto& vtplus = xtplus->segment(nq, nv);
   const auto& ztplus = xtplus->tail(nz);
@@ -496,7 +489,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
   // convergence.
   VectorX<T> last_qtplus = qtplus;
 
-  // Initialize the vector for qdot
+  // Initialize the vector for qdot.
   BasicVector<T> qdot(nq);
 
   // Advance the context time and state to compute derivatives at t0 + h.
@@ -508,24 +501,25 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
   VectorX<T> dx(xt0.size());
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Refresh Jacobians and iteration matrices.
-
-  // Full Newton: Calculate Jacobian and iteration matrices (and
-  // factorizations), as needed, around (tf, xtplus).
+  // Refresh Jacobian and iteration matrices (and factorizations),
+  // as needed, around (t0, xt0).
 #ifdef FULL_NEWTON
   // Set the trial number to 3 to force a Jacobian recomputation.
   if (trial < 3) trial = 3;
-#endif
   if (!this->MaybeFreshenVelocityMatrices(
           tf, *xtplus, qt0, h, trial,
+#else
+  if (!this->MaybeFreshenVelocityMatrices(
+          t0, xt0, qt0, h, trial,
+#endif
           ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix, Jv)) {
     return false;
   }
 
-  // Evaluate the residual error for equation (11) from Ante's doc:
-  // (I - h Jₗₖ) Δy = yⁿ - yₖ + h lₖ(yₖ), Δy = yₖ₊₁ - yₖ
-  // This also updates q by one explicit iteration.
-  VectorX<T> residual = ResidualR(qt0, yt0, h);
+  // Evaluate the residual error, which is the negation of the RHS of the update
+  // equation:
+  //     (I - h Jₗₖ) Δy = yⁿ - yₖ + h lₖ(yₖ), Δy = yₖ₊₁ - yₖ
+  VectorX<T> residual = ComputeResidualR(qt0, yt0, h);
 
   int num_nr_iterations_at_beginning = num_nr_iterations_;
 
@@ -534,35 +528,31 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
-    // Compute the state update using the equation A*y = -r(), where A is the
+    // Compute the state update using the equation A*y = -R(), where A is the
     // iteration matrix.
     const VectorX<T> dy = iteration_matrix->Solve(-residual);
 
+    // When dy is 0, we exit because the implicit step no longer provides any
+    // improvement; this is necessary because if dq = 0 as well after it
+    // converges, we will have theta = nan in the next iteration, which will
+    // fail to trigger the divergence check.
     if (i > 0 && this->IsUpdateZero(ytplus, dy)) return true;
-    // Update the y portion of xtplus
+
+    // Update the y portion of xtplus.
     ytplus += dy;
 
-    // assuming context has the last qk, evaluate N(qk) and update q
-    // In reality we iterate q twice: once here and once in
-    // velocity_residual_R().
-
+    // Update the q portion of xtplus. Note that at this point, the context has
+    // its position q equal to qtplus = qₖ, because ComputeResidualR was the
+    // last function to modify the context. This means that we can directly call
+    // MapVelocityToQDot on the context, which will evaluate N(qₖ).
     system.MapVelocityToQDot(*context, vtplus, &qdot);
-    // last_qtplus = qtplus;
-    // Update the q portion of xtplus
     qtplus = qt0 + h * qdot.get_value();
-    // qtplus = context->get_continuous_state()
-    //             .get_generalized_position()
-    //             .CopyToVector();
     dx << qtplus - last_qtplus, dy;
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
-    // update the context
-    // auto vzvectors = context->GetMutableVZVectors();
-    // vzvectors.first->SetFromVector(vtplus);
-    // vzvectors.second->SetFromVector(ztplus);
     context->SetTimeAndContinuousState(tf, *xtplus);
 
     // Compute the convergence rate and check convergence.
@@ -607,7 +597,7 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepImplicitEuler(
       return false;
     }
 #endif
-    residual = ResidualR(qt0, yt0, h);
+    residual = ComputeResidualR(qt0, yt0, h);
   }
 
   DRAKE_LOGGER_DEBUG("SOIE convergence failed");
@@ -647,13 +637,16 @@ bool SecondOrderImplicitEulerIntegrator<T>::StepHalfImplicitEulers(
       this->get_num_newton_raphson_iterations_that_end_in_failure();
   int stored_num_nr_failures = this->get_num_newton_raphson_failures();
 
-  bool success = StepImplicitEuler(t0, 0.5 * h, xt0, 0.5 * (xt0 + xtplus_guess),
-                                   xtplus, iteration_matrix, Jv);
+  // We set our guess for the state after a half-step to the average of the
+  // guess for the final state, xtplus_guess, and the initial state, xt0.
+  const VectorX<T> xthalf_guess = 0.5 * (xt0 + xtplus_guess);
+  bool success = StepImplicitEuler(t0, 0.5 * h, xt0, xthalf_guess, xtplus,
+                                   iteration_matrix, Jv);
   if (!success) {
     DRAKE_LOGGER_DEBUG("First Half SOIE convergence failed");
   } else {
     // set new xt0 to xthalf
-    VectorX<T> xthalf = *xtplus;
+    const VectorX<T> xthalf = *xtplus;
     success = StepImplicitEuler(t0 + 0.5 * h, 0.5 * h, xthalf, xthalf, xtplus,
                                 iteration_matrix, Jv);
     if (!success) {
@@ -794,7 +787,8 @@ bool SecondOrderImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(
     }
   }
 
-  // Compute and update the error estimate.
+  // Compute and update the error estimate. IntegratorBase will use the norm of
+  // this vector to adjust step size.
   err_est_vec_ = (xtplus_ie_ - xtplus_hie_);
 
   // Update the caller-accessible error estimate.
