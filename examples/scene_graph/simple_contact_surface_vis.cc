@@ -11,6 +11,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/value.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -51,6 +52,7 @@ using geometry::GeometryInstance;
 using geometry::AddRigidHydroelasticProperties;
 using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
+using geometry::Mesh;
 using geometry::ProximityProperties;
 using geometry::QueryObject;
 using geometry::SceneGraph;
@@ -70,10 +72,10 @@ using systems::lcm::LcmPublisherSystem;
 using systems::LeafSystem;
 using systems::Simulator;
 
-DEFINE_double(simulation_time, 10.0,
+DEFINE_double(simulation_time, 100.0,
               "Desired duration of the simulation in seconds.");
 DEFINE_bool(real_time, true, "Set to false to run as fast as possible");
-DEFINE_double(length, 1.0,
+DEFINE_double(length, 2.0,
               "Measure of sphere edge length -- smaller numbers produce a "
               "denser, more expensive mesh");
 
@@ -243,11 +245,13 @@ int do_main() {
   SourceId source_id = scene_graph.RegisterSource("world");
   const double edge_len = 10;
   const RigidTransformd X_WB(Eigen::AngleAxisd(M_PI / 4, Vector3d::UnitX()),
-      Vector3d{0, 0, -sqrt(2.0) * edge_len / 2});
+      Vector3d{0, 1.5, 0.0});
+  std::string rings_absolute_path =
+    FindResourceOrThrow("drake/examples/scene_graph/planet_rings.obj");
   GeometryId ground_id = scene_graph.RegisterAnchoredGeometry(
       source_id,
       make_unique<GeometryInstance>(
-          X_WB, make_unique<Box>(edge_len, edge_len, edge_len), "box"));
+          X_WB, make_unique<Mesh>(rings_absolute_path, 1.0), "rings"));
   ProximityProperties rigid_props;
   // A rigid hydroelastic geometry must have an infinite elastic modulus.
   rigid_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic,
@@ -255,7 +259,7 @@ int do_main() {
   AddRigidHydroelasticProperties(edge_len, &rigid_props);
   scene_graph.AssignRole(source_id, ground_id, rigid_props);
   IllustrationProperties illus_props;
-  illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 1.0});
+  illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 0.75});
   scene_graph.AssignRole(source_id, ground_id, illus_props);
 
   // Make and visualize contacts.
@@ -279,8 +283,8 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram);
 
-  simulator.get_mutable_integrator().set_maximum_step_size(0.002);
-  simulator.set_target_realtime_rate(FLAGS_real_time ? 1.f : 0.f);
+  simulator.get_mutable_integrator().set_maximum_step_size(0.0002);
+  simulator.set_target_realtime_rate(FLAGS_real_time ? 0.1f : 0.f);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);
   return 0;

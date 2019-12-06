@@ -294,6 +294,11 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
+/** Rigid mesh support. The ('hydroelastic', 'resolution_hint') property
+ is not used.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+     const Mesh& mesh, const ProximityProperties& props);
+
 /** Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>

@@ -18,6 +18,11 @@ void AddRigidHydroelasticProperties(double resolution_hint,
   properties->AddProperty(kHydroGroup, kRezHint, resolution_hint);
 }
 
+void AddRigidHydroelasticProperties(ProximityProperties* properties) {
+  const double resolution_hint = 1.0;
+  AddRigidHydroelasticProperties(resolution_hint, properties);
+}
+
 void AddSoftHydroelasticProperties(double resolution_hint,
                                    ProximityProperties* properties) {
   DRAKE_DEMAND(properties);

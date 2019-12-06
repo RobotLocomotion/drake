@@ -156,6 +156,27 @@ struct ReifyData {
   const ProximityProperties& properties;
 };
 
+// Small class for identifying mesh geometries. Unlike other kinds of
+// geometries, meshes are supported only in ComputeContactSurfaces but
+// not other proximity queries.
+class MeshIdentifier final : public ShapeReifier {
+ public:
+  bool is_mesh() const { return is_mesh_; }
+
+  // Implementation of ShapeReifier interface.
+  using ShapeReifier::ImplementGeometry;
+  void ImplementGeometry(const Sphere&, void*) final {}
+  void ImplementGeometry(const Cylinder&, void*) final {}
+  void ImplementGeometry(const Ellipsoid&, void*) final {}
+  void ImplementGeometry(const HalfSpace&, void*) final {}
+  void ImplementGeometry(const Box&, void*) final {}
+  void ImplementGeometry(const Capsule&, void*) final {}
+  void ImplementGeometry(const Mesh&, void*) final { is_mesh_ = true; }
+  void ImplementGeometry(const Convex&, void*) final {}
+
+ private:
+  bool is_mesh_{false};
+};
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -172,6 +193,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     dynamic_objects_.clear();
     anchored_tree_.clear();
     anchored_objects_.clear();
+    dynamic_mesh_tree_.clear();
+    dynamic_mesh_objects_.clear();
+    anchored_mesh_tree_.clear();
+    anchored_mesh_objects_.clear();
 
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
@@ -180,10 +205,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
                           &object_map);
+    CopyFclObjectsOrThrow(other.anchored_mesh_objects_, &anchored_mesh_objects_,
+                          &object_map);
+    CopyFclObjectsOrThrow(other.dynamic_mesh_objects_, &dynamic_mesh_objects_,
+                          &object_map);
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
     BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
+    BuildTreeFromReference(other.dynamic_mesh_tree_, object_map,
+                           &dynamic_mesh_tree_);
+    BuildTreeFromReference(other.anchored_mesh_tree_, object_map,
+                           &anchored_mesh_tree_);
+
     collision_filter_ = other.collision_filter_;
   }
 
@@ -206,11 +240,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
                           &object_map);
+    CopyFclObjectsOrThrow(anchored_mesh_objects_,
+                          &engine->anchored_mesh_objects_, &object_map);
+    CopyFclObjectsOrThrow(dynamic_mesh_objects_, &engine->dynamic_mesh_objects_,
+                          &object_map);
     engine->collision_filter_ = this->collision_filter_;
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
     BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
+    BuildTreeFromReference(dynamic_mesh_tree_, object_map,
+                           &engine->dynamic_mesh_tree_);
+    BuildTreeFromReference(anchored_mesh_tree_, object_map,
+                           &engine->anchored_mesh_tree_);
 
     return engine;
   }
@@ -219,10 +261,18 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           const ProximityProperties& props) {
     ReifyData data{nullptr, id, props};
     shape.Reify(this, &data);
-    dynamic_tree_.registerObject(data.fcl_object.get());
     EncodedData encoding(id, true /* is dynamic */);
     encoding.write_to(data.fcl_object.get());
-    dynamic_objects_[id] = std::move(data.fcl_object);
+
+    MeshIdentifier mesh_identifier;
+    shape.Reify(&mesh_identifier);
+    if (!mesh_identifier.is_mesh()) {
+      dynamic_tree_.registerObject(data.fcl_object.get());
+      dynamic_objects_[id] = std::move(data.fcl_object);
+    } else {
+      dynamic_mesh_tree_.registerObject(data.fcl_object.get());
+      dynamic_mesh_objects_[id] = std::move(data.fcl_object);
+    }
 
     collision_filter_.AddGeometry(encoding.encoding());
   }
@@ -233,32 +283,55 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     shape.Reify(this, &data);
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
     data.fcl_object->computeAABB();
-    anchored_tree_.registerObject(data.fcl_object.get());
-    anchored_tree_.update();
     EncodedData encoding(id, false /* is dynamic */);
     encoding.write_to(data.fcl_object.get());
-    anchored_objects_[id] = std::move(data.fcl_object);
+
+    MeshIdentifier mesh_identifier;
+    shape.Reify(&mesh_identifier);
+    if (!mesh_identifier.is_mesh()) {
+      anchored_tree_.registerObject(data.fcl_object.get());
+      anchored_tree_.update();
+      anchored_objects_[id] = std::move(data.fcl_object);
+    } else {
+      anchored_mesh_tree_.registerObject(data.fcl_object.get());
+      anchored_mesh_tree_.update();
+      anchored_mesh_objects_[id] = std::move(data.fcl_object);
+    }
 
     collision_filter_.AddGeometry(encoding.encoding());
   }
 
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (is_dynamic) {
-      RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
+      if (dynamic_objects_.find(id) != dynamic_objects_.end()) {
+        RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
+      } else {
+        RemoveGeometry(id, &dynamic_mesh_tree_, &dynamic_mesh_objects_);
+      }
     } else {
-      RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
+      if (anchored_objects_.find(id) != anchored_objects_.end()) {
+        RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
+      } else {
+        RemoveGeometry(id, &anchored_mesh_tree_, &anchored_mesh_objects_);
+      }
     }
     hydroelastic_geometries_.RemoveGeometry(id);
   }
 
   int num_geometries() const {
-    return static_cast<int>(dynamic_objects_.size() + anchored_objects_.size());
+    return static_cast<int>(dynamic_objects_.size() + anchored_objects_.size() +
+                            dynamic_mesh_objects_.size() +
+                            anchored_mesh_objects_.size());
   }
 
-  int num_dynamic() const { return static_cast<int>(dynamic_objects_.size()); }
+  int num_dynamic() const {
+    return static_cast<int>(dynamic_objects_.size() +
+                            dynamic_mesh_objects_.size());
+  }
 
   int num_anchored() const {
-    return static_cast<int>(anchored_objects_.size());
+    return static_cast<int>(anchored_objects_.size() +
+                            anchored_mesh_objects_.size());
   }
 
   void set_distance_tolerance(double tol) { distance_tolerance_ = tol; }
@@ -281,6 +354,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       dynamic_objects_[id]->computeAABB();
     }
     dynamic_tree_.update();
+
+    for (const auto& id_object_pair : dynamic_mesh_objects_) {
+      const GeometryId id = id_object_pair.first;
+      const RigidTransform<T>& X_WG = X_WGs.at(id);
+      // The FCL broadphase requires double-valued poses; so we use ADL to
+      // efficiently get double-valued poses out of arbitrary T-valued poses.
+      dynamic_mesh_objects_[id]->setTransform(
+          convert_to_double(X_WG).GetAsIsometry3());
+      dynamic_mesh_objects_[id]->computeAABB();
+    }
+    dynamic_mesh_tree_.update();
   }
 
   // Implementation of ShapeReifier interface
@@ -347,16 +431,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessHydroelastic(capsule, user_data);
   }
 
-  void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // TODO(SeanCurtis-TRI): When meshes are supported for hydroelastic contact,
-    //  remove this throw and replace it with a one-time warning that meshes are
-    //  only supported for hydroelastic contact (and no other proximity
-    //  queries). Also update the test in proximity_engine_test.cc for
-    //  GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties).
-    ProcessHydroelastic(mesh, user_data);
-    throw std::domain_error("The proximity engine does not support meshes yet");
-  }
-
   //
   // Convert vertices from tinyobj format to FCL format.
   //
@@ -386,6 +460,60 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
 
     return vertices;
+  }
+
+  // Convert Mesh specification to fcl representation and hydroelastic
+  // representation. The fcl representation of the mesh is a box for
+  // broadphase culling because meshes are not supported in other proximity
+  // queries except ComputeContactSurfaces.
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override {
+    static const logging::Warn log_once(
+        "Mesh is only for ComputeContactSurfaces in hydroelastic contact "
+        "model. It is _not_ available in other proximity queries: ({})",
+        mesh.filename());
+
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+    // We keep polygonal faces without triangulating them. They are not used.
+    bool do_tinyobj_triangulation = false;
+
+    // Tinyobj doesn't infer the search directory from the directory containing
+    // the obj file. We have to provide that directory; of course, this assumes
+    // that the material library reference is relative to the obj directory.
+    const size_t pos = mesh.filename().find_last_of('/');
+    const std::string obj_folder = mesh.filename().substr(0, pos + 1);
+    const char* mtl_basedir = obj_folder.c_str();
+
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+                                mesh.filename().c_str(), mtl_basedir,
+                                do_tinyobj_triangulation);
+    if (!ret || !err.empty()) {
+      throw std::runtime_error("Error parsing file '" + mesh.filename() +
+          "' : " + err);
+    }
+    if (shapes.size() != 1) {
+      throw std::runtime_error("For Mesh geometry, the .obj file must have "
+                               "one and only one object defined in it.");
+    }
+
+    auto vertices = TinyObjToFclVertices(attrib, mesh.scale());
+    Vector3d min_vertex, max_vertex;
+    min_vertex.setConstant(std::numeric_limits<double>::max());
+    max_vertex.setConstant(std::numeric_limits<double>::lowest());
+    for (const auto& vertex : vertices) {
+      min_vertex = min_vertex.cwiseMin(vertex);
+      max_vertex = max_vertex.cwiseMax(vertex);
+    }
+
+    // We will create fcl::Boxd that bounds the mesh for broadphase culling.
+    // There are two reasons to use Boxd. First it is lightweight. Second
+    // there is no fcl::Meshd.
+    Vector3d box_size = max_vertex - min_vertex;
+    auto fcl_box = make_shared<fcl::Boxd>(box_size);
+    TakeShapeOwnership(fcl_box, user_data);
+    ProcessHydroelastic(mesh, user_data);
   }
 
   //
@@ -662,6 +790,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
         &data, hydroelastic::Callback<T>);
+
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_mesh_tree_),
+        &data, hydroelastic::Callback<T>);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &dynamic_mesh_tree_),
+        &data, hydroelastic::Callback<T>);
+
+    dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
+    dynamic_mesh_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, hydroelastic::Callback<T>);
+    dynamic_mesh_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_mesh_tree_),
+        &data, hydroelastic::Callback<T>);
+
     return surfaces;
   }
 
@@ -786,42 +934,67 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                test.getAABB().height() == ref.getAABB().height() &&
                test.getAABB().depth() == ref.getAABB().depth();
       };
-      bool is_copy = true;
-      is_copy = is_copy &&
-                this->dynamic_objects_.size() == other.dynamic_objects_.size();
-      is_copy =
-          is_copy &&
-          this->anchored_objects_.size() == other.anchored_objects_.size();
-      if (is_copy) {
-        for (const auto& id_object_pair : this->dynamic_objects_) {
-          const GeometryId test_id = id_object_pair.first;
-          const CollisionObjectd& test_object = *id_object_pair.second;
-          const CollisionObjectd& ref_object =
-              *other.dynamic_objects_.at(test_id);
-          is_copy = is_copy && ValidateObject(test_object, ref_object);
-        }
-        for (const auto& id_object_pair : this->anchored_objects_) {
-          const GeometryId test_id = id_object_pair.first;
-          const CollisionObjectd& test_object = *id_object_pair.second;
-          const CollisionObjectd& ref_object =
-              *other.anchored_objects_.at(test_id);
-          is_copy = is_copy && ValidateObject(test_object, ref_object);
-        }
-      }
-      return is_copy;
-    }
 
+      auto IsObjectInAnotherMap =
+          [&ValidateObject](
+              const std::pair<const GeometryId, unique_ptr<CollisionObjectd>>&
+                  id_object_pair,
+              const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
+                  another_map) -> bool {
+        const GeometryId test_id = id_object_pair.first;
+        const CollisionObjectd& test_object = *id_object_pair.second;
+        const CollisionObjectd& ref_object = *another_map.at(test_id);
+        return ValidateObject(test_object, ref_object);
+      };
+
+      auto AreTwoMapsEqual =
+          [&IsObjectInAnotherMap](
+              const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
+                  one_map,
+              const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
+                  another_map) -> bool {
+        if (one_map.size() != another_map.size()) {
+          return false;
+        }
+        for (const auto& id_object_pair : one_map) {
+          if (!IsObjectInAnotherMap(id_object_pair, another_map)) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      if (!AreTwoMapsEqual(this->dynamic_objects_, other.dynamic_objects_)) {
+        return false;
+      }
+      if (!AreTwoMapsEqual(this->anchored_objects_, other.anchored_objects_)) {
+        return false;
+      }
+      if (!AreTwoMapsEqual(this->dynamic_mesh_objects_,
+                           other.dynamic_mesh_objects_)) {
+        return false;
+      }
+      if (!AreTwoMapsEqual(this->anchored_mesh_objects_,
+                           other.anchored_mesh_objects_)) {
+        return false;
+      }
+      return true;
+    }
     return false;
   }
 
   int peek_next_clique() const { return collision_filter_.peek_next_clique(); }
 
   const RigidTransformd GetX_WG(GeometryId id, bool is_dynamic) const {
-    if (is_dynamic) {
-      return RigidTransformd(dynamic_objects_.at(id)->getTransform());
-    } else {
-      return RigidTransformd(anchored_objects_.at(id)->getTransform());
-    }
+    const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>& objects =
+        is_dynamic ? (dynamic_objects_.find(id) != dynamic_objects_.end())
+                         ? dynamic_objects_
+                         : dynamic_mesh_objects_
+                   : (anchored_objects_.find(id) != anchored_objects_.end())
+                         ? anchored_objects_
+                         : anchored_mesh_objects_;
+
+    return RigidTransformd(objects.at(id)->getTransform());
   }
 
   const hydroelastic::Geometries& hydroelastic_geometries() const {
@@ -889,6 +1062,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // All of the hydroelastic representations of supported geometries -- this
   // can get quite large based on mesh resolution.
   hydroelastic::Geometries hydroelastic_geometries_;
+
+  fcl::DynamicAABBTreeCollisionManager<double> dynamic_mesh_tree_;
+  unordered_map<GeometryId, unique_ptr<CollisionObjectd>> dynamic_mesh_objects_;
+  fcl::DynamicAABBTreeCollisionManager<double> anchored_mesh_tree_;
+  unordered_map<GeometryId, unique_ptr<CollisionObjectd>>
+      anchored_mesh_objects_;
 };
 
 template <typename T>

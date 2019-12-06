@@ -181,12 +181,16 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kRigid);
   }
 
-  // TODO(SeanCurtis-TRI): Add test for rigid mesh when ProximityEngine no
-  //  longer blindly throws. See note in proximity_engine.cc:
-  //  ImplementGeometry(Mesh).
-
-  // Case: meshes. Not tested because currently, proximity engine throws at
-  // any attempt to add one.
+  // Case: meshes.
+  {
+    Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
+        edge_length};
+    const GeometryId mesh_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(mesh, mesh_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
+              HydroelasticType::kRigid);
+  }
 
   // Case: rigid convex (unsupported)
   {
@@ -3581,27 +3585,6 @@ TEST_F(BoxPenetrationTest, TangentProneCapsule1) {
 TEST_F(BoxPenetrationTest, TangentProneCapsule2) {
   // TODO(tehbelinda): We should check why we cannot use a smaller tolerance.
   TestCollision2(TangentProneCapsule, 1e-4);
-}
-
-// Attempting to add a dynamic Mesh should cause an abort.
-GTEST_TEST(ProximityEngineTests, AddDynamicMesh) {
-  ProximityEngine<double> engine;
-  Mesh mesh{"invalid/path/thing.obj", 1.0};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddDynamicGeometry(mesh, GeometryId::get_new_id()),
-      std::exception,
-      ".*The proximity engine does not support meshes yet.*");
-}
-
-// Attempting to add a anchored Mesh should cause an abort.
-GTEST_TEST(ProximityEngineTests, AddAnchoredMesh) {
-  ProximityEngine<double> engine;
-  Mesh mesh{"invalid/path/thing.obj", 1.0};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddAnchoredGeometry(mesh, RigidTransformd::Identity(),
-                                 GeometryId::get_new_id()),
-      std::exception,
-      ".*The proximity engine does not support meshes yet.*");
 }
 
 // This is a one-off test. Exposed in issue #10577. A point penetration pair
