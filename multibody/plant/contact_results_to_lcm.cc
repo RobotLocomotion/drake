@@ -101,12 +101,22 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     const geometry::SurfaceMesh<T>& mesh_W = contact_surface.mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
+    surface_msg.num_quadrature_points =
+        hydroelastic_contact_info.quadrature_point_data.size();
+    surface_msg.quadrature_point_data.resize(surface_msg.num_quadrature_points);
 
     write_double3(contact_surface.mesh_W().centroid(), surface_msg.centroid_W);
     write_double3(hydroelastic_contact_info.F_Ac_W().translational(),
                   surface_msg.force_C_W);
     write_double3(hydroelastic_contact_info.F_Ac_W().rotational(),
                   surface_msg.moment_C_W);
+
+    // Loop through all quadrature points on the contact surface.
+    lcmt_hydroelastic_quadature_point_data&
+    for (const auto& quadrature_point_data_i :
+         hydroelastic_contact_info.quadrature_point_data()) {
+
+    }
 
     // Loop through each contact triangle on the contact surface.
     for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {

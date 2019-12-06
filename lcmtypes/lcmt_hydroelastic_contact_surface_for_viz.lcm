@@ -22,4 +22,11 @@ struct lcmt_hydroelastic_contact_surface_for_viz {
 
   // The contact surface mesh and associated data.
   lcmt_hydroelastic_contact_surface_tri_for_viz triangles[num_triangles];
+
+  // The number of quadrature points.
+  int32_t num_quadrature_points;
+
+  // The quadrature point data.
+  lcmt_hydroelastic_quadrature_point_data_for_viz
+      quadrature_point_data[num_quadrature_points];
 }
