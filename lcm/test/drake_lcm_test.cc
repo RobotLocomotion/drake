@@ -211,6 +211,34 @@ TEST_F(DrakeLcmTest, QueueCapacityTest) {
   count = 0;
 }
 
+// Tests that upstream LCM actually obeys the IP address in the URL.
+TEST_F(DrakeLcmTest, AddressFilterAcceptanceTest) {
+  const std::string channel_name = "DrakeLcmTest.AddressFilterAcceptanceTest";
+
+  // The device that should never receive any traffic.
+  dut_ = std::make_unique<DrakeLcm>(kUdpmUrl);
+  int count = 0;
+  auto subscription = dut_->Subscribe(channel_name, [&count](const void*, int) {
+    ++count;
+  });
+
+  // A crosstalker with the same port number but different address.
+  std::string crosstalk_url{kUdpmUrl};
+  const int port_number_sep = 20;
+  DRAKE_DEMAND(crosstalk_url.at(port_number_sep) == ':');
+  DRAKE_DEMAND(crosstalk_url.at(port_number_sep - 1) == '7');
+  crosstalk_url[port_number_sep - 1] = '8';
+  ASSERT_NE(crosstalk_url, kUdpmUrl);
+  auto crosstalker = std::make_unique<DrakeLcm>(crosstalk_url);
+
+  // Transmit on the crosstalker, should not receive on the dut.
+  for (int i = 0; i < 10; ++i) {
+    Publish(crosstalker.get(), channel_name, message_);
+    dut_->HandleSubscriptions(100 /* millis */);
+  }
+  EXPECT_EQ(count, 0);
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace drake
