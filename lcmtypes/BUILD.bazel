@@ -61,6 +61,15 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "call_python",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_call_python.lcm",
+        "lcmt_call_python_data.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "constrained_values",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_constrained_values.lcm"],
@@ -319,6 +328,7 @@ LCMTYPES_CC = [
     ":body_acceleration",
     ":body_motion_data",
     ":body_wrench_data",
+    ":call_python",
     ":constrained_values",
     ":contact_information",
     ":contact_results_for_viz",
