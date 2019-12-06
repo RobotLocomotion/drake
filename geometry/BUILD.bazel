@@ -291,6 +291,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/forbidden_two_cubes.obj",
+        "test/non_convex_mesh.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
@@ -355,6 +356,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_state_test",
+    data = [":test_obj_files"],
     deps = [
         ":geometry_state",
         "//common/test_utilities",

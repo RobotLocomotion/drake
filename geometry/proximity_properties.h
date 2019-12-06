@@ -64,6 +64,11 @@ extern const char* const kRezHint;         ///< Resolution hint property name.
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties);
 
+/** Overload, intended for shapes that don't get tessellated in their
+ hydroelastic representation (e.g., HalfSpace and Mesh),
+ see `@ref MODULE_NOT_WRITTEN_YET`.  */
+void AddRigidHydroelasticProperties(ProximityProperties* properties);
+
 // TODO(SeanCurtis-TRI): Add module that explains resolution hint and reference
 //  it in the documentation below.
 /** Adds properties to the given set of proximity properties sufficient to cause
