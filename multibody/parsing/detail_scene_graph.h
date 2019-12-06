@@ -107,22 +107,6 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
 
-// TODO(sam.creasey) Making this operate specifically on sdf::Visual
-// is overly specific since we're going to be parsing collision meshes
-// at some point.
-
-/** Given an sdf::Visual object representing a <visual> element from
- an SDF file, this method makes a new Visual object which resolves
- the uri for the mesh element, if present.  If the mesh element is
- not present, the new object will be identical to the original.
- See parsers::ResolveFilename() for more detail on this operation.
-
- @throws std::runtime_error if the <mesh> tag is present but
- missing <uri> or if the file referenced in <uri> can not be found.  */
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const multibody::PackageMap& package_map,
-                             const std::string& root_dir);
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
