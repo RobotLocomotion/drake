@@ -37,7 +37,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "@com_google_protobuf//:protobuf",
+        "@libprotobuf",
     ],
 )
 
@@ -74,25 +74,6 @@ drake_py_binary(
     ],
 )
 
-_UBSAN_H = "//third_party:com_github_google_protobuf/protobuf-ubsan-fixup.h"
-
-# This library is used by //tools/skylark:drake_proto.bzl.  Developers should
-# never need to mention it directly.  The source code is placed in third_party
-# because it is forked from protobuf upstream, and thus copyright by Google.
-cc_library(
-    name = "protobuf_ubsan_fixup",
-    hdrs = [_UBSAN_H],
-    include_prefix = "drake/common/proto",
-    strip_include_prefix = "/third_party/com_github_google_protobuf",
-    tags = [
-        # Developers should not use this directly.
-        "exclude_from_package",
-        # Don't install via cc_library; instead, rely on the :install rule
-        # below to handle the install path correctly.
-        "exclude_from_libdrake",
-    ],
-)
-
 drake_cc_library(
     name = "rpc_pipe_temp_directory",
     srcs = ["rpc_pipe_temp_directory.cc"],
@@ -102,14 +83,6 @@ drake_cc_library(
         "//common:essential",
         "//common:filesystem",
     ],
-)
-
-install(
-    name = "install",
-    hdrs = [_UBSAN_H],
-    hdr_dest = "include/drake/common/proto",
-    hdr_strip_prefix = ["com_github_google_protobuf"],
-    allowed_externals = [_UBSAN_H],
 )
 
 # === test/ ===

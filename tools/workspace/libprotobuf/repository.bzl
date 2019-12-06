@@ -5,8 +5,10 @@ load(
     "pkg_config_repository",
 )
 
-# Load in the paths and flags to the system version of the protobuf runtime;
-# in contrast, the Bazel build rules are loaded as @com_google_protobuf.
+# As of DRAKE_DEPRECATED 2020-02-01 this dependency will become unused by Drake
+# and therefore will be removed.
+
+# Load in the paths and flags to the system version of the protobuf runtime.
 
 def libprotobuf_repository(
         name,

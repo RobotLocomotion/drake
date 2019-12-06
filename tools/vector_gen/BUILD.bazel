@@ -21,15 +21,15 @@ load(
     "@drake//tools/skylark:drake_lcm.bzl",
     "drake_lcm_cc_library",
 )
-load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_py_proto_library",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_py_proto_library(
+# N.B. This library is DRAKE_DEPRECATED 2020-02-01 -- we've committed the
+# generated sources into git so that we can remove our protoc dependency.
+drake_py_library(
     name = "named_vector",
-    srcs = ["named_vector.proto"],
+    srcs = ["named_vector_pb2.py"],
+    tags = ["nolint"],
+    visibility = ["//visibility:private"],
 )
 
 drake_py_binary(
