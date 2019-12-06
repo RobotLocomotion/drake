@@ -374,6 +374,15 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_forward_dynamics_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_hydroelastic_test",
     deps = [
         ":plant",

@@ -51,6 +51,11 @@ using systems::State;
 
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
+using drake::multibody::internal::AccelerationKinematicsCache;
+using drake::multibody::internal::ArticulatedBodyForceBiasCache;
+using drake::multibody::internal::ArticulatedBodyInertiaCache;
+using drake::multibody::internal::PositionKinematicsCache;
+using drake::multibody::internal::VelocityKinematicsCache;
 using drake::multibody::MultibodyForces;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -1806,6 +1811,45 @@ void MultibodyPlant<T>::CalcTamsiResults(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache(
+    const systems::Context<T>& context,
+    ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+  DRAKE_DEMAND(aba_force_bias_cache != nullptr);
+
+  // Applied forces including force elements (function of state x) and external
+  // inputs u.
+  MultibodyForces<T> forces(*this);
+  CalcAppliedForces(context, &forces);
+
+  // Add the contribution of contact forces.
+  std::vector<SpatialForce<T>>& Fapp_BBo_W_array = forces.mutable_body_forces();
+  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
+      EvalSpatialContactForcesContinuous(context);
+  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
+    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
+
+  // Perform the tip-to-base pass to compute the force bias terms needed by ABA.
+  internal_tree().CalcArticulatedBodyForceBiasCache(context, forces,
+                                                    aba_force_bias_cache);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcForwardDynamics(
+    const systems::Context<T>& context,
+    AccelerationKinematicsCache<T>* ac) const {
+  DRAKE_DEMAND(ac != nullptr);
+
+  // Evaluate the ABA cache, function of state x and inputs u.
+  const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache =
+      EvalArticulatedBodyForceBiasCache(context);
+
+  // Perform the last base-to-tip pass to compute accelerations using the O(n)
+  // ABA.
+  internal_tree().CalcArticulatedBodyAccelerations(context,
+                                                   aba_force_bias_cache, ac);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedAccelerations(
     const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
   DRAKE_DEMAND(vdot != nullptr);
@@ -2361,6 +2405,31 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {dependency_ticket});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
+
+  // Articulated Body Algorithm (ABA) force bias cache.
+  auto& aba_force_bias_cache_entry = this->DeclareCacheEntry(
+      std::string("ABA force bias cache."),
+      ArticulatedBodyForceBiasCache<T>(internal_tree().get_topology()),
+      &MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache,
+      // ABA computes quantities such as Zplus which are needed for the
+      // computation of acceleration and thus depend on both state and inputs.
+      // All sources include: time, accuracy, state, input ports, and
+      // parameters.
+      {this->all_sources_ticket()});
+  cache_indexes_.aba_force_bias_cache =
+      aba_force_bias_cache_entry.cache_index();
+
+  // Last pass of the ABA for forward dynamics.
+  auto& aba_accelerations_cache_entry = this->DeclareCacheEntry(
+      std::string("ABA accelerations."),
+      AccelerationKinematicsCache<T>(internal_tree().get_topology()),
+      &MultibodyPlant<T>::CalcForwardDynamics,
+      // Accelerations depend on both state and inputs.
+      // All sources include: time, accuracy, state, input ports, and
+      // parameters.
+      {this->all_sources_ticket()});
+  cache_indexes_.aba_accelerations =
+      aba_accelerations_cache_entry.cache_index();
 
   // Cache generalized accelerations.
   auto& vdot_cache_entry = this->DeclareCacheEntry(
