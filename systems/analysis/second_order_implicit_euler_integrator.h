@@ -176,7 +176,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// @param xtplus_guess the starting guess for x(t0+h).
   /// @param [out] xtplus the computed value for `x(t0+h)` on successful return.
   /// @param [in, out] iteration_matrix the cached iteration matrix
-  /// @param [in, out] iteration_matrix the cached velocity Jacobian
+  /// @param [in, out] Jv the cached velocity Jacobian
   /// @param trial the attempt for this approach (1-4). StepImplicitEuler() uses
   ///        more computationally expensive methods as the trial numbers
   ///        increase.
@@ -270,7 +270,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   ///
   /// @param t the time at which to compute the Jacobian.
   /// @param xt the continuous state at which the Jacobian is computed.
-  /// @param qt0 the generalized position state at the beginning of the step
+  /// @param qt0 the generalized position at the beginning of the step
   /// @param h the integration step size
   /// @param trial which trial (1-4) the Newton-Raphson process is in when
   ///        calling this method.
@@ -308,7 +308,7 @@ class SecondOrderImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// @post The position of the context is first altered and then restored to
   ///       the original position. This might invalidate some caches that depend
   ///       on the position.
-  VectorX<T> ResidualR(const VectorX<T>& qt0, const VectorX<T>& yt0,
+  VectorX<T> ComputeResidualR(const VectorX<T>& qt0, const VectorX<T>& yt0,
                        const T& h);
 
   // The last computed iteration matrix and factorization; the _ie_ is for
