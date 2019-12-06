@@ -89,6 +89,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     const HydroelasticContactInfo<T>& hydroelastic_contact_info =
         contact_results.hydroelastic_contact_info(i);
+    const std::vector<HydroelasticQuadraturePointData<T>>&
+        quadrature_point_data =
+            hydroelastic_contact_info.quadrature_point_data();
 
     // Get the two body names.
     surface_msg.body1_name = geometry_id_to_body_name_map_.at(
@@ -101,8 +104,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     const geometry::SurfaceMesh<T>& mesh_W = contact_surface.mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
-    surface_msg.num_quadrature_points =
-        hydroelastic_contact_info.quadrature_point_data.size();
+    surface_msg.num_quadrature_points = quadrature_point_data.size();
     surface_msg.quadrature_point_data.resize(surface_msg.num_quadrature_points);
 
     write_double3(contact_surface.mesh_W().centroid(), surface_msg.centroid_W);
@@ -112,10 +114,14 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
                   surface_msg.moment_C_W);
 
     // Loop through all quadrature points on the contact surface.
-    lcmt_hydroelastic_quadature_point_data&
-    for (const auto& quadrature_point_data_i :
-         hydroelastic_contact_info.quadrature_point_data()) {
-
+    for (int j = 0; j < surface_msg.num_quadrature_points; ++j) {
+      lcmt_hydroelastic_quadrature_point_data_for_viz& quad_data_msg =
+          surface_msg.quadrature_point_data[j];
+      write_double3(quadrature_point_data[j].p_WQ, quad_data_msg.p_WQ);
+      write_double3(quadrature_point_data[j].vt_BqAq_W,
+                    quad_data_msg.vt_BqAq_W);
+      write_double3(quadrature_point_data[j].traction_Aq_W,
+                    quad_data_msg.traction_Aq_W);
     }
 
     // Loop through each contact triangle on the contact surface.
