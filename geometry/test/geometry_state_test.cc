@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -2836,23 +2837,26 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
   ASSERT_TRUE(expected_roles(world_id, 1, 1, 1));
 }
 
-// Confirms that assigning a proximity role to a mesh is a no-op. If it
-// *weren't* no-op, the ProximityEngine would abort; so not aborting is
-// correlated with its no-op-ness. This test will go away when meshes are fully
-// supported in collision.
+// Confirms that assigning a proximity role to a mesh will switch its
+// proximity role from false to true. Currently Mesh is supported in
+// ComputeContactSurfaces() but not in other proximity queries.  This test
+// will go away when meshes are fully supported in all proximity queries.
 TEST_F(GeometryStateTest, ProximityRoleOnMesh) {
   SetUpSingleSourceTree();
+
+  std::string file_name =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
 
   // Add a mesh to a frame.
   const GeometryId mesh_id = geometry_state_.RegisterGeometry(
       source_id_, frames_[0],
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                    make_unique<Mesh>("path", 1.0), "mesh"));
+                                    make_unique<Mesh>(file_name, 1.0), "mesh"));
   const InternalGeometry* mesh = gs_tester_.GetGeometry(mesh_id);
   ASSERT_NE(mesh, nullptr);
-  ASSERT_FALSE(mesh->has_proximity_role());
+  EXPECT_FALSE(mesh->has_proximity_role());
   geometry_state_.AssignRole(source_id_, mesh_id, ProximityProperties());
-  ASSERT_FALSE(mesh->has_proximity_role());
+  EXPECT_TRUE(mesh->has_proximity_role());
 }
 
 // Confirms that attempting to remove the "unassigned" role has no effect.

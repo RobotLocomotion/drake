@@ -26,6 +26,9 @@ using math::RigidTransformd;
 
 namespace {
 
+// TODO(DamrongGuoy): Refactor this function into detail_sdf_common.h/cc.
+//  It has a non-const version in detail_sdf_parser.cc.
+
 // Helper to return the child element of `element` named `child_name`.
 // Returns nullptr if not present.
 const sdf::Element* MaybeGetChildElement(
@@ -58,18 +61,6 @@ const sdf::Element& GetChildElementOrThrow(
   // guarantees "element" is not changed as promised by this method's
   // signature. See sdformat issue #188.
   return *const_cast<sdf::Element &>(element).GetElement(child_name);
-}
-
-// Helper to return the mutable child element of `element` named
-// `child_name`.  Returns nullptr if not present.
-sdf::Element* MaybeGetChildElement(
-    sdf::Element* element, const std::string &child_name) {
-  // First verify <child_name> is present (otherwise GetElement() has the
-  // side effect of adding new elements if not present!!).
-  if (element->HasElement(child_name)) {
-    return element->GetElement(child_name).get();
-  }
-  return nullptr;
 }
 
 // Helper to return the value of a child of `element` named `child_name`.
@@ -378,41 +369,6 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
       GetChildElementValueOrThrow<double>(ode_element, "mu2");
 
   return CoulombFriction<double>(static_friction, dynamic_friction);
-}
-
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const PackageMap& package_map,
-                             const std::string& root_dir) {
-  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
-  sdf::Element* geom_element =
-      MaybeGetChildElement(visual_element.get(), "geometry");
-  if (geom_element) {
-    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
-    if (mesh_element) {
-      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
-      if (uri_element) {
-        const std::string uri = uri_element->Get<std::string>();
-        const std::string resolved_name =
-            ResolveUri(uri, package_map, root_dir);
-        if (!resolved_name.empty()) {
-          uri_element->Set(resolved_name);
-        } else {
-          throw std::runtime_error(
-              std::string(__FILE__) + ": " + __func__ +
-              ": ERROR: Mesh file name could not be resolved from the "
-              "provided uri \"" + uri + "\".");
-        }
-      } else {
-        throw std::runtime_error(
-            std::string(__FILE__) + ": " + __func__ +
-            ": ERROR: <mesh> tag specified without <uri?>");
-      }
-    }
-  }
-
-  sdf::Visual visual;
-  visual.Load(visual_element);
-  return visual;
 }
 
 }  // namespace internal
