@@ -24,7 +24,7 @@ fi
 # TODO(jamiesnape): Remove two lines uninstalling dreal on or after 2020-02-01.
 brew uninstall --force dreal
 brew untap dreal/dreal &>/dev/null || true
-/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
+/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v /usr/local/bin/pip3 &>/dev/null; then
   echo 'ERROR: pip3 is NOT installed. The post-install step for the python formula may have failed.' >&2
