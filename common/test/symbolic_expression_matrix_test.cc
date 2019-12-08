@@ -552,6 +552,15 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
                               Substitute(M, subst).inverse(), 1e-10));
 }
 
+// We found that the following example could leak memory. This test makes sure
+// that we provide a correct work-around.
+// See https://github.com/RobotLocomotion/drake/issues/12453 for details.
+TEST_F(SymbolicExpressionMatrixTest, SparseMatrixMultiplicationNoMemoryLeak) {
+  Eigen::SparseMatrix<Expression> M1(2, 2);
+  Eigen::SparseMatrix<Expression> M2(2, 2);
+  (M1 * M2).eval();
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
