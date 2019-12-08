@@ -546,7 +546,11 @@ class Expression {
   friend class ExpressionPow;
 
  private:
+  // This is a helper function used to handle `Expression(double)` constructor.
+  static std::shared_ptr<ExpressionCell> make_cell(double d);
+
   explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+
   void HashAppend(DelegatingHasher* hasher) const;
 
   // Note: We use "non-const" ExpressionCell type. This allows us to perform
