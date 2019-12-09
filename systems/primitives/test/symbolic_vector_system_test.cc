@@ -15,9 +15,15 @@ namespace {
 using Eigen::Vector2d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+
+using symbolic::Environment;
 using symbolic::Expression;
+using symbolic::Polynomial;
 using symbolic::Variable;
+using symbolic::Variables;
 using symbolic::test::ExprEqual;
+using symbolic::test::PolyEqual;
+
 using Vector6d = Vector6<double>;
 
 class SymbolicVectorSystemTest : public ::testing::Test {
@@ -361,6 +367,102 @@ TEST_F(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
                       .get_value();
   EXPECT_TRUE(y[0].EqualTo(xc_[0] + uc_[0] + pc_[0]));
   EXPECT_TRUE(y[1].EqualTo(tc_));
+}
+
+TEST_F(SymbolicVectorSystemTest, LinearizeDynamics) {
+  // Create a system builder for the linearized pendulum model. Note that we
+  // provide a symbolic/parametric linearization point (x_lp, u_lp).
+
+  // state
+  const Variable theta{"theta"};
+  const Variable theta_dot{"theta_dot"};
+  const Vector2<Variable> x{theta, theta_dot};
+
+  // input
+  const Variable tau{"tau"};
+  const Vector1<Variable> u{tau};
+
+  // parameter
+  const Variable m{"m"};  // mass
+  const Variable g{"g"};  // gravity
+  const Variable l{"l"};  // length
+  const Variable b{"b"};  // damping
+  const Vector4<Variable> p{m, g, l, b};
+
+  // non-linear dynamics
+  const Vector2<Expression> dynamics{
+      theta_dot, (tau - m * g * l * sin(theta) - b * theta_dot) / (m * l * l)};
+
+  // Linearization Point
+  const Variable theta_lp{"theta_lp"};
+  const Variable theta_dot_lp{"theta_dot_lp"};
+  const Variable tau_lp{"tau_lp"};
+  const Vector2<Expression> x_lp{theta_lp, theta_dot_lp};
+  const Vector1<Expression> u_lp{tau_lp};
+
+  auto system_builder = SymbolicVectorSystemBuilder()
+                            .time(t_)
+                            .state(x)
+                            .input(u)
+                            .parameter(p)
+                            .dynamics(dynamics)
+                            .output(Vector2<Expression>{theta, theta_dot})
+                            .LinearizeDynamics(x_lp, u_lp);
+
+  // \dot{theta} = theta_dot which was already linear.
+  EXPECT_PRED2(ExprEqual, system_builder.dynamics_for_variable(theta),
+               theta_dot);
+
+  // x_lp and u_lp were not declared as system parameters. But the
+  // `LinearlizeDynamics` method introduces them as parameters.
+  const Variables new_parameters{system_builder.parameter()};
+  EXPECT_EQ(new_parameters.size(),
+            p.size() + 3 /* dim of the linearization point */);
+  EXPECT_TRUE(new_parameters.include(theta_lp));
+  EXPECT_TRUE(new_parameters.include(theta_dot_lp));
+  EXPECT_TRUE(new_parameters.include(tau_lp));
+
+  // Check that the linearized dynamics for theta_dot is linear in state and
+  // input ({theta, theta_dot, tau}).
+  const Polynomial linearized_dynamics_for_theta_dot{
+      system_builder.dynamics_for_variable(theta_dot),
+      {theta, theta_dot, tau} /* indeterminates */
+  };
+  EXPECT_EQ(linearized_dynamics_for_theta_dot.TotalDegree(), 1 /* linear */);
+
+  // Pick two sample linearization points and evaluate the
+  // `linearized_dynamics_for_theta_dot` polynomial. Make sure that the
+  // evaluation results are matched with the linearization results using
+  // `TaylorExpand` (outside of SymbolicVectorSystemBuilder class).
+  {
+    const Environment env1{
+        {theta_lp, -0.1}, {theta_dot_lp, 0.2}, {tau_lp, 0.3}};
+    const Environment env2{{theta, env1[theta_lp]},
+                           {theta_dot, env1[theta_dot_lp]},
+                           {tau, env1[tau_lp]}};
+
+    const Polynomial p1{
+        linearized_dynamics_for_theta_dot.EvaluatePartial(env1)};
+    const Polynomial p2{TaylorExpand(dynamics[1], env2, 1 /* linear */),
+                        {theta, theta_dot, tau} /* indeterminates */};
+
+    EXPECT_PRED2(PolyEqual, p1, p2);
+  }
+
+  {
+    const Environment env1{
+        {theta_lp, 0.3}, {theta_dot_lp, -0.1}, {tau_lp, 0.4}};
+    const Environment env2{{theta, env1[theta_lp]},
+                           {theta_dot, env1[theta_dot_lp]},
+                           {tau, env1[tau_lp]}};
+
+    const Polynomial p1{
+        linearized_dynamics_for_theta_dot.EvaluatePartial(env1)};
+    const Polynomial p2{TaylorExpand(dynamics[1], env2, 1 /* linear */),
+                        {theta, theta_dot, tau} /* indeterminates */};
+
+    EXPECT_PRED2(PolyEqual, p1, p2);
+  }
 }
 
 TEST_F(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
