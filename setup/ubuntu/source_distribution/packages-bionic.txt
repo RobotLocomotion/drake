@@ -48,7 +48,6 @@ openssh-client
 patch
 patchelf
 patchutils
-protobuf-compiler
 python3-boto3
 python3-dateutil
 python3-dbg

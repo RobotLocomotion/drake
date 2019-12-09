@@ -17,21 +17,6 @@ exports_files([
     ".drake-find_resource-sentinel",
 ])
 
-alias(
-    name = "protoc",
-    actual = "@com_google_protobuf//:protoc",
-)
-
-alias(
-    name = "protobuf",
-    actual = "@com_google_protobuf//:protobuf",
-)
-
-alias(
-    name = "protobuf_python",
-    actual = "@com_google_protobuf//:protobuf_python",
-)
-
 # Drake's top-level module; all drake_py_stuff rules add this to deps.
 # (We use py_library here because drake_py_library would be circular.)
 # This file should NOT be installed (see commits in __init__.py).
@@ -57,7 +42,6 @@ install(
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
-        "//common/proto:install",
         "//examples:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
