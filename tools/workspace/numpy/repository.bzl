@@ -21,10 +21,22 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
+    linux_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:linux platform.
+        Defaults to the value of LINUX_INTERPRETER_PATH in
+        //tools/py_toolchain:interpreter_paths.bzl.
+    macos_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:osx (macOS)
+        platform. Defaults to the value of MACOS_INTERPRETER_PATH in
+        //tools/py_toolchain:interpreter_paths.bzl.
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
-load("@drake//tools/workspace/python:repository.bzl", "repository_python_info")  # noqa
+load(
+    "@drake//tools/workspace/python:repository.bzl",
+    "interpreter_path_attrs",
+    "repository_python_info",
+)
 
 def _impl(repository_ctx):
     python_info = repository_python_info(repository_ctx)
@@ -70,6 +82,6 @@ cc_library(
 
 numpy_repository = repository_rule(
     _impl,
-    environ = ["DRAKE_PYTHON_BIN_PATH"],
+    attrs = interpreter_path_attrs,
     local = True,
 )
