@@ -543,8 +543,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const SpatialAcceleration<T> A_PB_W =
           R_WF * A_FM.Shift(p_MB_F);  // Eq. (4), with w_FM = 0.
       // Velocities are zero. No need to compute terms that become zero.
-      get_mutable_A_WB_from_array(&A_WB_array).get_coeffs() =
-          A_WP.Shift(p_PB_W).get_coeffs() + A_PB_W.get_coeffs();
+      get_mutable_A_WB_from_array(&A_WB_array) = A_WP.Shift(p_PB_W) + A_PB_W;
     }
   }
 
@@ -1315,7 +1314,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     const SpatialAcceleration<T>& Ab_WB = get_Ab_WB(aba_force_bias_cache);
 
     SpatialAcceleration<T>& A_WB = get_mutable_A_WB(ac);
-    A_WB = SpatialAcceleration<T>(Aplus_WB.get_coeffs() + Ab_WB.get_coeffs());
+    A_WB = Aplus_WB + Ab_WB;
 
     // These quantities do not contribute when nv = 0. We skip them since Eigen
     // does not allow certain operations on zero-sized objects.
@@ -1331,7 +1330,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       vmdot = nu_B - g_PB_W.transpose() * A_WB.get_coeffs();
 
       // Update with vmdot term the spatial acceleration of the current body.
-      A_WB.get_coeffs() += H_PB_W * vmdot;
+      A_WB += SpatialAcceleration<T>(H_PB_W * vmdot);
     }
   }
 
