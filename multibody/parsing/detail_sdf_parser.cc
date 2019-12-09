@@ -464,8 +464,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
 
       for (uint64_t collision_index = 0;
            collision_index < link.CollisionCount(); ++collision_index) {
-        const sdf::Collision& sdf_collision =
-            *link.CollisionByIndex(collision_index);
+        const sdf::Collision sdf_collision = ResolveCollisionUri(
+            *link.CollisionByIndex(collision_index), package_map, root_dir);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         ThrowIfPoseFrameSpecified(sdf_collision.Element());
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {

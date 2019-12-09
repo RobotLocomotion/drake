@@ -380,7 +380,8 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
   return CoulombFriction<double>(static_friction, dynamic_friction);
 }
 
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
+template <typename T>
+T ResolveUri(const T& original,
                              const PackageMap& package_map,
                              const std::string& root_dir) {
   std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
@@ -410,10 +411,23 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
     }
   }
 
-  sdf::Visual visual;
+  T visual;
   visual.Load(visual_element);
   return visual;
 }
+
+sdf::Visual ResolveVisualUri(const sdf::Visual& original,
+                             const multibody::PackageMap& package_map,
+                             const std::string& root_dir) {
+  return ResolveUri(original, package_map, root_dir);
+}
+
+sdf::Collision ResolveCollisionUri(const sdf::Collision& original,
+                                   const multibody::PackageMap& package_map,
+                                   const std::string& root_dir) {
+  return ResolveUri(original, package_map, root_dir);
+}
+
 
 }  // namespace internal
 }  // namespace multibody

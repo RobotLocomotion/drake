@@ -122,6 +122,9 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 sdf::Visual ResolveVisualUri(const sdf::Visual& original,
                              const multibody::PackageMap& package_map,
                              const std::string& root_dir);
+sdf::Collision ResolveCollisionUri(const sdf::Collision& original,
+                             const multibody::PackageMap& package_map,
+                             const std::string& root_dir);
 
 }  // namespace internal
 }  // namespace multibody
