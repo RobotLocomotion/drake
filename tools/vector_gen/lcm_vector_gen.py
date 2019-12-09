@@ -7,6 +7,7 @@ import collections
 import os
 import subprocess
 
+# TODO(jwnimmer-tri) Remove protobuf support on or after 2020-02-01.
 import google.protobuf.text_format
 import yaml
 
@@ -553,7 +554,8 @@ def generate_code(
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
 
-    # The C++ namespace open & close dance is as requested in the protobuf.
+    # The C++ namespace open & close dance is as requested in the
+    # `*.named_vector.yaml` specification.
     opening_namespace = "".join(["namespace " + x + "{\n"
                                  for x in namespace_list])
     closing_namespace = "".join(["}  // namespace " + x + "\n"

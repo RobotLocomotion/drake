@@ -10,11 +10,6 @@ config_setting(
     values = {"cpu": "k8"},
 )
 
-py_binary(
-    name = "drake_proto_ubsan_fix",
-    srcs = ["drake_proto_ubsan_fix.py"],
-)
-
 exports_files([
     "py_env_runner.py",
 ])
