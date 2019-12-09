@@ -246,6 +246,9 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     # did not work. Revisit this at some point.
     if "__del__" in name:
         return True
+    # In order to work around #11954.
+    if "__init__" in name:
+        return False
     return None
 
 
