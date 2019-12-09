@@ -38,6 +38,7 @@ drake_cc_binary(
     deps = [
         "//common:add_text_logging_gflags",
         "//common:find_resource",
+        "//examples/utils",
         "//geometry:geometry_visualization",
         "//math:geometric_transform",
         "//multibody/parsing",

@@ -22,6 +22,7 @@ drake_cc_binary(
         "//common:find_resource",
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
+        "//examples/utils",
         "//geometry:geometry_visualization",
         "//lcm",
         "//lcmtypes:allegro",
