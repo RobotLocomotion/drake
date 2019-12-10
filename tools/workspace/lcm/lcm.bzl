@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_library")
 load(
     "@drake//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
@@ -250,8 +251,7 @@ def lcm_py_library(
     if add_current_package_to_imports:
         if "." not in imports:
             imports = imports + ["."]
-
-    native.py_library(
+    py_library(
         name = name,
         srcs = outs + extra_srcs,
         imports = imports,

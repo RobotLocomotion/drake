@@ -1,8 +1,9 @@
 # -*- python -*-
 
-package(default_visibility = ["//visibility:public"])
-
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
 
 # Used by :python_env.bzl.
 config_setting(

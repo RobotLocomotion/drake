@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_library")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
@@ -188,7 +189,7 @@ def drake_py_library_aliases(
                 ),
             )
         actual_full_label = "//" + actual_subdir + actual_relative_label
-        native.py_library(
+        py_library(
             name = stub_relative_label[1:],
             deps = [actual_full_label],
             srcs = [stub_file],
