@@ -1,5 +1,7 @@
+ipywidgets
 lxml
 matplotlib
+notebook
 pydot
 PyYAML
 pyzmq

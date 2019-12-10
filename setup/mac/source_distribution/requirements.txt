@@ -1,6 +1,5 @@
 boto3
-ipywidgets  # For Jupyter
-jupyter  # Also enables `jupyter notebook`
+jupyter
 pandas
 pygame
 # Constrain Sphinx due to hack customizations for templates in
