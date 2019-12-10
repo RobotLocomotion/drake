@@ -1,0 +1,72 @@
+# -*- python -*-
+
+load("@rules_python//python:defs.bzl", "py_runtime", "py_runtime_pair")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    ":interpreter_paths.bzl",
+    "LINUX_DBG_INTERPRETER_PATH",
+    "LINUX_INTERPRETER_PATH",
+    "MACOS_INTERPRETER_PATH",
+)
+
+# The value of interpreter_path must match the value of linux_interpreter_path
+# used when declaring the @numpy and @python repositories.
+py_runtime(
+    name = "linux_py3_runtime",
+    interpreter_path = LINUX_INTERPRETER_PATH,
+    python_version = "PY3",
+)
+
+py_runtime_pair(
+    name = "linux_py_runtime_pair",
+    py3_runtime = ":linux_py3_runtime",
+)
+
+toolchain(
+    name = "linux_toolchain",
+    target_compatible_with = ["@platforms//os:linux"],
+    toolchain = ":linux_py_runtime_pair",
+    toolchain_type = "@rules_python//python:toolchain_type",
+)
+
+py_runtime(
+    name = "linux_dbg_py3_runtime",
+    interpreter_path = LINUX_DBG_INTERPRETER_PATH,
+    python_version = "PY3",
+)
+
+py_runtime_pair(
+    name = "linux_dbg_py_runtime_pair",
+    py3_runtime = ":linux_dbg_py3_runtime",
+)
+
+# Typically this toolchain would be loaded manually using the
+# --extra_toolchains command line option.
+toolchain(
+    name = "linux_dbg_toolchain",
+    target_compatible_with = ["@platforms//os:linux"],
+    toolchain = ":linux_dbg_py_runtime_pair",
+    toolchain_type = "@rules_python//python:toolchain_type",
+)
+
+# The value of interpreter_path must match the value of macos_interpreter_path
+# used when declaring the @numpy and @python repositories.
+py_runtime(
+    name = "macos_py3_runtime",
+    interpreter_path = MACOS_INTERPRETER_PATH,
+    python_version = "PY3",
+)
+
+py_runtime_pair(
+    name = "macos_py_runtime_pair",
+    py3_runtime = ":macos_py3_runtime",
+)
+
+toolchain(
+    name = "macos_toolchain",
+    target_compatible_with = ["@platforms//os:osx"],
+    toolchain = ":macos_py_runtime_pair",
+    toolchain_type = "@rules_python//python:toolchain_type",
+)
+
+add_lint_tests()

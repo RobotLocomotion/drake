@@ -10,9 +10,7 @@
 
 # N.B. Please keep these alphabetized.
 
-build --action_env=DRAKE_PYTHON_BIN_PATH=@PYTHON_EXECUTABLE@
 build --color=@BAZEL_COLOR@
-build --python_path=@PYTHON_EXECUTABLE@
 build --subcommands=@BAZEL_SUBCOMMANDS@
 build --symlink_prefix=/
 
