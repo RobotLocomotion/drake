@@ -1,0 +1,8 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+alias(
+    name = "pydrake",
+    actual = "//:pydrake",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,52 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//:_manifest.bzl", "MANIFEST")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "installed_runfiles",
+    data = [
+        x
+        for x in MANIFEST["runfiles"]["drake"]
+        if "/" not in x
+    ],
+)
+
+filegroup(
+    name = "_all_runfiles",
+    data = [
+        ":installed_runfiles",
+        "//common:installed_runfiles",
+        "//examples:installed_runfiles",
+        "//manipulation:installed_runfiles",
+    ],
+)
+
+# TODO(jwnimmer-tri) Use the correct cc_import phrasing, then mark this public.
+filegroup(
+    name = "_drake_shared_library",
+    data = glob([
+        ".lib/*.so",
+        ".lib/*.so.*",
+    ]),
+)
+
+_IMPORT = ".lib/python3.6/site-packages"
+
+py_library(
+    name = "pydrake",
+    srcs = glob(include = [
+        _IMPORT + "/**/*.py",
+    ]),
+    data = glob(include = [
+        _IMPORT + "/**/*.so",
+    ]) + [
+        ":_all_runfiles",
+        ":_drake_shared_library",
+    ],
+    imports = [
+        _IMPORT,
+    ],
+)
