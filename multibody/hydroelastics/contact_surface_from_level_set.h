@@ -208,6 +208,8 @@ int IntersectTetWithLevelSet(
   V prev(num_vertices + num_intersections - 1);
   for (int i = 0; i < num_intersections; ++i) {
     V current(i + num_vertices);
+    // Note: the face ordering below ensures that the normal will point into the
+    // rigid object.
     faces->emplace_back(prev, centroid_index, current);
     prev = current;
   }

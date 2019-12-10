@@ -139,6 +139,17 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
   ASSERT_EQ(results.contact_surface().mesh_W().num_faces() * 3,
             results.quadrature_point_data().size());
 
+  // Sanity check that geometry ID is consistent with direction of spatial
+  // force.
+  const std::vector<geometry::GeometryId> ball_collision_geometries =
+      plant_->GetCollisionGeometriesForBody(
+          plant_->GetBodyByName("Ball"));
+  const bool body_A_is_ball = (std::find(
+      ball_collision_geometries.begin(), ball_collision_geometries.end(),
+      results.contact_surface().id_M()) != ball_collision_geometries.end());
+  const double sign_scalar = (body_A_is_ball) ? 1.0 : -1.0;
+  ASSERT_GT(sign_scalar * F_Ac_W.translational()[2], 0);
+
   // Our crude quadrature process, which uses the mean traction over the
   // surface of the triangle, gives us the same accuracy as Gaussian quadrature
   // because the frictional components of each traction are zero. Because this
@@ -172,7 +183,7 @@ TEST_F(HydroelasticContactResultsOutputTester, SlipVelocity) {
   // If Body A is the ball, then every point in the slip velocity field should
   // be +x. Otherwise, it should be -x.
   const Vector3d x(1, 0, 0);
-  std::vector<geometry::GeometryId> ball_collision_geometries =
+  const std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(
           plant_->GetBodyByName("Ball"));
   const bool body_A_is_ball = (std::find(
@@ -197,7 +208,7 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
   // into M and the tractions should point in the same direction). Otherwise, it
   // should point along -z.
   const Vector3d z(0, 0, 1);
-  std::vector<geometry::GeometryId> ball_collision_geometries =
+  const std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
   const bool body_A_is_ball = (std::find(
       ball_collision_geometries.begin(), ball_collision_geometries.end(),
