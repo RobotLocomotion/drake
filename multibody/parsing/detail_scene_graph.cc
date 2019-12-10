@@ -60,18 +60,6 @@ const sdf::Element& GetChildElementOrThrow(
   return *const_cast<sdf::Element &>(element).GetElement(child_name);
 }
 
-// Helper to return the mutable child element of `element` named
-// `child_name`.  Returns nullptr if not present.
-sdf::Element* MaybeGetChildElement(
-    sdf::Element* element, const std::string &child_name) {
-  // First verify <child_name> is present (otherwise GetElement() has the
-  // side effect of adding new elements if not present!!).
-  if (element->HasElement(child_name)) {
-    return element->GetElement(child_name).get();
-  }
-  return nullptr;
-}
-
 // Helper to return the value of a child of `element` named `child_name`.
 // A std::runtime_error is thrown if the `<child_name>` tag is missing from the
 // SDF file, or the tag has a bad or missing value.
@@ -379,55 +367,6 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 
   return CoulombFriction<double>(static_friction, dynamic_friction);
 }
-
-template <typename T>
-T ResolveUri(const T& original,
-                             const PackageMap& package_map,
-                             const std::string& root_dir) {
-  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
-  sdf::Element* geom_element =
-      MaybeGetChildElement(visual_element.get(), "geometry");
-  if (geom_element) {
-    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
-    if (mesh_element) {
-      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
-      if (uri_element) {
-        const std::string uri = uri_element->Get<std::string>();
-        const std::string resolved_name =
-            ResolveUri(uri, package_map, root_dir);
-        if (!resolved_name.empty()) {
-          uri_element->Set(resolved_name);
-        } else {
-          throw std::runtime_error(
-              std::string(__FILE__) + ": " + __func__ +
-              ": ERROR: Mesh file name could not be resolved from the "
-              "provided uri \"" + uri + "\".");
-        }
-      } else {
-        throw std::runtime_error(
-            std::string(__FILE__) + ": " + __func__ +
-            ": ERROR: <mesh> tag specified without <uri?>");
-      }
-    }
-  }
-
-  T visual;
-  visual.Load(visual_element);
-  return visual;
-}
-
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const multibody::PackageMap& package_map,
-                             const std::string& root_dir) {
-  return ResolveUri(original, package_map, root_dir);
-}
-
-sdf::Collision ResolveCollisionUri(const sdf::Collision& original,
-                                   const multibody::PackageMap& package_map,
-                                   const std::string& root_dir) {
-  return ResolveUri(original, package_map, root_dir);
-}
-
 
 }  // namespace internal
 }  // namespace multibody
