@@ -23,7 +23,7 @@ DEFINE_double(stiction_tolerance, 1.0E-3,
 // Integration parameters:
 DEFINE_integration_scheme();
 DEFINE_double(
-    plant_discrete_update_period, 1.0E-3,
+    mbp_discrete_update_period, 1.0E-3,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
     "Set to zero for a continuous plant model.");
@@ -32,10 +32,6 @@ DEFINE_double(max_time_step, 1.0E-3,
 DEFINE_double(accuracy, 1.0e-2,
               "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
-DEFINE_bool(time_stepping, true,
-            "If 'true', the plant is modeled as a "
-            "discrete system with periodic updates of period 'max_time_step'."
-            "If 'false', the plant is modeled as a continuous system.");
 
 namespace drake {
 namespace examples {
@@ -48,16 +44,16 @@ using Eigen::Translation3d;
 using Eigen::VectorXd;
 
 int do_main() {
-  if (FLAGS_plant_discrete_update_period < 0) {
+  if (FLAGS_mbp_discrete_update_period < 0) {
     throw std::runtime_error(
-        "plant_discrete_update_period must be a non-negative number.");
+        "mbp_discrete_update_period must be a non-negative number.");
   }
 
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
   auto pair = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(
-                    FLAGS_plant_discrete_update_period));
+                    FLAGS_mbp_discrete_update_period));
   MultibodyPlant<double>& plant = pair.plant;
 
   const std::string full_name =

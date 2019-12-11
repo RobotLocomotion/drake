@@ -58,6 +58,11 @@ DEFINE_double(grip_width, 0.095,
 
 // Integration parameters:
 DEFINE_integration_scheme();
+DEFINE_double(
+    mbp_discrete_update_period, 1.0E-3,
+    "The fixed-time step period (in seconds) of discrete updates for the "
+    "multibody plant modeled as a discrete system. Strictly positive. "
+    "Set to zero for a continuous plant model.");
 DEFINE_double(max_time_step, 1.0e-3,
               "Maximum time step used for the integrators. [s]. "
               "If negative, a value based on parameter penetration_allowance "
@@ -65,10 +70,6 @@ DEFINE_double(max_time_step, 1.0e-3,
 DEFINE_double(accuracy, 1.0e-2,
               "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
-DEFINE_bool(time_stepping, true,
-            "If 'true', the plant is modeled as a "
-            "discrete system with periodic updates of period 'max_time_step'."
-            "If 'false', the plant is modeled as a continuous system.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -163,9 +164,7 @@ int do_main() {
   DRAKE_DEMAND(FLAGS_max_time_step > 0);
 
   MultibodyPlant<double>& plant =
-      FLAGS_time_stepping ?
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
-      *builder.AddSystem<MultibodyPlant>();
+      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   Parser parser(&plant);
   std::string full_name =
@@ -346,24 +345,22 @@ int do_main() {
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);
 
-  if (FLAGS_time_stepping) {
-    fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
-    fmt::print("Number of time steps taken = {:d}\n",
-               simulator.get_num_steps_taken());
-  } else {
-    fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
-    fmt::print("Number of time steps taken = {:d}\n",
-               integrator.get_num_steps_taken());
-    if (!integrator.get_fixed_step_mode()) {
-      fmt::print("Initial time step taken = {:10.6g} s\n",
-                 integrator.get_actual_initial_step_size_taken());
-      fmt::print("Largest time step taken = {:10.6g} s\n",
-                 integrator.get_largest_step_size_taken());
-      fmt::print("Smallest adapted step size = {:10.6g} s\n",
-                 integrator.get_smallest_adapted_step_size_taken());
-      fmt::print("Number of steps shrunk due to error control = {:d}\n",
-                 integrator.get_num_step_shrinkages_from_error_control());
-    }
+  if (plant.is_discrete()) {
+    fmt::print("Used time stepping with dt={}\n", plant.time_step());
+  }
+
+  fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
+  fmt::print("Number of time steps taken = {:d}\n",
+             integrator.get_num_steps_taken());
+  if (!integrator.get_fixed_step_mode()) {
+    fmt::print("Initial time step taken = {:10.6g} s\n",
+               integrator.get_actual_initial_step_size_taken());
+    fmt::print("Largest time step taken = {:10.6g} s\n",
+               integrator.get_largest_step_size_taken());
+    fmt::print("Smallest adapted step size = {:10.6g} s\n",
+               integrator.get_smallest_adapted_step_size_taken());
+    fmt::print("Number of steps shrunk due to error control = {:d}\n",
+               integrator.get_num_step_shrinkages_from_error_control());
   }
 
   return 0;
