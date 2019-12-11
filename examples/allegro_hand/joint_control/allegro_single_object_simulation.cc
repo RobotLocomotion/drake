@@ -54,16 +54,9 @@ DEFINE_double(target_realtime_rate, 1,
 
 // Integration parameters:
 DEFINE_integration_scheme();
-DEFINE_double(
-    mbp_discrete_update_period, 1.0E-3,
-    "The fixed-time step period (in seconds) of discrete updates for the "
-    "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model.");
-DEFINE_double(max_time_step, 1.0e-3,
-              "Maximum simulation time step used for integration.");
-DEFINE_double(accuracy, 1.0e-2,
-              "Sets the simulation accuracy for variable step"
-              "size integrators with error control.");
+DEFINE_mbp_discrete_update_period();
+DEFINE_max_time_step();
+DEFINE_accuracy();
 
 void DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
