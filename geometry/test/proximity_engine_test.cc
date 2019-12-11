@@ -2558,9 +2558,6 @@ GenDistPairTestSphereBoxBoundaryTransform() {
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereCapsule(
     const RotationMatrixd& R_WA = RotationMatrixd::Identity(),
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
-  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
-  // collision result from being more precise. See related Drake issue 7656.
-  const double kTolerance = 1e-3;
   auto sphere_A = make_shared<const Sphere>(2.);
   auto capsule_B = make_shared<const Capsule>(6., 16.);
   const double radius_A = sphere_A->radius();
@@ -2604,8 +2601,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCapsule(
         sphere_A, capsule_B, X_WA, X_WB,
         SignedDistancePair<double>(GeometryId::get_new_id(),
                                    GeometryId::get_new_id(), p_ACa, p_BCb,
-                                   pair_distance),
-        kTolerance);
+                                   pair_distance));
   }
   return test_data;
 }

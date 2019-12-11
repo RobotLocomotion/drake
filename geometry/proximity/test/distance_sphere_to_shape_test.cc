@@ -55,12 +55,17 @@ void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
 
 template <>
 void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
+                                             const fcl::Capsuled&) {}
+
+template <>
+void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
                                              const fcl::Cylinderd&) {}
 
 namespace {
 
 using Eigen::Vector3d;
 using fcl::Boxd;
+using fcl::Capsuled;
 using fcl::CollisionObjectd;
 using fcl::Cylinderd;
 using fcl::Halfspaced;
@@ -346,9 +351,12 @@ TEST_F(DistancePairGeometryTest, SphereSphereDouble) {
   EXPECT_TRUE((ResultsMatch<double, Sphered>(Sphered(1.3))));
 }
 
-
 TEST_F(DistancePairGeometryTest, SphereBoxDouble) {
   EXPECT_TRUE((ResultsMatch<double, Boxd>(Boxd{1.3, 2.3, 0.7})));
+}
+
+TEST_F(DistancePairGeometryTest, SphereCapsuleDouble) {
+  EXPECT_TRUE((ResultsMatch<double, Capsuled>(Capsuled{1.3, 2.3})));
 }
 
 TEST_F(DistancePairGeometryTest, SphereCylinderDouble) {
@@ -361,6 +369,10 @@ TEST_F(DistancePairGeometryTest, SphereSphereAutoDiff) {
 
 TEST_F(DistancePairGeometryTest, SphereBoxAutoDiffXd) {
   EXPECT_TRUE((ResultsMatch<AutoDiffXd, Boxd>(Boxd{1.3, 2.3, 0.7})));
+}
+
+TEST_F(DistancePairGeometryTest, SphereCapsuleAutoDiffXd) {
+  EXPECT_TRUE((ResultsMatch<AutoDiffXd, Capsuled>(Capsuled{1.3, 2.3})));
 }
 
 TEST_F(DistancePairGeometryTest, SphereCylinderAutoDiffXd) {
