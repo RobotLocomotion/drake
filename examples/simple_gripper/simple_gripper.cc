@@ -57,10 +57,7 @@ DEFINE_double(grip_width, 0.095,
               "The initial distance between the gripper fingers. [m].");
 
 // Integration parameters:
-DEFINE_string(integration_scheme, "implicit_euler",
-              ("Integration scheme to be used. Available options are: " +
-               drake::examples::supported_integrators())
-                  .c_str());
+DEFINE_integration_scheme();
 DEFINE_double(max_time_step, 1.0e-3,
               "Maximum time step used for the integrators. [s]. "
               "If negative, a value based on parameter penetration_allowance "

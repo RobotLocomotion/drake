@@ -53,10 +53,7 @@ DEFINE_double(target_realtime_rate, 1,
               "Simulator::set_target_realtime_rate() for details.");
 
 // Integration parameters:
-DEFINE_string(integration_scheme, "implicit_euler",
-              ("Integration scheme to be used. Available options are: " +
-               drake::examples::supported_integrators())
-                  .c_str());
+DEFINE_integration_scheme();
 DEFINE_double(
     plant_discrete_update_period, 1.0E-3,
     "The fixed-time step period (in seconds) of discrete updates for the "

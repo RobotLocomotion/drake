@@ -21,10 +21,7 @@ DEFINE_double(stiction_tolerance, 1.0E-3,
               "Allowable drift speed during stiction (m/s).");
 
 // Integration parameters:
-DEFINE_string(integration_scheme, "implicit_euler",
-              ("Integration scheme to be used. Available options are: " +
-               drake::examples::supported_integrators())
-                  .c_str());
+DEFINE_integration_scheme();
 DEFINE_double(
     plant_discrete_update_period, 1.0E-3,
     "The fixed-time step period (in seconds) of discrete updates for the "
