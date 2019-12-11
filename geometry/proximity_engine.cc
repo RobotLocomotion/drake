@@ -198,6 +198,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     dynamic_mesh_objects_.clear();
     anchored_mesh_tree_.clear();
     anchored_mesh_objects_.clear();
+    X_MBs_.clear();
 
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
@@ -210,6 +211,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
     CopyFclObjectsOrThrow(other.dynamic_mesh_objects_, &dynamic_mesh_objects_,
                           &object_map);
+    X_MBs_ = other.X_MBs_;
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
@@ -245,6 +247,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &engine->anchored_mesh_objects_, &object_map);
     CopyFclObjectsOrThrow(dynamic_mesh_objects_, &engine->dynamic_mesh_objects_,
                           &object_map);
+    engine->X_MBs_ = this->X_MBs_;
+
     engine->collision_filter_ = this->collision_filter_;
 
     // Build new AABB trees from the input AABB trees.
