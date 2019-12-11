@@ -38,6 +38,11 @@ py_library(
 py_binary(
     name = "mkdoc",
     srcs = ["//third_party:com_github_pybind_pybind11/mkdoc.py"],
+    data = [
+        "generate_pybind_coverage.py",
+        "pybind_coverage_libclang_parser.py",
+        "pybind_coverage_xml_parser.py",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
@@ -81,7 +86,6 @@ py_library(
     srcs = [
         "pybind_coverage_libclang_parser.py",
         "pybind_coverage_xml_parser.py",
-        "//third_party:com_github_pybind_pybind11/cindex_utils.py",
     ],
     deps = [
         ":libclang_setup_py",
@@ -96,20 +100,14 @@ py_binary(
     deps = [":pybind_coverage_py"],
 )
 
-drake_cc_library(
-    name = "pybind_coverage_test_header",
-    srcs = ["test/test.h"],
-)
-
 generate_pybind_documentation_header(
     name = "generate_sample_header",
     testonly = 1,
     out = "test/sample_header_documentation.h",
     out_xml = "sample_header_documentation_test.xml",
-    root_name = "pydrake_doc",
+    root_name = "sample_header_doc",
     targets = [
         ":sample_header",
-        ":pybind_coverage_test_header",
     ],
 )
 
@@ -121,6 +119,7 @@ filegroup(
 generate_pybind_coverage(
     name = "generate_pybind_coverage_example",
     class_coverage = "class_coverage_test.csv",
+    doc_variable_name = "sample_header_doc",
     file_coverage = "file_coverage_test.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
     xml_docstrings = "sample_header_documentation_test.xml",
@@ -130,9 +129,9 @@ filegroup(
     name = "pybind_coverage_test_expected_data",
     testonly = 1,
     data = [
-        "test/class_coverage.csv",
-        "test/documentation_pybind.xml",
-        "test/file_coverage.csv",
+        "test/sample_header_class_coverage_expected.csv",
+        "test/sample_header_documentation_pybind_expected.xml",
+        "test/sample_header_file_coverage_expected.csv",
     ],
 )
 
@@ -149,7 +148,7 @@ filegroup(
 drake_py_unittest(
     name = "generate_pybind_coverage_test",
     data = [
-        "test/test_py.cc",
+        "test/sample_header_py.cc",
         ":pybind_coverage_test_actual_data",
         ":pybind_coverage_test_expected_data",
     ],

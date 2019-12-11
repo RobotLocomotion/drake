@@ -1,4 +1,0 @@
-DirCoverage,FileName,Coverage,Class,Class Template,Type Aliases,Functions,Function Template,Enums,Methods
-11/64,drake/tools/workspace/pybind11/test/sample_header.h,0/44,0/6,0/2,0/1,0/3,0/1,0/5,0/22
-,drake/tools/workspace/pybind11/test/test.h,11/20,2/7,,0/1,,,,1/4
-,TOTAL,11/64,2/13,0/2,0/2,0/3,0/1,0/5,1/26

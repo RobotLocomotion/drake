@@ -8,6 +8,10 @@ from drake.tools.workspace.pybind11.pybind_coverage_xml_parser import (
     FileCoverage,
 )
 
+ignore_directories = (
+    "drake/common/proto", "drake/common/yaml", "drake/examples"
+)
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate pybind11 coverage")
@@ -17,6 +21,9 @@ def parse_arguments():
                         "coverage of classes", type=str, required=True)
     parser.add_argument("--file_coverage", help="A csv file for writing the "
                         "file-wise coverage", type=str, required=True)
+    parser.add_argument("--pybind_doc_variable", help="The name of the "
+                        "documentation variable, defaults to 'pydrake_doc'",
+                        type=str, required=False)
     parser.add_argument("pybind_source_files", nargs='+')
     args = parser.parse_args()
 
@@ -25,7 +32,8 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    pybind_strings = get_docstrings_from_bindings(args.pybind_source_files)
+    pybind_strings = get_docstrings_from_bindings(
+            args.pybind_source_files, args.pybind_doc_variable)
 
     class_coverage = ClassCoverage(
             args.xml_docstrings, pybind_strings, args.class_coverage)

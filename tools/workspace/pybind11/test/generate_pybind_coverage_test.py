@@ -20,13 +20,16 @@ class TestLibclangParser(unittest.TestCase):
     def test_parser(self):
         self.assert_file_equal(
             self.get_test_file("file_coverage_test.csv"),
-            self.get_test_file("test/file_coverage.csv"),
+            self.get_test_file(
+                "test/sample_header_file_coverage_expected.csv"),
         )
         self.assert_file_equal(
             self.get_test_file("class_coverage_test.csv"),
-            self.get_test_file("test/class_coverage.csv"),
+            self.get_test_file(
+                "test/sample_header_class_coverage_expected.csv"),
         )
         self.assert_file_equal(
             self.get_test_file("sample_header_documentation_test.xml"),
-            self.get_test_file("test/documentation_pybind.xml"),
+            self.get_test_file(
+                "test/sample_header_documentation_pybind_expected.xml"),
         )

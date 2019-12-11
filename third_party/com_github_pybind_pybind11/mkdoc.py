@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import drake.tools.workspace.pybind11.generate_pybind_coverage as \
+        generate_pybind_coverage
 
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
@@ -129,14 +131,8 @@ def eprint(*args):
     print(*args, file=sys.stderr)
 
 
-ignore_directories = (
-    "drake/automotive", "drake/common/proto", "drake/common/yaml",
-    "drake/examples"
-)
-
-
 def ignore_files(file_name):
-    return file_name.startswith(ignore_directories)
+    return file_name.startswith(generate_pybind_coverage.ignore_directories)
 
 
 def is_accepted_cursor(cursor, name_chain):
@@ -981,6 +977,7 @@ def print_symbols(f, name, node, level=0):
     tree_doc_var_xpath, ignore_xpath, symbol_include_xpath = [], [], []
     tree_parser_doc.append(name_var)
 
+    new_ele = None
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
     doc_vars = choose_doc_var_names(symbol_iter)
@@ -1009,17 +1006,23 @@ def print_symbols(f, name, node, level=0):
         else:
             ignore_xpath.append(str(1))
 
-    for d, i, s in zip(
-            tree_doc_var_xpath or [""], ignore_xpath or [""],
-            symbol_include_xpath or [""]):
-
         new_ele = ET.SubElement(root, "Node", {
             "kind": str(kind),
             "name": name_var,
             "full_name": full_name,
-            "ignore": i,
-            "doc_var": d,
-            "file_name": s,
+            "ignore": ignore_xpath[-1],
+            "doc_var": tree_doc_var_xpath[-1],
+            "file_name": symbol_include_xpath[-1],
+            })
+    # If the node has no children, add a leaf.
+    if new_ele is None:
+        new_ele = ET.SubElement(root, "Node", {
+            "kind": str(kind),
+            "name": name_var,
+            "full_name": full_name,
+            "ignore": "",
+            "doc_var": "",
+            "file_name": "",
             })
 
     tree_parser_xpath.append(new_ele)

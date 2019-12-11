@@ -433,6 +433,7 @@ def _generate_pybind_coverage_impl(ctx):
     args.add("--file_coverage=" + ctx.outputs.file_coverage.path)
     args.add("--class_coverage=" + ctx.outputs.class_coverage.path)
     args.add("--xml_docstrings=" + xml_file.path)
+    args.add("--pybind_doc_variable=" + ctx.attr.doc_variable_name)
     args.add_all(source_files)
     ctx.actions.run(
         outputs = [ctx.outputs.file_coverage, ctx.outputs.class_coverage],
@@ -470,5 +471,9 @@ generate_pybind_coverage = rule(
         "file_coverage": attr.output(mandatory = True),
         "class_coverage": attr.output(mandatory = True),
         "xml_docstrings": attr.label(allow_single_file = True),
+        "doc_variable_name": attr.string(
+            mandatory = False,
+            default = "pydrake_doc",
+        ),
     },
 )

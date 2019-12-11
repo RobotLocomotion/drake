@@ -24,6 +24,13 @@ from .libclang_setup import add_library_paths
 REPLACE_VARIABLES = ["doc", "cls_doc", "var_doc", "enum_doc"]
 
 
+class DocVariable:
+    _val = None
+
+    @classmethod
+    def val(cls): return cls._val if cls._val else "pydrake_doc"
+
+
 def var_value_search(var_name):
     """Defines the regex needed for extracting the values with which `var_name`
        is initialized.
@@ -58,7 +65,7 @@ def pydrake_doc_search():
     """
     re_for_search = {
         "start_tokens": [","],
-        "value_regex": r'pydrake_doc[\w.]+',
+        "value_regex": (DocVariable.val() + r'[\w.]+'),
         "end_token": ")"
     }
     return re_for_search
@@ -184,7 +191,7 @@ def replace_tokens_in_file(filename):
     return token_spellings, pydoc_strings
 
 
-def get_docstrings_from_bindings(filenames):
+def get_docstrings_from_bindings(filenames, pydrake_doc_variable):
     """Given a list of pybind filenames, get the docstrings used in them
 
     Args:
@@ -196,6 +203,7 @@ def get_docstrings_from_bindings(filenames):
     # TODO(eric.cousineau): Hoist side effects to main file?
     add_library_paths()
     logging.basicConfig(level=logging.INFO)
+    DocVariable._val = pydrake_doc_variable
 
     array_for_all_files = []
     for f in filenames:
