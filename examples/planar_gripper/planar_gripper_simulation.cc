@@ -401,13 +401,10 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::Context<double>& simulator_context = simulator.get_mutable_context();
-  VectorX<double> decoder_initial_conditions(kNumJoints * 3);
-  decoder_initial_conditions.setZero();
-  decoder_initial_conditions.head(kNumJoints * 2) = gripper_initial_conditions;
   command_decoder->set_initial_position(
       &diagram->GetMutableSubsystemContext(*command_decoder,
                                            &simulator_context),
-      decoder_initial_conditions);
+      gripper_initial_conditions.head(kNumJoints));
 
   // All fingers consist of two joints: a base joint and a mid joint.
   // Set the initial finger joint positions.
