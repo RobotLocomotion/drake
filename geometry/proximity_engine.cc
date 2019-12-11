@@ -23,6 +23,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/utilities.h"
 
@@ -281,13 +282,22 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                            GeometryId id, const ProximityProperties& props) {
     ReifyData data{nullptr, id, props};
     shape.Reify(this, &data);
-    data.fcl_object->setTransform(X_WG.GetAsIsometry3());
+    MeshIdentifier mesh_identifier;
+    shape.Reify(&mesh_identifier);
+
+    if (!mesh_identifier.is_mesh()) {
+      data.fcl_object->setTransform(X_WG.GetAsIsometry3());
+    } else {
+      // For a Mesh geometry G, its fcl object is its bounding Box B that has
+      // its pose X_GB expressed in G's frame.
+      RigidTransformd& X_GB = X_MBs_.at(id);
+      RigidTransformd X_WB = X_WG * X_GB;
+      data.fcl_object->setTransform(X_WB.GetAsIsometry3());
+    }
     data.fcl_object->computeAABB();
     EncodedData encoding(id, false /* is dynamic */);
     encoding.write_to(data.fcl_object.get());
 
-    MeshIdentifier mesh_identifier;
-    shape.Reify(&mesh_identifier);
     if (!mesh_identifier.is_mesh()) {
       anchored_tree_.registerObject(data.fcl_object.get());
       anchored_tree_.update();
@@ -358,10 +368,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     for (const auto& id_object_pair : dynamic_mesh_objects_) {
       const GeometryId id = id_object_pair.first;
       const RigidTransform<T>& X_WG = X_WGs.at(id);
-      // The FCL broadphase requires double-valued poses; so we use ADL to
-      // efficiently get double-valued poses out of arbitrary T-valued poses.
-      dynamic_mesh_objects_[id]->setTransform(
-          convert_to_double(X_WG).GetAsIsometry3());
+      // For a Mesh G, its fcl object is its bounding Box B that has its pose
+      // X_GB expressed in G's frame.
+      const RigidTransformd& X_GB = X_MBs_.at(id);
+      const RigidTransformd X_WB = convert_to_double(X_WG) * X_GB;
+      dynamic_mesh_objects_[id]->setTransform(X_WB.GetAsIsometry3());
       dynamic_mesh_objects_[id]->computeAABB();
     }
     dynamic_mesh_tree_.update();
@@ -431,6 +442,46 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessHydroelastic(capsule, user_data);
   }
 
+  // Helper of ImplementGeometry(const Mesh&, void*) that creates a bounding
+  // box B of a surface mesh M. Returns fcl::Boxd B and its pose X_MB
+  // expressed in the frame of the mesh M.
+  std::pair<shared_ptr<fcl::Boxd>, RigidTransformd> CalcFclBoundingBox(
+      const SurfaceMesh<double>& mesh_M) {
+    Vector3d min_vertex =
+        Vector3d::Constant(std::numeric_limits<double>::max());
+    Vector3d max_vertex =
+        Vector3d::Constant(std::numeric_limits<double>::lowest());
+    for (SurfaceVertexIndex i(0); i < mesh_M.num_vertices(); ++i) {
+      Vector3d vertex = mesh_M.vertex(i).r_MV();
+      min_vertex = min_vertex.cwiseMin(vertex);
+      max_vertex = max_vertex.cwiseMax(vertex);
+    }
+    Vector3d box_size = max_vertex - min_vertex;
+    auto fcl_box = make_shared<fcl::Boxd>(box_size);
+
+    Vector3d box_center = (max_vertex + min_vertex) / 2.0;
+    RigidTransformd X_MB(box_center);
+
+    return std::make_pair(fcl_box, X_MB);
+  }
+
+  // Convert Mesh specification to fcl representation and hydroelastic
+  // representation. The fcl representation of the mesh is a box for
+  // broadphase culling because meshes are not supported in other proximity
+  // queries except ComputeContactSurfaces.
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override {
+    static const logging::Warn log_once(
+        "Mesh is only for ComputeContactSurfaces in hydroelastic contact "
+        "model. It is _not_ available in other proximity queries.");
+    SurfaceMesh<double> surface =
+        ReadObjToSurfaceMesh(mesh.filename(), mesh.scale());
+    auto[fcl_box, X_MB] = CalcFclBoundingBox(surface);
+    TakeShapeOwnership(fcl_box, user_data);
+    // Store the pose X_MB of the bounding box B expressed in mesh's frame M.
+    X_MBs_[static_cast<ReifyData*>(user_data)->id] = X_MB;
+    ProcessHydroelastic(mesh, user_data);
+  }
+
   //
   // Convert vertices from tinyobj format to FCL format.
   //
@@ -460,60 +511,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
 
     return vertices;
-  }
-
-  // Convert Mesh specification to fcl representation and hydroelastic
-  // representation. The fcl representation of the mesh is a box for
-  // broadphase culling because meshes are not supported in other proximity
-  // queries except ComputeContactSurfaces.
-  void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    static const logging::Warn log_once(
-        "Mesh is only for ComputeContactSurfaces in hydroelastic contact "
-        "model. It is _not_ available in other proximity queries: ({})",
-        mesh.filename());
-
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string err;
-    // We keep polygonal faces without triangulating them. They are not used.
-    bool do_tinyobj_triangulation = false;
-
-    // Tinyobj doesn't infer the search directory from the directory containing
-    // the obj file. We have to provide that directory; of course, this assumes
-    // that the material library reference is relative to the obj directory.
-    const size_t pos = mesh.filename().find_last_of('/');
-    const std::string obj_folder = mesh.filename().substr(0, pos + 1);
-    const char* mtl_basedir = obj_folder.c_str();
-
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
-                                mesh.filename().c_str(), mtl_basedir,
-                                do_tinyobj_triangulation);
-    if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file '" + mesh.filename() +
-          "' : " + err);
-    }
-    if (shapes.size() != 1) {
-      throw std::runtime_error("For Mesh geometry, the .obj file must have "
-                               "one and only one object defined in it.");
-    }
-
-    auto vertices = TinyObjToFclVertices(attrib, mesh.scale());
-    Vector3d min_vertex, max_vertex;
-    min_vertex.setConstant(std::numeric_limits<double>::max());
-    max_vertex.setConstant(std::numeric_limits<double>::lowest());
-    for (const auto& vertex : vertices) {
-      min_vertex = min_vertex.cwiseMin(vertex);
-      max_vertex = max_vertex.cwiseMax(vertex);
-    }
-
-    // We will create fcl::Boxd that bounds the mesh for broadphase culling.
-    // There are two reasons to use Boxd. First it is lightweight. Second
-    // there is no fcl::Meshd.
-    Vector3d box_size = max_vertex - min_vertex;
-    auto fcl_box = make_shared<fcl::Boxd>(box_size);
-    TakeShapeOwnership(fcl_box, user_data);
-    ProcessHydroelastic(mesh, user_data);
   }
 
   //
@@ -1063,6 +1060,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // can get quite large based on mesh resolution.
   hydroelastic::Geometries hydroelastic_geometries_;
 
+  // FCL does not have Mesh representation, so we use the bounding box B of
+  // the mesh M in the AABBTree in FCL. Consequently the box B has its pose
+  // X_MB expressed in the frame M of the mesh.
+  unordered_map<GeometryId, RigidTransformd> X_MBs_;
   fcl::DynamicAABBTreeCollisionManager<double> dynamic_mesh_tree_;
   unordered_map<GeometryId, unique_ptr<CollisionObjectd>> dynamic_mesh_objects_;
   fcl::DynamicAABBTreeCollisionManager<double> anchored_mesh_tree_;
