@@ -21,9 +21,13 @@ drake_cc_library(
     srcs = ["reset_integrator.cc"],
     hdrs = ["reset_integrator.h"],
     deps = [
+        "//systems/analysis:bogacki_shampine3_integrator",
+        "//systems/analysis:explicit_euler_integrator",
         "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:radau_integrator",
         "//systems/analysis:runge_kutta2_integrator",
         "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:runge_kutta5_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",
         "@gflags",

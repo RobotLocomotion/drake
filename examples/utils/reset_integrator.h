@@ -1,8 +1,8 @@
 #pragma once
 
-#include <gflags/gflags.h>
-
 #include <string>
+
+#include <gflags/gflags.h>
 
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
@@ -16,8 +16,10 @@ namespace examples {
 #define DEFINE_integration_scheme()                                           \
 DEFINE_string(integration_scheme, "implicit_euler",                           \
               "Integration scheme to be used. Available options are: "        \
-              "'implicit_euler','runge_kutta2','runge_kutta3',"               \
-              "'semi_explicit_euler'");
+              "'bogacki_shampine3',"                                          \
+              "'explicit_euler','implicit_euler','semi_explicit_euler',"      \
+              "'radau1','radau3',"                                            \
+              "'runge_kutta2','runge_kutta3','runge_kutta5'");
 
 /// Resets the integrator used to advanced the continuous time dynamics of the
 /// system associated with `simulator` according to `integration_scheme`.
