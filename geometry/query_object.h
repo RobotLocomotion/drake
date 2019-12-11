@@ -196,13 +196,21 @@ class QueryObject {
 
    In the current incarnation, this function represents a simple implementation.
 
-     - Only collision between spheres, boxes, cylinders, ellipsoids, and
-       general meshes is supported. If an unfiltered geometry pair of any
-       other type pairing cannot be culled in the broadphase an error
-       will be thrown.
+     - This table shows the supported shapes and compliance modes.
+
+       |   Shape   | Soft  | Rigid |
+       | :-------: | :---: | :---- |
+       | Sphere    |  yes  |  yes  |
+       | Cylinder  |  yes  |  yes  |
+       | Box       |  yes  |  yes  |
+       | Capsule   |  no   |  no   |
+       | Ellipsoid |  yes  |  yes  |
+       | HalfSpace |  no   |  no   |
+       | Mesh      |  no   |  yes  |
+       | Convex    |  no   |  no   |
+
      - One geometry must be soft, and the other must be rigid. There is no
-       support for soft-soft collision.
-     - Only rigid meshes are supported; there is _no_ support for soft meshes.
+       support for soft-soft collision or rigid-rigid collision.
      - The elasticity modulus E (N/m^2) of each geometry is set in
        ProximityProperties (see proximity_properties.cc). A rigid geometry must
        have E = ∞.

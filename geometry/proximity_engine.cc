@@ -921,44 +921,30 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   bool IsDeepCopy(const Impl& other) const {
     if (this != &other) {
-      // Function for validating that two objects are different objects with
-      // "identical" data. The test isn't exhaustive (for example, the
-      // parameters of the particular geometric shape are not compared--instead,
-      // we compare the AABBs).
-      auto ValidateObject = [](const CollisionObjectd& test,
-                               const CollisionObjectd& ref) {
-        return test.getUserData() == ref.getUserData() && &test != &ref &&
-               test.getNodeType() == ref.getNodeType() &&
-               test.getObjectType() == ref.getObjectType() &&
-               test.getAABB().center() == ref.getAABB().center() &&
-               test.getAABB().width() == ref.getAABB().width() &&
-               test.getAABB().height() == ref.getAABB().height() &&
-               test.getAABB().depth() == ref.getAABB().depth();
-      };
-
-      auto IsObjectInAnotherMap =
-          [&ValidateObject](
-              const std::pair<const GeometryId, unique_ptr<CollisionObjectd>>&
-                  id_object_pair,
-              const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
-                  another_map) -> bool {
-        const GeometryId test_id = id_object_pair.first;
-        const CollisionObjectd& test_object = *id_object_pair.second;
-        const CollisionObjectd& ref_object = *another_map.at(test_id);
-        return ValidateObject(test_object, ref_object);
-      };
-
       auto AreTwoMapsEqual =
-          [&IsObjectInAnotherMap](
-              const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
-                  one_map,
-              const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
-                  another_map) -> bool {
+          [](const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
+                 one_map,
+             const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
+                 another_map) -> bool {
         if (one_map.size() != another_map.size()) {
           return false;
         }
         for (const auto& id_object_pair : one_map) {
-          if (!IsObjectInAnotherMap(id_object_pair, another_map)) {
+          const GeometryId test_id = id_object_pair.first;
+          const CollisionObjectd& test = *id_object_pair.second;
+          if (another_map.find(test_id) == another_map.end()) {
+            return false;
+          }
+          const CollisionObjectd& ref = *another_map.at(test_id);
+          bool objects_equal =
+              test.getUserData() == ref.getUserData() && &test != &ref &&
+              test.getNodeType() == ref.getNodeType() &&
+              test.getObjectType() == ref.getObjectType() &&
+              test.getAABB().center() == ref.getAABB().center() &&
+              test.getAABB().width() == ref.getAABB().width() &&
+              test.getAABB().height() == ref.getAABB().height() &&
+              test.getAABB().depth() == ref.getAABB().depth();
+          if (!objects_equal) {
             return false;
           }
         }
@@ -1064,9 +1050,23 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // can get quite large based on mesh resolution.
   hydroelastic::Geometries hydroelastic_geometries_;
 
-  // FCL does not have Mesh representation, so we use the bounding box B of
-  // the mesh M in the AABBTree in FCL. Consequently the box B has its pose
-  // X_MB expressed in the frame M of the mesh.
+  // FCL does not have Mesh representation, these are consequences:
+  // 1. We represent drake::geometry::Mesh M using its bounding box B in FCL as
+  //    fcl::Boxd in the AABBTree in FCL.
+  // 2. The bounding box B has its pose X_MB expressed in the frame M of the
+  //    mesh. This allows the center of the box to be far from the origin of
+  //    the mesh's frame.  We keep all X_MB of all bounding boxes of the
+  //    meshes in X_MBs_ below.
+  // 3. Currently Mesh is supported in ComputeContactSurfaces() only, so we
+  //    keep their FCL representations in separated AABBTree structures
+  //    (dynamic_mesh_tree_, dynamic_mesh_objects_, anchored_mesh_tree_,
+  //    anchored_mesh_objects_) and use them only in ComputeContactSurfaces()
+  //    but not in other proximity queries.
+  // TODO(DamrongGuoy): Merge these mesh-specific data into the main
+  //  dynamic_tree_ and anchored_tree when:
+  //  1. We have a direct collision-object representation for Mesh in the
+  //     broadphase culling, and
+  //  2. We have narrowphase support for Mesh in other proximity queries.
   unordered_map<GeometryId, RigidTransformd> X_MBs_;
   fcl::DynamicAABBTreeCollisionManager<double> dynamic_mesh_tree_;
   unordered_map<GeometryId, unique_ptr<CollisionObjectd>> dynamic_mesh_objects_;

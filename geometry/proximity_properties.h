@@ -66,8 +66,7 @@ void AddRigidHydroelasticProperties(double resolution_hint,
 
 /** Overload, intended for shapes that don't get tessellated in their
  hydroelastic representation (e.g., HalfSpace and Mesh),
- see `@ref MODULE_NOT_WRITTEN_YET`
- */
+ see `@ref MODULE_NOT_WRITTEN_YET`.  */
 void AddRigidHydroelasticProperties(ProximityProperties* properties);
 
 // TODO(SeanCurtis-TRI): Add module that explains resolution hint and reference

@@ -19,7 +19,12 @@ void AddRigidHydroelasticProperties(double resolution_hint,
 }
 
 void AddRigidHydroelasticProperties(ProximityProperties* properties) {
-  const double resolution_hint = 1.0;
+  // Creation of a hydroelastic representation requires the existence of the
+  // "hydroelastic" property group. We make use of the resolution hint
+  // infrastructure to introduce it, but pass in a negative value to confirm
+  // this overload isn't used for any shape that truly cares about the
+  // resolution hint.
+  const double resolution_hint = -1.0;
   AddRigidHydroelasticProperties(resolution_hint, properties);
 }
 
