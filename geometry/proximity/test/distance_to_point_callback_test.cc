@@ -290,6 +290,71 @@ GTEST_TEST(DistanceToPoint, Box) {
   }
 }
 
+// Simple smoke test for signed distance to Capsule. It does the following:
+//   Perform test of three different points w.r.t. a capsule: outside, on
+//     surface, and inside.
+//   Do it with AutoDiff relative to the query point's position.
+//   Confirm the *values* of the reported quantity.
+//   Confirm that the derivative of distance (extracted from AutoDiff) matches
+//     the derivative computed by hand (grad_W).
+GTEST_TEST(DistanceToPoint, Capsule) {
+  const double kEps = 6 * std::numeric_limits<double>::epsilon();
+
+  // Provide some arbitary pose of the capsule G in the world.
+  const RotationMatrix<double> R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const Vector3d p_WG{0.5, 1.25, -2};
+  const RigidTransform<double> X_WG(R_WG, p_WG);
+  const fcl::Capsuled capsule(0.7, 1.3);
+  PointShapeAutoDiffSignedDistanceTester<fcl::Capsuled> tester(&capsule, X_WG,
+                                                               kEps);
+  // We want to test the 3 sections for when the point Q is nearest to:
+  //   1. The top end cap of the capsule.
+  //   2. The spine of the capsule.
+  //   3. The bottom end cap of the capsule.
+  // In each section, we pick a direction away from the capsule that *isn't*
+  // aligned with the frame basis and prepare the witness point N accordingly.
+  const Vector3d vhat_NQ_Gs[3] = {
+      Vector3d{2, -3, 6}.normalized(),  // Upwards and away.
+      Vector3d{2, -3, 0}.normalized(),  // Perpendicularly outwards.
+      Vector3d{2, -3, -6}.normalized()  // Downwards and away.
+  };
+  const Vector3d p_GN_Gs[3] = {
+      capsule.radius * vhat_NQ_Gs[0] + Vector3d{0, 0, capsule.lz / 2},
+      capsule.radius * vhat_NQ_Gs[1] + Vector3d{0, 0, capsule.lz / 4},
+      capsule.radius * vhat_NQ_Gs[2] + Vector3d{0, 0, -capsule.lz / 2}};
+
+  for (int i = 0; i < 3; ++i) {
+    const Vector3d& vhat_NQ_G = vhat_NQ_Gs[i];
+    const Vector3d& p_GN_G = p_GN_Gs[i];
+
+    // Case: point lies *outside* the capsule.
+    {
+      const Vector3d p_NQ_G = 1.5 * vhat_NQ_G;
+      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+    }
+
+    // Case: point lies *on* the capsule.
+    {
+      const Vector3d p_NQ_G = Vector3d::Zero();
+      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+    }
+
+    // Case: point lies *in* the capsule.
+    {
+      const Vector3d p_NQ_G = -(0.5 * capsule.radius) * vhat_NQ_G;
+      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G, true /* is inside */));
+    }
+
+    // Case: point lies on the capsule's spine.
+    {
+      const Vector3d p_NQ_G = -capsule.radius * vhat_NQ_G;
+      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G, true /* is inside */,
+                              false /* ill defined */));
+    }
+  }
+}
+
 // Simple smoke test for signed distance to Halfspace. It does the following:
 //   Perform test of three different points w.r.t. a halfspace: outside, on
 //     surface, and inside.
@@ -498,6 +563,12 @@ void TestScalarShapeSupport() {
   // Box
   {
     run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
+    EXPECT_EQ(distances.size(), 1);
+  }
+
+  // Capsule
+  {
+    run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
     EXPECT_EQ(distances.size(), 1);
   }
 

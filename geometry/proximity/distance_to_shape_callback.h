@@ -143,6 +143,11 @@ class DistancePairGeometry {
     SphereShapeDistance(sphere_A, halfspace_B);
   }
 
+  void operator()(const fcl::Sphered& sphere_A,
+                  const fcl::Capsuled& capsule_B) {
+    SphereShapeDistance(sphere_A, capsule_B);
+  }
+
   //@}
 
  private:
@@ -318,6 +323,12 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
       const auto& halfspace_O =
           *static_cast<const fcl::Halfspaced*>(o_geometry);
       distance_pair(sphere_S, halfspace_O);
+      break;
+    }
+    case fcl::GEOM_CAPSULE: {
+      const auto& capsule_O =
+          *static_cast<const fcl::Capsuled*>(o_geometry);
+      distance_pair(sphere_S, capsule_O);
       break;
     }
     default: {
