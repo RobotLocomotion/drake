@@ -378,21 +378,15 @@ class ArticulatedBodyInertia {
   // Since this method is used within assertions or demands, we do not try to
   // attempt a smart way throw based on a given symbolic::Formula but instead we
   // make these methods a no-op for non-numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
-      const {
-    if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting articulated body inertia is not physically valid. "
-          "See ArticulatedBodyInertia::IsPhysicallyValid()");
+  void CheckInvariants() const {
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (!IsPhysicallyValid()) {
+        throw std::runtime_error(
+            "The resulting articulated body inertia is not physically valid. "
+            "See ArticulatedBodyInertia::IsPhysicallyValid()");
+      }
     }
   }
-
-  // SFINAE for non-numeric types. See documentation in the implementation for
-  // numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<!scalar_predicate<T1>::is_bool> CheckInvariants()
-      const {}
 };
 
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertia)
