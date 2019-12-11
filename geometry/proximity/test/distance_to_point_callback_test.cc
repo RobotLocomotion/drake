@@ -290,6 +290,92 @@ GTEST_TEST(DistanceToPoint, Box) {
   }
 }
 
+// Simple smoke test for signed distance to Capsule. It does the following:
+//   Perform test of three different points w.r.t. a capsule: outside, on
+//     surface, and inside.
+//   Do it with AutoDiff relative to the query point's position.
+//   Confirm the *values* of the reported quantity.
+//   Confirm that the derivative of distance (extracted from AutoDiff) matches
+//     the derivative computed by hand (grad_W).
+GTEST_TEST(DistanceToPoint, Capsule) {
+  const double kEps = 6 * std::numeric_limits<double>::epsilon();
+
+  // Provide some arbitary pose of the capsule in the world.
+  const RotationMatrix<double> R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const Vector3d p_WG{0.5, 1.25, -2};
+  const RigidTransform<double> X_WG(R_WG, p_WG);
+  const fcl::Capsuled capsule(0.7, 1.3);
+  PointShapeAutoDiffSignedDistanceTester<fcl::Capsuled> tester(&capsule, X_WG,
+                                                               kEps);
+
+  // Case: Point lies nearest to the top end cap of the capsule.
+  {
+    // An arbitrary direction upwards and away from the top end of the spine
+    // that *isn't* aligned with the frame basis.
+    const Vector3d vhat_NQ = Vector3d{2, -3, 6}.normalized();
+    const Vector3d p_NQ_G = 1.5 * vhat_NQ;
+    const Vector3d p_GN_G =
+        capsule.radius * vhat_NQ + Vector3d{0, 0, capsule.lz / 2};
+    // Case: point lies *outside* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+
+    // Case: point lies *on* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+
+    // Case: point lies *in* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
+
+    // Case: point lies at top end of the capsule's spine.
+    EXPECT_TRUE(tester.Test(p_GN_G, -capsule.radius * vhat_NQ,
+                            true /* is inside */, false /* ill defined */));
+  }
+
+  // Case: Point lies nearest to the spine of the capsule.
+  {
+    // An arbitrary direction outwards from the spine that *isn't* aligned with
+    // the frame basis.
+    const Vector3d vhat_NQ = Vector3d{2, -3, 0}.normalized();
+    const Vector3d p_NQ_G = 1.5 * vhat_NQ;
+    const Vector3d p_GN_G =
+        capsule.radius * vhat_NQ + Vector3d{0, 0, capsule.lz / 4};
+    // Case: point lies *outside* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+
+    // Case: point lies *on* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+
+    // Case: point lies *in* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
+
+    // Case: point lies on the capsule's spine.
+    EXPECT_TRUE(tester.Test(p_GN_G, -capsule.radius * vhat_NQ,
+                            true /* is inside */, false /* ill defined */));
+  }
+
+  // Case: Point lies nearest to the bottom end cap of the capsule.
+  {
+    // An arbitrary direction downwards and away from the bottom end of the
+    // spine that *isn't* aligned with the frame basis.
+    const Vector3d vhat_NQ = Vector3d{2, -3, -6}.normalized();
+    const Vector3d p_NQ_G = 1.5 * vhat_NQ;
+    const Vector3d p_GN_G =
+        capsule.radius * vhat_NQ + Vector3d{0, 0, -capsule.lz / 2};
+    // Case: point lies *outside* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+
+    // Case: point lies *on* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+
+    // Case: point lies *in* the capsule.
+    EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
+
+    // Case: point lies at bottom end of the capsule's spine.
+    EXPECT_TRUE(tester.Test(p_GN_G, -capsule.radius * vhat_NQ,
+                            true /* is inside */, false /* ill defined */));
+  }
+}
+
 // Simple smoke test for signed distance to Halfspace. It does the following:
 //   Perform test of three different points w.r.t. a halfspace: outside, on
 //     surface, and inside.
@@ -498,6 +584,12 @@ void TestScalarShapeSupport() {
   // Box
   {
     run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
+    EXPECT_EQ(distances.size(), 1);
+  }
+
+  // Capsule
+  {
+    run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
     EXPECT_EQ(distances.size(), 1);
   }
 

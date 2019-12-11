@@ -162,6 +162,102 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
   *is_grad_W_unique = true;
 }
 
+/** Overload of ComputeDistanceToPrimitive() for capsule primitive. */
+template <typename T>
+void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
+                                const math::RigidTransform<T>& X_WG,
+                                const Vector3<T>& p_WQ, Vector3<T>* p_GN,
+                                T* distance, Vector3<T>* grad_W,
+                                bool* is_grad_W_unique) {
+  const double radius = capsule.radius;
+  const double half_length = capsule.lz / 2;
+
+  // If the query point Q is closest to the end caps of the capsule, then we can
+  // re-use the distance to sphere calculations since they are effectively the
+  // same. Since our capsule is aligned with the local z-axis, we can simply
+  // compare the z co-ordinates in the capsule's frame G to determine which
+  // section the query point Q falls in.
+  // z
+  // ^           ●●
+  // |         ●    ●    Top end cap
+  // |--------●------●-------------------
+  // |        ●      ●
+  // |        ●      ●   Spine
+  // |        ●      ●
+  // |--------●------●-------------------
+  // |         ●    ●    Bottom end cap
+  // |           ●●
+
+  const Vector3<T> p_GQ_G = X_WG.inverse() * p_WQ;
+  if (p_GQ_G[2] >= half_length) {
+    // Represent the top end of the capsule using a sphere, Gprime, where its
+    // origin is shifted up by half_length along the z-axis.
+    const math::RigidTransform<T> X_WGprime =
+        X_WG * math::RigidTransform<T>{Vector3<T>{0, 0, half_length}};
+    ComputeDistanceToPrimitive(fcl::Sphered(radius), X_WGprime, p_WQ, p_GN,
+                               distance, grad_W, is_grad_W_unique);
+    // Adjust from Gprime back to frame G by compensating for the half_length.
+    (*p_GN)[2] += half_length;
+
+  } else if (p_GQ_G[2] <= -half_length) {
+    // Represent the bottom end of the capsule using a sphere, Gprime, where its
+    // origin is shifted down by half_length along the z-axis.
+    const math::RigidTransform<T> X_WGprime =
+        X_WG * math::RigidTransform<T>{Vector3<T>{0, 0, -half_length}};
+    ComputeDistanceToPrimitive(fcl::Sphered(radius), X_WGprime, p_WQ, p_GN,
+                               distance, grad_W, is_grad_W_unique);
+    // Adjust from Gprime back to frame G by compensating for the half_length.
+    (*p_GN)[2] -= half_length;
+
+  } else {
+    // Otherwise the query point Q lies in the section nearest to the spine.
+    // The gradient is always in the direction perpendicular from the spine of
+    // the capsule to the query point Q, regardless of whether the point Q is
+    // outside or inside the capsule G. To simplify further, the gradient is
+    // the same from the origin of the capsule G to the point Qprime, where
+    // Qprime is Q with a zeroed-out z value and thus perpendicular to the
+    // spine.
+    // z
+    // ^           ● ●
+    // |         ●     ●
+    // |        ●       ●
+    // |        ●   |---N---> Q
+    // |        ●   |   ●
+    // |        ●   G---●---> Qprime
+    // |        ●   |   ●
+    // |        ●   |   ●
+    // |        ●       ●
+    // |         ●     ●
+    // |           ● ●
+
+    const Vector3<T> p_GQprime_G{p_GQ_G[0], p_GQ_G[1], 0};
+    const T dist_GQprime = p_GQprime_G.norm();
+    // The gradient is undefined if the query point Q is at the spine of the
+    // capsule G. So if it is near the spine of the capsule G within a
+    // tolerance, we arbitrarily set the gradient vector as documented in
+    // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
+    const double tolerance = DistanceToPointRelativeTolerance(radius);
+    // Unit vector in x-direction of G's frame.
+    const Vector3<T> Gx = Vector3<T>::UnitX();
+    *is_grad_W_unique = (dist_GQprime > tolerance);
+    // Gradient vector expressed in G's frame.
+    const Vector3<T> grad_G =
+        *is_grad_W_unique ? p_GQprime_G / dist_GQprime : Gx;
+
+    // p_GN is the position of a witness point N in the geometry frame G.
+    const Vector3<T> p_GNprime = T(radius) * grad_G;
+    *p_GN = {p_GNprime[0], p_GNprime[1], p_GQ_G[2]};
+
+    // Do not compute distance as ∥p_GQ∥₂, because the gradient of ∥p_GQ∥₂
+    // w.r.t. p_GQ is p_GQᵀ/∥p_GQ∥₂ which is not well defined at p_GQ = 0.
+    // Instead, compute the distance as p_NQ_G.dot(grad_G).
+    *distance = (p_GQ_G - *p_GN).dot(grad_G);
+
+    // Gradient vector expressed in World frame.
+    *grad_W = X_WG.rotation() * grad_G;
+  }
+}
+
 // TODO(DamrongGuoy): Add overloads for all supported geometries.
 
 //@}
@@ -204,6 +300,18 @@ class DistanceToPoint {
     Vector3<T> p_GN_G, grad_W;
     bool is_grad_W_unique{};
     ComputeDistanceToPrimitive(halfspace, X_WG_, p_WQ_, &p_GN_G, &distance,
+                               &grad_W, &is_grad_W_unique);
+
+    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                    is_grad_W_unique};
+  }
+
+  /** Overload to compute distance to a capsule.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Capsuled& capsule) {
+    T distance{};
+    Vector3<T> p_GN_G, grad_W;
+    bool is_grad_W_unique{};
+    ComputeDistanceToPrimitive(capsule, X_WG_, p_WQ_, &p_GN_G, &distance,
                                &grad_W, &is_grad_W_unique);
 
     return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
@@ -499,6 +607,7 @@ struct ScalarSupport<double> {
       case fcl::GEOM_BOX:
       case fcl::GEOM_CYLINDER:
       case fcl::GEOM_HALFSPACE:
+      case fcl::GEOM_CAPSULE:
         return true;
       default:
         return false;
@@ -514,6 +623,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
       case fcl::GEOM_SPHERE:
       case fcl::GEOM_BOX:
       case fcl::GEOM_HALFSPACE:
+      case fcl::GEOM_CAPSULE:
         return true;
       default:
         return false;
@@ -583,6 +693,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       case fcl::GEOM_HALFSPACE:
         distance = distance_to_point(
             *static_cast<const fcl::Halfspaced*>(collision_geometry));
+        break;
+      case fcl::GEOM_CAPSULE:
+        distance = distance_to_point(
+            *static_cast<const fcl::Capsuled*>(collision_geometry));
         break;
       default:
         // Returning false tells fcl to continue to other objects.
