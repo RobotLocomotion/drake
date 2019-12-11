@@ -192,6 +192,11 @@ GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
   // IsPhysicallyValid() not supported for non-numeric types.
   ArticulatedBodyInertia<symbolic::Expression> Ps;
   EXPECT_ANY_THROW(Ps.IsPhysicallyValid());
+
+  // Invariant checks are a no-op for non-numeric types, allowing us to create
+  // symbolic ABIs also in Debug builds.
+  EXPECT_NO_THROW(ArticulatedBodyInertia<symbolic::Expression> Ds(
+      Matrix6<symbolic::Expression>::Identity()));
 }
 
 }  // namespace
