@@ -220,11 +220,11 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
             .Eval<std::vector<multibody::SpatialForce<double>>>(context);
     auto output_value = output->get_mutable_value();
     // Force sensor (fy, fz) values, measured in the "tip_link" frame.
-    output_value.head(2) =
+    output_value.head<2>() =
         spatial_vec[sensor_joint_indices_[0]].translational().tail(2);
-    output_value.segment(2, 2) =
+    output_value.segment<2>(2) =
         spatial_vec[sensor_joint_indices_[1]].translational().tail(2);
-    output_value.tail(2) =
+    output_value.tail<2>() =
         spatial_vec[sensor_joint_indices_[2]].translational().tail(2);
   }
 

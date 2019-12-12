@@ -190,6 +190,7 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
 MatrixX<double> ReorderKeyframesForPlant(
     const MultibodyPlant<double>& plant, MatrixX<double> keyframes,
     std::map<std::string, int> *finger_joint_name_to_row_index_map) {
+  DRAKE_DEMAND(finger_joint_name_to_row_index_map != nullptr);
   std::map<std::string, int> original_map = *finger_joint_name_to_row_index_map;
   DRAKE_DEMAND(original_map.size() == static_cast<ulong>(keyframes.rows()));
   MatrixX<double> reordered_keyframes(keyframes);
