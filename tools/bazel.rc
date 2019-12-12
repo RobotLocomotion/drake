@@ -3,9 +3,8 @@ import %workspace%/tools/cc_toolchain/bazel.rc
 import %workspace%/tools/dynamic_analysis/bazel.rc
 import %workspace%/tools/lint/bazel.rc
 
-# Continue to obtain the python runtime from the --python_version flag rather
-# than a toolchain in Bazel 0.27 and above until #11660 is resolved.
-build --incompatible_use_python_toolchains=false
+# Disable native Python rules in Bazel versions before 2.0.
+build --incompatible_load_python_rules_from_bzl=yes
 
 # Default to an optimized build.
 build -c opt

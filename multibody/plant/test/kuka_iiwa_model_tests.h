@@ -53,6 +53,11 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     context_ = plant_->CreateDefaultContext();
 
+    // Fix input ports.
+    const VectorX<double> tau =
+        VectorX<double>::Zero(plant_->num_actuated_dofs());
+    plant_->get_actuation_input_port().FixValue(context_.get(), tau);
+
     // Scalar-convert the model and create a default context for it.
     plant_autodiff_ = std::make_unique<MultibodyPlant<AutoDiffXd>>(*plant_);
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
@@ -65,15 +70,30 @@ class KukaIiwaModelTests : public ::testing::Test {
   void SetArbitraryConfiguration(bool unit_quaternion = true) {
     // Get an arbitrary set of angles and velocities for each joint.
     const VectorX<double> x0 = GetArbitraryJointConfiguration();
+    SetState(x0);
+     if (!unit_quaternion) {
+        VectorX<double> q = plant_->GetPositions(*context_);
+        // TODO(amcastro-tri): This assumes the first 4 entries in the
+        // generalized positions correspond to the quaternion for the free
+        // floating robot base. Provide API to access these values.
+        q.head<4>() *= 2;  // multiply quaternion by a factor.
+        plant_->SetPositions(context_.get(), q);
+    }
+  }
 
+  // Sets the state of the joints according to x_joints. The pose and spatial
+  // velocity of the base is set arbitrarily to a non-identity pose and non-zero
+  // spatial velocity.
+  void SetState(const VectorX<double>& x_joints) {
     EXPECT_EQ(plant_->num_joints(), 7);
     for (JointIndex joint_index(0); joint_index < plant_->num_joints();
          ++joint_index) {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->get_joint(joint_index));
-      joint.set_angle(context_.get(), x0[joint_index]);
-      joint.set_angular_rate(context_.get(), x0[kNumJoints + joint_index]);
+      joint.set_angle(context_.get(), x_joints[joint_index]);
+      joint.set_angular_rate(context_.get(),
+                             x_joints[kNumJoints + joint_index]);
     }
 
     // Set an arbitrary (though non-identity) pose of the floating base link.
@@ -86,17 +106,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // Set an arbitrary non-zero spatial velocity of the floating base link.
     const Vector3<double> w_WB{-1, 1, -1};
     const Vector3<double> v_WB{1, -1, 1};
-    plant_->SetFreeBodySpatialVelocity(
-        context_.get(), base_body, {w_WB, v_WB});
-
-    if (!unit_quaternion) {
-        VectorX<double> q = plant_->GetPositions(*context_);
-        // TODO(amcastro-tri): This assumes the first 4 entries in the
-        // generalized positions correspond to the quaternion for the free
-        // floating robot base. Provide API to access these values.
-        q.head<4>() *= 2;  // multiply quaternion by a factor.
-        plant_->SetPositions(context_.get(), q);
-    }
+    plant_->SetFreeBodySpatialVelocity(context_.get(), base_body, {w_WB, v_WB});
   }
 
   // Gets an arm state to an arbitrary configuration in which joint angles and

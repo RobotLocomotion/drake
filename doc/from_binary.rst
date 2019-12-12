@@ -4,6 +4,8 @@
 Binary installation (macOS, Ubuntu)
 ***********************************
 
+.. _nightly-releases:
+
 Nightly releases
 ================
 
@@ -29,6 +31,9 @@ instead.
 
 For using Python bindings, see :ref:`Binary Installation for Python
 <python-bindings-binary>`.
+
+You may also use these binary releases in Docker images. See :ref:`docker_hub`
+for more information.
 
 Drake binary releases incorporate a pre-compiled version of
 `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`_ as part of the

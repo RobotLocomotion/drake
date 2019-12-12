@@ -808,6 +808,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
       const int num_v = sub_xc.get_generalized_velocity().size();
+      if (num_v == 0) continue;
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
@@ -855,6 +856,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc.get_generalized_position().size();
+      if (num_q == 0) continue;
       const Eigen::Ref<const VectorX<T>>& dq_slice =
           qdot.segment(q_index, num_q);
 

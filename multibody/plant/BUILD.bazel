@@ -307,6 +307,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
         "//multibody/parsing",
+        "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
     ],
@@ -349,6 +350,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//multibody/parsing",
+        "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/framework",
     ],
 )
@@ -368,6 +370,15 @@ drake_cc_library(
         "//common:find_resource",
         "//math:geometric_transform",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_forward_dynamics_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

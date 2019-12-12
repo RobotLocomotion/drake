@@ -3,11 +3,6 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
-)
-load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
@@ -28,6 +23,27 @@ drake_cc_library(
         "//multibody/plant",
         "//systems/lcm:lcm_interface_system",
         "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
+    name = "planar_gripper_lcm",
+    srcs = ["planar_gripper_lcm.cc"],
+    hdrs = ["planar_gripper_lcm.h"],
+    deps = [
+        "//lcmtypes:planar_gripper",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "planar_manipuland_lcm",
+    srcs = ["planar_manipuland_lcm.cc"],
+    hdrs = ["planar_manipuland_lcm.h"],
+    deps = [
+        "//lcmtypes:planar_manipuland_status",
+        "//systems/framework:event_collection",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -132,6 +148,24 @@ drake_cc_googletest(
     deps = [
         ":gripper_brick_planning_constraint_helper",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_manipuland_lcm_test",
+    deps = [
+        ":planar_manipuland_lcm",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_gripper_lcm_test",
+    deps = [
+        ":planar_gripper_lcm",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
     ],
 )
 

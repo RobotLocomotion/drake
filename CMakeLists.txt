@@ -195,34 +195,65 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
+# The paths within which to search for the python3 executable should match the
+# interpreter paths for the Python runtimes in the Python toolchains
+# registered by Bazel in WORKSPACE.
+#
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
+  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/bin)
   set(SUPPORTED_PYTHON_VERSIONS 3.7)
 else()
+  set(FIND_PROGRAM_PYTHON3_PATHS /usr/bin)
   set(SUPPORTED_PYTHON_VERSIONS 3.6)
 endif()
 
-if(PYTHON_EXECUTABLE)
-  find_package(PythonInterp MODULE REQUIRED)
-else()
-  if(APPLE)
-    # Prefer python3 executable in /usr/local/bin.
-    list(INSERT CMAKE_PROGRAM_PATH 0 /usr/local/bin)
-    find_program(PYTHON_EXECUTABLE NAMES python3)
-    mark_as_advanced(PYTHON_EXECUTABLE)
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  find_program(PYTHON_EXECUTABLE NAMES python3
+    PATHS "${FIND_PROGRAM_PYTHON3_PATHS}"
+    NO_DEFAULT_PATH
+  )
+  if(NOT PYTHON_EXECUTABLE)
+    message(FATAL_ERROR "Could NOT find the python3 executable")
   endif()
   find_package(PythonInterp 3 EXACT MODULE REQUIRED)
+  set(PYTHON_VERSION_MAJOR_MINOR
+    "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
+  )
+else()
+  if(PYTHON_EXECUTABLE)
+    set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}" CACHE FILEPATH
+      "Path to the python3 executable" FORCE
+    )
+    unset(PYTHON_EXECUTABLE CACHE)
+  endif()
+  find_program(Python_EXECUTABLE NAMES python3
+    PATHS "${FIND_PROGRAM_PYTHON3_PATHS}"
+    NO_DEFAULT_PATH
+  )
+  if(NOT Python_EXECUTABLE)
+    message(FATAL_ERROR "Could NOT find the python3 executable")
+  endif()
+  set(Python_FIND_STRATEGY LOCATION)
+  find_package(Python 3 EXACT MODULE REQUIRED
+    COMPONENTS Development Interpreter NumPy
+  )
+  if(NOT Python_INTERPRETER_ID STREQUAL Python)
+    message(WARNING
+      "Python interpreter ${Python_INTERPRETER_ID} is NOT supported. Python "
+      "code in project drake_cxx_python may fail at runtime."
+    )
+  endif()
+  set(PYTHON_VERSION_MAJOR_MINOR
+    "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}"
+  )
 endif()
-
-set(PYTHON_VERSION_MAJOR_MINOR
-  "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
-)
 
 if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
   message(WARNING
-    "Python ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python code in "
-    "project drake_cxx_python may fail at runtime."
+    "Python version ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python "
+    "code in project drake_cxx_python may fail at runtime."
   )
 endif()
 

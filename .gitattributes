@@ -1,9 +1,7 @@
 # These lines tell reviewable.io how to highlight source code.
-**/*.bzl diff=python
-**/*.BUILD diff=python
-**/BUILD diff=python
-**/BUILD.bazel diff=python
 WORKSPACE diff=python
+**/*.bazel diff=python
+**/*.bzl diff=python
 **/*.cps diff=json
 
 # These lines tell git diff viewers to ignore data objects.

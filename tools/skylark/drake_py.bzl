@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+
 def drake_py_library(
         name,
         deps = None,
@@ -8,7 +10,7 @@ def drake_py_library(
 
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
-    native.py_library(
+    py_library(
         name = name,
         deps = deps,
         **kwargs
@@ -130,7 +132,7 @@ def drake_py_binary(
         main = srcs[0]
     _py_target_isolated(
         name = name,
-        py_target = native.py_binary,
+        py_target = py_binary,
         isolate = isolate,
         srcs = srcs,
         main = main,
@@ -223,7 +225,7 @@ def drake_py_test(
         tags = tags + ["py"]
     _py_target_isolated(
         name = name,
-        py_target = native.py_test,
+        py_target = py_test,
         isolate = isolate,
         size = size,
         srcs = srcs,
@@ -240,7 +242,7 @@ def py_test_isolated(
     """
     _py_target_isolated(
         name = name,
-        py_target = native.py_test,
+        py_target = py_test,
         isolate = True,
         **kwargs
     )

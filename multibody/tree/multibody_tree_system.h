@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
@@ -90,6 +91,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.velocity_kinematics)
         .template Eval<VelocityKinematicsCache<T>>(context);
+  }
+
+  /** Returns a reference to the up to date ArticulatedBodyInertiaCache stored
+  in the given context, recalculating it first if necessary. 
+  See @ref internal_forward_dynamics
+  "Articulated Body Algorithm Forward Dynamics" for further details. */
+  const ArticulatedBodyInertiaCache<T>& EvalArticulatedBodyInertiaCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.abi_cache_index)
+        .template Eval<ArticulatedBodyInertiaCache<T>>(context);
   }
 
   /** Returns a reference to the up to date cache of per-body spatial inertias
@@ -189,8 +200,9 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // This struct stores in one single place all indexes related to
   // MultibodyTreeSystem specific cache entries.
   struct CacheIndexes {
-    systems::CacheIndex dynamic_bias;
+    systems::CacheIndex abi_cache_index;
     systems::CacheIndex across_node_jacobians;
+    systems::CacheIndex dynamic_bias;
     systems::CacheIndex position_kinematics;
     systems::CacheIndex spatial_inertia_in_world;
     systems::CacheIndex velocity_kinematics;
