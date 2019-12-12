@@ -342,6 +342,20 @@ class SymbolicVectorSystemBuilder {
         Eigen::Map<const VectorX<symbolic::Expression>>(e.data(), e.size()));
   }
 
+  /// Linearizes the system dynamics around `(x0, u0)` using the first-order
+  /// Taylor Series expansion.
+  ///
+  /// @pre The length of @p x0 should be the length of `state()`.
+  /// @pre The length of @p u0 should be the length of `input()`.
+  /// @pre @p x0 and @p u0 should not include a state variable or an input
+  /// variable.
+  ///
+  /// @note If @p x0 or @p u0 includes a variable new to this system builder, it
+  /// will be added to this system builder as a parameter.
+  SymbolicVectorSystemBuilder LinearizeDynamics(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& x0,
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& u0);
+
   /// Sets the time period (0 is continuous time).
   SymbolicVectorSystemBuilder time_period(double p) {
     time_period_ = p;

@@ -12,8 +12,76 @@ using Eigen::Ref;
 using symbolic::Environment;
 using symbolic::Expression;
 using symbolic::Jacobian;
+using symbolic::Substitution;
 using symbolic::Variable;
 using symbolic::Variables;
+
+namespace {
+
+// Returns the first-order Taylor-series of @p f at @p a. The substitution a
+// provides the linearization point.
+Expression FirstOrderTaylorExpand(const Expression& f, const Substitution& a) {
+  // f(a) + ∑ᵢ (xᵢ - aᵢ)∂f/∂xᵢ(a)
+  Expression ret = f.Substitute(a);  // f(a)
+  for (const auto& p : a) {
+    const Variable& x_i = p.first;
+    const Expression& a_i = p.second;
+    // Add (xᵢ - aᵢ)∂f/∂xᵢ(a)
+    ret += (x_i - a_i) * f.Differentiate(x_i).Substitute(a);
+  }
+  return ret.Expand();
+}
+
+// Checks if @p v is in @p variables.
+inline bool Includes(const Ref<const VectorX<Variable>>& variables,
+                     const Variable& v) {
+  for (int i = 0; i < variables.size(); ++i) {
+    if (variables[i].equal_to(v)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace
+
+SymbolicVectorSystemBuilder SymbolicVectorSystemBuilder::LinearizeDynamics(
+    const Ref<const VectorX<Expression>>& x0,
+    const Ref<const VectorX<Expression>>& u0) {
+  DRAKE_DEMAND(state_vars_.size() == x0.size());
+  DRAKE_DEMAND(input_vars_.size() == u0.size());
+
+  // Build a substitution and collect all variables in x0 and u0.
+  Substitution subst;
+  Variables variables;
+  for (int i = 0; i < state_vars_.size(); ++i) {
+    subst.emplace(state_vars_[i], x0[i]);
+    variables += x0[i].GetVariables();
+  }
+  for (int i = 0; i < input_vars_.size(); ++i) {
+    subst.emplace(input_vars_[i], u0[i]);
+    variables += u0[i].GetVariables();
+  }
+
+  // Linearize dynamics.
+  for (int i = 0; i < dynamics_.size(); ++i) {
+    dynamics_[i] = FirstOrderTaylorExpand(dynamics_[i], subst);
+  }
+
+  // Update parameters.
+  for (const auto& var : variables) {
+    DRAKE_DEMAND(!Includes(state_vars_, var));
+    DRAKE_DEMAND(!Includes(input_vars_, var));
+    if (!Includes(parameter_vars_, var)) {
+      const auto prev_size = parameter_vars_.size();
+      parameter_vars_.conservativeResize(prev_size + 1);
+      parameter_vars_[prev_size] = var;
+    }
+  }
+
+  SymbolicVectorSystemBuilder result = *this;
+  return result;
+}
 
 template <typename T>
 SymbolicVectorSystem<T>::SymbolicVectorSystem(
