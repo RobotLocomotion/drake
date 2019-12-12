@@ -11,7 +11,7 @@ repositories:
   sdformat:
     type: hg
     url: https://bitbucket.org/osrf/sdformat
-    version: spec2_prototype_9
+    version: sdf9
   ign_tools:
     type: hg
     url: https://bitbucket.org/ignitionrobotics/ign-tools
