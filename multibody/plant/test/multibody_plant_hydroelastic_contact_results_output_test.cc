@@ -140,7 +140,10 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
             results.quadrature_point_data().size());
 
   // Sanity check that geometry ID is consistent with direction of spatial
-  // force.
+  // force. This check is based upon the convention that the force points into
+  // Body A. If Body A is the ball, we expect the z-dimension of the
+  // translational component of the spatial force to be positive; otherwise
+  // we expect it to be negative.
   const std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(
           plant_->GetBodyByName("Ball"));
