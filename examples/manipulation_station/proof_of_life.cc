@@ -93,20 +93,16 @@ int do_main(int argc, char* argv[]) {
 
   // Position command should hold the arm at the initial state.
   Eigen::VectorXd q0 = station->GetIiwaPosition(station_context);
-  station_context.FixInputPort(
-      station->GetInputPort("iiwa_position").get_index(), q0);
+  station->GetInputPort("iiwa_position").FixValue(&station_context, q0);
 
   // Zero feed-forward torque.
-  station_context.FixInputPort(
-      station->GetInputPort("iiwa_feedforward_torque").get_index(),
-      VectorXd::Zero(station->num_iiwa_joints()));
+  station->GetInputPort("iiwa_feedforward_torque")
+      .FixValue(&station_context, VectorXd::Zero(station->num_iiwa_joints()));
 
   // Nominal WSG position is open.
-  station_context.FixInputPort(
-      station->GetInputPort("wsg_position").get_index(), Vector1d(0.1));
+  station->GetInputPort("wsg_position").FixValue(&station_context, 0.1);
   // Force limit at 40N.
-  station_context.FixInputPort(
-      station->GetInputPort("wsg_force_limit").get_index(), Vector1d(40.0));
+  station->GetInputPort("wsg_force_limit").FixValue(&station_context, 40.0);
 
   if (!FLAGS_test) {
     std::random_device rd;

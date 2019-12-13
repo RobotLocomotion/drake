@@ -51,26 +51,21 @@ GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
   std::unique_ptr<systems::SystemOutput<double>> output =
       controller.AllocateOutput();
 
-  auto estimated_state_input =
-      std::make_unique<BasicVector<double>>(2 * kIiwaArmNumJoints);
-  estimated_state_input->get_mutable_value() << q, v;
+  VectorX<double> estimated_state_input(2 * kIiwaArmNumJoints);
+  estimated_state_input << q, v;
 
-  auto desired_state_input =
-      std::make_unique<BasicVector<double>>(2 * kIiwaArmNumJoints);
-  desired_state_input->get_mutable_value() << q_des, v_des;
+  VectorX<double> desired_state_input(2 * kIiwaArmNumJoints);
+  desired_state_input << q_des, v_des;
 
-  auto desired_torque_input =
-      std::make_unique<BasicVector<double>>(kIiwaArmNumJoints);
-  desired_torque_input->get_mutable_value() << torque_des;
+  VectorX<double> desired_torque_input(kIiwaArmNumJoints);
+  desired_torque_input << torque_des;
 
-  context->FixInputPort(
-      controller.get_input_port_estimated_state().get_index(),
-      std::move(estimated_state_input));
-  context->FixInputPort(controller.get_input_port_desired_state().get_index(),
-                        std::move(desired_state_input));
-  context->FixInputPort(
-      controller.get_input_port_commanded_torque().get_index(),
-      std::move(desired_torque_input));
+  controller.get_input_port_estimated_state().FixValue(context.get(),
+                                                       estimated_state_input);
+  controller.get_input_port_desired_state().FixValue(context.get(),
+                                                     desired_state_input);
+  controller.get_input_port_commanded_torque().FixValue(context.get(),
+                                                        desired_torque_input);
 
   // Compute gravity compensation torque.
   Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);
@@ -122,26 +117,21 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
   std::unique_ptr<systems::SystemOutput<double>> output =
       controller.AllocateOutput();
 
-  auto estimated_state_input =
-      std::make_unique<BasicVector<double>>(2 * kIiwaArmNumJoints);
-  estimated_state_input->get_mutable_value() << q, v;
+  VectorX<double> estimated_state_input(2 * kIiwaArmNumJoints);
+  estimated_state_input << q, v;
 
-  auto desired_state_input =
-      std::make_unique<BasicVector<double>>(2 * kIiwaArmNumJoints);
-  desired_state_input->get_mutable_value() << q_des, v_des;
+  VectorX<double> desired_state_input(2 * kIiwaArmNumJoints);
+  desired_state_input << q_des, v_des;
 
-  auto desired_torque_input =
-      std::make_unique<BasicVector<double>>(kIiwaArmNumJoints);
-  desired_torque_input->get_mutable_value() << torque_des;
+  VectorX<double> desired_torque_input(kIiwaArmNumJoints);
+  desired_torque_input << torque_des;
 
-  context->FixInputPort(
-      controller.get_input_port_estimated_state().get_index(),
-      std::move(estimated_state_input));
-  context->FixInputPort(controller.get_input_port_desired_state().get_index(),
-                        std::move(desired_state_input));
-  context->FixInputPort(
-      controller.get_input_port_commanded_torque().get_index(),
-      std::move(desired_torque_input));
+  controller.get_input_port_estimated_state().FixValue(context.get(),
+                                                       estimated_state_input);
+  controller.get_input_port_desired_state().FixValue(context.get(),
+                                                     desired_state_input);
+  controller.get_input_port_commanded_torque().FixValue(context.get(),
+                                                        desired_torque_input);
 
   // Compute gravity compensation torque.
   Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);
@@ -196,26 +186,21 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   std::unique_ptr<systems::SystemOutput<double>> output =
       controller.AllocateOutput();
 
-  auto estimated_state_input =
-      std::make_unique<BasicVector<double>>(2 * kIiwaArmNumJoints);
-  estimated_state_input->get_mutable_value() << q, v;
+  VectorX<double> estimated_state_input(2 * kIiwaArmNumJoints);
+  estimated_state_input << q, v;
 
-  auto desired_state_input =
-      std::make_unique<BasicVector<double>>(2 * kIiwaArmNumJoints);
-  desired_state_input->get_mutable_value() << q_des, v_des;
+  VectorX<double> desired_state_input(2 * kIiwaArmNumJoints);
+  desired_state_input << q_des, v_des;
 
-  auto desired_torque_input =
-      std::make_unique<BasicVector<double>>(kIiwaArmNumJoints);
-  desired_torque_input->get_mutable_value() << torque_des;
+  VectorX<double> desired_torque_input(kIiwaArmNumJoints);
+  desired_torque_input << torque_des;
 
-  context->FixInputPort(
-      controller.get_input_port_estimated_state().get_index(),
-      std::move(estimated_state_input));
-  context->FixInputPort(controller.get_input_port_desired_state().get_index(),
-                        std::move(desired_state_input));
-  context->FixInputPort(
-      controller.get_input_port_commanded_torque().get_index(),
-      std::move(desired_torque_input));
+  controller.get_input_port_estimated_state().FixValue(context.get(),
+                                                       estimated_state_input);
+  controller.get_input_port_desired_state().FixValue(context.get(),
+                                                     desired_state_input);
+  controller.get_input_port_commanded_torque().FixValue(context.get(),
+                                                        desired_torque_input);
 
   // Compute gravity compensation torque.
   Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);

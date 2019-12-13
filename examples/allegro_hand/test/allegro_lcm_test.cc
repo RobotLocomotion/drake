@@ -55,8 +55,7 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
     command.joint_position[i] = position(i) + delta(i);
   }
 
-  context->FixInputPort(
-      0, std::make_unique<Value<lcmt_allegro_command>>(command));
+  dut.get_input_port(0).FixValue(context.get(), command);
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
@@ -92,19 +91,18 @@ GTEST_TEST(AllegroLcmTest, AllegroStatusSenderTest) {
 
   Eigen::VectorXd command = Eigen::VectorXd::Zero(kAllegroNumJoints * 2);
   command.head(kAllegroNumJoints) = position * 0.5;
-  context->FixInputPort(dut.get_command_input_port().get_index(), command);
+  dut.get_command_input_port().FixValue(context.get(), command);
 
   Eigen::VectorXd state = Eigen::VectorXd::Zero(kAllegroNumJoints * 2);
   state.head(kAllegroNumJoints) = position;
   state.tail(kAllegroNumJoints) << 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8,
                                    0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1;
-  context->FixInputPort(dut.get_state_input_port().get_index(), state);
+  dut.get_state_input_port().FixValue(context.get(), state);
 
   Eigen::VectorXd torque = Eigen::VectorXd::Zero(kAllegroNumJoints);
   torque << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1,
             2.2, 2.3, 2.4, 2.5, 2.6;;
-  context->FixInputPort(
-      dut.get_commanded_torque_input_port().get_index(), torque);
+  dut.get_commanded_torque_input_port().FixValue(context.get(), torque);
 
   dut.CalcOutput(*context, output.get());
   lcmt_allegro_status status =

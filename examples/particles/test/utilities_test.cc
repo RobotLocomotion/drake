@@ -49,12 +49,10 @@ TYPED_TEST_P(SingleDOFEulerJointTest, OutputTest) {
   // Set input.
   const systems::InputPort<TypeParam>& input_port =
       this->dut_->get_input_port(0);
-  auto input = std::make_unique<systems::BasicVector<TypeParam>>(
-      input_port.size());
-  input->SetZero();
-  input->SetAtIndex(0, static_cast<TypeParam>(1.0));  // q0 = 1.0
-  input->SetAtIndex(input->size()/2, static_cast<TypeParam>(5.0));  // v0 = 5.0
-  this->context_->FixInputPort(0, std::move(input));
+  VectorX<TypeParam> input = VectorX<TypeParam>::Zero(input_port.size());
+  input[0] = static_cast<TypeParam>(1.0);  // q0 = 1.0
+  input[input.size()/2] = static_cast<TypeParam>(5.0);  // v0 = 5.0
+  this->dut_->get_input_port(0).FixValue(this->context_.get(), input);
   // Compute outputs.
   this->dut_->CalcOutput(*this->context_, this->output_.get());
   const systems::BasicVector<TypeParam>* output =

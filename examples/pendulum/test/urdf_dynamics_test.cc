@@ -26,8 +26,8 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto context_rbp = rbp.CreateDefaultContext();
   auto context_p = p.CreateDefaultContext();
 
-  auto& u_rbp = context_rbp->FixInputPort(0, Vector1d::Zero());
-  auto& u_p = context_p->FixInputPort(0, Vector1d::Zero());
+  auto& u_rbp = rbp.get_input_port(0).FixValue(context_rbp.get(), 0.);
+  auto& u_p = p.get_input_port().FixValue(context_p.get(), 0.);
 
   Eigen::Vector2d x;
   Vector1d u;
