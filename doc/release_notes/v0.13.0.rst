@@ -80,3 +80,114 @@ This release provides `pre-compiled binaries <https://github.com/RobotLocomotion
 Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. _drake_bazel_external: https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external
+
+Commits to be categorized
+-------------------------
+
+Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
+Current newest_commit a7aa26510ec00833a2719c0420763d4fa649c744 (inclusive).
+
+* Add pandas as a source dependency (`#12328`_)
+* geometry: create ellipsoid meshes (`#12323`_)
+* Update supported Xcode version to 11.2 (`#12331`_)
+* geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
+* Port planar_scenegraph_visualizer from underactuated (`#12218`_)  # Mesh support is removed for now See https://github.com/RobotLocomotion/drake/issues/11104 Co-authored-by: Russ Tedrake <russt@mit.edu> Co-authored-by: Eric Cousineau <eric.cousineau@tri.global> Co-authored-by: Greg Izatt <gregory.izatt@gmail.com>
+* Updates the planar_gripper model to match the hardware (`#12308`_)  # Also updates the planar_brick.sdf model to match the 100x100x70 mm physical brick.
+* Store indeterminates and decision variables in symbolic::Polynomial as members (`#11790`_)
+* workspace: Add missing pthread linkopts for MOSEK (`#12337`_)
+* Fix variable name in FindTinyXML2 (`#12339`_)
+* Install pkg-config during binary prerequisites install to help CMake locate packages (`#12339`_)
+* Do not install Python 2.7 on Mac (`#12339`_)
+* geometry: create pressure fields for ellipsoids and spheres in hydroelastic contact models (`#12333`_)
+* Documents forward dynamics algorithm and notation in MBT (`#12317`_)
+* Support collision queries with capsule (`#12343`_)
+* Add sdf parsing for ellipsoids (`#12324`_)
+* Add python binding for DistanceConstraint (`#12346`_)
+* Move graphviz to binary installation prerequisites since we install pydot (`#12340`_)  # In particular, macOS installs pydot via pip, but graphviz via Homebrew, so the dependency is not automatic.
+* Reorder and regroup MBPlant API (`#12342`_)
+* Adds a weld joint to the planar_gripper fingers (`#12338`_)  # at the force sensor interface, splitting link 2 into two separate links. This allows reaction force measurement via MBP. Also fixes a bug in the definition of finger orientations.
+* Improve RollPitchYaw and RotationMatrix class documentation (#12345) (`#12345`_)
+* geometry: pressure fields in cylinders for hydroelastic contact model (`#12348`_)
+* Complete visualizer port with obj to mesh bindings (`#12349`_)
+* Updates integrator documentation (`#12350`_)  # Reorganizes the integrator documentation and documents initial step size behavior (and caveats).
+* Clear superfluous executable bits (`#12356`_)
+* Renames event collection merge methods (`#12357`_)
+* workspace: Upgrade meshcat_python to latest commit (`#12365`_)
+* Add Dockerfile for building images for Docker Hub (`#12364`_)
+* Change MBP's TAMSI solver success assertion into an exception (`#12361`_)  # with a detailed description of possible causes/actions.
+* libdrake: Clarify headers vs shared-library dependencies (`#12362`_)
+* py systems: Bind `System.SetDefaultContext` and `Simulator.reset_context` (`#12368`_)
+* Rename/simplify/reword MultibodyTreeElement to produce better doxygen (`#12352`_)
+* pydrake doc: Update suggestions for debugging mkdoc (`#12370`_)
+* Fixes for building and testing Drake in a Docker container (`#12367`_)
+* Pybind an overloaded AddQuadraticCost (`#12375`_)  # Pybind an overloaded AddQuadraticCost.
+* Pybind add constraint (`#12371`_)  # Add python binding for MathematicalProgram::AddConstraint(constraint, vars)
+* Update stale instructions on subclassing Shape specification (`#12372`_)
+* Simplify and deprecate get_ accessors in shape specification API (`#12373`_)
+* lint: Make find_all_sources more paranoid (`#12369`_)
+* Provide access to owning MBPlant from any MBElement (`#12380`_)
+* Adds coverage to two blocks of code in IntegratorBase (`#12363`_)
+* libdrake: Use alwayslink instead of legacy_whole_archive (`#12262`_)  # As a side-effect, duplicate definitions (e.g., of main) are now an error.
+* Ensure compiler is absolute path for compiler-related tests (`#12384`_)
+* py geometry: Ensure all submodules are part of .all (`#12383`_)
+* Fix various CMake lint issues (`#12381`_)
+* Adds a query for signed distance between a single pair of geometries (`#12379`_)  # QueryObject has a new method. It attempts to produce a signed distance pair result between a user-specified pair of geometries.
+* Add capsule to the solar system visualisation (`#12374`_)
+* lint: Ignore bazel-kcov artifacts in find_all_sources (`#12385`_)
+* Do not run Valgrind Memcheck on print_host_settings_test (`#12394`_)
+* geometry_properties: Permit type erasure (for Python) (`#12389`_)
+* py tree: Bind `world_model_instance`, `default_model_instance` (`#12389`_)
+* py geometry: Bind properties and role assignment (`#12389`_)  # With some additional rendering functionality Co-Authored-By: mpetersen94 <markpetersen@g.harvard.edu>
+* py geometry: Permit casting RenderLabel to int (`#12390`_)
+* framework: Improve error message when cloning a non-root Context (`#12391`_)  # The old message "abort: Failure at systems/framework/dependency_tracker.cc:238 in RepairTrackerPointers(): condition 'map_entry != tracker_map.end()' failed." was not very helpful.
+* Added new generalized acceleration ports (`#12354`_)
+* Changed dt to h in integrator documentation and internals (`#12392`_)
+* Hydroelastic spatial force visualization (`#12378`_)  # Adds the ability to visualize spatial forces (force and moment) to drake visualizer.
+* py geometry: Bind property retrieval (`#d589124dad20aabe200b18c7fa9254c1dfcbb6a4`_)  # Clean up binding order and use of `Class` / `cls_doc` aliases
+* tutorials: Add example of rendering which uses MultibodyPlant (`#4668d74fb6e4455108b164082712339aa7fd6163`_)
+* doc: Make tutorials more discoverable (`#fc5afc581f7dbcccf75133e5f84c9ebd8ab14977`_)
+* workspace: Upgrade fcl to latest commit (`#12395`_)
+* workspace: Upgrade ghc_filesystem to latest release 1.2.8 (`#12395`_)
+* workspace: Upgrade ignition_math to latest release 6.4.0 (`#12395`_)
+* workspace: Upgrade json to latest release 3.7.3 (`#12395`_)
+* workspace: Upgrade lcm to latest commit (`#e4ecdcfb330c91c864f2206d078e836fe5872e30`_)
+* workspace: Upgrade meshcat to latest commit (`#12395`_)
+* workspace: Upgrade sdformat to latest release 8.6.0 (`#12395`_)
+* workspace: Upgrade semantic_version to latest release 2.8.3 (`#12395`_)
+* Add MathematicalProgram::indeterminates_index() (`#12405`_)
+* solvers: Add package_library decorations for fbstab (`#12407`_)
+* geometry: enable soft/rigid sphere, box, cylinder, and ellipsoid in hydroelastic contact model (`#12358`_)
+* pydrake doxygen: Capture convention for partitioned `*_py.cc` modules (`#12403`_)
+* doc: Add past release notes (`#12411`_)
+* Add Python binding for ComputeSignedDistancePairClosestPoints (`#12408`_)  # DistanceConstraint also uses ComputeSignedDistancePairClosestPoints.
+* doc: Add release download links; fix doxygen dot path (`#12416`_)
+* geometry: document QueryObject::ComputeContactSurfaces() (`#12413`_)
+* Update recommended bazel version to 1.2 (`#12396`_)  # We'll leave the minimum unchanged (at 1.1) -- in theory the 1.x series is compatible, so we should not raise the hard minimum absent knowledge of a specific feature that is only in 1.2 Also bump documentation to reflect Drake CI's macOS image's use of CMake version 3.16.
+* Add BoundingVolumeHierarchy class (`#12347`_)  # - add RigidMesh struct layer to hold the bvh, similar to the SoftMesh struct layer - create AABB tree with first pass on splitting branches based on axis spread, optimisations to come
+* tools: fix show_hydroelastic_contact plugin of drake_visualizer (`#12417`_)
+* Update image_show.py to be python 3 compatible (`#12422`_)  # In python 2, map(func, list) produced a list. In python 3 it produces an iterator. However, in one specific case, we are assuming it is a list and asking it for its length. This makes an explicit conversion from the iterator the expected list.
+* Add matrix version of Environment::insert (`#12409`_)
+* lint: Ask before rewriting thousands of files (`#12424`_)  # Better to ask for a confirmation, versus trying to guess in util.py whether or not find_all_sources did the right thing.
+* Tests for capsule support for distance to shape in proximity engine (`#12332`_)
+* Use ByteSizeLong instead of ByteSize for Protobuf 3.11.0 or above (`#12425`_)
+* Reordering the definitions and declarations in symbolic_expression.h (`#12427`_)  # The new ordering is: 1) In namespace drake::symbolic: Introduce symbolic::Expression and its utility functions. 2) In namespace std: Provide specialization of std::hash, std::less, std::equal_to, std::numeric_limits, std::uniform_real_distribution, std::normal_distribution, std::exponential_distribution for symbolic::Expression. 3) In namespace Eigen: Provide specialization of NumTraits, ScalarBinaryOpTraits for symbolic::Expression. 4) In namespace drake::symbolic: Definitions and declarations using symbolic Eigen Dense/Sparse matrix. 5) In namespace Drake: Extra overloading that should be in this namespace.
+* Add Evaluate for symbolic SparseMatrix (`#12406`_)  # Also rewrite GetDistinctVariables using Eigen's visit method.
+* py systems: Ensure names get copied for scalar conversion (`#12429`_)
+* More syntactic sugar for SymbolicVectorSystemBuilder (`#12421`_)  # `state`, `input`, `parameter`, `dynamics`, and `output` setters have std::vector variants. So that a user can write `.dynamics({-x_[1], -x_[0] + 3})` instead of `.dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))`. Also add `SymbolicVectorSystem::dynamics_for_variable`.
+* Updates the documentation on the use of accuracy in the Context (`#12428`_)
+* Removing grad_H from ContactSurface (`#12432`_)  # We are no longer using the grad_h value to define the normal of the contact surface. Instead, we're using the triangle normals of the surface itself. So, we remove the field and change downstream references to use the face normal instead. This act revealed some imprecision in the documented and implemented behaviors of the triangle normals. Where appropriate new documentation has been added (and tested) to help clarify the expectations of normals.
+* Remove deprecated methods (2019-12-01) (`#12431`_)
+* workspace: Upgrade octomap to latest release 1.9.1 (`#12426`_)
+* workspace: Upgrade ghc_filesystem to latest release 1.2.10 (`#12426`_)
+* workspace: Upgrade fmt to latest release 6.1.0 (`#12426`_)
+* tutorials: Add brief tutorial for optimization using MultibodyPlant (`#12433`_)  # Focused on custom evaluators
+* tutorials: Remove last cells from notebooks (`#12437`_)  # Also save with newest Python (3.6.9) for Ubuntu Bionic
+* Fixes qdot-to-v mapping (and back) for discrete MultibodyPlant (`#12355`_)
+* Removed referring triangles from SurfaceMesh (`#12438`_)
+* Revert "workspace: Upgrade lcm to latest commit" (`#12447`_)  # This reverts commit e4ecdcfb330c91c864f2206d078e836fe5872e30. Upstream commit 6b9099a15675794a94d7198dd69840bcd5432f25 makes LCM leaky on Linux.
+* Add the lcm utility for planar manipuland (`#12439`_)  # Add the lcm utility for planar manipuland.
+* docker: Add link to published images in documentation (`#12446`_)
+* proto: Use lcm encoding (not protobuf) for call_python (`#12442`_)  # In 0d7f74ca6fe2fb5904a6120c5a453ec04e769e39 way back in 2017, we stopped using LCM for call_matlab because its runtime support library for was incompatible with MATLAB.  However, the message serialization itself was never a problem (only the networking), and anyway for call_python there are no compatibility problems with LCM.  So to drop the heavy dependency on protobuf, we'll use LCM message serialization for call_python RPCs. (As a consequence, some of the build system code for generating protobuf messages is now dead code, but I'll do that purge separately because it's finicky and substantial.)
+* Fixes negative real time factors in Drake visualizer (`#12444`_)
+* lcm: Add acceptance test to rule out IP address crosstalk (`#12451`_)
+* Implements ABA forward dynamics (`#12412`_)
