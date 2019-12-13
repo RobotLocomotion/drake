@@ -5,8 +5,6 @@ Drake v0.13.0
 Announcements
 -------------
 
-TBD
-
 * Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_).
 
 Breaking changes since v0.12.0
@@ -60,15 +58,29 @@ TBD
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
-TBD
+* TBD DistanceConstraint (`#12346`_)
+* TBD System.SetDefaultContext (`#12368`_)
+* TBD Simulator.reset_context (`#12368`_)
+* TBD overloaded AddQuadraticCost (`#12375`_)
+* TBD AddConstraint (`#12371`_)
+* TBD py geometry: Ensure all submodules are part of .all (`#12383`_)
+* TBD tree.world_model_instance (`#12389`_)
+* TBD tree.default_model_instance (`#12389`_)
+* TBD geometry properties and role assignment (`#12389`_)
+* TBD geometry casting RenderLabel to int (`#12390`_)
+* TBD geometry property retrieval (`#12388`_)
+* TBD ComputeSignedDistancePairClosestPoints (`#12408`_)
+* Fix: Ensure system names get copied for scalar conversion (`#12429`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Provide nightly binary docker images (`#10554`_, `#12364`_, `#12367`_, `#12446`_)
 * Fix missing pthread linkopts for MOSEK (`#12337`_)
 * Fix variable name in FindTinyXML2 (`#12339`_)
 * Fix ByteSizeLong for Protobuf 3.11.0 or above (`#12425`_)
 * Fix linters' find_all_sources --all commands (`#12369`_, `#12385`_, `#12424`_)
+* Fix doxygen dot path (`#12416`_)
 * Add pkg-config as binary dependency (`#12339`_)
 * Add pandas as a source dependency (`#12328`_)
 * Change graphviz from source dependency to binary dependency (`#12340`_)
@@ -87,7 +99,6 @@ Build system and dependencies
 * Upgrade supported macOS CMake version to 3.16  (`#12396`_)
 * Upgrade supported macOS Xcode version to 11.2 (`#12331`_)
 * Do not install Python 2.7 on Mac (`#12339`_)
-* Provide nightly binary docker images (`#10554`_, `#12364`_, `#12367`_, `#12446`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -120,7 +131,6 @@ Current newest_commit a7aa26510ec00833a2719c0420763d4fa649c744 (inclusive).
 * Documents forward dynamics algorithm and notation in MBT (`#12317`_)
 * Support collision queries with capsule (`#12343`_)
 * Add sdf parsing for ellipsoids (`#12324`_)
-* Add python binding for DistanceConstraint (`#12346`_)
 * Reorder and regroup MBPlant API (`#12342`_)
 * Adds a weld joint to the planar_gripper fingers (`#12338`_)  # at the force sensor interface, splitting link 2 into two separate links. This allows reaction force measurement via MBP. Also fixes a bug in the definition of finger orientations.
 * Improve RollPitchYaw and RotationMatrix class documentation (#12345) (`#12345`_)
@@ -128,49 +138,33 @@ Current newest_commit a7aa26510ec00833a2719c0420763d4fa649c744 (inclusive).
 * Updates integrator documentation (`#12350`_)  # Reorganizes the integrator documentation and documents initial step size behavior (and caveats).
 * Renames event collection merge methods (`#12357`_)
 * Change MBP's TAMSI solver success assertion into an exception (`#12361`_)  # with a detailed description of possible causes/actions.
-* py systems: Bind `System.SetDefaultContext` and `Simulator.reset_context` (`#12368`_)
 * Rename/simplify/reword MultibodyTreeElement to produce better doxygen (`#12352`_)
-* pydrake doc: Update suggestions for debugging mkdoc (`#12370`_)
-* Pybind an overloaded AddQuadraticCost (`#12375`_)  # Pybind an overloaded AddQuadraticCost.
-* Pybind add constraint (`#12371`_)  # Add python binding for MathematicalProgram::AddConstraint(constraint, vars)
 * Update stale instructions on subclassing Shape specification (`#12372`_)
 * Simplify and deprecate get_ accessors in shape specification API (`#12373`_)
 * Provide access to owning MBPlant from any MBElement (`#12380`_)
-* Adds coverage to two blocks of code in IntegratorBase (`#12363`_)
-* py geometry: Ensure all submodules are part of .all (`#12383`_)
 * Adds a query for signed distance between a single pair of geometries (`#12379`_)  # QueryObject has a new method. It attempts to produce a signed distance pair result between a user-specified pair of geometries.
 * Add capsule to the solar system visualisation (`#12374`_)
-* Do not run Valgrind Memcheck on print_host_settings_test (`#12394`_)
-* geometry_properties: Permit type erasure (for Python) (`#12389`_)
-* py tree: Bind `world_model_instance`, `default_model_instance` (`#12389`_)
-* py geometry: Bind properties and role assignment (`#12389`_)  # With some additional rendering functionality Co-Authored-By: mpetersen94 <markpetersen@g.harvard.edu>
-* py geometry: Permit casting RenderLabel to int (`#12390`_)
 * framework: Improve error message when cloning a non-root Context (`#12391`_)
 * Added new generalized acceleration ports (`#12354`_)
-* Changed dt to h in integrator documentation and internals (`#12392`_)
+* Changed dt to h in integrator documentation (`#12392`_)
 * Hydroelastic spatial force visualization (`#12378`_)  # Adds the ability to visualize spatial forces (force and moment) to drake visualizer.
-* py geometry: Bind property retrieval (`#d589124dad20aabe200b18c7fa9254c1dfcbb6a4`_)  # Clean up binding order and use of `Class` / `cls_doc` aliases
 * tutorials: Add example of rendering which uses MultibodyPlant (`#4668d74fb6e4455108b164082712339aa7fd6163`_)
 * doc: Make tutorials more discoverable (`#fc5afc581f7dbcccf75133e5f84c9ebd8ab14977`_)
 * Add MathematicalProgram::indeterminates_index() (`#12405`_)
 * solvers: Add package_library decorations for fbstab (`#12407`_)
 * geometry: enable soft/rigid sphere, box, cylinder, and ellipsoid in hydroelastic contact model (`#12358`_)
 * pydrake doxygen: Capture convention for partitioned `*_py.cc` modules (`#12403`_)
-* Add Python binding for ComputeSignedDistancePairClosestPoints (`#12408`_)  # DistanceConstraint also uses ComputeSignedDistancePairClosestPoints.
-* doc: Fix doxygen dot path (`#12416`_)
 * geometry: document QueryObject::ComputeContactSurfaces() (`#12413`_)
 * Add BoundingVolumeHierarchy class (`#12347`_)  # - add RigidMesh struct layer to hold the bvh, similar to the SoftMesh struct layer - create AABB tree with first pass on splitting branches based on axis spread, optimisations to come
 * tools: fix show_hydroelastic_contact plugin of drake_visualizer (`#12417`_)
-* Update image_show.py to be python 3 compatible (`#12422`_)  # In python 2, map(func, list) produced a list. In python 3 it produces an iterator. However, in one specific case, we are assuming it is a list and asking it for its length. This makes an explicit conversion from the iterator the expected list.
+* Update image_show.py to be python 3 compatible (`#12422`_)
 * Add matrix version of Environment::insert (`#12409`_)
 * Tests for capsule support for distance to shape in proximity engine (`#12332`_)
 * Add Evaluate for symbolic SparseMatrix (`#12406`_)  # Also rewrite GetDistinctVariables using Eigen's visit method.
-* py systems: Ensure names get copied for scalar conversion (`#12429`_)
 * More syntactic sugar for SymbolicVectorSystemBuilder (`#12421`_)  # `state`, `input`, `parameter`, `dynamics`, and `output` setters have std::vector variants. So that a user can write `.dynamics({-x_[1], -x_[0] + 3})` instead of `.dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))`. Also add `SymbolicVectorSystem::dynamics_for_variable`.
 * Updates the documentation on the use of accuracy in the Context (`#12428`_)
 * Removing grad_H from ContactSurface (`#12432`_)  # We are no longer using the grad_h value to define the normal of the contact surface. Instead, we're using the triangle normals of the surface itself. So, we remove the field and change downstream references to use the face normal instead. This act revealed some imprecision in the documented and implemented behaviors of the triangle normals. Where appropriate new documentation has been added (and tested) to help clarify the expectations of normals.
 * tutorials: Add brief tutorial for optimization using MultibodyPlant (`#12433`_)  # Focused on custom evaluators
-* tutorials: Remove last cells from notebooks (`#12437`_)  # Also save with newest Python (3.6.9) for Ubuntu Bionic
 * Fixes qdot-to-v mapping (and back) for discrete MultibodyPlant (`#12355`_)
 * Removed referring triangles from SurfaceMesh (`#12438`_)
 * Add the lcm utility for planar manipuland (`#12439`_)  # Add the lcm utility for planar manipuland.
