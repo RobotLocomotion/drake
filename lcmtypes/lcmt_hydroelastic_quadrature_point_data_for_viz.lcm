@@ -5,9 +5,9 @@ struct lcmt_hydroelastic_quadrature_point_data_for_viz {
   // the traction and slip velocities are evaluated.
   double p_WQ[3];
 
-  // The slip velocity between two bodies A and B at Point Q, expressed in the
-  // world frame. Note that Point Q is coincident to frames Aq and Bq attached
-  // to Bodies A and B, respectively.
+  // The slip velocity of Body A at Point Q relative to Body B at point Q,
+  // expressed in the world frame. Note that Point Q is coincident to frames Aq
+  // and Bq attached to Bodies A and B, respectively.
   double vt_BqAq_W[3];
 
   // The traction vector (with units of Pa) applied to Frame Aq rigidly
