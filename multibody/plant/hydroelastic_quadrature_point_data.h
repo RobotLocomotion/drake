@@ -26,9 +26,8 @@ struct HydroelasticQuadraturePointData {
   /// and Bq attached to Bodies A and B, respectively.
   Vector3<T> vt_BqAq_W;
 
-  /// The traction vector (with units of Pa) applied to Frame Aq rigidly
-  /// attached to Body A at Point Q (i.e., Frame A is shifted to Aq), expressed
-  /// in the world frame.
+  /// The traction vector, expressed in the world frame and with units of Pa,
+  /// applied to Body A at Point Q (i.e., Frame A is shifted to Aq).
   Vector3<T> traction_Aq_W;
 };
 
