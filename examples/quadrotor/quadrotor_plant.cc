@@ -140,7 +140,7 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
   Eigen::VectorXd u0 = Eigen::VectorXd::Constant(
       4, quadrotor_plant->m() * quadrotor_plant->g() / 4);
 
-  quad_context_goal->FixInputPort(0, u0);
+  quadrotor_plant->get_input_port(0).FixValue(quad_context_goal.get(), u0);
   quad_context_goal->SetContinuousState(x0);
 
   // Setup LQR cost matrices (penalize position error 10x more than velocity
