@@ -208,7 +208,9 @@ int IntersectTetWithLevelSet(
   V prev(num_vertices + num_intersections - 1);
   for (int i = 0; i < num_intersections; ++i) {
     V current(i + num_vertices);
-    faces->emplace_back(prev, current, centroid_index);
+    // Note: the face ordering below ensures that the normal will point into the
+    // rigid object.
+    faces->emplace_back(prev, centroid_index, current);
     prev = current;
   }
 
@@ -270,9 +272,9 @@ int IntersectTetWithLevelSet(
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
 /// defined by `mesh_M`.  The triangulation is measured and expressed in frame
-/// N. The right handed normal of each triangle points towards the positive side
-/// of the level set function `φ(V)` (the normals point out of the rigid object
-/// represented by the level set field and into the soft volume mesh).
+/// N. The right handed normal of each triangle points towards the negative side
+/// of the level set function `φ(V)` (the normals point out of the soft volume
+/// mesh and into the rigid object represented by the level set field.
 ///
 /// @note  The geometry::SurfaceMesh may have duplicate vertices.
 template <typename T>

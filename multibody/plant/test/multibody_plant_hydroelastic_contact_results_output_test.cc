@@ -139,6 +139,20 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
   ASSERT_EQ(results.contact_surface().mesh_W().num_faces() * 3,
             results.quadrature_point_data().size());
 
+  // Sanity check that geometry ID is consistent with direction of spatial
+  // force. This check is based upon the convention that the force points into
+  // Body A. If Body A is the ball, we expect the z-dimension of the
+  // translational component of the spatial force to be positive; otherwise
+  // we expect it to be negative.
+  const std::vector<geometry::GeometryId> ball_collision_geometries =
+      plant_->GetCollisionGeometriesForBody(
+          plant_->GetBodyByName("Ball"));
+  const bool body_A_is_ball = (std::find(
+      ball_collision_geometries.begin(), ball_collision_geometries.end(),
+      results.contact_surface().id_M()) != ball_collision_geometries.end());
+  const double sign_scalar = (body_A_is_ball) ? 1.0 : -1.0;
+  ASSERT_GT(sign_scalar * F_Ac_W.translational()[2], 0);
+
   // Our crude quadrature process, which uses the mean traction over the
   // surface of the triangle, gives us the same accuracy as Gaussian quadrature
   // because the frictional components of each traction are zero. Because this
@@ -172,13 +186,13 @@ TEST_F(HydroelasticContactResultsOutputTester, SlipVelocity) {
   // If Body A is the ball, then every point in the slip velocity field should
   // be +x. Otherwise, it should be -x.
   const Vector3d x(1, 0, 0);
-  std::vector<geometry::GeometryId> ball_collision_geometries =
+  const std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(
           plant_->GetBodyByName("Ball"));
   const bool body_A_is_ball = (std::find(
       ball_collision_geometries.begin(), ball_collision_geometries.end(),
       results.contact_surface().id_M()) != ball_collision_geometries.end());
-  const Vector3d expected_slip = body_A_is_ball ? -x : x;
+  const Vector3d expected_slip = body_A_is_ball ? x : -x;
 
   // Check that value of the slip velocity field points to +x.
   for (const auto& quadrature_point_datum : quadrature_point_data)
@@ -193,11 +207,11 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
       quadrature_point_data = results.quadrature_point_data();
 
   // If Body A (with geometry M) is the ball, then the traction field should
-  // point along -z (i.e., the contact surfaces normals point out of M and
-  // into N and the tractions should point in the same direction). Otherwise, it
-  // should point along +z.
-  const Vector3d z(0, 0, -1);
-  std::vector<geometry::GeometryId> ball_collision_geometries =
+  // point along +z (i.e., the contact surfaces normals point out of N and
+  // into M and the tractions should point in the same direction). Otherwise, it
+  // should point along -z.
+  const Vector3d z(0, 0, 1);
+  const std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
   const bool body_A_is_ball = (std::find(
       ball_collision_geometries.begin(), ball_collision_geometries.end(),
@@ -217,7 +231,7 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
     // The conversion from Cartesian to barycentric coordinates introduces some
     // roundoff error. Test the values using a relative tolerance since the
     // pressure is generally much greater than unity.
-    const double tol = pressure * 20 * std::numeric_limits<double>::epsilon();
+    const double tol = pressure * 30 * std::numeric_limits<double>::epsilon();
     const Vector3d expected_traction = expected_traction_direction * pressure;
     EXPECT_NEAR(
         (quadrature_point_datum.traction_Aq_W - expected_traction).norm(), 0,
