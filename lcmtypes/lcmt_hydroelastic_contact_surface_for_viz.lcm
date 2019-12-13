@@ -27,6 +27,6 @@ struct lcmt_hydroelastic_contact_surface_for_viz {
   int32_t num_quadrature_points;
 
   // The quadrature point data.
-  lcmt_hydroelastic_quadrature_point_data_for_viz
+  lcmt_hydroelastic_quadrature_per_point_data_for_viz
       quadrature_point_data[num_quadrature_points];
 }

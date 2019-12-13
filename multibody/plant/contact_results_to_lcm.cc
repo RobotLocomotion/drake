@@ -115,7 +115,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     // Loop through all quadrature points on the contact surface.
     for (int j = 0; j < surface_msg.num_quadrature_points; ++j) {
-      lcmt_hydroelastic_quadrature_point_data_for_viz& quad_data_msg =
+      lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_msg =
           surface_msg.quadrature_point_data[j];
       write_double3(quadrature_point_data[j].p_WQ, quad_data_msg.p_WQ);
       write_double3(quadrature_point_data[j].vt_BqAq_W,

@@ -395,7 +395,7 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       MakeQuadraturePointData();
   ASSERT_EQ(quadrature_point_data.size(), surface_msg.num_quadrature_points);
   for (int i = 0; i < surface_msg.num_quadrature_points; ++i) {
-    const lcmt_hydroelastic_quadrature_point_data_for_viz& quadrature_msg =
+    const lcmt_hydroelastic_quadrature_per_point_data_for_viz& quadrature_msg =
         surface_msg.quadrature_point_data[i];
     const Vector3<double> p_WQ(quadrature_msg.p_WQ[0], quadrature_msg.p_WQ[1],
                                quadrature_msg.p_WQ[2]);

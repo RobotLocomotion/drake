@@ -1,6 +1,6 @@
 package drake;
 
-struct lcmt_hydroelastic_quadrature_point_data_for_viz {
+struct lcmt_hydroelastic_quadrature_per_point_data_for_viz {
   // The quadrature point Q, as an offset vector in the world frame W, at which
   // the traction and slip velocities are evaluated.
   double p_WQ[3];
