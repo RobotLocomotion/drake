@@ -13,6 +13,9 @@ namespace planar_gripper {
 using drake::multibody::MultibodyPlant;
 using Eigen::Vector3d;
 
+constexpr int kNumFingers = 3;
+constexpr int kNumJoints = kNumFingers * 2;
+
 // The planar-gripper coordinate frame G (with origin Go) and finger layout are
 // defined as follows (assuming all finger joint angles are set to zero):
 //
@@ -75,11 +78,11 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
                                  EigenPtr<Vector3<double>>(nullptr));
 
 /**
- * Reorders the joint keyframe matrix data contained in @p keyframes such that
- * joint keyframes (rows) are ordered according to the @ plant's joint velocity
+ * Reorders the joint keyframe matrix data contained in `keyframes` such that
+ * joint keyframes (rows) are ordered according to the `plant`'s joint velocity
  * index ordering, making it compatible with the inverse dynamics controller's
  * desired state input port ordering.
- * @param[in] plant The Multibodyplant providing the velocity index ordering.
+ * @param[in] plant The MultibodyPlant providing the velocity index ordering.
  * @param[in] keyframes The planar gripper keyframes.
  * @param[out] finger_joint_name_to_row_index_map A std::map which contains the
  * incoming joint name to row index ordering. This map is updated to reflect the
@@ -87,9 +90,9 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
  * @return A MatrixX containing the reordered keyframes.
  */
 MatrixX<double> ReorderKeyframesForPlant(
-    const MultibodyPlant<double> &plant,
-    MatrixX<double> keyframes,
-    std::map<std::string, int> *finger_joint_name_to_row_index_map);
+    const MultibodyPlant<double>& plant,
+    const MatrixX<double> keyframes,
+    std::map<std::string, int>* finger_joint_name_to_row_index_map);
 
 /// Returns the planar gripper frame G's transform w.r.t. the world frame W.
 const math::RigidTransformd X_WGripper();

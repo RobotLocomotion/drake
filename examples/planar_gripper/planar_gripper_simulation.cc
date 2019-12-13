@@ -213,6 +213,7 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
                                   &ForceSensorEvaluator::SetOutput)
         .get_index();
   }
+
   void SetOutput(const drake::systems::Context<double>& context,
                  drake::systems::BasicVector<double>* output) const {
     const std::vector<multibody::SpatialForce<double>>& spatial_vec =
@@ -233,9 +234,6 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
 };
 
 int DoMain() {
-  // This is the total number of joints for the 3-finger planar-gripper.
-  const int kNumJoints = 6;
-
   systems::DiagramBuilder<double> builder;
 
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
@@ -298,7 +296,7 @@ int DoMain() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(plant.geometry_source_is_registered());
 
-  // Connect MBP snd SG.
+  // Connect MBP and SG.
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
@@ -346,7 +344,7 @@ int DoMain() {
     builder.Connect(*id_controller, *force_to_actuation);
     builder.Connect(force_to_actuation->get_output_port(0),
                     plant.get_actuation_input_port(gripper_index));
-  } else {
+  } else {  // Use torque control.
     builder.Connect(command_decoder->get_torques_output_port(),
                     plant.get_actuation_input_port());
   }
@@ -408,7 +406,6 @@ int DoMain() {
 
   // All fingers consist of two joints: a base joint and a mid joint.
   // Set the initial finger joint positions.
-  const int kNumFingers = 3;
   for (int i = 0; i < kNumFingers; i++) {
     std::string finger = "finger" + std::to_string(i + 1);
     const RevoluteJoint<double>& base_pin =

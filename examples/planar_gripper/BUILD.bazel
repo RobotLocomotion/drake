@@ -83,8 +83,8 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "planar_gripper_trajectory_publisher",
-    srcs = ["planar_gripper_trajectory_publisher.cc"],
+    name = "run_planar_gripper_trajectory_publisher",
+    srcs = ["run_planar_gripper_trajectory_publisher.cc"],
     data = [
         "//examples/planar_gripper:planar_gripper.sdf",
         "//examples/planar_gripper:postures.txt",
