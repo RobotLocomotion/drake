@@ -1,7 +1,7 @@
 #include "drake/common/symbolic_codegen.h"
 
-#include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 #include <fmt/format.h>
 
@@ -13,7 +13,65 @@ using std::ostringstream;
 using std::runtime_error;
 using std::string;
 using std::to_string;
+using std::unordered_map;
 using std::vector;
+
+namespace {
+
+// Visitor class for code generation.
+class CodeGenVisitor {
+ public:
+  using IdToIndexMap = unordered_map<Variable::Id, vector<Variable>::size_type>;
+
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CodeGenVisitor)
+
+  // Constructs an instance of this visitor class using the vector of
+  // variables, @p parameters. This visitor will map a symbolic variable `var`
+  // into `p[n]` where `n` is the index of the variable `var` in the given @p
+  /// parameters.
+  explicit CodeGenVisitor(const vector<Variable>& parameters);
+
+  // Generates C expression for the expression @p e.
+  string CodeGen(const Expression& e) const;
+
+ private:
+  string VisitVariable(const Expression& e) const;
+  string VisitConstant(const Expression& e) const;
+  string VisitAddition(const Expression& e) const;
+  string VisitMultiplication(const Expression& e) const;
+  // Helper method to handle unary cases.
+  string VisitUnary(const string& f, const Expression& e) const;
+  // Helper method to handle binary cases.
+  string VisitBinary(const string& f, const Expression& e) const;
+  string VisitPow(const Expression& e) const;
+  string VisitDivision(const Expression& e) const;
+  string VisitAbs(const Expression& e) const;
+  string VisitLog(const Expression& e) const;
+  string VisitExp(const Expression& e) const;
+  string VisitSqrt(const Expression& e) const;
+  string VisitSin(const Expression& e) const;
+  string VisitCos(const Expression& e) const;
+  string VisitTan(const Expression& e) const;
+  string VisitAsin(const Expression& e) const;
+  string VisitAcos(const Expression& e) const;
+  string VisitAtan(const Expression& e) const;
+  string VisitAtan2(const Expression& e) const;
+  string VisitSinh(const Expression& e) const;
+  string VisitCosh(const Expression& e) const;
+  string VisitTanh(const Expression& e) const;
+  string VisitMin(const Expression& e) const;
+  string VisitMax(const Expression& e) const;
+  string VisitCeil(const Expression& e) const;
+  string VisitFloor(const Expression& e) const;
+  string VisitIfThenElse(const Expression& e) const;
+  string VisitUninterpretedFunction(const Expression& e) const;
+  // Makes VisitExpression a friend of this class so that it can use private
+  // methods.
+  friend string VisitExpression<string>(const CodeGenVisitor*,
+                                        const Expression&);
+
+  IdToIndexMap id_to_idx_map_;
+};
 
 CodeGenVisitor::CodeGenVisitor(const vector<Variable>& parameters) {
   for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
@@ -176,6 +234,8 @@ string CodeGenVisitor::VisitIfThenElse(const Expression&) const {
 string CodeGenVisitor::VisitUninterpretedFunction(const Expression&) const {
   throw runtime_error("Codegen does not support uninterpreted functions.");
 }
+
+}  // namespace
 
 string CodeGen(const string& function_name, const vector<Variable>& parameters,
                const Expression& e) {
