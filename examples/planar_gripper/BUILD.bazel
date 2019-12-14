@@ -185,6 +185,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "planar_gripper_common_test",
+    data = [
+        "//examples/planar_gripper:planar_brick.sdf",
+        "//examples/planar_gripper:planar_gripper.sdf",
+    ],
+    deps = [
+        ":planar_gripper_common",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
 install_data()
 
 add_lint_tests()

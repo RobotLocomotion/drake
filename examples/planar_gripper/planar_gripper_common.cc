@@ -191,8 +191,23 @@ MatrixX<double> ReorderKeyframesForPlant(
     const MultibodyPlant<double>& plant, const MatrixX<double> keyframes,
     std::map<std::string, int>* finger_joint_name_to_row_index_map) {
   DRAKE_DEMAND(finger_joint_name_to_row_index_map != nullptr);
+  if (finger_joint_name_to_row_index_map->size() !=
+      static_cast<ulong>(keyframes.rows())) {
+    throw std::runtime_error(
+        "The number of keyframe rows must match the size of "
+        "finger_joint_name_to_row_index_map.");
+  }
+  if (keyframes.rows() != kNumJoints) {
+    throw std::runtime_error(
+        "The number of keyframe rows must match the number of planar-gripper "
+        "joints");
+  }
+  if (plant.num_positions() != kNumJoints) {
+    throw std::runtime_error(
+        "The number of plant positions must exactly match the number of "
+        "planar-gripper joints.");
+  }
   std::map<std::string, int> original_map = *finger_joint_name_to_row_index_map;
-  DRAKE_DEMAND(original_map.size() == static_cast<ulong>(keyframes.rows()));
   MatrixX<double> reordered_keyframes(keyframes);
   for (auto iter = original_map.begin();
        iter != original_map.end(); ++iter) {

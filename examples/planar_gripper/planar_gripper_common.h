@@ -81,13 +81,20 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
  * Reorders the joint keyframe matrix data contained in `keyframes` such that
  * joint keyframes (rows) are ordered according to the `plant`'s joint velocity
  * index ordering, making it compatible with the inverse dynamics controller's
- * desired state input port ordering.
+ * desired state input port ordering. The incoming `plant` is the MultibodyPlant
+ * used for inverse dynamics control, i.e., the "control plant". The number of
+ * planar-gripper joints `kNumJoints` must exactly match plant.num_positions().
  * @param[in] plant The MultibodyPlant providing the velocity index ordering.
  * @param[in] keyframes The planar gripper keyframes.
  * @param[out] finger_joint_name_to_row_index_map A std::map which contains the
  * incoming joint name to row index ordering. This map is updated to reflect the
  * new keyframe reordering.
  * @return A MatrixX containing the reordered keyframes.
+ * @throw If the number of keyframe rows does not match the size of
+ * `finger_joint_name_to_row_index_map`
+ * @throw If the number of keyframe rows does not match the number of
+ * planar-gripper joints.
+ * @throw If `kNumJoints` does not exactly match plant.num_positions().
  */
 MatrixX<double> ReorderKeyframesForPlant(
     const MultibodyPlant<double>& plant,
