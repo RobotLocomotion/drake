@@ -486,6 +486,25 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   return geometry_id;
 }
 
+template <typename T>
+void MultibodyPlant<T>::RegisterGeometryFramesForAllBodies() {
+  DRAKE_ASSERT(geometry_source_is_registered());
+  // Loop through the bodies to make sure that all bodies get a geometry frame.
+  // If not, create and attach one.
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const auto& body = get_body(body_index);
+    if (!body_has_registered_frame(body)) {
+      FrameId frame_id = member_scene_graph().RegisterFrame(
+          source_id_.value(),
+          GeometryFrame(
+              GetScopedName(*this, body.model_instance(), body.name()),
+              body.model_instance()));
+      body_index_to_frame_id_[body.index()] = frame_id;
+      frame_id_to_body_index_[frame_id] = body.index();
+    }
+  }
+}
+
 template<typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
@@ -556,6 +575,7 @@ void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
   if (geometry_source_is_registered()) {
+    RegisterGeometryFramesForAllBodies();
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
