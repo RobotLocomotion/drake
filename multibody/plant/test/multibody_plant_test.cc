@@ -871,6 +871,42 @@ TEST_F(AcrobotPlantTests, SetRandomState) {
       random_context->get_mutable_continuous_state_vector().CopyToVector()));
 }
 
+GTEST_TEST(MultibodyPlantTest, Graphviz) {
+  MultibodyPlant<double> plant;
+  const std::string acrobot_path =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string cylinder_path = FindResourceOrThrow(
+      "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf");
+  Parser(&plant).AddModelFromFile(acrobot_path);
+  Parser(&plant).AddModelFromFile(cylinder_path);
+  Parser(&plant).AddModelFromFile(cylinder_path, "cylinder2");
+
+  plant.set_name("MyTestMBP");
+  const std::string dot = plant.GetTopologyGraphvizString();
+
+  // Check that the diagram is labeled with the system name.
+  EXPECT_NE(std::string::npos, dot.find("MyTestMBP")) << dot;
+  // Check that we have subgraphs and they use the "cluster" prefix.
+  EXPECT_NE(std::string::npos, dot.find("subgraph cluster")) << dot;
+  // Check that we have a body0 - body4 (world, 2 for acrobot, 2 cylinders).
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_NE(std::string::npos, dot.find("body" + std::to_string(i))) << dot;
+  }
+  // Check that the cylinder's body appears twice.
+  const size_t pos = dot.find("uniformSolidCylinder");
+  EXPECT_NE(std::string::npos, pos) << dot;
+  EXPECT_NE(std::string::npos, dot.find("uniformSolidCylinder", pos + 1))
+      << dot;
+  // Check for the second cylinder model instance.
+  EXPECT_NE(std::string::npos, dot.find("cylinder2")) << dot;
+  // Check for the Acrobot elbow joint.
+  EXPECT_NE(std::string::npos, dot.find("ElbowJoint [revolute]")) << dot;
+
+  // Check that the same string appears before and after calling Finalize().
+  plant.Finalize();
+  EXPECT_STREQ(dot.c_str(), plant.GetTopologyGraphvizString().c_str());
+}
+
 // Verifies that the right errors get invoked upon finalization.
 GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
   SceneGraph<double> scene_graph;
