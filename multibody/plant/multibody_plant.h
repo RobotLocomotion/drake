@@ -3559,6 +3559,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape,
       const std::string& name);
 
+  // Register frames to all the boides if a body does not have a frame
+  // registered yet. This function assures every body should have at least one
+  // frame associated with it even if the body does not have a geometry defined.
+  // It will be called inside the Finalize() function by default.
+  // See issue #12118.
+  // This assumes:
+  // 1. Finalize() was not called on `this` plant.
+  // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
+  // 3. `scene_graph` points to the same SceneGraph instance previously
+  //    passed to RegisterAsSourceForSceneGraph().
+  void RegisterFrameToAllBodies();
+
   bool body_has_registered_frame(const Body<T>& body) const {
     return body_index_to_frame_id_.find(body.index()) !=
         body_index_to_frame_id_.end();

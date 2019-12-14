@@ -1119,7 +1119,7 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
         plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
     GeometrySetTester tester(&set);
     EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_EQ(tester.num_frames(), 0);
+    EXPECT_EQ(tester.num_frames(), 1);
   }
 
   // Case: Include the world body.
