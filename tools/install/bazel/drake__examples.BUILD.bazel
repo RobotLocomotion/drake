@@ -1,0 +1,21 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+# This is the @drake//examples package.
+
+load("//:.manifest.bzl", "MANIFEST")
+
+package(default_visibility = ["//:__subpackages__"])
+
+_subdir = "examples/"
+
+_runfiles = [
+    x[len(_subdir):]
+    for x in MANIFEST["runfiles"]["drake"]
+    if x.startswith(_subdir)
+]
+
+filegroup(
+    name = ".installed_runfiles",
+    data = _runfiles,
+)
