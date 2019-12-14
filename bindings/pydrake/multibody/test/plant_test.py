@@ -273,6 +273,7 @@ class TestPlant(unittest.TestCase):
             plant.get_frame(frame_index=FrameIndex(0)), Frame)
         self.assertEqual("acrobot", plant.GetModelInstanceName(
             model_instance=model_instance))
+        self.assertIn("acrobot", plant.GetTopologyGraphvizString())
 
     def _test_multibody_tree_element_mixin(self, T, element):
         cls = type(element)
