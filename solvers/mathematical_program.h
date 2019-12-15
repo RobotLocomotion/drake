@@ -2633,6 +2633,35 @@ class MathematicalProgram {
     return y;
   }
 
+  /**
+   * Check if a given binding (constraint) is satisfied at some given values
+   * or program decision variables.
+   * @param binding A list of bindings. The bound variables have to be among
+   * the decision variables of this MathematicalProgram.
+   * @param prog_var_vals The value of ALL the decision variables in this
+   * program. We check if prog.decision_variable(i) takes the value
+   * prog_var_vals(i), whether the binding is satisfied or not.
+   * @param tol The tolerance of determining whether the constraint is satisfied
+   * or not. If we evaluate the binding and the binding value doesn't violate
+   * the constraint bounds by more than tol, then the constraint is deemed as
+   * satisfied.
+   * @return satisfied Whether the binding is satisfied or not.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector_of<DerivedX, double>::value,
+                          bool>::type
+  CheckBindingSatisfied(const Binding<C>& binding,
+                        const Eigen::MatrixBase<DerivedX>& prog_var_vals,
+                        double tol) const {
+    const VectorX<double> binding_y = EvalBinding(binding, prog_var_vals);
+    return (binding_y.array() >=
+            binding.evaluator()->lower_bound().array() - tol)
+               .all() &&
+           (binding_y.array() <=
+            binding.evaluator()->upper_bound().array() + tol)
+               .all();
+  }
+
   /** Evaluates all visualization callbacks registered with the
    * MathematicalProgram.
    *

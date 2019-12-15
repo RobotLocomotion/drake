@@ -2701,6 +2701,20 @@ GTEST_TEST(TestMathematicalProgram, TestEvalBinding) {
   EXPECT_THROW(prog.EvalBinding(quadratic_cost_y, x_val), std::runtime_error);
 }
 
+GTEST_TEST(TestMathematicalProgram, TestCheckBindingSatisfied) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  auto binding1 = prog.AddBoundingBoxConstraint(-1, 1, x(0));
+
+  auto binding2 = prog.AddLinearEqualityConstraint(x(0) + 2 * x(2), 2);
+
+  const Eigen::Vector3d x_val(-2, 1, 2);
+
+  EXPECT_FALSE(prog.CheckBindingSatisfied(binding1, x_val, 1E-6));
+  EXPECT_TRUE(prog.CheckBindingSatisfied(binding1, x_val, 1));
+  EXPECT_TRUE(prog.CheckBindingSatisfied(binding2, x_val, 1E-6));
+}
+
 GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();
