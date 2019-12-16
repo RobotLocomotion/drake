@@ -76,6 +76,7 @@ SKIP_RECURSE_NAMES = [
     'DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE',
     'Eigen',
     'detail',
+    'dev',
     'google',
     'internal',
     'std',
@@ -123,8 +124,9 @@ def eprint(*args):
     print(*args, file=sys.stderr)
 
 
-def ignore_files(file_name):
-    return file_name.startswith(generate_pybind_coverage.ignore_directories)
+def ignore_file_for_coverage(file_name):
+    return int(
+            file_name.startswith(generate_pybind_coverage.ignore_directories))
 
 
 def is_accepted_cursor(cursor, name_chain):
@@ -932,16 +934,14 @@ def choose_doc_var_names(symbols):
     return failure_result
 
 
-# A different parsing variable is needed for doc.
-tree_parser_doc = []
-tree_parser_xpath = [ET.Element("Root")]
-
-
-def print_symbols(f, name, node, level=0):
+# TODO(m-chaturvedi): Refactor this to not use stack
+def print_symbols(f, name, node, level=0, **kwargs):
     """
     Prints C++ code for relevant documentation.
     """
     indent = '  ' * level
+    tree_parser_doc = kwargs["tree_parser_doc"]
+    tree_parser_xpath = kwargs["tree_parser_xpath"]
 
     def iprint(s):
         f.write((indent + s).rstrip() + "\n")
@@ -970,15 +970,15 @@ def print_symbols(f, name, node, level=0):
     root = tree_parser_xpath[-1]
     kind = node.first_symbol.cursor.kind if node.first_symbol else None
 
-    # These variables are used to create XML tree.  They store information
-    # about a node.
-    tree_doc_var_xpath, ignore_xpath, symbol_include_xpath = [], [], []
     tree_parser_doc.append(name_var)
 
     new_ele = None
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
     doc_vars = choose_doc_var_names(symbol_iter)
+    #  New element in the XML tree.
+    new_ele = None
+
     for symbol, doc_var in zip(symbol_iter, doc_vars):
         if doc_var is None:
             continue
@@ -994,25 +994,21 @@ def print_symbols(f, name, node, level=0):
             doc_var, delim, comment.strip()))
 
         tree_doc_var = ".".join(tree_parser_doc + [doc_var])
-        tree_doc_var_xpath.append(tree_doc_var)
-        symbol_include_xpath.append(symbol.include)
 
-        # Check if the symbol must be ignored.
-        if (not ignore_files(symbol.include) and
-                set({"internal", "dev"}).isdisjoint(set(name_chain[:-1]))):
-            ignore_xpath.append(str(0))
-        else:
-            ignore_xpath.append(str(1))
+        ignore_xpath = False
+        if kwargs["ignore_dirs_for_coverage"]:
+            ignore_xpath = symbol.include.startswith(
+                            kwargs["ignore_dirs_for_coverage"])
 
         new_ele = ET.SubElement(root, "Node", {
             "kind": str(kind),
             "name": name_var,
             "full_name": full_name,
-            "ignore": ignore_xpath[-1],
-            "doc_var": tree_doc_var_xpath[-1],
-            "file_name": symbol_include_xpath[-1],
+            "ignore": str(int(ignore_xpath)),
+            "doc_var": tree_doc_var,
+            "file_name": symbol.include,
             })
-    # If the node has no children, add a leaf.
+    # If the node has no doc_var's
     if new_ele is None:
         new_ele = ET.SubElement(root, "Node", {
             "kind": str(kind),
@@ -1028,7 +1024,7 @@ def print_symbols(f, name, node, level=0):
     keys = sorted(node.children_map.keys())
     for key in keys:
         child = node.children_map[key]
-        print_symbols(f, key, child, level=level + 1)
+        print_symbols(f, key, child, level=level + 1, **kwargs)
     iprint('}} {};'.format(name_var))
 
     tree_parser_doc.pop()
@@ -1091,6 +1087,11 @@ def main():
             output_filename_xml = item[len('-output_xml='):]
         elif item.startswith('-std='):
             std = item
+        elif item.startswith('-ignore-dirs-for-coverage='):
+            ignore_dir_str = item[len('-ignore-dirs-for-coverage='):]
+            ignore_dirs_for_coverage = None
+            if ignore_dir_str:
+                ignore_dirs_for_coverage = tuple(ignore_dir_str.split(','))
         elif item.startswith('-root-name='):
             root_name = item[len('-root-name='):]
         elif item.startswith('-exclude-hdr-patterns='):
@@ -1188,7 +1189,11 @@ def main():
     if not quiet:
         eprint("Writing header file...")
     try:
-        print_symbols(f, root_name, symbol_tree.root)
+        tree_parser = {"tree_parser_doc": [],
+                       "tree_parser_xpath": [ET.Element("Root")],
+                       "ignore_dirs_for_coverage": ignore_dirs_for_coverage}
+
+        print_symbols(f, root_name, symbol_tree.root, **tree_parser)
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print("""
@@ -1205,7 +1210,7 @@ If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
 #endif
 ''')
     if f_xml is not None:
-        f_xml.write(prettify(tree_parser_xpath[0]))
+        f_xml.write(prettify(tree_parser["tree_parser_xpath"][0]))
 
 
 if __name__ == '__main__':

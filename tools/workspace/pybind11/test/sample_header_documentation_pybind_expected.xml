@@ -56,13 +56,6 @@
       </Node>
     </Node>
     <Node doc_var="" file_name="" full_name="namespace_1" ignore="" kind="CursorKind.NAMESPACE" name="namespace_1">
-      <Node doc_var="" file_name="" full_name="namespace_1::dev" ignore="" kind="CursorKind.NAMESPACE" name="dev">
-        <Node doc_var="sample_header_doc.namespace_1.dev.IgnoredStruct.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::dev::IgnoredStruct" ignore="1" kind="CursorKind.STRUCT_DECL" name="IgnoredStruct">
-          <Node doc_var="sample_header_doc.namespace_1.dev.IgnoredStruct.var_1.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::dev::IgnoredStruct::var_1" ignore="1" kind="CursorKind.FIELD_DECL" name="var_1"/>
-          <Node doc_var="sample_header_doc.namespace_1.dev.IgnoredStruct.var_2.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::dev::IgnoredStruct::var_2" ignore="1" kind="CursorKind.FIELD_DECL" name="var_2"/>
-          <Node doc_var="sample_header_doc.namespace_1.dev.IgnoredStruct.var_3.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::dev::IgnoredStruct::var_3" ignore="1" kind="CursorKind.FIELD_DECL" name="var_3"/>
-        </Node>
-      </Node>
       <Node doc_var="" file_name="" full_name="namespace_1::namespace_2" ignore="" kind="CursorKind.NAMESPACE" name="namespace_2">
         <Node doc_var="sample_header_doc.namespace_1.namespace_2.DummyClass.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::namespace_2::DummyClass" ignore="0" kind="CursorKind.CLASS_DECL" name="DummyClass">
           <Node doc_var="sample_header_doc.namespace_1.namespace_2.DummyClass.Details.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::namespace_2::DummyClass::Details" ignore="0" kind="CursorKind.TYPE_ALIAS_DECL" name="Details"/>

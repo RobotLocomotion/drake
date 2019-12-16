@@ -402,7 +402,7 @@ DrakeDeprecatedTemplateClass {};
 }  // namespace mkdoc_test
 }  // namespace drake
 
-#define DUMMY_MACRO(DummyClassname)      \
+#define DRAKE_NO_COPY_NO_MOVE(DummyClassname)      \
   DummyClassname(const DummyClassname&) = delete;                 \
   void operator=(const DummyClassname&) = delete;            \
   DummyClassname(DummyClassname&&) = delete;                      \
@@ -445,7 +445,7 @@ struct Struct6{};
 
 class DummyClass {
  public:
-  DUMMY_MACRO(DummyClass)
+  DRAKE_NO_COPY_NO_MOVE(DummyClass)
 
   /// Ligula. Nunc turpis. Mauris vitae sapien. Nunc.
   using Details = Struct1;
@@ -466,12 +466,18 @@ class DummyClass {
 };
 }  // namespace namespace_2
 
-namespace dev {
 // Must be ignored
+namespace dev {
 struct IgnoredStruct {
   int var_1{};
-  int var_2{};
-  double var_3{};
+};
+
+}
+
+// Must be ignored
+namespace internal {
+struct IgnoredStruct {
+  int var_1{};
 };
 
 }

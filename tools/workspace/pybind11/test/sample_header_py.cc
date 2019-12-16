@@ -1,5 +1,6 @@
 // This is for testing only, will not compile.
 #include "pybind11/pybind11.h"
+#include "pybind11/test/sample_header.h"
 
 namespace namespace_1 {
 namespace namespace_2 {
@@ -8,8 +9,6 @@ PYBIND11_MODULE(dummy_module, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace namespace_1::namespace_2;
   constexpr auto& doc = sample_header_doc.namespace_1.namespace_2;
-
-  m.doc() = "Et nunc. Nullam vehicula fermentum risus.";
 
   py::module::import("namespace_1.namespace_2.Struct2");
 

@@ -8,10 +8,6 @@ from drake.tools.workspace.pybind11.pybind_coverage_xml_parser import (
     FileCoverage,
 )
 
-ignore_directories = (
-    "drake/common/proto", "drake/common/yaml", "drake/examples"
-)
-
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate pybind11 coverage")

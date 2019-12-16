@@ -434,29 +434,6 @@ Parameter ``param``:
   } drake;
   // Symbol: namespace_1
   struct /* namespace_1 */ {
-    // Symbol: namespace_1::dev
-    struct /* dev */ {
-      // Symbol: namespace_1::dev::IgnoredStruct
-      struct /* IgnoredStruct */ {
-        // Source: drake/tools/workspace/pybind11/test/sample_header.h:471
-        const char* doc = R"""()""";
-        // Symbol: namespace_1::dev::IgnoredStruct::var_1
-        struct /* var_1 */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:472
-          const char* doc = R"""()""";
-        } var_1;
-        // Symbol: namespace_1::dev::IgnoredStruct::var_2
-        struct /* var_2 */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:473
-          const char* doc = R"""()""";
-        } var_2;
-        // Symbol: namespace_1::dev::IgnoredStruct::var_3
-        struct /* var_3 */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:474
-          const char* doc = R"""()""";
-        } var_3;
-      } IgnoredStruct;
-    } dev;
     // Symbol: namespace_1::namespace_2
     struct /* namespace_2 */ {
       // Symbol: namespace_1::namespace_2::DummyClass

@@ -62,6 +62,11 @@ generate_pybind_documentation_header(
         # docstrings.
         "drake/lcmtypes/**",
     ],
+    ignore_dirs_for_coverage = [
+        "drake/common/proto",
+        "drake/common/yaml",
+        "drake/examples",
+    ],
     out_xml = "documentation_pybind.xml",
     root_name = "pydrake_doc",
     targets = [
