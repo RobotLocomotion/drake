@@ -26,23 +26,6 @@ using std::make_unique;
 using std::move;
 using std::vector;
 
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
-  switch (type) {
-    case HydroelasticType::kUndefined:
-      out << "undefined";
-      break;
-    case HydroelasticType::kRigid:
-      out << "rigid";
-      break;
-    case HydroelasticType::kSoft:
-      out << "soft";
-      break;
-    default:
-      DRAKE_UNREACHABLE();
-  }
-  return out;
-}
-
 SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
   if (this == &g) return *this;
 
@@ -78,7 +61,8 @@ void Geometries::RemoveGeometry(GeometryId id) {
 
 void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
                                   const ProximityProperties& properties) {
-  const HydroelasticType type = Classify(properties);
+  const HydroelasticType type = properties.GetPropertyOrDefault(
+      kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
   if (type != HydroelasticType::kUndefined) {
     ReifyData data{type, id, properties};
     shape.Reify(this, &data);
@@ -146,32 +130,6 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
   DRAKE_DEMAND(hydroelastic_type(id) == HydroelasticType::kUndefined);
   supported_geometries_[id] = HydroelasticType::kRigid;
   rigid_geometries_.insert({id, move(geometry)});
-}
-
-HydroelasticType Classify(const ProximityProperties& props) {
-  // Presence of the hydroelastic group triggers an attempt to represent it.
-  if (props.HasGroup(kHydroGroup)) {
-    if (props.HasProperty(kMaterialGroup, kElastic)) {
-      const double elastic_modulus =
-          props.GetProperty<double>(kMaterialGroup, kElastic);
-      if (std::isinf(elastic_modulus)) {
-        return HydroelasticType::kRigid;
-      } else if (elastic_modulus <= 0) {
-        throw std::logic_error(
-            fmt::format("Properties contain a bad value for the ('{}', '{}') "
-                        "property: {}; the value must be positive",
-                        kMaterialGroup, kElastic, elastic_modulus));
-      } else {
-        return HydroelasticType::kSoft;
-      }
-    } else {
-      throw std::logic_error(
-          fmt::format("Properties contain the '{}' group but is missing the "
-                      "('{}', '{}') property; compliance cannot be determined",
-                      kHydroGroup, kMaterialGroup, kElastic));
-    }
-  }
-  return HydroelasticType::kUndefined;
 }
 
 // Validator interface for use with extracting valid properties. It is

@@ -345,51 +345,34 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
 
 ProximityProperties MakeProximityPropertiesForCollision(
     const sdf::Collision& sdf_collision) {
-  geometry::ProximityProperties properties;
   const sdf::ElementPtr collision_element = sdf_collision.Element();
   DRAKE_DEMAND(collision_element != nullptr);
 
   const sdf::Element* const drake_element =
       MaybeGetChildElement(*collision_element, "drake:proximity_properties");
 
+  geometry::ProximityProperties properties;
   if (drake_element != nullptr) {
-    auto read_double = [drake_element, &properties](const char* element_name,
-                                                    const char* group_name,
-                                                    const char* property_name) {
+    auto read_double =
+        [drake_element](const char* element_name) -> std::optional<double> {
       if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
-        const double value =
-            GetChildElementValueOrThrow<double>(*drake_element, element_name);
-        properties.AddProperty(group_name, property_name, value);
+        return GetChildElementValueOrThrow<double>(*drake_element,
+                                                   element_name);
       }
+      return {};
     };
 
-    read_double("drake:mesh_resolution_hint", geometry::internal::kHydroGroup,
-                geometry::internal::kRezHint);
-    read_double("drake:elastic_modulus", geometry::internal::kMaterialGroup,
-                geometry::internal::kElastic);
-    read_double("drake:hunt_crossley_dissipation",
-                geometry::internal::kMaterialGroup,
-                geometry::internal::kHcDissipation);
+    const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
+    const bool is_soft = drake_element->HasElement("drake:soft_hydroelastic");
 
-    auto[mu_dynamic, dynamic_read] =
-        drake_element->Get<double>("drake:mu_dynamic", -1.0);
-    auto[mu_static, static_read] =
-        drake_element->Get<double>("drake:mu_static", -1.0);
-    // Note: we rely on the constructor of CoulombFriction to detect negative
-    // values and bad relationship between static and dynamic coefficients.
-    if (dynamic_read && static_read) {
-      properties.AddProperty(geometry::internal::kMaterialGroup,
-                             geometry::internal::kFriction,
-                             CoulombFriction<double>{mu_static, mu_dynamic});
-    } else if (dynamic_read) {
-      properties.AddProperty(geometry::internal::kMaterialGroup,
-                             geometry::internal::kFriction,
-                             CoulombFriction<double>{mu_dynamic, mu_dynamic});
-    } else if (static_read) {
-      properties.AddProperty(geometry::internal::kMaterialGroup,
-                             geometry::internal::kFriction,
-                             CoulombFriction<double>{mu_static, mu_static});
+    if (is_rigid && is_soft) {
+      throw std::runtime_error(
+          "A <collision> geometry has defined mutually-exclusive tags "
+          "<drake:rigid_hydroelastic> and <drake:soft_hydroelastic>. Only one "
+          "can be provided.");
     }
+
+    properties = ParseProximityProperties(read_double, is_rigid, is_soft);
   }
 
   if (!properties.HasProperty(geometry::internal::kMaterialGroup,

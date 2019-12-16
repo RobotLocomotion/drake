@@ -503,38 +503,20 @@ geometry::GeometryInstance ParseCollision(
       return {};
     };
 
-    std::optional<double> rez_hint = read_double("drake:mesh_resolution_hint");
-    if (rez_hint) {
-      props.AddProperty(geometry::internal::kHydroGroup,
-                        geometry::internal::kRezHint, *rez_hint);
+    const XMLElement* const rigid_element =
+        drake_element->FirstChildElement("drake:rigid_hydroelastic");
+    const XMLElement* const soft_element =
+        drake_element->FirstChildElement("drake:soft_hydroelastic");
+    if (rigid_element && soft_element) {
+      throw std::runtime_error(fmt::format(
+          "Collision geometry has defined mutually-exclusive tags "
+          "<drake:rigid_hydroelastic> and <drake:soft_hydroelastic> on lines "
+          "{} and {}, respectively. Only one can be provided.",
+          rigid_element->GetLineNum(), soft_element->GetLineNum()));
     }
-    std::optional<double> elastic_modulus =
-        read_double("drake:elastic_modulus");
-    if (elastic_modulus) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kElastic, *elastic_modulus);
-    }
-    std::optional<double> dissipation =
-        read_double("drake:hunt_crossley_dissipation");
-    if (dissipation) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kHcDissipation, *dissipation);
-    }
-    std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
-    std::optional<double> mu_static = read_double("drake:mu_static");
-    if (mu_dynamic && mu_static) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kFriction,
-                        CoulombFriction<double>(*mu_static, *mu_dynamic));
-    } else if (mu_dynamic) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kFriction,
-                        CoulombFriction<double>(*mu_dynamic, *mu_dynamic));
-    } else if (mu_static) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kFriction,
-                        CoulombFriction<double>(*mu_static, *mu_static));
-    }
+
+    props = ParseProximityProperties(read_double, rigid_element != nullptr,
+        soft_element != nullptr);
   }
 
   // Now test to see how we should handle a potential <drake_compliance> tag.

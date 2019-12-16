@@ -96,18 +96,22 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  @endcode
 
  As long as no exceptions are thrown, the function is guaranteed to return
- a valid instance of ProximityProperties.
+ a valid instance of ProximityProperties. There are not default values for these
+ tags (except for friction -- see below); if the tag is missing, the
+ corresponding property will be missing from the property set.
 
  Mapping from SDF tag to geometry property. See
  @ref YET_TO_BE_WRITTEN_HYDROELATIC_GEOMETRY_MODULE for details on the semantics
  of these properties.
- | Tag                              | Group        | Property                  | Notes                                           |
- | :------------------------------: | :----------: | :-----------------------: | :---------------------------------------------: |
- | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for hydroelastic contact.              |
- | drake:elastic_modulus            | material     | elastic_modulus           | ∞ for rigid hydrolelastic models; < ∞ for soft. |
- | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                 |
- | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                     |
- | drake:mu_static                  | material     | coulomb_friction          | See note below on friction.                     |
+ | Tag                              | Group        | Property                  | Notes                                                                                                                            |
+ | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
+ | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tesselation to support hydroelastic contact.                                                    |
+ | drake:elastic_modulus            | material     | elastic_modulus           | Finite positive value. Required for soft hydroelastic representations.                                                           |
+ | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
+ | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |
+ | drake:mu_static                  | material     | coulomb_friction          | See note below on friction.                                                                                                      |
+ | drake:rigid_hydroelastic         | hydroelastic | compliance_type           | Requests a rigid hydroelastic representation. Cannot be combined *with* soft_hydroelastic.                                       |
+ | drake:soft_hydroelastic          | hydroelastic | compliance_type           | Requests a soft hydroelastic representation. Cannot be combined *with* rigid_hydroelastic. Requires a value for elastic_modulus. |
 
  <h3>Coefficients of friction</h3>
 
