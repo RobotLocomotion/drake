@@ -63,9 +63,6 @@ void TestSineSystem(const Sine<T>& sine_system,
     // Loop over the input vectors and check that the Sine system outputs match
     // the expected outputs.
     for (int i = 0; i < input_vectors.cols(); i++) {
-      auto input =
-          make_unique<BasicVector<double>>(
-              sine_system.amplitude_vector().size());
       ASSERT_EQ(1, sine_system.num_input_ports());
       ASSERT_EQ(1, context->num_input_ports());
 
@@ -73,11 +70,11 @@ void TestSineSystem(const Sine<T>& sine_system,
       // inputs (i.e., each column in the input_vectors matrix represents a
       // sampling instant. The number of rows in input_vectors should match the
       // size of the input port).
-      ASSERT_EQ(input->get_mutable_value().size(), input_vectors.rows());
+      ASSERT_EQ(sine_system.amplitude_vector().size(), input_vectors.rows());
 
       // Initialize the input and associate it with the context.
-      input->get_mutable_value() << input_vectors.col(i);
-      context->FixInputPort(0, std::move(input));
+      sine_system.get_input_port(0).FixValue(context.get(),
+                                             input_vectors.col(i));
 
       // Check the Sine output.
       ASSERT_EQ(3, sine_system.num_output_ports());

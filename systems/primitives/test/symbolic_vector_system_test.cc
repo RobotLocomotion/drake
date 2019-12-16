@@ -214,7 +214,7 @@ TEST_F(SymbolicVectorSystemTest, ScalarPassThrough) {
   EXPECT_EQ(system.get_output_port().size(), 1);
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
 
-  context->FixInputPort(0, Vector1d{0.12});
+  system.get_input_port().FixValue(context.get(), 0.12);
   EXPECT_TRUE(CompareMatrices(system.get_output_port()
                                   .template Eval<BasicVector<double>>(*context)
                                   .CopyToVector(),
@@ -327,7 +327,7 @@ TEST_F(SymbolicVectorSystemTest, VectorPassThrough) {
   EXPECT_EQ(system.get_output_port().size(), 2);
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
 
-  context->FixInputPort(0, Vector2d{0.12, 0.34});
+  system.get_input_port().FixValue(context.get(), Vector2d{0.12, 0.34});
   EXPECT_TRUE(CompareMatrices(system.get_output_port()
                                   .template Eval<BasicVector<double>>(*context)
                                   .CopyToVector(),
@@ -453,7 +453,7 @@ TEST_F(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
 
   context->SetTime(tc_);
   context->SetContinuousState(xc_);
-  context->FixInputPort(0, uc_);
+  system->get_input_port().FixValue(context.get(), uc_);
   context->get_mutable_numeric_parameter(0).SetFromVector(pc_);
 
   const auto& xdot = system->EvalTimeDerivatives(*context).get_vector();
@@ -598,7 +598,7 @@ TEST_F(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
 
   context->SetTime(tc_);
   context->get_mutable_discrete_state_vector().SetFromVector(xc_);
-  context->FixInputPort(0, uc_);
+  system->get_input_port().FixValue(context.get(), uc_);
   context->get_mutable_numeric_parameter(0).SetFromVector(pc_);
 
   auto discrete_variables = system->AllocateDiscreteVariables();
@@ -664,7 +664,8 @@ class SymbolicVectorSystemAutoDiffXdTest : public SymbolicVectorSystemTest {
   void SetContext(const VectorX<AutoDiffXd>& txup) {
     context_->SetTime(txup[0]);
     context_->SetContinuousState(txup.segment<1>(1));
-    context_->FixInputPort(0, txup.segment<2>(2));
+    autodiff_system_->get_input_port(0).FixValue(context_.get(),
+                                                 txup.segment<2>(2));
     context_->get_mutable_numeric_parameter(0).SetFromVector(txup.tail<2>());
   }
 

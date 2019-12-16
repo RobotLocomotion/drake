@@ -45,8 +45,8 @@ GTEST_TEST(BarycentricSystemTest, MatrixGain) {
   for (double x : {-1., -.5, .3, .7}) {
     for (double y : {-.24, .4, .8}) {
       test = Vector2d{x, y};
-      gain_context->FixInputPort(0, test);
-      bary_context->FixInputPort(0, test);
+      gain.get_input_port().FixValue(gain_context.get(), test);
+      bary_sys.get_input_port().FixValue(bary_context.get(), test);
 
       const auto& gain_output = gain.get_output_port().Eval(*gain_context);
       const auto& bary_output = bary_sys.get_output_port().Eval(*bary_context);

@@ -31,7 +31,6 @@ class TrajectoryAffineSystemTest
           data_.kDiscreteTimeStep);
     }
     context_ = dut_->CreateDefaultContext();
-    input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     continuous_state_ = &context_->get_mutable_continuous_state();
     discrete_state_ = &context_->get_mutable_discrete_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -45,7 +44,6 @@ class TrajectoryAffineSystemTest
 
   ContinuousState<double>* continuous_state_{nullptr};
   DiscreteValues<double>* discrete_state_{nullptr};
-  unique_ptr<BasicVector<double>> input_vector_;
   unique_ptr<ContinuousState<double>> derivatives_;
   unique_ptr<DiscreteValues<double>> updates_;
 
@@ -87,8 +85,7 @@ TEST_P(TrajectoryAffineSystemTest, KnotPointConsistency) {
 TEST_P(TrajectoryAffineSystemTest, DiscreteUpdates) {
   // Sets the context's input port.
   Eigen::Vector2d u(7, 42);
-  input_vector_->get_mutable_value() << u;
-  context_->FixInputPort(0, std::move(input_vector_));
+  dut_->get_input_port().FixValue(context_.get(), u);
 
   EXPECT_NE(derivatives_, nullptr);
   EXPECT_NE(updates_, nullptr);
@@ -123,8 +120,7 @@ TEST_P(TrajectoryAffineSystemTest, DiscreteUpdates) {
 TEST_P(TrajectoryAffineSystemTest, Output) {
   // Sets the context's input port.
   Eigen::Vector2d u(5.6, -10.1);
-  input_vector_->get_mutable_value() << u;
-  context_->FixInputPort(0, std::move(input_vector_));
+  dut_->get_input_port().FixValue(context_.get(), u);
 
   // Sets the state.
   Eigen::Vector2d x(0.8, -22.1);

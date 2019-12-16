@@ -180,7 +180,7 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 /// @note All _vector_ inputs in the system must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
 /// reference to a subsystem in a Diagram), or to a constant value using, e.g.
-/// `context->FixInputPort(0,default_input)`. Any _abstract_ inputs in the
+/// `port.FixValue(context, default_input)`. Any _abstract_ inputs in the
 /// system must be unconnected (the port must be both optional and unused).
 ///
 /// @note The inputs, states, and outputs of the returned system are NOT the

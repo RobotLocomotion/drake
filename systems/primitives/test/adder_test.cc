@@ -21,14 +21,14 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
-    input0_.reset(new BasicVector<double>(3 /* size */));
-    input1_.reset(new BasicVector<double>(3 /* size */));
+    input0_ = Eigen::VectorXd(3 /* size */);
+    input1_ = Eigen::VectorXd(3 /* size */);
   }
 
   std::unique_ptr<Adder<double>> adder_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
+  Eigen::VectorXd input0_;
+  Eigen::VectorXd input1_;
 };
 
 // Tests that the system exports the correct topology.
@@ -52,10 +52,10 @@ TEST_F(AdderTest, Topology) {
 TEST_F(AdderTest, AddTwoVectors) {
   // Hook up two inputs of the expected size.
   ASSERT_EQ(2, context_->num_input_ports());
-  input0_->get_mutable_value() << 1, 2, 3;
-  input1_->get_mutable_value() << 4, 5, 6;
-  context_->FixInputPort(0, std::move(input0_));
-  context_->FixInputPort(1, std::move(input1_));
+  input0_ << 1, 2, 3;
+  input1_ << 4, 5, 6;
+  adder_->get_input_port(0).FixValue(context_.get(), input0_);
+  adder_->get_input_port(1).FixValue(context_.get(), input1_);
 
   Eigen::Vector3d expected(5, 7, 9);
   EXPECT_EQ(expected, adder_->get_output_port().Eval(*context_));
