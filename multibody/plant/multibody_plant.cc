@@ -389,7 +389,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
   DRAKE_THROW_UNLESS(properties.HasProperty("material", "coulomb_friction"));
 
-  const CoulombFriction<double>& coulomb_friction =
+  const CoulombFriction<double> coulomb_friction =
       properties.GetProperty<CoulombFriction<double>>("material",
                                                       "coulomb_friction");
 

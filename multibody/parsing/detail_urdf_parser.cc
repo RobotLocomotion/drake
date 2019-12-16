@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <Eigen/Dense>
 #include <tinyxml2.h>
@@ -139,7 +140,8 @@ void ParseBody(const multibody::PackageMap& package_map,
       DRAKE_DEMAND(geometry_instance.proximity_properties());
       plant->RegisterCollisionGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(), *geometry_instance.proximity_properties());
+          geometry_instance.name(),
+          std::move(*geometry_instance.mutable_proximity_properties()));
     }
   }
 }
