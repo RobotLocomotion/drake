@@ -113,8 +113,14 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     write_double3(hydroelastic_contact_info.F_Ac_W().rotational(),
                   surface_msg.moment_C_W);
 
-    // Loop through all quadrature points on the contact surface.
+    // Write all quadrature points on the contact surface.
+    const int num_quadrature_points_per_tri =
+        surface_msg.num_quadrature_points / surface_msg.num_triangles;
     for (int j = 0; j < surface_msg.num_quadrature_points; ++j) {
+      // Verify the ordering is consistent with that advertised.
+      DRAKE_DEMAND(quadrature_point_data[j].face_index ==
+                   j / num_quadrature_points_per_tri);
+
       lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_msg =
           surface_msg.quadrature_point_data[j];
       write_double3(quadrature_point_data[j].p_WQ, quad_data_msg.p_WQ);

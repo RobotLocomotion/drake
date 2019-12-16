@@ -24,6 +24,7 @@ using geometry::MeshFieldLinear;
 using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
 using geometry::SurfaceFace;
+using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
@@ -189,19 +190,6 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
 // TODO(edrumwri) Refactor these helper functions to be more
 // broadly available to unit tests that depend on them.
 
-// Returns two distinct quadrature points.
-std::vector<HydroelasticQuadraturePointData<double>> MakeQuadraturePointData() {
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
-  quadrature_point_data.resize(2);
-  quadrature_point_data[0].p_WQ = Vector3<double>(1, 3, 5);
-  quadrature_point_data[0].vt_BqAq_W = Vector3<double>(7, 11, 13);
-  quadrature_point_data[0].traction_Aq_W = Vector3<double>(17, 19, 23);
-  quadrature_point_data[1].p_WQ = Vector3<double>(29, 31, 37);
-  quadrature_point_data[1].vt_BqAq_W = Vector3<double>(41, 43, 47);
-  quadrature_point_data[1].traction_Aq_W = Vector3<double>(51, 53, 57);
-  return quadrature_point_data;
-}
-
 // Returns a distinct spatial force.
 SpatialForce<double> MakeSpatialForce() {
   return SpatialForce<double>(Vector3<double>(1, 2, 3),
@@ -228,6 +216,25 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
 
   return std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
+}
+
+// Returns two distinct quadrature points.
+std::vector<HydroelasticQuadraturePointData<double>> MakeQuadraturePointData() {
+  // Note that the setup of the face indices will indicate exactly one
+  // quadrature point per triangle given a mesh of two triangles. Verify this.
+  DRAKE_DEMAND(CreateSurfaceMesh()->num_faces() == 2);
+
+  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
+  quadrature_point_data.resize(2);
+  quadrature_point_data[0].p_WQ = Vector3<double>(1, 3, 5);
+  quadrature_point_data[0].vt_BqAq_W = Vector3<double>(7, 11, 13);
+  quadrature_point_data[0].traction_Aq_W = Vector3<double>(17, 19, 23);
+  quadrature_point_data[0].face_index = SurfaceFaceIndex(0);
+  quadrature_point_data[1].p_WQ = Vector3<double>(29, 31, 37);
+  quadrature_point_data[1].vt_BqAq_W = Vector3<double>(41, 43, 47);
+  quadrature_point_data[1].traction_Aq_W = Vector3<double>(51, 53, 57);
+  quadrature_point_data[1].face_index = SurfaceFaceIndex(1);
+  return quadrature_point_data;
 }
 
 // Creates a contact surface between the two given geometries.
