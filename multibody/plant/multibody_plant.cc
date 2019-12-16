@@ -389,7 +389,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
   DRAKE_THROW_UNLESS(properties.HasProperty("material", "coulomb_friction"));
 
-  const CoulombFriction<double>& coulomb_friction =
+  // TODO(SeanCurtis-TRI): This must *copy* the friction value because there is
+  //  a code path in which the properties do not get *captured -- specifically,
+  //  if shape is a Mesh. PR 12455 will make it so a mesh *can* have
+  //  proximity properties assigned and this can become:
+  //  const auto& coulomb_friction = ...
+  const CoulombFriction<double> coulomb_friction =
       properties.GetProperty<CoulombFriction<double>>("material",
                                                       "coulomb_friction");
 
