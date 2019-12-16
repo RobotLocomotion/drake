@@ -33,14 +33,14 @@ class IiwaCommandSenderTest : public testing::Test {
 TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
   const VectorXd q0 = VectorXd::LinSpaced(N, 0.1, 0.2);
   const std::vector<double> std_q0 = {q0.data(), q0.data() + q0.size()};
-  context_.FixInputPort(dut_.get_position_input_port().get_index(), q0);
+  dut_.get_position_input_port().FixValue(&context_, q0);
   EXPECT_EQ(output().num_joints, N);
   EXPECT_EQ(output().joint_position, std_q0);
   EXPECT_EQ(output().num_torques, 0);
 
   const VectorXd t0 = VectorXd::LinSpaced(N, 0.3, 0.4);
   const std::vector<double> std_t0 = {t0.data(), t0.data() + t0.size()};
-  context_.FixInputPort(dut_.get_torque_input_port().get_index(), t0);
+  dut_.get_torque_input_port().FixValue(&context_, t0);
   EXPECT_EQ(output().num_joints, N);
   EXPECT_EQ(output().joint_position, std_q0);
   EXPECT_EQ(output().num_torques, N);

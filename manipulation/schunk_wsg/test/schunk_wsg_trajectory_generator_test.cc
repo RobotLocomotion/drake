@@ -23,12 +23,9 @@ GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, BasicTest) {
 
   // Start off with the gripper closed (zero) and a command to open to
   // 100mm.
-  context->FixInputPort(dut.get_desired_position_input_port().get_index(),
-                        Vector1d(0.05));
-  context->FixInputPort(dut.get_force_limit_input_port().get_index(),
-                        Vector1d(40));
-  context->FixInputPort(dut.get_state_input_port().get_index(),
-                        Eigen::VectorXd::Zero(1));
+  dut.get_desired_position_input_port().FixValue(context.get(), 0.05);
+  dut.get_force_limit_input_port().FixValue(context.get(), 40.);
+  dut.get_state_input_port().FixValue(context.get(), 0.0);
 
   // Step a little bit. We should be commanding a point on the
   // trajectory wider than zero, but not to the target yet.

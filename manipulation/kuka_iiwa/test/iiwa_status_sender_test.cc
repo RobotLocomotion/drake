@@ -38,7 +38,7 @@ class IiwaStatusSenderTest : public testing::Test {
   }
 
   void Fix(const systems::InputPort<double>& port, const Eigen::VectorXd& v) {
-    context_.FixInputPort(port.get_index(), v);
+    port.FixValue(&context_, v);
   }
 
  protected:
