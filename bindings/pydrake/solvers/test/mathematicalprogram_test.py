@@ -344,12 +344,12 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
         binding1 = prog.AddBoundingBoxConstraint(-1, 1, x[0])
-        binding2 = prog.AddLinearEqualityConstraint(x[0] + 2*x[2], 2)
+        binding2 = prog.AddLinearEqualityConstraint(x[1] + 2*x[2], 2)
         x_val = np.array([-2., 1., 2.])
         np.testing.assert_allclose(
             prog.GetBindingVariableValues(binding1, x_val), np.array([-2]))
         np.testing.assert_allclose(
-            prog.GetBindingVariableValues(binding2, x_val), np.array([-2, 2]))
+            prog.GetBindingVariableValues(binding2, x_val), np.array([1, 2]))
 
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()

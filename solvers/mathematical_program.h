@@ -2634,7 +2634,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Given the value of all decision variables, namely if
+   * Given the value of all decision variables, namely
    * this.decision_variable(i) takes the value prog_var_vals(i), returns the
    * vector that contains the value of the variables in binding.variables().
    * @param binding binding.variables() must be decision variables in this
