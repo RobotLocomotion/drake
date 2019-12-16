@@ -8,15 +8,29 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using internal::HydroelasticType;
+
 GTEST_TEST(ProximityPropertiesTest, AddRigidProperties) {
   for (double length : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
     AddRigidHydroelasticProperties(length, &props);
+    EXPECT_TRUE(
+        props.HasProperty(internal::kHydroGroup, internal::kCompliance));
+    EXPECT_EQ(props.GetProperty<HydroelasticType>(internal::kHydroGroup,
+                                                  internal::kCompliance),
+              HydroelasticType::kRigid);
     EXPECT_TRUE(props.HasProperty(internal::kHydroGroup, internal::kRezHint));
     EXPECT_EQ(
         props.GetProperty<double>(internal::kHydroGroup, internal::kRezHint),
         length);
   }
+
+  ProximityProperties props;
+  AddRigidHydroelasticProperties(&props);
+  EXPECT_TRUE(props.HasProperty(internal::kHydroGroup, internal::kCompliance));
+  EXPECT_EQ(props.GetProperty<HydroelasticType>(internal::kHydroGroup,
+                                                internal::kCompliance),
+            HydroelasticType::kRigid);
 }
 
 // Tests the variant where the static pressure is given explicitly. This doesn't
@@ -27,11 +41,23 @@ GTEST_TEST(ProximityPropertiesTest, AddSoftProperties) {
   for (double length : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
     AddSoftHydroelasticProperties(length, &props);
+    EXPECT_TRUE(
+        props.HasProperty(internal::kHydroGroup, internal::kCompliance));
+    EXPECT_EQ(props.GetProperty<HydroelasticType>(internal::kHydroGroup,
+                                                  internal::kCompliance),
+              HydroelasticType::kSoft);
     EXPECT_TRUE(props.HasProperty(internal::kHydroGroup, internal::kRezHint));
     EXPECT_EQ(
         props.GetProperty<double>(internal::kHydroGroup, internal::kRezHint),
         length);
   }
+
+  ProximityProperties props;
+  AddSoftHydroelasticProperties(&props);
+  EXPECT_TRUE(props.HasProperty(internal::kHydroGroup, internal::kCompliance));
+  EXPECT_EQ(props.GetProperty<HydroelasticType>(internal::kHydroGroup,
+                                                internal::kCompliance),
+            HydroelasticType::kSoft);
 }
 
 }  // namespace
