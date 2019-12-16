@@ -27,7 +27,7 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
 
   PoseBundleToDrawMessage converter;
   auto context = converter.AllocateContext();
-  context->FixInputPort(0, AbstractValue::Make(bundle));
+  converter.get_input_port(0).FixValue(context.get(), bundle);
   auto output = converter.AllocateOutput();
   converter.CalcOutput(*context, output.get());
 

@@ -91,32 +91,32 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   generic_input.set_name(1, "Mycroft");
   generic_input.set_pose(1, Isometry3d(translation_1));
   generic_input.set_model_instance_id(1, kMycroftModelInstanceId);
-  context_->FixInputPort(0, AbstractValue::Make(generic_input));
+  aggregator_.get_input_port(0).FixValue(context_.get(), generic_input);
 
   // Set an arbitrary translation in the first PoseVector input.
-  auto pose_vec1 = std::make_unique<PoseVector<double>>();
-  pose_vec1->set_translation(Eigen::Translation<double, 3>(0.5, 1.5, 2.5));
+  PoseVector<double> pose_vec1 = PoseVector<double>();
+  pose_vec1.set_translation(Eigen::Translation<double, 3>(0.5, 1.5, 2.5));
   // TODO(russt): Consider implementing ToAutoDiffXd for BasicVector<double>?
-  auto autodiff_pose_vec1 = std::make_unique<PoseVector<AutoDiffXd>>();
-  autodiff_pose_vec1->set_value(
-      pose_vec1->get_value().template cast<AutoDiffXd>());
-  context_->FixInputPort(1, std::move(pose_vec1));
+  PoseVector<AutoDiffXd> autodiff_pose_vec1 = PoseVector<AutoDiffXd>();
+  autodiff_pose_vec1.set_value(
+      pose_vec1.get_value().template cast<AutoDiffXd>());
+  aggregator_.get_input_port(1).FixValue(context_.get(), pose_vec1);
 
   // Set some numbers in the corresponding FrameVelocity input.
-  auto frame_vel1 = std::make_unique<FrameVelocity<double>>();
-  frame_vel1->get_mutable_value() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
-  auto autodiff_frame_vel1 = std::make_unique<FrameVelocity<AutoDiffXd>>();
-  autodiff_frame_vel1->set_value(
-      frame_vel1->get_value().template cast<AutoDiffXd>());
-  context_->FixInputPort(2, std::move(frame_vel1));
+  FrameVelocity<double> frame_vel1 = FrameVelocity<double>();
+  frame_vel1.get_mutable_value() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+  FrameVelocity<AutoDiffXd> autodiff_frame_vel1 = FrameVelocity<AutoDiffXd>();
+  autodiff_frame_vel1.set_value(
+      frame_vel1.get_value().template cast<AutoDiffXd>());
+  aggregator_.get_input_port(2).FixValue(context_.get(), frame_vel1);
 
   // Set an arbitrary rotation in the second PoseVector input.
-  auto pose_vec2 = std::make_unique<PoseVector<double>>();
-  pose_vec2->set_rotation(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5));
-  auto autodiff_pose_vec2 = std::make_unique<PoseVector<AutoDiffXd>>();
-  autodiff_pose_vec2->set_value(
-      pose_vec2->get_value().template cast<AutoDiffXd>());
-  context_->FixInputPort(3, std::move(pose_vec2));
+  PoseVector<double> pose_vec2 = PoseVector<double>();
+  pose_vec2.set_rotation(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5));
+  PoseVector<AutoDiffXd> autodiff_pose_vec2 = PoseVector<AutoDiffXd>();
+  autodiff_pose_vec2.set_value(
+      pose_vec2.get_value().template cast<AutoDiffXd>());
+  aggregator_.get_input_port(3).FixValue(context_.get(), pose_vec2);
 
   aggregator_.CalcOutput(*context_, output_.get());
 
@@ -167,11 +167,14 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   auto autodiff_context = autodiff_aggregator->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(*context_);
 
-  autodiff_context->FixInputPort(
-      0, AbstractValue::Make(ToAutoDiffXd(generic_input)));
-  autodiff_context->FixInputPort(1, std::move(autodiff_pose_vec1));
-  autodiff_context->FixInputPort(2, std::move(autodiff_frame_vel1));
-  autodiff_context->FixInputPort(3, std::move(autodiff_pose_vec2));
+  autodiff_aggregator->get_input_port(0).FixValue(autodiff_context.get(),
+                                                  ToAutoDiffXd(generic_input));
+  autodiff_aggregator->get_input_port(1).FixValue(autodiff_context.get(),
+                                                  autodiff_pose_vec1);
+  autodiff_aggregator->get_input_port(2).FixValue(autodiff_context.get(),
+                                                  autodiff_frame_vel1);
+  autodiff_aggregator->get_input_port(3).FixValue(autodiff_context.get(),
+                                                  autodiff_pose_vec2);
 
   auto autodiff_output = autodiff_aggregator->AllocateOutput();
   autodiff_aggregator->CalcOutput(*autodiff_context, autodiff_output.get());
