@@ -519,7 +519,11 @@ def _install_impl(ctx):
                 [i.src for i in installed_tests],
     )
     return [
-        InstallInfo(install_actions = actions, rename = rename),
+        InstallInfo(
+            install_actions = actions,
+            rename = rename,
+            installed_files = installed_files,
+        ),
         InstalledTestInfo(tests = installed_tests),
         DefaultInfo(runfiles = files),
     ]

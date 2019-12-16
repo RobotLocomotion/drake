@@ -1,0 +1,10 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+# This is the @drake//bindings/pydrake package.
+
+alias(
+    name = "pydrake",
+    actual = "//:.pydrake",
+    visibility = ["//visibility:public"],
+)
