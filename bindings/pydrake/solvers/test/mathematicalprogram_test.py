@@ -340,15 +340,16 @@ class TestMathematicalProgram(unittest.TestCase):
             y_i = evaluator.Eval(x=[x_i, x_i])
             self.assertIsInstance(y_i[0], T_y_i)
 
-    def test_check_binding_satisfied(self):
+    def test_get_binding_variable_values(self):
         prog = mp.MathematicalProgram()
-        x = prog.NewContinuousVariables(3);
+        x = prog.NewContinuousVariables(3)
         binding1 = prog.AddBoundingBoxConstraint(-1, 1, x[0])
         binding2 = prog.AddLinearEqualityConstraint(x[0] + 2*x[2], 2)
         x_val = np.array([-2., 1., 2.])
-        self.assertFalse(prog.CheckBindingSatisfied(binding1, x_val, 1E-6))
-        self.assertTrue(prog.CheckBindingSatisfied(binding1, x_val, 1))
-        self.assertTrue(prog.CheckBindingSatisfied(binding2, x_val, 1E-6))
+        np.testing.assert_allclose(
+            prog.GetBindingVariableValues(binding1, x_val), np.array([-2]))
+        np.testing.assert_allclose(
+            prog.GetBindingVariableValues(binding2, x_val), np.array([-2, 2]))
 
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()

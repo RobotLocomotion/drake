@@ -2634,32 +2634,30 @@ class MathematicalProgram {
   }
 
   /**
-   * Check if a given binding (constraint) is satisfied at some given values
-   * or program decision variables.
-   * @param binding A list of bindings. The bound variables have to be among
-   * the decision variables of this MathematicalProgram.
+   * Given the value of all decision variables, namely if
+   * this.decision_variable(i) takes the value prog_var_vals(i), returns the
+   * vector that contains the value of the variables in binding.variables().
+   * @param binding binding.variables() must be decision variables in this
+   * MathematicalProgram.
    * @param prog_var_vals The value of ALL the decision variables in this
-   * program. We check if prog.decision_variable(i) takes the value
-   * prog_var_vals(i), whether the binding is satisfied or not.
-   * @param tol The tolerance of determining whether the constraint is satisfied
-   * or not. If we evaluate the binding and the binding value doesn't violate
-   * the constraint bounds by more than tol, then the constraint is deemed as
-   * satisfied.
-   * @return satisfied Whether the binding is satisfied or not.
+   * program.
+   * @return binding_variable_vals binding_variable_vals(i) is the value of
+   * binding.variables()(i) in prog_var_vals.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if<is_eigen_vector_of<DerivedX, double>::value,
-                          bool>::type
-  CheckBindingSatisfied(const Binding<C>& binding,
-                        const Eigen::MatrixBase<DerivedX>& prog_var_vals,
-                        double tol) const {
-    const VectorX<double> binding_y = EvalBinding(binding, prog_var_vals);
-    return (binding_y.array() >=
-            binding.evaluator()->lower_bound().array() - tol)
-               .all() &&
-           (binding_y.array() <=
-            binding.evaluator()->upper_bound().array() + tol)
-               .all();
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  GetBindingVariableValues(
+      const Binding<C>& binding,
+      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    DRAKE_DEMAND(prog_var_vals.rows() == num_vars());
+    VectorX<typename DerivedX::Scalar> binding_variable_vals(
+        binding.GetNumElements());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      binding_variable_vals(i) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
+    }
+    return binding_variable_vals;
   }
 
   /** Evaluates all visualization callbacks registered with the

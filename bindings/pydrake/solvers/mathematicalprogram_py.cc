@@ -791,14 +791,14 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
-      .def("CheckBindingSatisfied",
+      .def("GetBindingVariableValues",
           [](const MathematicalProgram& prog,
-              const Binding<solvers::Constraint>& binding,
-              const VectorX<double>& prog_var_vals, double tol) {
-            return prog.CheckBindingSatisfied(binding, prog_var_vals, tol);
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<double>& prog_var_vals) {
+            return prog.GetBindingVariableValues(binding, prog_var_vals);
           },
-          py::arg("binding"), py::arg("prog_var_vals"), py::arg("tol"),
-          doc.MathematicalProgram.CheckBindingSatisfied.doc)
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.GetBindingVariableValues.doc)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
