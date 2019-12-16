@@ -264,12 +264,12 @@ class HalfSpace final : public Shape {
                                                const Vector3<double>& p_FB);
 };
 
-// TODO(SeanCurtis-TRI): Update documentation when the level of support for
-// meshes extends to collision/rendering.
-/** Limited support for meshes. Meshes declared as such will _not_ serve in
- proximity queries or rendering queries. However, they _will_ be propagated
- to drake_visualizer. The mesh is dispatched to drake visualizer via the
- filename. The mesh is _not_ parsed/loaded by Drake. */
+// TODO(DamrongGuoy): Update documentation when the level of support for
+//  meshes extends to more collision and rendering.
+/** Limited support for meshes. Meshes are supported in Rendering and
+ Illustration roles. For Proximity role, Meshes are supported in
+ ComputeContactSurfaces() query only. No other proximity queries are supported.
+ */
 class Mesh final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
