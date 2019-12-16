@@ -1,3 +1,5 @@
+# Docker Image for Docker Hub
+
 To create a Docker image similar to that hosted on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake), download the
 latest [binary package](https://drake.mit.edu/from_binary.html)

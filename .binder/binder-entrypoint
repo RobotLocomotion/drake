@@ -1,0 +1,5 @@
+#!/bin/bash -l
+
+set -euxo pipefail
+
+xvfb-run -a "$@"
