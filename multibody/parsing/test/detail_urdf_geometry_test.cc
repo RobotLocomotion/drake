@@ -1,6 +1,5 @@
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 
-#include <memory>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -10,9 +9,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/package_map.h"
 
@@ -21,33 +18,11 @@ namespace multibody {
 namespace internal {
 namespace {
 
-using std::make_unique;
-using std::unique_ptr;
-
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using math::RigidTransformd;
 using geometry::GeometryInstance;
-using geometry::ProximityProperties;
-
-// Creates a special XML DOM consisting of *only* a collision object. XML text
-// can be provided as an input and it will be injected as a child of the
-// <collision> tag.
-unique_ptr<XMLDocument> MakeCollisionDocFromString(
-    const std::string& collision_spec) {
-  const std::string urdf_harness = R"_(
-<?xml version="1.0"?>
-  <collision>
-    <geometry>
-      <box size=".1 .2 .3"/>
-    </geometry>{}
-  </collision>)_";
-  const std::string urdf = fmt::format(urdf_harness, collision_spec);
-  auto doc = make_unique<XMLDocument>();
-  doc->Parse(urdf.c_str());
-  return doc;
-}
 
 class UrdfGeometryTests : public testing::Test {
  public:
@@ -98,9 +73,10 @@ class UrdfGeometryTests : public testing::Test {
                link_node->FirstChildElement("collision");
            collision_node;
            collision_node = collision_node->NextSiblingElement("collision")) {
+        CoulombFriction<double> friction;
         geometry::GeometryInstance geometry_instance =
             internal::ParseCollision(body_name, package_map_, root_dir_,
-                                     collision_node);
+                                     collision_node, &friction);
         collision_instances_.push_back(geometry_instance);
       }
     }
@@ -278,10 +254,11 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
                             &materials_), std::runtime_error,
       "In link fake_name expected visual element, got material");
 
+  CoulombFriction<double> friction;
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ParseCollision("fake_name", package_map_, root_dir_,
-                               material_node), std::runtime_error,
-      "In link 'fake_name' expected collision element, got material");
+                               material_node, &friction), std::runtime_error,
+      "In link fake_name expected collision element, got material");
 }
 
 TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
@@ -307,166 +284,6 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
         dynamic_cast<const geometry::Mesh*>(&instance.shape());
     ASSERT_TRUE(mesh);
   }
-}
-
-// Verify we can parse drake collision properties from a <collision> element.
-TEST_F(UrdfGeometryTests, CollisionProperties) {
-  // Verifies that the property exists with the given double-typed value.
-  auto verify_single_property = [](const ProximityProperties& properties,
-                                   const char* group, const char* property,
-                                   double value) {
-    ASSERT_TRUE(properties.HasProperty(group, property))
-        << fmt::format("  for property: ('{}', '{}')", group, property);
-    EXPECT_EQ(properties.GetProperty<double>(group, property), value);
-  };
-
-  // Verifies that the properties has friction and it matches the given values.
-  auto verify_friction = [](const ProximityProperties& properties,
-                            const CoulombFriction<double>& expected_friction) {
-    ASSERT_TRUE(properties.HasProperty("material", "coulomb_friction"));
-    const auto& friction = properties.GetProperty<CoulombFriction<double>>(
-        "material", "coulomb_friction");
-    EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
-    EXPECT_EQ(friction.dynamic_friction(),
-              expected_friction.dynamic_friction());
-  };
-
-  const PackageMap package_map;     // An empty package map.
-  const std::string root_dir(".");  // Arbitrary, un-used root directory.
-
-  // Case: has resolution hint; contains hint and default friction coefficients.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:mesh_resolution_hint value="2.5"/>
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint, 2.5);
-    verify_friction(properties, default_friction());
-  }
-
-  // Case: has elastic_modulus; contains modulus and default friction
-  // coefficients.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:elastic_modulus value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic, 3.5);
-    verify_friction(properties, default_friction());
-  }
-
-  // Case: has dissipation; contains dissipation and default friction
-  // coefficients.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:hunt_crossley_dissipation value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation, 3.5);
-    verify_friction(properties, default_friction());
-  }
-
-  // Case: has dynamic friction.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:mu_dynamic value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.5, 3.5});
-  }
-
-  // Case: has static friction.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:mu_static value="3.25" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.25, 3.25});
-  }
-
-  // Case: has static and dynamic friction.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:mu_dynamic value="3.25" />
-    <drake:mu_static value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.5, 3.25});
-  }
-
-  // Case: has no drake:proximity_properties coefficients, only drake_compliance
-  // coeffs.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake_compliance>
-    <static_friction>3.5</static_friction>
-    <dynamic_friction>2.5</dynamic_friction>
-  </drake_compliance>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.5, 2.5});
-  }
-
-  // Case: has both drake_compliance and drake:proximity_properties;
-  // drake:proximity_properties wins.
-  unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake_compliance>
-    <static_friction>3.5</static_friction>
-    <dynamic_friction>2.5</dynamic_friction>
-  </drake_compliance>
-  <drake:proximity_properties>
-    <drake:mu_dynamic value="4.5" />
-  </drake:proximity_properties>)_");
-  const XMLElement* collision_node = doc->FirstChildElement("collision");
-  ASSERT_NE(collision_node, nullptr);
-  GeometryInstance instance =
-      ParseCollision("link_name", package_map, root_dir, collision_node);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
-  verify_friction(properties, {4.5, 4.5});
 }
 
 }  // namespace

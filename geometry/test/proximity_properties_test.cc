@@ -12,10 +12,8 @@ GTEST_TEST(ProximityPropertiesTest, AddRigidProperties) {
   for (double length : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
     AddRigidHydroelasticProperties(length, &props);
-    EXPECT_TRUE(props.HasProperty(internal::kHydroGroup, internal::kRezHint));
-    EXPECT_EQ(
-        props.GetProperty<double>(internal::kHydroGroup, internal::kRezHint),
-        length);
+    EXPECT_TRUE(props.HasProperty(kHydroGroup, kRezHint));
+    EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kRezHint), length);
   }
 }
 
@@ -27,10 +25,8 @@ GTEST_TEST(ProximityPropertiesTest, AddSoftProperties) {
   for (double length : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
     AddSoftHydroelasticProperties(length, &props);
-    EXPECT_TRUE(props.HasProperty(internal::kHydroGroup, internal::kRezHint));
-    EXPECT_EQ(
-        props.GetProperty<double>(internal::kHydroGroup, internal::kRezHint),
-        length);
+    EXPECT_TRUE(props.HasProperty(kHydroGroup, kRezHint));
+    EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kRezHint), length);
   }
 }
 

@@ -384,42 +384,29 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    geometry::ProximityProperties properties) {
+    const CoulombFriction<double>& coulomb_friction) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  DRAKE_THROW_UNLESS(properties.HasProperty("material", "coulomb_friction"));
-
-  const CoulombFriction<double>& coulomb_friction =
-      properties.GetProperty<CoulombFriction<double>>("material",
-                                                      "coulomb_friction");
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+  GeometryId id =
+      RegisterGeometry(body, X_BG, shape,
+                       GetScopedName(*this, body.model_instance(), name));
 
-  member_scene_graph().AssignRole(*source_id_, id, std::move(properties));
+  // TODO(SeanCurtis-TRI): Push the contact parameters into the
+  // ProximityProperties.
+  member_scene_graph().AssignRole(
+      *source_id_, id, geometry::ProximityProperties());
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
       static_cast<int>(default_coulomb_friction_.size()) == collision_index);
-  // TODO(SeanCurtis-TRI): Stop storing coulomb friction in MBP and simply
-  //  acquire it from SceneGraph.
   default_coulomb_friction_.push_back(coulomb_friction);
   DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
   collision_geometries_[body.index()].push_back(id);
   return id;
-}
-
-template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction) {
-  geometry::ProximityProperties props;
-  props.AddProperty("material", "coulomb_friction", coulomb_friction);
-  return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
 template <typename T>

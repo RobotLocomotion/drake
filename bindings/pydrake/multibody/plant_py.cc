@@ -129,8 +129,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("dynamic_friction", &Class::dynamic_friction,
             cls_doc.dynamic_friction.doc);
 
-    AddValueInstantiation<CoulombFriction<T>>(m);
-
     m.def("CalcContactFrictionFromSurfaceProperties",
         [](const multibody::CoulombFriction<T>& surface_properties1,
             const multibody::CoulombFriction<T>& surface_properties2) {
@@ -602,21 +600,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
-                geometry::ProximityProperties>(
-                &Class::RegisterCollisionGeometry),
-            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("properties"),
-            cls_doc.RegisterCollisionGeometry
-                .doc_5args_body_X_BG_shape_name_properties)
-        .def("RegisterCollisionGeometry",
-            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
-                const geometry::Shape&, const std::string&,
                 const CoulombFriction<double>&>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"),
-            cls_doc.RegisterCollisionGeometry
-                .doc_5args_body_X_BG_shape_name_coulomb_friction)
+            py::arg("coulomb_friction"), cls_doc.RegisterCollisionGeometry.doc)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_reference_internal,

@@ -6,12 +6,9 @@
 #include <sstream>
 #include <stdexcept>
 
-#include <fmt/format.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
@@ -81,8 +78,8 @@ void AddMaterialToMaterialMap(const std::string& material_name,
 
 void ParseMaterial(const XMLElement* node, MaterialMap* materials) {
   if (std::string(node->Name()) != "material") {
-    throw std::runtime_error(std::string("Expected material element, got ") +
-                             node->Name());
+    throw std::runtime_error(
+        std::string("Expected material element, got ") + node->Name());
   }
 
   std::string name;
@@ -115,8 +112,8 @@ void ParseMaterial(const XMLElement* node, MaterialMap* materials) {
 
       if (texture_node) {
         std::stringstream error_buff;
-        error_buff << "WARNING: Material \"" << name
-                   << "\" is a texture. Textures are currently "
+        error_buff << "WARNING: Material \""
+                   << name << "\" is a texture. Textures are currently "
                    << "not supported. For more information, see: "
                    << "https://github.com/RobotLocomotion/drake/issues/2588. "
                    << "Defaulting to use the black color for this material.";
@@ -125,9 +122,9 @@ void ParseMaterial(const XMLElement* node, MaterialMap* materials) {
         AddMaterialToMaterialMap(name, rgba, true /* abort_if_name_clash */,
                                  materials);
       } else {
-        throw std::runtime_error("Material\"" + name +
-                                 "\" not previously defined. Therefore "
-                                 "a color must be specified.");
+        throw std::runtime_error(
+            "Material\"" + name + "\" not previously defined. Therefore "
+            "a color must be specified.");
       }
     }
   }
@@ -181,9 +178,9 @@ std::unique_ptr<geometry::Shape> ParseCapsule(const XMLElement* shape_node) {
   return std::make_unique<geometry::Capsule>(r, l);
 }
 
-std::unique_ptr<geometry::Shape> ParseMesh(const XMLElement* shape_node,
-                                           const PackageMap& package_map,
-                                           const std::string& root_dir) {
+std::unique_ptr<geometry::Shape> ParseMesh(
+    const XMLElement* shape_node, const PackageMap& package_map,
+    const std::string& root_dir) {
   std::string filename;
   if (!ParseStringAttribute(shape_node, "filename", &filename)) {
     throw std::runtime_error("Mesh element has no filename tag");
@@ -207,8 +204,8 @@ std::unique_ptr<geometry::Shape> ParseMesh(const XMLElement* shape_node,
     if (!(scale_vector(0) == scale_vector(1) &&
           scale_vector(0) == scale_vector(2))) {
       throw std::runtime_error(
-          "Drake meshes only support isotropic scaling. Therefore all "
-          "three scaling factors must be exactly equal.");
+        "Drake meshes only support isotropic scaling. Therefore all "
+        "three scaling factors must be exactly equal.");
     }
     scale = scale_vector(0);
   }
@@ -220,9 +217,9 @@ std::unique_ptr<geometry::Shape> ParseMesh(const XMLElement* shape_node,
   }
 }
 
-std::unique_ptr<geometry::Shape> ParseGeometry(const XMLElement* node,
-                                               const PackageMap& package_map,
-                                               const std::string& root_dir) {
+std::unique_ptr<geometry::Shape> ParseGeometry(
+    const XMLElement* node, const PackageMap& package_map,
+    const std::string& root_dir) {
   if (node->FirstChildElement("box")) {
     return ParseBox(node->FirstChildElement("box"));
   }
@@ -236,19 +233,19 @@ std::unique_ptr<geometry::Shape> ParseGeometry(const XMLElement* node,
     return ParseCapsule(node->FirstChildElement("capsule"));
   }
   if (node->FirstChildElement("mesh")) {
-    return ParseMesh(node->FirstChildElement("mesh"), package_map, root_dir);
+    return ParseMesh(node->FirstChildElement("mesh"), package_map,
+                     root_dir);
   }
 
-  throw std::runtime_error(
-      "Warning: geometry element "
-      "has an unknown type and will be ignored.");
+  throw std::runtime_error("Warning: geometry element "
+                           "has an unknown type and will be ignored.");
 }
 
 std::string MakeGeometryName(const std::string& basename,
                              const XMLElement* node) {
-  using std::hex;
   using std::setfill;
   using std::setw;
+  using std::hex;
 
   // Append the address spelled like "@0123456789abcdef".
   intptr_t address = reinterpret_cast<intptr_t>(node);
@@ -260,14 +257,15 @@ std::string MakeGeometryName(const std::string& basename,
 }  // namespace
 
 // Parses a "visual" element in @p node.
-geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
-                                       const PackageMap& package_map,
-                                       const std::string& root_dir,
-                                       const XMLElement* node,
-                                       MaterialMap* materials) {
+geometry::GeometryInstance ParseVisual(
+    const std::string& parent_element_name,
+    const PackageMap& package_map,
+    const std::string& root_dir, const XMLElement* node,
+    MaterialMap* materials) {
   if (std::string(node->Name()) != "visual") {
-    throw std::runtime_error("In link " + parent_element_name +
-                             " expected visual element, got " + node->Name());
+    throw std::runtime_error(
+        "In link " + parent_element_name +
+        " expected visual element, got " + node->Name());
   }
 
   // Ensures there is a geometry child element. Since this is a required
@@ -312,8 +310,9 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
     const XMLElement* color_node = material_node->FirstChildElement("color");
     if (color_node) {
       if (!ParseVectorAttribute(color_node, "rgba", &rgba)) {
-        throw std::runtime_error("Failed to parse color of material for link " +
-                                 parent_element_name);
+        throw std::runtime_error(
+            "Failed to parse color of material for link " +
+            parent_element_name);
       }
       color_specified = true;
     }
@@ -345,7 +344,7 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
       // distributed across multiple `<link>` elements and are not at the
       // `<robot>` level.
       AddMaterialToMaterialMap(material_name, rgba,
-                               false /* abort_if_name_clash */, materials);
+          false /* abort_if_name_clash */, materials);
     }
 
     // If the color is specified as a child element of the current material
@@ -372,94 +371,32 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
     geometry_name = MakeGeometryName(parent_element_name + "_Visual", node);
   }
 
-  auto instance = geometry::GeometryInstance(T_element_to_link,
-                                             std::move(shape), geometry_name);
+  auto instance = geometry::GeometryInstance(
+      T_element_to_link, std::move(shape), geometry_name);
   instance.set_illustration_properties(properties);
   return instance;
-}
-
-// This is the backwards-compatible fallback for defining friction; it reads
-// the soon-to-be-deprecated <drake_compliance> tag for data. It throws errors
-// for malformed values or returns a friction (either the valid friction
-// defined in the tag or the default).
-//
-// It incidentally propagates some warnings about unused tags from the rigid
-// body tree days.
-CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
-    const std::string& parent_element_name, const XMLElement* node) {
-  const XMLElement* compliant_node =
-      node->FirstChildElement("drake_compliance");
-  if (compliant_node) {
-    // TODO(SeanCurtis-TRI): Ultimately, we want to kill <drake_compliance>
-    //  and these will go along with it. These values are only used in rigid
-    //  body tree; with no real expectation we'll re-use them in MBP.
-    if (compliant_node->FirstChildElement("youngs_modulus")) {
-      drake::log()->warn("Ignoring youngs_modulus for link " +
-                         parent_element_name);
-    }
-
-    if (compliant_node->FirstChildElement("dissipation")) {
-      drake::log()->warn("Ignoring dissipation for link " +
-                         parent_element_name);
-    }
-
-    double static_friction{-1};
-    double dynamic_friction{-1};
-    bool static_friction_present{false};
-    bool dynamic_friction_present{false};
-
-    const XMLElement* friction_node =
-        compliant_node->FirstChildElement("static_friction");
-    if (friction_node) {
-      static_friction_present = true;
-      if (friction_node->QueryDoubleText(&static_friction)) {
-        throw std::runtime_error("Unable to parse static_friction for link " +
-                                 parent_element_name);
-      }
-    }
-
-    friction_node = compliant_node->FirstChildElement("dynamic_friction");
-    if (friction_node) {
-      dynamic_friction_present = true;
-      if (friction_node->QueryDoubleText(&dynamic_friction)) {
-        throw std::runtime_error("Unable to parse dynamic_friction for link " +
-                                 parent_element_name);
-      }
-    }
-
-    if (static_friction_present != dynamic_friction_present) {
-      throw std::runtime_error(
-          fmt::format("Link '{}': When specifying coefficient of friction, "
-                      "both static and dynamic coefficients must be defined",
-                      parent_element_name));
-    }
-
-    if (static_friction_present) {
-      return CoulombFriction<double>(static_friction, dynamic_friction);
-    }
-  }
-  return default_friction();
 }
 
 // Parses a "collision" element in @p node.
 //
 // @param[out] friction Coulomb friction for the associated geometry.
 geometry::GeometryInstance ParseCollision(
-    const std::string& parent_element_name, const PackageMap& package_map,
-    const std::string& root_dir, const XMLElement* node) {
+    const std::string& parent_element_name,
+    const PackageMap& package_map,
+    const std::string& root_dir, const XMLElement* node,
+    CoulombFriction<double>* friction) {
   if (std::string(node->Name()) != "collision") {
     throw std::runtime_error(
-        fmt::format("In link '{}' expected collision element, got {}",
-                    parent_element_name, node->Name()));
+        "In link " + parent_element_name +
+        " expected collision element, got " + node->Name());
   }
 
   // Ensures there is a geometry child element. Since this is a required
   // element, throws an exception if a geometry element does not exist.
   const XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
-    throw std::runtime_error(
-        fmt::format("Link '{}' has a collision element without geometry",
-                    parent_element_name));
+    throw std::runtime_error("Link " + parent_element_name +
+                             " has a collision element without geometry.");
   }
 
   // Obtains the reference frame of the visualization relative to the
@@ -480,81 +417,53 @@ geometry::GeometryInstance ParseCollision(
   std::unique_ptr<geometry::Shape> shape =
       ParseGeometry(geometry_node, package_map, root_dir);
 
-  // Parse the properties from <drake:proximity_properties>.
-  geometry::ProximityProperties props;
-  const XMLElement* drake_element =
-      node->FirstChildElement("drake:proximity_properties");
-  if (drake_element) {
-    auto read_double =
-        [drake_element](const char* element_name) -> std::optional<double> {
-      const XMLElement* value_node =
-          drake_element->FirstChildElement(element_name);
-      if (value_node != nullptr) {
-        double value{};
-        if (ParseScalarAttribute(value_node, "value", &value)) {
-          return value;
-        } else {
-          throw std::runtime_error(
-              fmt::format("Unable to read the 'value' attribute for the <{}> "
-                          "tag on line {}",
-                          element_name, value_node->GetLineNum()));
-        }
+  *friction = default_friction();
+  const XMLElement* compliant_node =
+      node->FirstChildElement("drake_compliance");
+  if (compliant_node) {
+    double static_friction{-1};
+    double dynamic_friction{-1};
+    bool static_friction_present = false;
+    bool dynamic_friction_present = false;
+
+    const XMLElement* friction_node =
+        compliant_node->FirstChildElement("static_friction");
+    if (friction_node) {
+      static_friction_present = true;
+      if (friction_node->QueryDoubleText(&static_friction)) {
+        throw std::runtime_error(
+            "Unable to parse static_friction for link " + parent_element_name);
       }
-      return {};
-    };
+    }
 
-    std::optional<double> rez_hint = read_double("drake:mesh_resolution_hint");
-    if (rez_hint) {
-      props.AddProperty(geometry::internal::kHydroGroup,
-                        geometry::internal::kRezHint, *rez_hint);
+    friction_node = compliant_node->FirstChildElement("dynamic_friction");
+    if (friction_node) {
+      dynamic_friction_present = true;
+      if (friction_node->QueryDoubleText(&dynamic_friction)) {
+        throw std::runtime_error(
+            "Unable to parse dynamic_friction for link " + parent_element_name);
+      }
     }
-    std::optional<double> elastic_modulus =
-        read_double("drake:elastic_modulus");
-    if (elastic_modulus) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kElastic, *elastic_modulus);
-    }
-    std::optional<double> dissipation =
-        read_double("drake:hunt_crossley_dissipation");
-    if (dissipation) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kHcDissipation, *dissipation);
-    }
-    std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
-    std::optional<double> mu_static = read_double("drake:mu_static");
-    if (mu_dynamic && mu_static) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kFriction,
-                        CoulombFriction<double>(*mu_static, *mu_dynamic));
-    } else if (mu_dynamic) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kFriction,
-                        CoulombFriction<double>(*mu_dynamic, *mu_dynamic));
-    } else if (mu_static) {
-      props.AddProperty(geometry::internal::kMaterialGroup,
-                        geometry::internal::kFriction,
-                        CoulombFriction<double>(*mu_static, *mu_static));
-    }
-  }
 
-  // Now test to see how we should handle a potential <drake_compliance> tag.
-  if (!props.HasProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kFriction)) {
-    // We have no friction from <drake:proximity_properties> so we need the old
-    // tag.
-    CoulombFriction<double> friction =
-        ParseCoulombFrictionFromDrakeCompliance(parent_element_name, node);
-    props.AddProperty(geometry::internal::kMaterialGroup,
-                      geometry::internal::kFriction, friction);
-  } else {
-    // We parsed friction from <drake:proximity_properties>; test for the
-    // existence of <drake_compliance> and warn that it won't be used.
-    if (node->FirstChildElement("drake_compliance")) {
-      drake::log()->warn(fmt::format(
-          "Drake contact parameters are fully specified by the "
-          "<drake:proximity_properties> tag for the '{}' link. The "
-          "<drake_compliance> tag is ignored. Consider removing  it.",
-          parent_element_name));
+    if (static_friction_present != dynamic_friction_present) {
+        throw std::runtime_error(
+            "Link " + parent_element_name +
+            ": When specifying coefficient of friction, "
+            "both static and dynamic coefficients must be defined");
+    }
+
+    if (static_friction_present) {
+      *friction = CoulombFriction<double>(static_friction, dynamic_friction);
+    }
+
+    if (compliant_node->FirstChildElement("youngs_modulus")) {
+      drake::log()->warn("Ignoring youngs_modulus for link " +
+                         parent_element_name);
+    }
+
+    if (compliant_node->FirstChildElement("dissipation")) {
+      drake::log()->warn("Ignoring dissipation for link " +
+                         parent_element_name);
     }
   }
 
@@ -563,10 +472,8 @@ geometry::GeometryInstance ParseCollision(
     geometry_name = MakeGeometryName(parent_element_name + "_Collision", node);
   }
 
-  geometry::GeometryInstance instance(T_element_to_link, std::move(shape),
-                                      geometry_name);
-  instance.set_proximity_properties(std::move(props));
-  return instance;
+  return geometry::GeometryInstance(T_element_to_link, std::move(shape),
+                                    geometry_name);
 }
 
 }  // namespace internal
