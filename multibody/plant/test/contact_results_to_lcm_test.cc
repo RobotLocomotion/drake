@@ -47,9 +47,8 @@ GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
   plant.Finalize();
   ContactResultsToLcmSystem<double> lcm_system(plant);
   auto lcm_context = lcm_system.AllocateContext();
-  lcm_context->FixInputPort(
-      lcm_system.get_contact_result_input_port().get_index(),
-      Value<ContactResults<double>>());
+  lcm_system.get_contact_result_input_port().FixValue(lcm_context.get(),
+                                                      ContactResults<double>());
 
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
@@ -101,11 +100,9 @@ GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
       index1,           index2,     f_BC_W,          p_WC,
       separation_speed, slip_speed, penetration_data};
   contacts.AddContactInfo(pair_info);
-  Value<ContactResults<double>> contacts_value(contacts);
   auto lcm_context = lcm_system.AllocateContext();
-  lcm_context->FixInputPort(
-      lcm_system.get_contact_result_input_port().get_index(),
-      Value<ContactResults<double>>(contacts));
+  lcm_system.get_contact_result_input_port().FixValue(lcm_context.get(),
+                                                      contacts);
 
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
@@ -366,8 +363,8 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
 
   ContactResultsToLcmSystem<double> contact_results_to_lcm_system(*plant);
 
-  const systems::InputPortIndex contact_results_input_port_index =
-      contact_results_to_lcm_system.get_contact_result_input_port().get_index();
+  const systems::InputPort<double>& contact_results_input_port =
+      contact_results_to_lcm_system.get_contact_result_input_port();
   const systems::OutputPortIndex
       lcm_hydroelastic_contact_surface_output_port_index =
           contact_results_to_lcm_system.get_lcm_message_output_port()
@@ -377,10 +374,9 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
   std::unique_ptr<Context<double>> context =
       contact_results_to_lcm_system.CreateDefaultContext();
-  context->FixInputPort(
-      contact_results_input_port_index,
-      Value<ContactResults<double>>(GenerateHydroelasticContactResults(
-          *plant, &contact_surface, &contact_info)));
+  contact_results_input_port.FixValue(
+      context.get(), GenerateHydroelasticContactResults(
+                         *plant, &contact_surface, &contact_info));
 
   // Get the LCM message that corresponds to the contact results.
   Value<lcmt_contact_results_for_viz> lcm_message_value;

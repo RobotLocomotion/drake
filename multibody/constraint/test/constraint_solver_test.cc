@@ -31,12 +31,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     rod_->set_rod_mass(2.0);
 
     // Set a zero input force (this is the default).
-    std::unique_ptr<BasicVector<double>> ext_input =
-        std::make_unique<BasicVector<double>>(3);
-    ext_input->SetAtIndex(0, 0.0);
-    ext_input->SetAtIndex(1, 0.0);
-    ext_input->SetAtIndex(2, 0.0);
-    context_->FixInputPort(0, std::move(ext_input));
+    const Vector3<double> ext_input(0.0, 0.0, 0.0);
+    rod_->get_input_port(0).FixValue(context_.get(), ext_input);
 
     // Construct the problem data for the 2D rod.
     const int num_velocities = 3;

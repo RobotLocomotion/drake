@@ -398,17 +398,14 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
 
   // Verify that derivatives can be computed after fixing the acrobot actuation
   // input port.
-  context->FixInputPort(
-      plant.get_actuation_input_port(acrobot_instance).get_index(),
-      Vector1d(0.0));
+  plant.get_actuation_input_port(acrobot_instance).FixValue(context.get(), 0.0);
   DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, continuous_state.get()));
 
   // Verify that derivatives can be computed after fixing the cylinder actuation
   // input port with an empty vector.
-  context->FixInputPort(
-      plant.get_actuation_input_port(cylinder_instance).get_index(),
-      VectorXd(0));
+  plant.get_actuation_input_port(cylinder_instance)
+      .FixValue(context.get(), VectorXd(0));
   DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, continuous_state.get()));
 }
@@ -476,8 +473,8 @@ class AcrobotPlantTests : public ::testing::Test {
         *plant_, context_.get());
 
     ASSERT_GT(plant_->num_actuators(), 0);
-    input_port_ = &plant_context_->FixInputPort(
-        plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
+    input_port_ =
+        &plant_->get_actuation_input_port().FixValue(plant_context_, 0.0);
   }
 
   void SetUpDiscreteAcrobotPlant(double time_step) {
@@ -490,9 +487,8 @@ class AcrobotPlantTests : public ::testing::Test {
 
     discrete_context_ = discrete_plant_->CreateDefaultContext();
     ASSERT_EQ(discrete_plant_->num_actuators(), 1);
-    discrete_context_->FixInputPort(
-        discrete_plant_->get_actuation_input_port().get_index(),
-        Vector1<double>(0.0));
+    discrete_plant_->get_actuation_input_port().FixValue(
+        discrete_context_.get(), 0.0);
 
     ASSERT_EQ(discrete_plant_->num_positions(), 2);
     ASSERT_EQ(discrete_plant_->num_velocities(), 2);
@@ -1461,11 +1457,9 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-  context->FixInputPort(pendulum->get_actuation_input_port().get_index(),
-                        Vector1d{0.0});
-  context->FixInputPort(
-      pendulum->get_applied_generalized_force_input_port().get_index(),
-      Vector1d{0.0});
+  pendulum->get_actuation_input_port().FixValue(context.get(), 0.0);
+  pendulum->get_applied_generalized_force_input_port().FixValue(context.get(),
+                                                                0.0);
 
   // First we will linearize about the unstable fixed point with the pendulum
   // in its inverted position.
