@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 /** @name  Declaring general contact material properties
 
@@ -19,22 +18,12 @@ namespace internal {
  SceneGraph depends on. These are not the exhaustive set of contact material
  properties that downstream consumers (e.g., MultibodyPlant) may require.
 
- As the namespace indicates, these are for internal use only, so Drake entities
- can implicitly coordinate the values they use to define proximity properties.
- These strings don't suggest what constitutes a valid property *value*. For
- those definitions, one should refer to the consumer of the properties (as
- called out in the documentation of the ProximityProperties class).
-
  <!-- TODO(SeanCurtis-TRI): Extend this to include other contact material
  properties and an API for setting them more conveniently.  */
 //@{
 
 extern const char* const kMaterialGroup;  ///< The contact material group name.
 extern const char* const kElastic;        ///< Elastic modulus property name.
-extern const char* const kFriction;       ///< Friction coefficients property
-                                          ///< name.
-extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
-                                          ///< property name.
 
 //@}
 
@@ -59,8 +48,6 @@ extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
 
 extern const char* const kHydroGroup;      ///< Hydroelastic group name.
 extern const char* const kRezHint;         ///< Resolution hint property name.
-
-}  // namespace internal
 
 /** Adds properties to the given set of proximity properties sufficient to cause
  the associated geometry to generate a rigid hydroelastic representation.

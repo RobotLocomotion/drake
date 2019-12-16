@@ -63,7 +63,6 @@ from pydrake.geometry import (
     GeometryId,
     Role,
     PenetrationAsPointPair_,
-    ProximityProperties,
     SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
@@ -183,19 +182,6 @@ class TestPlant(unittest.TestCase):
             self.assertEqual(plant.default_coulomb_friction(
                 plant.GetCollisionGeometriesForBody(body)[0]
                 ).dynamic_friction(), 0.5)
-            explicit_props = ProximityProperties()
-            explicit_props.AddProperty("material", "coulomb_friction",
-                                       CoulombFriction(1.1, 0.8))
-            plant.RegisterCollisionGeometry(
-                body=body, X_BG=body_X_BG, shape=box,
-                name="new_body_collision2", properties=explicit_props)
-            self.assertGreater(plant.num_collision_geometries(), 1)
-            self.assertEqual(plant.default_coulomb_friction(
-                plant.GetCollisionGeometriesForBody(body)[1]
-            ).static_friction(), 1.1)
-            self.assertEqual(plant.default_coulomb_friction(
-                plant.GetCollisionGeometriesForBody(body)[1]
-            ).dynamic_friction(), 0.8)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
