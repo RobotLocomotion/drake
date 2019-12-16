@@ -76,20 +76,14 @@ class InverseDynamicsTest : public ::testing::Test {
       vd_d = acceleration_desired;
     }
 
-    auto state_input = make_unique<BasicVector<double>>(
-        num_positions() + num_velocities());
-    state_input->get_mutable_value() << position, velocity;
-    inverse_dynamics_context_->FixInputPort(
-        inverse_dynamics_->get_input_port_estimated_state().get_index(),
-        std::move(state_input));
+    VectorXd state_input(num_positions() + num_velocities());
+    state_input << position, velocity;
+    inverse_dynamics_->get_input_port_estimated_state().FixValue(
+        inverse_dynamics_context_.get(), state_input);
 
     if (!inverse_dynamics_->is_pure_gravity_compensation()) {
-      auto vd_input =
-          make_unique<BasicVector<double>>(num_velocities());
-      vd_input->get_mutable_value() << vd_d;
-      inverse_dynamics_context_->FixInputPort(
-          inverse_dynamics_->get_input_port_desired_acceleration().get_index(),
-          std::move(vd_input));
+      inverse_dynamics_->get_input_port_desired_acceleration().FixValue(
+          inverse_dynamics_context_.get(), vd_d);
     }
 
     // Hook input of the expected size.
