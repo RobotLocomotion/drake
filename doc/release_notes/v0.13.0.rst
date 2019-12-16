@@ -120,7 +120,7 @@ Commits to be categorized
 -------------------------
 
 Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
-Current newest_commit a7aa26510ec00833a2719c0420763d4fa649c744 (inclusive).
+Current newest_commit 1fe6d30901aa7003978fa2f84de4fd919bfc5128 (inclusive).
 
 * geometry: create ellipsoid meshes (`#12323`_)
 * geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
@@ -171,3 +171,24 @@ Current newest_commit a7aa26510ec00833a2719c0420763d4fa649c744 (inclusive).
 * proto: Use lcm encoding (not protobuf) for call_python (`#12442`_)  # In 0d7f74ca6fe2fb5904a6120c5a453ec04e769e39 way back in 2017, we stopped using LCM for call_matlab because its runtime support library for was incompatible with MATLAB.  However, the message serialization itself was never a problem (only the networking), and anyway for call_python there are no compatibility problems with LCM.  So to drop the heavy dependency on protobuf, we'll use LCM message serialization for call_python RPCs. (As a consequence, some of the build system code for generating protobuf messages is now dead code, but I'll do that purge separately because it's finicky and substantial.)
 * Fixes negative real time factors in Drake visualizer (`#12444`_)
 * Implements ABA forward dynamics (`#12412`_)
+* Pass --no-lock to brew bundle (`#12458`_)  # https://github.com/Homebrew/homebrew-bundle/pull/552 introduces "Brewfile.lock.json" which provides a list of successfully installed packages and their metainfo. For now, git detects those new added "Brewfile.lock.json" as untracked files. Passing `--no-lock` is one solution to this problem. An alternative is to add the pattern in `.gitignore` but I think passing `--no-lock` is a cleaner solution.
+* tutorials: Updating wording in MP + MBP tutorial (`#12443`_)
+* Adds missing operators to SpatialVector (`#12436`_)
+* workspace: Upgrade lcm to latest commit (`#12457`_)
+* workspace: Remove unused protobuf (but not libprotobuf) (`#12450`_)  # We no longer need the message generation nor compilation machinery, but we still need the runtime support libraries for some of our deprecated methods. Specifically, all bazel machinery for protobuf message generation is removed: - @com_google_protobuf//... - @drake//:protobuf - @drake//:protobuf_python - @drake//:protoc - @drake//tools/skylark:drake_proto.bzl - @protoc//... Some runtime machinery remains, to be removed on 2020-02-01: - @libprotobuf - setup/mac/binary_distribution/Brewfile:brew 'protobuf' - setup/ubuntu/source_distribution/packages-bionic.txt:python3-protobuf - setup/ubuntu/binary_distribution/packages-bionic.txt:libprotobuf-dev
+* Expression(0.0) re-uses the pointer of Expression::Zero() (`#12459`_)  # Given a scalar type T, Eigen assumes that the constructor for T(0) is idempotent. Consequently, it should not involve memory-allocation to avoid a memory leak. This is not a correct assumption and needs to be fixed, but it takes time to fix the upstream and use the latest version of Eigen. Here, we want to provide a workaround on our side. See https://github.com/RobotLocomotion/drake/issues/12453.
+* Make effective use of SpatialAcceleration's addition operators (`#12462`_)
+* 'Fix' sphinx to get __init__ documentation (`#12452`_)
+* Adds LCM message utilities for the planar gripper (`#12449`_)
+* Define and use a toolchain for Python (`#12377`_)
+* Use rules_python for Python build rules (`#12377`_)
+* Update optitrack-driver with rules_python support (`#12377`_)
+* Move jupyter notebook and ipywidgets to binary prerequisite install (`#12461`_)
+* gitattributes: Update for modern bazel spellings (`#12465`_)
+* Un-pin sphinx for macOS (`#12467`_)
+* Add SymbolicVectorSystemBuilder::LinearizeDynamics (`#12466`_)
+* mkdoc: Fix bug where some internal names may leak in (`#12476`_)  # Remove SKIP_RECURSE_NAMES
+* Reverses the surface normal convention in ContactSurface (`#12463`_)
+* Add bindings for RevoluteSpring (`#12481`_)
+* Reverts #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
+* Adding drake contact material properties to sdf/urdf parsing (`#12464`_)  # This introduces a new XML sub-tree that is largely common between both SDF and URDF. SDF version: <drake:proximity_properties> <drake:mesh_resolution_hint>1.3</drake:hydroelastic_resolution_hint> <drake:elastic_modulus>1e8</drake:elastic_modulus> <drake:hunt_crossley_dissipation>0.25</drake:hunt_crossley_dissipation> <drake:mu_dynamic>0.7</drake:mu_dynamic> <drake:mu_static>0.7</drake:mu_static> </drake:proximity_properties> URDF version: <drake:proximity_properties> <drake:mesh_resolution_hint value="1.3" /> <drake:elastic_modulus value="1e8" /> <drake:hunt_crossley_dissipation value="0.25" /> <drake:mu_dynamic value="0.7" /> <drake:mu_static value="0.7" /> </drake:proximity_properties> (URDF differs because URDF has a style that uses attributes whereas SDF eschews them.) - Parsing collision geometry now creates a populated ProximityProperties and stores the parsed properties there. - There is some code that provides legacy compatibility with old mechanisms for specifying coefficients of friction so that existing files will still work (albeit with warnings). - MBP API has been extended to accept proximity properties compatible with this parsing logic. The old API needs to be deprecated (in a follow up commit). We still need to add "soft" deprecation for when we use the legacy functionality. It can't be compile-time, so it'll have to be warnings with a time stamp.
