@@ -117,11 +117,8 @@ int main(int argc, char* argv[]) {
   auto context = diagram->CreateDefaultContext();
   Context<double>& rod_context =
       diagram->GetMutableSubsystemContext(*rod, context.get());
-  auto ext_input = std::make_unique<BasicVector<double>>(3);
-  ext_input->SetAtIndex(0, 0.0);
-  ext_input->SetAtIndex(1, 0.0);
-  ext_input->SetAtIndex(2, 0.0);
-  rod_context.FixInputPort(0, std::move(ext_input));
+  const Eigen::Vector3d ext_input(0, 0, 0);
+  rod->get_input_port(0).FixValue(&rod_context, ext_input);
 
   // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));

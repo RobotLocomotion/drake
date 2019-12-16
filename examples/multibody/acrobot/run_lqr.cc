@@ -27,6 +27,7 @@ using multibody::Parser;
 using multibody::JointActuator;
 using multibody::RevoluteJoint;
 using systems::Context;
+using systems::InputPort;
 using Eigen::Vector2d;
 
 namespace examples {
@@ -68,12 +69,10 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   std::unique_ptr<Context<double>> context = acrobot.CreateDefaultContext();
 
   // Set nominal actuation torque to zero.
-  const int actuation_port_index =
-      acrobot.get_actuation_input_port().get_index();
-  context->FixInputPort(actuation_port_index, Vector1d::Constant(0.0));
-  context->FixInputPort(
-      acrobot.get_applied_generalized_force_input_port().get_index(),
-      Vector2d::Constant(0.0));
+  const InputPort<double>& actuation_port = acrobot.get_actuation_input_port();
+  actuation_port.FixValue(context.get(), 0.0);
+  acrobot.get_applied_generalized_force_input_port().FixValue(
+      context.get(), Vector2d::Constant(0.0));
 
   shoulder.set_angle(context.get(), M_PI);
   shoulder.set_angular_rate(context.get(), 0.0);
@@ -91,7 +90,7 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   return systems::controllers::LinearQuadraticRegulator(
       acrobot, *context, Q, R,
       Eigen::Matrix<double, 0, 0>::Zero() /* No cross state/control costs */,
-      actuation_port_index);
+      actuation_port.get_index());
 }
 
 int do_main() {

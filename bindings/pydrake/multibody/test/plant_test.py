@@ -23,6 +23,7 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
     MultibodyForces_,
     RevoluteJoint_,
+    RevoluteSpring_,
     RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
@@ -350,6 +351,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_force_element(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         LinearSpringDamper = LinearSpringDamper_[T]
+        RevoluteSpring = RevoluteSpring_[T]
         SpatialInertia = SpatialInertia_[float]
 
         plant = MultibodyPlant()
@@ -358,11 +360,31 @@ class TestPlant(unittest.TestCase):
                                     M_BBo_B=spatial_inertia)
         body_b = plant.AddRigidBody(name="body_b",
                                     M_BBo_B=spatial_inertia)
-        plant.AddForceElement(LinearSpringDamper(
+        linear_spring = plant.AddForceElement(LinearSpringDamper(
             bodyA=body_a, p_AP=[0., 0., 0.],
             bodyB=body_b, p_BQ=[0., 0., 0.],
             free_length=1., stiffness=2., damping=3.))
+        revolute_joint = plant.AddJoint(RevoluteJoint_[T](
+                name="revolve_joint", frame_on_parent=body_a.body_frame(),
+                frame_on_child=body_b.body_frame(), axis=[0, 0, 1],
+                damping=0.))
+        revolute_spring = plant.AddForceElement(RevoluteSpring(
+            joint=revolute_joint, nominal_angle=0.1, stiffness=100.))
         plant.Finalize()
+
+        # Test LinearSpringDamper accessors
+        self.assertEqual(linear_spring.bodyA(), body_a)
+        self.assertEqual(linear_spring.bodyB(), body_b)
+        np.testing.assert_array_equal(linear_spring.p_AP(), [0, 0, 0])
+        np.testing.assert_array_equal(linear_spring.p_BQ(), [0, 0, 0])
+        self.assertEqual(linear_spring.free_length(), 1.)
+        self.assertEqual(linear_spring.stiffness(), 2.)
+        self.assertEqual(linear_spring.damping(), 3.)
+
+        # Test RevoluteSpring accessors
+        self.assertEqual(revolute_spring.joint(), revolute_joint)
+        self.assertEqual(revolute_spring.nominal_angle(), 0.1)
+        self.assertEqual(revolute_spring.stiffness(), 100.)
 
     @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
