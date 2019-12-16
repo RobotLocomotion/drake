@@ -120,7 +120,7 @@ Commits to be categorized
 -------------------------
 
 Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
-Current newest_commit 1fe6d30901aa7003978fa2f84de4fd919bfc5128 (inclusive).
+Current newest_commit a7b7476319bef3602d99c51fb7f1eb2b6c468b7e (inclusive).
 
 * geometry: create ellipsoid meshes (`#12323`_)
 * geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
@@ -191,4 +191,3 @@ Current newest_commit 1fe6d30901aa7003978fa2f84de4fd919bfc5128 (inclusive).
 * Reverses the surface normal convention in ContactSurface (`#12463`_)
 * Add bindings for RevoluteSpring (`#12481`_)
 * Reverts #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
-* Adding drake contact material properties to sdf/urdf parsing (`#12464`_)  # This introduces a new XML sub-tree that is largely common between both SDF and URDF. SDF version: <drake:proximity_properties> <drake:mesh_resolution_hint>1.3</drake:hydroelastic_resolution_hint> <drake:elastic_modulus>1e8</drake:elastic_modulus> <drake:hunt_crossley_dissipation>0.25</drake:hunt_crossley_dissipation> <drake:mu_dynamic>0.7</drake:mu_dynamic> <drake:mu_static>0.7</drake:mu_static> </drake:proximity_properties> URDF version: <drake:proximity_properties> <drake:mesh_resolution_hint value="1.3" /> <drake:elastic_modulus value="1e8" /> <drake:hunt_crossley_dissipation value="0.25" /> <drake:mu_dynamic value="0.7" /> <drake:mu_static value="0.7" /> </drake:proximity_properties> (URDF differs because URDF has a style that uses attributes whereas SDF eschews them.) - Parsing collision geometry now creates a populated ProximityProperties and stores the parsed properties there. - There is some code that provides legacy compatibility with old mechanisms for specifying coefficients of friction so that existing files will still work (albeit with warnings). - MBP API has been extended to accept proximity properties compatible with this parsing logic. The old API needs to be deprecated (in a follow up commit). We still need to add "soft" deprecation for when we use the legacy functionality. It can't be compile-time, so it'll have to be warnings with a time stamp.
