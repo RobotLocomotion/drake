@@ -53,33 +53,22 @@ Fixes
 Multibody Dynamics
 ------------------
 
-..
-  To be filed below
-  TBD Update stale instructions on subclassing Shape specification (`#12372`_)
-  TBD Add sdf parsing for ellipsoids (`#12324`_)
-  TBD geometry: create ellipsoid meshes (`#12323`_)
-  TBD geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
-  TBD geometry: create pressure fields for ellipsoids and spheres in hydroelastic contact models (`#12333`_)
-  TBD geometry: pressure fields in cylinders for hydroelastic contact model (`#12348`_)
-  TBD geometry: enable soft/rigid sphere, box, cylinder, and ellipsoid in hydroelastic contact model (`#12358`_)
-  TBD geometry: document QueryObject::ComputeContactSurfaces() (`#12413`_)
-  TBD geometry: support rigid Mesh in ComputeContactSurfaces for hydroelastic; It is for hydroelastic contact model. Mesh is not supported in other proximity queries, mostly because we cannot use FCL's mesh representation, which is a triangle soup without the concept of enclosing volume. However, we still need broadphase culling for Mesh geometries colliding with other geometries. Therefore, we have colliding trees of bounding boxes of Mesh separated from the trees of other geometries. (`#12455`_)
-  TBD Add BoundingVolumeHierarchy class; add RigidMesh struct layer to hold the bvh, similar to the SoftMesh struct layer; create AABB tree with first pass on splitting branches based on axis spread, optimisations to come (`#12347`_)
-  TBD Support collision queries with capsule (`#12343`_)
-  TBD Tests for capsule support for distance to shape in proximity engine (`#12332`_)
-  TBD Removed referring triangles from SurfaceMesh (`#12438`_)
-  TBD Hydroelastic spatial force visualization to drake-visualizer (`#12378`_)
-  TBD Removing grad_H from ContactSurface; We are no longer using the grad_h value to define the normal of the contact surface. Instead, we're using the triangle normals of the surface itself. So, we remove the field and change downstream references to use the face normal instead. This act revealed some imprecision in the documented and implemented behaviors of the triangle normals. Where appropriate new documentation has been added (and tested) to help clarify the expectations of normals. (`#12432`_)
-  TBD fix show_hydroelastic_contact plugin of drake_visualizer (`#12417`_)
-  TBD Added new generalized acceleration ports (`#12354`_)
-  TBD Reverses the surface normal convention in ContactSurface (`#12463`_)
-
 New features
 
 * Implement ABA forward dynamics (`#12412`_, `#12462`_)
 * Add missing operators to SpatialVector (`#12436`_)
 * Provide access to owning MultibodyPlant from any MultibodyElement (`#12380`_)
 * Add a query for signed distance between a single pair of geometries (`#12379`_)
+* Added Ellipsoid parsing from SDF (`#12324`_)
+* Extend shape support in hydroleastic contact model
+
+  * Rigid Meshes supported (`#12455`_)
+  * Fully support soft and rigid for Sphere, Box, Cylinder, and Ellipsoid (`#12358`_, `#12348`_, `#12333`_, `#12323`_)
+
+* Extend Capsule Shape support for proximity queries (`#12343`_, `#12332`_)
+* Ability to export surface and volume mesh fields for VTK (Paraview) visualization (`#12311`_)
+* Initial implementation of Bounding Volume Hierarchy (BVH) to accelerate mesh-mesh hydroelastic contact -- not complete yet (`#12347`_)
+* Added new generalized acceleration ports to MultibodyPlant (`#12354`_)
 
 Fixes
 
@@ -89,6 +78,13 @@ Fixes
 * Improve documentation of MultibodyTreeElement (`#12352`_)
 * Improve documentation of RollPitchYaw and RotationMatrix (`#12345`_)
 
+Clean up
+
+* Clarify and unify definition of surface normal direction for ContactSurface (`#12432`_, `#12463`_)
+* Removed expensive and unused "referring triangles" from SurfaceMesh (`#12438`_)
+* Update instructions for tasks related to adding new Shape sub-classes (`#12372`_)
+* Update documentation of QueryObject::ComputeContactSurfaces() to reflect the current state of hydroelastic contact support (`#12413`_)
+
 
 Miscellaneous features and fixes
 --------------------------------
@@ -97,6 +93,7 @@ Visualizer changes:
 
 * Fix: Update image_show.py for Python 3 (`#12422`_)
 * Fix: Avoid negative real time factors (`#12444`_)
+* Feature: Hydroelastic spatial force visualization adds spatial forces (`#12378`_, `#12417`_)
 
 pydrake bindings
 ----------------
