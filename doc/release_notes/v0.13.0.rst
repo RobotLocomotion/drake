@@ -166,7 +166,16 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+* drake::common::NewPythonVariable (`#12442`_)
+* drake::multibody::MultibodyTreeElement (`#12352`_)
+* drake::geometry::Sphere::get_radius (`#12373`_)
+* drake::geometry::Cylinder::get_radius (`#12373`_)
+* drake::geometry::Cylinder::get_length (`#12373`_)
+* drake::geometry::Capsule::get_radius (`#12373`_)
+* drake::geometry::Capsule::get_length (`#12373`_)
+* drake::geometry::Ellipsoid::get_a (`#12373`_)
+* drake::geometry::Ellipsoid::get_b (`#12373`_)
+* drake::geometry::Ellipsoid::get_c (`#12373`_)
 
 Removal of deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
