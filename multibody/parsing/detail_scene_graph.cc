@@ -8,6 +8,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -22,9 +23,13 @@ using std::make_unique;
 
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
+using geometry::ProximityProperties;
 using math::RigidTransformd;
 
 namespace {
+
+// TODO(DamrongGuoy): Refactor this function into detail_sdf_common.h/cc.
+//  It has a non-const version in detail_sdf_parser.cc.
 
 // Helper to return the child element of `element` named `child_name`.
 // Returns nullptr if not present.
@@ -58,18 +63,6 @@ const sdf::Element& GetChildElementOrThrow(
   // guarantees "element" is not changed as promised by this method's
   // signature. See sdformat issue #188.
   return *const_cast<sdf::Element &>(element).GetElement(child_name);
-}
-
-// Helper to return the mutable child element of `element` named
-// `child_name`.  Returns nullptr if not present.
-sdf::Element* MaybeGetChildElement(
-    sdf::Element* element, const std::string &child_name) {
-  // First verify <child_name> is present (otherwise GetElement() has the
-  // side effect of adding new elements if not present!!).
-  if (element->HasElement(child_name)) {
-    return element->GetElement(child_name).get();
-  }
-  return nullptr;
 }
 
 // Helper to return the value of a child of `element` named `child_name`.
@@ -350,6 +343,87 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
   return X_LC;
 }
 
+ProximityProperties MakeProximityPropertiesForCollision(
+    const sdf::Collision& sdf_collision) {
+  geometry::ProximityProperties properties;
+  const sdf::ElementPtr collision_element = sdf_collision.Element();
+  DRAKE_DEMAND(collision_element != nullptr);
+
+  const sdf::Element* const drake_element =
+      MaybeGetChildElement(*collision_element, "drake:proximity_properties");
+
+  if (drake_element != nullptr) {
+    auto read_double = [drake_element, &properties](const char* element_name,
+                                                    const char* group_name,
+                                                    const char* property_name) {
+      if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
+        const double value =
+            GetChildElementValueOrThrow<double>(*drake_element, element_name);
+        properties.AddProperty(group_name, property_name, value);
+      }
+    };
+
+    read_double("drake:mesh_resolution_hint", geometry::internal::kHydroGroup,
+                geometry::internal::kRezHint);
+    read_double("drake:elastic_modulus", geometry::internal::kMaterialGroup,
+                geometry::internal::kElastic);
+    read_double("drake:hunt_crossley_dissipation",
+                geometry::internal::kMaterialGroup,
+                geometry::internal::kHcDissipation);
+
+    auto[mu_dynamic, dynamic_read] =
+        drake_element->Get<double>("drake:mu_dynamic", -1.0);
+    auto[mu_static, static_read] =
+        drake_element->Get<double>("drake:mu_static", -1.0);
+    // Note: we rely on the constructor of CoulombFriction to detect negative
+    // values and bad relationship between static and dynamic coefficients.
+    if (dynamic_read && static_read) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             geometry::internal::kFriction,
+                             CoulombFriction<double>{mu_static, mu_dynamic});
+    } else if (dynamic_read) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             geometry::internal::kFriction,
+                             CoulombFriction<double>{mu_dynamic, mu_dynamic});
+    } else if (static_read) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             geometry::internal::kFriction,
+                             CoulombFriction<double>{mu_static, mu_static});
+    }
+  }
+
+  if (!properties.HasProperty(geometry::internal::kMaterialGroup,
+                              geometry::internal::kFriction)) {
+    properties.AddProperty(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
+        MakeCoulombFrictionFromSdfCollisionOde(sdf_collision));
+  } else {
+    // We parsed friction from <drake:proximity_properties>; test for the
+    // existence of the legacy mechanism and warn we're not using it.
+    const sdf::Element* const surface_element =
+        MaybeGetChildElement(*collision_element, "surface");
+    if (surface_element) {
+      const sdf::Element* friction_element =
+          MaybeGetChildElement(*surface_element, "friction");
+      if (friction_element) {
+        const sdf::Element* ode_element =
+            MaybeGetChildElement(*friction_element, "ode");
+        if (MaybeGetChildElement(*ode_element, "mu") ||
+        MaybeGetChildElement(*ode_element, "mu2")) {
+          logging::Warn one_time(
+              "When drake contact parameters are fully specified in the "
+              "<drake:proximity_properties> tag, the <surface><friction><ode>"
+              "<mu*> tags are ignored. While parsing, there was at least one "
+              "instance where friction coefficients were defined in both "
+              "locations.");
+        }
+      }
+    }
+  }
+
+  return properties;
+}
+
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision) {
 
@@ -378,41 +452,6 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
       GetChildElementValueOrThrow<double>(ode_element, "mu2");
 
   return CoulombFriction<double>(static_friction, dynamic_friction);
-}
-
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const PackageMap& package_map,
-                             const std::string& root_dir) {
-  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
-  sdf::Element* geom_element =
-      MaybeGetChildElement(visual_element.get(), "geometry");
-  if (geom_element) {
-    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
-    if (mesh_element) {
-      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
-      if (uri_element) {
-        const std::string uri = uri_element->Get<std::string>();
-        const std::string resolved_name =
-            ResolveUri(uri, package_map, root_dir);
-        if (!resolved_name.empty()) {
-          uri_element->Set(resolved_name);
-        } else {
-          throw std::runtime_error(
-              std::string(__FILE__) + ": " + __func__ +
-              ": ERROR: Mesh file name could not be resolved from the "
-              "provided uri \"" + uri + "\".");
-        }
-      } else {
-        throw std::runtime_error(
-            std::string(__FILE__) + ": " + __func__ +
-            ": ERROR: <mesh> tag specified without <uri?>");
-      }
-    }
-  }
-
-  sdf::Visual visual;
-  visual.Load(visual_element);
-  return visual;
 }
 
 }  // namespace internal

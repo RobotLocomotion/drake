@@ -394,6 +394,67 @@ struct LinkInfo {
   RigidTransformd X_WL;
 };
 
+// TODO(DamrongGuoy): Refactor this function into detail_sdf_common.h/cc.
+//  It has a const version in detail_scene_graph.cc.
+
+// Helper to return the mutable child element of `element` named
+// `child_name`.  Returns nullptr if not present.
+sdf::Element* MaybeGetChildElement(sdf::Element* element,
+                                   const std::string& child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (element->HasElement(child_name)) {
+    return element->GetElement(child_name).get();
+  }
+  return nullptr;
+}
+
+/** Given an sdf::Visual or sdf::Collision object representing a <visual>
+ element or <collision> element from an SDF file, this method makes a new
+ object which resolves the uri for the mesh element, if present. If the mesh
+ element is not present, the new object will be identical to the original.
+ See parsers::ResolveFilename() for more detail on this operation.
+
+ @throws std::runtime_error if the <mesh> tag is present but
+ missing <uri> or if the file referenced in <uri> can not be found.
+
+ @tparam sdf::Visual or sdf::Collision */
+template <typename T>
+T ResolveMeshUri(const T& original, const PackageMap& package_map,
+                 const std::string& root_dir) {
+  std::shared_ptr<sdf::Element> clone_element = original.Element()->Clone();
+  sdf::Element* geom_element =
+      MaybeGetChildElement(clone_element.get(), "geometry");
+  if (geom_element) {
+    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
+    if (mesh_element) {
+      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
+      if (uri_element) {
+        const std::string uri = uri_element->Get<std::string>();
+        const std::string resolved_name =
+            ResolveUri(uri, package_map, root_dir);
+        if (!resolved_name.empty()) {
+          uri_element->Set(resolved_name);
+        } else {
+          throw std::runtime_error(
+              std::string(__FILE__) + ": " + __func__ +
+              ": ERROR: Mesh file name could not be resolved from the "
+              "provided uri \"" +
+              uri + "\".");
+        }
+      } else {
+        throw std::runtime_error(
+            std::string(__FILE__) + ": " + __func__ +
+            ": ERROR: <mesh> tag specified without <uri?>");
+      }
+    }
+  }
+
+  T resolve;
+  resolve.Load(clone_element);
+  return resolve;
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<LinkInfo> AddLinksFromSpecification(
@@ -442,7 +503,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual sdf_visual = ResolveVisualUri(
+        const sdf::Visual sdf_visual = ResolveMeshUri(
             *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(sdf_visual);
@@ -464,8 +525,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
 
       for (uint64_t collision_index = 0;
            collision_index < link.CollisionCount(); ++collision_index) {
-        const sdf::Collision& sdf_collision =
-            *link.CollisionByIndex(collision_index);
+        const sdf::Collision sdf_collision = ResolveMeshUri(
+            *link.CollisionByIndex(collision_index), package_map, root_dir);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         ThrowIfPoseFrameSpecified(sdf_collision.Element());
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
@@ -473,11 +534,10 @@ std::vector<LinkInfo> AddLinksFromSpecification(
               MakeGeometryPoseFromSdfCollision(sdf_collision));
           std::unique_ptr<geometry::Shape> shape =
               MakeShapeFromSdfGeometry(sdf_geometry);
-          const CoulombFriction<double> coulomb_friction =
-              MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
-          plant->RegisterCollisionGeometry(body, X_LG, *shape,
-                                           sdf_collision.Name(),
-                                           coulomb_friction);
+          geometry::ProximityProperties props =
+              MakeProximityPropertiesForCollision(sdf_collision);
+          plant->RegisterCollisionGeometry(
+              body, X_LG, *shape, sdf_collision.Name(), std::move(props));
         }
       }
     }
@@ -621,6 +681,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   return model_instance;
 }
+
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdfFile(
