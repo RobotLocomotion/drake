@@ -2651,13 +2651,12 @@ class MathematicalProgram {
       const Binding<C>& binding,
       const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     DRAKE_DEMAND(prog_var_vals.rows() == num_vars());
-    VectorX<typename DerivedX::Scalar> binding_variable_vals(
-        binding.GetNumElements());
+    VectorX<typename DerivedX::Scalar> result(binding.GetNumElements());
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      binding_variable_vals(i) =
+      result(i) =
           prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
     }
-    return binding_variable_vals;
+    return result;
   }
 
   /** Evaluates all visualization callbacks registered with the
