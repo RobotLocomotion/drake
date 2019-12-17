@@ -7,6 +7,11 @@ Announcements
 
 * Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_).
 
+* TBD tutorials: Add example of rendering which uses MultibodyPlant (`#4668d74fb6e4455108b164082712339aa7fd6163`_)
+* TBD doc: Make tutorials more discoverable (`#fc5afc581f7dbcccf75133e5f84c9ebd8ab14977`_)
+* TBD tutorials: Add brief tutorial for optimization using MultibodyPlant (`#12433`_)  # Focused on custom evaluators
+* TBD tutorials: Updating wording in MP + MBP tutorial (`#12443`_)
+
 Breaking changes since v0.12.0
 ------------------------------
 
@@ -22,18 +27,27 @@ Dynamical Systems
 
 New features
 
-TBD
+* TBD More syntactic sugar for SymbolicVectorSystemBuilder (`#12421`_)  # `state`, `input`, `parameter`, `dynamics`, and `output` setters have std::vector variants. So that a user can write `.dynamics({-x_[1], -x_[0] + 3})` instead of `.dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))`. Also add `SymbolicVectorSystem::dynamics_for_variable`.
+* TBD Add SymbolicVectorSystemBuilder::LinearizeDynamics (`#12466`_)
+* TBD Renames event collection merge methods (`#12357`_)
 
 Fixes
 
-TBD
+* TBD Changed dt to h in integrator documentation (`#12392`_)
+* TBD Updates integrator documentation (`#12350`_)  # Reorganizes the integrator documentation and documents initial step size behavior (and caveats).
+* TBD Improve error message when cloning a non-root Context (`#12391`_)
+* TBD Updates the documentation on the use of accuracy in the Context (`#12428`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 New features
 
-TBD
+* TBD Add MathematicalProgram::indeterminates_index() (`#12405`_)
+* TBD Add matrix version of Environment::insert (`#12409`_)
+* TBD Expression(0.0) re-uses the pointer of Expression::Zero() (`#12459`_)  # Given a scalar type T, Eigen assumes that the constructor for T(0) is idempotent. Consequently, it should not involve memory-allocation to avoid a memory leak. This is not a correct assumption and needs to be fixed, but it takes time to fix the upstream and use the latest version of Eigen. Here, we want to provide a workaround on our side. See https://github.com/RobotLocomotion/drake/issues/12453.
+* TBD Add Evaluate for symbolic SparseMatrix (`#12406`_)  # Also rewrite GetDistinctVariables using Eigen's visit method.
+* TBD Store indeterminates and decision variables in symbolic::Polynomial as members (`#11790`_)
 
 Fixes
 
@@ -43,17 +57,46 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 New features
-
-TBD
-
 Fixes
 
-TBD
+* TBD Update stale instructions on subclassing Shape specification (`#12372`_)
+* TBD Rename/simplify/reword MultibodyTreeElement to produce better doxygen (`#12352`_)
+* TBD Simplify and deprecate get_ accessors in shape specification API (`#12373`_)
+* TBD Adds a query for signed distance between a single pair of geometries (`#12379`_)  # QueryObject has a new method. It attempts to produce a signed distance pair result between a user-specified pair of geometries.
+* TBD Add sdf parsing for ellipsoids (`#12324`_)
+* TBD geometry: create ellipsoid meshes (`#12323`_)
+* TBD geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
+* TBD geometry: create pressure fields for ellipsoids and spheres in hydroelastic contact models (`#12333`_)
+* TBD geometry: pressure fields in cylinders for hydroelastic contact model (`#12348`_)
+* TBD geometry: enable soft/rigid sphere, box, cylinder, and ellipsoid in hydroelastic contact model (`#12358`_)
+* TBD geometry: document QueryObject::ComputeContactSurfaces() (`#12413`_)
+* TBD geometry: support rigid Mesh in ComputeContactSurfaces for hydroelastic (`#12455`_)  # It is for hydroelastic contact model. Mesh is not supported in other proximity queries, mostly because we cannot use FCL's mesh representation, which is a triangle soup without the concept of enclosing volume. However, we still need broadphase culling for Mesh geometries colliding with other geometries. Therefore, we have colliding trees of bounding boxes of Mesh separated from the trees of other geometries.
+* TBD Add BoundingVolumeHierarchy class (`#12347`_)  # - add RigidMesh struct layer to hold the bvh, similar to the SoftMesh struct layer - create AABB tree with first pass on splitting branches based on axis spread, optimisations to come
+* TBD Support collision queries with capsule (`#12343`_)
+* TBD Tests for capsule support for distance to shape in proximity engine (`#12332`_)
+* TBD Removed referring triangles from SurfaceMesh (`#12438`_)
+* TBD Hydroelastic spatial force visualization (`#12378`_)  # Adds the ability to visualize spatial forces (force and moment) to drake visualizer.
+* TBD Removing grad_H from ContactSurface (`#12432`_)  # We are no longer using the grad_h value to define the normal of the contact surface. Instead, we're using the triangle normals of the surface itself. So, we remove the field and change downstream references to use the face normal instead. This act revealed some imprecision in the documented and implemented behaviors of the triangle normals. Where appropriate new documentation has been added (and tested) to help clarify the expectations of normals.
+* TBD fix show_hydroelastic_contact plugin of drake_visualizer (`#12417`_)
+* TBD Added new generalized acceleration ports (`#12354`_)
+* TBD Reverses the surface normal convention in ContactSurface (`#12463`_)
+* TBD Documents forward dynamics algorithm and notation in MBT (`#12317`_)
+* TBD Reorder and regroup MBPlant API (`#12342`_)
+* TBD Provide access to owning MBPlant from any MBElement (`#12380`_)
+* TBD Change MBP's TAMSI solver success assertion into an exception (`#12361`_)  # with a detailed description of possible causes/actions.
+* TBD Implements ABA forward dynamics (`#12412`_)
+* TBD Fixes qdot-to-v mapping (and back) for discrete MultibodyPlant (`#12355`_)
+* TBD Adds missing operators to SpatialVector (`#12436`_)
+* TBD Make effective use of SpatialAcceleration's addition operators (`#12462`_)
+* TBD Improve RollPitchYaw and RotationMatrix class documentation (#12345) (`#12345`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+Visualizer changes:
+
+* Fix: Update image_show.py for Python 3 (`#12422`_)
+* Fix: Avoid negative real time factors (`#12444`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -70,7 +113,11 @@ pydrake bindings
 * TBD geometry casting RenderLabel to int (`#12390`_)
 * TBD geometry property retrieval (`#12388`_)
 * TBD ComputeSignedDistancePairClosestPoints (`#12408`_)
+* TBD RevoluteSpring (`#12481`_)
 * Fix: Ensure system names get copied for scalar conversion (`#12429`_)
+* TBD Use lcm encoding (not protobuf) for call_python RPCs (`#12442`_)
+* TBD Reverts /pydrake/manipulation/simple_ui #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
+* TBD pydrake/systems/planar_scenegraph_visualizer .pyPort planar_scenegraph_visualizer from underactuated (`#12218`_, `#12349`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,16 +136,26 @@ Build system and dependencies
 * Upgrade ghc_filesystem to latest release 1.2.8 (`#12395`_)
 * Upgrade ignition_math to latest release 6.4.0 (`#12395`_)
 * Upgrade json to latest release 3.7.3 (`#12395`_)
+* Upgrade lcm to latest commit (`#12457`_)
 * Upgrade meshcat to latest commit (`#12395`_)
 * Upgrade sdformat to latest release 8.6.0 (`#12395`_)
 * Upgrade semantic_version to latest release 2.8.3 (`#12395`_)
 * Upgrade octomap to latest release 1.9.1 (`#12426`_)
 * Upgrade ghc_filesystem to latest release 1.2.10 (`#12426`_)
-* Upgrade fmt to latest release 6.1.0 (`#12426`_)
+* Upgrade fmt to latest release 6.1.2 (`#12426`_, `#12487`_)
 * Upgrade supported Bazel version to 1.2 (`#12396`_)
 * Upgrade supported macOS CMake version to 3.16  (`#12396`_)
 * Upgrade supported macOS Xcode version to 11.2 (`#12331`_)
 * Do not install Python 2.7 on Mac (`#12339`_)
+* TBD install: Add drake_bazel_installed support (`#12402`_)
+* TBD Define and use a toolchain for Python (`#12377`_)
+* TBD Use rules_python for Python build rules (`#12377`_)
+* TBD Update optitrack-driver with rules_python support (`#12377`_)
+* TBD Move jupyter notebook and ipywidgets to binary prerequisite install (`#12461`_)
+* TBD workspace: Remove unused protobuf (but not libprotobuf) (`#12450`_)  # We no longer need the message generation nor compilation machinery, but we still need the runtime support libraries for some of our deprecated methods. Specifically, all bazel machinery for protobuf message generation is removed: - @com_google_protobuf//... - @drake//:protobuf - @drake//:protobuf_python - @drake//:protoc - @drake//tools/skylark:drake_proto.bzl - @protoc//... Some runtime machinery remains, to be removed on 2020-02-01: - @libprotobuf - setup/mac/binary_distribution/Brewfile:brew 'protobuf' - setup/ubuntu/source_distribution/packages-bionic.txt:python3-protobuf - setup/ubuntu/binary_distribution/packages-bionic.txt:libprotobuf-dev
+* TBD Pass --no-lock to brew bundle (`#12458`_)  # https://github.com/Homebrew/homebrew-bundle/pull/552 introduces "Brewfile.lock.json" which provides a list of successfully installed packages and their metainfo. For now, git detects those new added "Brewfile.lock.json" as untracked files. Passing `--no-lock` is one solution to this problem. An alternative is to add the pattern in `.gitignore` but I think passing `--no-lock` is a cleaner solution.
+* TBD Un-pin sphinx for macOS (`#12467`_)
+* TBD 'Fix' sphinx to get __init__ documentation (`#12452`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -121,78 +178,3 @@ Commits to be categorized
 
 Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
 Current newest_commit ebd51d63b19c0b213c0de2517c9c70e116abccce (inclusive).
-
-* geometry: create ellipsoid meshes (`#12323`_)
-* geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
-* Port planar_scenegraph_visualizer from underactuated (`#12218`_, `#12349`_)
-* Updates the planar_gripper model to match the hardware (`#12308`_)  # Also updates the planar_brick.sdf model to match the 100x100x70 mm physical brick.
-* Store indeterminates and decision variables in symbolic::Polynomial as members (`#11790`_)
-* geometry: create pressure fields for ellipsoids and spheres in hydroelastic contact models (`#12333`_)
-* Documents forward dynamics algorithm and notation in MBT (`#12317`_)
-* Support collision queries with capsule (`#12343`_)
-* Add sdf parsing for ellipsoids (`#12324`_)
-* Reorder and regroup MBPlant API (`#12342`_)
-* Adds a weld joint to the planar_gripper fingers (`#12338`_)  # at the force sensor interface, splitting link 2 into two separate links. This allows reaction force measurement via MBP. Also fixes a bug in the definition of finger orientations.
-* Improve RollPitchYaw and RotationMatrix class documentation (#12345) (`#12345`_)
-* geometry: pressure fields in cylinders for hydroelastic contact model (`#12348`_)
-* Updates integrator documentation (`#12350`_)  # Reorganizes the integrator documentation and documents initial step size behavior (and caveats).
-* Renames event collection merge methods (`#12357`_)
-* Change MBP's TAMSI solver success assertion into an exception (`#12361`_)  # with a detailed description of possible causes/actions.
-* Rename/simplify/reword MultibodyTreeElement to produce better doxygen (`#12352`_)
-* Update stale instructions on subclassing Shape specification (`#12372`_)
-* Simplify and deprecate get_ accessors in shape specification API (`#12373`_)
-* Provide access to owning MBPlant from any MBElement (`#12380`_)
-* Adds a query for signed distance between a single pair of geometries (`#12379`_)  # QueryObject has a new method. It attempts to produce a signed distance pair result between a user-specified pair of geometries.
-* Add capsule to the solar system visualisation (`#12374`_)
-* framework: Improve error message when cloning a non-root Context (`#12391`_)
-* Added new generalized acceleration ports (`#12354`_)
-* Changed dt to h in integrator documentation (`#12392`_)
-* Hydroelastic spatial force visualization (`#12378`_)  # Adds the ability to visualize spatial forces (force and moment) to drake visualizer.
-* tutorials: Add example of rendering which uses MultibodyPlant (`#4668d74fb6e4455108b164082712339aa7fd6163`_)
-* doc: Make tutorials more discoverable (`#fc5afc581f7dbcccf75133e5f84c9ebd8ab14977`_)
-* Add MathematicalProgram::indeterminates_index() (`#12405`_)
-* solvers: Add package_library decorations for fbstab (`#12407`_)
-* geometry: enable soft/rigid sphere, box, cylinder, and ellipsoid in hydroelastic contact model (`#12358`_)
-* pydrake doxygen: Capture convention for partitioned `*_py.cc` modules (`#12403`_)
-* geometry: document QueryObject::ComputeContactSurfaces() (`#12413`_)
-* Add BoundingVolumeHierarchy class (`#12347`_)  # - add RigidMesh struct layer to hold the bvh, similar to the SoftMesh struct layer - create AABB tree with first pass on splitting branches based on axis spread, optimisations to come
-* tools: fix show_hydroelastic_contact plugin of drake_visualizer (`#12417`_)
-* Update image_show.py to be python 3 compatible (`#12422`_)
-* Add matrix version of Environment::insert (`#12409`_)
-* Tests for capsule support for distance to shape in proximity engine (`#12332`_)
-* Add Evaluate for symbolic SparseMatrix (`#12406`_)  # Also rewrite GetDistinctVariables using Eigen's visit method.
-* More syntactic sugar for SymbolicVectorSystemBuilder (`#12421`_)  # `state`, `input`, `parameter`, `dynamics`, and `output` setters have std::vector variants. So that a user can write `.dynamics({-x_[1], -x_[0] + 3})` instead of `.dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))`. Also add `SymbolicVectorSystem::dynamics_for_variable`.
-* Updates the documentation on the use of accuracy in the Context (`#12428`_)
-* Removing grad_H from ContactSurface (`#12432`_)  # We are no longer using the grad_h value to define the normal of the contact surface. Instead, we're using the triangle normals of the surface itself. So, we remove the field and change downstream references to use the face normal instead. This act revealed some imprecision in the documented and implemented behaviors of the triangle normals. Where appropriate new documentation has been added (and tested) to help clarify the expectations of normals.
-* tutorials: Add brief tutorial for optimization using MultibodyPlant (`#12433`_)  # Focused on custom evaluators
-* Fixes qdot-to-v mapping (and back) for discrete MultibodyPlant (`#12355`_)
-* Removed referring triangles from SurfaceMesh (`#12438`_)
-* Add the lcm utility for planar manipuland (`#12439`_)  # Add the lcm utility for planar manipuland.
-* proto: Use lcm encoding (not protobuf) for call_python (`#12442`_)  # In 0d7f74ca6fe2fb5904a6120c5a453ec04e769e39 way back in 2017, we stopped using LCM for call_matlab because its runtime support library for was incompatible with MATLAB.  However, the message serialization itself was never a problem (only the networking), and anyway for call_python there are no compatibility problems with LCM.  So to drop the heavy dependency on protobuf, we'll use LCM message serialization for call_python RPCs. (As a consequence, some of the build system code for generating protobuf messages is now dead code, but I'll do that purge separately because it's finicky and substantial.)
-* Fixes negative real time factors in Drake visualizer (`#12444`_)
-* Implements ABA forward dynamics (`#12412`_)
-* Pass --no-lock to brew bundle (`#12458`_)  # https://github.com/Homebrew/homebrew-bundle/pull/552 introduces "Brewfile.lock.json" which provides a list of successfully installed packages and their metainfo. For now, git detects those new added "Brewfile.lock.json" as untracked files. Passing `--no-lock` is one solution to this problem. An alternative is to add the pattern in `.gitignore` but I think passing `--no-lock` is a cleaner solution.
-* tutorials: Updating wording in MP + MBP tutorial (`#12443`_)
-* Adds missing operators to SpatialVector (`#12436`_)
-* workspace: Upgrade lcm to latest commit (`#12457`_)
-* workspace: Remove unused protobuf (but not libprotobuf) (`#12450`_)  # We no longer need the message generation nor compilation machinery, but we still need the runtime support libraries for some of our deprecated methods. Specifically, all bazel machinery for protobuf message generation is removed: - @com_google_protobuf//... - @drake//:protobuf - @drake//:protobuf_python - @drake//:protoc - @drake//tools/skylark:drake_proto.bzl - @protoc//... Some runtime machinery remains, to be removed on 2020-02-01: - @libprotobuf - setup/mac/binary_distribution/Brewfile:brew 'protobuf' - setup/ubuntu/source_distribution/packages-bionic.txt:python3-protobuf - setup/ubuntu/binary_distribution/packages-bionic.txt:libprotobuf-dev
-* Expression(0.0) re-uses the pointer of Expression::Zero() (`#12459`_)  # Given a scalar type T, Eigen assumes that the constructor for T(0) is idempotent. Consequently, it should not involve memory-allocation to avoid a memory leak. This is not a correct assumption and needs to be fixed, but it takes time to fix the upstream and use the latest version of Eigen. Here, we want to provide a workaround on our side. See https://github.com/RobotLocomotion/drake/issues/12453.
-* Make effective use of SpatialAcceleration's addition operators (`#12462`_)
-* 'Fix' sphinx to get __init__ documentation (`#12452`_)
-* Adds LCM message utilities for the planar gripper (`#12449`_)
-* Define and use a toolchain for Python (`#12377`_)
-* Use rules_python for Python build rules (`#12377`_)
-* Update optitrack-driver with rules_python support (`#12377`_)
-* Move jupyter notebook and ipywidgets to binary prerequisite install (`#12461`_)
-* gitattributes: Update for modern bazel spellings (`#12465`_)
-* Un-pin sphinx for macOS (`#12467`_)
-* Add SymbolicVectorSystemBuilder::LinearizeDynamics (`#12466`_)
-* mkdoc: Fix bug where some internal names may leak in (`#12476`_)  # Remove SKIP_RECURSE_NAMES
-* Reverses the surface normal convention in ContactSurface (`#12463`_)
-* Add bindings for RevoluteSpring (`#12481`_)
-* Reverts #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
-* install: Add drake_bazel_installed support (`#12402`_)
-* examples: Change context.FixInputPort() to port.FixValue() (`#12482`_)
-* tools: Add relnotes helper tool (`#12477`_)
-* geometry: support rigid Mesh in ComputeContactSurfaces for hydroelastic (`#12455`_)  # It is for hydroelastic contact model. Mesh is not supported in other proximity queries, mostly because we cannot use FCL's mesh representation, which is a triangle soup without the concept of enclosing volume. However, we still need broadphase culling for Mesh geometries colliding with other geometries. Therefore, we have colliding trees of bounding boxes of Mesh separated from the trees of other geometries.
-* workspace: Upgrade fmt to latest release 6.1.2 (`#12487`_)
