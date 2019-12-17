@@ -191,8 +191,8 @@ MatrixX<double> ReorderKeyframesForPlant(
     const MultibodyPlant<double>& plant, const MatrixX<double> keyframes,
     std::map<std::string, int>* finger_joint_name_to_row_index_map) {
   DRAKE_DEMAND(finger_joint_name_to_row_index_map != nullptr);
-  if (finger_joint_name_to_row_index_map->size() !=
-      static_cast<ulong>(keyframes.rows())) {
+  if (static_cast<int>(finger_joint_name_to_row_index_map->size()) !=
+      keyframes.rows()) {
     throw std::runtime_error(
         "The number of keyframe rows must match the size of "
         "finger_joint_name_to_row_index_map.");
