@@ -120,7 +120,7 @@ Commits to be categorized
 -------------------------
 
 Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
-Current newest_commit a7b7476319bef3602d99c51fb7f1eb2b6c468b7e (inclusive).
+Current newest_commit ebd51d63b19c0b213c0de2517c9c70e116abccce (inclusive).
 
 * geometry: create ellipsoid meshes (`#12323`_)
 * geometry: export volume and surface meshes and fields to VTK files (`#12311`_)
@@ -191,3 +191,8 @@ Current newest_commit a7b7476319bef3602d99c51fb7f1eb2b6c468b7e (inclusive).
 * Reverses the surface normal convention in ContactSurface (`#12463`_)
 * Add bindings for RevoluteSpring (`#12481`_)
 * Reverts #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
+* install: Add drake_bazel_installed support (`#12402`_)
+* examples: Change context.FixInputPort() to port.FixValue() (`#12482`_)
+* tools: Add relnotes helper tool (`#12477`_)
+* geometry: support rigid Mesh in ComputeContactSurfaces for hydroelastic (`#12455`_)  # It is for hydroelastic contact model. Mesh is not supported in other proximity queries, mostly because we cannot use FCL's mesh representation, which is a triangle soup without the concept of enclosing volume. However, we still need broadphase culling for Mesh geometries colliding with other geometries. Therefore, we have colliding trees of bounding boxes of Mesh separated from the trees of other geometries.
+* workspace: Upgrade fmt to latest release 6.1.2 (`#12487`_)
