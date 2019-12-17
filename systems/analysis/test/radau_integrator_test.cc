@@ -61,31 +61,6 @@ GTEST_TEST(RadauIntegratorTest, Reuse) {
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 1);
 }
 
-// Tests the implicit integrator on a stationary system problem, which
-// stresses numerical differentiation (since the state does not change).
-GTEST_TEST(RadauIntegratorTest, Stationary) {
-  StationarySystem stationary;
-  std::unique_ptr<Context<double>> context = stationary.CreateDefaultContext();
-
-  // Set the initial condition for the stationary system.
-  VectorBase<double>& state = context->get_mutable_continuous_state().
-      get_mutable_vector();
-  state.SetAtIndex(0, 0.0);
-  state.SetAtIndex(1, 0.0);
-
-  // Create the integrator.
-  RadauIntegrator<double> integrator(stationary, context.get());
-  integrator.set_maximum_step_size(0.1);
-
-  // Integrate the system
-  integrator.Initialize();
-  integrator.IntegrateWithMultipleStepsToTime(1.0);
-
-  // Verify the solution.
-  EXPECT_NEAR(state.GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(state.GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
-}
-
 // Tests accuracy for integrating a scalar cubic system (with the state at time
 // t corresponding to f(t) ≡ C₃t³ + C₂t² + C₁t + C₀) over
 // t ∈ [0, 1]. Radau3 is a third order integrator, meaning that it uses the
@@ -134,36 +109,6 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   state = context->get_continuous_state().get_vector().CopyToVector();
   EXPECT_GT(std::abs(state[0] - cubic.Evaluate(h)),
       1e9 * std::numeric_limits<double>::epsilon());
-}
-
-// Tests accuracy for integrating a scalar linear system (with the state at time
-// t corresponding to f(t) ≡ C₁t + C₀) over
-// t ∈ [0, 1] using the single-stage Radau integrator, meaning that it uses the
-// Taylor Series expansion:
-// f(t+h) ≈ f(t) + hf'(t) + O(h²)
-// The formula above indicates that the approximation error will be zero if
-// f''(t) = 0, which is true for the linear equation.
-GTEST_TEST(RadauIntegratorTest, LinearSystem) {
-  LinearScalarSystem linear;
-  std::unique_ptr<Context<double>> context = linear.CreateDefaultContext();
-
-  // Create the integrator.
-  const int num_stages = 1;
-  RadauIntegrator<double, num_stages> euler(linear, context.get());
-
-  const double h = 1.0;
-  euler.set_maximum_step_size(h);
-
-  // Integrate the system
-  euler.Initialize();
-  euler.set_fixed_step_mode(true);
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
-
-  // Verify the solution.
-  VectorX<double> state =
-      context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], linear.Evaluate(h),
-      std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t

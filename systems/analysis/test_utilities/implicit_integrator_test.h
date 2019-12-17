@@ -605,8 +605,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
         integrator->get_num_newton_raphson_iterations_that_end_in_failure(), 0);
     EXPECT_GE(
         integrator->
-        get_num_error_estimator_newton_raphson_iterations_that_end_in_failure()
-        , 0);
+        get_num_error_estimator_newton_raphson_iterations_that_end_in_failure(),
+        0);
 
     EXPECT_GE(integrator->get_num_newton_raphson_failures(), 0);
     EXPECT_GE(integrator->get_num_error_estimator_newton_raphson_failures(), 0);
@@ -672,6 +672,75 @@ TYPED_TEST_P(ImplicitIntegratorTest, MiscAPIReuse) {
   this->MiscAPITest(kReuse);
 }
 
+// Tests the implicit integrator on a stationary system problem, which
+// stresses numerical differentiation (since the state does not change).
+TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
+  auto stationary = std::make_unique<StationarySystem>();
+  std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
+
+  // Set the initial condition for the stationary system.
+  VectorBase<double>& state =
+      context->get_mutable_continuous_state().get_mutable_vector();
+  state.SetAtIndex(0, 0.0);
+  state.SetAtIndex(1, 0.0);
+
+  // Create the integrator.
+  using Integrator = TypeParam;
+  Integrator integrator(*stationary, context.get());
+  integrator.set_maximum_step_size(1.0);
+  integrator.set_target_accuracy(1e-3);
+  integrator.request_initial_step_size_target(1e-4);
+
+  // Integrate the system
+  integrator.Initialize();
+  integrator.IntegrateWithMultipleStepsToTime(1.0);
+
+  // Verify the solution.
+  EXPECT_NEAR(state.GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(state.GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
+}
+
+// Tests the implicit integrator on Robertson's stiff chemical reaction
+// problem, which has been used to benchmark various implicit integrators.
+// This problem is particularly good at testing large step sizes (since the
+// solution quickly converges) and long simulation times.
+TYPED_TEST_P(ImplicitIntegratorTest, Robertson) {
+  std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
+      std::make_unique<analysis::test::RobertsonSystem<double>>();
+  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
+
+  const double t_final = robertson->get_end_time();
+  const double tol = 5e-5;
+
+  // Create the integrator.
+  using Integrator = TypeParam;
+  Integrator integrator(*robertson, context.get());
+
+  // Very large step is necessary for this problem since given solution is
+  // at t = 1e11. However, the current initial step size selection algorithm
+  // will use a large factor of the maximum step size, which can result in
+  // too large an initial step for this problem. Accordingly, we explicitly
+  // select a small initial step size.
+  // @TODO(edrumwri): Explore a better algorithm for selecting the initial
+  //                  step size (see issue #6329).
+  integrator.set_maximum_step_size(10000000.0);
+  integrator.set_throw_on_minimum_step_size_violation(false);
+  integrator.set_target_accuracy(tol);
+  integrator.request_initial_step_size_target(1e-4);
+
+  // Integrate the system
+  integrator.Initialize();
+  integrator.IntegrateWithMultipleStepsToTime(t_final);
+
+  // Verify the solution.
+  const VectorBase<double>& state =
+      context->get_continuous_state().get_vector();
+  const Eigen::Vector3d sol = robertson->GetSolution(t_final);
+  EXPECT_NEAR(state.GetAtIndex(0), sol(0), tol);
+  EXPECT_NEAR(state.GetAtIndex(1), sol(1), tol);
+  EXPECT_NEAR(state.GetAtIndex(2), sol(2), tol);
+}
+
 TYPED_TEST_P(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   auto robertson = std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
@@ -724,8 +793,65 @@ TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
 
   EXPECT_EQ(integrator.supports_error_estimation(), true);
   DRAKE_EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
-  DRAKE_EXPECT_NO_THROW(
-      integrator.request_initial_step_size_target(this->h()));
+  DRAKE_EXPECT_NO_THROW(integrator.request_initial_step_size_target(this->h()));
+}
+
+// Tests accuracy for integrating linear systems (with the state at time t
+// corresponding to f(t) ≡ St + C, where S is a scalar and C is the initial
+// state) over t ∈ [0, 1]. The asymptotic term in every implicit integrator's
+// error estimate is at least second order, meaning that it uses the Taylor
+// Series expansion: f(t+h) ≈ f(t) + hf'(t) + O(h²). This formula indicates that
+// the approximation error will be zero if f''(t) = 0, which is true for linear
+// systems. We check that the error estimator gives a perfect error estimate for
+// this function.
+TYPED_TEST_P(ImplicitIntegratorTest, LinearTest) {
+  LinearScalarSystem linear;
+  auto linear_context = linear.CreateDefaultContext();
+  const double C = linear.Evaluate(0);
+  linear_context->SetTime(0.0);
+  linear_context->get_mutable_continuous_state_vector()[0] = C;
+
+  using Integrator = TypeParam;
+  Integrator integrator1(linear, linear_context.get());
+  const double t_final = 1.0;
+  integrator1.set_maximum_step_size(t_final);
+  integrator1.set_fixed_step_mode(true);
+  integrator1.Initialize();
+  ASSERT_TRUE(integrator1.IntegrateWithSingleFixedStepToTime(t_final));
+
+  const double err_est = integrator1.get_error_estimate()->get_vector()[0];
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Verify the solution.
+  VectorX<double> state =
+      linear_context->get_continuous_state().get_vector().CopyToVector();
+  EXPECT_NEAR(state[0], linear.Evaluate(t_final),
+      std::numeric_limits<double>::epsilon());
+
+  // Repeat this test, but using a final time that is below the working minimum
+  // step size (thereby triggering the implicit integrator's alternate, explicit
+  // mode). To retain our existing tolerances, we change the scale factor (S)
+  // for the linear system.
+  integrator1.get_mutable_context()->SetTime(0);
+  const double working_min = integrator1.get_working_minimum_step_size();
+  LinearScalarSystem scaled_linear(4.0 / working_min);
+  auto scaled_linear_context = scaled_linear.CreateDefaultContext();
+  Integrator integrator2(scaled_linear, scaled_linear_context.get());
+  const double updated_t_final = working_min / 2;
+  integrator2.set_maximum_step_size(updated_t_final);
+  integrator2.set_fixed_step_mode(true);
+  integrator2.Initialize();
+  ASSERT_TRUE(integrator2.IntegrateWithSingleFixedStepToTime(updated_t_final));
+
+  const double updated_err_est =
+      integrator2.get_error_estimate()->get_vector()[0];
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 }
 
 TYPED_TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamperNoReuse) {
@@ -777,9 +903,9 @@ TYPED_TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffectsReuse) {
 }
 
 REGISTER_TYPED_TEST_SUITE_P(
-    ImplicitIntegratorTest, MiscAPINoReuse, MiscAPIReuse,
+    ImplicitIntegratorTest, MiscAPINoReuse, MiscAPIReuse, Stationary, Robertson,
     FixedStepThrowsOnMultiStep, ContextAccess, AccuracyEstAndErrorControl,
-    DoubleSpringMassDamperNoReuse, DoubleSpringMassDamperReuse,
+    LinearTest, DoubleSpringMassDamperNoReuse, DoubleSpringMassDamperReuse,
     SpringMassDamperStiffNoReuse, SpringMassDamperStiffReuse,
     DiscontinuousSpringMassDamperNoReuse, DiscontinuousSpringMassDamperReuse,
     SpringMassStepNoReuse, SpringMassStepReuse, ErrorEstimationNoReuse,
