@@ -247,7 +247,6 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12337: https://github.com/RobotLocomotion/drake/pull/12337
 .. _#12339: https://github.com/RobotLocomotion/drake/pull/12339
 .. _#12340: https://github.com/RobotLocomotion/drake/pull/12340
-.. _#12342: https://github.com/RobotLocomotion/drake/pull/12342
 .. _#12343: https://github.com/RobotLocomotion/drake/pull/12343
 .. _#12345: https://github.com/RobotLocomotion/drake/pull/12345
 .. _#12346: https://github.com/RobotLocomotion/drake/pull/12346
@@ -312,7 +311,6 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12452: https://github.com/RobotLocomotion/drake/pull/12452
 .. _#12455: https://github.com/RobotLocomotion/drake/pull/12455
 .. _#12457: https://github.com/RobotLocomotion/drake/pull/12457
-.. _#12458: https://github.com/RobotLocomotion/drake/pull/12458
 .. _#12459: https://github.com/RobotLocomotion/drake/pull/12459
 .. _#12461: https://github.com/RobotLocomotion/drake/pull/12461
 .. _#12462: https://github.com/RobotLocomotion/drake/pull/12462
