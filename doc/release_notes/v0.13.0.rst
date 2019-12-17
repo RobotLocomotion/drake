@@ -74,16 +74,11 @@ Fixes
 * Improve documentation of QueryObject::ComputeContactSurfaces to reflect the current state of hydroelastic contact support (`#12413`_)
 * Remove expensive and unused "referring triangles" from SurfaceMesh (`#12438`_)
 
-New hydroelastic contact model in progress (`#12455`_, `#12358`_, `#12348`_, `#12333`_, `#12323`_, `#12378`_, `#12417`_, `#12311`_, `#12347`_)
+New hydroelastic contact model in progress (`#12455`_, `#12358`_, `#12348`_, `#12333`_, `#12323`_, `#12378`_, `#12417`_, `#12311`_, `#12347`_, `#12432`_, `#12463`_)
 
-* Still only experimental.
-* Increased the number and types of shapes supported in the prototype.
-* Added more visualization infrastructure.
-
-Clean up
-
-* Clarify and unify definition of surface normal direction for ContactSurface (`#12432`_, `#12463`_)
-
+* Still only experimental
+* Increased the number and types of shapes supported in the prototype
+* Added more visualization infrastructure
 
 Miscellaneous features and fixes
 --------------------------------
