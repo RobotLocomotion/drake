@@ -67,8 +67,7 @@ drake_cc_library(
     srcs = ["gripper_brick.cc"],
     hdrs = ["gripper_brick.h"],
     data = [
-        "//examples/planar_gripper:planar_brick.sdf",
-        "//examples/planar_gripper:planar_gripper.sdf",
+        ":models",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -86,7 +85,7 @@ drake_cc_binary(
     name = "run_planar_gripper_trajectory_publisher",
     srcs = ["run_planar_gripper_trajectory_publisher.cc"],
     data = [
-        "//examples/planar_gripper:planar_gripper.sdf",
+        ":models",
         "//examples/planar_gripper:postures.txt",
     ],
     deps = [
@@ -108,8 +107,7 @@ drake_cc_binary(
     srcs = ["planar_gripper_simulation.cc"],
     add_test_rule = 1,
     data = [
-        "//examples/planar_gripper:planar_brick.sdf",
-        "//examples/planar_gripper:planar_gripper.sdf",
+        ":models",
         "//examples/planar_gripper:postures.txt",
     ],
     test_rule_args = [
@@ -188,8 +186,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "planar_gripper_common_test",
     data = [
-        "//examples/planar_gripper:planar_brick.sdf",
-        "//examples/planar_gripper:planar_gripper.sdf",
+        ":models",
     ],
     deps = [
         ":planar_gripper_common",

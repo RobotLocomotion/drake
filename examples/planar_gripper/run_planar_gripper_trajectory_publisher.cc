@@ -38,11 +38,12 @@ namespace examples {
 namespace planar_gripper {
 namespace {
 
-DEFINE_double(
-    keyframe_dt, 0.1,
-    "Defines the time step to take between keyframes. Note that keyframe "
-    "data in postures.txt contains static equilibrium poses and we "
-    "play these back at an arbitrary speed for this simulation.");
+DEFINE_double(keyframe_dt, 0.1,
+              "Defines a uniform time step between `break` points in our "
+              "spline interpolator (see PiecewisePolynomial::Pchip), where "
+              "each keyframe corresponds to a `knot` point. Note that keyframe "
+              "data in postures.txt contains static equilibrium poses and we "
+              "play these back at an arbitrary speed for this simulation.");
 
 const char* const kLcmStatusChannel = "PLANAR_GRIPPER_STATUS";
 const char* const kLcmCommandChannel = "PLANAR_GRIPPER_COMMAND";
@@ -72,8 +73,7 @@ int DoMain() {
           kLcmCommandChannel, &lcm));
   auto command_encoder = builder.AddSystem<GripperCommandEncoder>();
 
-  // Parse the keyframes from a file and also return initial brick pose. The
-  // brick's pose consists of {y_position, z_position, x_rotation_angle}.
+  // Parse the keyframes from a file.
   const std::string keyframe_path =
       "drake/examples/planar_gripper/postures.txt";
   MatrixX<double> keyframes;

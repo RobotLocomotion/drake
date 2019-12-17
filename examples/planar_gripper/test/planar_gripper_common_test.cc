@@ -12,9 +12,9 @@ namespace examples {
 namespace planar_gripper {
 
 GTEST_TEST(ReorderKeyframesTest, Test) {
-  const int num_keyframes = 4;
-  MatrixX<double> keyframes =  MatrixX<double>::Zero(kNumJoints, num_keyframes);
-  VectorX<double> unit_row = VectorX<double>::Ones(num_keyframes);
+  const int kNumKeyframes = 4;
+  MatrixX<double> keyframes =  MatrixX<double>::Zero(kNumJoints, kNumKeyframes);
+  VectorX<double> unit_row = VectorX<double>::Ones(kNumKeyframes);
 
   // Create an arbitrary keyframe matrix.
   for (int i = 0; i < keyframes.rows(); i++) {
@@ -67,7 +67,7 @@ GTEST_TEST(ReorderKeyframesTest, Test) {
 
   // Test throw when keyframe rows and joint name to row map size don't match.
   MatrixX<double> bad_rows_keyframes =  /* adds one extra row */
-      MatrixX<double>::Zero(kNumJoints + 1, num_keyframes);
+      MatrixX<double>::Zero(kNumJoints + 1, kNumKeyframes);
   EXPECT_THROW(ReorderKeyframesForPlant(plant, bad_rows_keyframes,
                                         &finger_joint_name_to_row_index_map),
                std::runtime_error);

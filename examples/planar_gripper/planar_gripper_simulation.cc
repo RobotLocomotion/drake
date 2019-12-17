@@ -210,11 +210,11 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
         .get_index();
     this->DeclareVectorOutputPort("force_sensors_out",
                                   systems::BasicVector<double>(num_sensors * 2),
-                                  &ForceSensorEvaluator::SetOutput)
+                                  &ForceSensorEvaluator::CalcOutput)
         .get_index();
   }
 
-  void SetOutput(const drake::systems::Context<double>& context,
+  void CalcOutput(const drake::systems::Context<double>& context,
                  drake::systems::BasicVector<double>* output) const {
     const std::vector<multibody::SpatialForce<double>>& spatial_vec =
         this->get_input_port(0)

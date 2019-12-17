@@ -209,8 +209,7 @@ MatrixX<double> ReorderKeyframesForPlant(
   }
   std::map<std::string, int> original_map = *finger_joint_name_to_row_index_map;
   MatrixX<double> reordered_keyframes(keyframes);
-  for (auto iter = original_map.begin();
-       iter != original_map.end(); ++iter) {
+  for (auto iter = original_map.begin(); iter != original_map.end(); ++iter) {
     auto joint_vel_start_index =
         plant.GetJointByName(iter->first).velocity_start();
     reordered_keyframes.row(joint_vel_start_index) =
