@@ -171,7 +171,41 @@ TBD
 Removal of deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD Remove deprecated methods (2019-12-01) (`#12431`_)
+* drake::common::MatlabRPC (`#12431`_)
+
+  * Use PythonRemoteMessage instead.")
+
+* drake::common::MatlabArray (`#12431`_)
+
+  * Use PythonRemoteData instead.
+
+* drake::common::ToMatlabArray (`#12431`_)
+
+  * Use ToPythonRemoteData instead.
+
+* drake::math::RigidTransform::FromMatrix4 (`#12431`_)
+
+  * Use the ``pose=`` constructor instead.
+
+* drake::geometry::ContactSurface::mesh (`#12431`_)
+
+  * Use mesh_W instead.
+
+* drake::geometry::SurfaceVertex::Transform (`#12431`_)
+
+  * Use TransformInPlace instead.
+
+* pydrake.multibody.ContactResults.num_contacts (`#12431`_)
+
+  * Use num_point_pair_contacts instead.
+
+* pydrake.multibody.ContactResults.contact_info (`#12431`_)
+
+  * Use point_pair_contact_info instead.
+
+* pydrake Eigen.Quaternion.multiply with ``position=`` kwargs (`#12431`_)
+
+  * Use ``vector=`` instead of ``position=``.
 
 This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.13.0>`__ named ``drake-TBD-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
 
