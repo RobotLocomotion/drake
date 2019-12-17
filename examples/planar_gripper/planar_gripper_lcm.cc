@@ -38,14 +38,15 @@ GripperCommandDecoder::GripperCommandDecoder(int num_fingers) :
 
 void GripperCommandDecoder::set_initial_position(
     Context<double>* context,
-    const Eigen::Ref<const VectorX<double>> x) const {
+    const Eigen::Ref<const VectorX<double>> pos) const {
+  // The Discrete state consists of positions, velocities, torques.
   auto state_value =
       context->get_mutable_discrete_state(0).get_mutable_value();
-  DRAKE_ASSERT(x.size() == num_joints_ * 3);  // pos, vel, torque.
-  state_value.head(num_joints_) = x;
-  state_value.segment(num_joints_, num_joints_) =
-      VectorX<double>::Zero(num_joints_);
-  state_value.tail(num_joints_) = VectorX<double>::Zero(num_joints_);
+  DRAKE_ASSERT(pos.size() == num_joints_);
+  // Set the initial positions.
+  state_value.head(num_joints_) = pos;
+  // Set the initial velocities and torques to zero.
+  state_value.tail(num_joints_ * 2) = VectorX<double>::Zero(num_joints_ * 2);
 }
 
 systems::EventStatus GripperCommandDecoder::UpdateDiscreteState(

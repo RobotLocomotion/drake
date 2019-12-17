@@ -2713,8 +2713,10 @@ void MultibodyPlant<T>::CalcReactionForces(
   // we can make an estimation based on the trace of the mass matrix (Jain 2011,
   // Eq. 4.21). For now we only ASSERT though with a better estimation we could
   // promote this to a DEMAND.
-  DRAKE_ASSERT(tau_id.norm() <
-               100 * num_velocities() * std::numeric_limits<double>::epsilon());
+  // TODO(amcastro-tri) Uncomment this line once issue #12473 is resolved.
+  // DRAKE_ASSERT(tau_id.norm() <
+  //              100 * num_velocities() *
+  //              std::numeric_limits<double>::epsilon());
 
   // Map mobilizer reaction forces to joint reaction forces and perform the
   // necessary frame conversions.
