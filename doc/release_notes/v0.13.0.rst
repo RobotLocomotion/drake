@@ -5,12 +5,12 @@ Drake v0.13.0
 Announcements
 -------------
 
-* Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_).
+* Drake's `tutorials`_ continue to improve, now including:
 
-* TBD tutorials: Add example of rendering which uses MultibodyPlant (`#4668d74fb6e4455108b164082712339aa7fd6163`_)
-* TBD doc: Make tutorials more discoverable (`#fc5afc581f7dbcccf75133e5f84c9ebd8ab14977`_)
-* TBD tutorials: Add brief tutorial for optimization using MultibodyPlant (`#12433`_)  # Focused on custom evaluators
-* TBD tutorials: Updating wording in MP + MBP tutorial (`#12443`_)
+  * Rendering that uses MultibodyPlant (`#12388`_)
+  * Optimization using MultibodyPlant, focused on custom evaluators (`#12433`_, `#12443`_)
+
+* Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_).
 
 Breaking changes since v0.12.0
 ------------------------------
@@ -172,6 +172,7 @@ This release provides `pre-compiled binaries <https://github.com/RobotLocomotion
 Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. _drake_bazel_external: https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external
+.. _tutorials: https://github.com/RobotLocomotion/drake/tree/master/tutorials
 
 Commits to be categorized
 -------------------------
