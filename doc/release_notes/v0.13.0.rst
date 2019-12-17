@@ -60,7 +60,7 @@ New features
 * Add missing operators to SpatialVector (`#12436`_)
 * Provide access to owning MultibodyPlant from any MultibodyElement (`#12380`_)
 * Add a query for signed distance between a single pair of geometries (`#12379`_)
-* Added Ellipsoid parsing from SDF (`#12324`_)
+* Add Ellipsoid parsing from SDF (`#12324`_)
 * Extend Capsule Shape support for proximity queries (`#12343`_, `#12332`_)
 
 Fixes
@@ -77,16 +77,16 @@ Fixes
 New hydroelastic contact model in progress (`#12455`_, `#12358`_, `#12348`_, `#12333`_, `#12323`_, `#12378`_, `#12417`_, `#12311`_, `#12347`_, `#12432`_, `#12463`_)
 
 * Still only experimental
-* Increased the number and types of shapes supported in the prototype
-* Added more visualization infrastructure
+* Increase the number and types of shapes supported in the prototype
+* Add more visualization infrastructure
 
 Miscellaneous features and fixes
 --------------------------------
 
-Visualizer changes:
+Visualizer fixes:
 
-* Fix: Update image_show.py for Python 3 (`#12422`_)
-* Fix: Avoid negative real time factors (`#12444`_)
+* Update image_show.py for Python 3 (`#12422`_)
+* Avoid negative real time factors (`#12444`_)
 
 pydrake bindings
 ----------------
@@ -325,5 +325,5 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12490: https://github.com/RobotLocomotion/drake/pull/12490
 
 ..
-  Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
-  Current newest_commit e7f352d26827b37d63d8f609ee0a4d5195ccf9b3 (inclusive).
+  Changelog oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
+  Changelog newest_commit e7f352d26827b37d63d8f609ee0a4d5195ccf9b3 (inclusive).
