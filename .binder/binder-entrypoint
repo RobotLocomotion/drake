@@ -1,0 +1,6 @@
+#!/bin/bash -l
+
+set -euxo pipefail
+
+# Some examples need a virtual X server environment for offscreen rendering.
+xvfb-run -a "$@"
