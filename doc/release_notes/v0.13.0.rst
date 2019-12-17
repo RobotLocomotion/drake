@@ -55,6 +55,7 @@ Multibody Dynamics
 
 New features
 
+* Add new generalized acceleration ports to MultibodyPlant (`#12354`_)
 * Implement ABA forward dynamics (`#12412`_, `#12462`_)
 * Add missing operators to SpatialVector (`#12436`_)
 * Provide access to owning MultibodyPlant from any MultibodyElement (`#12380`_)
@@ -68,7 +69,6 @@ New features
 * Extend Capsule Shape support for proximity queries (`#12343`_, `#12332`_)
 * Ability to export surface and volume mesh fields for VTK (Paraview) visualization (`#12311`_)
 * Initial implementation of Bounding Volume Hierarchy (BVH) to accelerate mesh-mesh hydroelastic contact -- not complete yet (`#12347`_)
-* Added new generalized acceleration ports to MultibodyPlant (`#12354`_)
 
 Fixes
 
@@ -77,13 +77,13 @@ Fixes
 * Improve documentation of forward dynamics algorithm and notation in MultibodyTree (`#12317`_)
 * Improve documentation of MultibodyTreeElement (`#12352`_)
 * Improve documentation of RollPitchYaw and RotationMatrix (`#12345`_)
+* Improve documentation of adding new Shape sub-classes (`#12372`_)
+* Improve documentation of QueryObject::ComputeContactSurfaces to reflect the current state of hydroelastic contact support (`#12413`_)
+* Remove expensive and unused "referring triangles" from SurfaceMesh (`#12438`_)
 
 Clean up
 
 * Clarify and unify definition of surface normal direction for ContactSurface (`#12432`_, `#12463`_)
-* Removed expensive and unused "referring triangles" from SurfaceMesh (`#12438`_)
-* Update instructions for tasks related to adding new Shape sub-classes (`#12372`_)
-* Update documentation of QueryObject::ComputeContactSurfaces() to reflect the current state of hydroelastic contact support (`#12413`_)
 
 
 Miscellaneous features and fixes
