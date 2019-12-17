@@ -987,6 +987,17 @@ class SphereChainScenario {
     return query_object.ComputePointPairPenetration();
   }
 
+  // Get all bodies of the internal plant.
+  std::vector<const Body<double>*> get_all_bodies() const {
+    std::vector<const Body<double>*> all_bodies;
+    all_bodies.push_back(no_geometry_body_);
+    for (const auto sphere : spheres_) {
+      all_bodies.push_back(sphere);
+    }
+    all_bodies.push_back(&plant_->world_body());
+    return all_bodies;
+  }
+
   const RigidBody<double>& sphere(int i) const { return *spheres_.at(i); }
   const RigidBody<double>& no_geometry_body() const {
     return *no_geometry_body_;
@@ -1119,7 +1130,7 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
         plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
     GeometrySetTester tester(&set);
     EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_EQ(tester.num_frames(), 0);
+    EXPECT_EQ(tester.num_frames(), 1);
   }
 
   // Case: Include the world body.
@@ -1129,6 +1140,16 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
             {&scenario.mutable_plant()->world_body()});
     GeometrySetTester tester(&set);
     EXPECT_EQ(tester.num_frames(), 1);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_FALSE(tester.contains(scenario.ground_id()));
+  }
+
+  // Case: Consider all bodies.
+  {
+    GeometrySet set =
+        plant.CollectRegisteredGeometries(scenario.get_all_bodies());
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_frames(), plant.num_bodies());
     EXPECT_EQ(tester.num_geometries(), 0);
     EXPECT_FALSE(tester.contains(scenario.ground_id()));
   }
