@@ -41,6 +41,7 @@ Mathematical Program
 New features
 
 * Add MathematicalProgram::indeterminates_index (`#12405`_)
+* Add MathematicalProgram::GetBindingVariableValues (`#12490`_)
 * Add drake::Evaluate for symbolic SparseMatrix (`#12406`_)
 * Add matrix version of drake::symbolic::Environment::insert (`#12409`_)
 
@@ -165,7 +166,7 @@ Build system and dependencies
 * Upgrade supported Bazel version to 1.2 (`#12396`_)
 
   * Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_)
-  
+
 * Upgrade supported macOS CMake version to 3.16  (`#12396`_)
 * Upgrade supported macOS Xcode version to 11.2 (`#12331`_)
 * Un-pin sphinx for macOS (`#12467`_)
@@ -234,7 +235,7 @@ Removal of deprecated APIs
 
   * Use ``vector=`` instead of ``position=``.
 
-This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.13.0>`__ named ``drake-TBD-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
+This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.13.0>`__ named ``drake-20191217-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
@@ -331,8 +332,8 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12481: https://github.com/RobotLocomotion/drake/pull/12481
 .. _#12486: https://github.com/RobotLocomotion/drake/pull/12486
 .. _#12487: https://github.com/RobotLocomotion/drake/pull/12487
+.. _#12490: https://github.com/RobotLocomotion/drake/pull/12490
 
 ..
-  Commits to be categorized
   Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
-  Current newest_commit ebd51d63b19c0b213c0de2517c9c70e116abccce (inclusive).
+  Current newest_commit e7f352d26827b37d63d8f609ee0a4d5195ccf9b3 (inclusive).
