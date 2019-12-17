@@ -89,7 +89,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
     std::unique_ptr<State<double>> state_copy = dspring_context_->CloneState();
 
     // Designate the solution tolerance.
-    const double sol_tol = 2e-2;
+    const double sol_tol_pos = 2e-2;
+    // The velocity solution needs a looser tolerance in Radau1 and Implicit
+    // Euler.
+    const double sol_tol_vel = sol_tol_pos / large_h_;
 
     // Set integrator parameters.
     T integrator(*stiff_double_system_, dspring_context_.get());
@@ -110,7 +113,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Integrate.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
 
-    // Check the solution.
+    // Check the position solution.
     const VectorX<double> nsol = dspring_context_->get_continuous_state()
                                      .get_generalized_position()
                                      .CopyToVector();
@@ -118,7 +121,18 @@ class ImplicitIntegratorTest : public ::testing::Test {
                                     .get_generalized_position()
                                     .CopyToVector();
 
-    for (int i = 0; i < nsol.size(); ++i) EXPECT_NEAR(sol(i), nsol(i), sol_tol);
+    for (int i = 0; i < nsol.size(); ++i)
+      EXPECT_NEAR(sol(i), nsol(i), sol_tol_pos);
+
+    // Check the velocity solution.
+    const VectorX<double> nsolv = dspring_context_->get_continuous_state()
+                                      .get_generalized_velocity()
+                                      .CopyToVector();
+    const VectorX<double> solv = state_copy->get_continuous_state()
+                                    .get_generalized_velocity()
+                                    .CopyToVector();
+    for (int i = 0; i < nsolv.size(); ++i)
+      EXPECT_NEAR(solv(i), nsolv(i), sol_tol_vel);
 
     // Verify that integrator statistics are valid.
     CheckGeneralStatsValidity(&integrator);
