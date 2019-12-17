@@ -17,7 +17,7 @@ Breaking changes since v0.12.0
 
 These are breaking changes that did not undergo a deprecation period:
 
-TBD
+* Remove all Bazel machinery for protobuf message generation (`#12450`_).
 
 Changes since v0.12.0:
 ----------------------
@@ -118,6 +118,7 @@ pydrake bindings
 * TBD Use lcm encoding (not protobuf) for call_python RPCs (`#12442`_)
 * TBD Reverts /pydrake/manipulation/simple_ui #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
 * TBD pydrake/systems/planar_scenegraph_visualizer .pyPort planar_scenegraph_visualizer from underactuated (`#12218`_, `#12349`_)
+* Fix: Sphinx shows ``__init__`` documentation in Python 3 (`#12452`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,7 +131,9 @@ Build system and dependencies
 * Fix doxygen dot path (`#12416`_)
 * Add pkg-config as binary dependency (`#12339`_)
 * Add pandas as a source dependency (`#12328`_)
+* Add rules_python as a source dependency for python, and define use a toolchain for Python (`#12377`_)
 * Change graphviz from source dependency to binary dependency (`#12340`_)
+* Change jupyter notebook and ipywidgets from source dependencies to binary dependencies in anticipation of installing Drake's tutorial notebooks (`#12461`_)
 * Upgrade meshcat_python to latest commit (`#12365`_)
 * Upgrade fcl to latest commit (`#12395`_)
 * Upgrade ghc_filesystem to latest release 1.2.8 (`#12395`_)
@@ -138,6 +141,7 @@ Build system and dependencies
 * Upgrade json to latest release 3.7.3 (`#12395`_)
 * Upgrade lcm to latest commit (`#12457`_)
 * Upgrade meshcat to latest commit (`#12395`_)
+* Upgrade optitrack-driver to latest commit (`#12377`_)
 * Upgrade sdformat to latest release 8.6.0 (`#12395`_)
 * Upgrade semantic_version to latest release 2.8.3 (`#12395`_)
 * Upgrade octomap to latest release 1.9.1 (`#12426`_)
@@ -146,16 +150,18 @@ Build system and dependencies
 * Upgrade supported Bazel version to 1.2 (`#12396`_)
 * Upgrade supported macOS CMake version to 3.16  (`#12396`_)
 * Upgrade supported macOS Xcode version to 11.2 (`#12331`_)
+* Un-pin sphinx for macOS (`#12467`_)
 * Do not install Python 2.7 on Mac (`#12339`_)
-* TBD install: Add drake_bazel_installed support (`#12402`_)
-* TBD Define and use a toolchain for Python (`#12377`_)
-* TBD Use rules_python for Python build rules (`#12377`_)
-* TBD Update optitrack-driver with rules_python support (`#12377`_)
-* TBD Move jupyter notebook and ipywidgets to binary prerequisite install (`#12461`_)
-* TBD workspace: Remove unused protobuf (but not libprotobuf) (`#12450`_)  # We no longer need the message generation nor compilation machinery, but we still need the runtime support libraries for some of our deprecated methods. Specifically, all bazel machinery for protobuf message generation is removed: - @com_google_protobuf//... - @drake//:protobuf - @drake//:protobuf_python - @drake//:protoc - @drake//tools/skylark:drake_proto.bzl - @protoc//... Some runtime machinery remains, to be removed on 2020-02-01: - @libprotobuf - setup/mac/binary_distribution/Brewfile:brew 'protobuf' - setup/ubuntu/source_distribution/packages-bionic.txt:python3-protobuf - setup/ubuntu/binary_distribution/packages-bionic.txt:libprotobuf-dev
-* TBD Pass --no-lock to brew bundle (`#12458`_)  # https://github.com/Homebrew/homebrew-bundle/pull/552 introduces "Brewfile.lock.json" which provides a list of successfully installed packages and their metainfo. For now, git detects those new added "Brewfile.lock.json" as untracked files. Passing `--no-lock` is one solution to this problem. An alternative is to add the pattern in `.gitignore` but I think passing `--no-lock` is a cleaner solution.
-* TBD Un-pin sphinx for macOS (`#12467`_)
-* TBD 'Fix' sphinx to get __init__ documentation (`#12452`_)
+* Remove all Bazel machinery for protobuf message generation (`#12450`_), specifically:
+
+  * @com_google_protobuf//...
+  * @drake//:protobuf
+  * @drake//:protobuf_python
+  * @drake//:protoc
+  * @drake//tools/skylark:drake_proto.bzl
+  * @protoc//...
+
+* Add experimental drake_bazel_installed support (`#12402`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -265,8 +271,7 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12486: https://github.com/RobotLocomotion/drake/pull/12486
 .. _#12487: https://github.com/RobotLocomotion/drake/pull/12487
 
-Commits to be categorized
--------------------------
-
-Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
-Current newest_commit ebd51d63b19c0b213c0de2517c9c70e116abccce (inclusive).
+..
+  Commits to be categorized
+  Current oldest_commit bda9c0f2d2f06bd16f9fc659d976b7bea1fd3216 (inclusive).
+  Current newest_commit ebd51d63b19c0b213c0de2517c9c70e116abccce (inclusive).
