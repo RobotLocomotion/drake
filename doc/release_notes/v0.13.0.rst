@@ -42,15 +42,14 @@ Mathematical Program
 
 New features
 
-* TBD Add MathematicalProgram::indeterminates_index() (`#12405`_)
-* TBD Add matrix version of Environment::insert (`#12409`_)
-* TBD Expression(0.0) re-uses the pointer of Expression::Zero() (`#12459`_)  # Given a scalar type T, Eigen assumes that the constructor for T(0) is idempotent. Consequently, it should not involve memory-allocation to avoid a memory leak. This is not a correct assumption and needs to be fixed, but it takes time to fix the upstream and use the latest version of Eigen. Here, we want to provide a workaround on our side. See https://github.com/RobotLocomotion/drake/issues/12453.
-* TBD Add Evaluate for symbolic SparseMatrix (`#12406`_)  # Also rewrite GetDistinctVariables using Eigen's visit method.
-* TBD Store indeterminates and decision variables in symbolic::Polynomial as members (`#11790`_)
+* Add MathematicalProgram::indeterminates_index (`#12405`_)
+* Add drake::Evaluate for symbolic SparseMatrix (`#12406`_)
+* Add matrix version of drake::symbolic::Environment::insert (`#12409`_)
 
 Fixes
 
-TBD
+* Speed up symbolic::Polynomial::decision_variables by storing indeterminates and decision variables as members (`#11790`_)
+* Fix Eigen::SparseMatrix memory leak related to drake::symbolic::Expression (`#12459`_)
 
 Multibody Dynamics
 ------------------
@@ -197,7 +196,7 @@ Removal of deprecated APIs
 
 * drake::common::MatlabRPC (`#12431`_)
 
-  * Use PythonRemoteMessage instead.")
+  * Use PythonRemoteMessage instead.
 
 * drake::common::MatlabArray (`#12431`_)
 
