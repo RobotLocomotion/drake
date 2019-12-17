@@ -10,36 +10,35 @@ Announcements
   * Rendering that uses MultibodyPlant (`#12388`_)
   * Optimization using MultibodyPlant, focused on custom evaluators (`#12433`_, `#12443`_)
 
-* Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_).
+* Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_)
 
-Breaking changes since v0.12.0
-------------------------------
+Breaking Changes
+----------------
 
 These are breaking changes that did not undergo a deprecation period:
 
-* Remove all Bazel machinery for protobuf message generation (`#12450`_).
-
-Changes since v0.12.0:
-----------------------
+* Remove all Bazel machinery for protobuf message generation (`#12450`_)
+* Remove drake::systems::EventCollection::Merge (`#12357`_)
 
 Dynamical Systems
-~~~~~~~~~~~~~~~~~
+-----------------
 
 New features
 
-* TBD More syntactic sugar for SymbolicVectorSystemBuilder (`#12421`_)  # `state`, `input`, `parameter`, `dynamics`, and `output` setters have std::vector variants. So that a user can write `.dynamics({-x_[1], -x_[0] + 3})` instead of `.dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))`. Also add `SymbolicVectorSystem::dynamics_for_variable`.
-* TBD Add SymbolicVectorSystemBuilder::LinearizeDynamics (`#12466`_)
-* TBD Renames event collection merge methods (`#12357`_)
+* Usability improvements to SymbolicVectorSystem:
+
+  * Add LinearizeDynamics (`#12466`_)
+  * Add dynamics_for_variable (`#12421`_)
+  * The setters for state, input, parameter, dynamics, and output offer a std::vector overload, so that a user can write ``.dynamics({-x_[1], -x_[0] + 3})``  (`#12421`_)
 
 Fixes
 
-* TBD Changed dt to h in integrator documentation (`#12392`_)
-* TBD Updates integrator documentation (`#12350`_)  # Reorganizes the integrator documentation and documents initial step size behavior (and caveats).
-* TBD Improve error message when cloning a non-root Context (`#12391`_)
-* TBD Updates the documentation on the use of accuracy in the Context (`#12428`_)
+* Better error message when cloning a non-root Context (`#12391`_)
+* Improve documentation on integrators (`#12350`_, `#12392`_)
+* Improve documentation on the use of accuracy in the Context (`#12428`_)
 
 Mathematical Program
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 New features
 
@@ -54,7 +53,7 @@ Fixes
 TBD
 
 Multibody Dynamics
-~~~~~~~~~~~~~~~~~~
+------------------
 
 New features
 Fixes
@@ -91,7 +90,7 @@ Fixes
 * TBD Improve RollPitchYaw and RotationMatrix class documentation (#12345) (`#12345`_)
 
 Miscellaneous features and fixes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------
 
 Visualizer changes:
 
@@ -99,7 +98,7 @@ Visualizer changes:
 * Fix: Avoid negative real time factors (`#12444`_)
 
 pydrake bindings
-~~~~~~~~~~~~~~~~
+----------------
 
 New features
 
@@ -137,7 +136,7 @@ Newly bound
 * pydrake.systems.framework.System.SetDefaultContext (`#12368`_)
 
 Build system and dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 * Provide nightly binary docker images (`#10554`_, `#12364`_, `#12367`_, `#12446`_)
 * Fix missing pthread linkopts for MOSEK (`#12337`_)
@@ -180,7 +179,7 @@ Build system and dependencies
 * Add experimental drake_bazel_installed support (`#12402`_)
 
 Newly-deprecated APIs
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 * drake::common::NewPythonVariable (`#12442`_)
 * drake::multibody::MultibodyTreeElement (`#12352`_)
@@ -194,7 +193,7 @@ Newly-deprecated APIs
 * drake::geometry::Ellipsoid::get_c (`#12373`_)
 
 Removal of deprecated APIs
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 * drake::common::MatlabRPC (`#12431`_)
 
