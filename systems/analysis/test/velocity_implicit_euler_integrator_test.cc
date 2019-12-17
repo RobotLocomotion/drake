@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/second_order_implicit_euler_integrator.h"
+#include "drake/systems/analysis/velocity_implicit_euler_integrator.h"
 
 #include <gtest/gtest.h>
 
@@ -28,7 +28,7 @@ using implicit_integrator_test::SpringMassDamperSystem;
 
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
-GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, Stationary) {
+GTEST_TEST(VelocityImplicitEulerIntegratorTest, Stationary) {
   auto stationary = std::make_unique<StationarySystem>();
   std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
 
@@ -39,7 +39,7 @@ GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, Stationary) {
   state.SetAtIndex(1, 0.0);
 
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*stationary,
+  VelocityImplicitEulerIntegrator<double> integrator(*stationary,
                                                         context.get());
   integrator.set_maximum_step_size(1.0);
   integrator.set_target_accuracy(1e-3);
@@ -58,7 +58,7 @@ GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, Stationary) {
 // problem, which has been used to benchmark various implicit integrators.
 // This problem is particularly good at testing large step sizes (since the
 // solution quickly converges) and long simulation times.
-GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, Robertson) {
+GTEST_TEST(VelocityImplicitEulerIntegratorTest, Robertson) {
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
       std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
@@ -67,7 +67,7 @@ GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, Robertson) {
   const double tol = 5e-5;
 
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*robertson,
+  VelocityImplicitEulerIntegrator<double> integrator(*robertson,
                                                         context.get());
 
   // Very large step is necessary for this problem since given solution is
@@ -95,7 +95,7 @@ GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, Robertson) {
   EXPECT_NEAR(state.GetAtIndex(2), sol(2), tol);
 }
 
-GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
+GTEST_TEST(VelocityImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
   auto robertson = std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
@@ -104,7 +104,7 @@ GTEST_TEST(SecondOrderImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
   const double dt = 1e+1;
 
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*robertson,
+  VelocityImplicitEulerIntegrator<double> integrator(*robertson,
                                                         context.get());
 
   // Make sure integrator can take the size we want.
@@ -194,7 +194,7 @@ TEST_F(ImplicitIntegratorTest2, AutoDiff) {
   // Create the integrator for a System<AutoDiffXd>.
   auto system = spring_->ToAutoDiffXd();
   auto context = system->CreateDefaultContext();
-  SecondOrderImplicitEulerIntegrator<AutoDiffXd> integrator(*system,
+  VelocityImplicitEulerIntegrator<AutoDiffXd> integrator(*system,
                                                             context.get());
 
   // Set reasonable integrator parameters.
@@ -227,7 +227,7 @@ TEST_F(ImplicitIntegratorTest2, AutoDiff) {
 
 TEST_P(ImplicitIntegratorTest2, MiscAPI) {
   // Create the integrator for a System<double>.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*spring_,
+  VelocityImplicitEulerIntegrator<double> integrator(*spring_,
                                                         context_.get());
 
   // Verifies set_reuse(flag) == get_reuse() == flag
@@ -240,7 +240,7 @@ TEST_P(ImplicitIntegratorTest2, MiscAPI) {
 
   // Verify defaults match documentation.
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
-            SecondOrderImplicitEulerIntegrator<
+            VelocityImplicitEulerIntegrator<
                 double>::JacobianComputationScheme::kForwardDifference);
 
   // Test that setting the target accuracy and initial step size target is
@@ -264,7 +264,7 @@ TEST_F(ImplicitIntegratorTest2, FixedStepThrowsOnMultiStep) {
   const double dt = 1e+1;
 
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*robertson,
+  VelocityImplicitEulerIntegrator<double> integrator(*robertson,
                                                         context.get());
 
   // Make sure integrator can take the size we want.
@@ -286,7 +286,7 @@ TEST_F(ImplicitIntegratorTest2, FixedStepThrowsOnMultiStep) {
 
 TEST_F(ImplicitIntegratorTest2, ContextAccess) {
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*spring_,
+  VelocityImplicitEulerIntegrator<double> integrator(*spring_,
                                                         context_.get());
 
   integrator.get_mutable_context()->SetTime(3.);
@@ -302,7 +302,7 @@ TEST_F(ImplicitIntegratorTest2, ContextAccess) {
 // / Verifies error estimation is supported.
 TEST_F(ImplicitIntegratorTest2, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*spring_,
+  VelocityImplicitEulerIntegrator<double> integrator(*spring_,
                                                         context_.get());
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 2);
@@ -314,7 +314,7 @@ TEST_F(ImplicitIntegratorTest2, AccuracyEstAndErrorControl) {
 // Tests accuracy for integrating linear systems (with the state at time t
 // corresponding to f(t) ≡ St + C, where S is a scalar and C is the initial
 // state) over t ∈ [0, 1]. The asymptotic term in
-// SecondOrderImplicitEulerIntegrator's error estimate is second order,
+// VelocityImplicitEulerIntegrator's error estimate is second order,
 // meaning that it uses the Taylor Series expansion:
 // f(t+h) ≈ f(t) + hf'(t) + O(h²).
 // This formula indicates that the approximation error will be zero if
@@ -327,7 +327,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   linear_context->SetTime(0.0);
   linear_context->get_mutable_continuous_state_vector()[0] = C;
 
-  SecondOrderImplicitEulerIntegrator<double> ie(linear, linear_context.get());
+  VelocityImplicitEulerIntegrator<double> ie(linear, linear_context.get());
   const double t_final = 1.0;
   ie.set_maximum_step_size(t_final);
   ie.set_fixed_step_mode(true);
@@ -348,7 +348,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   const double working_min = ie.get_working_minimum_step_size();
   LinearScalarSystem scaled_linear(4.0 / working_min);
   auto scaled_linear_context = scaled_linear.CreateDefaultContext();
-  SecondOrderImplicitEulerIntegrator<double> ie2(scaled_linear,
+  VelocityImplicitEulerIntegrator<double> ie2(scaled_linear,
                                                  scaled_linear_context.get());
   const double updated_t_final = working_min / 2;
   ie2.set_maximum_step_size(updated_t_final);
@@ -375,7 +375,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, QuadraticTest) {
   quadratic_context->SetTime(0.0);
   quadratic_context->get_mutable_continuous_state_vector()[0] = C;
 
-  SecondOrderImplicitEulerIntegrator<double> ie2(quadratic,
+  VelocityImplicitEulerIntegrator<double> ie2(quadratic,
                                                  quadratic_context.get());
 
   // Per the description in IntegratorBase::get_error_estimate_order(), this
@@ -414,7 +414,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, QuadraticTest) {
 
 // Checks the validity of general integrator statistics and resets statistics.
 void CheckGeneralStatsValidity(
-    SecondOrderImplicitEulerIntegrator<double>* integrator) {
+    VelocityImplicitEulerIntegrator<double>* integrator) {
   EXPECT_GT(integrator->get_num_newton_raphson_iterations(), 0);
   EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_iterations(), 0);
   EXPECT_GT(integrator->get_previous_integration_step_size(), 0.0);
@@ -451,7 +451,7 @@ TEST_P(ImplicitIntegratorTest2, DoubleSpringMassDamper) {
   double sol_tol = 2e-2;
 
   // Set integrator parameters.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*stiff_double_system_,
+  VelocityImplicitEulerIntegrator<double> integrator(*stiff_double_system_,
                                                         dspring_context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.request_initial_step_size_target(large_dt_);
@@ -503,7 +503,7 @@ TEST_P(ImplicitIntegratorTest2, DoubleSpringMassDamper) {
 // This equation should be stiff.
 TEST_P(ImplicitIntegratorTest2, SpringMassDamperStiff) {
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*spring_damper_,
+  VelocityImplicitEulerIntegrator<double> integrator(*spring_damper_,
                                                         context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_requested_minimum_step_size(small_dt_);
@@ -554,7 +554,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassDamperStiff) {
   /* TODO(antequ) 10/15: reenable these after implementing autodiff
     // Switch to central differencing.
     integrator.set_jacobian_computation_scheme(
-        SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+        VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
         kCentralDifference);
 
     // Reset the time, position, and velocity.
@@ -575,7 +575,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassDamperStiff) {
 
     // Switch to automatic differencing.
     integrator.set_jacobian_computation_scheme(
-        SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+        VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
         kAutomatic);
 
     // Reset the time, position, and velocity.
@@ -607,7 +607,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassStep) {
 
   // Set integrator parameters; we want error control to initially "fail",
   // necessitating step size adjustment.
-  SecondOrderImplicitEulerIntegrator<double> integrator(spring_mass,
+  VelocityImplicitEulerIntegrator<double> integrator(spring_mass,
                                                         context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.request_initial_step_size_target(large_dt_);
@@ -660,7 +660,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassStep) {
   /* TODO(antequ) 10/15/19: reenable these after enabling autodiff
     // Switch to central differencing.
     integrator.set_jacobian_computation_scheme(
-        SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+        VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
         kCentralDifference);
 
     // Reset the time, position, and velocity.
@@ -682,7 +682,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassStep) {
 
     // Switch to automatic differentiation.
     integrator.set_jacobian_computation_scheme(
-        SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+        VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
         kAutomatic);
 
     // Reset the time, position, and velocity.
@@ -717,7 +717,7 @@ TEST_P(ImplicitIntegratorTest2, ErrorEstimation) {
   SpringMassSystem<double> spring_mass(spring_k, mass_, false /* no forcing */);
 
   // Set the integrator to operate in fixed step mode.
-  SecondOrderImplicitEulerIntegrator<double> integrator(spring_mass,
+  VelocityImplicitEulerIntegrator<double> integrator(spring_mass,
                                                         context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_fixed_step_mode(true);
@@ -726,7 +726,7 @@ TEST_P(ImplicitIntegratorTest2, ErrorEstimation) {
   /* TODO(antequ) 10/15/2019: reenable this
    // Use automatic differentiation because we can.
    integrator.set_jacobian_computation_scheme(
-       SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+       VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
        kAutomatic); */
 
   // Create the initial positions and velocities.
@@ -803,7 +803,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassStepAccuracyEffects) {
   SpringMassSystem<double> spring_mass(spring_k, mass_, false /* no forcing */);
 
   // Spring-mass system is necessary only to setup the problem.
-  SecondOrderImplicitEulerIntegrator<double> integrator(spring_mass,
+  VelocityImplicitEulerIntegrator<double> integrator(spring_mass,
                                                         context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_requested_minimum_step_size(small_dt_);
@@ -854,7 +854,7 @@ TEST_P(ImplicitIntegratorTest2, SpringMassStepAccuracyEffects) {
 // discontinuity in the velocity derivative at spring position x = 0.
 TEST_P(ImplicitIntegratorTest2, DiscontinuousSpringMassDamper) {
   // Create the integrator.
-  SecondOrderImplicitEulerIntegrator<double> integrator(*mod_spring_damper_,
+  VelocityImplicitEulerIntegrator<double> integrator(*mod_spring_damper_,
                                                         context_.get());
   integrator.set_maximum_step_size(dt_);
   integrator.set_throw_on_minimum_step_size_violation(false);
@@ -901,7 +901,7 @@ TEST_P(ImplicitIntegratorTest2, DiscontinuousSpringMassDamper) {
   /* TODO antequ 10/15/2019: re enable these
     // Switch the Jacobian scheme to central differencing.
     integrator.set_jacobian_computation_scheme(
-        SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+        VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
         kCentralDifference);
 
     // Reset the time, position, and velocity.
@@ -921,7 +921,7 @@ TEST_P(ImplicitIntegratorTest2, DiscontinuousSpringMassDamper) {
 
     // Switch the Jacobian scheme to automatic differentiation.
     integrator.set_jacobian_computation_scheme(
-        SecondOrderImplicitEulerIntegrator<double>::JacobianComputationScheme::
+        VelocityImplicitEulerIntegrator<double>::JacobianComputationScheme::
         kAutomatic);
 
     // Reset the time, position, and velocity.
@@ -941,7 +941,7 @@ TEST_P(ImplicitIntegratorTest2, DiscontinuousSpringMassDamper) {
 }
 
 // Test Euler integrator.
-typedef ::testing::Types<SecondOrderImplicitEulerIntegrator<double>> MyTypes;
+typedef ::testing::Types<VelocityImplicitEulerIntegrator<double>> MyTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ImplicitIntegratorTest, MyTypes);
 
 }  // namespace analysis_test

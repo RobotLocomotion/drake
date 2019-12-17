@@ -24,11 +24,11 @@
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/second_order_implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/velocity_implicit_euler_integrator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -60,7 +60,7 @@ DEFINE_double(target_realtime_rate, 1,
 // Integration parameters:
 DEFINE_string(integration_scheme, "implicit_euler",
               "Integration scheme to be used. Available options are: "
-              "'radau1', 'implicit_euler' (ec), 'second_order_implicit_euler' (ec), 'semi_explicit_euler',"
+              "'radau1', 'implicit_euler' (ec), 'velocity_implicit_euler' (ec), 'semi_explicit_euler',"
               "'runge_kutta2', 'runge_kutta3' (ec), 'bogacki_shampine3' (ec), 'radau'");
 
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
@@ -208,10 +208,10 @@ void DoMain() {
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
   systems::IntegratorBase<double>* integrator{nullptr};
-  // for SOIE statistics
-  bool soie = false;
+  // for VIE statistics
+  bool vie = false;
   bool implicit = false;
-  systems::SecondOrderImplicitEulerIntegrator<double>* soie_integrator{nullptr};
+  systems::VelocityImplicitEulerIntegrator<double>* vie_integrator{nullptr};
   systems::ImplicitIntegrator<double>* implicit_integrator{nullptr};
   
   if (FLAGS_integration_scheme == "implicit_euler") {
@@ -230,12 +230,12 @@ void DoMain() {
     integrator =
         simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(
             *diagram, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "second_order_implicit_euler") {
-    soie_integrator =
-        simulator.reset_integrator<systems::SecondOrderImplicitEulerIntegrator<double>>(
+  } else if (FLAGS_integration_scheme == "velocity_implicit_euler") {
+    vie_integrator =
+        simulator.reset_integrator<systems::VelocityImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
-    soie = true;
-    implicit_integrator = soie_integrator;
+    vie = true;
+    implicit_integrator = vie_integrator;
     implicit = true;
     integrator = implicit_integrator;
     integrator->set_target_accuracy(FLAGS_accuracy);
@@ -275,16 +275,16 @@ void DoMain() {
   } else {
     fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
     fmt::print("Number of time steps taken = {:d}\n",
-               soie ? soie_integrator->get_soie_num_steps_taken() : integrator->get_num_steps_taken());
+               vie ? vie_integrator->get_vie_num_steps_taken() : integrator->get_num_steps_taken());
     if (!integrator->get_fixed_step_mode()) {
       fmt::print("Initial time step taken = {:10.6g} s\n",
-                 soie ? soie_integrator->get_soie_actual_initial_step_size_taken() : 
+                 vie ? vie_integrator->get_vie_actual_initial_step_size_taken() : 
                  integrator->get_actual_initial_step_size_taken());
       fmt::print("Largest time step taken = {:10.6g} s\n",
-                 soie ? soie_integrator->get_soie_largest_step_size_taken() : 
+                 vie ? vie_integrator->get_vie_largest_step_size_taken() : 
                  integrator->get_largest_step_size_taken());
       fmt::print("Smallest adapted step size = {:10.6g} s\n",
-                 soie ? soie_integrator->get_soie_smallest_adapted_step_size_taken() :
+                 vie ? vie_integrator->get_vie_smallest_adapted_step_size_taken() :
                  integrator->get_smallest_adapted_step_size_taken());
       fmt::print("Number of steps shrunk due to error control = {:d}\n",
                  integrator->get_num_step_shrinkages_from_error_control());
@@ -295,7 +295,7 @@ void DoMain() {
     }
     if(implicit)
     {
-      if(soie)
+      if(vie)
         fmt::print("Implicit Integrator Statistics (total, half-size-steps):\n");
       else
         fmt::print("Implicit Integrator Statistics (total, error estimator):\n");
