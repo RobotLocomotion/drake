@@ -101,24 +101,40 @@ Visualizer changes:
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
-* TBD DistanceConstraint (`#12346`_)
-* TBD System.SetDefaultContext (`#12368`_)
-* TBD Simulator.reset_context (`#12368`_)
-* TBD overloaded AddQuadraticCost (`#12375`_)
-* TBD AddConstraint (`#12371`_)
-* TBD py geometry: Ensure all submodules are part of .all (`#12383`_)
-* TBD tree.world_model_instance (`#12389`_)
-* TBD tree.default_model_instance (`#12389`_)
-* TBD geometry properties and role assignment (`#12389`_)
-* TBD geometry casting RenderLabel to int (`#12390`_)
-* TBD geometry property retrieval (`#12388`_)
-* TBD ComputeSignedDistancePairClosestPoints (`#12408`_)
-* TBD RevoluteSpring (`#12481`_)
-* Fix: Ensure system names get copied for scalar conversion (`#12429`_)
-* TBD Use lcm encoding (not protobuf) for call_python RPCs (`#12442`_)
-* TBD Reverts /pydrake/manipulation/simple_ui #11560 (`#12486`_)  # , which had multiple defects (described on that github issue), and which broke the existing uses.
-* TBD pydrake/systems/planar_scenegraph_visualizer .pyPort planar_scenegraph_visualizer from underactuated (`#12218`_, `#12349`_)
-* Fix: Sphinx shows ``__init__`` documentation in Python 3 (`#12452`_)
+New features
+
+* Add pydrake.systems.planar_scenegraph_visualizer (`#12218`_, `#12349`_)
+* Use lcm encoding (not protobuf) for call_python RPCs (`#12442`_)
+
+Fixes
+
+* Fix pydrake.geometry submodules are part of .all (`#12383`_)
+* Fix pydrake.manipulation.simple_ui window resizing (`#12486`_)
+* Fix System name preservation during scalar conversion (`#12429`_)
+* Fix Sphinx ``__init__`` documentation in Python 3 (`#12452`_)
+
+Newly bound
+
+* pydrake.geometry.GeometryProperties (`#12389`_)
+* pydrake.geometry.IllustrationProperties (`#12389`_)
+* pydrake.geometry.MakePhongIllustrationProperties (`#12389`_)
+* pydrake.geometry.PerceptionProperties (`#12389`_)
+* pydrake.geometry.ProximityProperties (`#12389`_)
+* pydrake.geometry.QueryObject.ComputeSignedDistancePairClosestPoints (`#12408`_)
+* pydrake.geometry.SceneGraph.AssignRole (`#12389`_)
+* pydrake.geometry.SceneGraph.RendererCount (`#12389`_)
+* pydrake.geometry.SceneGraphInspector.GetIllustrationProperties (`#12388`_)
+* pydrake.geometry.SceneGraphInspector.GetPerceptionProperties (`#12388`_)
+* pydrake.geometry.SceneGraphInspector.GetProximityProperties (`#12388`_)
+* pydrake.geometry.render.RenderLabel cast to to int (`#12390`_)
+* pydrake.multibody.inverse_kinematics.DistanceConstraint (`#12346`_)
+* pydrake.multibody.tree.RevoluteSpring (`#12481`_)
+* pydrake.multibody.tree.default_model_instance (`#12389`_)
+* pydrake.multibody.tree.world_model_instance (`#12389`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddConstraint (`#12371`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddQuadraticCost (`#12375`_)
+* pydrake.systems.analysis.Simulator.reset_context (`#12368`_)
+* pydrake.systems.framework.System.SetDefaultContext (`#12368`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
