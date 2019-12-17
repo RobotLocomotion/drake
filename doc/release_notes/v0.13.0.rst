@@ -10,8 +10,6 @@ Announcements
   * Rendering that uses MultibodyPlant (`#12388`_)
   * Optimization using MultibodyPlant, focused on custom evaluators (`#12433`_, `#12443`_)
 
-* Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_)
-
 Breaking Changes
 ----------------
 
@@ -165,6 +163,9 @@ Build system and dependencies
 * Upgrade ghc_filesystem to latest release 1.2.10 (`#12426`_)
 * Upgrade fmt to latest release 6.1.2 (`#12426`_, `#12487`_)
 * Upgrade supported Bazel version to 1.2 (`#12396`_)
+
+  * Users who compile Drake from source as a bazel external (as in the `drake_bazel_external`_ pattern) should no longer set ``build --incompatible_remove_legacy_whole_archive=false`` in their project’s ``.bazelrc`` (`#12262`_)
+  
 * Upgrade supported macOS CMake version to 3.16  (`#12396`_)
 * Upgrade supported macOS Xcode version to 11.2 (`#12331`_)
 * Un-pin sphinx for macOS (`#12467`_)
