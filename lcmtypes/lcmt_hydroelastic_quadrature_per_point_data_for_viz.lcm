@@ -5,10 +5,11 @@ struct lcmt_hydroelastic_quadrature_per_point_data_for_viz {
   // the traction and slip velocities are evaluated.
   double p_WQ[3];
 
-  // The velocity of Body A at Point Q relative to Body B at point Q,
-  // expressed in the world frame, and projected to the plane tangent to the
-  // contact surface. Note that Point Q is coincident to frames Aq
-  // and Bq attached to Bodies A and B, respectively.
+  // Denoting Point Aq as the point of Body A coincident with Q and Point Bq as
+  // the point of Body B coincident with Q, calculates vr (the velocity
+  // of Bq relative to Aq) and then calculates the component perpendicular to
+  // the unit surface normal n̂ as vt = vr - (vrᵀ⋅n̂)n̂.
+  // The resulting vector vt is expressed in the world frame W.
   double vt_BqAq_W[3];
 
   // The traction vector, expressed in the world frame and with units of Pa,
