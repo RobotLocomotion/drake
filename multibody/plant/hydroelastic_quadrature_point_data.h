@@ -23,7 +23,7 @@ struct HydroelasticQuadraturePointData {
   /// Denoting Point Aq as the point of Body A coincident with Q and Point Bq as
   /// the point of Body B coincident with Q, calculates vr (the velocity
   /// of Bq relative to Aq) and then calculates the component perpendicular to
-  /// the unit surface normal n̂ as vt = vr - (vrᵀ⋅n̂)n̂.
+  /// the unit surface normal n̂ as vt = vr - (vr⋅n̂)n̂.
   /// The resulting vector vt is expressed in the world frame W.
   Vector3<T> vt_BqAq_W;
 
