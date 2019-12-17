@@ -864,6 +864,24 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   member_scene_graph().ExcludeCollisionsBetween(visual, collision);
 }
 
+template <typename T>
+void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+    const std::pair<std::string, geometry::GeometrySet>&
+        collision_filter_group_a,
+    const std::pair<std::string, geometry::GeometrySet>&
+        collision_filter_group_b) {
+  DRAKE_DEMAND(!is_finalized());
+  DRAKE_DEMAND(geometry_source_is_registered());
+
+  if (collision_filter_group_a.first == collision_filter_group_b.first) {
+    member_scene_graph().ExcludeCollisionsWithin(
+        collision_filter_group_a.second);
+  } else {
+    member_scene_graph().ExcludeCollisionsBetween(
+        collision_filter_group_a.second, collision_filter_group_b.second);
+  }
+}
+
 template<typename T>
 void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const systems::Context<T>& context,
