@@ -1,13 +1,16 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
 #include <limits>
+#include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <utility>
 
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
@@ -143,6 +146,56 @@ void ParseBody(const multibody::PackageMap& package_map,
           geometry_instance.name(),
           std::move(*geometry_instance.mutable_proximity_properties()));
     }
+  }
+}
+
+void ParseCollisionFilterGroup(
+    const MultibodyPlant<double>& plant, XMLElement* node,
+    std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
+    std::set<SortedPair<std::string>>* sorted_collision_filter_pairs) {
+  std::string drake_ignore;
+  if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
+      drake_ignore == std::string("true")) {
+    return;
+  }
+
+  std::string group_name;
+  if (!ParseStringAttribute(node, "name", &group_name)) {
+    throw std::runtime_error("ERROR: group tag is missing name attribute.");
+  }
+
+  geometry::GeometrySet collision_filter_geometry_set;
+  for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
+       member_node = member_node->NextSiblingElement("member")) {
+    const char* body_name = member_node->Attribute("link");
+    if (!body_name) {
+      throw std::runtime_error(std::string(__FILE__) + ": " + __func__ +
+                               ": Collision "
+                               "filter group " +
+                               group_name +
+                               " provides a member tag without "
+                               "specifying the \"link\" attribute.");
+    }
+    const auto& body = plant.GetBodyByName(body_name);
+    collision_filter_geometry_set.Add(
+        plant.GetCollisionGeometriesForBody(body));
+  }
+  collision_filter_groups->insert({group_name, collision_filter_geometry_set});
+
+  for (XMLElement* ignore_node =
+           node->FirstChildElement("ignored_collision_filter_group");
+       ignore_node; ignore_node = ignore_node->NextSiblingElement(
+                        "ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("collision_filter_group");
+    if (!target_name) {
+      throw std::runtime_error(
+          std::string(__FILE__) + ": " + __func__ +
+          ": Collision filter group "
+          "provides a tag specifying a group to ignore without specifying "
+          "the \"collision_filter_group\" attribute.");
+    }
+    sorted_collision_filter_pairs->insert(
+        SortedPair<std::string>(group_name, target_name));
   }
 }
 
@@ -464,9 +517,21 @@ ModelInstanceIndex ParseUrdf(
               &materials, plant);
   }
 
-  // TODO(sam.creasey) Parse collision filter groups.
-  if (node->FirstChildElement("collision_filter_group")) {
-    drake::log()->warn("Skipping collision_filter_group elements");
+  // Parses the collision filter groups only if the scene graph is registered.
+  if (plant->geometry_source_is_registered()) {
+    std::map<std::string, geometry::GeometrySet> collision_filter_groups;
+    std::set<SortedPair<std::string>> sorted_collision_filter_pairs;
+    for (XMLElement* group_node =
+             node->FirstChildElement("collision_filter_group");
+         group_node; group_node = group_node->NextSiblingElement(
+                         "collision_filter_group")) {
+      ParseCollisionFilterGroup(*plant, group_node, &collision_filter_groups,
+                                &sorted_collision_filter_pairs);
+    }
+    for (const auto collision_filter_pair : sorted_collision_filter_pairs) {
+      plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+          collision_filter_pair, collision_filter_groups);
+    }
   }
 
   // Parses the model's joint elements.

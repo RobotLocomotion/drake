@@ -983,6 +983,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
       const Body<T>& body) const;
 
+  void ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+      const SortedPair<std::string>& collision_filter_pair,
+      const std::map<std::string, geometry::GeometrySet>&
+          collision_filter_groups);
+
   /// For each of the provided `bodies`, collects up all geometries that have
   /// been registered to that body. Intended to be used in conjunction with
   /// SceneGraph::ExcludeCollisionsWithin() and
