@@ -61,14 +61,7 @@ New features
 * Provide access to owning MultibodyPlant from any MultibodyElement (`#12380`_)
 * Add a query for signed distance between a single pair of geometries (`#12379`_)
 * Added Ellipsoid parsing from SDF (`#12324`_)
-* Extend shape support in hydroleastic contact model
-
-  * Rigid Meshes supported (`#12455`_)
-  * Fully support soft and rigid for Sphere, Box, Cylinder, and Ellipsoid (`#12358`_, `#12348`_, `#12333`_, `#12323`_)
-
 * Extend Capsule Shape support for proximity queries (`#12343`_, `#12332`_)
-* Ability to export surface and volume mesh fields for VTK (Paraview) visualization (`#12311`_)
-* Initial implementation of Bounding Volume Hierarchy (BVH) to accelerate mesh-mesh hydroelastic contact -- not complete yet (`#12347`_)
 
 Fixes
 
@@ -80,6 +73,12 @@ Fixes
 * Improve documentation of adding new Shape sub-classes (`#12372`_)
 * Improve documentation of QueryObject::ComputeContactSurfaces to reflect the current state of hydroelastic contact support (`#12413`_)
 * Remove expensive and unused "referring triangles" from SurfaceMesh (`#12438`_)
+
+New hydroelastic contact model in progress (`#12455`_, `#12358`_, `#12348`_, `#12333`_, `#12323`_, `#12378`_, `#12417`_, `#12311`_, `#12347`_)
+
+* Still only experimental.
+* Increased the number and types of shapes supported in the prototype.
+* Added more visualization infrastructure.
 
 Clean up
 
@@ -93,7 +92,6 @@ Visualizer changes:
 
 * Fix: Update image_show.py for Python 3 (`#12422`_)
 * Fix: Avoid negative real time factors (`#12444`_)
-* Feature: Hydroelastic spatial force visualization adds spatial forces (`#12378`_, `#12417`_)
 
 pydrake bindings
 ----------------
