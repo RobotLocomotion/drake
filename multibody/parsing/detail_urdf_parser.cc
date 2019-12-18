@@ -149,7 +149,7 @@ void ParseBody(const multibody::PackageMap& package_map,
   }
 }
 
-void ParseCollisionFilterGroup(
+void RegisterCollisionFilterGroup(
     const MultibodyPlant<double>& plant, XMLElement* node,
     std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
     std::set<SortedPair<std::string>>* sorted_collision_filter_pairs) {
@@ -183,10 +183,11 @@ void ParseCollisionFilterGroup(
   collision_filter_groups->insert({group_name, collision_filter_geometry_set});
 
   for (XMLElement* ignore_node =
-           node->FirstChildElement("ignored_collision_filter_group");
+           node->FirstChildElement("drake:ignored_collision_filter_group");
        ignore_node; ignore_node = ignore_node->NextSiblingElement(
-                        "ignored_collision_filter_group")) {
-    const char* target_name = ignore_node->Attribute("collision_filter_group");
+                        "drake:ignored_collision_filter_group")) {
+    const char* target_name =
+        ignore_node->Attribute("drake:collision_filter_group");
     if (!target_name) {
       throw std::runtime_error(
           std::string(__FILE__) + ": " + __func__ +
@@ -196,6 +197,31 @@ void ParseCollisionFilterGroup(
     }
     sorted_collision_filter_pairs->insert(
         SortedPair<std::string>(group_name, target_name));
+  }
+}
+
+void ParseCollisionFilterGroup(XMLElement* node,
+                               MultibodyPlant<double>* plant) {
+  std::map<std::string, geometry::GeometrySet> collision_filter_groups;
+  std::set<SortedPair<std::string>> sorted_collision_filter_pairs;
+  for (XMLElement* group_node =
+           node->FirstChildElement("drake:collision_filter_group");
+       group_node; group_node = group_node->NextSiblingElement(
+                       "drake:collision_filter_group")) {
+    RegisterCollisionFilterGroup(*plant, group_node, &collision_filter_groups,
+                                 &sorted_collision_filter_pairs);
+  }
+  for (const auto collision_filter_pair : sorted_collision_filter_pairs) {
+    const auto collision_filter_group_a =
+        collision_filter_groups.find(collision_filter_pair.first());
+    DRAKE_DEMAND(collision_filter_group_a != collision_filter_groups.end());
+    const auto collision_filter_group_b =
+        collision_filter_groups.find(collision_filter_pair.second());
+    DRAKE_DEMAND(collision_filter_group_b != collision_filter_groups.end());
+
+    plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+        {collision_filter_group_a->first, collision_filter_group_a->second},
+        {collision_filter_group_b->first, collision_filter_group_b->second});
   }
 }
 
@@ -519,27 +545,7 @@ ModelInstanceIndex ParseUrdf(
 
   // Parses the collision filter groups only if the scene graph is registered.
   if (plant->geometry_source_is_registered()) {
-    std::map<std::string, geometry::GeometrySet> collision_filter_groups;
-    std::set<SortedPair<std::string>> sorted_collision_filter_pairs;
-    for (XMLElement* group_node =
-             node->FirstChildElement("collision_filter_group");
-         group_node; group_node = group_node->NextSiblingElement(
-                         "collision_filter_group")) {
-      ParseCollisionFilterGroup(*plant, group_node, &collision_filter_groups,
-                                &sorted_collision_filter_pairs);
-    }
-    for (const auto collision_filter_pair : sorted_collision_filter_pairs) {
-      const auto collision_filter_group_a =
-          collision_filter_groups.find(collision_filter_pair.first());
-      DRAKE_DEMAND(collision_filter_group_a != collision_filter_groups.end());
-      const auto collision_filter_group_b =
-          collision_filter_groups.find(collision_filter_pair.second());
-      DRAKE_DEMAND(collision_filter_group_b != collision_filter_groups.end());
-
-      plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-          {collision_filter_group_a->first, collision_filter_group_a->second},
-          {collision_filter_group_b->first, collision_filter_group_b->second});
-    }
+    ParseCollisionFilterGroup(node, plant);
   }
 
   // Parses the model's joint elements.
