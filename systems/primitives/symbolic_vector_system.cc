@@ -160,8 +160,9 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
 
 template <typename T>
 template <typename Container>
-void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
-                                                  Container* penv) const {
+void SymbolicVectorSystem<T>::PopulateFromContext(
+    const Context<T>& context, const VectorX<Expression>& expr,
+    Container* penv) const {
   Container& env = *penv;
   if (time_var_) {
     env[*time_var_] = context.get_time();
@@ -175,9 +176,23 @@ void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
     }
   }
   if (input_vars_.size() > 0) {
-    const auto& input = get_input_port().Eval(context);
+    Variables needed_variables;
+    for (int j = 0; j < expr.size(); ++j) {
+      needed_variables.insert(expr(j).GetVariables());
+    }
+    bool need_input{false};
+
     for (int i = 0; i < input_vars_.size(); i++) {
-      env[input_vars_[i]] = input[i];
+      if (needed_variables.include(input_vars_[i])) {
+        need_input = true;
+        break;
+      }
+    }
+    if (need_input) {
+      const auto& input = get_input_port().Eval(context);
+      for (int i = 0; i < input_vars_.size(); i++) {
+        env[input_vars_[i]] = input[i];
+      }
     }
   }
   if (parameter_vars_.size() > 0) {
@@ -198,7 +213,7 @@ void SymbolicVectorSystem<double>::EvaluateWithContext(
     VectorBase<double>* out) const {
   unused(jacobian);
   Environment env = env_;
-  PopulateFromContext(context, &env);
+  PopulateFromContext(context, expr, &env);
   for (int i = 0; i < out->size(); i++) {
     out->SetAtIndex(i, expr[i].Evaluate(env));
   }
@@ -282,8 +297,8 @@ void SymbolicVectorSystem<Expression>::EvaluateWithContext(
     const MatrixX<symbolic::Expression>& jacobian,
     VectorBase<Expression>* out) const {
   unused(jacobian);
-  symbolic::Substitution s;
-  PopulateFromContext(context, &s);
+  Substitution s;
+  PopulateFromContext(context, expr, &s);
   for (int i = 0; i < out->size(); i++) {
     out->SetAtIndex(i, expr[i].Substitute(s));
   }

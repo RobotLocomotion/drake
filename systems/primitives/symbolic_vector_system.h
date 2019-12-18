@@ -181,7 +181,9 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 
  private:
   template <typename Container>
-  void PopulateFromContext(const Context<T>& context, Container* penv) const;
+  void PopulateFromContext(const Context<T>& context,
+                           const VectorX<symbolic::Expression>& expr,
+                           Container* penv) const;
 
   // Evaluate context to a vector.
   void EvaluateWithContext(const Context<T>& context,
