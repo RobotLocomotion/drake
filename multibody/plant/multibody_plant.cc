@@ -274,6 +274,39 @@ MultibodyPlant<T>::MultibodyPlant(
 }
 
 template <typename T>
+std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
+  std::string graphviz = "digraph MultibodyPlant {\n";
+  graphviz += "label=\"" + this->get_name() + "\";\n";
+  graphviz += "rankdir=BT;\n";
+  graphviz += "labelloc=t;\n";
+  // Create a subgraph for each model instance, with the bodies as nodes.
+  // Note that the subgraph name must have the "cluster" prefix in order to
+  // have the box drawn.
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    graphviz += fmt::format("subgraph cluster{} {{\n", model_instance_index);
+    graphviz += fmt::format(" label=\"{}\";\n",
+                            GetModelInstanceName(model_instance_index));
+    for (const BodyIndex& body_index : GetBodyIndices(model_instance_index)) {
+      const Body<T>& body = get_body(body_index);
+      graphviz +=
+          fmt::format(" body{} [label=\"{}\"];\n", body.index(), body.name());
+    }
+    graphviz += "}\n";
+  }
+  // Add the graph edges (via the joints).
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    graphviz += fmt::format(
+        "body{} -> body{} [label=\"{} [{}]\"];\n", joint.child_body().index(),
+        joint.parent_body().index(), joint.name(), joint.type_name());
+  }
+  // TODO(russt): Consider adding actuators, frames, forces, etc.
+  graphviz += "}\n";
+  return graphviz;
+}
+
+template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;

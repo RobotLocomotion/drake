@@ -3047,6 +3047,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetModelInstanceByName(name);
   }
 
+  /// Returns a Graphviz string describing the topology of this plant.
+  /// To render the string, use the Graphviz tool, ``dot``.
+  /// http://www.graphviz.org/
+  ///
+  /// Note: this method can be called either before or after `Finalize()`.
+  std::string GetTopologyGraphvizString() const;
+
   /// Returns the size of the generalized position vector q for this model.
   int num_positions() const { return internal_tree().num_positions(); }
 

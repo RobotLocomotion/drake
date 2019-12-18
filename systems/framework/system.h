@@ -1403,8 +1403,7 @@ class System : public SystemBase {
   //@{
 
   /// Returns a Graphviz string describing this System.  To render the string,
-  /// use the Graphviz tool, ``dot``.
-  /// http://www.graphviz.org/Documentation/dotguide.pdf
+  /// use the Graphviz tool, ``dot``. http://www.graphviz.org/
   ///
   /// @param max_depth Sets a limit to the depth of nested diagrams to
   // visualize.  Set to zero to render a diagram as a single system block.
