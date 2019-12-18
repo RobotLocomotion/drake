@@ -63,13 +63,13 @@ Defines a URDF model with collision filter groups.
     <limit effort="100" lower="-1" upper="2" velocity="100"/>
   </joint>
 
-  <collision_filter_group name="group_link1">
-    <member link="link1" />
-    <ignored_collision_filter_group collision_filter_group="group_link3" />
-  </collision_filter_group>
+  <drake:collision_filter_group name="group_link1">
+    <drake:member link="link1" />
+    <drake:ignored_collision_filter_group collision_filter_group="group_link3" />
+  </drake:collision_filter_group>
 
-  <collision_filter_group name="group_link3">
-    <member link="link3" />
-    <ignored_collision_filter_group collision_filter_group="group_link1" />
-  </collision_filter_group>
+  <drake:collision_filter_group name="group_link3">
+    <drake:member link="link3" />
+    <drake:ignored_collision_filter_group collision_filter_group="group_link1" />
+  </drake:collision_filter_group>
 </robot>
