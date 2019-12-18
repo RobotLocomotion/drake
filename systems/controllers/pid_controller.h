@@ -16,25 +16,27 @@ namespace controllers {
 
 // N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
- * Implements the PID controller. Given estimated state `x_in = (q_in, v_in)`,
- * the controlled state `x_c = (q_c, v_c)` is computed by `x_c = P_x * x_in`,
- * where `P_x` is a state projection matrix. The desired state
- * `x_d = (q_d, v_d)`, is in the same space as `x_c`. The output of this
- * controller is:
+ * Implements a PID controller for a second-order system with positions `q`
+ * and velocities `v` concatenated into a single state vector `x = (q,v)`.
+ * Given  estimated state `x_in = (q_in, v_in)`, the controlled state `x_c =
+ * (q_c, v_c)` is computed by `x_c = P_x * x_in`, where `P_x` is a state
+ * projection matrix. The desired state `x_d = (q_d, v_d)`, is in the same
+ * space as `x_c`. The output of this controller is:
  * <pre>
  * y = P_y * (kp * (q_d - q_c) + kd * (v_d - v_c) + ki * integral(q_d - q_c)),
  * </pre>
  * where `P_y` is the output projection matrix.
  *
  * @system{PidController,
- *    @input_port{estimated_state, desired_state},
+ *    @input_port{estimated_state}
+ *    @input_port{desired_state},
  *    @output_port{control}
  * }
  *
  * This system has one continuous state, which is the integral of position
  * error, two input ports: estimated state `x_in` and desired state `x_d`, and
  * one output port `y`. Note that this class assumes `|q_c| = |v_c|` and
- * `|q_d| = |v_d|`. However, `|q_c|` does not have to equal to `|q_d|`. One
+ * `|q_d| = |v_d|`. However, `|q_in|` does not have to equal to `|q_d|`. One
  * typical use case for non-identity `P_x` and `P_y` is to select a subset of
  * state for feedback.
  *
