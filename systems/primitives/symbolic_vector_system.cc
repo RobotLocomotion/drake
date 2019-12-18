@@ -156,11 +156,30 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
   for (const auto& v : all_vars) {
     env_.insert(v, 0.0);
   }
+  dynamics_needs_inputs_ = DependsOnInputs(dynamics_);
+  output_needs_inputs_ = DependsOnInputs(output_);
+}
+
+template <typename T>
+bool SymbolicVectorSystem<T>::DependsOnInputs(
+    const VectorX<Expression>& expr) const {
+  Variables needed_variables;
+  for (int j = 0; j < expr.size(); ++j) {
+    needed_variables.insert(expr(j).GetVariables());
+  }
+
+  for (int i = 0; i < input_vars_.size(); i++) {
+    if (needed_variables.include(input_vars_[i])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename T>
 template <typename Container>
 void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
+                                                  bool needs_inputs,
                                                   Container* penv) const {
   Container& env = *penv;
   if (time_var_) {
@@ -174,7 +193,11 @@ void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
       env[state_vars_[i]] = state[i];
     }
   }
-  if (input_vars_.size() > 0) {
+  // Note: Invocations only require pre-analysis on the *input* dependency (as
+  // opposed to state, time, etc) because all other values come directly from
+  // the Context (and not from input ports whose *unnecessary* evaluation can
+  // lead to spurious algebraic loops).
+  if (input_vars_.size() > 0 && needs_inputs) {
     const auto& input = get_input_port().Eval(context);
     for (int i = 0; i < input_vars_.size(); i++) {
       env[input_vars_[i]] = input[i];
@@ -195,10 +218,10 @@ template <>
 void SymbolicVectorSystem<double>::EvaluateWithContext(
     const Context<double>& context, const VectorX<Expression>& expr,
     const MatrixX<symbolic::Expression>& jacobian,
-    VectorBase<double>* out) const {
+    bool needs_inputs, VectorBase<double>* out) const {
   unused(jacobian);
   Environment env = env_;
-  PopulateFromContext(context, &env);
+  PopulateFromContext(context, needs_inputs, &env);
   for (int i = 0; i < out->size(); i++) {
     out->SetAtIndex(i, expr[i].Evaluate(env));
   }
@@ -208,7 +231,7 @@ template <>
 void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
     const Context<AutoDiffXd>& context, const VectorX<Expression>& expr,
     const MatrixX<symbolic::Expression>& jacobian,
-    VectorBase<AutoDiffXd>* pout) const {
+    bool needs_inputs, VectorBase<AutoDiffXd>* pout) const {
   VectorBase<AutoDiffXd>& out = *pout;
 
   const BasicVector<AutoDiffXd> empty(0);
@@ -218,9 +241,16 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
           ? ((time_period_ > 0.0) ? context.get_discrete_state_vector()
                                   : context.get_continuous_state_vector())
           : empty;
+  // It is very important we don't evaluate the inputs if the expression doesn't
+  // actually depend on it (as delcared by the needs_inputs parameter). This
+  // avoids introducing spurious algebraic loops.
+  const BasicVector<AutoDiffXd> input_zeros(
+      VectorX<AutoDiffXd>::Zero(input_vars_.size()));
   const BasicVector<AutoDiffXd>& input =
-      (input_vars_.size() > 0)
-          ? get_input_port().Eval<BasicVector<AutoDiffXd>>(context)
+      input_vars_.size() > 0
+          ? (needs_inputs
+                 ? get_input_port().Eval<BasicVector<AutoDiffXd>>(context)
+                 : input_zeros)
           : empty;
 
   const BasicVector<AutoDiffXd>& parameter =
@@ -280,10 +310,10 @@ template <>
 void SymbolicVectorSystem<Expression>::EvaluateWithContext(
     const Context<Expression>& context, const VectorX<Expression>& expr,
     const MatrixX<symbolic::Expression>& jacobian,
-    VectorBase<Expression>* out) const {
+    bool needs_inputs, VectorBase<Expression>* out) const {
   unused(jacobian);
-  symbolic::Substitution s;
-  PopulateFromContext(context, &s);
+  Substitution s;
+  PopulateFromContext(context, needs_inputs, &s);
   for (int i = 0; i < out->size(); i++) {
     out->SetAtIndex(i, expr[i].Substitute(s));
   }
@@ -293,7 +323,8 @@ template <typename T>
 void SymbolicVectorSystem<T>::CalcOutput(const Context<T>& context,
                                          BasicVector<T>* output_vector) const {
   DRAKE_DEMAND(output_.size() > 0);
-  EvaluateWithContext(context, output_, output_jacobian_, output_vector);
+  EvaluateWithContext(context, output_, output_jacobian_, output_needs_inputs_,
+                      output_vector);
 }
 
 template <typename T>
@@ -302,6 +333,7 @@ void SymbolicVectorSystem<T>::DoCalcTimeDerivatives(
   DRAKE_DEMAND(time_period_ == 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
   EvaluateWithContext(context, dynamics_, dynamics_jacobian_,
+                      dynamics_needs_inputs_,
                       &derivatives->get_mutable_vector());
 }
 
@@ -314,7 +346,7 @@ void SymbolicVectorSystem<T>::DoCalcDiscreteVariableUpdates(
   DRAKE_DEMAND(time_period_ > 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
   EvaluateWithContext(context, dynamics_, dynamics_jacobian_,
-                      &updates->get_mutable_vector());
+                      dynamics_needs_inputs_, &updates->get_mutable_vector());
 }
 
 }  // namespace systems
