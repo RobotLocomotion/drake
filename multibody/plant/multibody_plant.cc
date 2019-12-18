@@ -830,26 +830,19 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
 
 template <typename T>
 void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-    const SortedPair<std::string>& collision_filter_pair,
-    const std::map<std::string, geometry::GeometrySet>&
-        collision_filter_groups) {
+    const std::pair<std::string, geometry::GeometrySet>&
+        collision_filter_group_a,
+    const std::pair<std::string, geometry::GeometrySet>&
+        collision_filter_group_b) {
   DRAKE_DEMAND(geometry_source_is_registered());
-  const auto group_a_name = collision_filter_pair.first();
-  const auto group_b_name = collision_filter_pair.second();
 
-  const auto collision_filter_group_a =
-      collision_filter_groups.find(group_a_name);
-  DRAKE_DEMAND(collision_filter_group_a != collision_filter_groups.end());
-
-  if (group_a_name.compare(group_b_name) == 0) {
+  if (collision_filter_group_a.first.compare(collision_filter_group_b.first) ==
+      0) {
     member_scene_graph().ExcludeCollisionsWithin(
-        collision_filter_group_a->second);
+        collision_filter_group_a.second);
   } else {
-    const auto collision_filter_group_b =
-        collision_filter_groups.find(group_b_name);
-    DRAKE_DEMAND(collision_filter_group_b != collision_filter_groups.end());
     member_scene_graph().ExcludeCollisionsBetween(
-        collision_filter_group_a->second, collision_filter_group_b->second);
+        collision_filter_group_a.second, collision_filter_group_b.second);
   }
 }
 

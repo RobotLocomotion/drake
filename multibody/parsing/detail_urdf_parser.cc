@@ -529,8 +529,16 @@ ModelInstanceIndex ParseUrdf(
                                 &sorted_collision_filter_pairs);
     }
     for (const auto collision_filter_pair : sorted_collision_filter_pairs) {
+      const auto collision_filter_group_a =
+          collision_filter_groups.find(collision_filter_pair.first());
+      DRAKE_DEMAND(collision_filter_group_a != collision_filter_groups.end());
+      const auto collision_filter_group_b =
+          collision_filter_groups.find(collision_filter_pair.second());
+      DRAKE_DEMAND(collision_filter_group_b != collision_filter_groups.end());
+
       plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-          collision_filter_pair, collision_filter_groups);
+          {collision_filter_group_a->first, collision_filter_group_a->second},
+          {collision_filter_group_b->first, collision_filter_group_b->second});
     }
   }
 

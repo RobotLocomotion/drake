@@ -983,10 +983,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
       const Body<T>& body) const;
 
+  /// Exclude the collision geometries between two given collision filter
+  /// groups. This function requires RegisterAsSourceForSceneGraph() was called
+  /// on `this` plant.
   void ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-      const SortedPair<std::string>& collision_filter_pair,
-      const std::map<std::string, geometry::GeometrySet>&
-          collision_filter_groups);
+      const std::pair<std::string, geometry::GeometrySet>&
+          collision_filter_group_a,
+      const std::pair<std::string, geometry::GeometrySet>&
+          collision_filter_group_b);
 
   /// For each of the provided `bodies`, collects up all geometries that have
   /// been registered to that body. Intended to be used in conjunction with
