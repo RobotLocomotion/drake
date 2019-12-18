@@ -640,7 +640,10 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
           throw std::logic_error(
               "Currently MultibodyPlant does not handle joint limits for "
               "continuous models. However a limit was specified for joint `"
-              "`" + get_joint(index).name() + "`.");
+              "`" + get_joint(index).name() + "`.  Consider setting a "
+              "non-zero time step in the MultibodyPlant constructor; this "
+              "will put MultibodyPlant in discrete-time mode, which "
+              "does support joint limits.");
         }
       }
     }
