@@ -180,14 +180,18 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   /// @}
 
  private:
+  // Reports if the given expression contains an input variable.
+  bool DependsOnInputs(const VectorX<symbolic::Expression>& expr) const;
+
   template <typename Container>
-  void PopulateFromContext(const Context<T>& context, Container* penv) const;
+  void PopulateFromContext(const Context<T>& context, bool needs_inputs,
+                           Container* penv) const;
 
   // Evaluate context to a vector.
   void EvaluateWithContext(const Context<T>& context,
                            const VectorX<symbolic::Expression>& expr,
                            const MatrixX<symbolic::Expression>& jacobian,
-                           VectorBase<T>* out) const;
+                           bool needs_inputs, VectorBase<T>* out) const;
 
   void CalcOutput(const Context<T>& context,
                   BasicVector<T>* output_vector) const;
@@ -206,6 +210,8 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   const VectorX<symbolic::Variable> parameter_vars_{};
   const VectorX<symbolic::Expression> dynamics_{};
   const VectorX<symbolic::Expression> output_{};
+  const bool dynamics_needs_inputs_;
+  const bool output_needs_inputs_;
 
   symbolic::Environment env_{};
   const double time_period_{0.0};
@@ -425,21 +431,21 @@ class SymbolicVectorSystemBuilder {
 template <>
 void SymbolicVectorSystem<double>::EvaluateWithContext(
     const Context<double>& context, const VectorX<symbolic::Expression>& expr,
-    const MatrixX<symbolic::Expression>& jacobian,
+    const MatrixX<symbolic::Expression>& jacobian, bool needs_inputs,
     VectorBase<double>* out) const;
 
 template <>
 void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
     const Context<AutoDiffXd>& context,
     const VectorX<symbolic::Expression>& expr,
-    const MatrixX<symbolic::Expression>& jacobian,
+    const MatrixX<symbolic::Expression>& jacobian, bool needs_inputs,
     VectorBase<AutoDiffXd>* out) const;
 
 template <>
 void SymbolicVectorSystem<symbolic::Expression>::EvaluateWithContext(
     const Context<symbolic::Expression>& context,
     const VectorX<symbolic::Expression>& expr,
-    const MatrixX<symbolic::Expression>& jacobian,
+    const MatrixX<symbolic::Expression>& jacobian, bool needs_inputs,
     VectorBase<symbolic::Expression>* out) const;
 #endif
 
