@@ -197,7 +197,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
-  plant.Finalize();
 
   const geometry::SceneGraphInspector<double>& inspector =
       scene_graph.model_inspector();
