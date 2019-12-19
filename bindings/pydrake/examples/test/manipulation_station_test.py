@@ -87,6 +87,7 @@ class TestManipulationStation(unittest.TestCase):
 
         # Finalize
         station.Finalize()
+        self.assertEqual(station.num_iiwa_joints(), 7)
 
         # This WSG gripper model has 2 independent dof, and the IIWA model
         # has 7.
@@ -105,6 +106,7 @@ class TestManipulationStation(unittest.TestCase):
             station.AddManipulandFromFile(model_file, X_WObject)
 
         station.Finalize()
+        self.assertEqual(station.num_iiwa_joints(), 7)
 
         context = station.CreateDefaultContext()
         q = np.linspace(0.04, 0.6, num=7)
@@ -124,6 +126,27 @@ class TestManipulationStation(unittest.TestCase):
         self.assertEqual(len(station.get_camera_names()), 1)
         self.assertEqual(station.get_multibody_plant().num_model_instances(),
                          num_station_bodies + len(ycb_objects))
+
+    def test_planar_iiwa_setup(self):
+        station = ManipulationStation(time_step=0.001)
+        station.SetupPlanarIiwaStation()
+        station.Finalize()
+        self.assertEqual(station.num_iiwa_joints(), 3)
+
+        context = station.CreateDefaultContext()
+        q = np.linspace(0.04, 0.6, num=3)
+        v = np.linspace(-2.3, 0.5, num=3)
+        station.SetIiwaPosition(context, q)
+        np.testing.assert_array_equal(q, station.GetIiwaPosition(context))
+        station.SetIiwaVelocity(context, v)
+        np.testing.assert_array_equal(v, station.GetIiwaVelocity(context))
+
+        q = 0.0423
+        v = 0.0851
+        station.SetWsgPosition(context, q)
+        self.assertEqual(q, station.GetWsgPosition(context))
+        station.SetWsgVelocity(context, v)
+        self.assertEqual(v, station.GetWsgVelocity(context))
 
     def test_iiwa_collision_model(self):
         # Check that all of the elements of the enum were spelled correctly.
