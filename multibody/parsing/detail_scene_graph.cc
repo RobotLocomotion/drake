@@ -91,7 +91,7 @@ T GetChildElementValueOrThrow(const sdf::Element& element,
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
-    const sdf::Geometry& sdf_geometry) {
+    const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
   switch (sdf_geometry.Type()) {
@@ -150,7 +150,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
           MaybeGetChildElement(*geometry_element, "mesh");
       DRAKE_DEMAND(mesh_element != nullptr);
       const std::string file_name =
-          GetChildElementValueOrThrow<std::string>(*mesh_element, "uri");
+          resolve_filename(
+              GetChildElementValueOrThrow<std::string>(*mesh_element, "uri"));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         const ignition::math::Vector3d& scale_vector =
@@ -180,7 +181,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual) {
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
+    const math::RigidTransformd& X_LG) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
     // The file either specifies an EMPTY geometry or one that isn't recognized
@@ -191,10 +193,6 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       return std::unique_ptr<GeometryInstance>(nullptr);
     }
   }
-
-  // Retrieve the pose of the visual frame G in the parent link L in which
-  // geometry gets defined.
-  const RigidTransformd X_LG = ToRigidTransform(sdf_visual.Pose());
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
@@ -239,7 +237,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   }
 
   auto instance = make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry), sdf_visual.Name());
+      X_LC, MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename),
+      sdf_visual.Name());
   instance->set_illustration_properties(
       MakeVisualPropertiesFromSdfVisual(sdf_visual));
   return instance;
@@ -288,11 +287,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 }
 
 RigidTransformd MakeGeometryPoseFromSdfCollision(
-    const sdf::Collision& sdf_collision) {
-  // Retrieve the pose of the collision frame G in the parent link L in which
-  // geometry gets defined.
-  const RigidTransformd X_LG = ToRigidTransform(sdf_collision.Pose());
-
+    const sdf::Collision& sdf_collision, const RigidTransformd& X_LG) {
   // GeometryInstance defines its shapes in a "canonical frame" C. The canonical
   // frame C is the frame in which the geometry is defined and it generally
   // coincides with the geometry frame G (G is specified in the SDF file).

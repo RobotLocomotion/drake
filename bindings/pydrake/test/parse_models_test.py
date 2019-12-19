@@ -43,7 +43,10 @@ class TestParseModels(unittest.TestCase):
             if model_relpath.startswith("external/sdformat/sdf"):
                 # These are schema files; do not load.
                 model_files.remove(model_file)
-        # Ensure that we have at least a certain number of models to check.
+        # We expect there to be dozens of files that should be available for
+        # parsing. Do a quick check to make sure we're in the right order of
+        # magnitude in order to prevent false test success based on changes
+        # that might lead to missing files.
         self.assertGreater(len(model_files), 40)
         # Parse each model file for testing.
         for model_file in model_files:
