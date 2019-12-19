@@ -1,4 +1,4 @@
-<sdf version='1.6'>
+<sdf version='1.7'>
   <model name='test_robot'>
     <!-- This sdf file defines a simple test robot with multiple links so that
          we can test visuals and collisions are properly added to each link.
@@ -122,14 +122,15 @@
 
     <!-- Test frames -->
     <!-- We will define this frame as `F1`. -->
-    <frame name='model_scope_link1_frame'>
+    <frame name='model_scope_link1_frame' attached_to='link1'>
       <!-- This pose represents `X_L1F1`. -->
-      <pose frame='link1'>0.1 0.2 0.3 0.4 0.5 0.6</pose>
+      <pose>0.1 0.2 0.3 0.4 0.5 0.6</pose>
     </frame>
     <!-- We will define this frame as `F2`. -->
-    <frame name='model_scope_link1_frame_child'>
+    <frame name='model_scope_link1_frame_child'
+        attached_to='model_scope_link1_frame'>
       <!-- This pose represents `X_F1F2`. -->
-      <pose frame='model_scope_link1_frame'>0.1 0 0 0 0 0</pose>
+      <pose>0.1 0 0 0 0 0</pose>
     </frame>
     <!-- We will define this frame as `F3`.
          NOTE: An unnamed frame implies this element's parent frame. At model
@@ -138,21 +139,6 @@
       <!-- This pose represents `X_MF3`. -->
       <pose>0.7 0.8 0.9 0 0 0</pose>
     </frame>
-    <!-- We will define this frame as `F4`. -->
-    <frame name='model_scope_world_frame'>
-      <!-- This pose represents `X_WF4`. -->
-      <pose frame='world'>1.1 1.2 1.3 0 0 0</pose>
-    </frame>
-
-    <!-- IMPORTANT NOTE: The model frame is NOT affixed to any particular
-         link's frame (e.g. a "base" frame). Thus, if you weld a joint between
-         one of the links (which could be considered the "base" link) and
-         another link, the model frame (and any frames attached to it) will not
-         be affixed to the other link. If you want frames to track the base
-         frame, you *MUST* explicitly affix it to the relevant base link /
-         frame.
-         TODO(eric.cousineau): Find a more discoverable location for this
-         note. -->
 
     <!-- For now at least, We care only that Drake's custom tag doesn't break
          parsing the rest of the elements in this file. -->
