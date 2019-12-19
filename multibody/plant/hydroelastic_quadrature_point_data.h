@@ -20,14 +20,15 @@ struct HydroelasticQuadraturePointData {
   /// The triangle on the ContactSurface that contains Q.
   geometry::SurfaceFaceIndex face_index;
 
-  /// The slip velocity between Bodies A and B at Point Q, expressed in the
-  /// world frame. Note that Point Q is coincident to frames Aq and Bq attached
-  /// to Bodies A and B, respectively.
+  /// Denoting Point Aq as the point of Body A coincident with Q and Point Bq as
+  /// the point of Body B coincident with Q, calculates vr (the velocity
+  /// of Bq relative to Aq) and then calculates the component perpendicular to
+  /// the unit surface normal n̂ as vt = vr - (vr⋅n̂)n̂.
+  /// The resulting vector vt is expressed in the world frame W.
   Vector3<T> vt_BqAq_W;
 
-  /// The traction vector (with units of Pa) applied to Frame Aq rigidly
-  /// attached to Body A at Point Q (i.e., Frame A is shifted to Aq), expressed
-  /// in the world frame.
+  /// The traction vector, expressed in the world frame and with units of Pa,
+  /// applied to Body A at Point Q (i.e., Frame A is shifted to Aq).
   Vector3<T> traction_Aq_W;
 };
 

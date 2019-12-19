@@ -281,8 +281,8 @@ simulator.set_publish_every_time_step(False)
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
-station_context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+station.GetInputPort("iiwa_feedforward_torque").FixValue(station_context,
+                                                         np.zeros(7))
 
 simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(

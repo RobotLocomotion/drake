@@ -1,11 +1,14 @@
 #include "drake/systems/primitives/symbolic_vector_system.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -15,9 +18,15 @@ namespace {
 using Eigen::Vector2d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+
+using symbolic::Environment;
 using symbolic::Expression;
+using symbolic::Polynomial;
 using symbolic::Variable;
+using symbolic::Variables;
 using symbolic::test::ExprEqual;
+using symbolic::test::PolyEqual;
+
 using Vector6d = Vector6<double>;
 
 class SymbolicVectorSystemTest : public ::testing::Test {
@@ -212,6 +221,100 @@ TEST_F(SymbolicVectorSystemTest, ScalarPassThrough) {
                               Vector1d{0.12}));
 }
 
+// A simple class whose sole purpose it to report when it's output gets
+// calculated. This is a one-shot system. Once the output has been calculated,
+// it will always report "calculated". Throw it out and create a new one as
+// necessary.
+// Trying to make it reusable requires coordinating the hidden mutable state in
+// the system with the context -- the cache entry associated with the output
+// would have to be marked "out of date". For this testing context, it's simpler
+// to use it, evaluate it, and then throw it out.
+template <typename T>
+class CalcRecorder final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CalcRecorder);
+
+  explicit CalcRecorder(int output_size = 1) {
+    this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+        &CalcRecorder::CalcOutput);
+  }
+
+  bool calculated() const { return calculated_; }
+
+ private:
+  void CalcOutput(const Context<T>& context,
+                  BasicVector<T>* output_vector) const {
+    calculated_ = true;
+    for (int i = 0; i < output_vector->size(); ++i) {
+      output_vector->SetAtIndex(i, T(i * 0.5));
+    }
+  }
+
+  mutable bool calculated_{false};
+};
+
+// Simply confirm the utility class does what it's supposed to do.
+GTEST_TEST(SymbolicVectorSystemTestUtil, CalcRecorder) {
+  CalcRecorder<double> recorder;
+  ASSERT_FALSE(recorder.calculated());
+  auto context = recorder.AllocateContext();
+  recorder.get_output_port(0).Eval(*context);
+  ASSERT_TRUE(recorder.calculated());
+}
+
+template <typename T>
+class InputEvaluationTest : public ::testing::Test {};
+
+// We want to confirm that the inputs are only evaluated for when required
+// for *every* scalar type -- AutoDiffXd takes a different path than the other
+// scalars.
+using InputEvalTypes = ::testing::Types<double, AutoDiffXd, Expression>;
+TYPED_TEST_SUITE(InputEvaluationTest, InputEvalTypes);
+
+// This confirms that the input is only evaluated when it is *explicitly*
+// required.
+TYPED_TEST(InputEvaluationTest, EvaluateOnlyWhenNecessary) {
+  using T = TypeParam;
+  Variable u0("u0");
+  Variable x0("x0");
+  auto input_evaluated_for_output = [u0,
+                                     x0](const Vector1<Expression>& output) {
+    DiagramBuilder<T> builder;
+    auto& recorder = *builder.template AddSystem<CalcRecorder<T>>();
+    Vector1<Expression> dynamics{x0};
+    auto& dut = *builder.template AddSystem<SymbolicVectorSystem<T>>(
+        std::nullopt, Vector1<Variable>{x0}, Vector1<Variable>{u0}, dynamics,
+        output);
+
+    builder.Connect(recorder, dut);
+
+    auto diagram = builder.Build();
+
+    auto context = diagram->AllocateContext();
+    const auto& dut_context = diagram->GetSubsystemContext(dut, *context);
+    dut.get_output_port().Eval(dut_context);
+    return recorder.calculated();
+  };
+
+  // Case: output simply doesn't reference the input.
+  {
+    Vector1<Expression> output{x0};
+    ASSERT_FALSE(input_evaluated_for_output(output));
+  }
+
+  // Case: output references input.
+  {
+    Vector1<Expression> output{x0 + u0};
+    ASSERT_TRUE(input_evaluated_for_output(output));
+  }
+
+  // Case: output references input in mathematically meaningless way.
+  {
+    Vector1<Expression> output{x0 + u0 * 0};
+    ASSERT_FALSE(input_evaluated_for_output(output));
+  }
+}
+
 TEST_F(SymbolicVectorSystemTest, VectorPassThrough) {
   // y = u.
   SymbolicVectorSystem<double> system({}, Vector0<Variable>{}, u_,
@@ -222,6 +325,7 @@ TEST_F(SymbolicVectorSystemTest, VectorPassThrough) {
   EXPECT_TRUE(context->is_stateless());
   EXPECT_EQ(system.get_input_port().size(), 2);
   EXPECT_EQ(system.get_output_port().size(), 2);
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
 
   context->FixInputPort(0, Vector2d{0.12, 0.34});
   EXPECT_TRUE(CompareMatrices(system.get_output_port()
@@ -361,6 +465,102 @@ TEST_F(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
                       .get_value();
   EXPECT_TRUE(y[0].EqualTo(xc_[0] + uc_[0] + pc_[0]));
   EXPECT_TRUE(y[1].EqualTo(tc_));
+}
+
+TEST_F(SymbolicVectorSystemTest, LinearizeDynamics) {
+  // Create a system builder for the linearized pendulum model. Note that we
+  // provide a symbolic/parametric linearization point (x_lp, u_lp).
+
+  // state
+  const Variable theta{"theta"};
+  const Variable theta_dot{"theta_dot"};
+  const Vector2<Variable> x{theta, theta_dot};
+
+  // input
+  const Variable tau{"tau"};
+  const Vector1<Variable> u{tau};
+
+  // parameter
+  const Variable m{"m"};  // mass
+  const Variable g{"g"};  // gravity
+  const Variable l{"l"};  // length
+  const Variable b{"b"};  // damping
+  const Vector4<Variable> p{m, g, l, b};
+
+  // non-linear dynamics
+  const Vector2<Expression> dynamics{
+      theta_dot, (tau - m * g * l * sin(theta) - b * theta_dot) / (m * l * l)};
+
+  // Linearization Point
+  const Variable theta_lp{"theta_lp"};
+  const Variable theta_dot_lp{"theta_dot_lp"};
+  const Variable tau_lp{"tau_lp"};
+  const Vector2<Expression> x_lp{theta_lp, theta_dot_lp};
+  const Vector1<Expression> u_lp{tau_lp};
+
+  auto system_builder = SymbolicVectorSystemBuilder()
+                            .time(t_)
+                            .state(x)
+                            .input(u)
+                            .parameter(p)
+                            .dynamics(dynamics)
+                            .output(Vector2<Expression>{theta, theta_dot})
+                            .LinearizeDynamics(x_lp, u_lp);
+
+  // \dot{theta} = theta_dot which was already linear.
+  EXPECT_PRED2(ExprEqual, system_builder.dynamics_for_variable(theta),
+               theta_dot);
+
+  // x_lp and u_lp were not declared as system parameters. But the
+  // `LinearlizeDynamics` method introduces them as parameters.
+  const Variables new_parameters{system_builder.parameter()};
+  EXPECT_EQ(new_parameters.size(),
+            p.size() + 3 /* dim of the linearization point */);
+  EXPECT_TRUE(new_parameters.include(theta_lp));
+  EXPECT_TRUE(new_parameters.include(theta_dot_lp));
+  EXPECT_TRUE(new_parameters.include(tau_lp));
+
+  // Check that the linearized dynamics for theta_dot is linear in state and
+  // input ({theta, theta_dot, tau}).
+  const Polynomial linearized_dynamics_for_theta_dot{
+      system_builder.dynamics_for_variable(theta_dot),
+      {theta, theta_dot, tau} /* indeterminates */
+  };
+  EXPECT_EQ(linearized_dynamics_for_theta_dot.TotalDegree(), 1 /* linear */);
+
+  // Pick two sample linearization points and evaluate the
+  // `linearized_dynamics_for_theta_dot` polynomial. Make sure that the
+  // evaluation results are matched with the linearization results using
+  // `TaylorExpand` (outside of SymbolicVectorSystemBuilder class).
+  {
+    const Environment env1{
+        {theta_lp, -0.1}, {theta_dot_lp, 0.2}, {tau_lp, 0.3}};
+    const Environment env2{{theta, env1[theta_lp]},
+                           {theta_dot, env1[theta_dot_lp]},
+                           {tau, env1[tau_lp]}};
+
+    const Polynomial p1{
+        linearized_dynamics_for_theta_dot.EvaluatePartial(env1)};
+    const Polynomial p2{TaylorExpand(dynamics[1], env2, 1 /* linear */),
+                        {theta, theta_dot, tau} /* indeterminates */};
+
+    EXPECT_PRED2(PolyEqual, p1, p2);
+  }
+
+  {
+    const Environment env1{
+        {theta_lp, 0.3}, {theta_dot_lp, -0.1}, {tau_lp, 0.4}};
+    const Environment env2{{theta, env1[theta_lp]},
+                           {theta_dot, env1[theta_dot_lp]},
+                           {tau, env1[tau_lp]}};
+
+    const Polynomial p1{
+        linearized_dynamics_for_theta_dot.EvaluatePartial(env1)};
+    const Polynomial p2{TaylorExpand(dynamics[1], env2, 1 /* linear */),
+                        {theta, theta_dot, tau} /* indeterminates */};
+
+    EXPECT_PRED2(PolyEqual, p1, p2);
+  }
 }
 
 TEST_F(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {

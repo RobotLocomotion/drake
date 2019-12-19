@@ -142,8 +142,8 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
-  // Contact surfaces are documented to have face normals that point *out of* M
-  // and *into* N -- which is the face normal of the contact surface (as
+  // Contact surfaces are documented to have face normals that point *out of* N
+  // and *into* M -- which is the face normal of the contact surface (as
   // documented).
   const Vector3<T> nhat_W = data.surface.mesh_W().face_normal(face_index);
 

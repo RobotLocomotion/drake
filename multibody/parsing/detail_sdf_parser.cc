@@ -486,7 +486,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
           std::unique_ptr<geometry::Shape> shape =
               MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
           const CoulombFriction<double> coulomb_friction =
-              MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
+              MakeProximityPropertiesForCollision(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,
                                            sdf_collision.Name(),
                                            coulomb_friction);
@@ -625,6 +625,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   return model_instance;
 }
+
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdfFile(

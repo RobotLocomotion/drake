@@ -956,10 +956,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
-  /// @param[in] coulomb_friction
-  ///   Coulomb's law of friction coefficients to model friction on the
-  ///   surface of `shape` for the given `body`.
-  /// @throws std::exception if called post-finalize.
+  /// @param[in] properties
+  ///   The proximity properties associated with the collision geometry. They
+  ///   *must* include the (`material`, `coulomb_friction`) property of type
+  ///   CoulombFriction<double>.
+  /// @throws std::exception if called post-finalize or if the properties are
+  /// missing the coulomb friction property (or if it is of the wrong type).
+  geometry::GeometryId RegisterCollisionGeometry(
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      geometry::ProximityProperties properties);
+
+  // TODO(SeanCurtis-TRI): Deprecate this in favor of simply passing properties.
+  /// Overload which specifies a single property: coulomb_friction.
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -1011,7 +1020,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return &internal_tree().get_body(it->second);
   }
 
-  /// If the body with `body_index` has geometry registered with it, it returns
+  /// If the body with `body_index` belongs to the called plant, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
   std::optional<geometry::FrameId> GetBodyFrameIdIfExists(
       BodyIndex body_index) const {
@@ -1022,10 +1031,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return it->second;
   }
 
-  /// If the body with `body_index` has geometry registered with it, it returns
+  /// If the body with `body_index` belongs to the called plant, it returns
   /// the geometry::FrameId associated with it. Otherwise this method throws
   /// an exception.
-  /// @throws std::exception if no geometry has been registered with the body
+  /// @throws std::exception if the called plant does not have the body
   /// indicated by `body_index`.
   geometry::FrameId GetBodyFrameIdOrThrow(BodyIndex body_index) const {
     const auto it = body_index_to_frame_id_.find(body_index);
@@ -3038,6 +3047,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetModelInstanceByName(name);
   }
 
+  /// Returns a Graphviz string describing the topology of this plant.
+  /// To render the string, use the Graphviz tool, ``dot``.
+  /// http://www.graphviz.org/
+  ///
+  /// Note: this method can be called either before or after `Finalize()`.
+  std::string GetTopologyGraphvizString() const;
+
   /// Returns the size of the generalized position vector q for this model.
   int num_positions() const { return internal_tree().num_positions(); }
 
@@ -3558,6 +3574,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape,
       const std::string& name);
+
+  // Registers a geometry frame for every body. If the body already has a
+  // geometry frame, it is unchanged. This registration is part of finalization.
+  // This requires RegisterAsSourceForSceneGraph() was called on `this` plant.
+  void RegisterGeometryFramesForAllBodies();
 
   bool body_has_registered_frame(const Body<T>& body) const {
     return body_index_to_frame_id_.find(body.index()) !=

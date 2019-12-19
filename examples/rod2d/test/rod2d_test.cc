@@ -53,12 +53,8 @@ class Rod2DDAETest : public ::testing::Test {
     dut_->SetStiffnessAndDissipation(cfm, erp);
 
     // Set a zero input force (this is the default).
-    std::unique_ptr<BasicVector<double>> ext_input =
-        std::make_unique<BasicVector<double>>(3);
-    ext_input->SetAtIndex(0, 0.0);
-    ext_input->SetAtIndex(1, 0.0);
-    ext_input->SetAtIndex(2, 0.0);
-    context_->FixInputPort(0, std::move(ext_input));
+    const Vector3<double> ext_input(0, 0, 0);
+    dut_->get_input_port(0).FixValue(context_.get(), ext_input);
   }
 
   std::unique_ptr<State<double>> CloneState() const {
@@ -401,12 +397,8 @@ TEST_F(Rod2DDAETest, ConsistentDerivativesContacting) {
   // TODO(edrumwri): Add a large upward force and ensure that the rod
   // accelerates upward.
   const double fup = 100.0;
-  std::unique_ptr<BasicVector<double>> ext_input =
-      std::make_unique<BasicVector<double>>(3);
-  ext_input->SetAtIndex(0, 0.0);
-  ext_input->SetAtIndex(1, fup);
-  ext_input->SetAtIndex(2, 0.0);
-  context_->FixInputPort(0, std::move(ext_input));
+  const Vector3<double> ext_input(0, fup, 0);
+  dut_->get_input_port(0).FixValue(context_.get(), ext_input);
   // TODO(edrumwri): Calculate and check derivatives here.
 }
 
@@ -427,14 +419,10 @@ TEST_F(Rod2DDAETest, DerivativesContactingAndSticking) {
 
   // Set a constant horizontal input force, as if applied at the bottom of
   // the rod.
-  std::unique_ptr<BasicVector<double>> ext_input =
-      std::make_unique<BasicVector<double>>(3);
   const double f_x = 1.0;
   const double f_y = -1.0;
-  ext_input->SetAtIndex(0, f_x);
-  ext_input->SetAtIndex(1, f_y);
-  ext_input->SetAtIndex(2, f_x * dut_->get_rod_half_length());
-  context_->FixInputPort(0, std::move(ext_input));
+  const Vector3<double> ext_input(f_x, f_y, f_x * dut_->get_rod_half_length());
+  dut_->get_input_port(0).FixValue(context_.get(), ext_input);
 
   // Set the coefficient of friction such that the contact forces are right
   // on the edge of the friction cone. Determine the predicted normal force
@@ -587,12 +575,8 @@ TEST_F(Rod2DDAETest, MultiPoint) {
 
   // Set a constant force pushing the rod.
   const double fX = 1.0;
-  std::unique_ptr<BasicVector<double>> ext_input =
-      std::make_unique<BasicVector<double>>(3);
-  ext_input->SetAtIndex(0, fX);
-  ext_input->SetAtIndex(1, 0.0);
-  ext_input->SetAtIndex(2, 0.0);
-  context_->FixInputPort(0, std::move(ext_input));
+  const Vector3<double> ext_input(fX, 0, 0);
+  dut_->get_input_port(0).FixValue(context_.get(), ext_input);
 
   // Verify that the linear and angular acceleration are still zero.
   // TODO(edrumwri): Calculate the derivatives and verify derivatives(3:5) are
@@ -774,12 +758,8 @@ class Rod2DDiscretizedTest : public ::testing::Test {
     dut_->set_rod_mass(2.0);
 
     // Set a zero input force (this is the default).
-    std::unique_ptr<BasicVector<double>> ext_input =
-        std::make_unique<BasicVector<double>>(3);
-    ext_input->SetAtIndex(0, 0.0);
-    ext_input->SetAtIndex(1, 0.0);
-    ext_input->SetAtIndex(2, 0.0);
-    context_->FixInputPort(0, std::move(ext_input));
+    const Vector3<double> ext_input(0, 0, 0);
+    dut_->get_input_port(0).FixValue(context_.get(), ext_input);
   }
 
   BasicVector<double>& mutable_discrete_state() {
@@ -867,11 +847,8 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
 
   // Set zero input forces for both.
   Vector3<double> fext(0, 0, 0);
-  std::unique_ptr<BasicVector<double>> ext_input =
-    std::make_unique<BasicVector<double>>(fext);
-  context_ts->FixInputPort(0, std::move(ext_input));
-  ext_input = std::make_unique<BasicVector<double>>(fext);
-  context_pdae->FixInputPort(0, std::move(ext_input));
+  ts.get_input_port(0).FixValue(context_ts.get(), fext);
+  pdae.get_input_port(0).FixValue(context_pdae.get(), fext);
 
   // Init the simulator for the discretized (time stepping) system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));
@@ -939,11 +916,8 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
   // Set constant input forces for both.
   const double x = 1.0;
   Vector3<double> fext(x, 0, x * ts.get_rod_half_length());
-  std::unique_ptr<BasicVector<double>> ext_input =
-    std::make_unique<BasicVector<double>>(fext);
-  context_ts->FixInputPort(0, std::move(ext_input));
-  ext_input = std::make_unique<BasicVector<double>>(fext);
-  context_pdae->FixInputPort(0, std::move(ext_input));
+  ts.get_input_port(0).FixValue(context_ts.get(), fext);
+  pdae.get_input_port(0).FixValue(context_pdae.get(), fext);
 
   // Init the simulator for the time stepping system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));
@@ -985,12 +959,8 @@ class Rod2DContinuousTest : public ::testing::Test {
     // Using default compliant contact parameters.
 
     // Set a zero input force (this is the default).
-    std::unique_ptr<BasicVector<double>> ext_input =
-        std::make_unique<BasicVector<double>>(3);
-    ext_input->SetAtIndex(0, 0.0);
-    ext_input->SetAtIndex(1, 0.0);
-    ext_input->SetAtIndex(2, 0.0);
-    context_->FixInputPort(0, std::move(ext_input));
+    const Vector3<double> ext_input(0, 0, 0);
+    dut_->get_input_port(0).FixValue(context_.get(), ext_input);
   }
 
   // Calculate time derivatives using the context member and writing to

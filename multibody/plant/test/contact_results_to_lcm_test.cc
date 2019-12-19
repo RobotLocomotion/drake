@@ -24,6 +24,7 @@ using geometry::MeshFieldLinear;
 using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
 using geometry::SurfaceFace;
+using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
@@ -217,6 +218,25 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
       std::move(faces), std::move(vertices));
 }
 
+// Returns two distinct quadrature points.
+std::vector<HydroelasticQuadraturePointData<double>> MakeQuadraturePointData() {
+  // Note that the setup of the face indices will indicate exactly one
+  // quadrature point per triangle given a mesh of two triangles. Verify this.
+  DRAKE_DEMAND(CreateSurfaceMesh()->num_faces() == 2);
+
+  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
+  quadrature_point_data.resize(2);
+  quadrature_point_data[0].p_WQ = Vector3<double>(1, 3, 5);
+  quadrature_point_data[0].vt_BqAq_W = Vector3<double>(7, 11, 13);
+  quadrature_point_data[0].traction_Aq_W = Vector3<double>(17, 19, 23);
+  quadrature_point_data[0].face_index = SurfaceFaceIndex(0);
+  quadrature_point_data[1].p_WQ = Vector3<double>(29, 31, 37);
+  quadrature_point_data[1].vt_BqAq_W = Vector3<double>(41, 43, 47);
+  quadrature_point_data[1].traction_Aq_W = Vector3<double>(51, 53, 57);
+  quadrature_point_data[1].face_index = SurfaceFaceIndex(1);
+  return quadrature_point_data;
+}
+
 // Creates a contact surface between the two given geometries.
 std::unique_ptr<ContactSurface<double>> CreateContactSurface(
     GeometryId halfspace_id, GeometryId block_id) {
@@ -256,7 +276,8 @@ ContactResults<double> GenerateHydroelasticContactResults(
       CreateContactSurface(world_geoms.front(), block_geoms.front());
 
   multibody::SpatialForce<double> F_Ac_W = MakeSpatialForce();
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
+  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data =
+      MakeQuadraturePointData();
   ContactResults<double> output;
   *contact_info = std::make_unique<HydroelasticContactInfo<double>>(
       contact_surface->get(), F_Ac_W, std::move(quadrature_point_data));
@@ -375,6 +396,26 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       lcm_message.hydroelastic_contacts[0];
   EXPECT_EQ(surface_msg.body1_name, "WorldBody");
   EXPECT_EQ(surface_msg.body2_name, "BodyB");
+
+  // Verify that the quadrature point data matches that expected.
+  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data =
+      MakeQuadraturePointData();
+  ASSERT_EQ(quadrature_point_data.size(), surface_msg.num_quadrature_points);
+  for (int i = 0; i < surface_msg.num_quadrature_points; ++i) {
+    const lcmt_hydroelastic_quadrature_per_point_data_for_viz& quadrature_msg =
+        surface_msg.quadrature_point_data[i];
+    const Vector3<double> p_WQ(quadrature_msg.p_WQ[0], quadrature_msg.p_WQ[1],
+                               quadrature_msg.p_WQ[2]);
+    const Vector3<double> vt_BqAq_W(quadrature_msg.vt_BqAq_W[0],
+                                    quadrature_msg.vt_BqAq_W[1],
+                                    quadrature_msg.vt_BqAq_W[2]);
+    const Vector3<double> traction_Aq_W(quadrature_msg.traction_Aq_W[0],
+                                        quadrature_msg.traction_Aq_W[1],
+                                        quadrature_msg.traction_Aq_W[2]);
+    EXPECT_EQ(p_WQ, quadrature_point_data[i].p_WQ);
+    EXPECT_EQ(vt_BqAq_W, quadrature_point_data[i].vt_BqAq_W);
+    EXPECT_EQ(traction_Aq_W, quadrature_point_data[i].traction_Aq_W);
+  }
 
   // Verify that the spatial forces match.
   const Vector3<double> force_C_W(surface_msg.force_C_W[0],

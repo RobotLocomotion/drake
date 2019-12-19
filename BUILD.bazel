@@ -34,12 +34,14 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-_INSTALL_TEST_COMMANDS = "install_test_commands"
-
+# To create a manifest of all installed files for use by drake_bazel_installed,
+# we declare an install target that contains almost everything -- but it can't
+# contain the bazel logic that is generated based on the manifest, so we'll add
+# that in below in the final :install target.
 install(
-    name = "install",
-    install_tests_script = _INSTALL_TEST_COMMANDS,
+    name = "all_install_targets_except_bazel",
     docs = ["LICENSE.TXT"],
+    visibility = ["//tools/install/bazel:__pkg__"],
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
@@ -51,6 +53,17 @@ install(
         "//tools/install/cmake:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
+    ],
+)
+
+_INSTALL_TEST_COMMANDS = "install_test_commands"
+
+install(
+    name = "install",
+    install_tests_script = _INSTALL_TEST_COMMANDS,
+    deps = [
+        ":all_install_targets_except_bazel",
+        "//tools/install/bazel:install",
     ],
 )
 

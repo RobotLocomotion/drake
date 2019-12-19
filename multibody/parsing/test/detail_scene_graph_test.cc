@@ -11,9 +11,11 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 
 namespace drake {
@@ -32,6 +34,7 @@ using geometry::GeometryInstance;
 using geometry::HalfSpace;
 using geometry::IllustrationProperties;
 using geometry::Mesh;
+using geometry::ProximityProperties;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
@@ -849,6 +852,163 @@ GTEST_TEST(SceneGraphParserDetail,
                               kTolerance, MatrixCompareType::relative));
 }
 
+// Verify we can parse drake collision properties from a <collision> element.
+GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
+  // This string represents the generic XML spelling of a <collision> element.
+  // It contains a `{}` place holder such that child tags of <collision> can be
+  // injected to test various expressions of collision properties --
+  // substitution via fmt::format.
+  const std::string collision_xml = R"_(
+<collision name="some_geo">
+  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+  <geometry>
+    <plane>
+      <normal>1.0 2.0 3.0</normal>
+    </plane>
+  </geometry>{}
+</collision>
+)_";
+
+  auto make_sdf_collision = [&collision_xml](const char* material_string) {
+    return MakeSdfCollisionFromString(
+        fmt::format(collision_xml, material_string));
+  };
+
+  auto assert_friction = [](const ProximityProperties& properties,
+                            const CoulombFriction<double>& expected_friction) {
+    ASSERT_TRUE(properties.HasProperty(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kFriction));
+    const auto& friction = properties.GetProperty<CoulombFriction<double>>(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+    EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
+    EXPECT_EQ(friction.dynamic_friction(),
+              expected_friction.dynamic_friction());
+  };
+
+  auto assert_single_property = [](const ProximityProperties& properties,
+                                   const char* group, const char* property,
+                                   double value) {
+    ASSERT_TRUE(properties.HasProperty(group, property));
+    EXPECT_EQ(properties.GetProperty<double>(group, property), value);
+  };
+
+  // Case: has resolution hint; contains hint and default friction coefficients.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_single_property(properties, geometry::internal::kHydroGroup,
+                           geometry::internal::kRezHint, 2.5);
+    assert_friction(properties, default_friction());
+  }
+
+  // Case: has elastic_modulus; contains modulus and default friction
+  // coefficients.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:elastic_modulus>3.5</drake:elastic_modulus>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_single_property(properties, geometry::internal::kMaterialGroup,
+                           geometry::internal::kElastic, 3.5);
+    assert_friction(properties, default_friction());
+  }
+
+  // Case: has dissipation; contains dissipation and default friction
+  // coefficients.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_single_property(properties, geometry::internal::kMaterialGroup,
+                           geometry::internal::kHcDissipation, 4.5);
+    assert_friction(properties, default_friction());
+  }
+
+  // Case: has dynamic friction.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:mu_dynamic>4.5</drake:mu_dynamic>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_friction(properties, {4.5, 4.5});
+  }
+
+  // Case: has static friction.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:mu_static>4.75</drake:mu_static>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_friction(properties, {4.75, 4.75});
+  }
+
+  // Case: has static and dynamic friction.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:mu_dynamic>4.5</drake:mu_dynamic>
+    <drake:mu_static>4.75</drake:mu_static>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_friction(properties, {4.75, 4.5});
+  }
+
+  // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2
+  // friction.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <surface>
+    <friction>
+      <ode>
+        <mu>0.8</mu>
+        <mu2>0.3</mu2>
+      </ode>
+    </friction>
+  </surface>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_friction(properties, {0.8, 0.3});
+  }
+
+  // Case: has both ode (mu, mu2) and drake (dynamic): contains
+  // drake::mu_dynamic wins.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:mu_dynamic>0.3</drake:mu_dynamic>
+  </drake:proximity_properties>
+  <surface>
+    <friction>
+      <ode>
+        <mu>1.8</mu>
+        <mu2>1.3</mu2>
+      </ode>
+    </friction>
+  </surface>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    assert_friction(properties, {0.3, 0.3});
+  }
+
+  // Note: we're not explicitly testing negative friction coefficients or
+  // dynamic > static because we rely on the CoulombFriction constructor to
+  // handle that.
+}
+
 // Verify we can parse friction coefficients from an <ode> element in
 // <collision><surface><friction>. Drake understands <mu> to be the static
 // coefficient and <mu2> the dynamic coefficient of friction.
@@ -874,6 +1034,26 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
   EXPECT_EQ(friction.static_friction(), 0.8);
   EXPECT_EQ(friction.dynamic_friction(), 0.3);
+}
+
+// Verify that if no <surface> tag is present, we return default friction
+// coefficients.
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_NoSurface) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "</collision>");
+  const CoulombFriction<double> friction =
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
+  const CoulombFriction<double> expected_friction = default_friction();
+  EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
+  EXPECT_EQ(friction.dynamic_friction(), expected_friction.dynamic_friction());
 }
 
 // Verify MakeCoulombFrictionFromSdfCollisionOde() throws an exception if

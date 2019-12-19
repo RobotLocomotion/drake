@@ -274,6 +274,39 @@ MultibodyPlant<T>::MultibodyPlant(
 }
 
 template <typename T>
+std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
+  std::string graphviz = "digraph MultibodyPlant {\n";
+  graphviz += "label=\"" + this->get_name() + "\";\n";
+  graphviz += "rankdir=BT;\n";
+  graphviz += "labelloc=t;\n";
+  // Create a subgraph for each model instance, with the bodies as nodes.
+  // Note that the subgraph name must have the "cluster" prefix in order to
+  // have the box drawn.
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    graphviz += fmt::format("subgraph cluster{} {{\n", model_instance_index);
+    graphviz += fmt::format(" label=\"{}\";\n",
+                            GetModelInstanceName(model_instance_index));
+    for (const BodyIndex& body_index : GetBodyIndices(model_instance_index)) {
+      const Body<T>& body = get_body(body_index);
+      graphviz +=
+          fmt::format(" body{} [label=\"{}\"];\n", body.index(), body.name());
+    }
+    graphviz += "}\n";
+  }
+  // Add the graph edges (via the joints).
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    graphviz += fmt::format(
+        "body{} -> body{} [label=\"{} [{}]\"];\n", joint.child_body().index(),
+        joint.parent_body().index(), joint.name(), joint.type_name());
+  }
+  // TODO(russt): Consider adding actuators, frames, forces, etc.
+  graphviz += "}\n";
+  return graphviz;
+}
+
+template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
@@ -384,29 +417,42 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction) {
+    geometry::ProximityProperties properties) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  DRAKE_THROW_UNLESS(properties.HasProperty("material", "coulomb_friction"));
+
+  const CoulombFriction<double> coulomb_friction =
+      properties.GetProperty<CoulombFriction<double>>("material",
+                                                      "coulomb_friction");
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id =
-      RegisterGeometry(body, X_BG, shape,
-                       GetScopedName(*this, body.model_instance(), name));
+  GeometryId id = RegisterGeometry(
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
-  // TODO(SeanCurtis-TRI): Push the contact parameters into the
-  // ProximityProperties.
-  member_scene_graph().AssignRole(
-      *source_id_, id, geometry::ProximityProperties());
+  member_scene_graph().AssignRole(*source_id_, id, std::move(properties));
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
       static_cast<int>(default_coulomb_friction_.size()) == collision_index);
+  // TODO(SeanCurtis-TRI): Stop storing coulomb friction in MBP and simply
+  //  acquire it from SceneGraph.
   default_coulomb_friction_.push_back(coulomb_friction);
   DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
   collision_geometries_[body.index()].push_back(id);
   return id;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const CoulombFriction<double>& coulomb_friction) {
+  geometry::ProximityProperties props;
+  props.AddProperty("material", "coulomb_friction", coulomb_friction);
+  return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
 template <typename T>
@@ -486,6 +532,25 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   return geometry_id;
 }
 
+template <typename T>
+void MultibodyPlant<T>::RegisterGeometryFramesForAllBodies() {
+  DRAKE_ASSERT(geometry_source_is_registered());
+  // Loop through the bodies to make sure that all bodies get a geometry frame.
+  // If not, create and attach one.
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const auto& body = get_body(body_index);
+    if (!body_has_registered_frame(body)) {
+      FrameId frame_id = member_scene_graph().RegisterFrame(
+          source_id_.value(),
+          GeometryFrame(
+              GetScopedName(*this, body.model_instance(), body.name()),
+              body.model_instance()));
+      body_index_to_frame_id_[body.index()] = frame_id;
+      frame_id_to_body_index_[frame_id] = body.index();
+    }
+  }
+}
+
 template<typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
@@ -556,6 +621,7 @@ void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
   if (geometry_source_is_registered()) {
+    RegisterGeometryFramesForAllBodies();
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
@@ -640,7 +706,10 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
           throw std::logic_error(
               "Currently MultibodyPlant does not handle joint limits for "
               "continuous models. However a limit was specified for joint `"
-              "`" + get_joint(index).name() + "`.");
+              "`" + get_joint(index).name() + "`.  Consider setting a "
+              "non-zero time step in the MultibodyPlant constructor; this "
+              "will put MultibodyPlant in discrete-time mode, which "
+              "does support joint limits.");
         }
       }
     }
@@ -1387,12 +1456,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
     const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
 
-    // Pack everything calculator needs. The contact surface has normals
-    // pointing *into* geometry N, so it leads to the traction acting on body B.
-    // So, we order the parameters here as B, A and compute the force on B
-    // below.
+    // Pack everything calculator needs.
     typename internal::HydroelasticTractionCalculator<T>::Data data(
-        X_WB, X_WA, V_WB, V_WA, &surface);
+        X_WA, X_WB, V_WA, V_WB, &surface);
 
     // Combined Hunt & Crossley dissipation.
     const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
@@ -1400,14 +1466,14 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Integrate the hydroelastic traction field over the contact surface.
     std::vector<HydroelasticQuadraturePointData<T>> traction_output;
-    SpatialForce<T> F_Bc_W;
+    SpatialForce<T> F_Ac_W;
     traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        data, dissipation, dynamic_friction, &traction_output, &F_Bc_W);
+        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
 
     // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
     traction_calculator.ShiftSpatialForcesAtCentroidToBodyOrigins(
-        data, F_Bc_W, &F_Bo_W, &F_Ao_W);
+        data, F_Ac_W, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array.at(bodyA.node_index()) += F_Ao_W;
@@ -1418,7 +1484,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Bc_W, std::move(traction_output));
+    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
   }
 }
 
@@ -2683,8 +2749,10 @@ void MultibodyPlant<T>::CalcReactionForces(
   // we can make an estimation based on the trace of the mass matrix (Jain 2011,
   // Eq. 4.21). For now we only ASSERT though with a better estimation we could
   // promote this to a DEMAND.
-  DRAKE_ASSERT(tau_id.norm() <
-               100 * num_velocities() * std::numeric_limits<double>::epsilon());
+  // TODO(amcastro-tri) Uncomment this line once issue #12473 is resolved.
+  // DRAKE_ASSERT(tau_id.norm() <
+  //              100 * num_velocities() *
+  //              std::numeric_limits<double>::epsilon());
 
   // Map mobilizer reaction forces to joint reaction forces and perform the
   // necessary frame conversions.
