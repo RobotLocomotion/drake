@@ -14,6 +14,102 @@
 namespace drake {
 namespace systems {
 
+/** @defgroup events_description System Events
+    @ingroup systems
+
+ This page describes how Systems can respond (through an Event) to changes
+ ("triggers") in time, state, and inputs.
+
+ The state of simple dynamical systems, like the ODE ẋ = x, can be
+ propagated through time using straightforward numerical integration. More
+ sophisticated systems (e.g., systems modeled using piecewise differential
+ algebraic equations, systems dependent upon mouse button clicks, and
+ @ref discrete_systems) require more sophisticated state updating mechanisms.
+ We call those state updates "events" and discuss them in detail from an
+ author's perspective on this page. The Simulator class documentation describes
+ the technical process underlying how events are handled and delves into greater
+ detail.
+
+ ### Types of events
+
+ Events are grouped by the component(s) of a system's State that can be altered:
+
+ - "publish" events can modify no state: they are useful for broadcasting data
+    outside of the novel system and any containing diagrams.
+
+ - "discrete update" events can alter the discrete state of a system.
+
+ - "unrestricted update" events can alter every component of state but time:
+    continuous state, discrete state, and abstract state.
+
+ Note that continuous state is nominally updated through the
+ process of solving an ODE initial value problem (i.e., "integrating") rather
+ than through a specialized event.
+
+ Updates are performed in a particular sequence. For example, unrestricted
+ updates are performed before discrete updates. The Simulator documentation
+ describes the precise update ordering in depth.
+
+ ### %Event triggers
+
+ Events can be triggered in various ways including:
+ - upon initialization
+ - as a certain time is crossed (whether once or repeatedly, i.e.,
+   periodically)
+ - per simulation step
+ - as a WitnessFunction crosses zero
+ - "by force", e.g., the system's CalcUnrestrictedUpdate() function is invoked
+ by some user code
+
+ ### How events are dispatched
+
+ Drake's Simulator is nominally responsible for detecting when events
+ trigger, dispatching the appropriate event update function, and updating the
+ state (the update functions modify only copies of state so that every update
+ function sees the same pre-update state regardless of the sequence of event
+ updates).
+
+  ### Declaring update functions (for leaf system authors)
+
+ The preferred way to update state through events is to declare an update
+ handler in your class derived from LeafSystem; some older code updates state by
+ overriding event dispatchers (e.g., DoCalcUnrestrictedUpdates()), though that
+ practice is discouraged and will soon be deprecated.
+
+ A number of convenience functions are available in LeafSystem for declaring
+ various trigger and event update combinations; see, e.g.,
+ LeafSystem::DeclarePeriodicPublishEvent(),
+ LeafSystem::DeclarePerStepDiscreteUpdateEvent(), and
+ LeafSystem::DeclareInitializationUnrestrictedUpdateEvent().
+
+ The following sample code shows how to declare a publish event that is
+ triggered at regular time intervals:
+ ```
+   template <typename T>
+   class MySystem : public LeafSystem<T> {
+    MySystem() {
+      const double period = 1.0;
+      const double offset = 0.0;
+      this->DeclarePeriodicPublishEvent(period, offset, MySystem::MyPublish);
+    }
+
+    // Called once per second when MySystem is simulated.
+    EventStatus MyPublish(const Context<T>&) const { }
+   };
+ ```
+
+ ### %Event status
+
+ Event handlers can return an EventStatus type to modulate the behavior of a
+ simulation. Returning EventStatus::kFailed from the event handler indicates
+ that the event handler was unable to update the state (because, e.g., the
+ simulation step was too big) and thus Simulator should take corrective action.
+ Or an event handler can return EventStatus::kReachedTermination to indicate
+ that the Simulator should stop simulating; this is useful if the event handler
+ detects that a walking robot has fallen over and that the end of a
+ reinforcement learning episode has been observed, for example.
+ */
+
 template <class T>
 class WitnessFunction;
 
@@ -223,7 +319,7 @@ enum class TriggerType {
  * function that handles the event. No-op is the default handling behavior.
  * Currently, the System framework only supports three concrete event types:
  * PublishEvent, DiscreteUpdateEvent, and UnrestrictedUpdateEvent distinguished
- * by their callback functions' access level to the context.
+ * by their callback functions' write access level to the State.
  *
  * Event handling occurs during a simulation of a system. The logic that
  * describes when particular event types are handled is described in the
@@ -232,22 +328,20 @@ enum class TriggerType {
 template <typename T>
 class Event {
  public:
-  /// Constructs an Event with no trigger type and no event data.
+  #ifndef DRAKE_DOXYGEN_CXX
+  // Constructs an Event with no trigger type and no event data.
   Event() { trigger_type_ = TriggerType::kUnknown; }
+  virtual ~Event() {}
   void operator=(const Event&) = delete;
   Event(Event&&) = delete;
   void operator=(Event&&) = delete;
+  #endif
 
   // TODO(eric.cousineau): Deprecate and remove this alias.
   using TriggerType = systems::TriggerType;
 
   /// Returns `true` if this is a DiscreteUpdateEvent.
   virtual bool is_discrete_update() const = 0;
-
-  /**
-   * An object passed
-   */
-  virtual ~Event() {}
 
   /**
    * Clones this instance.
