@@ -1,6 +1,8 @@
 <sdf version='1.6'>
   <model name='robot1'>
+    <link name="need_at_least_one_link"/>
   </model>
   <model name='robot2'>
+    <link name="need_at_least_one_link"/>
   </model>
 </sdf>
