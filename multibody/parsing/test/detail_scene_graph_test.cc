@@ -16,6 +16,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_common.h"
+#include "drake/multibody/parsing/detail_ignition.h"
 
 namespace drake {
 namespace multibody {
@@ -153,12 +154,16 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
   return sdf_collision;
 }
 
+// Define a pass-through functor for testing.
+std::string NoopResolveFilename(std::string filename) { return filename; }
+
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
 // sdf::Geometry.
 GTEST_TEST(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry =
       MakeSdfGeometryFromString("<empty/>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   EXPECT_EQ(shape, nullptr);
 }
 
@@ -168,7 +173,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
       "<box>"
       "  <size>1.0 2.0 3.0</size>"
       "</box>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Box* box = dynamic_cast<const Box*>(shape.get());
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
@@ -181,7 +187,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
@@ -195,14 +202,16 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
       "  <length>1.2</length>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_radius_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_radius_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <radius> is required within element <drake:capsule>.");
   unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_length_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_length_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <length> is required within element <drake:capsule>.");
 }
 
@@ -213,7 +222,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</cylinder>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
   ASSERT_NE(cylinder, nullptr);
   EXPECT_EQ(cylinder->radius(), 0.5);
@@ -228,7 +238,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
@@ -244,7 +255,8 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_a_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_a_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <a> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -252,7 +264,8 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_b_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_b_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <b> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -260,7 +273,8 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <b>1.2</b>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_c_geometry), std::runtime_error,
+      MakeShapeFromSdfGeometry(*no_c_geometry, NoopResolveFilename),
+      std::runtime_error,
       "Element <c> is required within element <drake:ellipsoid>.");
 }
 
@@ -270,7 +284,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
       "<sphere>"
       "  <radius>0.5</radius>"
       "</sphere>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
   ASSERT_NE(sphere, nullptr);
   EXPECT_EQ(sphere->radius(), 0.5);
@@ -285,7 +300,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
       "</plane>");
   // MakeShapeFromSdfGeometry() ignores <normal> and <size> to create the
   // HalfSpace. Therefore we only verify it created the right object.
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
 }
 
@@ -300,7 +316,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->filename(), absolute_file_path);
@@ -316,7 +333,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
   const Convex* convex = dynamic_cast<const Convex*>(shape.get());
   ASSERT_NE(convex, nullptr);
   EXPECT_EQ(convex->filename(), absolute_file_path);
@@ -339,7 +357,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
-      MakeGeometryInstanceFromSdfVisual(*sdf_visual);
+      MakeGeometryInstanceFromSdfVisual(
+          *sdf_visual, NoopResolveFilename,
+          ToRigidTransform(sdf_visual->RawPose()));
 
   const RigidTransformd X_LC(geometry_instance->pose());
 
@@ -479,7 +499,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
-      MakeGeometryInstanceFromSdfVisual(*sdf_visual);
+      MakeGeometryInstanceFromSdfVisual(
+          *sdf_visual, NoopResolveFilename,
+          ToRigidTransform(sdf_visual->RawPose()));
 
   // Verify we do have a plane geometry.
   const HalfSpace* shape =
@@ -516,7 +538,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
-      MakeGeometryInstanceFromSdfVisual(*sdf_visual);
+      MakeGeometryInstanceFromSdfVisual(
+          *sdf_visual, NoopResolveFilename,
+          ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
 }
 
@@ -779,7 +803,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
       "    <sphere/>"
       "  </geometry>"
       "</collision>");
-  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(
+      *sdf_collision, ToRigidTransform(sdf_collision->RawPose()));
 
   // These are the expected values as specified by the string above.
   const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
@@ -810,7 +835,8 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </plane>"
       "  </geometry>"
       "</collision>");
-  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(
+      *sdf_collision, ToRigidTransform(sdf_collision->RawPose()));
 
   // The expected coordinates of the normal vector in the link frame L.
   const Vector3d normal_L_expected = Vector3d(1.0, 2.0, 3.0).normalized();

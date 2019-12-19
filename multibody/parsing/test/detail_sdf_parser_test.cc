@@ -200,7 +200,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
       "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
   const RigidTransformd X_MF3(Vector3d(0.7, 0.8, 0.9));
   check_frame(
-      "_instance1_sdf_model_frame", "model_scope_model_frame_implicit", X_MF3);
+      "__model__", "model_scope_model_frame_implicit", X_MF3);
 }
 
 struct PlantAndSceneGraph {
@@ -518,52 +518,115 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
       std::logic_error, "There is no joint actuator named '.*' in the model.");
 }
 
-void ExpectUnsupportedFrame(const std::string& inner) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(inner),
-      std::runtime_error,
-      R"(<pose frame='\{non-empty\}'/> is presently not supported )"
-      R"(outside of the <frame/> tag.)");
-}
-
-GTEST_TEST(SdfParser, TestUnsupportedFrames) {
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <pose frame='hello'/>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'><pose frame='hello'/></link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'>
-    <inertial><pose frame='hello'/></inertial>
+GTEST_TEST(SdfParser, TestSupportedFrames) {
+  // Test `//link/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <pose relative_to='my_frame'/>
   </link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'>"
-    <visual name='b'><pose frame='hello'/></visual>
+</model>
+)");
+  // Test `//link/visual/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <visual name='my_visual'>
+      <pose relative_to='my_frame'/>
+    </visual>
   </link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'>"
-    <collision name='b'><pose frame='hello'/></collision>
+</model>
+)");
+  // Test `//link/collision/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <collision name='my_collision'>
+      <pose relative_to='my_frame'/>
+    </collision>
   </link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
+</model>
+)");
+  // Test `//joint/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
   <link name='a'/>
+  <frame name='my_frame'/>
   <joint name='b' type='fixed'>"
-    <pose frame='hello'/>"
+    <pose relative_to='my_frame'/>"
     <parent>world</parent>
     <child>a</child>"
   </joint>
 </model>)");
 }
 
+void FailWithUnsupportedRelativeTo(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
+      R"(in <inertial/> or <model/> tags.)");
+}
+
+void FailWithInvalidWorld(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
+      R"(with name\[.*\] does not match a link, joint, or )"
+      R"(frame name in model with name\[bad\][\s\S]*)");
+}
+
+void FailWithReservedName(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*The supplied frame name \[.*\] is reserved.[\s\S]*)");
+}
+
+GTEST_TEST(SdfParser, TestUnsupportedFrames) {
+  // Model frames cannnot attach to / nor be relative to the world frame.
+  FailWithInvalidWorld(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='model_scope_world_frame' attached_to='world'>
+    <pose>0 0 0 0 0 0</pose>
+  </frame>
+</model>
+)");
+  FailWithInvalidWorld(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='model_scope_world_relative_frame'>
+    <pose relative_to='world'>0 0 0 0 0 0</pose>
+  </frame>
+</model>
+)");
+  for (std::string bad_name : {"world", "__model__", "__anything__"}) {
+    FailWithReservedName(fmt::format(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='{}'/>  <!-- Invalid name -->
+</model>
+)", bad_name));
+  }
+
+  FailWithUnsupportedRelativeTo(R"(
+<model name='bad'>
+  <pose relative_to='invalid_usage'/>
+  <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
+</model>)");
+  FailWithUnsupportedRelativeTo(R"(
+<model name='bad'>
+  <frame name='my_frame'/>
+  <link name='a'>
+    <inertial><pose relative_to='my_frame'/></inertial>
+  </link>
+</model>)");
+}
 
 }  // namespace
 }  // namespace internal
