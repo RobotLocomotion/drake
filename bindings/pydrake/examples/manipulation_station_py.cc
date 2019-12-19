@@ -50,6 +50,9 @@ PYBIND11_MODULE(manipulation_station, m) {
           py::arg("X_WCameraBody") = std::nullopt,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupClutterClearingStation.doc)
+      .def("SetupPlanarIiwaStation",
+          &ManipulationStation<T>::SetupPlanarIiwaStation,
+          doc.ManipulationStation.SetupPlanarIiwaStation.doc)
       .def("AddManipulandFromFile",
           &ManipulationStation<T>::AddManipulandFromFile, py::arg("model_file"),
           py::arg("X_WObject"),
@@ -62,6 +65,8 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStation.RegisterWsgControllerModel.doc)
       .def("Finalize", py::overload_cast<>(&ManipulationStation<T>::Finalize),
           doc.ManipulationStation.Finalize.doc_0args)
+      .def("num_iiwa_joints", &ManipulationStation<T>::num_iiwa_joints,
+          doc.ManipulationStation.num_iiwa_joints.doc)
       .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
           py_reference_internal,
           doc.ManipulationStation.get_multibody_plant.doc)
