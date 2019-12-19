@@ -6,28 +6,28 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body_frame
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [-0.008, 0.074133, 0.0]
+      translation: [-0.008, 0.025, 0.0]
     name: Schunk_Gripper::left_finger
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.008, 0.074133, 0.0]
+      translation: [0.008, 0.025, 0.0]
     name: Schunk_Gripper::right_finger
   - X_WF:
       rotation:
@@ -46,28 +46,28 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body_frame
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.992, 0.074133, 0.0]
+      translation: [0.992, 0.025, 0.0]
     name: Schunk_Gripper::left_finger
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.008, 0.074133, 0.0]
+      translation: [1.008, 0.025, 0.0]
     name: Schunk_Gripper::right_finger
   - X_WF:
       rotation:
@@ -86,28 +86,28 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body_frame
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.092, 0.074133, 0.0]
+      translation: [0.092, 0.025, 0.0]
     name: Schunk_Gripper::left_finger
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.20800000000000002, 0.074133, 0.0]
+      translation: [0.20800000000000002, 0.025, 0.0]
     name: Schunk_Gripper::right_finger
   - X_WF:
       rotation:
@@ -126,28 +126,28 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body_frame
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.5627963267948966, 0.074133, 0.0]
+      translation: [1.5627963267948966, 0.025, 0.0]
     name: Schunk_Gripper::left_finger
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [1.5787963267948966, 0.074133, 0.0]
+      translation: [1.5787963267948966, 0.025, 0.0]
     name: Schunk_Gripper::right_finger
   - X_WF:
       rotation:
