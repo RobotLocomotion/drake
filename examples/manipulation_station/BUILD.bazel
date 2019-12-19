@@ -27,6 +27,7 @@ drake_cc_library(
     ],
     data = [
         ":models",
+        "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/ycb:models",
