@@ -485,11 +485,11 @@ std::vector<LinkInfo> AddLinksFromSpecification(
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG_init);
           std::unique_ptr<geometry::Shape> shape =
               MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
-          const CoulombFriction<double> coulomb_friction =
+          geometry::ProximityProperties props =
               MakeProximityPropertiesForCollision(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,
                                            sdf_collision.Name(),
-                                           coulomb_friction);
+                                           std::move(props));
         }
       }
     }
