@@ -21,7 +21,7 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kManipulationClass, kClutterClearing };
+enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -159,6 +159,8 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupManipulationClassStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
+  void SetupPlanarIiwaStation();
 
   /// Sets the default State for the chosen setup.
   /// @param context A const reference to the ManipulationStation context.
@@ -315,7 +317,9 @@ class ManipulationStation : public systems::Diagram<T> {
 
   /// Get the number of joints in the IIWA (only -- does not include the
   /// gripper).
-  int num_iiwa_joints() const { return 7; }
+  /// @pre must call one of the "setup" methods first to register an IIWA
+  /// model.
+  int num_iiwa_joints() const;
 
   /// Convenience method for getting all of the joint angles of the Kuka IIWA.
   /// This does not include the gripper.
