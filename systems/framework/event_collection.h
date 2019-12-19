@@ -150,7 +150,17 @@ class EventCollection {
  * EventCollection instance is maintained internally, thus effectively holding
  * the same recursive tree structure as the corresponding Diagram.
  *
- * End users should never need to use or know about this class.
+ * This class uses an unusual paradigm for storing collections of events
+ * corresponding to subsystems of the diagram ("subevent collections"). The
+ * class owns some subevent collections and maintains pointers to other
+ * subevent collections. The technical reasoning is that the same data may
+ * need to be referenced by multiple collections;
+ * DiagramCompositeEventCollection maintains one collection for all publish
+ * events and another for the events from each subsystem, but maintains only
+ * a single copy of all of the event data.
+ *
+ * End users should never need to use or know about this class. It is for
+ * internal use only.
  */
 template <typename EventType>
 class DiagramEventCollection final : public EventCollection<EventType> {
@@ -283,6 +293,9 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 /**
  * A concrete class that holds all simultaneous _homogeneous_ events for a
  * LeafSystem.
+ *
+ * End users should never need to use or know about this class. It is for
+ * internal use only.
  */
 template <typename EventType>
 class LeafEventCollection final : public EventCollection<EventType> {
@@ -390,7 +403,8 @@ class LeafEventCollection final : public EventCollection<EventType> {
  * DiagramCompositeEventCollection. Adding new events to the collection is
  * only allowed for LeafCompositeEventCollection.
  *
- * End users should never need to use or know about this class.
+ * End users should never need to use or know about this class.  It is for
+ * internal use only.
  *
  * @tparam T needs to be compatible with Eigen Scalar type.
  */
@@ -627,7 +641,8 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
 /**
  * CompositeEventCollection for a Diagram.
  *
- * End users should never need to use or know about this class.
+ * End users should never need to use or know about this class.  It is for
+ * internal use only.
  */
 template <typename T>
 class DiagramCompositeEventCollection final

@@ -30,7 +30,7 @@ namespace systems {
  the technical process underlying how events are handled and delves into greater
  detail.
 
- ### Event driven simulation
+ ### Exposition
 
  Events occur between discretely between finite advancements of systems' time
  and state, as in the mouse click example above. In the absence of events, a
@@ -40,7 +40,14 @@ namespace systems {
  paused for polling: an event might serve no other purpose than to count the
  number of times that it occurred.
 
- ### Types of events
+ ### Types of events and triggers
+
+ We distinguish between the condition that is responsible for the event to be
+ handled (the "trigger") and the action that is taken when the event is
+ dispatched (the "event handler"). The latter falls into several categories
+ based on event type.
+
+ #### %Event types
 
  Events are grouped by the component(s) of a system's State that can be altered:
 
@@ -60,11 +67,7 @@ namespace systems {
  updates are performed before discrete updates. The Simulator documentation
  describes the precise update ordering in depth.
 
- ### Creating events
-
- ### Event data
-
- ### %Event triggers
+ #### %Event triggers
 
  Events can be triggered in various ways including:
  - upon initialization
@@ -81,18 +84,26 @@ namespace systems {
  trigger, dispatching the appropriate event update function, and updating the
  state (the update functions modify only copies of state so that every update
  function sees the same pre-update state regardless of the sequence of event
- updates).
+ updates). Novel "solvers" must provide these capabilities as well.
 
- ### Forcing event updates
+ Events can also be dispatched by force. As noted above, one can could
+ CalcUnrestrictedUpdate() to determine how a system's state would change and,
+ optionally, update that state manually. Here is a simple example showing a
+ forced publish:
+ ```
+   SystemX y;
+   std::unique_ptr<Context<T>> context = y.CreateDefaultContext();
+   y.Publish(*context, y.get_forced_publish_events());
+ ```
 
- - EventCollection
+ ### Information for leaf system authors
 
- ### Declaring update functions (for leaf system authors)
+ #### Declaring update functions
 
  The preferred way to update state through events is to declare an update
- handler in your class derived from LeafSystem. **Some older code updates state by
- overriding event dispatchers (e.g., DoCalcUnrestrictedUpdates()), though that
- practice is discouraged and will soon be deprecated.**
+ handler in your class derived from LeafSystem. **Some older code updates state
+ by overriding event dispatchers (e.g., DoCalcUnrestrictedUpdates()), though
+ that practice is discouraged and will soon be deprecated.**
 
  A number of convenience functions are available in LeafSystem for declaring
  various trigger and event update combinations; see, e.g.,
@@ -112,13 +123,61 @@ namespace systems {
     }
 
     // Called once per second when MySystem is simulated.
-    EventStatus MyPublish(const Context<T>&) const { }
+    EventStatus MyPublish(const Context<T>&) const { ... }
    };
  ```
 
- ### %Event status
+ #### %EventData
 
- Event handlers can return an EventStatus type to modulate the behavior of a
+ It can be impractical or infeasible to create a different handler function for
+ every possible trigger that a leaf system might need to consider. The
+ alternative is to create a single event handler and map every trigger to it.
+ The problem then becomes how to determine which condition triggered the event
+ handler.
+
+ The EventData structure was created for exactly this purpose at the price
+ of some verbosity. Every Event stores the type of trigger associated with it
+ and, if relevant, some %EventData that provides greater insight into why the
+ event handler was invoked. For example:
+ ```
+   template <typename T>
+   class MySystem : public LeafSystem<T> {
+    MySystem() {
+      const double period1 = 1.0;
+      const double period2 = 2.0;
+      const double offset = 0.0;
+
+      // Declare a publish event with one period.
+      this->DeclarePeriodicEvent(period1, offset, PublishEvent<T>(
+          TriggerType::kPeriodic,
+          [this](const Context<T>& context, const PublishEvent<T>& event) ->
+              EventStatus {
+            return MyPublish(context, event);
+          }));
+
+      // Declare a second publish event with another period.
+      this->DeclarePeriodicEvent(period2, offset, PublishEvent<T>(
+          TriggerType::kPeriodic,
+          [this](const Context<T>& context, const PublishEvent<T>& event) ->
+              EventStatus {
+            return MyPublish(context, event);
+          }));
+    }
+
+    // A single update handler for all triggered events.
+    EventStatus MyPublish(const Context<T>&, const PublishEvent<T>& e) const {
+      if (e.get_trigger_type() == TriggerType::kPeriodic) {
+        std::cout << "Event period: " <<
+            static_cast<PeriodicEventData<T>*>(
+                  e.get_event_data()).period_sec() << std::endl;
+      }
+    }
+   };
+ ```
+
+ #### %Event status
+
+ %Event handlers can return an EventStatus type to modulate the behavior of a
  simulation. Returning EventStatus::kFailed from the event handler indicates
  that the event handler was unable to update the state (because, e.g., the
  simulation step was too big) and thus Simulator should take corrective action.
