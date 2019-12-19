@@ -308,6 +308,49 @@ void ManipulationStation<T>::SetupManipulationClassStation(
 }
 
 template <typename T>
+void ManipulationStation<T>::SetupPlanarIiwaStation() {
+  DRAKE_DEMAND(setup_ == Setup::kNone);
+  setup_ = Setup::kPlanarIiwa;
+
+  // Add the tables.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/kuka_iiwa_arm/models/table/"
+        "extra_heavy_duty_table_surface_only_collision.sdf");
+
+    const double table_height = 0.7645;
+    internal::AddAndWeldModelFrom(
+        sdf_path, "robot_table", plant_->world_frame(), "link",
+        RigidTransform<double>(Vector3d(0, 0, -table_height)), plant_);
+    internal::AddAndWeldModelFrom(
+        sdf_path, "work_table", plant_->world_frame(), "link",
+        RigidTransform<double>(Vector3d(0.75, 0, -table_height)), plant_);
+  }
+
+  // Add planar iiwa model.
+  {
+    std::string sdf_path = FindResourceOrThrow(
+        "drake/manipulation/models/iiwa_description/urdf/"
+        "planar_iiwa14_spheres_dense_elbow_collision.urdf");
+    const auto X_WI = RigidTransform<double>::Identity();
+    auto iiwa_instance = internal::AddAndWeldModelFrom(
+        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
+    RegisterIiwaControllerModel(
+        sdf_path, iiwa_instance, plant_->world_frame(),
+        plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
+  }
+
+  // Add the default wsg model.
+  AddDefaultWsg();
+}
+
+template <typename T>
+int ManipulationStation<T>::num_iiwa_joints() const {
+  DRAKE_DEMAND(iiwa_model_.model_instance.is_valid());
+  return plant_->num_positions(iiwa_model_.model_instance);
+}
+
+template <typename T>
 void ManipulationStation<T>::SetDefaultState(
     const systems::Context<T>& station_context,
     systems::State<T>* state) const {
@@ -454,6 +497,20 @@ void ManipulationStation<T>::Finalize(
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
+      break;
+    }
+    case Setup::kPlanarIiwa: {
+      // Set initial positions of the IIWA, but now with only joints 2, 4,
+      // and 6.
+      q0_iiwa << 0.1, -1.2, 1.6;
+
+      std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.8),
+          y(0, 0), z(0, 0.05);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
       }
       break;
     }

@@ -291,6 +291,20 @@ GTEST_TEST(ManipulationStationTest, SetupClutterClearingStation) {
   station.SetRandomContext(context.get(), &generator);
 }
 
+GTEST_TEST(ManipulationStationTest, SetupPlanarIiwaStation) {
+  ManipulationStation<double> station(0.002);
+  station.SetupPlanarIiwaStation();
+  station.Finalize();
+
+  // Make sure we get through the setup and initialization.
+  auto context = station.CreateDefaultContext();
+
+  // Check that domain randomization works.
+  RandomGenerator generator;
+  station.SetRandomContext(context.get(), &generator);
+}
+
+
 // Check that making many stations does not exhaust resources.
 GTEST_TEST(ManipulationStationTest, MultipleInstanceTest) {
   for (int i = 0; i < 20; ++i) {
