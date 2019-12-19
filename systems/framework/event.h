@@ -30,6 +30,16 @@ namespace systems {
  the technical process underlying how events are handled and delves into greater
  detail.
 
+ ### Event driven simulation
+
+ Events occur between discretely between finite advancements of systems' time
+ and state, as in the mouse click example above. In the absence of events, a
+ simulator would happily advance time and any continuous state without stopping.
+ Events allow a system to change its state discontinuously and to communicate
+ with the outside world. Events also allow the time and state evolution to be
+ paused for polling: an event might serve no other purpose than to count the
+ number of times that it occurred.
+
  ### Types of events
 
  Events are grouped by the component(s) of a system's State that can be altered:
@@ -50,6 +60,10 @@ namespace systems {
  updates are performed before discrete updates. The Simulator documentation
  describes the precise update ordering in depth.
 
+ ### Creating events
+
+ ### Event data
+
  ### %Event triggers
 
  Events can be triggered in various ways including:
@@ -69,12 +83,16 @@ namespace systems {
  function sees the same pre-update state regardless of the sequence of event
  updates).
 
-  ### Declaring update functions (for leaf system authors)
+ ### Forcing event updates
+
+ - EventCollection
+
+ ### Declaring update functions (for leaf system authors)
 
  The preferred way to update state through events is to declare an update
- handler in your class derived from LeafSystem; some older code updates state by
+ handler in your class derived from LeafSystem. **Some older code updates state by
  overriding event dispatchers (e.g., DoCalcUnrestrictedUpdates()), though that
- practice is discouraged and will soon be deprecated.
+ practice is discouraged and will soon be deprecated.**
 
  A number of convenience functions are available in LeafSystem for declaring
  various trigger and event update combinations; see, e.g.,
@@ -108,6 +126,17 @@ namespace systems {
  that the Simulator should stop simulating; this is useful if the event handler
  detects that a walking robot has fallen over and that the end of a
  reinforcement learning episode has been observed, for example.
+
+ ### Glossary
+
+  - register
+  - schedule
+  - generate
+  - trigger
+  - handle
+  - process
+  - forced events
+
  */
 
 template <class T>
@@ -290,14 +319,19 @@ enum class TriggerType {
   /**
    * This trigger indicates that an associated event is triggered whenever a
    * `solver` takes a `step`. A `solver` is an abstract construct that
-   * controls the time and state evolution of a System. For example, a
-   * simulator is a `solver`. Its `step` advances time a finite duration by
-   * integrating a system, modifying its state accordingly. Per-step events
-   * are most commonly created in System::GetPerStepEvents(). A very common
-   * use of such per-step events is to update a discrete or abstract state
-   * variable that changes whenever the continuous state advances; examples
-   * are computing the "min" or "max" of some state variable, recording a
-   * signal in a delay buffer, or publishing. Per-step events are also useful
+   * controls or tracks the time and state evolution of a System. A simulator is
+   * a `solver`- it advances time a finite duration by integrating a system,
+   * modifying its state accordingly- as is a process that receives from IPC
+   * some numeric state through then used to, e.g., update abstract state.
+   * Steps may occur at irregular time intervals: a step typically coincides
+   * with a point in time where it is advantageous to poll for events, like
+   * immediately after an integrator has advanced time and state.
+   *
+   * Per-step events are most commonly created in System::GetPerStepEvents(). A
+   * very common use of such per-step events is to update a discrete or abstract
+   * state variable that changes whenever the continuous state advances;
+   * examples are computing the "min" or "max" of some state variable, recording
+   * a signal in a delay buffer, or publishing. Per-step events are also useful
    * to implement feedback controllers interfaced with physical devices; the
    * controller can be implemented in the event handler, and the "step" would
    * correspond to receiving sensory data from the hardware.

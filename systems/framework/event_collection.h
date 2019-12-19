@@ -145,10 +145,12 @@ class EventCollection {
 };
 
 /**
- * A concrete class that holds all simultaneous homogeneous events for a
+ * A concrete class that holds all simultaneous _homogeneous_ events for a
  * Diagram. For each subsystem in the corresponding Diagram, a derived
  * EventCollection instance is maintained internally, thus effectively holding
  * the same recursive tree structure as the corresponding Diagram.
+ *
+ * End users should never need to use or know about this class.
  */
 template <typename EventType>
 class DiagramEventCollection final : public EventCollection<EventType> {
@@ -279,7 +281,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 };
 
 /**
- * A concrete class that holds all simultaneous homogeneous events for a
+ * A concrete class that holds all simultaneous _homogeneous_ events for a
  * LeafSystem.
  */
 template <typename EventType>
@@ -387,6 +389,8 @@ class LeafEventCollection final : public EventCollection<EventType> {
  * There are two concrete derived classes: LeafCompositeEventCollection and
  * DiagramCompositeEventCollection. Adding new events to the collection is
  * only allowed for LeafCompositeEventCollection.
+ *
+ * End users should never need to use or know about this class.
  *
  * @tparam T needs to be compatible with Eigen Scalar type.
  */
@@ -622,6 +626,8 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
 
 /**
  * CompositeEventCollection for a Diagram.
+ *
+ * End users should never need to use or know about this class.
  */
 template <typename T>
 class DiagramCompositeEventCollection final
@@ -631,7 +637,9 @@ class DiagramCompositeEventCollection final
 
   /**
    * Allocated CompositeEventCollection for all constituent subsystems are
-   * passed in `subevents`, for which ownership is also transferred to `this`.
+   * passed in `subevents` (a vector of size of the number of subsystems of
+   * the corresponding diagram), for which ownership is also transferred to
+   * `this`.
    */
   explicit DiagramCompositeEventCollection(
       std::vector<std::unique_ptr<CompositeEventCollection<T>>> subevents)
@@ -650,6 +658,7 @@ class DiagramCompositeEventCollection final
       DiagramEventCollection<PublishEvent<T>>& sub_publish =
           dynamic_cast<DiagramEventCollection<PublishEvent<T>>&>(
               this->get_mutable_publish_events());
+
       // Sets sub_publish's i'th subsystem's EventCollection<PublishEvent>
       // pointer to owned_subevent_collection_[i].get_mutable_publish_events().
       // So that sub_publish has the same pointer structure, but does not
