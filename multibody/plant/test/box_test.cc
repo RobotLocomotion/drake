@@ -59,8 +59,7 @@ class SlidingBoxTest : public ::testing::Test {
     diagram->SetDefaultContext(diagram_context.get());
     Context<double>& plant_context =
         diagram->GetMutableSubsystemContext(plant, diagram_context.get());
-    plant_context.FixInputPort(plant.get_actuation_input_port().get_index(),
-                               Vector1<double>::Constant(applied_force_));
+    plant.get_actuation_input_port().FixValue(&plant_context, applied_force_);
 
     Simulator<double> simulator(*diagram, std::move(diagram_context));
     simulator.set_publish_every_time_step(true);
@@ -154,8 +153,7 @@ class SlidingBoxTest : public ::testing::Test {
     diagram_context2->EnableCaching();
     Context<double>& plant_context2 =
         diagram2->GetMutableSubsystemContext(plant2, diagram_context2.get());
-    plant_context2.FixInputPort(plant2.get_actuation_input_port().get_index(),
-                                Vector1<double>::Constant(applied_force_));
+    plant2.get_actuation_input_port().FixValue(&plant_context2, applied_force_);
     // Set the state from the computed solution.
     plant2.SetPositionsAndVelocities(
         &plant_context2, plant.GetPositionsAndVelocities(plant_context));
