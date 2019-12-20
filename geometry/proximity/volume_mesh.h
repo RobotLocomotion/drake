@@ -103,6 +103,10 @@ class VolumeElement {
   std::array<VolumeVertexIndex, 4> vertex_;
 };
 
+// Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
+// friend access to VolumeMeshTester<T>.
+template <typename T> class VolumeMeshTester;
+
 /** %VolumeMesh represents a tetrahedral volume mesh.
  @tparam T  The underlying scalar type for coordinates, e.g., double or
             AutoDiffXd. Must be a valid Eigen scalar.
@@ -123,6 +127,7 @@ class VolumeMesh {
   //@{
 
   static constexpr int kDim = 3;
+  static constexpr int kVertexPerElement = 4;
 
   /** Index for identifying a vertex.
    */
@@ -243,12 +248,76 @@ class VolumeMesh {
     return b_Q;
   }
 
+  /** Checks to see whether the given VolumeMesh object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   @param mesh The mesh for comparison.
+   @returns `true` if the given mesh is equal.
+   */
+  bool Equal(const VolumeMesh<T>& mesh) const {
+    if (this->num_elements() != mesh.num_elements()) return false;
+    if (this->num_vertices() != mesh.num_vertices()) return false;
+
+    // Check tetrahedral elements.
+    for (VolumeElementIndex i(0); i < this->num_elements(); ++i) {
+      const VolumeElement& element1 = this->element(i);
+      const VolumeElement& element2 = mesh.element(i);
+      for (int j = 0; j < 4; ++j)
+        if (element1.vertex(j) != element2.vertex(j)) return false;
+    }
+    // Check vertices.
+    for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {
+      if (this->vertex(i).r_MV() != mesh.vertex(i).r_MV()) return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
+  /** Calculates the gradient ∇u of a linear field u on the tetrahedron `e`.
+   Field u is defined by the four field values `field_value[i]` at the i-th
+   vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  Vector3<FieldValue> CalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 4>& field_value,
+      VolumeElementIndex e) const {
+    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
+    for (int i = 1; i < 4; ++i) {
+      gradu_M += field_value[i] * CalcGradBarycentric(e, i);
+    }
+    return gradu_M;
+  }
+
  private:
+  // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
+  // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
+  // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
+  // @pre  0 ≤ i < 4.
+  Vector3<T> CalcGradBarycentric(VolumeElementIndex e, int i) const;
+
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
   // The vertices that are shared between the tetrahedral elements.
   std::vector<VolumeVertex<T>> vertices_;
+
+  friend class VolumeMeshTester<T>;
 };
+
+template <typename T>
+Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
+                                              int i) const {
+  DRAKE_DEMAND(0 <= i && i < 4);
+  const Vector3<T>& V = vertices_[elements_[e].vertex(i)].r_MV();
+  const Vector3<T>& A = vertices_[elements_[e].vertex((i + 1) % 4)].r_MV();
+  const Vector3<T>& B = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
+  const Vector3<T>& C = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
+  // nhat may point into or out of tetrahedron.
+  const Vector3<T> nhat = ((B - A).cross(C - A)).normalized();
+  // nhat.dot(AV) = nhat.dot(BV) = nhat.dot(CV)
+  return nhat / nhat.dot(V - A);
+}
+
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(VolumeMesh)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

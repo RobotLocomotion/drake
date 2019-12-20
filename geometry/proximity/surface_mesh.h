@@ -103,6 +103,10 @@ class SurfaceFace {
   std::array<SurfaceVertexIndex, 3> vertex_;
 };
 
+// Forward declaration of SurfaceMeshTester<T>. SurfaceMesh<T> will
+// grant friend access to SurfaceMeshTester<T>.
+template <typename T> class SurfaceMeshTester;
+
 // TODO(DamrongGuoy): mention interesting properties of the mesh, e.g., open
 //  meshes, meshes with holes, non-manifold surface.
 /** %SurfaceMesh represents a triangulated surface.
@@ -127,6 +131,7 @@ class SurfaceMesh {
    A surface mesh has the intrinsic dimension 2.  It is embedded in 3-d space.
    */
   static constexpr int kDim = 2;
+  static constexpr int kVertexPerElement = 3;
 
   /**
    Index for identifying a vertex.
@@ -409,10 +414,31 @@ class SurfaceMesh {
     return true;
   }
 
+  /** Calculates the gradient ∇u of a linear field u on the triangle `f`.
+   Field u is defined by the three field values `field_value[i]` at the i-th
+   vertex of the triangle. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  Vector3<FieldValue> CalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 3>& field_value, SurfaceFaceIndex f) const {
+    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(f, 0);
+    for (int i = 1; i < 3; ++i) {
+      gradu_M += field_value[i] * CalcGradBarycentric(f, i);
+    }
+    return gradu_M;
+  }
+
  private:
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
   void CalcAreasNormalsAndCentroid();
+
+  // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
+  // function bᵢ of the i-th vertex of the triangle `f`. The gradient
+  // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
+  // @pre  0 ≤ i < 3.
+  Vector3<T> CalcGradBarycentric(SurfaceFaceIndex f, int i) const;
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
@@ -431,6 +457,8 @@ class SurfaceMesh {
   // Area-weighted geometric centroid Sc of the surface mesh as an offset vector
   // from the origin of Frame M to point Sc, expressed in Frame M.
   Vector3<T> p_MSc_;
+
+  friend class SurfaceMeshTester<T>;
 };
 
 template <class T>
@@ -467,6 +495,20 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   // Finalize centroid.
   if (total_area_ != T(0.))
     p_MSc_ /= (3. * total_area_);
+}
+
+template <typename T>
+Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
+                                               int i) const {
+  DRAKE_DEMAND(0 <= i && i < 3);
+  const Vector3<T>& V = vertices_[faces_[f].vertex(i)].r_MV();
+  const Vector3<T>& A = vertices_[faces_[f].vertex((i + 1) % 3)].r_MV();
+  const Vector3<T>& B = vertices_[faces_[f].vertex((i + 2) % 3)].r_MV();
+  const Vector3<T> ehat = (B - A).normalized();
+  const Vector3<T> AV = V - A;
+  const Vector3<T> nhat = (AV - (AV.dot(ehat)) * ehat).normalized();
+  // nhat.dot(AV) = nhat.dot(BV)
+  return nhat / nhat.dot(AV);
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
