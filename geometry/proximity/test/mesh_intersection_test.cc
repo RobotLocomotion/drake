@@ -378,8 +378,9 @@ unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
 // +X    |
 //      -Z
 //
-template<typename T>
-unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
+template <typename T>
+unique_ptr<VolumeMesh<T>> TrivialVolumeMesh(
+    const math::RigidTransform<T>& X_MN = math::RigidTransform<T>::Identity()) {
   const int element_data[2][4] = {
       {0, 1, 2, 3},
       {0, 2, 1, 4}};
@@ -388,11 +389,11 @@ unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
     elements.emplace_back(element);
   }
   const Vector3<T> vertex_data[5] = {
-      Vector3<T>::Zero(),
-      Vector3<T>::UnitX(),
-      Vector3<T>::UnitY(),
-      Vector3<T>::UnitZ(),
-      -Vector3<T>::UnitZ()
+      X_MN * Vector3<T>::Zero(),
+      X_MN * Vector3<T>::UnitX(),
+      X_MN * Vector3<T>::UnitY(),
+      X_MN * Vector3<T>::UnitZ(),
+      X_MN * (-Vector3<T>::UnitZ())
   };
   std::vector<VolumeVertex<T>> vertices;
   for (auto& vertex : vertex_data) {
@@ -405,16 +406,12 @@ unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
 template<typename T>
 unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
     const VolumeMesh<T>* volume_mesh) {
-  // TODO(SeanCurtis-TRI): All the zeros and ones prevent meaningful recognition
-  // of valid interpolation. I.e., interpolating values at v0, v1, v2
-  // incorrectly will still produce zero. Provide more complex values.
-
   // Pressure field value pᵢ at vertex vᵢ.
   const T p0{0.};
   const T p1{0.};
   const T p2{0.};
-  const T p3{1.};
-  const T p4{1.};
+  const T p3{1e+7};
+  const T p4{1e+7};
   std::vector<T> p_values = {p0, p1, p2, p3, p4};
   DRAKE_DEMAND(5 == volume_mesh->num_vertices());
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
@@ -679,7 +676,56 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
 
 // TODO(DamrongGuoy): Add unit tests for AddPolygonToMeshData().
 
-// TODO(DamrongGuoy): Add unit tests for ComputeNormalField().
+GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
+  // It is ok to use the trivial mesh and trivial mesh field in this test.
+  // The function under test asks for the gradient values and operates on it.
+  // It is not responsible for making sure that the gradient is computed
+  // correctly -- that is tested elsewhere.
+
+  // Let T be the expressed-in frame of the trivial volume mesh. In frame T,
+  // the tetrahedron Element_0 is above the X-Y plane, and its trivial volume
+  // mesh field has the gradient vector in Element_0 in +Z direction of frame
+  // T. We will use the following general rigid transform X_MT to express the
+  // volume mesh and its field in another frame M, so the test is more general.
+  RigidTransformd X_MT(RollPitchYawd(M_PI_4, 2. * M_PI / 3., M_PI / 6.),
+                       Vector3d(1.1, 2.5, 4.0));
+  const auto volume_M = TrivialVolumeMesh<double>(X_MT);
+  const auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
+  // Rigid surface mesh N has the triangle Face_0 with its face normal vector
+  // in +Z direction of N's frame.
+  const auto rigid_N = TrivialSurfaceMesh<double>();
+
+  // We will set the pose of SurfaceMesh N in frame M so that triangle
+  // Face_0 of N has its face normal vector make various angles with the
+  // gradient vector in tetrahedron Element_0.
+  struct TestData {
+    double angle;        // Angle between the face normal and the gradient.
+    bool expect_result;  // true when `angle` < threshold 5π/8.
+  } test_data[]{{0, true},
+                 {M_PI_2, true},
+                 {(5. * M_PI / 8.) * 0.99, true},   // slightly less than 5π/8
+                 {(5. * M_PI / 8.) * 1.01, false},  // slightly more than 5π/8
+                 {3. * M_PI_4, false},
+                 {M_PI, false}};
+
+  // Whether triangle Face_0 intersects tetrahedron Element_0 is not
+  // relevant to this test because IsFaceNormalAlongPressureGradient()
+  // only checks the angle between the normal and the gradient without
+  // triangle-tetrahedron intersection test.
+  for (const TestData& t : test_data) {
+    // First we use a simple pose of surface N in frame T of the trivial volume
+    // mesh, so we can check the angle threshold conveniently.
+    const auto X_TN =
+        RigidTransformd(RollPitchYawd(t.angle, 0, 0), Vector3d::Zero());
+    // Then, we use the general rigid transform X_MT to change simple X_TN to
+    // general X_MN as an argument to the tested function
+    // IsFaceNormalAlongPressureGradient().
+    const auto X_MN = X_MT * X_TN;
+    EXPECT_EQ(t.expect_result, IsFaceNormalAlongPressureGradient<double>(
+                                   *volume_field_M, *rigid_N, X_MN,
+                                   VolumeElementIndex(0), SurfaceFaceIndex(0)));
+  }
+}
 
 // TODO(DamrongGuoy): Test SampleVolumeFieldOnSurface with more general
 //  X_MN.  Right now X_MN is a simple translation without rotation.
@@ -708,7 +754,7 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   const SurfaceFaceIndex face0(0);
   const SurfaceMesh<double>::Barycentric centroid(1. / 3., 1. / 3., 1. / 3.);
   const double e = e_field->Evaluate(face0, centroid);
-  const double expect_e = 0.5;
+  const double expect_e = 5e6;
   EXPECT_NEAR(expect_e, e, kEps);
 
   // Test the face normals of resulting mesh. Because the 'trivial' surface mesh
