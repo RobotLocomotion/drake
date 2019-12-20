@@ -19,7 +19,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/* \
   && locale-gen en_US.UTF-8 \
   && useradd -d "/home/$NB_USER" -G $NB_GID -mU -s /bin/bash "$NB_USER"
-USER "$NB_USER"
 ENV HOME="/home/$NB_USER" \
   LANG=en_US.UTF-8 \
   LANGUAGE=en_US.UTF-8 \
@@ -27,8 +26,13 @@ ENV HOME="/home/$NB_USER" \
   SHELL=/bin/bash \
   USER="$NB_USER"
 WORKDIR $HOME
-COPY --chown=$NB_UID:$NB_GID \
-  [".binder/binder-entrypoint", "/opt/drake/bin/binder-entrypoint"]
-COPY --chown=$NB_UID:$NB_GID ["tutorials/*.ipynb", "$HOME/tutorials/"]
+COPY [".binder/binder-entrypoint", "/opt/drake/bin/binder-entrypoint"]
+COPY ["tutorials/*.ipynb", "$HOME/tutorials/"]
+# TODO(jamiesnape): Use COPY --chown $NB_UID:$NB_GID instead of adding an extra
+# layer when all Binder environments are built with Docker 19.03 or above.
+RUN chown -R $NB_UID:$NB_GID \
+  /opt/drake/bin/binder-entrypoint \
+  "$HOME/tutorials"
+USER "$NB_USER"
 ENTRYPOINT ["/opt/drake/bin/binder-entrypoint"]
 CMD ["jupyter", "notebook", "--ip", "0.0.0.0"]
