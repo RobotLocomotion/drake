@@ -496,6 +496,11 @@ drake_py_binary(
 )
 
 drake_py_unittest(
+    name = "parse_models_test",
+    deps = [":pydrake"],
+)
+
+drake_py_unittest(
     name = "dot_clang_format_test",
     data = [
         "//:.clang-format",
