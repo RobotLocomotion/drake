@@ -405,16 +405,12 @@ unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
 template<typename T>
 unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
     const VolumeMesh<T>* volume_mesh) {
-  // TODO(SeanCurtis-TRI): All the zeros and ones prevent meaningful recognition
-  // of valid interpolation. I.e., interpolating values at v0, v1, v2
-  // incorrectly will still produce zero. Provide more complex values.
-
   // Pressure field value pᵢ at vertex vᵢ.
   const T p0{0.};
   const T p1{0.};
   const T p2{0.};
-  const T p3{1.};
-  const T p4{1.};
+  const T p3{1e+7};
+  const T p4{1e+7};
   std::vector<T> p_values = {p0, p1, p2, p3, p4};
   DRAKE_DEMAND(5 == volume_mesh->num_vertices());
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
@@ -679,7 +675,41 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
 
 // TODO(DamrongGuoy): Add unit tests for AddPolygonToMeshData().
 
-// TODO(DamrongGuoy): Add unit tests for ComputeNormalField().
+GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
+  // VolumeMesh M has the tetrahedron Element_0 above the X-Y plane.
+  const auto volume_M = TrivialVolumeMesh<double>();
+  // VolumeMeshField of M has the gradient vector in Element_0 in +Z direction.
+  const auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
+  // SurfaceMesh N has the triangle Face_0 with its face normal vector in +Z
+  // direction.
+  const auto rigid_N = TrivialSurfaceMesh<double>();
+
+  // We will set the pose of SurfaceMesh N in M's frame so that the triangle
+  // Face_0 of N has its face normal vector make various angle with the
+  // gradient vector in the tetrahedron Element_0 of M.
+  struct TestData {
+    double angle;        // Angle between the face normal and the gradient.
+    bool expect_result;  // true when `angle` < threshold 5π/8.
+  } test_data[6]{{0, true},
+                 {M_PI_2, true},
+                 {(5. * M_PI / 8.) * 0.99, true},   // slightly less than 5π/8
+                 {(5. * M_PI / 8.) * 1.01, false},  // slightly more than 5π/8
+                 {3. * M_PI_4, false},
+                 {M_PI, false}};
+
+  for (const TestData& t : test_data) {
+    // Rotate the triangle Face_0 of SurfaceMesh N around the X-axis of
+    // VolumeMesh M. Whether the triangle Face_0 intersects the tetrahedron
+    // Element_0 is not relevant to this test because the code only checks
+    // the angle between the normal and the gradient without checking whether
+    // the triangle and the tetrahedron intersect.
+    const auto X_MN =
+        RigidTransformd(RollPitchYawd(t.angle, 0, 0), Vector3d::Zero());
+    EXPECT_EQ(t.expect_result, IsFaceNormalAlongPressureGradient<double>(
+                                   *volume_field_M, *rigid_N, X_MN,
+                                   VolumeElementIndex(0), SurfaceFaceIndex(0)));
+  }
+}
 
 // TODO(DamrongGuoy): Test SampleVolumeFieldOnSurface with more general
 //  X_MN.  Right now X_MN is a simple translation without rotation.
@@ -708,7 +738,7 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   const SurfaceFaceIndex face0(0);
   const SurfaceMesh<double>::Barycentric centroid(1. / 3., 1. / 3., 1. / 3.);
   const double e = e_field->Evaluate(face0, centroid);
-  const double expect_e = 0.5;
+  const double expect_e = 5e6;
   EXPECT_NEAR(expect_e, e, kEps);
 
   // Test the face normals of resulting mesh. Because the 'trivial' surface mesh

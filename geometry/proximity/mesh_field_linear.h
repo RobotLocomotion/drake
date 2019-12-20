@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <map>
 #include <memory>
 #include <string>
@@ -16,91 +17,60 @@
 namespace drake {
 namespace geometry {
 
-// TODO(DamrongGuoy): Consider putting shape_function_FEM into its own file.
 /**
- \defgroup shape_function_FEM  Shape Functions in Finite Element Approximation
+ %MeshFieldLinear represents a piecewise linear field f defined on a
+ simplicial-element (triangular or tetrahedral) mesh; the field value
+ changes linearly within each element, and the gradient is constant within
+ each element. The field is continuous across adjacent elements, but its
+ gradient is discontinuous from one element to the other.
 
-  Much of this discussion was taken from:
+ To represent a piecewise linear field f, we store one field value per vertex
+ of the mesh. Each element (triangle or tetrahedron) has (d+1) vertices,
+ where d is the dimension of the element. For triangle, d = 2, and for
+ tetrahedron, d = 3.
 
-      O.C. Zienkiewicz, R.L. Taylor & J.Z. Zhu.
-      The Finite Element Method: Its Basis and Fundamentals.
-      Chapter 3. Weak Forms and Finite Element Approximation.
-      Chapter 6. Shape Functions, Derivatives, and Integration.
+ The following sections are details for interested readers.
 
-  We approximately represent a field u over a finite domain by dividing the
-  domain into "small regular shaped regions" (Zienkiewicz et al. p. 55), each
-  of which define a _finite element_ domain, and a finite set of points
-  shared between the finite elements define the _nodes_, where we store field
-  values.  The division of the domain into elements and nodes is called a
-  _finite element mesh_.  The term _element_ refers to a tetrahedron in
-  VolumeMesh or a triangle in SurfaceMesh.
+ <h3> Barycentric coordinate </h3>
 
-  On each finite element E, we have one _shape function_ Nᵢ for each
-  node nᵢ of the element, where i is a local index of the node within the
-  element E:
+ For a linear triangle or tetrahedron element E in 3-D, we use barycentric
+ coordinate:
 
-               Nᵢ : E → ℝ,
+       (b₀, b₁, b₂)     for triangle,
+       (b₀, b₁, b₂, b₃) for tetrahedron,
+       ∑bᵢ = 1, bᵢ ≥ 0,
 
-  and use Nᵢ to define the _finite element approximation_ uᵉ of Field u
-  at a point p ∈ E as:
+ to identify a point Q that lies in the simplicial element E. The coefficient
+ bᵢ is the weight of vertex Vᵢ of the element E, where the index i is a local
+ index within the element E, not the global index of the entire mesh. In other
+ words, vertex Vᵢ is the iᵗʰ vertex of E, not the iᵗʰ vertex among all vertices
+ in the mesh. The point Q in E can be expressed as:
 
-               uᵉ(p) = ∑ Nᵢ(p) * uᵢ
+    Q = ∑bᵢ(Q)Vᵢ,
 
-  where uᵢ is the value of u at the node nᵢ in the element E.  The specific
-  definition of a shape function Nᵢ depends on the shape and order of
-  approximation of a finite element E. For example, E could be a triangle or
-  a tetrahedron, with first-order (linear) approximation, second-order
-  (quadratic) approximation, etc.
+ where we indicate the barycentric coordinate of a point Q on an element E as
+ bᵢ(Q) -- omitting E for typographical convenience.
 
-  Refer to MeshFieldLinear and MeshFieldQuadratic for examples of the shape
-  functions.
- */
+ <h3> Field value </h3>
 
-/**@{*/
+ At a point Q in element E, the piecewise linear field f has value:
 
-/**
- @ingroup shape_function_FEM
- %MeshFieldLinear represents a field variable defined on a finite-element
- simplicial (triangular or tetrahedral) mesh using first-order (linear)
- approximation. See @ref shape_function_FEM for basic terminology of finite
- element approximation.
+    f(Q) = ∑bᵢ(Q)Fᵢ
 
- We store one field value per vertex of the mesh, and each element
- (triangle or tetrahedron) has (d+1) nodes, where d is the dimension of the
- element.
+ where Fᵢ is the field value at the iᵗʰ vertex of E.
 
- <h3>Example. %Shape Function of a Linear Triangular Element</h3>
+ <h3> Gradient </h3>
 
- A _linear triangular element_ E with three vertices v₀, v₁, v₂ has its
- three nodes n₀, n₁, n₂ are coincident with the vertices. For brevity, here we
- write vᵢ for both the label of the vertex and also the Cartesian coordinates
- of its location in a certain coordinates frame.
+ Consider each bᵢ as a linear scalar field on element E, the gradient of
+ the piecewise linear field f on E is:
 
- <!-- TODO(DamrongGuoy): Consider simplify it. -->
- For a triangular element, it is beneficial to use a map from the
- _parent coordinate system_ (L₀, L₁, L₂) (also known as
- _barycentric_ or _area coordinates_) to the Cartesian coordinates
- p = (x,y,z) of a point on the triangle:
+      ∇f = ∑Fᵢ∇bᵢ
 
-              p(L₀, L₁, L₂) = L₀ * v₀ + L₁ * v₁ + L₂ * v₂,
-              L₀ + L₁ + L₂ = 1, Lᵢ ∈ [0,1].
+ Each gradient vector ∇bᵢ is constant on E and depends on the shape of the
+ triangle or tetrahedron E.
 
- For a linear triangular element, the shape function is the same as the
- parent coordinate functions:
-
-              Nᵢ(p) = Lᵢ(p), i = 0,1,2,
-
- and its finite element approximation uᵉ of Field u at a point p ∈ E is:
-
-              uᵉ(p) = N₀(p) * u₀ + N₁(p) * u₁ + N₂(p) * u₂,
-
- where uᵢ is the value of u() at the node nᵢ.
-
- Linear tetrahedral elements are similar.
-
- @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
-                     the field value.
- @tparam MeshType    the type of the meshes: surface mesh or volume mesh.
+ @tparam FieldValue  a valid Eigen scalar, or a Vector of Eigen scalar.
+ @tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh.
  */
 template <class FieldValue, class MeshType>
 class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
@@ -121,6 +91,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
         name_(std::move(name)), values_(std::move(values)) {
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
                  this->mesh().num_vertices());
+    CalcGradientField();
   }
 
   FieldValue EvaluateAtVertex(typename MeshType::VertexIndex v) const final {
@@ -143,29 +114,58 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
     return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
   }
 
+ /** Evaluates the gradient in the domain of the element indicated by `e`.
+  The gradient is a vector in R³ expressed in frame M. For surface meshes, it
+  will particularly lie parallel to the plane of the corresponding triangle.
+  */
+  Vector3<FieldValue> EvaluateGradient(
+      typename MeshType::ElementIndex e) const {
+    return gradients_[e];
+  }
+
+  /** Transforms the gradient vectors of this field from its initial frame M
+   to the new frame N.
+   @warning Use this function when the reference mesh of this field changes
+   its frame in the same way.
+   */
+  void TransformGradients(
+      const math::RigidTransform<typename MeshType::ScalarType>& X_NM) {
+    for (auto& grad : gradients_) {
+      grad = X_NM.rotation() * grad;
+    }
+  }
+
   const std::string& name() const { return name_; }
   const std::vector<FieldValue>& values() const { return values_; }
-  std::vector<FieldValue>& mutable_values() { return values_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
-  // TODO(#12173): Support the VolumeMesh MeshType by implementing the Equal
-  //               function in VolumeMesh.
+  // TODO(DamrongGuoy): Change the type of parameter `field` from MeshField
+  //  to MeshFieldLinear. We will need to change the callers of this function
+  //  too.
   /** Checks to see whether the given MeshFieldLinear object is equal via deep
    exact comparison. The name of the objects are exempt from this comparison.
    NaNs are treated as not equal as per the IEEE standard.
-   @note Using a MeshType of VolumeMesh is not yet supported.
    @param field The field for comparison.
    @returns `true` if the given field is equal.
+   @note Requires `MeshField field` to be MeshFieldLinear.
    */
   bool Equal(const MeshField<FieldValue, MeshType>& field) const {
     if (!this->mesh().Equal(field.mesh())) return false;
 
+    const auto* field_linear =
+        dynamic_cast<const MeshFieldLinear<FieldValue, MeshType>*>(&field);
+    DRAKE_DEMAND(field_linear);
+
+    // Check field value at each vertex.
     for (typename MeshType::VertexIndex i(0); i < this->mesh().num_vertices();
          ++i) {
-      if (this->EvaluateAtVertex(i) != field.EvaluateAtVertex(i))
+      if (values_.at(i) != field_linear->values_.at(i))
         return false;
     }
-
+    for (typename MeshType::ElementIndex i(0); i < this->mesh().num_elements();
+         ++i) {
+      if (gradients_.at(i) != field_linear->gradients_.at(i)) return false;
+    }
     // All checks passed.
     return true;
   }
@@ -177,11 +177,39 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   DoCloneWithNullMesh() const final {
     return std::make_unique<MeshFieldLinear>(*this);
   }
+  void CalcGradientField();
+  Vector3<FieldValue> CalcGradientVector(
+      typename MeshType::ElementIndex e) const;
+
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
   std::vector<FieldValue> values_;
+  // The gradients are indexed in the same way as elements, i.e.,
+  // gradients_[i] is the gradient vector on elements_[i]. The elements could
+  // be tetrahedra for VolumeMesh or triangles for SurfaceMesh.
+  std::vector<Vector3<FieldValue>> gradients_;
 };
+
+template <class FieldValue, class MeshType>
+void MeshFieldLinear<FieldValue, MeshType>::CalcGradientField() {
+  gradients_.clear();
+  gradients_.reserve(this->mesh().num_elements());
+  for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
+       ++e) {
+    gradients_.push_back(CalcGradientVector(e));
+  }
+}
+
+template <class FieldValue, class MeshType>
+Vector3<FieldValue> MeshFieldLinear<FieldValue, MeshType>::CalcGradientVector(
+    typename MeshType::ElementIndex e) const {
+  std::array<FieldValue, MeshType::kVertexPerElement> u;
+  for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
+    u[i] = values_[this->mesh().element(e).vertex(i)];
+  }
+  return this->mesh().CalcGradientVectorOfLinearField(u, e);
+}
 
 /**
  @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
@@ -190,8 +218,6 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
  */
 template <typename FieldValue, typename T>
 using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;
-
-/**@}*/
 
 }  // namespace geometry
 }  // namespace drake
