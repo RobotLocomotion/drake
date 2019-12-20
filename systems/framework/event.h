@@ -25,20 +25,21 @@ namespace systems {
  sophisticated systems (e.g., systems modeled using piecewise differential
  algebraic equations, systems dependent upon mouse button clicks, and
  @ref discrete_systems) require more sophisticated state updating mechanisms.
- We call those state updates "events" and discuss them in detail from an
- author's perspective on this page. The Simulator class documentation describes
- the technical process underlying how events are handled and delves into greater
+ We call those state updates "events", the conditions that cause these events
+ "triggers", and the mechanisms that compute the updates "handlers". We discuss
+ these concepts in detail on this page. The Simulator class documentation
+ describes the technical process underlying how events are handled in great
  detail.
 
  ### Exposition
 
- Events occur between discretely between finite advancements of systems' time
+ Events occur between discrete, finite advancements of systems' time
  and state, as in the mouse click example above. In the absence of events, a
  simulator would happily advance time and any continuous state without stopping.
- Events allow a system to change its state discontinuously and to communicate
- with the outside world. Events also allow the time and state evolution to be
- paused for polling: an event might serve no other purpose than to count the
- number of times that it occurred.
+ Events allow a system's state to change discontinuously and permit systems to
+ communicate with the "outside world". Events also allow the time and state
+ evolution to be paused for polling: an event might serve no other purpose than
+ to allow counting the number of times that it occurred.
 
  ### Types of events and triggers
 
@@ -65,7 +66,7 @@ namespace systems {
 
  Updates are performed in a particular sequence. For example, unrestricted
  updates are performed before discrete updates. The Simulator documentation
- describes the precise update ordering in depth.
+ describes the precise update ordering.
 
  #### %Event triggers
 
@@ -76,20 +77,24 @@ namespace systems {
  - per simulation step
  - as a WitnessFunction crosses zero
  - "by force", e.g., the system's CalcUnrestrictedUpdate() function is invoked
- by some user code
+   by some user code
 
- ### How events are dispatched
+ ### How events are handled
 
- Drake's Simulator is nominally responsible for detecting when events
- trigger, dispatching the appropriate event update function, and updating the
- state (the update functions modify only copies of state so that every update
- function sees the same pre-update state regardless of the sequence of event
- updates). Novel "solvers" must provide these capabilities as well.
+ State advances with time in dynamical systems. If the dynamical system is
+ simulated, then Drake's Simulator, or another solver (see @ref event_glossary
+ "glossary") is responsible for detecting when events trigger, dispatching the
+ appropriate event update function, and updating the state (the update functions
+ modify only copies of state so that every update function sees the same
+ pre-update state regardless of the sequence of event updates) as time advances.
+ "Solvers" for physically situated dynamical systems (e.g., robots) must provide
+ these same capabilities, even though the state over time is generally estimated
+ rather than computed (solved).
 
- Events can also be dispatched by force. As noted above, one can could
- CalcUnrestrictedUpdate() to determine how a system's state would change and,
- optionally, update that state manually. Here is a simple example showing a
- forced publish:
+ Events can also be dispatched manually ("by force"), i.e., outside of a solver.
+ As noted above, one could call CalcUnrestrictedUpdate() to determine how a
+ system's state would change and, optionally, update that state manually. Here
+ is a simple example illustrating a forced publish:
  ```
    SystemX y;
    std::unique_ptr<Context<T>> context = y.CreateDefaultContext();
@@ -101,9 +106,10 @@ namespace systems {
  #### Declaring update functions
 
  The preferred way to update state through events is to declare an update
- handler in your class derived from LeafSystem. **Some older code updates state
- by overriding event dispatchers (e.g., DoCalcUnrestrictedUpdates()), though
- that practice is discouraged and will soon be deprecated.**
+ handler in your LeafSystem-derived-class. **Some older Drake code computes
+ state updates by overriding event dispatchers** (e.g.,
+ LeafSystem::DoCalcUnrestrictedUpdate()), **though that practice is discouraged
+ and will soon be deprecated.**
 
  A number of convenience functions are available in LeafSystem for declaring
  various trigger and event update combinations; see, e.g.,
@@ -131,14 +137,14 @@ namespace systems {
 
  It can be impractical or infeasible to create a different handler function for
  every possible trigger that a leaf system might need to consider. The
- alternative is to create a single event handler and map every trigger to it.
- The problem then becomes how to determine which condition triggered the event
- handler.
+ alternative is to create a single event handler and map multiple triggers to
+ it. The problem then becomes how an event handler should determine which
+ condition triggered it.
 
- The EventData structure was created for exactly this purpose at the price
- of some verbosity. Every Event stores the type of trigger associated with it
- and, if relevant, some %EventData that provides greater insight into why the
- event handler was invoked. For example:
+ The EventData structure was created for exactly this purpose, at the price
+ of some verbosity when declaring the events. Every Event stores the type of
+ trigger associated with it and, if relevant, some %EventData that provides
+ greater insight into why the event handler was invoked. For example:
  ```
    template <typename T>
    class MySystem : public LeafSystem<T> {
@@ -178,23 +184,27 @@ namespace systems {
  #### %Event status
 
  %Event handlers can return an EventStatus type to modulate the behavior of a
- simulation. Returning EventStatus::kFailed from the event handler indicates
+ solver. Returning EventStatus::kFailed from the event handler indicates
  that the event handler was unable to update the state (because, e.g., the
- simulation step was too big) and thus Simulator should take corrective action.
+ simulation step was too big) and thus the solver should take corrective action.
  Or an event handler can return EventStatus::kReachedTermination to indicate
- that the Simulator should stop simulating; this is useful if the event handler
- detects that a walking robot has fallen over and that the end of a
+ that the solver should stop computing; this is useful if the event handler
+ detects that a simulated walking robot has fallen over and that the end of a
  reinforcement learning episode has been observed, for example.
 
  ### Glossary
+ @anchor event_glossary
 
-  - register
-  - schedule
-  - generate
-  - trigger
-  - handle
-  - process
-  - forced events
+  - **dispatch**: the process of the solver collecting events that trigger
+                  simultaneously and then farming those events to their
+                  handlers.
+  - **forced event**: when an event handler is called manually through user
+                      code rather than by a solver.
+  - **handle/handler**: an event is "handled" when the triggering condition has
+                        been identified and the "handler" function is called.
+  - **solver**: a process that controls or tracks the time and state evolution
+                of a System.
+  - **trigger**: the condition responsible for causing an event.
 
  */
 
