@@ -169,6 +169,16 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bounding_volume_hierarchy",
+        ":make_box_field",
+        ":make_box_mesh",
+        ":make_cylinder_field",
+        ":make_cylinder_mesh",
+        ":make_ellipsoid_field",
+        ":make_ellipsoid_mesh",
+        ":make_sphere_field",
+        ":make_sphere_mesh",
+        ":obj_to_surface_mesh",
+        ":proximity_utilities",
         ":surface_mesh",
         ":volume_mesh",
         "//common:essential",
@@ -176,16 +186,6 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
-        "//geometry/proximity:make_box_field",
-        "//geometry/proximity:make_box_mesh",
-        "//geometry/proximity:make_cylinder_field",
-        "//geometry/proximity:make_cylinder_mesh",
-        "//geometry/proximity:make_ellipsoid_field",
-        "//geometry/proximity:make_ellipsoid_mesh",
-        "//geometry/proximity:make_sphere_field",
-        "//geometry/proximity:make_sphere_mesh",
-        "//geometry/proximity:obj_to_surface_mesh",
-        "//geometry/proximity:proximity_utilities",
         "@fmt",
     ],
 )
@@ -195,7 +195,7 @@ drake_cc_library(
     hdrs = ["make_box_field.h"],
     deps = [
         ":distance_to_point_callback",
-        ":volume_mesh",
+        ":mesh_field",
         "//common:essential",
         "//common:unused",
         "//geometry:shape_specification",
@@ -218,7 +218,7 @@ drake_cc_library(
     hdrs = ["make_cylinder_field.h"],
     deps = [
         ":distance_to_point_callback",
-        ":volume_mesh",
+        ":mesh_field",
         "//common:essential",
         "//common:unused",
         "//geometry:shape_specification",
@@ -241,7 +241,7 @@ drake_cc_library(
     name = "make_ellipsoid_field",
     hdrs = ["make_ellipsoid_field.h"],
     deps = [
-        ":volume_mesh",
+        ":mesh_field",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -263,7 +263,7 @@ drake_cc_library(
     name = "make_sphere_field",
     hdrs = ["make_sphere_field.h"],
     deps = [
-        ":volume_mesh",
+        ":mesh_field",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -290,9 +290,11 @@ drake_cc_library(
     hdrs = [
         "mesh_field.h",
         "mesh_field_linear.h",
+        "volume_mesh_field.h",
     ],
     deps = [
         ":surface_mesh",
+        ":volume_mesh",
         "//common",
     ],
 )
@@ -407,14 +409,12 @@ drake_cc_library(
     name = "volume_mesh",
     srcs = [
         "volume_mesh.cc",
-        "volume_mesh_field.cc",
     ],
     hdrs = [
         "volume_mesh.h",
         "volume_mesh_field.h",
     ],
     deps = [
-        ":mesh_field",
         "//common",
         "//geometry:geometry_ids",
     ],
@@ -609,6 +609,8 @@ drake_cc_googletest(
     name = "mesh_field_linear_test",
     deps = [
         ":mesh_field",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -692,7 +694,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "volume_mesh_test",
     deps = [
+        ":mesh_field",
         ":volume_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
 )
