@@ -64,6 +64,12 @@ GTEST_TEST(MeshFieldTest, TestClone) {
                          const MeshType::Cartesian&) const final {
       return FieldValue(0);
     }
+    Vector3<FieldValue> EvaluateGradient(
+      typename MeshType::ElementIndex e,
+      const typename MeshType::Barycentric& b) const final {
+      return Vector3<FieldValue>::Zero();
+    }
+
    private:
     [[nodiscard]] std::unique_ptr<MeshFieldBase> DoCloneWithNullMesh() const
     final {

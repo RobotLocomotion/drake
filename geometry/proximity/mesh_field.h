@@ -13,9 +13,9 @@ namespace geometry {
   on a mesh M. It can evaluate the field value at any location on any element
   of the mesh.
 
-  @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
+  @tparam FieldValue  a valid Eigen scalar or Vector of Eigen scalar for
                      the field value.
-  @tparam MeshType   the type of the mesh: surface mesh or volume mesh.
+  @tparam MeshType   the type of the mesh: SurfaceMesh or VolumeMesh.
 */
 template <class FieldValue, class MeshType>
 // TODO(DamrongGuoy): Consider making the fact that MeshType is templated on
@@ -47,6 +47,21 @@ class MeshField {
   virtual FieldValue EvaluateCartesian(
       typename MeshType::ElementIndex e,
       const typename MeshType::Cartesian& p_MQ) const = 0;
+
+  /** Evaluates the gradient at a location on an element.
+   If the element is a tetrahedron, returns the gradient with respect to
+   Cartesian coordinates, expressed in frame M of the mesh. If the element
+   is a triangle, returns the gradient **along** the triangle with respect to
+   Cartesian coordinates, expressed in frame M of the mesh.
+   @param e The index of the element.
+   @param b The barycentric coordinates.
+   @note Currently the abstract class MeshField has only one concrete subclass
+   MeshFieldLinear, which has a constant gradient on each element. In this
+   case, the parameter `b` has no effect.
+   */
+  virtual Vector3<FieldValue> EvaluateGradient(
+      typename MeshType::ElementIndex e,
+      const typename MeshType::Barycentric& b) const = 0;
 
   /** Copy to a new %MeshField and set the new %MeshField to use a new
    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
@@ -95,6 +110,9 @@ class MeshField {
  */
 template <typename FieldValue, typename T>
 using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
+
+extern template class MeshField<double, SurfaceMesh<double>>;
+extern template class MeshField<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake
