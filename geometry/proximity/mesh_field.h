@@ -13,9 +13,9 @@ namespace geometry {
   on a mesh M. It can evaluate the field value at any location on any element
   of the mesh.
 
-  @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
+  @tparam FieldValue  a valid Eigen scalar or Vector of Eigen scalar for
                      the field value.
-  @tparam MeshType   the type of the mesh: surface mesh or volume mesh.
+  @tparam MeshType   the type of the mesh: SurfaceMesh or VolumeMesh.
 */
 template <class FieldValue, class MeshType>
 // TODO(DamrongGuoy): Consider making the fact that MeshType is templated on
@@ -95,6 +95,9 @@ class MeshField {
  */
 template <typename FieldValue, typename T>
 using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
+
+extern template class MeshField<double, SurfaceMesh<double>>;
+extern template class MeshField<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake
