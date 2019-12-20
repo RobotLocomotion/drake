@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
@@ -101,6 +102,19 @@ GTEST_TEST(MeshFieldLinearTest, TestEqual) {
   auto field2 = MeshFieldLinear<double, SurfaceMesh<double>>(
       "e", std::move(alt_e_values), mesh.get());
   EXPECT_FALSE(mesh_field->Equal(field2));
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradient) {
+  auto mesh = GenerateMesh<double>();
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e", std::move(e_values), mesh.get());
+
+  Vector3<double> gradient = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+
+  Vector3<double> expect_gradient(1., 1., 0.);
+  EXPECT_TRUE(CompareMatrices(expect_gradient, gradient, 1e-14));
 }
 
 }  // namespace
