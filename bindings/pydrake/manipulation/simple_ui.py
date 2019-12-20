@@ -182,11 +182,13 @@ class SchunkWsgButtons(LeafSystem):
         # Schedule window updates in either case (new or existing window):
         self.DeclarePeriodicPublish(update_period_sec, 0.0)
 
-        self._open_button = tk.Button(self.window, text="Open Gripper",
+        self._open_button = tk.Button(self.window,
+                                      text="Open Gripper (spacebar)",
                                       state=tk.DISABLED,
                                       command=self.open)
         self._open_button.pack()
-        self._close_button = tk.Button(self.window, text="Close Gripper",
+        self._close_button = tk.Button(self.window,
+                                       text="Close Gripper (spacebar)",
                                        command=self.close)
         self._close_button.pack()
 

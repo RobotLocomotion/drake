@@ -154,6 +154,7 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
   return sdf_collision;
 }
 
+// Define a pass-through functor for testing.
 std::string NoopResolveFilename(std::string filename) { return filename; }
 
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>

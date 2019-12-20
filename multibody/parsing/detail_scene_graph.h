@@ -15,7 +15,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Used for resolving URIs / filenames.
+/** Used for resolving URIs / filenames.  */
 using ResolveFilename = std::function<std::string (std::string)>;
 
 /** Given an sdf::Geometry object representing a <geometry> element from an SDF
@@ -28,7 +28,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 
 /** Given an sdf::Visual object representing a <visual> element from an SDF
  file, this method makes a new drake::geometry::GeometryInstance object from
- this specification.
+ this specification at a pose `X_LG` relatve to its parent link.
  This method returns nullptr when the given SDF specification corresponds
  to a geometry of type `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)  */
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
@@ -83,9 +83,11 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
     const sdf::Visual& sdf_visual);
 
-/** Given `sdf_collision` stemming from the parsing of a `<collision>` element
- in an SDF file, this method makes the pose `X_LG` of frame G for the geometry
- of that collision element in the frame L of the link it belongs to.  */
+/** Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
+ relative to the link L containing the collision, given an `sdf_collision`
+ stemming from the parsing of a `<collision>` element in an SDF file and its
+ pose `X_LG`, where `G` represents the frame for the geometry of that collision
+ element.  */
 math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision, const math::RigidTransformd& X_LG);
 

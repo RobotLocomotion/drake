@@ -312,7 +312,7 @@
     </frame>
 
     <!--
-    N.B. This model used have <static>true</static>, but this creates
+    N.B. This model used to have <static>true</static>, but this creates
     issues in reusability with the current implementation of MBP parsing
     (#12227).
     -->

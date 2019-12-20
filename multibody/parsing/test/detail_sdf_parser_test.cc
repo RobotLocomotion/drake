@@ -200,7 +200,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
       "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
   const RigidTransformd X_MF3(Vector3d(0.7, 0.8, 0.9));
   check_frame(
-      "_instance1_sdf_model_frame", "model_scope_model_frame_implicit", X_MF3);
+      "__model__", "model_scope_model_frame_implicit", X_MF3);
 }
 
 struct PlantAndSceneGraph {
@@ -563,12 +563,12 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
 </model>)");
 }
 
-void FailWithNonemptyRelativeTo(const std::string& inner) {
+void FailWithUnsupportedRelativeTo(const std::string& inner) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
       std::runtime_error,
       R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
-      R"(outside of the <frame/> tag.)");
+      R"(in <inertial/> or <model/> tags.)");
 }
 
 void FailWithInvalidWorld(const std::string& inner) {
@@ -614,14 +614,12 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 )", bad_name));
   }
 
-  // TODO(eric.cousineau): Support the rest of these...
-  FailWithNonemptyRelativeTo(R"(
+  FailWithUnsupportedRelativeTo(R"(
 <model name='bad'>
-  <pose relative_to='my_frame'/>
-  <frame name='my_frame'/>
+  <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
-  FailWithNonemptyRelativeTo(R"(
+  FailWithUnsupportedRelativeTo(R"(
 <model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
@@ -629,7 +627,6 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   </link>
 </model>)");
 }
-
 
 }  // namespace
 }  // namespace internal

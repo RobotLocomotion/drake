@@ -2,19 +2,19 @@
 <robot name="office">
 
    <material name="Brown">
-     <color rgba="83./255. 53./255. 10./255."/>
+     <color rgba="0.33 0.21 0.04 1"/>
    </material>
 
    <material name="White">
-    <color rgba="1 1 1"/>
+    <color rgba="1 1 1 1"/>
    </material>
 
    <material name="Grey">
-    <color rgba=".3 .3 .3"/>
+    <color rgba=".3 .3 .3 1"/>
    </material>
 
     <material name="Red">
-     <color rgba="1 0 0"/>
+     <color rgba="1 0 0 1"/>
     </material>
 
    <link name="wall1">

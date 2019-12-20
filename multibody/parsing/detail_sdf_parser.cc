@@ -56,30 +56,32 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
 
 // Fails fast if a user attempts to specify `<pose frame='...'/>` in an
 // unsupported location.
-// See https://bitbucket.org/osrf/sdformat/issues/200 (tracked by #10590).
 void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
-  // TODO(eric.cousineau): Fix all call sites, and remove this function.
+  // TODO(eric.cousineau): Fix this for `<inertial/>` and `<model/>`.
   if (element->HasElement("pose")) {
     sdf::ElementPtr pose = element->GetElement("pose");
     const std::string frame_name = pose->Get<std::string>("relative_to");
     if (!frame_name.empty()) {
       throw std::runtime_error(
           "<pose relative_to='{non-empty}'/> is presently not supported "
-          "outside of the <frame/> tag.");
+          "in <inertial/> or <model/> tags.");
     }
   }
 }
 
+// Throws an exception if there are any errors present in the `errors` list.
 void ThrowAnyErrors(const sdf::Errors& errors) {
-  // Check for any errors.
   if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfFile():\n");
+    std::ostringstream os;
+    os << "From AddModelFromSdfFile():";
     for (const auto& e : errors)
-      error_accumulation += "Error: " + e.Message() + "\n";
-    throw std::runtime_error(error_accumulation);
+      os << "\nError: " + e.Message();
+    throw std::runtime_error(os.str());
   }
 }
 
+// This takes a `sdf::SemanticPose`, which defines a pose relative to a frame,
+// and resolves its value with respect to another frame.
 math::RigidTransformd ResolveRigidTransform(
     const sdf::SemanticPose& semantic_pose,
     const std::string& relative_to = "") {
@@ -442,8 +444,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
               ResolveUri(uri, package_map, root_dir);
           if (resolved_name.empty()) {
             throw std::runtime_error(
-                std::string(__FILE__) + ": " + __func__ +
-                ": ERROR: Mesh file name could not be resolved from the "
+                "ERROR: Mesh file name could not be resolved from the "
                 "provided uri \"" + uri + "\".");
           }
           return resolved_name;
@@ -478,16 +479,15 @@ std::vector<LinkInfo> AddLinksFromSpecification(
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
-          // ... Yuck?
-          const RigidTransformd X_LG_init = ResolveRigidTransform(
+          const RigidTransformd X_LG = ResolveRigidTransform(
               sdf_collision.SemanticPose());
-          const RigidTransformd X_LG =
-              MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG_init);
+          const RigidTransformd X_LC =
+              MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
           std::unique_ptr<geometry::Shape> shape =
               MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
           geometry::ProximityProperties props =
               MakeProximityPropertiesForCollision(sdf_collision);
-          plant->RegisterCollisionGeometry(body, X_LG, *shape,
+          plant->RegisterCollisionGeometry(body, X_LC, *shape,
                                            sdf_collision.Name(),
                                            std::move(props));
         }
@@ -497,20 +497,17 @@ std::vector<LinkInfo> AddLinksFromSpecification(
   return link_infos;
 }
 
-// TODO(eric.cousineau): Handle backwards compatibility.
 const Frame<double>& AddFrameFromSpecification(
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
-    const Frame<double>& model_frame, MultibodyPlant<double>* plant) {
-  // TODO(eric.cousineau): Would be nice if "" defaulted to `__model__` /
-  // `__world__`?
-  RigidTransformd X_PF;
+    const Frame<double>& default_frame, MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
-  const sdf::SemanticPose& semantic_pose = frame_spec.SemanticPose();
+  // TODO(eric.cousineau): Without supplying AttachedTo(), this ResolvePose
+  // call fails. Debug why.
+  const RigidTransformd X_PF = ResolveRigidTransform(
+      frame_spec.SemanticPose(), frame_spec.AttachedTo());
   if (frame_spec.AttachedTo().empty()) {
-    X_PF = ResolveRigidTransform(semantic_pose);
-    parent_frame = &model_frame;
+    parent_frame = &default_frame;
   } else {
-    X_PF = ResolveRigidTransform(semantic_pose, frame_spec.AttachedTo());
     parent_frame = &plant->GetFrameByName(
         frame_spec.AttachedTo(), model_instance);
   }
@@ -567,14 +564,8 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
-  // N.B. We mangle this name to dis-incentivize users from wanting to use
-  // this frame. At present, SDFormat does not concretely specify what the
-  // semantics of a "model frame" are. Note that this is welded to the
-  // canonical link.
-  // TODO(eric.cousineau): Use same name mangling as what libsdformat (or the
-  // spec itself) uses.
-  const std::string sdf_model_frame_name =
-      "_" + model_name + "_sdf_model_frame";
+  // N.B. This follows SDFormat's convention.
+  const std::string sdf_model_frame_name = "__model__";
   const Frame<double>& model_frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           sdf_model_frame_name, canonical_link_frame, X_MLc.inverse(),
@@ -594,9 +585,8 @@ ModelInstanceIndex AddModelFromSpecification(
 
   drake::log()->trace("sdf_parser: Add explicit frames");
   // Add frames at root-level of <model>.
-  // Add frames at root-level of <model>.
   for (uint64_t frame_index = 0; frame_index < model.FrameCount();
-      ++frame_index) {
+       ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
   }
