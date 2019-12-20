@@ -3,10 +3,9 @@ namespace geometry {
 namespace proximity {
 
 /** @addtogroup proximity_queries
-
  Proximity queries span a range of types, including:
 
-   - penetration
+   - @ref module_penetration_queries "penetration"
    - distance
    - ray-intersection
 
@@ -15,7 +14,13 @@ namespace proximity {
  <!-- TODO(tehbelinda): Fill this in. -->
  @note This page is still under construction.
 
- Next topic: @ref render_engines  */
+ Next topic: @ref render_engines
+
+ @{
+  @defgroup module_penetration_queries Penetration Queries
+ @}
+
+ */
 
 }  // namespace proximity
 }  // namespace geometry
