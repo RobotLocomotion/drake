@@ -596,15 +596,16 @@ class HydroelasticContactVisualizer(object):
                                 # magnitude must be > 0 otherwise this traction
                                 #  would be skipped.
                                 scale /= traction_mag
-                                d.addArrow(start=origin, end=origin +
-                                           auto_traction_scale *
-                                           traction * scale,
-                                           tubeRadius=0.000125,
-                                           headRadius=0.00025, color=[1, 0, 1])
-                            else:
-                                d.addSphere(center=origin,
-                                            radius=0.000125,
-                                            color=[1, 0, 1])
+
+                            d.addArrow(start=origin, end=origin +
+                                       auto_traction_scale *
+                                       traction * scale,
+                                       tubeRadius=0.000125,
+                                       headRadius=0.00025, color=[1, 0, 1])
+                        else:
+                            d.addSphere(center=origin,
+                                        radius=0.000125,
+                                        color=[1, 0, 1])
 
                     if self.show_slip_velocity_vectors:
                         slip = np.array([quad_point_data.vt_BqAq_W[0],
@@ -620,15 +621,16 @@ class HydroelasticContactVisualizer(object):
                                 # magnitude must be > 0 otherwise this slip
                                 # vector would be skipped.
                                 scale /= slip_mag
-                                d.addArrow(start=origin, end=origin +
-                                           auto_slip_velocity_scale *
-                                           slip * scale,
-                                           tubeRadius=0.000125,
-                                           headRadius=0.00025, color=[0, 1, 1])
-                            else:
-                                d.addSphere(center=origin,
-                                            radius=0.000125,
-                                            color=[0, 1, 1])
+
+                            d.addArrow(start=origin, end=origin +
+                                       auto_slip_velocity_scale *
+                                       slip * scale,
+                                       tubeRadius=0.000125,
+                                       headRadius=0.00025, color=[0, 1, 1])
+                        else:
+                            d.addSphere(center=origin,
+                                        radius=0.000125,
+                                        color=[0, 1, 1])
 
             # Iterate over all triangles.
             for tri in surface.triangles:
