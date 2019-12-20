@@ -601,6 +601,10 @@ class HydroelasticContactVisualizer(object):
                                            traction * scale,
                                            tubeRadius=0.000125,
                                            headRadius=0.00025, color=[1, 0, 1])
+                            else:
+                                d.addSphere(center=origin,
+                                            radius=0.000125,
+                                            color=[1, 0, 1])
 
                     if self.show_slip_velocity_vectors:
                         slip = np.array([quad_point_data.vt_BqAq_W[0],
@@ -621,6 +625,10 @@ class HydroelasticContactVisualizer(object):
                                            slip * scale,
                                            tubeRadius=0.000125,
                                            headRadius=0.00025, color=[0, 1, 1])
+                            else:
+                                d.addSphere(center=origin,
+                                            radius=0.000125,
+                                            color=[0, 1, 1])
 
             # Iterate over all triangles.
             for tri in surface.triangles:
