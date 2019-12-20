@@ -351,6 +351,110 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
   return polygon_M;
 }
 
+/** Determines whether a triangle of a rigid surface N and a tetrahedron of a
+ soft volume M are suitable for building contact surface based on the face
+ normal vector f_N of the triangle and the pressure gradient vector ∇p_M
+ of the tetrahedron. This is an attempt to address Issue #12441 "Hydroelastic
+ contact surface broken for thin rigid object -- needs to use normals".
+     For example, when a thin rigid plate N penetrates deeply into a soft
+ ball M, both sides of surface N intersect the volume of M as shown in this
+ picture:
+
+     thin rigid plate N
+           ┌┄┐
+           ┊ ┊    soft ball M
+           ┊ ┊     ● ● ● ●
+           ┊ ║●               ●
+          ⇦┃↘║⇨                 ●
+         ●⇦┃↘║↘                   ●
+        ● ⇦┃ ║⇨ ↘                  ●
+        ● ⇦┃ ║⇨   ↘                ●
+        ● ⇦┃→║⇨ → → →              ●
+        ● ⇦┃ ║⇨   ↗                ●    ↗ pressure gradient ∇p_M in M
+        ● ⇦┃ ║⇨ ↗                  ●    ⇨ surface normal f_N on N
+         ●⇦┃↗║↗                   ●     ║ suitable intersecting surface
+          ⇦┃↗║⇨                 ●       ┃ unsuitable intersecting surface
+           ┊ ║●               ●         ┊ non-intersecting surface
+           ┊ ┊     ● ● ● ●
+           ┊ ┊
+           └┄┘
+
+ In the picture above, each suitable triangle in N has its face normal making
+ an acute angle with the pressure gradient in M, and each unsuitable triangle
+ has its face normal vector making an obtuse angle with the pressure gradient.
+ In this case, we can use π/2 as the angle threshold to distinguish the two
+ kinds of triangles in N.
+     However, there is no single angle threshold that works for all cases.
+ For example, a rigid box N penetrates into a soft ball M (see the
+ following picture) and has triangles on its left side and right side with
+ face normals that make obtuse angles with the pressure gradient. Using
+ π/2 as the threshold, we would prohibit these triangles from the contact
+ surface.
+
+                 soft ball M
+                   ● ● ● ●
+              ●               ●
+           ●                     ●
+         ●                         ●
+        ●                           ●
+        ●                           ●
+        ●                           ●
+        ●           ↗ ↑ ↖           ●    ↗ pressure gradient ∇p_M in M
+        ●         ↗ ⇧ ↑ ⇧ ↖         ●    ⇧ face normal f_N of N
+         ●        ╔═══════╗        ●     ║ suitable intersecting surface
+           ●     ⇦┃↗     ↖┃⇨     ●       ┃ incorrectly prohibited intersecting
+              ●  ⇦┃↗     ↖┃⇨  ●            surface with π/2 threshold
+                  ┃● ● ● ●┃              ┊ non-intersecting surface
+                  ┊       ┊
+                  ┊       ┊
+                  ┊       ┊
+                  └┄┄┄┄┄┄┄┘
+                 rigid box N
+
+ @param[in] volume_field_M
+     The pressure field defined on the volume mesh M. Its gradient vectors are
+     expressed in frame M.
+ @param[in] surface_N
+     Surface mesh N of the rigid geometry. Its face normal vectors are
+     expressed in frame N.
+ @param[in] X_MN
+     Pose of frame N in frame M.
+ @param[in] tet_index
+     Index of the tetrahedron in the volume mesh M.
+ @param[in] tri_index
+     Index of the triangle in the surface mesh N.
+ @return true if the two vectors make an angle less than an internal threshold.
+ @note    This function is a work in progress. There is no single threshold
+          that works for all cases. We pick 5π/8 empirically.
+          See @ref module_contact_surface.
+ */
+template <typename T>
+bool IsFaceNormalAlongPressureGradient(
+    const VolumeMeshField<T, T>& volume_field_M,
+    const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
+    const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
+  const Vector3<T>& normal_N = surface_N.face_normal(tri_index);
+  const Vector3<T>  normal_M = X_MN.rotation() * normal_N;
+  // Evaluate the gradient vector on the tetrahedron.
+  // TODO(DamrongGuoy): Change the type of volume_field_M from
+  //  VolumeMeshField to VolumeMeshFieldLinear and remove this cast.
+  const auto field_M =
+      dynamic_cast<const VolumeMeshFieldLinear<T, T>*>(&volume_field_M);
+  DRAKE_DEMAND(field_M);
+  const Vector3<T> grad_p_M = field_M->EvaluateGradient(tet_index);
+  const T dot_product = normal_M.dot(grad_p_M.normalized());
+
+  // We pick 5π/8 empirically.
+  constexpr double kAngleThreshold = 5. * M_PI / 8.;
+  static const double kDotProductThreshold = std::cos(kAngleThreshold);
+  // dot_product greater than kDotProductThreshold means the angle between
+  // the two unit vectors is less than kAngleThreshold.
+  if (dot_product > kDotProductThreshold)
+    return true;
+  else
+    return false;
+}
+
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
 //  remove the note in the function documentation.
 
@@ -404,6 +508,11 @@ void SampleVolumeFieldOnSurface(
        ++tet_index) {
     for (SurfaceFaceIndex tri_index(0); tri_index < surface_N.num_faces();
          ++tri_index) {
+      if (!IsFaceNormalAlongPressureGradient(volume_field_M, surface_N, X_MN,
+                                             tet_index, tri_index)) {
+        continue;
+      }
+
       // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
       //  positions. Specifically, each vertex will be transformed M times (once
       //  per tetrahedron. Even with broadphase culling, this vertex will get
@@ -451,8 +560,9 @@ void SampleVolumeFieldOnSurface(
 
   *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
+  const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get());
+      "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
 /** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
@@ -475,6 +585,11 @@ void SampleVolumeFieldOnSurface(
                    &surface_vertices_M, &surface_e, &mesh_M,
                    &X_MN](VolumeElementIndex tet_index,
                           SurfaceFaceIndex tri_index) -> BvttCallbackResult {
+    if (!IsFaceNormalAlongPressureGradient(volume_field_M, surface_N, X_MN,
+                                           tet_index, tri_index)) {
+      return BvttCallbackResult::Continue;
+    }
+
     // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
     //  positions. Specifically, each vertex will be transformed M times (once
     //  per tetrahedron. Even with broadphase culling, this vertex will get
@@ -522,9 +637,12 @@ void SampleVolumeFieldOnSurface(
 
   *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
+  const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get());
+      "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
+
+#endif  // #ifndef DRAKE_DOXYGEN_CXX
 
 /** Computes the contact surface between a soft geometry S and a rigid
  geometry R. This does not use any broadphase culling.
@@ -596,8 +714,13 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 
   if (surface_SR == nullptr) return nullptr;
 
+  // TODO(DamrongGuoy): Compute the mesh and field with the quantities
+  //  expressed in World frame by construction so that we can delete these two
+  //  transforming methods.
+
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
+  e_SR->TransformGradients(X_WS);
 
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
                                              std::move(e_SR));
@@ -638,8 +761,13 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 
   if (surface_SR == nullptr) return nullptr;
 
+  // TODO(DamrongGuoy): Compute the mesh and field with the quantities
+  //  expressed in World frame by construction so that we can delete these two
+  //  transforming methods.
+
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
+  e_SR->TransformGradients(X_WS);
 
   // The contact surface is documented as having the normals pointing *out* of
   // the second surface and into the first. This mesh intersection creates a
@@ -668,8 +796,6 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const SurfaceMesh<double>&,
     const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
     const math::RigidTransform<AutoDiffXd>&);
-
-#endif  // #ifndef DRAKE_DOXYGEN_CXX
 
 }  // namespace internal
 }  // namespace geometry
