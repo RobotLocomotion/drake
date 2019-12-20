@@ -30,11 +30,6 @@ class ContactSurfaceTester {
     return *(surface_.e_MN_);
   }
 
-  SurfaceMeshFieldLinear<T, T>& mutable_e_MN() const {
-    DRAKE_DEMAND(surface_.e_MN_ != nullptr);
-    return *(surface_.e_MN_);
-  }
-
   SurfaceMesh<T>& mutable_mesh_W() const {
     DRAKE_DEMAND(surface_.mesh_W_ != nullptr);
     return *(surface_.mesh_W_);
@@ -49,6 +44,8 @@ namespace {
 using Eigen::AngleAxisd;
 using math::RigidTransformd;
 using Eigen::Vector3d;
+using std::make_unique;
+using std::move;
 
 // TODO(DamrongGuoy): Consider splitting the test into several smaller tests
 //  including a separated mesh test.
@@ -184,10 +181,21 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
   ContactSurfaceTester<double>(surface1).mutable_mesh_W().ReverseFaceWinding();
   EXPECT_FALSE(surface.Equal(surface1));
 
-  // Different pressure field.
-  auto surface2 = ContactSurface<double>(surface);
-  ContactSurfaceTester<double>(surface2).mutable_e_MN().mutable_values()[0] +=
-      2.0;
+  // Equal mesh, Different pressure field.
+  // First, copy the mesh.
+  auto mesh2 = make_unique<SurfaceMesh<double>>(surface.mesh_W());
+  // TODO(DamrongGuoy): Remove this cast when we remove MeshField and use
+  //  only MeshFieldLinear.
+  auto field = dynamic_cast<const SurfaceMeshFieldLinear<double, double>*>(
+                   &surface.e_MN());
+  DRAKE_DEMAND(field);
+  // Then, copy the field values and change it.
+  std::vector<double> field2_values(field->values());
+  field2_values.at(0) += 2.0;
+  auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
+                    field->name(), move(field2_values), mesh2.get());
+  auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
+                                         move(mesh2), move(field2));
   EXPECT_FALSE(surface.Equal(surface2));
 }
 
