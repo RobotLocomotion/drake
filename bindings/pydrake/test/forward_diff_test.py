@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
-from pydrake.forwarddiff import sin, cos, derivative
+from pydrake.forwarddiff import sin, cos, derivative, gradient
+from pydrake.common.test_utilities import numpy_compare
 
 
 class TestForwardDiff(unittest.TestCase):
@@ -44,3 +45,20 @@ class TestForwardDiff(unittest.TestCase):
                                1)
         self.assertAlmostEqual(derivative(lambda x: 1.0 / x, x),
                                -1.0 / x**2)
+
+    def test_gradient_and_jacobian(self):
+        x = [1., 2.]
+
+        def f(x):
+            x = np.asarray(x)
+            return x**x
+
+        def df(x):
+            x = np.asarray(x)
+            return 2 * x
+
+        def f_vector(x):
+            return [f(x)]
+
+        numpy_compare.assert_equal(gradient(f, x), df(x))
+        numpy_compare.assert_equal(jacobian(f, x), [df(x)])
