@@ -20,12 +20,14 @@ def gradient(function, x):
 
     The function should be vector-input and scalar-output.
     """
+    x = np.asarray(x)
     x_ad = np.empty(x.shape, dtype=AutoDiffXd)
     for i in range(x.size):
         der = np.zeros(x.size)
         der[i] = 1
         x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
     y_ad = function(x_ad)
+    assert y_ad.size == 1, "Must be scalar output"
     return y_ad[0].derivatives()
 
 
@@ -35,6 +37,7 @@ def jacobian(function, x):
 
     The function should be vector-input and vector-output.
     """
+    x = np.asarray(x)
     x_ad = np.empty(x.shape, dtype=np.object)
     for i in range(x.size):
         der = np.zeros(x.size)
