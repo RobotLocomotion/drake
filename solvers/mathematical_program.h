@@ -2711,6 +2711,26 @@ class MathematicalProgram {
     return decision_variable_index_;
   }
 
+  const std::unordered_map<int, double>& GetVariableScaling() const {
+    return var_scaling_map_;
+  }
+  void SetVariableScaling(double scale, int idx_start) {
+    SetVariableScaling(scale, idx_start, idx_start);
+  }
+  void SetVariableScaling(double scale, int idx_start, int idx_end) {
+    DRAKE_DEMAND(0 <= idx_start);
+    DRAKE_DEMAND(idx_start <= idx_end);
+    DRAKE_DEMAND(idx_end < num_vars());
+
+    for (int i = idx_start; i <= idx_end; i++) {
+      // Check if the scaling has been set already
+      DRAKE_DEMAND(decision_variable_index_.find(i) ==
+        decision_variable_index_.end());
+      // Add scaling
+      var_scaling_map_.insert(std::pair<int, double>(i, scale));
+    }
+  }
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 
@@ -2960,6 +2980,8 @@ class MathematicalProgram {
     NewVariables_impl(type, names, true, decision_variable_matrix);
     return decision_variable_matrix;
   }
+
+  std::unordered_map<int, double> var_scaling_map_{};
 };
 
 }  // namespace solvers
