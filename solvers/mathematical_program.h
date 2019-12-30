@@ -2718,15 +2718,14 @@ class MathematicalProgram {
     SetVariableScaling(scale, idx_start, idx_start);
   }
   void SetVariableScaling(double scale, int idx_start, int idx_end) {
+    DRAKE_DEMAND(0 < scale);
     DRAKE_DEMAND(0 <= idx_start);
     DRAKE_DEMAND(idx_start <= idx_end);
     DRAKE_DEMAND(idx_end < num_vars());
 
     for (int i = idx_start; i <= idx_end; i++) {
       // Check if the scaling has been set already
-      std::cout << "i = " << i << std::endl;
-      DRAKE_DEMAND(var_scaling_map_.find(i) ==
-        var_scaling_map_.end());
+      DRAKE_DEMAND(var_scaling_map_.find(i) == var_scaling_map_.end());
       // Add scaling
       var_scaling_map_.insert(std::pair<int, double>(i, scale));
     }

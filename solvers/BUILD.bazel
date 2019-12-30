@@ -810,6 +810,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//math:autodiff",
+            "//math:gradient",
             "@snopt//:snopt_cwrap",
         ],
         # This is always the Fortran flavor.
@@ -817,6 +818,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//math:autodiff",
+            "//math:gradient",
             "@snopt//:snopt_cwrap",
         ],
         # This is always the f2c flavor.
@@ -824,6 +826,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//math:autodiff",
+            "//math:gradient",
             "@snopt//:snopt_c",
         ],
         # This is when SNOPT is disabled / unavailable.

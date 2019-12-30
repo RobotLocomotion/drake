@@ -18,6 +18,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/mathematical_program.h"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
@@ -746,13 +747,22 @@ void UpdateLinearCost(
     const MathematicalProgram& prog,
     std::unordered_map<int, double>* variable_to_coefficient_map,
     double* linear_cost_constant_term) {
+  const auto & scale_map = prog.GetVariableScaling();
+  double scale = 1;
   for (const auto& binding : prog.linear_costs()) {
     *linear_cost_constant_term += binding.evaluator()->b();
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       const int variable_index =
           prog.FindDecisionVariableIndex(binding.variables()(k));
+      // Scale the coefficient as well
+      auto it = scale_map.find(variable_index);
+      if (it != scale_map.end()) {
+        scale = it->second;
+      } else {
+        scale = 1;
+      }
       (*variable_to_coefficient_map)[variable_index] +=
-          binding.evaluator()->a()(k);
+          binding.evaluator()->a()(k) * scale;
     }
   }
 }
@@ -859,7 +869,6 @@ void SolveWithGivenOptions(
     xlow[member.first] /= member.second;
     xupp[member.first] /= member.second;
   }
-
 
 
   // For linear complementary condition
