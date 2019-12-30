@@ -2724,8 +2724,9 @@ class MathematicalProgram {
 
     for (int i = idx_start; i <= idx_end; i++) {
       // Check if the scaling has been set already
-      DRAKE_DEMAND(decision_variable_index_.find(i) ==
-        decision_variable_index_.end());
+      std::cout << "i = " << i << std::endl;
+      DRAKE_DEMAND(var_scaling_map_.find(i) ==
+        var_scaling_map_.end());
       // Add scaling
       var_scaling_map_.insert(std::pair<int, double>(i, scale));
     }
