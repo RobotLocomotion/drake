@@ -935,13 +935,12 @@ def choose_doc_var_names(symbols):
 
 
 # TODO(m-chaturvedi): Refactor this to not use stack
-def print_symbols(f, name, node, level=0, **kwargs):
+def print_symbols(f, name, node, level=0, *, tree_parser_doc,
+                  tree_parser_xpath, ignore_dirs_for_coverage):
     """
     Prints C++ code for relevant documentation.
     """
     indent = '  ' * level
-    tree_parser_doc = kwargs["tree_parser_doc"]
-    tree_parser_xpath = kwargs["tree_parser_xpath"]
 
     def iprint(s):
         f.write((indent + s).rstrip() + "\n")
@@ -996,9 +995,8 @@ def print_symbols(f, name, node, level=0, **kwargs):
         tree_doc_var = ".".join(tree_parser_doc + [doc_var])
 
         ignore_xpath = False
-        if kwargs["ignore_dirs_for_coverage"]:
-            ignore_xpath = symbol.include.startswith(
-                            kwargs["ignore_dirs_for_coverage"])
+        if ignore_dirs_for_coverage:
+            ignore_xpath = symbol.include.startswith(ignore_dirs_for_coverage)
 
         new_ele = ET.SubElement(root, "Node", {
             "kind": str(kind),
@@ -1024,7 +1022,12 @@ def print_symbols(f, name, node, level=0, **kwargs):
     keys = sorted(node.children_map.keys())
     for key in keys:
         child = node.children_map[key]
-        print_symbols(f, key, child, level=level + 1, **kwargs)
+        tree_parser_args = {
+                "tree_parser_doc": tree_parser_doc,
+                "tree_parser_xpath": tree_parser_xpath,
+                "ignore_dirs_for_coverage": ignore_dirs_for_coverage
+            }
+        print_symbols(f, key, child, level=level + 1, **tree_parser_args)
     iprint('}} {};'.format(name_var))
 
     tree_parser_doc.pop()
