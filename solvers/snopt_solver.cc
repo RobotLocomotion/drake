@@ -406,6 +406,10 @@ void EvaluateNonlinearConstraints(
       }
     }
 
+    // Testing
+    // std::cout << c->get_description() << std::endl;
+    // std::cout << "this_x= " << this_x <<std::endl;
+
     AutoDiffVecXd ty;
     ty.resize(num_constraints);
     EvaluateSingleNonlinearConstraint(*c, this_x_scaled, &ty);
@@ -1058,7 +1062,6 @@ void SolveWithGivenOptions(
   // Actual solve.
   const char problem_name[] = "drake_problem";
   // clang-format off
-  std::cout << "Call solve()\n";
   Snopt::snkera(Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
                 nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
                 nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
