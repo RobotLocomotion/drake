@@ -289,8 +289,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   ///        computing and factoring the iteration matrix.
   /// @param[out] iteration_matrix the updated and factored iteration matrix on
   ///             return.
-  /// @post the state in the internal context may or may not be altered on
-  ///       return; if altered, it will be set to (t, xt).
+  /// @post the state in the internal context will be set to (t, xt) on return.
   void FreshenMatricesIfFullNewton(const T& t, const VectorX<T>& xt, const T& h,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
@@ -397,7 +396,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // will not be reused.
   bool reuse_{true};
 
-  // If set to `true`, Jacobian matrices and iteratino matrix factorizations
+  // If set to `true`, Jacobian matrices and iteration matrix factorizations
   // will be freshly computed on every Newton-Raphson iteration. This should
   // only ever be useful in debugging.
   bool use_full_newton_{false};

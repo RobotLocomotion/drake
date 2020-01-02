@@ -74,10 +74,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, FullNewton) {
 
   // Attempt to integrate the system. Our past experience indicates that this
   // system fails to converge from the initial state for this large step size.
-  // This tests the case where the Jacobian matrix has yet to be formed. There
-  // should be two Jacobian matrix evaluations- once at trial 1 and another
-  // at trial 3. There should be three iteration matrix factorizations: once
-  // at trial 1, another at trial 2, and the third at trial 3.
+  // This tests the case where the Jacobian matrix has yet to be formed.
   euler.Initialize();
   ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
   EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
@@ -96,9 +93,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, FullNewton) {
             euler.get_num_newton_raphson_iterations());
 
   // Again try taking a large step, which we expect will be too large to
-  // converge. There should be one Jacobian matrix evaluation- once at trial 3.
-  // There should be two iteration matrix factorizations: one at trial 2 and
-  // another at trial 3.
+  // converge.
   euler.ResetStatistics();
   ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
   EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
