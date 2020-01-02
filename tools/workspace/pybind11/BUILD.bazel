@@ -27,6 +27,13 @@ py_binary(
     deps = ["@clang_cindex_python3//:clang"],
 )
 
+drake_py_unittest(
+    name = "mkdoc_test",
+    deps = [
+        ":mkdoc",
+    ],
+)
+
 drake_cc_library(
     name = "sample_header",
     testonly = 1,
