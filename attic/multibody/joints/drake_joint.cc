@@ -41,31 +41,6 @@ std::string DrakeJoint::get_velocity_name(int index) const {
   return get_position_name(index) + "dot";
 }
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int DrakeJoint::getNumPositions() const {
-  return get_num_positions();
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int DrakeJoint::getNumVelocities() const {
-  return get_num_velocities();
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-const Eigen::Isometry3d& DrakeJoint::getTransformToParentBody() const {
-  return get_transform_to_parent_body();
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-const std::string& DrakeJoint::getName() const {
-  return get_name();
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-std::string DrakeJoint::getVelocityName(int index) const {
-  return get_velocity_name(index);
-}
-
 const Eigen::VectorXd& DrakeJoint::getJointLimitMin() const {
   return joint_limit_min_;
 }

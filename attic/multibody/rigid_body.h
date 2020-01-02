@@ -12,7 +12,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/collision/drake_collision.h"
@@ -174,10 +173,6 @@ class RigidBody {
    * parent RigidBody except for the RigidBodyTree's root, which is the world.
    */
   bool has_parent_body() const { return parent_ != nullptr; }
-
-  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use has_parent_body().")
-  bool hasParent() const;
 
   /**
    * Checks if a particular rigid body is the parent of this rigid body.

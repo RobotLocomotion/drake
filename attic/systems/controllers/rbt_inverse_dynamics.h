@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/leaf_system.h"
 
 // Forward declaration keeps us from including RBT headers that significantly
@@ -48,10 +47,6 @@ class InverseDynamics : public LeafSystem<T> {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
-  DRAKE_DEPRECATED("2019-12-31",
-      "Please use constructor with InverseDynamicsType.")
-  InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
-
   /**
    * Computes inverse dynamics for `tree`, where the computed force `tau_id`
    * is: <pre>
@@ -87,14 +82,6 @@ class InverseDynamics : public LeafSystem<T> {
   const InputPort<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(!this->is_pure_gravity_compensation());
     return this->get_input_port(input_port_index_desired_acceleration_);
-  }
-
-  /**
-   * Returns the output port for the actuation torques.
-   */
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_output_port_force().")
-  const OutputPort<T>& get_output_port_torque() const {
-    return this->get_output_port(output_port_index_force_);
   }
 
   /**
