@@ -134,7 +134,9 @@ Later edited by hand to:
       <self_collide>0</self_collide>
     </link>
     <joint name='iiwa_joint_2' type='revolute'>
-      <pose relative_to="iiwa_link_1">0 0 0.2025 1.570796326794897 0 3.141592653589793</pose>
+      <pose relative_to="iiwa_link_1">
+        0 0 0.2025 1.570796326794897 0 3.141592653589793
+      </pose>
       <child>iiwa_link_2</child>
       <parent>iiwa_link_1</parent>
       <axis>
@@ -456,7 +458,9 @@ Later edited by hand to:
       <self_collide>0</self_collide>
     </link>
     <joint name='iiwa_joint_7' type='revolute'>
-      <pose relative_to="iiwa_link_6">0 0.081 0 -1.570796326794897 3.141592653589793 0</pose>
+      <pose relative_to="iiwa_link_6">
+        0 0.081 0 -1.570796326794897 3.141592653589793 0
+      </pose>
       <child>iiwa_link_7</child>
       <parent>iiwa_link_6</parent>
       <axis>

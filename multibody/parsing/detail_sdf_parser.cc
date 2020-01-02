@@ -80,7 +80,7 @@ void ThrowAnyErrors(const sdf::Errors& errors) {
   }
 }
 
-// This takes a `sdf::SemanticPose`, which defines a pose relative to a frame,
+// This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
 // and resolves its value with respect to another frame.
 math::RigidTransformd ResolveRigidTransform(
     const sdf::SemanticPose& semantic_pose,
@@ -293,25 +293,18 @@ void AddJointFromSpecification(
   const RigidTransformd X_CJ =
       ResolveRigidTransform(joint_spec.SemanticPose());
 
-  // Get the pose of the child link C in the model frame M.
-  const RigidTransformd X_MC = ResolveRigidTransform(
-      model_spec.LinkByName(joint_spec.ChildLinkName())->SemanticPose());
-
-  // Pose of the joint frame J in the model frame M.
-  const RigidTransformd X_MJ = X_MC * X_CJ;
-
   // Pose of the frame J in the parent body frame P.
   std::optional<RigidTransformd> X_PJ;
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
   if (parent_body.index() == world_index()) {
+    const RigidTransformd X_MJ =
+        ResolveRigidTransform(joint_spec.SemanticPose(), "__model__");
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
-    // Get the pose of the parent link P in the model frame M.
-    const RigidTransformd X_MP = ResolveRigidTransform(
-        model_spec.LinkByName(joint_spec.ParentLinkName())->SemanticPose());
-    X_PJ = X_MP.inverse() * X_MJ;
+    X_PJ = ResolveRigidTransform(
+        joint_spec.SemanticPose(), joint_spec.ParentLinkName());
   }
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
@@ -698,7 +691,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     // Load the world and all the models in the world.
     const sdf::World& world = *root.WorldByIndex(0);
 
-    // TODO(eric.cousineau): Er... where and how do world joints get added???
+    // TODO(eric.cousineau): Either support or explicitly prevent adding joints
+    // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
 
     for (uint64_t frame_index = 0; frame_index < world.FrameCount();
         ++frame_index) {
