@@ -3018,6 +3018,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().num_force_elements();
   }
 
+  /// Returns a constant reference to the force element with unique index
+  /// `force_element_index`.
+  /// @throws std::runtime_error when `force_element_index` does not correspond
+  /// to a force element in this model.
+  const ForceElement<T>& get_force_element(
+      ForceElementIndex force_element_index) const {
+    return internal_tree().get_force_element(force_element_index);
+  }
+
+  /// Returns a constant reference to a force element identified by its unique
+  /// index in `this` %MultibodyPlant.  If the optional template argument is
+  /// supplied, then the returned value is downcast to the specified
+  /// `ForceElementType`.
+  /// @tparam ForceElementType The specific type of the ForceElement to be
+  /// retrieved. It must be a subclass of ForceElement.
+  /// @throws std::logic_error if the force element is not of type
+  /// `ForceElementType` or if there is no ForceElement with that index.
+  template <template <typename> class ForceElementType = ForceElement>
+  const ForceElementType<T>& GetForceElement(
+      ForceElementIndex force_element_index) const {
+    return internal_tree().template GetForceElement<ForceElementType>(
+        force_element_index);
+  }
+
   /// An accessor to the current gravity field.
   const UniformGravityFieldElement<T>& gravity_field() const {
     return internal_tree().gravity_field();
