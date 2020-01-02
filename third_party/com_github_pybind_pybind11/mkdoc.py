@@ -236,6 +236,9 @@ def process_comment(comment):
             s = s[2:].lstrip('*')
         if s.endswith('*/'):
             s = s[:-2].rstrip('*')
+        # http://www.doxygen.nl/manual/docblocks.html#memberdoc
+        if s.startswith('///<'):
+            s = s[4:]
         if s.startswith('///') or s.startswith('//!'):
             s = s[3:]
         if s.startswith('*'):
@@ -266,9 +269,12 @@ def process_comment(comment):
     s = re.sub(
         r'([\s\-,;:!.()]+)__([^\s_]+|[^\s_].*?[^\s_])__([\s\-,;:!.()]+)',
         r'\1**\2**\3', s, flags=re.DOTALL)
-    # Convert `typewriter` to ``typewriter``.
-    s = re.sub(r'([\s\-,;:!.()]+)`([^\s`]|[^\s`].*?[^\s`])`([\s\-,;:!.()]+)',
-               r'\1``\2``\3', s, flags=re.DOTALL)
+
+    # Convert `typewriter` to ``typewriter``
+    rr = r'([\s\-,;:!.()]+)`([^\s`]|[^\s`].*?[^\s`])`([\s\-,;:!.()]+)'
+    while re.search(rr, s):
+        s = re.sub(rr, r'\1``\2``\3', s, flags=re.DOTALL)
+
     # Convert [Link](https://example.org) to `Link <https://example.org>`_.
     s = re.sub(r'\[(.*?)\]\(([\w:.?/#]+)\)', r'`\1 <\2>`_', s,
                flags=re.DOTALL)
