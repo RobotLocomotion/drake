@@ -16,16 +16,14 @@ namespace lcm {
  * A *mock* LCM instance. This only manipulates LCM messages in memory, not on
  * the wire.  It is similar to a DrakeLcm object with a "memq://" URL, but is
  * guaranteed to behave deterministically (without a hidden background thread).
+ *
+ * NOTE:  For simplicity this version of LCM does not perform regex
+ * matching; subscriptions must exactly match channel names.
  */
 class DrakeMockLcm : public DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeMockLcm);
 
-  /**
-   * A constructor that creates a DrakeMockLcm with loopback disabled, i.e., a
-   * call to Publish() will not result in subscriber callback functions being
-   * executed. To enable loopback behavior, call EnableLoopBack().
-   */
   DrakeMockLcm();
 
   void Publish(const std::string&, const void*, int,
