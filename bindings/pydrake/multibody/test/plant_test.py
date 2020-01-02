@@ -703,8 +703,6 @@ class TestPlant(unittest.TestCase):
         # are working properly.
         simulator = Simulator(diagram)
         simulator.AdvanceTo(0.01)
-        with catch_drake_warnings(expected_count=1):
-            simulator.StepTo(0.011)
 
     @numpy_compare.check_all_types
     def test_model_instance_state_access(self, T):
