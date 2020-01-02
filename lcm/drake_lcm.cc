@@ -96,6 +96,7 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     result->user_callback_ = std::move(handler);
     result->weak_self_reference_ = result;
     result->strong_self_reference_ = result;
+    // TODO(#12523) This should escape `channel` against regex parsing.
     result->native_subscription_ = native_instance->subscribeFunction(
       channel, &DrakeSubscription::NativeCallback, result.get());
     result->native_subscription_->setQueueCapacity(1);

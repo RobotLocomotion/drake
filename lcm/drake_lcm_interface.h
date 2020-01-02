@@ -69,6 +69,12 @@ class DrakeLcmInterface {
    * Subscribes to an LCM channel without automatic message decoding. The
    * handler will be invoked when a message arrives on channel @p channel.
    *
+   * NOTE: Unlike upstream LCM, DrakeLcm does not support regexes for the
+   * `channel` argument.
+   * TODO(#12523) Some implementations may provide this capability, but users
+   * should not rely on this functionality which will be removed in the
+   * future.
+   *
    * @param channel The channel to subscribe to.
    * Must not be the empty string.
    *
