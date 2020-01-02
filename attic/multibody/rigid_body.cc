@@ -72,10 +72,6 @@ template <typename T>
 void RigidBody<T>::set_parent(RigidBody* parent) { parent_ = parent; }
 
 
-// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-template <typename T>
-bool RigidBody<T>::hasParent() const { return has_parent_body(); }
-
 template <typename T>
 void RigidBody<T>::set_body_index(int body_index) { body_index_ = body_index; }
 
