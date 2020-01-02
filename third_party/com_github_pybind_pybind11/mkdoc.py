@@ -236,6 +236,9 @@ def process_comment(comment):
             s = s[2:].lstrip('*')
         if s.endswith('*/'):
             s = s[:-2].rstrip('*')
+        # http://www.doxygen.nl/manual/docblocks.html#memberdoc
+        if s.startswith('///<'):
+            s = s[4:]
         if s.startswith('///') or s.startswith('//!'):
             s = s[3:]
         if s.startswith('*'):
