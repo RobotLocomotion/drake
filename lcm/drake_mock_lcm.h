@@ -21,11 +21,6 @@ class DrakeMockLcm : public DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeMockLcm);
 
-  /**
-   * A constructor that creates a DrakeMockLcm with loopback disabled, i.e., a
-   * call to Publish() will not result in subscriber callback functions being
-   * executed. To enable loopback behavior, call EnableLoopBack().
-   */
   DrakeMockLcm();
 
   void Publish(const std::string&, const void*, int,
