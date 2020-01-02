@@ -84,7 +84,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// that using fresh Jacobians and factorizations buys- which can permit
   /// increased step sizes but should have no effect on solution accuracy- can
   /// outweigh the small factorization cost.
-  /// @sa get_reuse
+  /// @note The reuse setting will have no effect when
+  ///       use_full_newton() `== true`.
+  /// @sa get_reuse()
+  /// @sa set_use_full_newton()
   void set_reuse(bool reuse) { reuse_ = reuse; }
 
   /// Gets whether the integrator attempts to reuse Jacobian matrices and
@@ -95,10 +98,13 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   /// Sets whether the method operates in "full Newton" mode, in which case
   /// Jacobian and iteration matrices are freshly computed on every
-  /// Newton-Raphson iteration.
+  /// Newton-Raphson iteration. When set to `true`, this mode overrides
+  /// the reuse mode.
+  /// @see set_reuse()
   void set_use_full_newton(bool flag) { use_full_newton_ = flag; }
 
   /// Gets whether this method is operating in "full Newton" mode.
+  /// @see set_use_full_newton()
   bool use_full_newton() const { return use_full_newton_; }
 
   /// Sets the Jacobian computation scheme. This function can be safely called
