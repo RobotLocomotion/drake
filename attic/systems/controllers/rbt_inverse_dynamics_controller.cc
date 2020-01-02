@@ -105,7 +105,8 @@ InverseDynamicsController<T>::InverseDynamicsController(
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
       builder.template AddSystem<InverseDynamics<T>>(
-          rigid_body_tree_for_control_.get(), false);
+          rigid_body_tree_for_control_.get(),
+          InverseDynamics<T>::kInverseDynamics);
 
   const int num_positions = rigid_body_tree_for_control_->get_num_positions();
   const int num_velocities = rigid_body_tree_for_control_->get_num_velocities();

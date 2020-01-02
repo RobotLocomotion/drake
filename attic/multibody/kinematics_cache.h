@@ -14,7 +14,6 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/drake_joint.h"
 #include "drake/multibody/kinematic_path.h"
@@ -198,15 +197,7 @@ class KinematicsCache {
 
   int get_num_positions() const;
 
-// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_positions().")
-  int getNumPositions() const;
-
   int get_num_velocities() const;
-
-// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_velocities().")
-  int getNumVelocities() const;
 
  private:
   void invalidate();
