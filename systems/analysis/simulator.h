@@ -610,12 +610,28 @@ class Simulator {
   /// example usage is:
   /// @code
   /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-  ///               (sys, h, context).
+  ///               (sys, h).
   /// @endcode
   /// See the base overload for `reset_integrator` for more details.
+  /// @note This method automatically sets the integrator's context; there is
+  ///       no need to specify the context when constructing the integrator.
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
     auto integrator = std::make_unique<U>(std::forward<Args>(args)...);
+    integrator->reset_context(&get_mutable_context());
+    return reset_integrator(std::move(integrator));
+  }
+
+  /// Resets the integrator with a new one using factory construction.
+  /// @code
+  /// simulator.reset_integrator<RungeKutta3Integrator<double>>().
+  /// @endcode
+  /// See the base overload for `reset_integrator` for more details.
+  /// @note The integrator must have a single-argument constructor.
+  template <class U>
+  U* reset_integrator() {
+    auto integrator = std::make_unique<U>(get_system());
+    integrator->reset_context(&get_mutable_context());
     return reset_integrator(std::move(integrator));
   }
 
