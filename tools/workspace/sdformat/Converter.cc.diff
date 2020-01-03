@@ -1,0 +1,11 @@
+--- src/Converter.cc  Tue Dec 10 17:20:56 2019 +0100
++++ src/Converter.cc  Fri Jan 03 17:03:14 2020 -0500
+@@ -86,7 +86,7 @@
+ 
+   // Starting with the original SDF version, perform all the conversions
+   // necessary in order to reach the _toVersion.
+-  while (fromIter->first != _toVersion && fromIter != conversionMap.end())
++  while (fromIter != conversionMap.end() && fromIter->first != _toVersion)
+   {
+     // Get the SDF to version.
+     toVer = fromIter->second.first;
