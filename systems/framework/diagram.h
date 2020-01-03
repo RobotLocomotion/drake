@@ -1098,7 +1098,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // @param allocator_func A function for allocating an event collection of the
   //                       given type, thus allowing this method to allocate
   //                       collections for publish events, discrete update
-  //                       events, and unrestricted update events using a
+  //                       events, or unrestricted update events using a
   //                       single mechanism.
   template <typename EventType>
   std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(

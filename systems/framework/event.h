@@ -17,7 +17,7 @@ namespace systems {
 /** @defgroup events_description System Events
     @ingroup systems
 
- This page describes how Systems can respond (through an Event) to changes
+ This page describes how Drake Systems can respond (through an Event) to changes
  ("triggers") in time, state, and inputs.
 
  The state of simple dynamical systems, like the ODE ẋ = x, can be
@@ -43,8 +43,8 @@ namespace systems {
 
  ### Types of events and triggers
 
- We distinguish between the condition that is responsible for the event to be
- handled (the "trigger") and the action that is taken when the event is
+ We distinguish between the condition that is responsible for detecting the
+ event (the "trigger") and the action that is taken when the event is
  dispatched (the "event handler"). The latter falls into several categories
  based on event type.
 
@@ -84,7 +84,7 @@ namespace systems {
  State advances with time in dynamical systems. If the dynamical system is
  simulated, then Drake's Simulator, or another solver (see @ref event_glossary
  "glossary") is responsible for detecting when events trigger, dispatching the
- appropriate event update function, and updating the state (the update functions
+ appropriate handler function, and updating the state (the update functions
  modify only copies of state so that every update function sees the same
  pre-update state regardless of the sequence of event updates) as time advances.
  "Solvers" for physically situated dynamical systems (e.g., robots) must provide
@@ -98,7 +98,7 @@ namespace systems {
  ```
    SystemX y;
    std::unique_ptr<Context<T>> context = y.CreateDefaultContext();
-   y.Publish(*context, y.get_forced_publish_events());
+   y.Publish(*context);
  ```
 
  ### Information for leaf system authors
@@ -106,8 +106,8 @@ namespace systems {
  #### Declaring update functions
 
  The preferred way to update state through events is to declare an update
- handler in your LeafSystem-derived-class. **Some older Drake code computes
- state updates by overriding event dispatchers** (e.g.,
+ handler in your LeafSystem-derived-class. Some older Drake code computes
+ state updates by overriding event dispatchers (e.g.,
  LeafSystem::DoCalcUnrestrictedUpdate()), **though that practice is discouraged
  and will soon be deprecated.**
 
@@ -125,7 +125,7 @@ namespace systems {
     MySystem() {
       const double period = 1.0;
       const double offset = 0.0;
-      this->DeclarePeriodicPublishEvent(period, offset, MySystem::MyPublish);
+      this->DeclarePeriodicPublishEvent(period, offset, &MySystem::MyPublish);
     }
 
     // Called once per second when MySystem is simulated.
@@ -196,9 +196,9 @@ namespace systems {
  @anchor event_glossary
 
   - **dispatch**: the process of the solver collecting events that trigger
-                  simultaneously and then farming those events to their
+                  simultaneously and then distributing those events to their
                   handlers.
-  - **forced event**: when an event handler is called manually through user
+  - **forced event**: when an event is triggered manually through user
                       code rather than by a solver.
   - **handle/handler**: an event is "handled" when the triggering condition has
                         been identified and the "handler" function is called.
@@ -390,8 +390,8 @@ enum class TriggerType {
    * `solver` takes a `step`. A `solver` is an abstract construct that
    * controls or tracks the time and state evolution of a System. A simulator is
    * a `solver`- it advances time a finite duration by integrating a system,
-   * modifying its state accordingly- as is a process that receives from IPC
-   * some numeric state through then used to, e.g., update abstract state.
+   * modifying its state accordingly- as is a process that receives some numeric
+   * state from IPC that is then used to, e.g., update abstract state.
    * Steps may occur at irregular time intervals: a step typically coincides
    * with a point in time where it is advantageous to poll for events, like
    * immediately after an integrator has advanced time and state.

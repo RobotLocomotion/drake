@@ -614,7 +614,7 @@ class Simulator {
   /// @endcode
   /// See the base overload for `reset_integrator` for more details.
   template <class U, typename... Args>
-  U* reset_integrator(Args&&... args) {
+  U& reset_integrator(Args&&... args) {
     auto integrator = std::make_unique<U>(std::forward<Args>(args)...);
     return reset_integrator(std::move(integrator));
   }
