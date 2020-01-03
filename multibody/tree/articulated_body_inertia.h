@@ -375,11 +375,16 @@ class ArticulatedBodyInertia {
   // Checks that the ArticulatedBodyInertia is physically valid and throws an
   // exception if not. This is mostly used in Debug builds to throw an
   // appropriate exception.
+  // Since this method is used within assertions or demands, we do not try to
+  // attempt a smart way throw based on a given symbolic::Formula but instead we
+  // make these methods a no-op for non-numeric types.
   void CheckInvariants() const {
-    if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting articulated body inertia is not physically valid. "
-              "See ArticulatedBodyInertia::IsPhysicallyValid()");
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (!IsPhysicallyValid()) {
+        throw std::runtime_error(
+            "The resulting articulated body inertia is not physically valid. "
+            "See ArticulatedBodyInertia::IsPhysicallyValid()");
+      }
     }
   }
 };
