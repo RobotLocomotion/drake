@@ -369,7 +369,7 @@ class TestPlant(unittest.TestCase):
         RevoluteSpring = RevoluteSpring_[T]
         SpatialInertia = SpatialInertia_[float]
 
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(0.0)
         spatial_inertia = SpatialInertia()
         body_a = plant.AddRigidBody(name="body_a",
                                     M_BBo_B=spatial_inertia)
@@ -405,7 +405,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_gravity_default(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         UniformGravityFieldElement = UniformGravityFieldElement_[T]
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(0.0)
         with self.assertRaises(RuntimeError) as cm:
             plant.AddForceElement(UniformGravityFieldElement())
 
@@ -413,7 +413,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_tree_kinematics(self, T):
         RigidTransform = RigidTransform_[T]
         SpatialVelocity = SpatialVelocity_[T]
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
 
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")
@@ -498,7 +498,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_state_access(self, T):
         MultibodyPlant = MultibodyPlant_[T]
 
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
@@ -586,7 +586,7 @@ class TestPlant(unittest.TestCase):
         MultibodyPlant = MultibodyPlant_[T]
         InputPort = InputPort_[T]
         OutputPort = OutputPort_[T]
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
@@ -671,7 +671,7 @@ class TestPlant(unittest.TestCase):
 
         builder_f = DiagramBuilder_[float]()
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = builder_f.AddSystem(MultibodyPlant_[float]())
+        plant_f = builder_f.AddSystem(MultibodyPlant_[float](0.0))
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf")
         Parser(plant_f).AddModelFromFile(file_name)
@@ -723,7 +723,7 @@ class TestPlant(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
         parser = Parser(plant_f)
 
         iiwa_model = parser.AddModelFromFile(
@@ -976,7 +976,7 @@ class TestPlant(unittest.TestCase):
         RigidTransform = RigidTransform_[T]
         RollPitchYaw = RollPitchYaw_[T]
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
         iiwa_sdf_path = FindResourceOrThrow(
             "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
@@ -1019,7 +1019,7 @@ class TestPlant(unittest.TestCase):
         # Python.
         num_joints = 2
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
         parser = Parser(plant_f)
         instances = []
         for i in range(num_joints + 1):
@@ -1065,7 +1065,7 @@ class TestPlant(unittest.TestCase):
 
         Frame = Frame_[T]
 
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(0.0)
         frame = plant.AddFrame(frame=FixedOffsetFrame(
             name="frame", P=plant.world_frame(),
             X_PF=RigidTransform_[float].Identity(), model_instance=None))
@@ -1083,7 +1083,7 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float]()
+        plant_f = MultibodyPlant_[float](0.0)
         Parser(plant_f).AddModelFromFile(file_name)
         # Getting ready for when we set foot on Mars :-).
         gravity_vector = np.array([0.0, 0.0, -3.71])
@@ -1194,7 +1194,7 @@ class TestPlant(unittest.TestCase):
         # ContactResultsToLcmSystem
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        plant = MultibodyPlant_[float]()
+        plant = MultibodyPlant_[float](0.0)
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         contact_results_to_lcm = ContactResultsToLcmSystem(plant)

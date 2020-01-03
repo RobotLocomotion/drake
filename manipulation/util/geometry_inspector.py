@@ -93,7 +93,7 @@ def main():
     scene_graph = builder.AddSystem(SceneGraph())
 
     # Construct a MultibodyPlant.
-    plant = MultibodyPlant()
+    plant = MultibodyPlant(0.0)
     plant.RegisterAsSourceForSceneGraph(scene_graph)
 
     # Create the parser.

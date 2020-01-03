@@ -21,7 +21,7 @@ class TestSimpleUI(unittest.TestCase):
         # Simply test to make sure that the UI loads and produces the output.
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(0.0)
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
 

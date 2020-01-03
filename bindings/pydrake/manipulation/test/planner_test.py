@@ -64,7 +64,7 @@ class TestPlanner(unittest.TestCase):
     def test_mbp_overloads(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(0.0)
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
 
