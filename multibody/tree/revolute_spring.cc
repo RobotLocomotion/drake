@@ -13,11 +13,26 @@ namespace multibody {
 template <typename T>
 RevoluteSpring<T>::RevoluteSpring(const RevoluteJoint<T>& joint,
                                   double nominal_angle, double stiffness)
-    : ForceElement<T>(joint.model_instance()),
-      joint_(joint),
+    : RevoluteSpring(joint.model_instance(), joint.index(), nominal_angle,
+                     stiffness) {}
+
+template <typename T>
+RevoluteSpring<T>::RevoluteSpring(ModelInstanceIndex model_instance,
+                                  JointIndex joint_index, double nominal_angle,
+                                  double stiffness)
+    : ForceElement<T>(model_instance),
+      joint_index_(joint_index),
       nominal_angle_(nominal_angle),
       stiffness_(stiffness) {
   DRAKE_THROW_UNLESS(stiffness >= 0);
+}
+
+template <typename T>
+const RevoluteJoint<T>& RevoluteSpring<T>::joint() const {
+  const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
+      &this->get_parent_tree().get_joint(joint_index_));
+  DRAKE_DEMAND(joint != nullptr);
+  return *joint;
 }
 
 template <typename T>
@@ -26,16 +41,16 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
-  const T delta = nominal_angle_ - joint_.get_angle(context);
+  const T delta = nominal_angle_ - joint().get_angle(context);
   const T torque = stiffness_ * delta;
-  joint_.AddInTorque(context, torque, forces);
+  joint().AddInTorque(context, torque, forces);
 }
 
 template <typename T>
 T RevoluteSpring<T>::CalcPotentialEnergy(
     const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>&) const {
-  const T delta = nominal_angle_ - joint_.get_angle(context);
+  const T delta = nominal_angle_ - joint().get_angle(context);
 
   return 0.5 * stiffness_ * delta * delta;
 }
@@ -50,8 +65,8 @@ T RevoluteSpring<T>::CalcConservativePower(
   // The conservative power is defined as:
   //  Pc = -d(V)/dt = -[k⋅(θ₀-θ)⋅-dθ/dt] = k⋅(θ₀-θ)⋅dθ/dt
   // being positive when the potential energy decreases.
-  const T delta = nominal_angle_ - joint_.get_angle(context);
-  const T theta_dot = joint_.get_angular_rate(context);
+  const T delta = nominal_angle_ - joint().get_angle(context);
+  const T theta_dot = joint().get_angular_rate(context);
   return stiffness_ * delta * theta_dot;
 }
 
@@ -67,12 +82,14 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 RevoluteSpring<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const RevoluteJoint<ToScalar>& joint_clone = tree_clone.get_variant(joint());
-  // Make the clone.
-  auto spring_clone = std::make_unique<RevoluteSpring<ToScalar>>(
-      joint_clone, nominal_angle(), stiffness());
-
+    const internal::MultibodyTree<ToScalar>&) const {
+  // N.B. We can't use std::make_unique here since this constructor is private
+  // to std::make_unique.
+  // N.B. We use the private constructor since it doesn't rely on a valid joint
+  // reference, which might not be available during cloning.
+  std::unique_ptr<RevoluteSpring<ToScalar>> spring_clone(
+      new RevoluteSpring<ToScalar>(this->model_instance(), joint_index_,
+                                   nominal_angle(), stiffness()));
   return std::move(spring_clone);
 }
 

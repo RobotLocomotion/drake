@@ -289,7 +289,8 @@ void AddJointFromSpecification(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
 
   // Get the pose of frame J in the frame of the child link C, as specified in
-  // <joint> <pose> ... </pose></joint>.
+  // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
+  // joint will be the child link.
   const RigidTransformd X_CJ =
       ResolveRigidTransform(joint_spec.SemanticPose());
 

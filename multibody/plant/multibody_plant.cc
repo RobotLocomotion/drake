@@ -1941,7 +1941,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerations(
   if (is_discrete())
     CalcGeneralizedAccelerationsDiscrete(context, vdot);
   else
-    CalcGeneralizedAccelerationsContinuous(context, vdot);
+    *vdot = EvalForwardDynamics(context).get_vdot();
 }
 
 template <typename T>

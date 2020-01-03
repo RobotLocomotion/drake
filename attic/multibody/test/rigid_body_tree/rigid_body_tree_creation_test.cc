@@ -105,12 +105,6 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Ensure we have access to the list of frames and bodies (including world).
   EXPECT_EQ(tree_->get_bodies().size(), 3);
   EXPECT_EQ(tree_->get_frames().size(), 3);
-  // - Check deprecated accessors.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(tree_->bodies, tree_->get_bodies());
-  EXPECT_EQ(tree_->frames, tree_->get_frames());
-  #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
