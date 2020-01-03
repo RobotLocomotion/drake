@@ -3,6 +3,7 @@
 import unittest
 
 import numpy as np
+import warnings
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
@@ -135,6 +136,13 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(numpy_compare.to_float(x))))
         if nonzero:
             numpy_compare.assert_float_not_equal(x, 0.)
+
+    def test_deprecated_zero_argument_constructor(self):
+        with warnings.catch_warnings(record=True) as w:
+            MultibodyPlant_[float](0)
+            self.assertEqual(len(w), 1)
+            self.assertIn("Use MultibodyPlant(double) with time_step = 0.",
+                str(w[0].message))
 
     @numpy_compare.check_nonsymbolic_types
     def test_multibody_plant_construction_api(self, T):
