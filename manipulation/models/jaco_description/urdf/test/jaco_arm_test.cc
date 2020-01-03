@@ -18,7 +18,7 @@ GTEST_TEST(JacoArmTest, TestLoad6DofTree) {
       "drake/manipulation/models/jaco_description/urdf/"
       "j2n6s300.urdf"));
 
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(kPath);
 
@@ -41,7 +41,7 @@ GTEST_TEST(JacoArmTest, TestLoad7DofTree) {
       "drake/manipulation/models/jaco_description/urdf/"
       "j2s7s300.urdf"));
 
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(kPath);
 

@@ -56,7 +56,7 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   // Therefore we create a new model that meets this requirement. (a model
   // created along with a SceneGraph for simulation would also have input ports
   // to interact with that SceneGraph).
-  MultibodyPlant<double> acrobot;
+  MultibodyPlant<double> acrobot(0.0);
   Parser parser(&acrobot);
   parser.AddModelFromFile(full_name);
   // We are done defining the model.

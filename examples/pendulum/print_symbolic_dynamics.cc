@@ -42,7 +42,7 @@ VectorX<Expression> PendulumPlantDynamics() {
 VectorX<Expression> MultibodyPlantDynamics() {
   // Load the Pendulum.urdf into a symbolic MultibodyPlant.
   const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));

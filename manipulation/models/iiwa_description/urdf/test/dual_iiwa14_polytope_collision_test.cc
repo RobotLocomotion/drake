@@ -16,7 +16,7 @@ GTEST_TEST(DualIiwa14PolytopeCollisionTest, TestLoadTree) {
       "drake/manipulation/models/iiwa_description/urdf/"
       "dual_iiwa14_polytope_collision.urdf"));
 
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(kPath);
   plant.Finalize();

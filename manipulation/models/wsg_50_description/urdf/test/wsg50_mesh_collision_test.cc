@@ -17,7 +17,7 @@ GTEST_TEST(Wsg50DescriptionTest, TestMeshCollisionModelLoadTree) {
       "drake/manipulation/models/wsg_50_description/urdf/"
       "wsg_50_mesh_collision.urdf"));
 
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(kPath);
   plant.Finalize();

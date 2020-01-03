@@ -113,7 +113,7 @@ class SpringMassSystemTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   const PrismaticJoint<double>* slider_{nullptr};
 
   // Parameters of the case.

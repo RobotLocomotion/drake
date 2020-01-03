@@ -33,7 +33,7 @@ GTEST_TEST(ReorderKeyframesTest, Test) {
   // Create the plant which defines the ordering.
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   multibody::Parser(&plant).AddModelFromFile(full_name, "gripper");
   WeldGripperFrames(&plant);
   plant.Finalize();
@@ -84,7 +84,7 @@ GTEST_TEST(ReorderKeyframesTest, Test) {
 
   // Test throw when plant positions don't match number of expected planar
   // gripper joints.
-  MultibodyPlant<double> bad_plant;
+  MultibodyPlant<double> bad_plant(0.0);
   multibody::Parser(&bad_plant).AddModelFromFile(full_name, "gripper");
   WeldGripperFrames(&bad_plant);
   const std::string extra_model_name =

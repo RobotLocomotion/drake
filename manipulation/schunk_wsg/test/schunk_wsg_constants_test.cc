@@ -14,7 +14,7 @@ namespace {
 // Test that the constants defined in schunk_wsg_constants.h are
 // correct wrt `models/schunk_wsg_50.sdf`.
 GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"));

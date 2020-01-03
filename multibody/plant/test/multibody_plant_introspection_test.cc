@@ -39,7 +39,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   const std::string mug_sdf_path =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   // Load a model of a table for the environment around the robot.
   Parser parser(&plant);

@@ -50,7 +50,7 @@ GeometryId AddRigidBody(MultibodyPlant<double>* plant,
 }
 
 GTEST_TEST(HydroelasticEngine, CombineSoftAndRigidMaterialProperties) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
@@ -74,7 +74,7 @@ GTEST_TEST(HydroelasticEngine, CombineSoftAndRigidMaterialProperties) {
 }
 
 GTEST_TEST(HydroelasticEngine, CombineSoftAndSoftMaterialProperties) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 

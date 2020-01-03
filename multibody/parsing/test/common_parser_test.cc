@@ -43,7 +43,7 @@ class MultibodyPlantLinkTests :
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   geometry::SceneGraph<double> scene_graph_;
   const std::string base_name_{"drake/multibody/parsing/test/"
         "links_with_visuals_and_collisions"};

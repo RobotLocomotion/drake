@@ -56,7 +56,7 @@ int DoMain() {
   // (only) to extract joint velocity ordering.
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
-  MultibodyPlant<double> control_plant;
+  MultibodyPlant<double> control_plant(0.0);
   multibody::Parser(&control_plant).AddModelFromFile(full_name);
   WeldGripperFrames<double>(&control_plant);
   control_plant.Finalize();

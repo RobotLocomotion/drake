@@ -16,7 +16,7 @@ namespace multibody {
 namespace {
 
 GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, GetCenterOfMassPosition) {
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_(0.0);
   plant_.Finalize();
   auto context_ = plant_.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -75,7 +75,7 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   std::unique_ptr<systems::Context<double>> context_;
   ModelInstanceIndex triangle_instance_;
   ModelInstanceIndex sphere_instance_;

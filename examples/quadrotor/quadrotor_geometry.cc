@@ -41,7 +41,7 @@ QuadrotorGeometry::QuadrotorGeometry(
   // Use (temporary) MultibodyPlant to parse the urdf and setup the
   // scene_graph.
   // TODO(SeanCurtis-TRI): Update this on resolution of #10775.
-  multibody::MultibodyPlant<double> mbp;
+  multibody::MultibodyPlant<double> mbp(0.0);
   multibody::Parser parser(&mbp, scene_graph);
 
   auto model_id = parser.AddModelFromFile(
