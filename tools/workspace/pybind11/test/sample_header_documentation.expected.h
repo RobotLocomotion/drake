@@ -65,7 +65,7 @@ Version:
     struct /* mkdoc_test */ {
       // Symbol: drake::mkdoc_test::AnonymousConstant
       struct /* AnonymousConstant */ {
-        // Source: drake/tools/workspace/pybind11/test/sample_header.h:376
+        // Source: drake/tools/workspace/pybind11/test/sample_header.h:374
         const char* doc = R"""(Anonymous enum's constant.)""";
       } AnonymousConstant;
       // Symbol: drake::mkdoc_test::Class
@@ -274,7 +274,7 @@ risus quis varius quam.)""";
       } Class;
       // Symbol: drake::mkdoc_test::DrakeDeprecatedClass
       struct /* DrakeDeprecatedClass */ {
-        // Source: drake/tools/workspace/pybind11/test/sample_header.h:381
+        // Source: drake/tools/workspace/pybind11/test/sample_header.h:379
         const char* doc_deprecated =
 R"""(I am measurably old. (Deprecated.)
 
@@ -283,7 +283,7 @@ Deprecated:
     after 2038-01-19.)""";
         // Symbol: drake::mkdoc_test::DrakeDeprecatedClass::a
         struct /* a */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:394
+          // Source: drake/tools/workspace/pybind11/test/sample_header.h:392
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -293,14 +293,14 @@ Deprecated:
         } a;
         // Symbol: drake::mkdoc_test::DrakeDeprecatedClass::f
         struct /* f */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:386
+          // Source: drake/tools/workspace/pybind11/test/sample_header.h:384
           const char* doc_deprecated_1args =
 R"""((Deprecated.)
 
 Deprecated:
     f() is slow; use g() instead. Also, I like hats. This will be
     removed from Drake on or after 2038-01-19.)""";
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:390
+          // Source: drake/tools/workspace/pybind11/test/sample_header.h:388
           const char* doc_deprecated_0args =
 R"""((Deprecated.)
 
@@ -311,7 +311,7 @@ Deprecated:
       } DrakeDeprecatedClass;
       // Symbol: drake::mkdoc_test::DrakeDeprecatedTemplateClass
       struct /* DrakeDeprecatedTemplateClass */ {
-        // Source: drake/tools/workspace/pybind11/test/sample_header.h:400
+        // Source: drake/tools/workspace/pybind11/test/sample_header.h:398
         const char* doc_deprecated =
 R"""(I am symbolically old. (Deprecated.)
 
@@ -339,10 +339,9 @@ R"""(Enumeration class. Malesuada fames ac turpis egestas integer eget
 aliquet nibh praesent.)""";
         // Symbol: drake::mkdoc_test::EnumClass::EnumClassConstant
         struct /* EnumClassConstant */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:370
+          // Source: drake/tools/workspace/pybind11/test/sample_header.h:368
           const char* doc =
-R"""(Enumeration class constant. Vestibulum mattis ullamcorper velit sed
-ullamcorper.)""";
+R"""(Enumeration class constant. Vestibulum mattis.)""";
         } EnumClassConstant;
       } EnumClass;
       // Symbol: drake::mkdoc_test::Struct
