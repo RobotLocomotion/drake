@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/examples/utils/reset_integrator.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -15,13 +16,15 @@ DEFINE_double(target_realtime_rate, 0,
               "Desired rate relative to real time (usually between 0 and 1). "
               "This is documented in Simulator::set_target_realtime_rate().");
 DEFINE_double(simulation_time, 2.0, "Simulation duration in seconds");
-DEFINE_double(
-    time_step, 1.0E-3,
-    "The fixed-time step period (in seconds) of discrete updates for the "
-    "multibody plant modeled as a discrete system. Strictly positive.");
 DEFINE_double(penetration_allowance, 1.0E-3, "Allowable penetration (meters).");
 DEFINE_double(stiction_tolerance, 1.0E-3,
               "Allowable drift speed during stiction (m/s).");
+
+// Integration parameters:
+DEFINE_integration_scheme();
+DEFINE_mbp_discrete_update_period();
+DEFINE_max_time_step();
+DEFINE_accuracy();
 
 namespace drake {
 namespace examples {
@@ -34,16 +37,16 @@ using Eigen::Translation3d;
 using Eigen::VectorXd;
 
 int do_main() {
-  if (FLAGS_time_step <= 0) {
+  if (FLAGS_mbp_discrete_update_period < 0) {
     throw std::runtime_error(
-        "time_step must be a strictly positive number. Only the time-stepping "
-        "mode is supported for this model.");
+        "mbp_discrete_update_period must be a non-negative number.");
   }
 
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
   auto pair = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
+      &builder, std::make_unique<MultibodyPlant<double>>(
+                    FLAGS_mbp_discrete_update_period));
   MultibodyPlant<double>& plant = pair.plant;
 
   const std::string full_name =
@@ -109,6 +112,8 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
+  ResetIntegrator(FLAGS_integration_scheme, FLAGS_max_time_step, FLAGS_accuracy,
+                  &simulator);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

@@ -13,6 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
+#include "drake/examples/utils/reset_integrator.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
@@ -45,13 +46,17 @@ DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
               "Desired duration of the simulation in seconds");
 DEFINE_bool(use_right_hand, true,
             "Which hand to model: true for right hand or false for left hand");
-DEFINE_double(max_time_step, 1.5e-4,
-              "Simulation time step used for intergrator.");
 DEFINE_bool(add_gravity, false,
             "Whether adding gravity (9.81 m/s^2) in the simulation");
 DEFINE_double(target_realtime_rate, 1,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
+
+// Integration parameters:
+DEFINE_integration_scheme();
+DEFINE_mbp_discrete_update_period();
+DEFINE_max_time_step();
+DEFINE_accuracy();
 
 void DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
@@ -64,7 +69,7 @@ void DoMain() {
   scene_graph.set_name("scene_graph");
 
   MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step);
+      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string hand_model_path;
   if (FLAGS_use_right_hand)
@@ -187,6 +192,8 @@ void DoMain() {
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  ResetIntegrator(FLAGS_integration_scheme, FLAGS_max_time_step, FLAGS_accuracy,
+                  &simulator);
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();

@@ -1,0 +1,37 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+#drake_cc_package_library(
+#    name = "examples_utils",
+#    deps = [":reset_integrator"],
+#)
+
+drake_cc_library(
+    name = "reset_integrator",
+    srcs = ["reset_integrator.cc"],
+    hdrs = ["reset_integrator.h"],
+    deps = [
+        "//systems/analysis:bogacki_shampine3_integrator",
+        "//systems/analysis:explicit_euler_integrator",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:radau_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:runge_kutta5_integrator",
+        "//systems/analysis:semi_explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
