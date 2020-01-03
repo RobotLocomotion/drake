@@ -16,121 +16,6 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-// Tests the Jacobian and iteration matrix reuse strategies using a test
-// problem and integrator for which we have knowledge of the convergence
-// behavior from the initial state.
-GTEST_TEST(RadauIntegratorTest, Reuse) {
-  std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
-    std::make_unique<analysis::test::RobertsonSystem<double>>();
-  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
-
-  // Create the Euler integrator.
-  RadauIntegrator<double, 1> euler(*robertson, context.get());
-
-  euler.set_maximum_step_size(1e-2);  // Maximum step that will be attempted.
-  euler.set_throw_on_minimum_step_size_violation(false);
-  euler.set_fixed_step_mode(true);
-  euler.set_reuse(true);    // The whole point of this.
-
-  // Attempt to integrate the system. Our past experience indicates that this
-  // system fails to converge from the initial state for this large step size.
-  // This tests the case where the Jacobian matrix has yet to be formed. There
-  // should be two Jacobian matrix evaluations- once at trial 1 and another
-  // at trial 3. There should be three iteration matrix factorizations: once
-  // at trial 1, another at trial 2, and the third at trial 3.
-  euler.Initialize();
-  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e-2));
-  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(), 3);
-  EXPECT_EQ(euler.get_num_jacobian_evaluations(), 2);
-
-  // Now integrate again but with a smaller size. Again, past experience
-  // that this step size should be sufficiently small for the integrator to
-  // converge. The Jacobian matrix will be "fresh"; we assume no knowledge
-  // of the number of iteration matrix factorizations.
-  euler.ResetStatistics();
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(1e-6));
-  EXPECT_EQ(euler.get_num_jacobian_evaluations(), 0);
-
-  // Again try taking a large step, which we expect will be too large to
-  // converge. There should be one Jacobian matrix evaluation- once at trial 3.
-  // There should be two iteration matrix factorizations: one at trial 2 and
-  // another at trial 3.
-  euler.ResetStatistics();
-  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e-2));
-  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(), 2);
-  EXPECT_EQ(euler.get_num_jacobian_evaluations(), 1);
-}
-
-// Tests that the full-Newton approach computes a Jacobian matrix and factorizes
-// the iteration matrix on every Newton-Raphson iteration.
-GTEST_TEST(RadauIntegratorTest, FullNewton) {
-  std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
-    std::make_unique<analysis::test::RobertsonSystem<double>>();
-  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
-
-  // Create the Euler integrator.
-  RadauIntegrator<double, 1> euler(*robertson, context.get());
-
-  euler.request_initial_step_size_target(1e0);
-  euler.set_throw_on_minimum_step_size_violation(false);
-  euler.set_fixed_step_mode(true);
-  euler.set_use_full_newton(true);    // The whole point of this test.
-
-  // Attempt to integrate the system. Our past experience indicates that this
-  // system fails to converge from the initial state for this large step size.
-  // This tests the case where the Jacobian matrix has yet to be formed.
-  euler.Initialize();
-  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
-  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
-            euler.get_num_newton_raphson_iterations());
-  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
-            euler.get_num_newton_raphson_iterations());
-
-  // Now integrate again but with a smaller size. Again, past experience tells
-  // us that this step size should be sufficiently small for the integrator to
-  // converge.
-  euler.ResetStatistics();
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(1e-6));
-  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
-            euler.get_num_newton_raphson_iterations());
-  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
-            euler.get_num_newton_raphson_iterations());
-
-  // Again try taking a large step, which we expect will be too large to
-  // converge.
-  euler.ResetStatistics();
-  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
-  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
-            euler.get_num_newton_raphson_iterations());
-  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
-            euler.get_num_newton_raphson_iterations());
-}
-
-// Tests the implicit integrator on a stationary system problem, which
-// stresses numerical differentiation (since the state does not change).
-GTEST_TEST(RadauIntegratorTest, Stationary) {
-  StationarySystem stationary;
-  std::unique_ptr<Context<double>> context = stationary.CreateDefaultContext();
-
-  // Set the initial condition for the stationary system.
-  VectorBase<double>& state = context->get_mutable_continuous_state().
-      get_mutable_vector();
-  state.SetAtIndex(0, 0.0);
-  state.SetAtIndex(1, 0.0);
-
-  // Create the integrator.
-  RadauIntegrator<double> integrator(stationary, context.get());
-  integrator.set_maximum_step_size(0.1);
-
-  // Integrate the system
-  integrator.Initialize();
-  integrator.IntegrateWithMultipleStepsToTime(1.0);
-
-  // Verify the solution.
-  EXPECT_NEAR(state.GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(state.GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
-}
-
 // Tests accuracy for integrating a scalar cubic system (with the state at time
 // t corresponding to f(t) ≡ C₃t³ + C₂t² + C₁t + C₀) over
 // t ∈ [0, 1]. Radau3 is a third order integrator, meaning that it uses the
@@ -179,36 +64,6 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   state = context->get_continuous_state().get_vector().CopyToVector();
   EXPECT_GT(std::abs(state[0] - cubic.Evaluate(h)),
       1e9 * std::numeric_limits<double>::epsilon());
-}
-
-// Tests accuracy for integrating a scalar linear system (with the state at time
-// t corresponding to f(t) ≡ C₁t + C₀) over
-// t ∈ [0, 1] using the single-stage Radau integrator, meaning that it uses the
-// Taylor Series expansion:
-// f(t+h) ≈ f(t) + hf'(t) + O(h²)
-// The formula above indicates that the approximation error will be zero if
-// f''(t) = 0, which is true for the linear equation.
-GTEST_TEST(RadauIntegratorTest, LinearSystem) {
-  LinearScalarSystem linear;
-  std::unique_ptr<Context<double>> context = linear.CreateDefaultContext();
-
-  // Create the integrator.
-  const int num_stages = 1;
-  RadauIntegrator<double, num_stages> euler(linear, context.get());
-
-  const double h = 1.0;
-  euler.set_maximum_step_size(h);
-
-  // Integrate the system
-  euler.Initialize();
-  euler.set_fixed_step_mode(true);
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
-
-  // Verify the solution.
-  VectorX<double> state =
-      context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], linear.Evaluate(h),
-      std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
@@ -292,13 +147,12 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
       10 * std::numeric_limits<double>::epsilon());
 }
 
-// Tests accuracy for integrating the linear system (with the state at time t
-// corresponding to f(t) ≡ C₁t + C₀, where C₀ is the initial state) over
-// t ∈ [0, 1]. The error estimate from 1-stage Radau is first order accurate,
-// meaning that the approximation error will be zero if f''(t) = 0, which is
-// true for the linear equation. We check that the error estimate is perfect
-// for this function.
-GTEST_TEST(RadauIntegratorTest, LinearTest) {
+// Tests that Radau1 can successfully integrate the linear system (with the
+// state at time t corresponding to f(t) ≡ C₁t + C₀, where C₀ is the initial
+// state) over t ∈ [0, 1], without falling back to Euler+RK2. In
+// ImplicitIntegratorTest::LinearTest, we also test the accuracy of Radau1 and
+// Radau3 while integrating the same system.
+GTEST_TEST(RadauIntegratorTest, LinearRadauTest) {
   LinearScalarSystem linear;
   auto linear_context = linear.CreateDefaultContext();
   const double C0 = linear.Evaluate(0);
@@ -324,53 +178,6 @@ GTEST_TEST(RadauIntegratorTest, LinearTest) {
   // Big-Oh term; for the two-stage Radau integrator, this value will be
   // different.
   ASSERT_EQ(radau.get_error_estimate_order(), 2);
-
-  const double err_est =
-      radau.get_error_estimate()->get_vector().GetAtIndex(0);
-
-  // Note the very tight tolerance used, which will likely not hold for
-  // arbitrary values of C0, t_final, or polynomial coefficients.
-  EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
-
-  // Verify the solution too.
-  EXPECT_NEAR(
-      linear_context->get_continuous_state().get_vector().CopyToVector()[0],
-      linear.Evaluate(t_final),
-      std::numeric_limits<double>::epsilon());
-
-  // Repeat this test, but using a final time that is below the working minimum
-  // step size (thereby triggering the implicit integrator's alternate, explicit
-  // mode). To retain our existing tolerances, we change the scale factor (S)
-  // for the linear system.
-  radau.get_mutable_context()->SetTime(0);
-  const double working_min = radau.get_working_minimum_step_size();
-  LinearScalarSystem scaled_linear(4.0/working_min);
-  auto scaled_linear_context = scaled_linear.CreateDefaultContext();
-  RadauIntegrator<double> scaled_radau(
-      scaled_linear, scaled_linear_context.get());
-  const double updated_t_final = working_min / 2;
-  scaled_radau.set_maximum_step_size(updated_t_final);
-  scaled_radau.set_fixed_step_mode(true);
-  scaled_radau.Initialize();
-  ASSERT_TRUE(scaled_radau.IntegrateWithSingleFixedStepToTime(updated_t_final));
-
-  // Ensure that explicit Euler + RK2, and not Radau, was used by counting the
-  // number of function evaluations.
-  EXPECT_EQ(scaled_radau.get_num_derivative_evaluations(), 4);
-
-  const double updated_err_est =
-      scaled_radau.get_error_estimate()->get_vector()[0];
-
-  // Note the very tight tolerance used, which will likely not hold for
-  // arbitrary values of C0, t_final, or polynomial coefficients.
-  EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
-
-  // Verify the solution too.
-  EXPECT_NEAR(
-      scaled_linear_context->get_continuous_state().get_vector().
-          CopyToVector()[0],
-      scaled_linear.Evaluate(updated_t_final),
-      10 * std::numeric_limits<double>::epsilon());
 }
 
 // Integrate the modified mass-spring-damping system, which exhibits a
