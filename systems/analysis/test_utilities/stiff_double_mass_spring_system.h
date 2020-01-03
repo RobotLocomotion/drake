@@ -165,7 +165,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     // The position of the second body should be offset exactly from the first.
     state->get_mutable_generalized_position().SetAtIndex(1, x1_final + offset);
 
-    // Velocity of the second body should be equal to the first
+    // Velocity of the second body should be equal to that of the first body.
     state->get_mutable_generalized_velocity().SetAtIndex(1, v1_final);
   }
 };

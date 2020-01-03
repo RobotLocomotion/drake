@@ -96,3 +96,4 @@ GTEST_TEST(ImplicitIntegratortest, IsUpdateZero) {
 }  // namespace
 }  // namespace systems
 }  // namespace drake
+
