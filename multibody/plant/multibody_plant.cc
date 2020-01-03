@@ -253,6 +253,10 @@ std::string GetScopedName(
 }  // namespace
 
 template <typename T>
+MultibodyPlant<T>::MultibodyPlant()
+    : MultibodyPlant(0.0) {}
+
+template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
     : MultibodyPlant(nullptr, time_step) {}
 
@@ -2898,7 +2902,7 @@ AddMultibodyPlantSceneGraph(
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
   if (!plant) {
-    plant = std::make_unique<MultibodyPlant<T>>();
+    plant = std::make_unique<MultibodyPlant<T>>(0.0);
     plant->set_name("plant");
   }
   if (!scene_graph) {

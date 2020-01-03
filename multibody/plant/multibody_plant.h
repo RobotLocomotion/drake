@@ -451,14 +451,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// methods that perform computations. See Finalize() for details.
   /// @{
 
+  /// Default constructor creates a plant modeled as a continuous system.
+  DRAKE_DEPRECATED("2020-03-06", "Use MultibodyPlant(double).")
+  MultibodyPlant();
+
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
   /// @param[in] time_step
-  ///   An optional parameter indicating whether `this` plant is modeled as a
-  ///   continuous system (`time_step = 0`) or as a discrete system with
-  ///   periodic updates of period `time_step > 0`. @default 0.0.
+  ///   Indicates whether `this` plant is modeled as a continuous system
+  ///   (`time_step = 0`) or as a discrete system with periodic updates of
+  ///   period `time_step > 0`.
   /// @throws std::exception if `time_step` is negative.
-  explicit MultibodyPlant(double time_step = 0);
+  explicit MultibodyPlant(double time_step);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
