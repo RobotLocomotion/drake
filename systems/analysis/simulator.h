@@ -588,16 +588,10 @@ class Simulator {
   /// state of the system.
   IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
-  /// Resets the integrator with a new one. An example usage is:
-  /// @code
-  /// simulator.reset_integrator(std::move(integrator));
-  /// @endcode
-  /// The %Simulator must be reinitialized after resetting the integrator to
-  /// ensure the integrator is properly initialized. You can do that explicitly
-  /// with the Initialize() method or it will be done implicitly at the first
-  /// time step.
-  /// @throws std::logic_error if `integrator` is nullptr.
   template <class U>
+  DRAKE_DEPRECATED(
+      "2020-03-01",
+      "Use scalar-valued or void version of reset_integrator() instead.")
   U* reset_integrator(std::unique_ptr<U> integrator) {
     if (!integrator)
       throw std::logic_error("Integrator cannot be null.");
@@ -606,16 +600,10 @@ class Simulator {
     return static_cast<U*>(integrator_.get());
   }
 
-  /// Resets the integrator with a new one using factory construction. An
-  /// example usage is:
-  /// @code
-  /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-  ///               (sys, h).
-  /// @endcode
-  /// See the base overload for `reset_integrator` for more details.
-  /// @note This method automatically sets the integrator's context; there is
-  ///       no need to specify the context when constructing the integrator.
   template <class U, typename... Args>
+  DRAKE_DEPRECATED(
+      "2020-03-01",
+      "Use scalar-valued or void version of reset_integrator() instead.")
   U* reset_integrator(Args&&... args) {
     auto integrator = std::make_unique<U>(std::forward<Args>(args)...);
     integrator->reset_context(&get_mutable_context());
@@ -626,13 +614,47 @@ class Simulator {
   /// @code
   /// simulator.reset_integrator<RungeKutta3Integrator<double>>().
   /// @endcode
-  /// See the base overload for `reset_integrator` for more details.
-  /// @note The integrator must have a single-argument constructor.
+  /// The %Simulator must be reinitialized after resetting the integrator to
+  /// ensure the integrator is properly initialized. You can do that explicitly
+  /// with the Initialize() method or it will be done implicitly at the first
+  /// time step.
+  /// @note This method works with integrators that have constructors of the
+  ///       form Integrator(const System&, Context*).  All of Drake's
+  ///       error controlled integrators fit this model.
   template <class U>
   U* reset_integrator() {
-    auto integrator = std::make_unique<U>(get_system());
-    integrator->reset_context(&get_mutable_context());
-    return reset_integrator(std::move(integrator));
+    static_assert(
+        std::is_constructible<U, const System<T>&, Context<T>*>::value,
+        "Integrator needs a constructor of the form "
+        "Integrator::Integrator(const System&, Context*); this "
+        "constructor is usually associated with error-controlled integrators.");
+    integrator_ = std::make_unique<U>(get_system(), &get_mutable_context());
+    initialization_done_ = false;
+    return static_cast<U*>(integrator_.get());
+  }
+
+  /// Resets the integrator with a new one using factory construction and a
+  /// maximum step size argument (which is required for constructing fixed-step
+  /// integrators).
+  /// @code
+  /// simulator.reset_integrator<RungeKutta2Integrator<double>>(0.1).
+  /// @endcode
+  /// @see argument-less version of reset_integrator() for note about
+  ///      initialization.
+  /// @note This method works with integrators that have constructors of the
+  ///       form Integrator(const System&, const T&, Context*). All of Drake's
+  ///       fixed-step integrators fit this model.
+  template <class U>
+  U* reset_integrator(const T max_step_size) {
+    static_assert(
+        std::is_constructible<U, const System<T>&, double, Context<T>*>::value,
+        "Integrator needs a constructor of the form "
+        "Integrator::Integrator(const System&, const T&, Context*); this "
+        "constructor is usually associated with fixed-step integrators.");
+    integrator_ = std::make_unique<U>(get_system(), max_step_size,
+                                      &get_mutable_context());
+    initialization_done_ = false;
+    return static_cast<U*>(integrator_.get());
   }
 
   /// Gets the length of the interval used for witness function time isolation.
