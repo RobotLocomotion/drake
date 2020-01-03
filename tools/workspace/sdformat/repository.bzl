@@ -16,4 +16,6 @@ def sdformat_repository(
         strip_prefix = "osrf-sdformat-%s" % (commit),
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
+        # TODO(eric.cousineau): Remove this once libsdformat incorporates it.
+        patches = ["@drake//tools/workspace/sdformat:Converter.cc.diff"],
     )
