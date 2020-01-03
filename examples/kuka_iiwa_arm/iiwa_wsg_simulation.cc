@@ -282,8 +282,7 @@ int DoMain() {
   // advancing once the gripper grasps the box.  Grasping makes the
   // problem computationally stiff, which brings the default RK3
   // integrator to its knees.
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
-      FLAGS_dt, &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(FLAGS_dt);
   simulator.set_publish_every_time_step(false);
   simulator.AdvanceTo(FLAGS_simulation_sec);
 

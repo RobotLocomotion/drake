@@ -79,7 +79,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
-    DefineTemplateClassWithDefault<Simulator<T>>(
+    auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc)
         .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
             py::arg("system"), py::arg("context") = nullptr,
@@ -109,10 +109,14 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.has_context.doc)
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
             // Keep alive, ownership: `context` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
+            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc);
         // TODO(eric.cousineau): Bind `release_context` once some form of the
         // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
-        .def("reset_integrator",
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        cls.def("reset_integrator",
+            WrapDeprecated(
+                cls_doc.reset_integrator.doc_deprecated,
             [](Simulator<T>* self,
                 std::unique_ptr<IntegratorBase<T>> integrator) {
               return self->reset_integrator(std::move(integrator));
@@ -120,7 +124,8 @@ PYBIND11_MODULE(analysis, m) {
             py::arg("integrator"),
             // Keep alive, ownership: `integrator` keeps `self` alive.
             py::keep_alive<2, 1>(),
-            doc.Simulator.reset_integrator.doc_1args_stduniqueptr)
+            cls_doc.reset_integrator.doc_deprecated)
+#pragma GCC diagnostic pop
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step,
             doc.Simulator.set_publish_every_time_step.doc)

@@ -1004,8 +1004,8 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
 
   // Create the integrator and initialize it.
-  auto& integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      h);
+  auto& integrator =
+      simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
   integrator.Initialize();
 
   // Set the integrator and initialize the simulator.
