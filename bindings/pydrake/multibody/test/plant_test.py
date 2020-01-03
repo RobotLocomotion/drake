@@ -139,7 +139,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deprecated_zero_argument_constructor(self):
         with warnings.catch_warnings(record=True) as w:
-            MultibodyPlant_[float](0)
+            MultibodyPlant_[float]()
             self.assertEqual(len(w), 1)
             self.assertIn("Use MultibodyPlant(double) with time_step = 0.",
                 str(w[0].message))
