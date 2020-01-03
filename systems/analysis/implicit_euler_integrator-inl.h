@@ -171,7 +171,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   //                xtplus. This would give a better Jacobian, but would
   //                complicate the logic, since the Jacobian would no longer
   //                (necessarily) be fresh upon fallback to a smaller step size.
-  if (!this->use_full_newton() &&
+  if (!this->get_use_full_newton() &&
       !this->MaybeFreshenMatrices(t0, xt0, h, trial,
                                   compute_and_factor_iteration_matrix,
                                   iteration_matrix)) {
@@ -252,7 +252,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   DRAKE_LOGGER_DEBUG("StepAbstract() convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
-  // is nothing else we can try.
+  // is nothing else we can try.  Note that get_reuse() returns false if
+  // "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 

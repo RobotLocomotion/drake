@@ -490,7 +490,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   //                xtplus. This would give a better Jacobian, but would
   //                complicate the logic, since the Jacobian would no longer
   //                (necessarily) be fresh upon fallback to a smaller step size.
-  if (!this->use_full_newton() &&
+  if (!this->get_use_full_newton() &&
       !this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
       &iteration_matrix_radau_)) {
     return false;
@@ -564,7 +564,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try; otherwise, the following code will recurse
-  // into this function again, and freshen computations as helpful.
+  // into this function again, and freshen computations as helpful.  Note that
+  // get_reuse() returns false if "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 
@@ -678,7 +680,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   //                would give a better Jacobian, but would complicate the
   //                logic, since the Jacobian would no longer (necessarily) be
   //                fresh upon fallback to a smaller step size.
-  if (!this->use_full_newton() &&
+  if (!this->get_use_full_newton() &&
       !this->MaybeFreshenMatrices(t0, xt0, h, trial,
                                   ComputeImplicitTrapezoidIterationMatrix,
                                   &iteration_matrix_implicit_trapezoid_)) {
@@ -726,7 +728,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
       "failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
-  // is nothing else we can try.
+  // is nothing else we can try. Note that get_reuse() returns false if
+  // "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 

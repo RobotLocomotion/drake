@@ -85,7 +85,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// increased step sizes but should have no effect on solution accuracy- can
   /// outweigh the small factorization cost.
   /// @note The reuse setting will have no effect when
-  ///       use_full_newton() `== true`.
+  ///       get_use_full_newton() `== true`.
   /// @sa get_reuse()
   /// @sa set_use_full_newton()
   void set_reuse(bool reuse) { reuse_ = reuse; }
@@ -105,7 +105,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   /// Gets whether this method is operating in "full Newton" mode.
   /// @see set_use_full_newton()
-  bool use_full_newton() const { return use_full_newton_; }
+  bool get_use_full_newton() const { return use_full_newton_; }
 
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
@@ -735,7 +735,7 @@ void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   // Return immediately if full-Newton is not in use.
-  if (!use_full_newton()) return;
+  if (!get_use_full_newton()) return;
 
   // Compute the initial Jacobian and iteration matrices and factor them.
   MatrixX<T>& J = get_mutable_jacobian();
