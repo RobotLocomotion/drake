@@ -1004,9 +1004,9 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
 
   // Create the integrator and initialize it.
-  auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
+  auto& integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
       h);
-  integrator->Initialize();
+  integrator.Initialize();
 
   // Set the integrator and initialize the simulator.
   simulator.Initialize();
@@ -1805,11 +1805,11 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   // Construct the Simulator with an RK3 integrator and settings that reproduce
   // the behavior.
   Simulator<double> simulator(*diagram);
-  auto rk3 = simulator.reset_integrator<RungeKutta3Integrator<double>>();
-  rk3->set_maximum_step_size(1.0 / kFrequency);
-  rk3->request_initial_step_size_target(1e-4);
-  rk3->set_target_accuracy(1e-4);
-  rk3->set_fixed_step_mode(false);
+  auto& rk3 = simulator.reset_integrator<RungeKutta3Integrator<double>>();
+  rk3.set_maximum_step_size(1.0 / kFrequency);
+  rk3.request_initial_step_size_target(1e-4);
+  rk3.set_target_accuracy(1e-4);
+  rk3.set_fixed_step_mode(false);
 
   // Simulate.
   const int kTime = 1;

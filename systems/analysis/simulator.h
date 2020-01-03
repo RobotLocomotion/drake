@@ -621,16 +621,17 @@ class Simulator {
   /// @note This method works with integrators that have constructors of the
   ///       form Integrator(const System&, Context*).  All of Drake's
   ///       error controlled integrators fit this model.
-  template <class U>
-  U* reset_integrator() {
+  template <class Integrator>
+  Integrator& reset_integrator() {
     static_assert(
-        std::is_constructible<U, const System<T>&, Context<T>*>::value,
+        std::is_constructible<Integrator, const System<T>&, Context<T>*>::value,
         "Integrator needs a constructor of the form "
         "Integrator::Integrator(const System&, Context*); this "
         "constructor is usually associated with error-controlled integrators.");
-    integrator_ = std::make_unique<U>(get_system(), &get_mutable_context());
+    integrator_ =
+        std::make_unique<Integrator>(get_system(), &get_mutable_context());
     initialization_done_ = false;
-    return static_cast<U*>(integrator_.get());
+    return *static_cast<Integrator*>(integrator_.get());
   }
 
   /// Resets the integrator with a new one using factory construction and a
@@ -644,17 +645,18 @@ class Simulator {
   /// @note This method works with integrators that have constructors of the
   ///       form Integrator(const System&, const T&, Context*). All of Drake's
   ///       fixed-step integrators fit this model.
-  template <class U>
-  U* reset_integrator(const T max_step_size) {
+  template <class Integrator>
+  Integrator& reset_integrator(const T max_step_size) {
     static_assert(
-        std::is_constructible<U, const System<T>&, double, Context<T>*>::value,
+        std::is_constructible<Integrator, const System<T>&, double,
+                              Context<T>*>::value,
         "Integrator needs a constructor of the form "
         "Integrator::Integrator(const System&, const T&, Context*); this "
         "constructor is usually associated with fixed-step integrators.");
-    integrator_ = std::make_unique<U>(get_system(), max_step_size,
+    integrator_ = std::make_unique<Integrator>(get_system(), max_step_size,
                                       &get_mutable_context());
     initialization_done_ = false;
-    return static_cast<U*>(integrator_.get());
+    return *static_cast<Integrator*>(integrator_.get());
   }
 
   /// Gets the length of the interval used for witness function time isolation.
