@@ -420,11 +420,6 @@ class Simulator {
     return monitor_;
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2020-01-01", "Use AdvanceTo() instead.")
-  void StepTo(const T& boundary_time) { AdvanceTo(boundary_time); }
-#endif
-
   // TODO(sherm1): Provide options for issuing a warning or aborting the
   // simulation if the desired rate cannot be achieved.
   /// Slow the simulation down to *approximately* synchronize with real time

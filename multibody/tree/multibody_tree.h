@@ -677,6 +677,34 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
+  /// See MultibodyPlant method.
+  template <template <typename> class ForceElementType = ForceElement>
+  const ForceElementType<T>& GetForceElement(
+      ForceElementIndex force_element_index) const {
+    static_assert(
+        std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
+        "ForceElementType<T> must be a sub-class of ForceElement<T>.");
+    const ForceElement<T>* force_element =
+        &get_force_element(force_element_index);
+
+    const ForceElementType<T>* typed_force_element =
+        dynamic_cast<const ForceElementType<T>*>(force_element);
+    if (typed_force_element == nullptr) {
+      throw std::logic_error("ForceElement is not of type '" +
+                             NiceTypeName::Get<ForceElementType<T>>() +
+                             "' but of type '" +
+                             NiceTypeName::Get(*force_element) + "'.");
+    }
+
+    return *typed_force_element;
+  }
+
+  const ForceElement<T>& get_force_element(
+      ForceElementIndex force_element_index) const {
+    DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
+    return *owned_force_elements_[force_element_index];
+  }
+
   /// An accessor to the current gravity field.
   const UniformGravityFieldElement<T>& gravity_field() const {
     DRAKE_ASSERT(gravity_field_);

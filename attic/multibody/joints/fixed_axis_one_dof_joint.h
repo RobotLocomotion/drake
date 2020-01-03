@@ -210,12 +210,6 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return DrakeJoint::name_;
   }
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_position_name().")
-  std::string getPositionName(int index) const override {
-    return get_position_name(index);
-  }
-
   const drake::TwistVector<double>& joint_axis() const { return joint_axis_; }
 
   double damping() const { return damping_; }

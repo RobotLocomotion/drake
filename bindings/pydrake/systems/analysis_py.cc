@@ -94,10 +94,6 @@ PYBIND11_MODULE(analysis, m) {
                 py::arg("boundary_time"), doc.Simulator.AdvanceTo.doc)
             .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
                 doc.Simulator.AdvancePendingEvents.doc)
-            .def("StepTo",
-                WrapDeprecated(doc.Simulator.StepTo.doc_deprecated,
-                    &Simulator<T>::AdvanceTo),
-                doc.Simulator.StepTo.doc_deprecated)
             .def("get_context", &Simulator<T>::get_context,
                 py_reference_internal, doc.Simulator.get_context.doc)
             .def("get_integrator", &Simulator<T>::get_integrator,

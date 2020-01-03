@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/rbt_inverse_dynamics.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
@@ -113,15 +112,6 @@ class InverseDynamicsController : public Diagram<T>,
    */
   const OutputPort<T>& get_output_port_control() const final {
     return this->get_output_port(output_port_index_control_);
-  }
-
-  /**
-   * Returns a constant reference to the RigidBodyTree used for control.
-   */
-  DRAKE_DEPRECATED("2019-12-31",
-      "Please use get_rigid_body_tree_for_control().")
-  const RigidBodyTree<T>& get_robot_for_control() const {
-    return *rigid_body_tree_for_control_;
   }
 
   /**

@@ -9,13 +9,12 @@ To query GitHub APIs, you'll need to authenticate yourself first,
 via a GitHub API token:
 
   bazel build //tools/dev:relnotes
-  env GITHUB_API_TOKEN=$(cat ~/.config/readonly_github_api_token.txt) \
-    bazel-bin/tools/dev/relnotes
+  bazel-bin/tools/dev/relnotes
 
-To create the ~/.config/readonly_github_api_token.txt file, open a browser to
-https://github.com/settings/tokens and create a new token (it does not need any
-extra permissions; the default "no checkboxes are set" is good), and save the
-plaintext hexidecimal token to that file.
+To create the required ~/.config/readonly_github_api_token.txt file, open a
+browser to https://github.com/settings/tokens and create a new token (it does
+not need any extra permissions; the default "no checkboxes are set" is good),
+and save the plaintext hexidecimal token to that file.
 """
 
 import argparse
@@ -85,6 +84,10 @@ def main():
         "--max_num_commits", type=int, default=400,
         help="Stop after chasing this many commits")
     parser.add_argument(
+        "--token_file", default="~/.config/readonly_github_api_token.txt",
+        help="Uses an API token read from this filename (default: "
+        "%(default)s)")
+    parser.add_argument(
         "--verbose", action="store_true", default=False)
     args = parser.parse_args()
     if args.verbose:
@@ -93,9 +96,8 @@ def main():
         parser.error("Missing required 40-character sha for newest_commit.")
     if len(args.oldest_commit) != 40:
         parser.error("Missing required 40-character sha for oldest_commit.")
-    token = os.environ.get("GITHUB_API_TOKEN")
-    if not token:
-        parser.error("Missing required env GITHUB_API_TOKEN; see --help.")
+    with open(os.path.expanduser(args.token_file), "r") as f:
+        token = f.read().strip()
 
     gh = github3.login(token=token)
     drake = gh.repository("RobotLocomotion", "drake")
