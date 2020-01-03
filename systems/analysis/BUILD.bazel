@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":simulator",
         ":simulator_status",
         ":stepwise_dense_output",
+        ":velocity_implicit_euler_integrator",
     ],
 )
 
@@ -212,6 +213,18 @@ drake_cc_library(
         ":implicit_integrator",
         ":runge_kutta2_integrator",
         "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "velocity_implicit_euler_integrator",
+    srcs = ["velocity_implicit_euler_integrator.cc"],
+    hdrs = [
+        "velocity_implicit_euler_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
+        "//math:compute_numerical_gradient",
     ],
 )
 
@@ -435,7 +448,10 @@ drake_cc_googletest(
     deps = [
         ":implicit_euler_integrator",
         ":radau_integrator",
-        "//systems/analysis/test_utilities",
+        "//systems/analysis/test_utilities:cubic_scalar_system",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:linear_scalar_system",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -505,6 +521,18 @@ drake_cc_googletest(
         ":semi_explicit_euler_integrator",
         "//multibody/plant",
         "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_implicit_euler_integrator_test",
+    # Note: if memcheck takes too long with Valgrind, disable
+    # memcheck (per Drake issue #9621).
+    timeout = "moderate",
+    shard_count = 2,
+    deps = [
+        ":velocity_implicit_euler_integrator",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
     ],
 )
 
