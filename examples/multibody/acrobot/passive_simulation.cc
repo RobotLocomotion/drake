@@ -104,16 +104,14 @@ int do_main() {
   systems::IntegratorBase<double>* integrator{nullptr};
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
-        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
-            *diagram, &simulator.get_mutable_context());
+        &simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
-        simulator.reset_integrator<RungeKutta3Integrator<double>>(
-            *diagram, &simulator.get_mutable_context());
+        &simulator.reset_integrator<RungeKutta3Integrator<double>>();
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
-        simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
+        &simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+            max_time_step);
   } else {
     throw std::runtime_error(
         "Integration scheme '" + FLAGS_integration_scheme +

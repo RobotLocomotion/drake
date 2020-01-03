@@ -66,8 +66,7 @@ class SlidingBoxTest : public ::testing::Test {
     // Implicit integration does much better than the default RK3 for this
     // system with regularized friction. Otherwise RK3 requires a very small
     // accuracy setting and it is very costly.
-    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
-        *diagram, &simulator.get_mutable_context());
+    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>();
     simulator.get_mutable_integrator().set_maximum_step_size(1e-3);
     simulator.Initialize();
     simulator.AdvanceTo(simulation_time_);
