@@ -105,6 +105,13 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   JacobianComputationScheme get_jacobian_computation_scheme() const {
     return jacobian_scheme_;
   }
+
+  /// Indicates whether the integrator supports automatic differentiation
+  /// and central differencing. This should be true unless the derived
+  /// integrator defines its own Jacobian computation schemes.
+  bool supports_autodiff_and_central_differencing() const {
+    return do_supports_autodiff_and_central_differencing();
+  }
   /// @}
 
   /// @name Cumulative statistics functions.
@@ -196,6 +203,13 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// Newton-Raphson iterations (10 by default) to take before the
   /// Newton-Raphson process decides that convergence will not be attained.
   virtual int do_max_newton_raphson_iterations() const { return 10; }
+
+  /// Derived classes can override this method if they implement their own
+  /// Jacobian computation schemes to indicate whether Autodiff and Central
+  /// Differencing are available yet. By default they are supported.
+  virtual bool do_supports_autodiff_and_central_differencing() const {
+    return true;
+  }
 
   /// A class for storing the factorization of an iteration matrix and using it
   /// to solve linear systems of equations. This class exists simply because
