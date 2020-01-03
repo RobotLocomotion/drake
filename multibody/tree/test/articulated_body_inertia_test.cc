@@ -5,6 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -192,6 +193,19 @@ GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
   // IsPhysicallyValid() not supported for non-numeric types.
   ArticulatedBodyInertia<symbolic::Expression> Ps;
   EXPECT_ANY_THROW(Ps.IsPhysicallyValid());
+
+  // Invariant checks are a no-op for non-numeric types, allowing us to create
+  // symbolic ABIs also in Debug builds. Therefore this test passes successfully
+  // even though we supply an invalid matrix (in this case a negative definite
+  // matrix.)
+  // The same test however is expected to throw when T = double in Debug builds.
+  DRAKE_EXPECT_NO_THROW(ArticulatedBodyInertia<symbolic::Expression> Ds(
+      -Matrix6<symbolic::Expression>::Identity()));
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      ArticulatedBodyInertia<double> Ds(-Matrix6<double>::Identity()),
+      std::runtime_error,
+      "The resulting articulated body inertia is not physically "
+      "valid.[\\s\\S]*");
 }
 
 }  // namespace

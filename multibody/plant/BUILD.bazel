@@ -550,4 +550,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_scalar_conversion_test",
+    deps = [
+        ":plant",
+    ],
+)
+
 add_lint_tests()

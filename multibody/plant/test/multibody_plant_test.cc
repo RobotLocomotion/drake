@@ -34,6 +34,7 @@
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -243,6 +244,19 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointByName("pin");
   EXPECT_EQ(pin_joint.model_instance(), pendulum_model_instance);
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
+
+  // Get force elements by index. In this case the default gravity field.
+  const ForceElementIndex gravity_field_index(0);
+  EXPECT_EQ(
+      &plant->gravity_field(),
+      &plant->GetForceElement<UniformGravityFieldElement>(gravity_field_index));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->GetForceElement<RevoluteSpring>(gravity_field_index),
+      std::logic_error,
+      ".*not of type '.*RevoluteSpring<double>' but of type "
+      "'.*UniformGravityFieldElement<double>'.");
+  const ForceElementIndex invalid_force_index(plant->num_force_elements() + 1);
+  EXPECT_ANY_THROW(plant->GetForceElement<RevoluteSpring>(invalid_force_index));
 
   // Get joint indices by model instance
   const std::vector<JointIndex> acrobot_joint_indices =

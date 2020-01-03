@@ -42,7 +42,6 @@ drake_cc_package_library(
         ":ipopt_solver",
         ":linear_system_solver",
         ":mathematical_program",
-        ":mathematical_program_lite",
         ":mathematical_program_result",
         ":minimum_value_constraint",
         ":mixed_integer_optimization_util",
@@ -322,23 +321,6 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "mathematical_program_lite",
-    deprecation = " ".join([
-        "The label @drake//solvers:mathematical_program_lite is deprecated.",
-        "Use the new spelling @drake//solvers:mathematical_program instead.",
-        "The deprecated spelling will be removed on 2020-01-01.",
-    ]),
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        ":mathematical_program",
-        ":solver_interface",
     ],
 )
 

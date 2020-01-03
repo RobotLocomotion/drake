@@ -6,7 +6,6 @@
 
 #include <tinyxml2.h>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/package_map.h"
@@ -86,11 +85,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, bool do_compile,
     RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("2019-12-31",
-  "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
-ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string, RigidBodyTree<double>* tree);
-
 /**
  * This method is the same as
  * AddModelInstanceFromUrdfStringWithRpyJointToWorld() except it has an
@@ -137,11 +131,6 @@ ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string, const PackageMap& package_map,
     bool do_compile, RigidBodyTree<double>* tree);
-
-DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
-ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string, const PackageMap& package_map,
-    RigidBodyTree<double>* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
@@ -251,14 +240,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     bool do_compile, RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
-ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string, const PackageMap& package_map,
-    const std::string& root_dir,
-    const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
-    RigidBodyTree<double>* tree);
-
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
  * to @p tree. Let the "base bodies" be the bodies in the model that do not have
@@ -294,10 +275,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
 ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
     const std::string& urdf_filename, bool do_compile,
     RigidBodyTree<double>* tree);
-
-DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
-ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-     const std::string& urdf_filename, RigidBodyTree<double>* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
@@ -343,13 +320,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     bool do_compile, RigidBodyTree<double>* tree);
-
-DRAKE_DEPRECATED("2019-12-31",
-    "Please use AddModelInstanceFromUrdfFileToWorld().")
-ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-    const std::string& urdf_filename,
-    const drake::multibody::joints::FloatingBaseType floating_base_type,
-    RigidBodyTree<double>* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
@@ -452,12 +422,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     bool do_compile, RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
-ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-     const std::string& urdf_filename, const PackageMap& package_map,
-     const drake::multibody::joints::FloatingBaseType floating_base_type,
-     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
-     RigidBodyTree<double>* tree);
 }  // namespace urdf
 }  // namespace parsers
 }  // namespace drake

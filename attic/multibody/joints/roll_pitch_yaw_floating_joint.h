@@ -293,18 +293,11 @@ class RollPitchYawFloatingJoint
 
   bool is_floating() const override { return true; }
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use is_floating().")
-  bool isFloating() const override { return is_floating(); }
-
   Eigen::VectorXd zeroConfiguration() const override;
   Eigen::VectorXd randomConfiguration(
       std::default_random_engine& generator) const override;
   std::string get_position_name(int index) const override;
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_position_name().")
-  std::string getPositionName(int index) const override;
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

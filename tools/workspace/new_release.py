@@ -9,18 +9,17 @@ two ways to do this:
 (1) Type in your password each time you run this program:
 
   bazel build //tools/workspace:new_release
-  bazel-bin/tools/workspace/new_release
+  bazel-bin/tools/workspace/new_release --use_password
 
 (2) Use a GitHub API token:
 
   bazel build //tools/workspace:new_release
-  env GITHUB_API_TOKEN=$(cat ~/.config/readonly_github_api_token.txt) \
-    bazel-bin/tools/workspace/new_release
+  bazel-bin/tools/workspace/new_release
 
-To create the ~/.config/readonly_github_api_token.txt file, open a browser to
-https://github.com/settings/tokens and create a new token (it does not need any
-extra permissions; the default "no checkboxes are set" is good), and save the
-plaintext hexidecimal token to that file.
+To create the ~/.config/readonly_github_api_token.txt file used by (2), open a
+browser to https://github.com/settings/tokens and create a new token (it does
+not need any extra permissions; the default "no checkboxes are set" is good),
+and save the plaintext hexidecimal token to that file.
 """
 
 import argparse
@@ -117,11 +116,14 @@ def run(gh, args, metadata):
 
 
 def main():
-    token = os.getenv("GITHUB_API_TOKEN", None)
     parser = argparse.ArgumentParser(prog="new_release", description=__doc__)
     parser.add_argument(
-        "--use_token", action="store_true", default=(token is not None),
-        help="When set, uses an API token instead of username + password")
+        "--use_password", action="store_true", default=False,
+        help="Prompt for the GitHub password, instead of using an API token.")
+    parser.add_argument(
+        "--token_file", default="~/.config/readonly_github_api_token.txt",
+        help="Uses an API token read from this filename, unless "
+        "--use_password was given (default: %(default)s)")
     parser.add_argument(
         "--user", metavar="USER", type=str, default=_get_default_username(),
         help="GitHub username (default: %(default)s)")
@@ -130,19 +132,19 @@ def main():
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
-    if args.use_token and not token:
-        parser.error("Missing environment variable GITHUB_API_TOKEN")
-    elif not args.user:
+    if args.use_password and not args.user:
         parser.error("Couldn't guess github username; you must supply --user.")
 
     # Log in to github.
-    if args.use_token:
-        gh = github3.login(token=token)
-    else:
+    if args.use_password:
         prompt = "Password for https://{}@github.com: ".format(args.user)
         gh = github3.login(
             username=args.user,
             password=getpass.getpass(prompt))
+    else:
+        with open(os.path.expanduser(args.token_file), "r") as f:
+            token = f.read().strip()
+        gh = github3.login(token=token)
 
     # Grab the workspace metadata.
     print("Collecting bazel repository details...")

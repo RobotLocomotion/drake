@@ -49,16 +49,6 @@ VectorXd QuaternionBallJoint::randomConfiguration(
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-std::string QuaternionBallJoint::getPositionName(int index) const {
-  return get_position_name(index);
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-std::string QuaternionBallJoint::getVelocityName(int index) const {
-  return get_velocity_name(index);
-}
-
 std::unique_ptr<DrakeJoint> QuaternionBallJoint::DoClone() const {
   auto joint = std::make_unique<QuaternionBallJoint>(
       get_name(), get_transform_to_parent_body());

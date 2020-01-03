@@ -8,7 +8,6 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/gradient.h"
@@ -152,35 +151,7 @@ class DrakeJoint {
    */
   virtual std::string get_velocity_name(int index) const;
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_transform_to_parent_body().")
-  const Eigen::Isometry3d& getTransformToParentBody() const;
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_positions().")
-  int getNumPositions() const;
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_velocities().")
-  int getNumVelocities() const;
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_name().")
-  const std::string& getName() const;
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_position_name().")
-  virtual std::string getPositionName(int index) const = 0;
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_velocity_name().")
-  virtual std::string getVelocityName(int index) const;
-
   virtual bool is_floating() const { return false; }
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use is_floating().")
-  virtual bool isFloating() const { return is_floating(); }
 
   /**
    * Returns `true` if this joint is a FixedJoint.

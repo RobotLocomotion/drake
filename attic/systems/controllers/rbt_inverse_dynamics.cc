@@ -9,13 +9,6 @@ namespace rbt {
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
-                                    bool pure_gravity_compensation)
-    : InverseDynamics(tree, pure_gravity_compensation ?
-                      InverseDynamicsMode::kGravityCompensation :
-                      InverseDynamicsMode::kInverseDynamics) {}
-
-template <typename T>
-InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
                                     const InverseDynamicsMode mode)
     : rigid_body_tree_(tree),
       mode_(mode),
