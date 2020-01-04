@@ -43,7 +43,7 @@ namespace {
 
 // Confirm that an empty multibody plant produces an empty lcm message.
 GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   plant.Finalize();
   ContactResultsToLcmSystem<double> lcm_system(plant);
   auto lcm_context = lcm_system.AllocateContext();
@@ -131,7 +131,7 @@ GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
 
 // Confirm that the system can be transmogrified to other supported scalars.
 GTEST_TEST(ContactResultsToLcmSystem, Transmogrify) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   plant.Finalize();
   ContactResultsToLcmSystem<double> lcm_system(plant);
 

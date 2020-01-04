@@ -40,7 +40,7 @@ const double kEps = std::numeric_limits<double>::epsilon();
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
@@ -66,7 +66,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_name = FindResourceOrThrow(
@@ -336,7 +336,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
       "negative_damping_joint.sdf");
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(sdf_file_path);
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromSdfFile(sdf_file_path, "", package_map, &plant),
       std::runtime_error,
@@ -350,7 +350,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
   sdf::addURIPath("model://", filesystem::path(full_name).parent_path());
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   // We start with the world and default model instances.
   ASSERT_EQ(plant.num_model_instances(), 2);
@@ -418,7 +418,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     AddModelsFromSdfFile(full_name, package_map, &plant, &scene_graph);
     plant.Finalize();
@@ -427,7 +427,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   EXPECT_NE(num_visuals_explicit, 0);
   {
     // Test implicitly specifying.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     AddModelsFromSdfFile(full_name, package_map, &plant);
@@ -438,7 +438,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
 
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
 
   const std::string full_name = FindResourceOrThrow(
@@ -485,7 +485,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
 GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"

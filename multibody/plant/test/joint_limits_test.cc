@@ -292,7 +292,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 
 GTEST_TEST(JointLimitsTest, KukaArmFloating) {
   // Check limits for a model with a floating base.
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
   plant.Finalize();
   const int nq = 14;

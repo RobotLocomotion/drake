@@ -13,7 +13,7 @@ namespace rendering {
 namespace {
 
 GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
-  multibody::MultibodyPlant<double> mbp;
+  multibody::MultibodyPlant<double> mbp(0.0);
   geometry::SceneGraph<double> scene_graph;
   mbp.RegisterAsSourceForSceneGraph(&scene_graph);
   multibody::Parser(&mbp).AddModelFromFile(

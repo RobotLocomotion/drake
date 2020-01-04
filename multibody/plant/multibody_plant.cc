@@ -2900,7 +2900,7 @@ AddMultibodyPlantSceneGraph(
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
   if (!plant) {
-    plant = std::make_unique<MultibodyPlant<T>>();
+    plant = std::make_unique<MultibodyPlant<T>>(0.0);
     plant->set_name("plant");
   }
   if (!scene_graph) {

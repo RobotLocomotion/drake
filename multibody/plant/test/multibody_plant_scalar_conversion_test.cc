@@ -20,7 +20,7 @@ namespace {
 // spring. In particular, we verify that the spring element correctly references
 // the joint both before and after scalar conversion.
 GTEST_TEST(ScalarConversionTest, RevoluteJointAndSpring) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   // For this test inertia values are irrelevant.
   const RigidBody<double>& body =
       plant.AddRigidBody("Body", SpatialInertia<double>());
