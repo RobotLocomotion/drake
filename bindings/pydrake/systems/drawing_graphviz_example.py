@@ -12,7 +12,7 @@ file_name = FindResourceOrThrow(
     "drake/examples/multibody/cart_pole/cart_pole.sdf")
 builder = DiagramBuilder()
 scene_graph = builder.AddSystem(SceneGraph())
-cart_pole = builder.AddSystem(MultibodyPlant())
+cart_pole = builder.AddSystem(MultibodyPlant(0.0))
 cart_pole.RegisterAsSourceForSceneGraph(scene_graph)
 Parser(plant=cart_pole).AddModelFromFile(file_name)
 

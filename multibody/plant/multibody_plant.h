@@ -447,18 +447,60 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Once _all_ modeling elements have been added, the Finalize() method
   /// **must** be called. A call to any construction method **after** a call to
   /// Finalize() causes an exception to be thrown.
-  //  After calling Finalize(), you may invoke %MultibodyPlant
+  ///  After calling Finalize(), you may invoke %MultibodyPlant
   /// methods that perform computations. See Finalize() for details.
   /// @{
 
-  /// Default constructor creates a plant with a single "world" body.
+  /// Default constructor creates a plant modeled as a continuous system.
+  /// Please refer to MultibodyPlant(double) for details.
+  DRAKE_DEPRECATED("2020-05-01",
+                   "Use MultibodyPlant(double) with time_step = 0.")
+  MultibodyPlant() : MultibodyPlant(0.0) {}
+
+  /// This constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
+  ///
+  /// %MultibodyPlant offers two different modalities to model mechanical sytems
+  /// in time. These are:
+  ///  1. As a discrete system with periodic updates, `time_step` is strictly
+  ///     greater than zero.
+  ///  2. As a continuous system, `time_step` equals exactly zero.
+  ///
+  /// Currently the discrete model is preferred for simulation given its
+  /// robustness and speed in problems with frictional contact. However this
+  /// might change as we work towards developing better strategies to model
+  /// contact.
+  /// See @ref time_advancement_strategy
+  /// "Choice of Time Advancement Strategy" for further details.
+  ///
+  /// @warning Users should be aware of current limitations in either modeling
+  /// modality. While the discrete model is often the preferred option for
+  /// problems with frictional contact given its robustness and speed, it might
+  /// become unstable when using large feedback gains, high damping or large
+  /// external forcing. %MultibodyPlant will throw an exception whenever the
+  /// discrete solver is detected to fail.
+  /// Conversely, the continuous modality has the potential to leverage the
+  /// robustness and accuracy control provide by Drake's integrators. However
+  /// thus far this has proved difficult in practice and especially due to poor
+  /// performance.
+  ///
+  /// <!-- TODO(amcastro-tri): Update the @warning messages in these docs if the
+  ///      best practices advice changes as our solvers evolve. -->
+  ///
   /// @param[in] time_step
-  ///   An optional parameter indicating whether `this` plant is modeled as a
-  ///   continuous system (`time_step = 0`) or as a discrete system with
-  ///   periodic updates of period `time_step > 0`. @default 0.0.
+  ///   Indicates whether `this` plant is modeled as a continuous system
+  ///   (`time_step = 0`) or as a discrete system with periodic updates of
+  ///   period `time_step > 0`. See @ref time_advancement_strategy
+  ///   "Choice of Time Advancement Strategy" for further details.
+  ///
+  /// @warning Currently the continuous modality with `time_step = 0` does not
+  /// support joint limits for simulation, these are ignored. %MultibodyPlant
+  /// prints a warning to console if joint limits are provided. If your
+  /// simulation requires joint limits currently you must use a discrete
+  /// %MultibodyPlant model.
+  ///
   /// @throws std::exception if `time_step` is negative.
-  explicit MultibodyPlant(double time_step = 0);
+  explicit MultibodyPlant(double time_step);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -4057,7 +4099,9 @@ struct AddMultibodyPlantSceneGraphResult;
 ///   Builder to add to.
 /// @param[in] plant (optional)
 ///   Constructed plant (e.g. for using a discrete plant). By default, a
-///   continuous plant is used.
+///   continuous plant is used. Please refer to the documentation provided in
+///   MultibodyPlant::MultibodyPlant(double) which describes each modeling
+///   modality as well as their competing strengths and weaknesses.
 /// @param[in] scene_graph (optional)
 ///   Constructed scene graph. If none is provided, one will be created and
 ///   used.

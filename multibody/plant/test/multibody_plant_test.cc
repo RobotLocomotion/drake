@@ -356,7 +356,7 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
 }
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
@@ -373,7 +373,7 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
   // Create a MultibodyPlant consisting of two model instances, one actuated
   // and the other unactuated.
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   const std::string acrobot_path = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   const std::string cylinder_path = FindResourceOrThrow(
@@ -425,7 +425,7 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
 }
 
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddForceElement<UniformGravityFieldElement>(
@@ -836,7 +836,7 @@ TEST_F(AcrobotPlantTests, SetDefaultState) {
 GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   // We cannot use Acrobot for testing `SetDefaultFreeBodyPose` since it has no
   // free bodies.
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   const auto& body = plant.AddRigidBody("body", SpatialInertia<double>());
   const RigidTransformd X_WB_default(
       RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
@@ -882,7 +882,7 @@ TEST_F(AcrobotPlantTests, SetRandomState) {
 }
 
 GTEST_TEST(MultibodyPlantTest, Graphviz) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   const std::string acrobot_path =
       FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
   const std::string cylinder_path = FindResourceOrThrow(
@@ -924,13 +924,13 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
   // Case: Finalize w/o having registered as geometry source but without
   // providing a scene graph -- no error.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_NO_THROW(plant.Finalize());
   }
 
   // Case: Registered as source, correct finalization.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     DRAKE_EXPECT_NO_THROW(plant.Finalize());
   }
@@ -1118,7 +1118,7 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
 
 // Tests the error conditions for CollectRegisteredGeometries.
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   // A throw-away rigid body I can use to satisfy the function interface; it
   // will never be used because the function will fail in a pre-requisite test.
@@ -1208,7 +1208,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   // welded-together bodies.
   const std::string sdf_file =
       FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModelFromFile(sdf_file);
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
@@ -1267,7 +1267,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const double x_offset = 0.6;
 
   SceneGraph<double> scene_graph;
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
   // A half-space for the ground geometry.
@@ -1369,7 +1369,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   temp_engine->set_force_accept(true);
   const DummyRenderEngine& render_engine = *temp_engine;
   scene_graph.AddRenderer("dummy", move(temp_engine));
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   EXPECT_EQ(render_engine.num_registered(), 0);
 
@@ -1610,7 +1610,7 @@ void InitializePlantAndContextForVelocityToQDotMapping(
 // Tests the qdot-to-v mapping when all objects in the world are fixed (have
 // no degrees-of-freedom).
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackFixedWorld) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   test::AddFixedObjectsToPlant(&plant);
   plant.Finalize();
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
@@ -1622,7 +1622,7 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackFixedWorld) {
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackContinuous) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   unique_ptr<Context<double>> context;
   InitializePlantAndContextForVelocityToQDotMapping(&plant, &context);
 
@@ -1692,7 +1692,7 @@ class SplitPendulum : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   const RevoluteJoint<double>* pin_{nullptr};
   unique_ptr<Context<double>> context_;
 };
@@ -1749,7 +1749,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/multibody/parsing/test/"
           "links_with_visuals_and_collisions.sdf");
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   Parser(&plant, &scene_graph).AddModelFromFile(full_name);
 
@@ -2078,7 +2078,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
   unique_ptr<Context<double>> context_;
   std::vector<PenetrationAsPointPair<double>> penetrations_;
@@ -2150,7 +2150,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
       "drake/manipulation/models/iiwa_description/sdf/"
           "iiwa14_no_collision.sdf";
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModelFromFile(FindResourceOrThrow(kSdfPath));
   const auto& base_link_frame = plant.GetFrameByName("iiwa_link_0");
   const Joint<double>& weld = plant.WeldFrames(
@@ -2429,7 +2429,7 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(StateSelection, JointHasNoActuator) {
   const std::string file_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModelFromFile(FindResourceOrThrow(file_name));
   plant.Finalize();
 
@@ -2460,7 +2460,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   // the end effector. The purpose of having this floating model is to unit test
   // the methods for making state/actuation selector matrices for more complex
   // cases when we have floating robots in the model.
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   const ModelInstanceIndex arm_model =
       parser.AddModelFromFile(FindResourceOrThrow(kArmSdfPath));
@@ -2680,7 +2680,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const std::string mug_sdf_path = FindResourceOrThrow(
       "drake/examples/simple_gripper/simple_mug.sdf");
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   // Load a model of a table for the robot.
   Parser parser(&plant);
@@ -2776,7 +2776,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
 GTEST_TEST(SetRandomTest, FloatingBodies) {
   // Create a model that contains a single body.
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   const Body<double>& body =
       plant.AddRigidBody("LoneBody", SpatialInertia<double>());
   plant.Finalize();

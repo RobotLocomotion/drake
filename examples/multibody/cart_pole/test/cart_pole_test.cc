@@ -103,7 +103,7 @@ class CartPoleTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> cart_pole_;
+  MultibodyPlant<double> cart_pole_{0.0};
   const PrismaticJoint<double>* cart_slider_{nullptr};
   const RevoluteJoint<double>* pole_pin_{nullptr};
   std::unique_ptr<Context<double>> context_;

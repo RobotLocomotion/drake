@@ -24,7 +24,7 @@ using geometry::SceneGraph;
 GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
@@ -48,7 +48,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
@@ -86,7 +86,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
 // "package://" syntax internally to the URDF (at least for packages which are
 // successfully found in the same directory at the URDF.
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
@@ -108,7 +108,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(model_file);
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(model_file, "", package_map, &plant, &scene_graph);
   plant.Finalize();
@@ -125,7 +125,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
     plant.Finalize();
@@ -134,7 +134,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   EXPECT_NE(num_visuals_explicit, 0);
   {
     // Test implicitly specifying.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     AddModelFromUrdfFile(full_name, "", package_map, &plant);
@@ -150,7 +150,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(full_name);
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
@@ -194,7 +194,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(full_name);
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
 
