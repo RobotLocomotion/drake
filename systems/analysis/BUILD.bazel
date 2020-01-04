@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":simulator",
         ":simulator_status",
         ":stepwise_dense_output",
+        ":velocity_implicit_euler_integrator",
     ],
 )
 
@@ -179,6 +180,19 @@ drake_cc_library(
     hdrs = [
         "implicit_euler_integrator.h",
         "implicit_euler_integrator-inl.h",
+    ],
+    deps = [
+        ":implicit_integrator",
+        ":runge_kutta2_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "velocity_implicit_euler_integrator",
+    srcs = ["velocity_implicit_euler_integrator.cc"],
+    hdrs = [
+        "velocity_implicit_euler_integrator.h",
     ],
     deps = [
         ":implicit_integrator",
@@ -375,6 +389,21 @@ drake_cc_googletest(
     ],
     deps = [
         ":implicit_euler_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis/test_utilities",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_implicit_euler_integrator_test",
+    timeout = "moderate",
+    shard_count = 2,
+    tags = [
+        "no_memcheck",
+    ],
+    deps = [
+        ":velocity_implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis/test_utilities",
         "//systems/plants/spring_mass_system",
