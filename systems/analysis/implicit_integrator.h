@@ -350,6 +350,20 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @copydoc IntegratorBase::DoStep()
   virtual bool DoImplicitIntegratorStep(const T& h) = 0;
 
+  // Methods for derived classes to increment the factorization and Jacobian
+  // evaluation counts.
+  inline void increment_num_iter_factorizations() {
+    ++num_iter_factorizations_;
+  }
+
+  inline void increment_jacobian_computation_derivative_evaluations(int count) {
+    num_jacobian_function_evaluations_ += count;
+  }
+
+  inline void increment_jacobian_evaluations() {
+    ++num_jacobian_evaluations_;
+  }
+
  private:
   bool DoStep(const T& h) final {
     bool result = DoImplicitIntegratorStep(h);
