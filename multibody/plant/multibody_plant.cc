@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -692,27 +693,28 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
         joint_limits_parameters_.damping.push_back(penalty_parameters.second);
       }
     }
+  }
 
-    // Since currently MBP only handles joint limits for discrete models, verify
-    // there are no joint limits when the model is continuous.
-    // Therefore we throw an exception with an appropriate message when a user
-    // specifies joint limits for a continuous model.
-    if (!is_discrete()) {
-      for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
-        const double stiffness = joint_limits_parameters_.stiffness[i];
-        if (!std::isinf(stiffness)) {
-          const JointIndex index =
-              joint_limits_parameters_.joints_with_limits[i];
-          throw std::logic_error(
-              "Currently MultibodyPlant does not handle joint limits for "
-              "continuous models. However a limit was specified for joint `"
-              "`" + get_joint(index).name() + "`.  Consider setting a "
-              "non-zero time step in the MultibodyPlant constructor; this "
-              "will put MultibodyPlant in discrete-time mode, which "
-              "does support joint limits.");
-        }
-      }
+  // Since currently MBP only handles joint limits for discrete models, we
+  // verify that there are no joint limits when the model is continuous.
+  // Therefore we print an appropriate warning message when a user
+  // specifies joint limits for a continuous model.
+  if (!is_discrete() && !joint_limits_parameters_.joints_with_limits.empty()) {
+    drake::log()->warn(
+        "Currently MultibodyPlant does not handle joint limits for "
+        "continuous models. "
+        "However some joints do specify limits. "
+        "Consider setting a non-zero time step in the MultibodyPlant "
+        "constructor; this will put MultibodyPlant in discrete-time mode, "
+        "which does support joint limits.");
+
+    std::string joints_names;
+    for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
+      const JointIndex index = joint_limits_parameters_.joints_with_limits[i];
+      if (i > 0) joints_names += ", ";
+      joints_names += fmt::format("`{}`", get_joint(index).name());
     }
+    drake::log()->warn("Joints that specify limits are: {}.", joints_names);
   }
 }
 
