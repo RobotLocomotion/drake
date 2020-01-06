@@ -143,9 +143,7 @@ int main() {
   // Create simulator.
   Simulator<double> simulator(*diagram);
   Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(*diagram,
-                                                            FLAGS_timestep,
-                                                            &context);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(FLAGS_timestep);
   // Set initial state.
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, &context);

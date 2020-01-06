@@ -105,7 +105,7 @@ int do_main(int argc, char* argv[]) {
   // Same as the nominal step size, since we're using a fixed step integrator.
   const double max_step_size = 1e-3;
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-      model, max_step_size, &simulator.get_mutable_context());
+      max_step_size);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_duration);
   return 0;

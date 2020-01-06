@@ -176,11 +176,9 @@ TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   // sufficient to test the original RigidBodyTree against its clone.
   const double integrator_step_size = swing_period / 100;
   original_simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      original_diagram, integrator_step_size,
-      &original_simulator.get_mutable_context());
+      integrator_step_size);
   cloned_simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      cloned_diagram, integrator_step_size,
-      &cloned_simulator.get_mutable_context());
+      integrator_step_size);
 
   original_simulator.Initialize();
   cloned_simulator.Initialize();

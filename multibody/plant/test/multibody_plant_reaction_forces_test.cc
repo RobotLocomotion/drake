@@ -184,8 +184,7 @@ class LadderTest : public ::testing::Test {
     // The default RK3 integrator requires specifying a very high accuracy to
     // reach steady state within kTolerance and therefore it is very costly.
     // However implicit Euler does a much better job with larger time steps.
-    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
-        *diagram_, &simulator.get_mutable_context());
+    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>();
     simulator.get_mutable_integrator().set_maximum_step_size(5e-3);
     simulator.get_mutable_integrator().set_target_accuracy(1e-6);
     simulator.Initialize();

@@ -120,17 +120,6 @@ class ExampleDiagram : public Diagram<double> {
   StatelessDiagram* stateless_diag_ = nullptr;
 };
 
-// Tests that resetting the integrator with a null pointer throws.
-GTEST_TEST(SimulatorTest, ResetWithNullIntegratorThrows) {
-  // We need an arbitrary system to instantiate the Simulator.
-  StatelessSystemPlusDerivs system;
-  Simulator<double> simulator(system);
-  std::unique_ptr<IntegratorBase<double>> null_unique;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      simulator.reset_integrator(std::move(null_unique)),
-      std::logic_error, "Integrator cannot be null.");
-}
-
 // Tests that DoCalcTimeDerivatives() is not called when the system has no
 // continuous state.
 GTEST_TEST(SimulatorTest, NoUnexpectedDoCalcTimeDerivativesCall) {
@@ -140,9 +129,7 @@ GTEST_TEST(SimulatorTest, NoUnexpectedDoCalcTimeDerivativesCall) {
   const double final_time = 1.0;
   const double h = 1e-3;
   Simulator<double> simulator(system);
-  Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, h,
-                                                            &context);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
   simulator.AdvanceTo(final_time);
 
   // Verify no derivative calculations.
@@ -162,9 +149,7 @@ GTEST_TEST(SimulatorTest, NoContinuousStateYieldsSingleStep) {
   // time step.
   const double h = 1e-3;
   Simulator<double> simulator(system);
-  Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, h,
-      &context);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
   simulator.AdvanceTo(final_time);
 
   EXPECT_EQ(simulator.get_num_steps_taken(), 1);
@@ -188,13 +173,11 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 
   const double h = 1;
   Simulator<double> simulator(system);
-  Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, h,
-                                                            &context);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
 
-  context.SetTime(0);
+  simulator.get_mutable_context().SetTime(0);
   simulator.AdvanceTo(1);
 
   // Publication should occur at witness function crossing.
@@ -320,9 +303,7 @@ void DisableDefaultPublishing(Simulator<double>* s) {
 // Initializes the Simulator's integrator to fixed step mode for witness
 // function related tests.
 void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double h) {
-  const System<double>& system = s->get_system();
-  Context<double>& context = s->get_mutable_context();
-  s->reset_integrator<RungeKutta2Integrator<double>>(system, h, &context);
+  s->reset_integrator<RungeKutta2Integrator<double>>(h);
   s->get_mutable_integrator().set_fixed_step_mode(true);
   s->get_mutable_integrator().set_maximum_step_size(h);
   DisableDefaultPublishing(s);
@@ -331,9 +312,7 @@ void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double h) {
 // Initializes the Simulator's integrator to variable step mode for witness
 // function related tests.
 void InitVariableStepIntegratorForWitnessTesting(Simulator<double>* s) {
-  const System<double>& system = s->get_system();
-  Context<double>& context = s->get_mutable_context();
-  s->reset_integrator<RungeKutta3Integrator<double>>(system, &context);
+  s->reset_integrator<RungeKutta3Integrator<double>>();
   DisableDefaultPublishing(s);
 }
 
@@ -496,8 +475,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   const double h = 1e-3;
   Simulator<double> simulator(system);
   DisableDefaultPublishing(&simulator);
-  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system,
-                                              &simulator.get_mutable_context());
+  simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
   simulator.get_mutable_integrator().set_maximum_step_size(h);
   simulator.get_mutable_integrator().set_target_accuracy(0.1);
 
@@ -853,12 +831,8 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
   // Set the integrator default step size.
   const double h = 1e-3;
 
-  // Get the context.
-  Context<double>& context = simulator.get_mutable_context();
-
   // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, h,
-                                                              &context);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
   // Initialize the simulator first.
   simulator.Initialize();
@@ -871,12 +845,8 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   // Set the integrator default step size.
   const double h = 1e-3;
 
-  // Get the context.
-  Context<double>& context = simulator.get_mutable_context();
-
   // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, h,
-                                                              &context);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
   // Initialize the simulator first.
   simulator.Initialize();
@@ -914,12 +884,8 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
 
-  // Get the context.
-  Context<double>& context = simulator.get_mutable_context();
-
   // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, h,
-                                                              &context);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
   simulator.set_target_realtime_rate(0.5);
   // Request forced-publishes at every internal step.
@@ -932,7 +898,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // Simulate for 1 second.
   simulator.AdvanceTo(1.);
 
-  EXPECT_NEAR(context.get_time(), 1., 1e-8);
+  EXPECT_NEAR(simulator.get_context().get_time(), 1., 1e-8);
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
 
@@ -961,20 +927,16 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   Context<double>& context = simulator.get_mutable_context();
 
   // Create the integrator with the simple spelling.
-  auto euler_integrator =
-      std::make_unique<ExplicitEulerIntegrator<double>>(
-          spring_mass, h, &context);
-  simulator.reset_integrator(std::move(euler_integrator));
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
-  // set the integrator and initialize the simulator
+  // Set the integrator and initialize the simulator
   simulator.Initialize();
 
   // Simulate for 1/2 second.
   simulator.AdvanceTo(0.5);
 
   // Reset the integrator.
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(
-      simulator.get_system(), h, &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
 
   // Simulate to 1 second..
   simulator.AdvanceTo(1.);
@@ -1038,16 +1000,13 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  // Get the context.
-  Context<double>& context = simulator.get_mutable_context();
-
   // Set initial condition using the Simulator's internal context.
-  spring_mass.set_position(&context, 0.1);
+  spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
 
   // Create the integrator and initialize it.
-  auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      spring_mass, h, &context);
-  integrator->Initialize();
+  auto& integrator =
+      simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
+  integrator.Initialize();
 
   // Set the integrator and initialize the simulator.
   simulator.Initialize();
@@ -1797,8 +1756,7 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   const double directed_t_final = expected_t_final - 1e-8;
 
   // Initialize a fixed step integrator and the simulator.
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(spring_mass,
-      directed_t_final, &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(directed_t_final);
   simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
@@ -1847,13 +1805,11 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   // Construct the Simulator with an RK3 integrator and settings that reproduce
   // the behavior.
   Simulator<double> simulator(*diagram);
-  auto rk3 = std::make_unique<RungeKutta3Integrator<double>>(
-      *diagram, &simulator.get_mutable_context());
-  rk3->set_maximum_step_size(1.0 / kFrequency);
-  rk3->request_initial_step_size_target(1e-4);
-  rk3->set_target_accuracy(1e-4);
-  rk3->set_fixed_step_mode(false);
-  simulator.reset_integrator(std::move(rk3));
+  auto& rk3 = simulator.reset_integrator<RungeKutta3Integrator<double>>();
+  rk3.set_maximum_step_size(1.0 / kFrequency);
+  rk3.request_initial_step_size_target(1e-4);
+  rk3.set_target_accuracy(1e-4);
+  rk3.set_fixed_step_mode(false);
 
   // Simulate.
   const int kTime = 1;
@@ -1883,8 +1839,7 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
   const double directed_t_final = event_t_final - 0.1;
 
   // Initialize a fixed step integrator.
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(spring_mass,
-      directed_t_final, &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(directed_t_final);
 
   // Set initial condition using the Simulator's internal Context.
   simulator.get_mutable_context().SetTime(0);
@@ -1921,8 +1876,7 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   const double req_initial_step_size = 1e-2;
 
   // Initialize the error controlled integrator and the simulator.
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(
-      spring_mass, &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta3Integrator<double>>();
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   integrator.request_initial_step_size_target(req_initial_step_size);
   integrator.set_target_accuracy(accuracy);
@@ -1983,8 +1937,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   const double req_min_step_size = directed_t_final;
 
   // Initialize the error controlled integrator and the simulator.
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(spring_mass,
-      &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta3Integrator<double>>();
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   integrator.set_requested_minimum_step_size(req_min_step_size);
   integrator.request_initial_step_size_target(directed_t_final);
@@ -2276,7 +2229,7 @@ GTEST_TEST(SimulatorTest, EvalDerivativesCounter) {
   Simulator<double> simulator(spring_mass);
   Context<double>& context = simulator.get_mutable_context();
   context.DisableCaching();
-  simulator.reset_integrator<WastefulIntegrator>(spring_mass, 0.125, &context);
+  simulator.reset_integrator<WastefulIntegrator>(0.125);
   simulator.AdvanceTo(1.);  // 8 steps, but 16 evaluations since no caching.
   EXPECT_EQ(simulator.get_integrator().get_num_steps_taken(), 8);
   EXPECT_EQ(simulator.get_integrator().get_num_derivative_evaluations(), 16);
@@ -2293,9 +2246,7 @@ GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   spring_mass.set_name("my_spring_mass");
   Simulator<double> simulator(spring_mass);
-  Context<double>& context = simulator.get_mutable_context();
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass,
-                                                              0.125, &context);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(0.125);
   std::vector<Eigen::VectorXd> states;
   const auto monitor = [&states](const Context<double>& root_context) {
     Eigen::VectorXd vector(1 + root_context.num_continuous_states());
