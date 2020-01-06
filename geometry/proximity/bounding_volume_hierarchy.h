@@ -32,10 +32,11 @@ class Aabb {
   */
   Aabb(Vector3<double> center, Vector3<double> half_width)
       : center_(std::move(center)), half_width_(std::move(half_width)) {
-    // TODO(tehbelinda): Introduce epsilon tolerance for robust bounding box.
     DRAKE_DEMAND(half_width.x() >= 0.0);
     DRAKE_DEMAND(half_width.y() >= 0.0);
     DRAKE_DEMAND(half_width.z() >= 0.0);
+
+    PadBoundary();
   }
 
   /** Returns the center. */
@@ -63,6 +64,19 @@ class Aabb {
                          const math::RigidTransform<double>& X_AB);
 
  private:
+  friend class AabbTester;
+
+  // Pad this box in place by a small amount to ensure there will be no
+  // roundoff problems. The amount to pad depends on the default tolerance for
+  // this precision, the dimensions, and the position of the box in space.
+  // A very large box, or a box that is very far from the origin, must be
+  // padded more than a small one at the origin.
+  void PadBoundary();
+
+  // Default tolerance for double precision. This is the minimum amount of
+  // padding to be added to the boundary, regardless of size or position.
+  static constexpr double kTolerance = 2e-14;
+
   // Center point of the box.
   Vector3<double> center_;
   // Half width extents along each axes.
