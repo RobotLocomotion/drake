@@ -46,6 +46,7 @@ drake_cc_package_library(
         ":random",
         ":reset_after_move",
         ":reset_on_copy",
+        ":scope_exit",
         ":scoped_singleton",
         ":sorted_pair",
         ":sorted_vectors_have_intersection",
@@ -527,6 +528,14 @@ drake_cc_library(
 drake_cc_library(
     name = "unused",
     hdrs = ["unused.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "scope_exit",
+    hdrs = ["scope_exit.h"],
     deps = [
         ":essential",
     ],
@@ -1321,6 +1330,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
     deps = [":autodiff"],
+)
+
+drake_cc_googletest(
+    name = "scope_exit_test",
+    deps = [
+        ":scope_exit",
+    ],
 )
 
 drake_cc_googletest(

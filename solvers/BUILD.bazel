@@ -719,6 +719,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//math:eigen_sparse_triplet",
+            "//common:scope_exit",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
             "@fmt",
@@ -789,6 +790,7 @@ drake_cc_library(
         "//tools:with_snopt": [
             ":mathematical_program",
             ":solver_base",
+            "//common:scope_exit",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
         ],
