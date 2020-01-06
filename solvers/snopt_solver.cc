@@ -16,6 +16,7 @@
 // NOLINTNEXTLINE(build/include)
 #include "snopt.h"
 
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
@@ -210,14 +211,6 @@ using Snopt = SnoptImpl<kIsSnopt76>;
 namespace drake {
 namespace solvers {
 namespace {
-
-// TODO(jwnimmer-tri) Add a reusable scope_guard to //common.
-// Make a scope exit guard -- an object that when destroyed runs `func`.
-auto MakeGuard(std::function<void()> func) {
-  // The shared_ptr deleter func is always invoked, even for nullptrs.
-  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
-  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
-}
 
 // This class is used for passing additional info to the snopt_userfun, which
 // evaluates the value and gradient of the cost and constraints. Apart from the
@@ -783,10 +776,10 @@ void SolveWithGivenOptions(
       print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
-  auto guard = MakeGuard([&storage]() {
-      Snopt::snend(
-          storage.iw(), storage.leniw(),
-          storage.rw(), storage.lenrw());
+  ScopeExit guard([&storage]() {
+    Snopt::snend(
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
   });
 
   int nx = prog.num_vars();

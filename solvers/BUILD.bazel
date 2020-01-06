@@ -789,6 +789,7 @@ drake_cc_library(
         "//tools:with_snopt": [
             ":mathematical_program",
             ":solver_base",
+            "//common:scope_exit",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
         ],
@@ -984,6 +985,7 @@ drake_cc_library(
     }),
     deps = select({
         "//tools:with_gurobi": [
+            "//common:scope_exit",
             "@eigen",
             "@gurobi//:gurobi_c",
         ],
