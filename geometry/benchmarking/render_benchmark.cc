@@ -43,6 +43,9 @@ DEFINE_bool(show_window, false, "Whether to display the rendered images");
 DEFINE_int32(samples_per_pixel, 1,
              "Number of illumination samples per pixel when path tracing");
 
+// Keep track of saved image paths.
+std::set<std::string> saved_image_paths;
+
 // Default sphere array sizes.
 const int kCols = 4;
 const double kRadius = 0.5;
@@ -190,7 +193,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkColor)
     }
   }
   if (!FLAGS_save_image_path.empty()) {
-    SaveToPng(color_image_, image_path_name("VtkColor", state, "png"));
+    const std::string path_name = image_path_name("VtkColor", state, "png");
+    SaveToPng(color_image_, path_name);
+    saved_image_paths.insert(path_name);
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkColor)
@@ -214,7 +219,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkDepth)
     }
   }
   if (!FLAGS_save_image_path.empty()) {
-    SaveToTiff(depth_image_, image_path_name("VtkDepth", state, "tiff"));
+    const std::string path_name = image_path_name("VtkDepth", state, "tiff");
+    SaveToTiff(depth_image_, path_name);
+    saved_image_paths.insert(path_name);
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkDepth)
@@ -234,7 +241,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkLabel)
     }
   }
   if (!FLAGS_save_image_path.empty()) {
-    SaveToPng(label_image_, image_path_name("VtkLabel", state, "png"));
+    const std::string path_name = image_path_name("VtkLabel", state, "png");
+    SaveToPng(label_image_, path_name);
+    saved_image_paths.insert(path_name);
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkLabel)
@@ -254,7 +263,10 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayRayColor)
     }
   }
   if (!FLAGS_save_image_path.empty()) {
-    SaveToPng(color_image_, image_path_name("OsprayRayColor", state, "png"));
+    const std::string path_name =
+        image_path_name("OsprayRayColor", state, "png");
+    SaveToPng(color_image_, path_name);
+    saved_image_paths.insert(path_name);
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayRayColor)
@@ -279,8 +291,10 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayRayColorShadowsOff)
     }
   }
   if (!FLAGS_save_image_path.empty()) {
-    SaveToPng(color_image_,
-              image_path_name("OsprayRayColorShadowsOff", state, "png"));
+    const std::string path_name =
+        image_path_name("OsprayRayColorShadowsOff", state, "png");
+    SaveToPng(color_image_, path_name);
+    saved_image_paths.insert(path_name);
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayRayColorShadowsOff)
@@ -306,13 +320,25 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayPathColor)
     }
   }
   if (!FLAGS_save_image_path.empty()) {
-    SaveToPng(color_image_, image_path_name("OsprayPathColor", state, "png"));
+    const std::string path_name =
+        image_path_name("OsprayPathColor", state, "png");
+    SaveToPng(color_image_, path_name);
+    saved_image_paths.insert(path_name);
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayPathColor)
     ->Unit(benchmark::kMillisecond)
     ->Args({1, 1, 640, 480})    // 1 sphere, 1 camera, 640 width, 480 height.
     ->Args({1, 10, 640, 480});  // 1 sphere, 10 cameras, 640 width, 480 height.
+
+void Cleanup() {
+  if (!saved_image_paths.empty()) {
+    std::cout << "Saved rendered images to:" << std::endl;
+    for (const auto& path : saved_image_paths) {
+      std::cout << fmt::format(" - {}", path) << std::endl;
+    }
+  }
+}
 
 }  // namespace
 }  // namespace internal
@@ -324,4 +350,5 @@ int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
+  drake::geometry::render_benchmark::internal::Cleanup();
 }
