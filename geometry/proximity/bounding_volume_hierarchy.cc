@@ -63,6 +63,15 @@ bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
   return true;
 }
 
+void Aabb::StretchBoundary() {
+  const double max_dim = center_.cwiseAbs().maxCoeff();
+  const double max_rad = half_width_.maxCoeff();
+  const double scale = std::max(max_dim, max_rad);
+  const double incr =
+      std::max(scale * std::numeric_limits<double>::epsilon(), kTolerance);
+  half_width_ += Vector3<double>::Ones() * incr;
+}
+
 template <class MeshType>
 BoundingVolumeHierarchy<MeshType>::BoundingVolumeHierarchy(
     const MeshType& mesh) {
