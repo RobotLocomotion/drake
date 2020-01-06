@@ -34,26 +34,33 @@ namespace systems {
  ### Exposition
 
  Events occur between discrete, finite advancements of systems' time
- and state, as in the mouse click example above. In the absence of events, a
- simulator would happily advance time and any continuous state without stopping.
- Events allow a system's state to change discontinuously and permit systems to
- communicate with the "outside world". Events also allow the time and state
- evolution to be paused for polling: an event might serve no other purpose than
- to allow counting the number of times that it occurred.
+ and state. In the absence of events, a simulator would happily advance time and
+ any continuous state without stopping. The occurrence of an event pauses the
+ time and state evolution in order to allow a system to change its state
+ discontinuously, to communicate with the "outside world", and even to just
+ count the number of event occurrences.
 
  ### Types of events and triggers
 
- We distinguish between the condition that is responsible for detecting the
- event (the "trigger") and the action that is taken when the event is
- dispatched (the "event handler"). The latter falls into several categories
- based on event type.
+ The diagram below distinguishes between the condition that is responsible for
+ detecting the event (the "trigger") and the action that is taken when the event
+ is dispatched (the "event handler").
+
+                           --> handler1
+ triggers  -->  dispatcher --> handler2
+         Events            --> etc.
+
+ Handler actions fall into several categories based on event type, as
+ described next.
 
  #### %Event types
 
  Events are grouped by the component(s) of a system's State that can be altered:
 
  - "publish" events can modify no state: they are useful for broadcasting data
-    outside of the novel system and any containing diagrams.
+    outside of the novel system and any containing diagrams, for terminating
+    a simulation, for detecting errors, and for forcing boundaries between
+    integration steps.
 
  - "discrete update" events can alter the discrete state of a system.
 
@@ -84,12 +91,13 @@ namespace systems {
  State advances with time in dynamical systems. If the dynamical system is
  simulated, then Drake's Simulator, or another solver (see @ref event_glossary
  "glossary") is responsible for detecting when events trigger, dispatching the
- appropriate handler function, and updating the state (the update functions
- modify only copies of state so that every update function sees the same
- pre-update state regardless of the sequence of event updates) as time advances.
- "Solvers" for physically situated dynamical systems (e.g., robots) must provide
- these same capabilities, even though the state over time is generally estimated
- rather than computed (solved).
+ appropriate handler function, and updating the state as time advances. The
+ update functions modify only copies of state so that every update function in a
+ class (e.g., all unrestricted updates) sees the same pre-update state
+ regardless of the sequence of event updates). "Solvers" for physically situated
+ dynamical systems (e.g., robots) must provide these same capabilities, even
+ though the state over time is generally estimated rather than computed
+ (solved).
 
  Events can also be dispatched manually ("by force"), i.e., outside of a solver.
  As noted above, one could call CalcUnrestrictedUpdate() to determine how a
@@ -435,10 +443,14 @@ class Event {
   // Constructs an Event with no trigger type and no event data.
   Event() { trigger_type_ = TriggerType::kUnknown; }
   virtual ~Event() {}
+  #endif
+
+  /** @name Does not allow move or assignment; copy constructor is private. */
+  /** @{ */
   void operator=(const Event&) = delete;
   Event(Event&&) = delete;
   void operator=(Event&&) = delete;
-  #endif
+  /** @} */
 
   // TODO(eric.cousineau): Deprecate and remove this alias.
   using TriggerType = systems::TriggerType;
