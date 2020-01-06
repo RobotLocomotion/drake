@@ -467,9 +467,6 @@ TEST_F(BoxPlaneIntersectionTest, VerifySurfaceFieldsInterpolations) {
 
 // Verify the algorithm returns no intersections when the box is over the plane.
 TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
-  const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kTolerance = 5.0 * kEpsilon;
-
   const auto Rx_pi_2 = RollPitchYawd(M_PI_2, 0.0, 0.0);
   const auto Ry_pi_2 = RollPitchYawd(0.0, M_PI_2, 0.0);
   const auto Rx_pi = RollPitchYawd(M_PI, 0.0, 0.0);
@@ -501,7 +498,7 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
     std::unique_ptr<SurfaceMesh<double>> contact_surface =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
                                      &e_b_surface);
-    EXPECT_NEAR(CalcSurfaceArea(*contact_surface), 0.0, kTolerance);
+    EXPECT_EQ(contact_surface, nullptr);
   }
 }
 

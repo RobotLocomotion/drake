@@ -152,8 +152,7 @@ GTEST_TEST(SurfaceMeshTest, TestArea) {
   EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 1.0, tol);
   EXPECT_NEAR(surface_mesh->total_area(), 1.5, tol);
 
-  // Verify that the empty mesh and the zero area mesh both give zero area.
-  EXPECT_NEAR(GenerateEmptyMesh()->total_area(), 0.0, tol);
+  // Verify that the zero area mesh gives zero area.
   EXPECT_NEAR(GenerateZeroAreaMesh()->total_area(), 0.0, tol);
 }
 
@@ -191,7 +190,6 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
 
   // The documentation for the centroid method specifies particular behavior
   // when the total area is zero. Test that.
-  EXPECT_NEAR(GenerateEmptyMesh()->centroid().norm(), 0.0, tol);
   EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, tol);
 }
 
@@ -355,14 +353,16 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
 
 // Checks the equality calculations.
 GTEST_TEST(SurfaceMeshTest, TestEqual) {
-  const auto empty_mesh = GenerateEmptyMesh();
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
   SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
   EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
-  EXPECT_FALSE(empty_mesh->Equal(*zero_area_mesh));
   EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
-  EXPECT_FALSE(triangle_mesh->Equal(*empty_mesh));
+}
+
+// Checks that constructing an empty mesh throws.
+GTEST_TEST(SurfaceMeshTest, TestEmptyMeshElements) {
+  EXPECT_THROW(GenerateEmptyMesh(), std::logic_error);
 }
 
 GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {

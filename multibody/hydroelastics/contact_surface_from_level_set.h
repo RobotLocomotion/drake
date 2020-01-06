@@ -292,6 +292,7 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
   std::array<Vector3<T>, 4> tet_vertices_N;
   Vector4<T> phi;
   Vector4<T> e_m;
+  int num_intersections = 0;
   for (const auto& tet : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
@@ -308,9 +309,11 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
     std::swap(phi[1], phi[2]);
     std::swap(e_m[1], e_m[2]);
-    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, &vertices_N, &faces,
-                             e_m_surface);
+    num_intersections += IntersectTetWithLevelSet(
+        tet_vertices_N, phi, e_m, &vertices_N, &faces, e_m_surface);
   }
+
+  if (num_intersections == 0) return nullptr;
 
   return std::make_unique<geometry::SurfaceMesh<T>>(std::move(faces),
                                                     std::move(vertices_N));
