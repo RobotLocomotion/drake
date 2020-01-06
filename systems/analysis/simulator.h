@@ -586,7 +586,7 @@ class Simulator {
   template <class U>
   DRAKE_DEPRECATED(
       "2020-03-01",
-      "Use scalar-valued or void version of reset_integrator() instead.")
+      "Use void or max-step-size version of reset_integrator() instead.")
   U* reset_integrator(std::unique_ptr<U> integrator) {
     if (!integrator)
       throw std::logic_error("Integrator cannot be null.");
@@ -598,7 +598,7 @@ class Simulator {
   template <class U, typename... Args>
   DRAKE_DEPRECATED(
       "2020-03-01",
-      "Use scalar-valued or void version of reset_integrator() instead.")
+      "Use void or max-step-size version of reset_integrator() instead.")
   U* reset_integrator(Args&&... args) {
     auto integrator = std::make_unique<U>(std::forward<Args>(args)...);
     integrator->reset_context(&get_mutable_context());
