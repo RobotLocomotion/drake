@@ -150,6 +150,33 @@ TEST_F(DrakeLcmTest, AcceptanceTest) {
   });
 }
 
+// Ensure that regex characters in the channel named are treated as literals,
+// not regex directives.
+TEST_F(DrakeLcmTest, SubscribeNotRegexTest) {
+  const std::string channel1 = "DrakeLcmTest_SubscribeNotRegexTest";
+  const std::string channel2 = "DrakeLcmTest_.*";
+
+  Subscriber<lcmt_drake_signal> channel1_subscriber(dut_.get(), channel1);
+  Subscriber<lcmt_drake_signal> channel2_subscriber(dut_.get(), channel2);
+
+  // Publishing one channel is only ever received by its own subscriber.
+  LoopUntilDone(&channel1_subscriber.message(), 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel1, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_GE(channel1_subscriber.count(), 0);
+  EXPECT_EQ(channel2_subscriber.count(), 0);
+  channel1_subscriber.clear();
+  channel2_subscriber.clear();
+
+  LoopUntilDone(&channel2_subscriber.message(), 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel2, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(channel1_subscriber.count(), 0);
+  EXPECT_GE(channel2_subscriber.count(), 0);
+}
+
 // Tests DrakeLcm's unsubscribe.
 TEST_F(DrakeLcmTest, UnsubscribeTest) {
   const std::string channel_name = "DrakeLcmTest.UnsubscribeTest";
