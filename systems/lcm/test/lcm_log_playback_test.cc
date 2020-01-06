@@ -16,14 +16,14 @@ namespace {
 const int kDim = 1;
 
 void SetInput(double time, const std::string& name, double val,
-              Context<double>* context) {
+              const InputPort<double>& input_port, Context<double>* context) {
   lcmt_drake_signal msg;
   msg.dim = kDim;
   msg.val.resize(kDim, val);
   msg.coord.resize(kDim, name);
   msg.timestamp = time * 1e6;
   context->SetTime(time);
-  context->FixInputPort(0, AbstractValue::Make<lcmt_drake_signal>(msg));
+  input_port.FixValue(context, msg);
 }
 
 class DummySys : public LeafSystem<double> {
@@ -92,26 +92,26 @@ void GenerateLog() {
   auto pub1 = LcmPublisherSystem::Make<lcmt_drake_signal>("Ch1", &w_log);
   auto context1 = pub1->CreateDefaultContext();
 
-  SetInput(0.1, "Ch0", 1, context0.get());
+  SetInput(0.1, "Ch0", 1, pub0->get_input_port(), context0.get());
   pub0->Publish(*context0);
 
-  SetInput(0.22, "Ch1", 2, context1.get());
+  SetInput(0.22, "Ch1", 2, pub1->get_input_port(), context1.get());
   pub1->Publish(*context1);
 
   // Testing multiple messages sent to the same channel at the same time.
   // Only the last one should be visible from the Subscriber's point of view.
-  SetInput(0.3, "Ch0", 3, context0.get());
+  SetInput(0.3, "Ch0", 3, pub0->get_input_port(), context0.get());
   pub0->Publish(*context0);
-  SetInput(0.3, "Ch0", 4, context0.get());
+  SetInput(0.3, "Ch0", 4, pub0->get_input_port(), context0.get());
   pub0->Publish(*context0);
-  SetInput(0.3, "Ch0", 5, context0.get());
+  SetInput(0.3, "Ch0", 5, pub0->get_input_port(), context0.get());
   pub0->Publish(*context0);
 
   // Testing sending a message to a different channel at the same time.
-  SetInput(0.3, "Ch1", 6, context1.get());
+  SetInput(0.3, "Ch1", 6, pub1->get_input_port(), context1.get());
   pub1->Publish(*context1);
 
-  SetInput(0.4, "Ch1", 7, context1.get());
+  SetInput(0.4, "Ch1", 7, pub1->get_input_port(), context1.get());
   pub1->Publish(*context1);
 }
 

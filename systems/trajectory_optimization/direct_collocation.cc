@@ -64,8 +64,9 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     }
 
     // Provide a fixed value for the input port and keep an alias around.
-    input_port_value_ = &context_->FixInputPort(
-        input_port_->get_index(), system_->AllocateInputVector(*input_port_));
+    input_port_value_ = &input_port_->FixValue(
+        context_.get(),
+        system_->AllocateInputVector(*input_port_)->get_value());
   }
 }
 
@@ -169,8 +170,9 @@ DirectCollocation::DirectCollocation(
 
   if (input_port_) {
     // Allocate the input port and keep an alias around.
-    input_port_value_ = &context_->FixInputPort(
-        input_port_->get_index(), system_->AllocateInputVector(*input_port_));
+    input_port_value_ = &input_port_->FixValue(
+        context_.get(),
+        system_->AllocateInputVector(*input_port_)->get_value());
   }
 
   // Add the dynamic constraints.

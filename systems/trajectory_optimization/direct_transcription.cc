@@ -330,8 +330,9 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     }
 
     // Provide a fixed value for the input port and keep an alias around.
-    input_port_value_ = &context_->FixInputPort(
-        input_port_->get_index(), system_->AllocateInputVector(*input_port_));
+    input_port_value_ = &input_port_->FixValue(
+        context_.get(),
+        system_->AllocateInputVector(*input_port_)->get_value());
   }
 
   // For N-1 timesteps, add a constraint which depends on the knot

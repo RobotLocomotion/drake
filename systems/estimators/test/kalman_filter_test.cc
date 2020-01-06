@@ -47,7 +47,7 @@ GTEST_TEST(TestKalman, DoubleIntegrator) {
   // Should get the same result, but as an affine system.
   auto sys = std::make_unique<LinearSystem<double>>(A, B, C, D);
   auto context = sys->CreateDefaultContext();
-  context->FixInputPort(0, Eigen::Matrix<double, 1, 1>::Zero());
+  sys->get_input_port().FixValue(context.get(), 0.0);
   context->get_mutable_continuous_state().SetFromVector(
       Eigen::Vector2d::Zero());
   auto filter =
