@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <glib.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -19,6 +21,14 @@ constexpr const char* const kLcmDefaultUrl = "udpm://239.255.76.67:7667?ttl=0";
 
 // Defined below.
 class DrakeSubscription;
+
+// TODO(jwnimmer-tri) Add a reusable scope_guard to //common.
+// Make a scope exit guard -- an object that when destroyed runs `func`.
+auto MakeGuard(std::function<void()> func) {
+  // The shared_ptr deleter func is always invoked, even for nullptrs.
+  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
+  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
+}
 
 }  // namespace
 
@@ -90,15 +100,21 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
       HandlerFunction handler) {
     DRAKE_DEMAND(native_instance != nullptr);
 
+    // The argument to subscribeFunction is regex (not a string literal), so
+    // we'll need to escape the channel name before calling subscribeFunction.
+    char* channel_regex = g_regex_escape_string(channel.c_str(), -1);
+    auto guard = MakeGuard([channel_regex](){
+      g_free(channel_regex);
+    });
+
     // Create the result.
     auto result = std::make_shared<DrakeSubscription>();
     result->native_instance_ = native_instance;
     result->user_callback_ = std::move(handler);
     result->weak_self_reference_ = result;
     result->strong_self_reference_ = result;
-    // TODO(#12523) This should escape `channel` against regex parsing.
     result->native_subscription_ = native_instance->subscribeFunction(
-      channel, &DrakeSubscription::NativeCallback, result.get());
+        channel_regex, &DrakeSubscription::NativeCallback, result.get());
     result->native_subscription_->setQueueCapacity(1);
 
     // Sanity checks.  (The use_count will be 2 because both 'result' and
