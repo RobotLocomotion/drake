@@ -609,13 +609,11 @@ class Simulator {
   /// @code
   /// simulator.reset_integrator<RungeKutta3Integrator<double>>().
   /// @endcode
-  /// The %Simulator must be reinitialized after resetting the integrator to
-  /// ensure the integrator is properly initialized. You can do that explicitly
-  /// with the Initialize() method or it will be done implicitly at the first
-  /// time step.
-  /// @note This method works with integrators that have constructors of the
-  ///       form Integrator(const System&, Context*).  All of Drake's
-  ///       error controlled integrators fit this model.
+  /// Resetting the integrator resets the %Simulator such that it needs to be
+  /// initialized again -- see Initialize() for details.
+  /// @note Integrator needs a constructor of the form
+  ///       Integrator(const System&, Context*); this
+  ///       constructor is usually associated with error-controlled integrators.
   template <class Integrator>
   Integrator& reset_integrator() {
     static_assert(
@@ -637,9 +635,10 @@ class Simulator {
   /// @endcode
   /// @see argument-less version of reset_integrator() for note about
   ///      initialization.
-  /// @note This method works with integrators that have constructors of the
-  ///       form Integrator(const System&, const T&, Context*). All of Drake's
-  ///       fixed-step integrators fit this model.
+  /// @note Integrator needs a constructor of the form
+  ///       Integrator(const System&, const T&, Context*); this
+  ///       constructor is usually associated with fixed-step integrators (i.e.,
+  ///       integrators which do not support error estimation).
   template <class Integrator>
   Integrator& reset_integrator(const T max_step_size) {
     static_assert(
