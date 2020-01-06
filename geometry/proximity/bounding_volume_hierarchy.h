@@ -33,10 +33,11 @@ class Aabb {
   */
   Aabb(Vector3<double> center, Vector3<double> half_width)
       : center_(std::move(center)), half_width_(std::move(half_width)) {
-    // TODO(tehbelinda): Introduce epsilon tolerance for robust bounding box.
     DRAKE_DEMAND(half_width.x() >= 0.0);
     DRAKE_DEMAND(half_width.y() >= 0.0);
     DRAKE_DEMAND(half_width.z() >= 0.0);
+
+    StretchBoundary();
   }
 
   /** Returns the center. */
@@ -64,6 +65,16 @@ class Aabb {
                          const math::RigidTransform<double>& X_AB);
 
  private:
+  // Stretch this box in place by a small amount to ensure there will be no
+  // roundoff problems. The amount to stretch depends on the default tolerance
+  // for this precision, the dimensions, and the position of the box in space.
+  // A very large box, or a box that is very far from the origin, must be
+  // stretched more than a small one at the origin.
+  void StretchBoundary();
+
+  // Default tolerance for double precision.
+  static constexpr double kTolerance = 2e-14;
+
   // Center point of the box.
   Vector3<double> center_;
   // Half width extents along each axes.
