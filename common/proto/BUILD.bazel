@@ -66,11 +66,7 @@ drake_py_binary(
     srcs = ["call_python_client.py"],
     main = "call_python_client.py",
     deps = [
-        # Use @drake// not just // so that "import drake.common..." works.
-        # TODO(jwnimmer-tri) We should use a project-wide solution so that
-        # Drake's import paths are consistent without having to use weird
-        # spellings such as this one.
-        "@drake//common/proto:call_python_client",
+        ":call_python_client",
     ],
 )
 
