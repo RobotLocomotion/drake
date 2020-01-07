@@ -168,7 +168,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv, int trial = 1);
 
-  /// velocity Jacobians for implicit euler
+  // Velocity Jacobians for implicit Euler.
   MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
 
 
@@ -223,7 +223,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// Computes necessary matrices (Jacobian and iteration matrix) for
   /// Newton-Raphson (NR) iterations, as necessary. This method is based off of
   /// ImplicitIntegrator<T>::MaybeFreshenMatrices. We implement our own version
-  /// here to use a specialized Velocity Jacobian. The aformentioned method was
+  /// here to use a specialized velocity Jacobian. The aformentioned method was
   /// designed for use in DoImplicitIntegratorStep() processes that follow this
   /// model:
   /// 1. DoImplicitIntegratorStep(h) is called;
@@ -237,8 +237,14 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   ///    `trial` parameter below. In this model, DoImplicitIntegratorStep()
   ///    returns failure if the NR iterations reach a fourth trial.
   ///
-  /// Note that the sophisticated logic above only applies when the Jacobian
-  /// reuse is activated (default, see get_reuse()).
+  /// We provide our own method to execute the same logic, but with the
+  /// following differences:
+  /// 1. We use the velocity Jacobian instead of the full Jacobian.
+  /// 2. We no longer use the get_reuse() logic to reuse a Jacobian
+  ///    when the time-step size (h) shrinks, because the velocity Jacobian
+  ///    depends on h.
+  /// These changes allow the velocity-implicit Euler method to use the smaller
+  /// velocity Jacobian in its Newton solves.
   ///
   /// @param t the time at which to compute the Jacobian.
   /// @param xt the continuous state at which the Jacobian is computed.
@@ -444,8 +450,8 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(
     const T& t, const T& h, const VectorX<T>& x, const VectorX<T>& qt0,
     MatrixX<T>* Jv) {
   // Just like ImplicitIntegrator<T>::CalcJacobian, we change the context but
-  // will change it back. The user should not assume any caches remain after we
-  // finish.
+  // will change it back. The user should assume all caches are dirty after it
+  // finishes.
   Context<T>* context = this->get_mutable_context();
 
   // Get the current time and state.
@@ -664,18 +670,19 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     const VectorX<T> dy = iteration_matrix->Solve(-residual);
 
     // When dy is 0, we exit because the implicit step no longer provides any
-    // improvement; this is necessary because if dq = 0 as well after it
-    // converges, we will have theta = nan in the next iteration, which will
-    // fail to trigger the divergence check.
+    // improvement; this is necessary because theta will equal nan in the
+    // iteration that follows where dq = 0, which will fail to trigger the
+    // divergence check.
     if (i > 0 && this->IsUpdateZero(ytplus, dy)) return true;
 
-    // Update the y portion of xtplus.
+    // Update the y portion of xtplus to yₖ₊₁.
     ytplus += dy;
 
-    // Update the q portion of xtplus. Note that at this point, the context has
-    // its position q equal to qtplus = qₖ, because ComputeResidualR was the
-    // last function to modify the context. This means that we can directly call
-    // MapVelocityToQDot on the context, which will evaluate N(qₖ).
+    // Update the q portion of xtplus to qₖ₊₁. Note that at this point, the
+    // context has its position q equal to qtplus = qₖ, because
+    // ComputeResidualR was the last function to modify the context. This means
+    // that we can directly call MapVelocityToQDot on the context, which will
+    // evaluate N(qₖ).
     system.MapVelocityToQDot(*context, vtplus, &qdot);
     qtplus = qt0 + h * qdot.get_value();
     dx << qtplus - last_qtplus, dy;
