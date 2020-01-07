@@ -181,6 +181,18 @@ std::unique_ptr<geometry::Shape> ParseCapsule(const XMLElement* shape_node) {
   return std::make_unique<geometry::Capsule>(r, l);
 }
 
+std::unique_ptr<geometry::Shape> ParseEllipsoid(const XMLElement* shape_node) {
+  double axes[3];
+  const char* names[] = {"a", "b", "c"};
+  for (int i = 0; i < 3; ++i) {
+    if (!ParseScalarAttribute(shape_node, names[i], &axes[i])) {
+      throw std::runtime_error(
+          fmt::format("Missing ellipsoid attribute: {}", names[i]));
+    }
+  }
+  return std::make_unique<geometry::Ellipsoid>(axes[0], axes[1], axes[2]);
+}
+
 std::unique_ptr<geometry::Shape> ParseMesh(const XMLElement* shape_node,
                                            const PackageMap& package_map,
                                            const std::string& root_dir) {
@@ -223,25 +235,36 @@ std::unique_ptr<geometry::Shape> ParseMesh(const XMLElement* shape_node,
 std::unique_ptr<geometry::Shape> ParseGeometry(const XMLElement* node,
                                                const PackageMap& package_map,
                                                const std::string& root_dir) {
-  if (node->FirstChildElement("box")) {
-    return ParseBox(node->FirstChildElement("box"));
-  }
-  if (node->FirstChildElement("sphere")) {
-    return ParseSphere(node->FirstChildElement("sphere"));
-  }
-  if (node->FirstChildElement("cylinder")) {
-    return ParseCylinder(node->FirstChildElement("cylinder"));
-  }
-  if (node->FirstChildElement("capsule")) {
-    return ParseCapsule(node->FirstChildElement("capsule"));
-  }
-  if (node->FirstChildElement("mesh")) {
-    return ParseMesh(node->FirstChildElement("mesh"), package_map, root_dir);
+  if (auto child_node = node->FirstChildElement("box"); child_node) {
+    return ParseBox(child_node);
+  } else if (child_node = node->FirstChildElement("sphere"); child_node) {
+    return ParseSphere(child_node);
+  } else if (child_node = node->FirstChildElement("cylinder"); child_node) {
+    return ParseCylinder(child_node);
+  } else if (child_node = node->FirstChildElement("capsule");
+             child_node) {
+    // TODO(SeanCurtis-TRI): This should *not* be <capsule>. It should be
+    //  <drake:capsule>. <capsule> is not in the spec
+    //  http://wiki.ros.org/urdf/XML/link. And even there has been a three-year
+    //  debate about adding it into ros (still unresolved):
+    //  https://github.com/ros/urdfdom_headers/pull/24
+    //  Given that this is a tag that is *not* in the spec, it requires the
+    //  namespace.
+    //  As a footnote, bullet does support it:
+    //  https://github.com/bulletphysics/bullet3/blob/master/data/capsule.urdf
+    //  and we have a number of legacy files that have <capsule> declarations
+    //  in them.
+    return ParseCapsule(child_node);
+  } else if (child_node = node->FirstChildElement("mesh"); child_node) {
+    return ParseMesh(child_node, package_map, root_dir);
+  } else if (child_node = node->FirstChildElement("drake:ellipsoid");
+             child_node) {
+    return ParseEllipsoid(child_node);
   }
 
-  throw std::runtime_error(
-      "Warning: geometry element "
-      "has an unknown type and will be ignored.");
+  throw std::runtime_error(fmt::format(
+      "Warning: geometry element on line {} "
+      "does not have a recognizable shape type", node->GetLineNum()));
 }
 
 std::string MakeGeometryName(const std::string& basename,

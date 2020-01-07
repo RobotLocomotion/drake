@@ -472,13 +472,14 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         const sdf::Collision& sdf_collision =
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
-        if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
+
+        std::unique_ptr<geometry::Shape> shape =
+            MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
+        if (shape != nullptr) {
           const RigidTransformd X_LG = ResolveRigidTransform(
               sdf_collision.SemanticPose());
           const RigidTransformd X_LC =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
-          std::unique_ptr<geometry::Shape> shape =
-              MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
           geometry::ProximityProperties props =
               MakeProximityPropertiesForCollision(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LC, *shape,

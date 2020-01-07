@@ -245,6 +245,87 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
   EXPECT_TRUE(
       inspector.CollisionFiltered(geometry_id_link3, geometry_id_link4));
 }
+// Reports if the frame with the given id has a geometry with the given role
+// whose name is the same as what ShapeName(ShapeType{}) would produce.
+template <typename ShapeType>
+::testing::AssertionResult FrameHasShape(geometry::FrameId frame_id,
+                                         geometry::Role role,
+                                         const SceneGraph<double>& scene_graph,
+                                         const ShapeType& shape) {
+  const auto& inspector = scene_graph.model_inspector();
+  const std::string name = geometry::ShapeName(shape).name();
+  try {
+    // Note: MBP prepends the model index to the geometry name; in this case
+    // that model instance name is "test_robot".
+    const geometry::GeometryId geometry_id =
+        inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
+    const std::string shape_type =
+        geometry::ShapeName(inspector.GetShape(geometry_id)).name();
+    if (shape_type != name) {
+      return ::testing::AssertionFailure()
+          << "Geometry with role " << role << " has wrong shape type."
+          << "\nExpected: " << name
+          << "\nFound: " << shape_type;
+    }
+  } catch (const std::exception& e) {
+    return ::testing::AssertionFailure()
+        << "Frame " << frame_id << " does not have a geometry with role "
+        << role << " and name " << name
+        << ".\n  Exception message: " << e.what();
+  }
+  return ::testing::AssertionSuccess();
+}
+
+// Confirms that all supported geometries in an URDF file are registered. The
+// *details* of the geometries are ignored -- we assume that that functionality
+// is tested in detail_urdf_geometry_test.cc. This merely makes sure that *that*
+// functionality is exercised appropriately.
+void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
+  const std::string full_name = FindResourceOrThrow(sdf_name);
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  plant.Finalize();
+
+  const auto frame_id =
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link1").index());
+
+  const std::string mesh_uri = "drake/multibody/parsing/test/tri_cube.obj";
+
+  // Note: the parameters for the various example shapes do not matter to this
+  // test.
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Box{0.1, 0.1, 0.1}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Capsule{0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Convex{mesh_uri, 1.0}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Cylinder{0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Ellipsoid{0.1, 0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Mesh{mesh_uri, 1.0}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Sphere{0.1}));
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionGeometryParsing) {
+  TestForParsedGeometry(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "all_geometries_as_collision.urdf",
+      geometry::Role::kProximity);
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, VisualGeometryParsing) {
+  TestForParsedGeometry(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "all_geometries_as_visual.urdf",
+      geometry::Role::kPerception);
+}
 
 }  // namespace
 }  // namespace internal
