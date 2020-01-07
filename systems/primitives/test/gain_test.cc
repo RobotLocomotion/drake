@@ -27,18 +27,14 @@ void TestGainSystem(const Gain<T>& gain_system,
 
   // Verifies that Gain allocates no state variables in the context.
   EXPECT_EQ(0, context->num_continuous_states());
-  auto input =
-      make_unique<BasicVector<double>>(gain_system.get_gain_vector().size());
 
   // Checks that the number of input ports in the Gain system and the Context
   // are consistent.
   ASSERT_EQ(1, gain_system.num_input_ports());
   ASSERT_EQ(1, context->num_input_ports());
 
-  input->get_mutable_value() << input_vector;
-
   // Hook input of the expected size.
-  context->FixInputPort(0, std::move(input));
+  gain_system.get_input_port().FixValue(context.get(), input_vector);
 
   // Checks the output.
   ASSERT_EQ(1, gain_system.num_output_ports());

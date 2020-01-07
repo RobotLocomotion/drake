@@ -68,7 +68,8 @@ TEST_F(FirstOrderLowPassFilterTest, Topology) {
 TEST_F(FirstOrderLowPassFilterTest, Output) {
   SetUpSingleTimeConstantFilter();
   ASSERT_EQ(1, context_->num_input_ports());
-  context_->FixInputPort(0, BasicVector<double>::Make({1.0, 2.0, 3.0}));
+  filter_->get_input_port().FixValue(context_.get(),
+                                      Vector3<double>(1.0, 2.0, 3.0));
 
   ASSERT_EQ(1, filter_->num_output_ports());
 
@@ -85,7 +86,7 @@ TEST_F(FirstOrderLowPassFilterTest, Derivatives) {
   SetUpMultipleTimeConstantsFilter();
   ASSERT_EQ(1, context_->num_input_ports());
   Vector3<double> u({1.0, 2.0, 3.0});  // The input signal.
-  context_->FixInputPort(0, u);
+  filter_->get_input_port().FixValue(context_.get(), u);
 
   // Sets a more interesting (non-zero) state.
   Vector3<double> z_expected(-1.0, 2.0, 3.5);

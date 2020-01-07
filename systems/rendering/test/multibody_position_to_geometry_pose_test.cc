@@ -31,7 +31,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
 
   const Eigen::VectorXd position =
       Eigen::VectorXd::LinSpaced(mbp.num_positions(), 0.123, 0.456);
-  context->FixInputPort(dut.get_input_port().get_index(), position);
+  dut.get_input_port().FixValue(context.get(), position);
 
   const auto& output =
       dut.get_output_port().Eval<geometry::FramePoseVector<double>>(*context);

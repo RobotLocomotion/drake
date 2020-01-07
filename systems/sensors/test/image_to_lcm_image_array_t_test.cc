@@ -30,17 +30,10 @@ robotlocomotion::image_array_t SetUpInputAndOutput(
   const InputPort<double>& label_image_input_port =
       dut->label_image_input_port();
 
-  auto color_image_value = std::make_unique<Value<ImageRgba8U>>(color_image);
-  auto depth_image_value = std::make_unique<Value<ImageDepth32F>>(depth_image);
-  auto label_image_value = std::make_unique<Value<ImageLabel16I>>(label_image);
-
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  context->FixInputPort(color_image_input_port.get_index(),
-                        std::move(color_image_value));
-  context->FixInputPort(depth_image_input_port.get_index(),
-                        std::move(depth_image_value));
-  context->FixInputPort(label_image_input_port.get_index(),
-                        std::move(label_image_value));
+  color_image_input_port.FixValue(context.get(), color_image);
+  depth_image_input_port.FixValue(context.get(), depth_image);
+  label_image_input_port.FixValue(context.get(), label_image);
 
   return dut->image_array_t_msg_output_port().
       Eval<robotlocomotion::image_array_t>(*context);

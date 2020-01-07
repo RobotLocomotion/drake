@@ -43,12 +43,9 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
   EXPECT_EQ(pose_vector.value(frame_id).translation()[1], ty);
   EXPECT_EQ(pose_vector.value(frame_id).translation()[2], tz);
 
-  std::unique_ptr<AbstractValue> input(
-      new Value<geometry::FramePoseVector<double>>(pose_vector));
-
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput();
-  context->FixInputPort(0 /* input port ID*/, std::move(input));
+  dut.get_input_port(0).FixValue(context.get(), pose_vector);
 
   dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
   dut.CalcOutput(*context, output.get());

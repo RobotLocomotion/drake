@@ -39,7 +39,7 @@ class TestMpcWithDoubleIntegrator : public ::testing::Test {
 
     std::unique_ptr<Context<double>> system_context =
         system->CreateDefaultContext();
-    system_context->FixInputPort(0, u0);
+    system->get_input_port().FixValue(system_context.get(), u0);
     system_context->get_mutable_discrete_state(0).SetFromVector(x0);
 
     dut_.reset(new LinearModelPredictiveController<double>(
@@ -72,7 +72,7 @@ TEST_F(TestMpcWithDoubleIntegrator, TestAgainstInfiniteHorizonSolution) {
   const Eigen::Matrix<double, 2, 1> x0 = Eigen::Vector2d::Ones();
 
   auto context = dut_->CreateDefaultContext();
-  context->FixInputPort(0, BasicVector<double>::Make(x0(0), x0(1)));
+  dut_->get_input_port(0).FixValue(context.get(), x0);
   std::unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput();
 
   dut_->CalcOutput(*context, output.get());
@@ -144,7 +144,7 @@ class TestMpcWithCubicSystem : public ::testing::Test {
     auto context = system_->CreateDefaultContext();
 
     // Set nominal input to zero.
-    context->FixInputPort(0, Vector1d::Constant(0.));
+    system_->get_input_port(0).FixValue(context.get(), 0.);
 
     // Set the nominal state.
     BasicVector<double>& x =
@@ -239,7 +239,7 @@ GTEST_TEST(TestMpcConstructor, ThrowIfRNotStrictlyPositiveDefinite) {
       std::make_unique<LinearSystem<double>>(A, B, C, D, 1.);
 
   std::unique_ptr<Context<double>> context = system->CreateDefaultContext();
-  context->FixInputPort(0, BasicVector<double>::Make(0., 0.));
+  system->get_input_port().FixValue(context.get(), Eigen::Vector2d::Zero());
 
   const Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
 
