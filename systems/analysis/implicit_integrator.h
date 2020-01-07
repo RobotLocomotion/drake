@@ -86,13 +86,13 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// outweigh the small factorization cost.
   /// @note The reuse setting will have no effect when
   ///       get_use_full_newton() `== true`.
-  /// @sa get_reuse()
-  /// @sa set_use_full_newton()
+  /// @see get_reuse()
+  /// @see set_use_full_newton()
   void set_reuse(bool reuse) { reuse_ = reuse; }
 
   /// Gets whether the integrator attempts to reuse Jacobian matrices and
   /// iteration matrix factorizations.
-  /// @sa set_reuse()
+  /// @see set_reuse()
   /// @note This method always returns `false` when full-Newton mode is on.
   bool get_reuse() const { return !use_full_newton_ && reuse_; }
 
@@ -650,7 +650,7 @@ inline void ImplicitIntegrator<AutoDiffXd>::IterationMatrix::
 
 // Solves a linear system Ax = b for x using the iteration matrix (A)
 // factored using LU decomposition.
-// @sa Factor()
+// @see Factor()
 template <class T>
 VectorX<T> ImplicitIntegrator<T>::IterationMatrix::Solve(
     const VectorX<T>& b) const {
@@ -659,7 +659,7 @@ VectorX<T> ImplicitIntegrator<T>::IterationMatrix::Solve(
 
 // Solves the linear system Ax = b for x using the iteration matrix (A)
 // factored using QR decomposition.
-// @sa Factor()
+// @see Factor()
 // Note: must be declared inline because it's specialized and located in the
 // header file (to avoid multiple definition errors).
 template <>
@@ -734,6 +734,8 @@ void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
         typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+  DRAKE_DEMAND(iteration_matrix);
+
   // Return immediately if full-Newton is not in use.
   if (!get_use_full_newton()) return;
 

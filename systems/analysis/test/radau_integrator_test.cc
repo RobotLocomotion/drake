@@ -71,7 +71,7 @@ GTEST_TEST(RadauIntegratorTest, FullNewton) {
   // Create the Euler integrator.
   RadauIntegrator<double, 1> euler(*robertson, context.get());
 
-  euler.set_maximum_step_size(1e-2);  // Maximum step that will be attempted.
+  euler.request_initial_step_size_target(1e0);
   euler.set_throw_on_minimum_step_size_violation(false);
   euler.set_fixed_step_mode(true);
   euler.set_use_full_newton(true);    // The whole point of this test.

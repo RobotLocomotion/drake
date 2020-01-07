@@ -40,9 +40,9 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Reuse) {
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 2);
 
   // Now integrate again but with a smaller size. Again, past experience
-  // that this step size should be sufficiently small for the integrator to
-  // converge. The Jacobian matrix will be "fresh"; we assume no knowledge
-  // of the number of iteration matrix factorizations.
+  // indicates that this step size should be sufficiently small for the
+  // integrator to converge. The Jacobian matrix will be "fresh"; we assume no
+  // knowledge of the number of iteration matrix factorizations.
   euler.ResetStatistics();
   ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(1e-6));
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 0);
@@ -67,7 +67,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, FullNewton) {
   // Create the Euler integrator.
   ImplicitEulerIntegrator<double> euler(*robertson, context.get());
 
-  euler.set_maximum_step_size(1e-2);  // Maximum step that will be attempted.
+  euler.request_initial_step_size_target(1e0);
   euler.set_throw_on_minimum_step_size_violation(false);
   euler.set_fixed_step_mode(true);
   euler.set_use_full_newton(true);    // The whole point of this test.

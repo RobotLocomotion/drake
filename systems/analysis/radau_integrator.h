@@ -484,8 +484,10 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   };
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
-  // around (t0, xt0). We do not do this calculation if full Newton is in use,
-  // because it will be computed at the beginning of the loop.
+  // around (t0, xt0). We do not do this calculation if full Newton is in use;
+  // the calculation will be performed at the beginning of the loop
+  // instead.
+
   // TODO(edrumwri) Consider computing the Jacobian matrix around tf and/or
   //                xtplus. This would give a better Jacobian, but would
   //                complicate the logic, since the Jacobian would no longer
