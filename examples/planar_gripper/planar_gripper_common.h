@@ -16,6 +16,22 @@ using Eigen::Vector3d;
 constexpr int kNumFingers = 3;
 constexpr int kNumJoints = kNumFingers * 2;
 
+enum class Finger {
+  kFinger1,
+  kFinger2,
+  kFinger3,
+};
+
+std::string to_string(Finger finger);
+int to_num(Finger finger);
+
+enum class BrickFace {
+  kPosZ,
+  kNegZ,
+  kPosY,
+  kNegY,
+};
+
 // The planar-gripper coordinate frame G (with origin Go) and finger layout are
 // defined as follows (assuming all finger joint angles are set to zero):
 //
@@ -103,6 +119,10 @@ MatrixX<double> ReorderKeyframesForPlant(
 
 /// Returns the planar gripper frame G's transform w.r.t. the world frame W.
 const math::RigidTransformd X_WGripper();
+
+/// Returns a specific finger's weld angle from the +Gz axis
+/// (gripper frame, +z axis)
+double FingerWeldAngle(Finger finger);
 
 }  // namespace planar_gripper
 }  // namespace examples

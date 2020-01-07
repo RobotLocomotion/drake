@@ -8,12 +8,22 @@
     <xacro:property name="base_dim" value=".08" />
     <xacro:property name="l1_length" value="0.085" />
     <xacro:property name="l1_radius" value="0.011" />
-    <xacro:property name="l1_mass" value="0.1" />
-    <xacro:property name="l1_inertia" value="0.0083" />
+    <xacro:property name="l1_mass" value="0.449" />
+    <xacro:property name="l1_ixx" value="1.519282829" />
+    <xacro:property name="l1_iyy" value="1.519856854" />
+    <xacro:property name="l1_izz" value="0.0006529" />
+    <xacro:property name="l1_ixz" value="2.8883e-05" />
+    <xacro:property name="l1_ixy" value="0" />
+    <xacro:property name="l1_iyz" value="0" />
     <xacro:property name="l2_length" value="0.040" />
     <xacro:property name="l2_radius" value="0.011" />
-    <xacro:property name="l2_mass" value="0.1" />
-    <xacro:property name="l2_inertia" value="0.0083" />
+    <xacro:property name="l2_mass" value="0.104" />
+    <xacro:property name="l2_ixx" value="1.513503562" />
+    <xacro:property name="l2_iyy" value="1.513508314" />
+    <xacro:property name="l2_izz" value="1.2773e-05" />
+    <xacro:property name="l2_ixz" value="6.523e-06" />
+    <xacro:property name="l2_ixy" value="0" />
+    <xacro:property name="l2_iyz" value="0" />
     <xacro:property name="sensor_length" value="0.005" />
     <xacro:property name="sensor_width" value="0.02" />
     <xacro:property name="tip_adapter_length" value="0.0113" />
@@ -42,8 +52,12 @@
           <pose>0 0 -${l1_length/2} 0 0 0</pose>
           <mass>${l1_mass}</mass>
           <inertia>
-            <ixx>${l1_inertia}</ixx><iyy>${l1_inertia}</iyy><izz>5e-7</izz>
-            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            <ixx>${l1_ixx}</ixx>
+            <iyy>${l1_iyy}</iyy>
+            <izz>${l1_izz}</izz>
+            <ixz>${l1_ixz}</ixz>
+            <ixy>${l1_ixy}</ixy>
+            <iyz>${l1_iyz}</iyz>
           </inertia>
         </inertial>
         <visual name='link1_visual'>
@@ -94,8 +108,12 @@
           <pose>0 0 -${(l2_length + sensor_length + tip_adapter_length + tip_cylinder_length)/2} 0 0 0</pose>
           <mass>${l2_mass}</mass>
           <inertia>
-            <ixx>${l2_inertia}</ixx><iyy>${l2_inertia}</iyy><izz>5e-7</izz>
-            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            <ixx>${l2_ixx}</ixx>
+            <iyy>${l2_iyy}</iyy>
+            <izz>${l2_izz}</izz>
+            <ixz>${l2_ixz}</ixz>
+            <ixy>${l2_ixy}</ixy>
+            <iyz>${l2_iyz}</iyz>
           </inertia>
         </inertial>
         <visual name='link2_visual'>

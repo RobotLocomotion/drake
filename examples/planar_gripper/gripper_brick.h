@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
@@ -10,21 +11,6 @@
 namespace drake {
 namespace examples {
 namespace planar_gripper {
-
-enum class Finger {
-  kFinger1,
-  kFinger2,
-  kFinger3,
-};
-
-std::string to_string(Finger finger);
-
-enum class BrickFace {
-  kPosZ,
-  kNegZ,
-  kPosY,
-  kNegY,
-};
 
 /**
  * The helper class that contains the diagram of the planar gripper (3 planar

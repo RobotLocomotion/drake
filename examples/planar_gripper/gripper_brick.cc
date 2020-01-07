@@ -11,22 +11,6 @@ namespace drake {
 namespace examples {
 namespace planar_gripper {
 
-std::string to_string(Finger finger) {
-  switch (finger) {
-    case Finger::kFinger1: {
-      return "finger 1";
-    }
-    case Finger::kFinger2: {
-      return "finger 2";
-    }
-    case Finger::kFinger3: {
-      return "finger 3";
-    }
-    default:
-      throw std::runtime_error("Finger not valid.");
-  }
-}
-
 template <typename T>
 void AddDrakeVisualizer(systems::DiagramBuilder<T>*,
                         const geometry::SceneGraph<T>&) {

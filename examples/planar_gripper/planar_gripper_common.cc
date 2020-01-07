@@ -21,15 +21,47 @@ using drake::math::RollPitchYawd;
 using drake::multibody::MultibodyPlant;
 using Eigen::Vector3d;
 
+std::string to_string(Finger finger) {
+  switch (finger) {
+    case Finger::kFinger1: {
+      return "finger1";
+    }
+    case Finger::kFinger2: {
+      return "finger2";
+    }
+    case Finger::kFinger3: {
+      return "finger3";
+    }
+    default:
+      throw std::runtime_error("Finger not valid.");
+  }
+}
+
+int to_num(Finger finger) {
+  switch (finger) {
+    case Finger::kFinger1: {
+      return 1;
+    }
+    case Finger::kFinger2: {
+      return 2;
+    }
+    case Finger::kFinger3: {
+      return 3;
+    }
+    default:
+      throw std::runtime_error("Finger not valid.");
+  }
+}
+
 template <typename T>
 void WeldGripperFrames(MultibodyPlant<T>* plant) {
   // The finger base links are all welded a fixed distance from the gripper
   // frame's origin (Go), lying on the the gripper frame's Y-Z plane. We denote
   // The gripper frame's Y and Z axes as Gy and Gz.
-  const double kGripperOriginToBaseDistance = 0.201;
-  const double kFinger1Angle = M_PI / 3.0;
-  const double kFinger2Angle = -M_PI / 3.0;
-  const double kFinger3Angle = M_PI;
+  const double kGripperOriginToBaseDistance = 0.19;
+  const double kFinger1Angle = FingerWeldAngle(Finger::kFinger1);
+  const double kFinger2Angle = FingerWeldAngle(Finger::kFinger2);
+  const double kFinger3Angle = FingerWeldAngle(Finger::kFinger3);
 
   // Note: Before welding and with all finger joint angles being zero, all
   // finger base links sit at the world origin with the finger pointing along
@@ -221,6 +253,22 @@ MatrixX<double> ReorderKeyframesForPlant(
 
 const RigidTransformd X_WGripper() {
   return math::RigidTransformd::Identity();
+}
+
+double FingerWeldAngle(Finger finger) {
+  switch (finger) {
+    case Finger::kFinger1 :
+      return M_PI / 3.0;
+      break;
+    case Finger::kFinger2 :
+      return -M_PI / 3.0;
+      break;
+    case Finger::kFinger3 :
+      return M_PI;
+      break;
+    default:
+      throw std::logic_error("Unknown Finger");
+  }
 }
 
 }  // namespace planar_gripper
