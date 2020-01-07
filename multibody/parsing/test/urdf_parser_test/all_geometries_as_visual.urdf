@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<robot name='test_robot'>
+  <!-- This urdf file defines a simple test robot with a single link that
+       contains one collision tag for each supported geometry type. We're
+       confirming that each geometry declaration produces a corresponding
+       Drake Shape. The *names* of each collision element match the string
+       that is produced by `ShapeName` (see shape_specification.h). This is
+       to facilitate testing and altering the names will cause the test to
+       fail.
+       Values in <inertial> are not important for this test model since
+       it's only to test the parsing of visuals and collisions into a
+       MultibodyPlant.
+       This file is meant to be kept in sync with the corresponding unit
+       test file detail_urdf_parser_test.cc -->
+  <link name='link1'>
+    <inertial>
+      <mass value="1"/>
+    </inertial>
+
+    <visual name = 'Box'>
+      <geometry>
+        <box size="1 2 3"/>
+      </geometry>
+    </visual>
+
+    <visual name = 'Capsule'>
+      <geometry>
+        <capsule radius="0.5" length="2.0"/>
+      </geometry>
+    </visual>
+
+    <visual name = 'Convex'>
+      <geometry>
+        <mesh filename="../tri_cube.obj">
+          <drake:declare_convex/>
+        </mesh>
+      </geometry>
+    </visual>
+
+    <visual name = 'Cylinder'>
+      <geometry>
+        <cylinder radius="0.5" length="2.0"/>
+      </geometry>
+    </visual>
+
+    <visual name = 'Ellipsoid'>
+      <geometry>
+        <drake:ellipsoid a="1.0" b="2.0" c="3.0"/>
+      </geometry>
+    </visual>
+
+    <!--
+    TODO(SeanCurtis-TRI): Parse halfspace from URDF files. Part of it is
+     defining the semantics. Do I allow an arbitrary normal and point in the
+     definition? Or do I infer it from the pose? This latter would more directly
+     parallel the sdf functionality.
+    <visual name = 'HalfSpace'>
+      <geometry>
+        <drake:half_space/>
+      </geometry>
+    </visual>
+    -->
+
+    <visual name = 'Mesh'>
+      <geometry>
+        <mesh filename="../tri_cube.obj"/>
+      </geometry>
+    </visual>
+
+    <visual name = 'Sphere'>
+      <geometry>
+        <sphere radius="1.0"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
