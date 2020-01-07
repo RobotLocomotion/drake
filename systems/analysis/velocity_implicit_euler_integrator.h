@@ -54,6 +54,9 @@ inline void EmitNoErrorEstimatorStatAndMessage() {
  * qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.              (6)
  * </pre>
  *
+ * For the unfamiliar reader, in this notation, n's index timesteps, while k's
+ * index the specific Newton-Raphson iterations within each time step.
+ *
  * To solve (5-6), first define<pre>
  * lₖ(y) = f(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),      (7)
  * Jₗₖ(y) = ∂lₖ(y) / ∂y.                   (8)
@@ -175,8 +178,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// Compute the partial derivative of the ordinary differential equations with
   /// respect to the y variables of a given x(t). In particular, we compute the
   /// Jacobian, Jₗₖ(y), of the function lₖ(y), used in this integrator's
-  /// residual computation, with respect to y. As defined before, y = (v,z) and
-  /// x = (q,v,z). This Jacobian is then defined as:
+  /// residual computation, with respect to y, where y = (v,z) and x = (q,v,z).
+  /// This Jacobian is then defined as:
   ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (7)
   ///     Jₗₖ(y) = ∂lₖ(y)/∂y                      (8)
   /// @param t refers to tⁿ⁺¹, the time used in the definition of lₖ(y)
@@ -193,8 +196,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   /// Uses first-order forward differencing to compute the Jacobian, Jₗₖ(y), of
   /// the function lₖ(y), used in this integrator's residual computation, with
-  /// respect to y. As defined before, y = (v, z). This Jacobian is then defined
-  /// as:
+  /// respect to y, where y = (v,z). This Jacobian is then defined as:
   ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (7)
   ///     Jₗₖ(y) = ∂lₖ(y)/∂y                      (8)
   //
