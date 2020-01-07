@@ -597,9 +597,6 @@ install(
         ":libdrake_marker.so",
         ":resource_tool",
     ],
-    # TODO(jwnimmer-tri) The install rule should offer more specific options
-    # for programs not in bin/, and including the workspace and/or package name
-    # in the installed path.  For now, we'll just specify it manually.
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
@@ -1383,10 +1380,6 @@ drake_py_unittest(
         ":resource_tool",
         "//examples/pendulum:models",
     ],
-    # Fails when run under Valgrind tools due to stdout/stderr mixing.
-    # TODO(jwnimmer-tri): Amend the test to stream stderr separately and then
-    # re-enable Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(
@@ -1398,11 +1391,6 @@ drake_cc_googletest(
         "//systems/framework/test_utilities:my_vector",
     ],
 )
-
-# TODO(jwnimmer-tri) These tests are currently missing...
-# - drake_assert_test in fancy variants
-# - drake_assert_test_compile in fancy variants
-# - cpplint_wrapper_test.py
 
 add_lint_tests(
     python_lint_extra_srcs = [
