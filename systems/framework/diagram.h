@@ -1103,8 +1103,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   template <typename EventType>
   std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
       std::function<
-      std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
-  allocater_func) const {
+          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+          allocator_func) const {
     const int num_systems = num_subsystems();
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (SubsystemIndex i(0); i < num_systems; ++i) {

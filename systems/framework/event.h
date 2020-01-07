@@ -46,9 +46,9 @@ namespace systems {
  detecting the event (the "trigger") and the action that is taken when the event
  is dispatched (the "event handler").
 
-                           --> handler1
- triggers  -->  dispatcher --> handler2
-         Events            --> etc.
+                                -- > handler1
+     triggers  -- >  dispatcher -- > handler2
+             Events             -- > etc.
 
  Handler actions fall into several categories based on event type, as
  described next.
@@ -94,10 +94,7 @@ namespace systems {
  appropriate handler function, and updating the state as time advances. The
  update functions modify only copies of state so that every update function in a
  class (e.g., all unrestricted updates) sees the same pre-update state
- regardless of the sequence of event updates). "Solvers" for physically situated
- dynamical systems (e.g., robots) must provide these same capabilities, even
- though the state over time is generally estimated rather than computed
- (solved).
+ regardless of the sequence of event updates).
 
  Events can also be dispatched manually ("by force"), i.e., outside of a solver.
  As noted above, one could call CalcUnrestrictedUpdate() to determine how a
