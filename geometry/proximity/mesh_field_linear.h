@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/mesh_field.h"
@@ -174,7 +173,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
-  DRAKE_NODISCARD std::unique_ptr<MeshField<FieldValue, MeshType>>
+  [[nodiscard]] std::unique_ptr<MeshField<FieldValue, MeshType>>
   DoCloneWithNullMesh() const final {
     return std::make_unique<MeshFieldLinear>(*this);
   }

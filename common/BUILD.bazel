@@ -806,6 +806,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_nodiscard_test",
+    copts = [
+        "-Wno-cpp",
+    ],
     deps = [
         ":essential",
         ":unused",
