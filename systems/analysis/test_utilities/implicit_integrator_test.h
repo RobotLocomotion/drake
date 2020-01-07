@@ -635,18 +635,28 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
     EXPECT_GE(integrator->get_num_steps_taken(), 0);
     EXPECT_GT(integrator->get_num_derivative_evaluations(), 0);
-    EXPECT_GE(integrator->get_num_error_estimator_derivative_evaluations(), 0);
+    if (integrator_supports_error_control_) {
+      EXPECT_GE(
+          integrator->get_num_error_estimator_derivative_evaluations(), 0);
+    }
     EXPECT_GT(integrator->get_num_derivative_evaluations_for_jacobian(), 0);
-    EXPECT_GE(
-        integrator
-            ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
-        0);
+    if (integrator_supports_error_control_) {
+      EXPECT_GE(
+          integrator
+              ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
+              0);
+    }
     EXPECT_GE(integrator->get_num_jacobian_evaluations(), 0);
-    EXPECT_GE(integrator->get_num_error_estimator_jacobian_evaluations(), 0);
+    if (integrator_supports_error_control_) {
+      EXPECT_GE(integrator->get_num_error_estimator_jacobian_evaluations(), 0);
+    }
     EXPECT_GE(integrator->get_num_iteration_matrix_factorizations(), 0);
-    EXPECT_GE(
-        integrator->get_num_error_estimator_iteration_matrix_factorizations(),
-        0);
+    if (integrator_supports_error_control_) {
+      EXPECT_GE(
+          integrator
+              ->get_num_error_estimator_iteration_matrix_factorizations(),
+              0);
+    }
     EXPECT_GE(integrator->get_num_substep_failures(), 0);
     EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
     EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
