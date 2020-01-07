@@ -12,57 +12,68 @@
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
-// #define USE_ERROR_CONTROL  // minimum effort to remove error control
 namespace drake {
 namespace systems {
 
+namespace internal {
+#ifndef DRAKE_DOXYGEN_CXX
+__attribute__((noreturn))
+inline void EmitNoErrorEstimatorStatAndMessage() {
+  throw std::logic_error("No error estimator is currently implemented, so "
+      "query error estimator statistics is not yet supported.");
+}
+#endif
+}  // namespace internal
+
+
 /**
- * A first-order, fully implicit integrator with second order error estimation.
+ * A first-order, fully implicit integrator optimized for second-order systems.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
- * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
- * this class, please refer to https://drake.mit.edu/cxx_inl.html.
+ * The velocity-implicit Euler integrator implements first-order implicit Euler
+ * by alternating between steps from Newton's method for solving the
+ * generalized velocity and miscellaneous states with fixed-point iterations
+ * for solving the position states.
  *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- *
- * TODO(antequ): support AutodiffXd
- * TODO(antequ): update this documentation to match the google doc.
- *
- * This integrator uses the following update rule:<pre>
- * x(t+h) = x(t) + h f(t+h,x(t+h))
+ * In particular, it solves a system of ordinary differential equations in
+ * state x = (q,v,z), such that<pre>
+ * q̇ = N(q) v;                          (1)
+ * ẏ = fᵥ(t,q,y),                       (2)
  * </pre>
- * where x are the state variables, h is the integration step size, and
- * f() returns the time derivatives of the state variables. Contrast this
- * update rule to that of an explicit first-order integrator:<pre>
- * x(t+h) = x(t) + h f(t, x(t))
- * </pre>
- * Thus implicit first-order integration must solve a nonlinear system of
- * equations to determine *both* the state at t+h and the time derivatives
- * of that state at that time. Cast as a nonlinear system of equations,
- * we seek the solution to:<pre>
- * x(t+h) - x(t) - h f(t+h,x(t+h)) = 0
- * </pre>
- * given unknowns x(t+h).
+ * where y = (v,z).
  *
- * This "implicit Euler" method is known to be L-Stable, meaning both that
- * applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
- * yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
- * A-Stability, in turn, means that the method can integrate the linear constant
- * coefficient system `dx/dt = Ax` at any step size without the solution
- * becoming unstable (growing without bound). The practical effect of
- * L-Stability is that the integrator tends to be stable for any given step size
- * on an arbitrary system of ordinary differential equations. See
- * [Lambert, 1991], Ch. 6 for an approachable discussion on stiff differential
- * equations and L- and A-Stability.
+ * Implicit Euler uses the following update rule at time step n:<pre>
+ * qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;          (3)
+ * yⁿ⁺¹ = yⁿ + h f(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).     (4)
+ * </pre>
+ *
+ * To solve the nonlinear system for (qⁿ⁺¹,yⁿ⁺¹), the velocity-implicit Euler
+ * integrator iterates the following with Newton's method: At iteration k, find
+ * (qₖ₊₁,yₖ₊₁) that satisfies<pre>
+ * yₖ₊₁ = yⁿ + h f(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);       (5)
+ * qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.              (6)
+ * </pre>
+ *
+ * To solve (5-6), first define<pre>
+ * lₖ(y) = f(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),      (7)
+ * Jₗₖ(y) = ∂lₖ(y) / ∂y.                   (8)
+ * </pre>
+ *
+ * (CalcVelocityJacobian() computes Jₗₖ(y) by automatic differentiation or
+ * numerical differencing.)
+ *
+ * Next, solve the following linear equation for Δy:<pre>
+ * (I - h Jₗₖ) Δy = - R(yₖ),               (9)
+ * </pre>
+ * where R(y) = y - yⁿ - h lₖ(y) and Δy = yₖ₊₁ - yₖ. We then directly use yₖ₊₁
+ * in (6) to get qₖ₊₁.
+ *
+ * TODO(antequ): support Error Control, AutodiffXd
  *
  * This implementation uses Newton-Raphson (NR) and relies upon the obvious
- * convergence to a solution for `g = 0` where
- * `g(x(t+h)) ≡ x(t+h) - x(t) - h f(t+h,x(t+h))` as `h` becomes sufficiently
- * small. It also uses the implicit trapezoid method- fed the result from
- * implicit Euler for (hopefully) faster convergence- to compute the error
- * estimate. General implementational details were gleaned from [Hairer, 1996].
+ * convergence to a solution for `R(y) = 0` where
+ * `R(y) = y - yⁿ - h lₖ(y)` as `h` becomes sufficiently small.
+ * General implementational details were gleaned from [Hairer, 1996].
  *
  * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
  *                    Equations II (Stiff and Differential-Algebraic Problems).
@@ -75,6 +86,8 @@ namespace systems {
  *       process. See IntegratorBase::set_target_accuracy() for more info.
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
+ * @see ImplicitEulerIntegrator class documentation for information about 
+ *      the "implicit Euler" integration method.
  */
 template <class T>
 class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
@@ -87,37 +100,12 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                                            Context<T>* context = nullptr)
       : ImplicitIntegrator<T>(system, context) {}
 
-  /// The integrator supports error estimation.
-  #ifdef USE_ERROR_CONTROL
-  bool supports_error_estimation() const final { return true; }
-  #else
+  // The integrator does not support error estimation.
   bool supports_error_estimation() const final { return false; }
-  #endif
-
-  /// The asymptotic order of the difference between the large and small steps
-  /// (from which the error estimate is computed) is O(h²).
-  int get_error_estimate_order() const final { return 2; }
-
-  /* Because the IntegratorBase dt is different from the half-step hs actually
-     used, we provide modified statistics here. */
-  // TODO(antequ): redesign this API in IntegratorBase so that the step size
-  //    adjustment logic still works while returning the true sizes
-  //    to the public
-  T get_vie_actual_initial_step_size_taken() const {
-    return 0.5 * IntegratorBase<T>::get_actual_initial_step_size_taken();
-  }
-  T get_vie_smallest_adapted_step_size_taken() const {
-    return 0.5 * IntegratorBase<T>::get_smallest_adapted_step_size_taken();
-  }
-  T get_vie_largest_step_size_taken() const {
-    return 0.5 * IntegratorBase<T>::get_largest_step_size_taken();
-  }
-
-  int get_vie_num_steps_taken() const {
-    return 2 * IntegratorBase<T>::get_num_steps_taken();
-  }
+  int get_error_estimate_order() const final { return 0; }
 
  protected:
+  // The integrator does not support autodiff or central differencing.
   bool do_supports_autodiff_and_central_differencing() const final {
     return false;
   }
@@ -128,25 +116,26 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
-    return num_err_est_function_evaluations_;
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
       const final {
-    return num_err_est_jacobian_function_evaluations_;
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
-  int64_t do_get_num_error_estimator_newton_raphson_iterations() const final {
-    return num_err_est_nr_iterations_;
+  int64_t do_get_num_error_estimator_newton_raphson_iterations()
+      const final {
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
-    return num_err_est_jacobian_reforms_;
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
       const final {
-    return num_err_est_iter_factorizations_;
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   void DoResetImplicitIntegratorStatistics() final;
@@ -155,8 +144,6 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
   void DoInitialize() final;
-  bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
-                         VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
 
   bool DoImplicitIntegratorStep(const T& h) final;
 
@@ -181,19 +168,17 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jv, int trial = 1);
 
-  /// velocity Jacobians for implicit euler and half implicit euler
+  /// velocity Jacobians for implicit euler
   MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
-  MatrixX<T>& get_mutable_velocity_jacobian_half_implicit_euler() {
-    return Jv_hie_;
-  }
+
 
   /// Compute the partial derivative of the ordinary differential equations with
   /// respect to the y variables of a given x(t). In particular, we compute the
   /// Jacobian, Jₗₖ(y), of the function lₖ(y), used in this integrator's
   /// residual computation, with respect to y. As defined before, y = (v,z) and
   /// x = (q,v,z). This Jacobian is then defined as:
-  ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (9)
-  ///     Jₗₖ(y) = ∂lₖ(y)/∂y                     (10)
+  ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (7)
+  ///     Jₗₖ(y) = ∂lₖ(y)/∂y                      (8)
   /// @param t refers to tⁿ⁺¹, the time used in the definition of lₖ(y)
   /// @param h is the timestep size parameter, h, used in the definition of
   ///        lₖ(y)
@@ -210,8 +195,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// the function lₖ(y), used in this integrator's residual computation, with
   /// respect to y. As defined before, y = (v, z). This Jacobian is then defined
   /// as:
-  ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (9)
-  ///     Jₗₖ(y) = ∂lₖ(y)/∂y                     (10)
+  ///     lₖ(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (7)
+  ///     Jₗₖ(y) = ∂lₖ(y)/∂y                      (8)
   //
   /// In this method, we compute the Jacobian Jₗₖ(y) using a first-order forward
   /// difference (i.e. numerical differentiation),
@@ -285,7 +270,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// This helper method evaluates the Newton-Raphson residual R(y), defined as
   /// the following:
   ///   R(y)  = y - yⁿ - h lₖ(y),
-  ///   lₖ(y) = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (9)
+  ///   lₖ(y) = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
   ///  with tⁿ⁺¹, qₖ, y derived from the context and qⁿ, yⁿ, h passed in.
   /// @param qt0 is qⁿ, the generalized position at the beginning of the step
   /// @param yt0 is yⁿ, the generalized velocity and miscellaneous states at the
@@ -300,53 +285,28 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // The last computed iteration matrix and factorization; the _ie_ is for
   // the large step and the _hie_ is for the small step
-  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_,
-      iteration_matrix_hie_;
-
-  // Vector used in error estimate calculations.
-  VectorX<T> err_est_vec_;
+  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_;
 
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
   // Variables to avoid heap allocations.
-  VectorX<T> xt0_, xdot_, xtplus_ie_, xtplus_hie_;
+  VectorX<T> xt0_, xdot_, xtplus_ie_;
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
-  int64_t num_nr_iterations_that_end_in_failure_{0};
-  int64_t num_nr_failures_{0};
 
   // The last computed velocity+misc Jacobian matrices.
   MatrixX<T> Jv_ie_;
-  MatrixX<T> Jv_hie_;
 
   // Second order Runge-Kutta method for estimating the integration error when
   // the requested step size lies below the working step size.
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
-
-  // Implicit trapezoid specific statistics.
-  int64_t num_err_est_jacobian_reforms_{0};
-  int64_t num_err_est_iter_factorizations_{0};
-  int64_t num_err_est_function_evaluations_{0};
-  int64_t num_err_est_jacobian_function_evaluations_{0};
-  int64_t num_err_est_nr_iterations_{0};
-  int64_t num_err_est_nr_iterations_that_end_in_failure_{0};
-  int64_t num_err_est_nr_failures_{0};
 };
 
 template <class T>
 void VelocityImplicitEulerIntegrator<T>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
-  num_nr_iterations_that_end_in_failure_ = 0;
-  num_nr_failures_ = 0;
-  num_err_est_nr_iterations_ = 0;
-  num_err_est_function_evaluations_ = 0;
-  num_err_est_jacobian_function_evaluations_ = 0;
-  num_err_est_jacobian_reforms_ = 0;
-  num_err_est_iter_factorizations_ = 0;
-  num_err_est_nr_iterations_that_end_in_failure_ = 0;
-  num_err_est_nr_failures_ = 0;
 }
 
 template <class T>
@@ -355,42 +315,13 @@ void VelocityImplicitEulerIntegrator<T>::DoInitialize() {
 
   // Allocate storage for changes to state variables during Newton-Raphson.
   dx_state_ = this->get_system().AllocateTimeDerivatives();
-#ifdef USE_ERROR_CONTROL
-  const double kDefaultAccuracy = 1e-1;  // Good for this particular integrator.
-  const double kLoosestAccuracy = 5e-1;  // Loosest accuracy is quite loose.
 
-  // Set an artificial step size target, if not set already.
-  if (isnan(this->get_initial_step_size_target())) {
-    // Verify that maximum step size has been set.
-    if (isnan(this->get_maximum_step_size()))
-      throw std::logic_error(
-          "Neither initial step size target nor maximum "
-          "step size has been set!");
-
-    this->request_initial_step_size_target(this->get_maximum_step_size());
-  }
-
-  // Sets the working accuracy to a good value.
-  double working_accuracy = this->get_target_accuracy();
-
-  // If the user asks for accuracy that is looser than the loosest this
-  // integrator can provide, use the integrator's loosest accuracy setting
-  // instead.
-  if (isnan(working_accuracy))
-    working_accuracy = kDefaultAccuracy;
-  else if (working_accuracy > kLoosestAccuracy)
-    working_accuracy = kLoosestAccuracy;
-  this->set_accuracy_in_use(working_accuracy);
-#else
-  // Arbitrarily chosen accuracy for the fixed step integrator.
-  // this->set_accuracy_in_use(1e-3);
   // Verify that the maximum step size has been set.
   if (isnan(this->get_maximum_step_size()))
     throw std::logic_error("Maximum step size has not been set!");
-#endif
+
   // Reset the Jacobian matrix (so that recomputation is forced).
   this->get_mutable_velocity_jacobian_implicit_euler().resize(0, 0);
-  this->get_mutable_velocity_jacobian_half_implicit_euler().resize(0, 0);
 
   // Initialize the embedded second order Runge-Kutta integrator. The maximum
   // step size will be set to infinity because we will explicitly request the
@@ -497,9 +428,6 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     }
     dyj = y_prime(j) - y(j);
 
-    // TODO(sherm1) This is invalidating q, v, and z but we only changed a
-    //              subset. Switch to a method that invalides just the relevant
-    //              partition, and ideally modify only the changed elements.
     // Compute lₖ(y') and set the relevant column of the Jacobian matrix.
     context->SetTimeAndContinuousState(t, x_prime);
     Jv->col(j) =
@@ -715,15 +643,8 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
 
   // Refresh Jacobian and iteration matrices (and factorizations),
   // as needed, around (t0, xt0).
-#ifdef FULL_NEWTON
-  // Set the trial number to 3 to force a Jacobian recomputation.
-  if (trial < 3) trial = 3;
-  if (!this->MaybeFreshenVelocityMatrices(
-          tf, *xtplus, qt0, h, trial,
-#else
   if (!this->MaybeFreshenVelocityMatrices(
           t0, xt0, qt0, h, trial,
-#endif
           ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix, Jv)) {
     return false;
   }
@@ -732,8 +653,6 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
   // equation:
   //     (I - h Jₗₖ) Δy = yⁿ - yₖ + h lₖ(yₖ), Δy = yₖ₊₁ - yₖ
   VectorX<T> residual = ComputeResidualR(qt0, yt0, h);
-
-  int num_nr_iterations_at_beginning = num_nr_iterations_;
 
   // Do the Newton-Raphson iterations.
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
@@ -763,14 +682,11 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
-#ifdef USE_ERROR_CONTROL
-    T dx_norm = this->CalcStateChangeNorm(*dx_state_);
-#else
+
     // TODO(antequ): Replace this with CalcStateChangeNorm() when error
     // control has been implemented.
     // Get the norm of the update vector.
     T dx_norm = dx_state_->CopyToVector().norm();
-#endif
 
     context->SetTimeAndContinuousState(tf, *xtplus);
 
@@ -807,22 +723,10 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     last_dx_norm = dx_norm;
     last_qtplus = qtplus;
 
-#ifdef FULL_NEWTON
-    // update the Jacobian for full newton
-    if (!this->MaybeFreshenVelocityMatrices(
-            tf, *xtplus, qt0, h, trial,
-            ComputeAndFactorImplicitEulerIterationMatrix, iteration_matrix,
-            Jv)) {
-      return false;
-    }
-#endif
     residual = ComputeResidualR(qt0, yt0, h);
   }
 
   DRAKE_LOGGER_DEBUG("VIE convergence failed");
-  num_nr_iterations_that_end_in_failure_ +=
-      num_nr_iterations_ - num_nr_iterations_at_beginning;
-  num_nr_failures_++;
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
@@ -835,54 +739,6 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
 }
 
 template <class T>
-bool VelocityImplicitEulerIntegrator<T>::AttemptStepPaired(
-    const T& t0, const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus_ie,
-    VectorX<T>* xtplus_hie) {
-  using std::abs;
-  DRAKE_ASSERT(xtplus_ie);
-  DRAKE_ASSERT(xtplus_hie);
-
-  // Use the current state as the candidate value for the next state.
-  // [Hairer 1996] validates this choice (p. 120).
-  const VectorX<T>& xtplus_guess = xt0;
-
-  // Do the Implicit Euler step.
-  if (!StepImplicitEuler(t0, h, xt0, xtplus_guess, xtplus_ie,
-                         &iteration_matrix_ie_, &Jv_ie_)) {
-    DRAKE_LOGGER_DEBUG(
-        "SO Implicit Euler approach did not converge for "
-        "step size {}",
-        h);
-    return false;
-  }
-#ifdef USE_ERROR_CONTROL
-  // Do the half Implicit Euler steps.
-  // TODO(antequ): consider turning this off for fixed step mode (this needs
-  //   to stay on to pass some of the error-control tests.). To do so, just
-  //   begin the if statement with "if (this->get_fixed_step_mode() || "
-  // REUSE the Jacobian and A Matrix from the big step because it works quite
-  //   well from the examples Ante ran.
-  if (StepHalfImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie,
-                             &iteration_matrix_ie_, &Jv_ie_)) {
-    Context<T>* context = this->get_mutable_context();
-    // As per discussions, we propagate the half steps
-    context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
-
-    return true;
-  } else {
-    DRAKE_LOGGER_DEBUG(
-        "SO Implicit Euler half-step approach failed with a step size "
-        "that succeeded for the normal approach {}",
-        h);
-    return false;
-  }
-#else
-  this->get_mutable_context()->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
-  return true;
-#endif
-}
-
-template <class T>
 bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Save the current time and state.
   Context<T>* context = this->get_mutable_context();
@@ -891,7 +747,6 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
 
   xt0_ = context->get_continuous_state().CopyToVector();
   xtplus_ie_.resize(xt0_.size());
-  xtplus_hie_.resize(xt0_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
@@ -900,50 +755,30 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
         "-- requested step too small, taking explicit "
         "step instead");
 
-    // The error estimation process for explicit Euler uses an explicit second
-    // order Runge-Kutta method so that the order of the asymptotic term
-    // matches that used for estimating the error of the implicit Euler
-    // integrator.
-
     // Compute the explicit Euler step.
     xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
     xtplus_ie_ = xt0_ + h * xdot_;
-
-    // Compute the RK2 step.
-    const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
-    if (!rk2_->IntegrateWithSingleFixedStepToTime(t0 + h)) {
-      throw std::runtime_error(
-          "Embedded RK2 integrator failed to take a single"
-          "fixed step to the requested time.");
-    }
-
-    const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
-    xtplus_hie_ = context->get_continuous_state().CopyToVector();
-
-    // Update the error estimation ODE counts.
-    num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
-
-    // Revert the state to that computed by explicit Euler.
-    context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
   } else {
-    // Try taking the requested step.
-    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_hie_);
+    // Use the current state as the candidate value for the next state.
+    // [Hairer 1996] validates this choice (p. 120).
+    const VectorX<T>& xtplus_guess = xt0_;
+    bool success = StepImplicitEuler(t0, h, xt0_, xtplus_guess, &xtplus_ie_,
+                         &iteration_matrix_ie_, &Jv_ie_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
+      DRAKE_LOGGER_DEBUG(
+        "SO Implicit Euler approach did not converge for "
+        "step size {}",
+        h);
       context->SetTimeAndContinuousState(t0, xt0_);
       return false;
     }
   }
-#ifdef USE_ERROR_CONTROL
-  // Compute and update the error estimate. IntegratorBase will use the norm of
-  // this vector to adjust step size.
-  err_est_vec_ = (xtplus_ie_ - xtplus_hie_);
 
-  // Update the caller-accessible error estimate.
-  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(
-      err_est_vec_);
-#endif
+  // Set the state to the computed state.
+  context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
+
   return true;
 }
 
