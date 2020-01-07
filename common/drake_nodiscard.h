@@ -1,7 +1,7 @@
 #pragma once
 
-// TODO(jwnimmer-tri) Once we are in --std=c++17 mode as our minimum version,
-// we can remove this file and just say [[nodiscard]] directly everywhere.
+// NOLINTNEXTLINE
+#warning DRAKE DEPRECATED: The drake/common/drake_nodiscard.h header is being removed from Drake on or after 2020-05-01.  Instead, developers should use [[nodiscard]] directly.
 
 #if defined(DRAKE_DOXYGEN_CXX) || __has_cpp_attribute(nodiscard)
 /** Synonym for [[nodiscard]], iff the current compiler supports it;

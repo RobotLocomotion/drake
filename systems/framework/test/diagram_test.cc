@@ -1517,7 +1517,7 @@ class SecondOrderStateVector : public BasicVector<double> {
   void set_v(double v) { SetAtIndex(1, v); }
 
  protected:
-  DRAKE_NODISCARD SecondOrderStateVector* DoClone() const override {
+  [[nodiscard]] SecondOrderStateVector* DoClone() const override {
     return new SecondOrderStateVector;
   }
 };

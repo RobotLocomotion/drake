@@ -11,7 +11,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/geometry/proximity/surface_mesh.h"

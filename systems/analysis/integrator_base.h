@@ -7,7 +7,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/hermitian_dense_output.h"
@@ -1038,7 +1037,7 @@ class IntegratorBase {
      integrator convergence)
    - Takes only a single step forward.
    */
-  DRAKE_NODISCARD bool IntegrateWithSingleFixedStepToTime(const T& t_target) {
+  [[nodiscard]] bool IntegrateWithSingleFixedStepToTime(const T& t_target) {
     using std::max;
     using std::abs;
 
