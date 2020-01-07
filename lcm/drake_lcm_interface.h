@@ -71,9 +71,6 @@ class DrakeLcmInterface {
    *
    * NOTE: Unlike upstream LCM, DrakeLcm does not support regexes for the
    * `channel` argument.
-   * TODO(#12523) Some implementations may provide this capability, but users
-   * should not rely on this functionality which will be removed in the
-   * future.
    *
    * @param channel The channel to subscribe to.
    * Must not be the empty string.
