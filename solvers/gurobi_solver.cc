@@ -19,6 +19,7 @@
 #include "gurobi_c.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
@@ -29,14 +30,6 @@
 namespace drake {
 namespace solvers {
 namespace {
-
-// TODO(jwnimmer-tri) Add a reusable scope_guard to //common.
-// Make a scope exit guard -- an object that when destroyed runs `func`.
-auto MakeGuard(std::function<void()> func) {
-  // The shared_ptr deleter func is always invoked, even for nullptrs.
-  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
-  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
-}
 
 // Information to be passed through a Gurobi C callback to
 // grant it information about its problem (the host
@@ -778,9 +771,9 @@ void GurobiSolver::DoSolve(
   GRBmodel* model = nullptr;
   GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
               &xupp[0], gurobi_var_type.data(), nullptr);
-  auto guard = MakeGuard([model]() {
-      GRBfreemodel(model);
-    });
+  ScopeExit guard([model]() {
+    GRBfreemodel(model);
+  });
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
