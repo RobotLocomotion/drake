@@ -9,7 +9,7 @@ namespace drake {
 namespace geometry {
 namespace {
 
-using mesh_intersection::HalfSpace;
+using internal::mesh_intersection::HalfSpace;
 
 template <typename T>
 class MeshHalfspaceIntersectionTest : public ::testing::Test {

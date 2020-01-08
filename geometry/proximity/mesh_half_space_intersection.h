@@ -297,7 +297,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<T>& input_mesh_F,
-    const mesh_intersection::HalfSpace<T>& half_space_F) {
+    const internal::mesh_intersection::HalfSpace<T>& half_space_F) {
   std::vector<SurfaceVertex<T>> new_vertices_F;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
