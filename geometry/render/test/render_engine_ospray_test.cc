@@ -571,6 +571,51 @@ TEST_F(RenderEngineOsprayTest, CylinderTest) {
   }
 }
 
+// Performs the shape-centered-in-the-image test with an ellipsoid rotated
+// three different ways for confirming each extent axis.
+TEST_F(RenderEngineOsprayTest, EllipsoidTest) {
+  Init(X_WC_, true);
+
+  // Sets up an ellipsoid.
+  const double a = 0.25;
+  const double b = 0.4;
+  const double c = 0.5;
+  Ellipsoid ellipsoid(a, b, c);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, ellipsoid, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+
+  // By default the 'c' extent of the ellipsoid is aligned with the z-axis of
+  // the world. For the test we need to align the top of the ellipsoid to be 1m
+  // above the terrain. So since the 'c' dimension is 0.5m, we raise the
+  // ellipsoid along the z-axis by an additional 0.5m.
+  RigidTransformd X_WV{Vector3d{0, 0, 0.5}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: c extent");
+
+  // Rotate the ellipsoid so that the 'b' extent is aligned with the z-axis of
+  // the world. The 'b' dimension is 0.4m so we need to raise it by an
+  // additional 0.6m to be 1m above the terrain.
+  X_WV =
+      RigidTransformd{RotationMatrixd{AngleAxisd(-M_PI / 2, Vector3d::UnitX())},
+                      Vector3d{0, 0, 0.6}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: b extent");
+
+  // Rotate the ellipsoid so that the 'a' extent is aligned with the z-axis of
+  // the world. The 'a' dimension is 0.25m so we need to raise it by an
+  // additional 0.75m to be 1m above the terrain.
+  X_WV =
+      RigidTransformd{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
+                      Vector3d{0, 0, 0.75}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: a extent");
+}
+
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
 // be a box). This simultaneously confirms that if a diffuse_map is specified
 // but it doesn't refer to a file that can be read, that the appearance defaults

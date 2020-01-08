@@ -211,9 +211,12 @@ void RenderEngineOspray::ImplementGeometry(const Box& box, void* user_data) {
 
 void RenderEngineOspray::ImplementGeometry(const Capsule& capsule,
                                            void* user_data) {
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  CreateVtkCapsule(transform_filter, capsule.radius(), capsule.length());
-  ImplementGeometry(transform_filter.GetPointer(), user_data);
+  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(), user_data);
+}
+
+void RenderEngineOspray::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                           void* user_data) {
+  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Mesh& mesh, void* user_data) {
