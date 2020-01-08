@@ -39,8 +39,8 @@ struct SoftMesh {
            std::unique_ptr<VolumeMeshField<double, double>> pressure_in)
       : mesh(std::move(mesh_in)),
         pressure(std::move(pressure_in)),
-        // TODO(tehbelinda): Create BVH once we start using it.
-        bvh(nullptr) {
+        bvh(std::make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(
+            *mesh)) {
     DRAKE_ASSERT(mesh.get() == &pressure->mesh());
   }
 };
@@ -70,6 +70,11 @@ class SoftGeometry {
     return *geometry_.pressure;
   }
 
+  /** Returns a reference to the bounding volume hierarchy.  */
+  const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh() const {
+    return *geometry_.bvh;
+  }
+
  private:
   SoftMesh geometry_;
 };
@@ -85,8 +90,8 @@ struct RigidMesh {
 
   explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh_in)
       : mesh(std::move(mesh_in)),
-        // TODO(tehbelinda): Create BVH once we start using it.
-        bvh(nullptr) {}
+        bvh(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
+            *mesh)) {}
 };
 
 /** The base representation of rigid geometries. A rigid geometry is represented
@@ -104,6 +109,11 @@ class RigidGeometry {
 
   /** Returns a reference to the surface mesh.  */
   const SurfaceMesh<double>& mesh() const { return *geometry_.mesh; }
+
+  /** Returns a reference to the bounding volume hierarchy.  */
+  const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh() const {
+    return *geometry_.bvh;
+  }
 
  private:
   RigidMesh geometry_;

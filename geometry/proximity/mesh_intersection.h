@@ -9,6 +9,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -18,9 +19,7 @@
 
 namespace drake {
 namespace geometry {
-
-// TODO(sean-curtis) Move this to a more common namespace.
-namespace mesh_intersection {
+namespace internal {
 
 #ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
 
@@ -45,16 +44,17 @@ namespace mesh_intersection {
 //  tetrahedrons.
 
 /** Definition of a half space. It is defined by the implicit equation
- `H(x⃗) = n̂⋅x⃗ - d <= 0`. A particular instance is defined in a particular frame F
- such that `H(p_QF) > 0` if the point Q (measured and expressed in F) is outside
- the half space.
+ `H(x⃗) = n̂⋅x⃗ - d <= 0`. A particular instance is defined by a boundary plane in
+ a particular frame F with its normal pointing out of the half space such that
+ `H(p_QF) > 0` if the point Q (measured and expressed in F) is outside the
+ half space.
  */
 template <typename T>
-class HalfSpace {
+class Plane {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Plane)
 
-  /** Constructs a HalfSpace in frame F.
+  /** Constructs a Plane in frame F.
    @param nhat_F
        A unit-length vector perpendicular to the half space's planar boundary
        expressed in frame F (the `n̂` in the implicit equation).
@@ -64,7 +64,7 @@ class HalfSpace {
    @pre
        ‖nhat_F‖₂ = 1.
    */
-  HalfSpace(const Vector3<T>& nhat_F, const T& displacement)
+  Plane(const Vector3<T>& nhat_F, const T& displacement)
       : nhat_F_(nhat_F), displacement_(displacement) {
     using std::abs;
     // Note: This may *seem* like a very tight threshold for determining if a
@@ -111,8 +111,9 @@ class HalfSpace {
  @param p_FB
      Point B measured and expressed in the common frame F.
  @param H_F
-     The half space H expressed in frame F (i.e., points also expressed in frame
-     F can be tested against it).
+     The half space H, as represented by its boundary plane with the plane's
+     normal pointing out of the half space, expressed in frame F (i.e., points
+     also expressed in frame F can be tested against it).
  @pre
      1. Points A and B are not coincident.
      2. One of A and B is outside the half space (and the other is contained in
@@ -122,9 +123,8 @@ class HalfSpace {
         of the half space.
  */
 template <typename T>
-Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
-                            const Vector3<T>& p_FB,
-                            const HalfSpace<T>& H_F) {
+Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                            const Plane<T>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
@@ -139,7 +139,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
   // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
   // too small.
   const T kEps(1e-14);
-  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into* HalfSpace
+  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into* Plane
   //  if it turns out we need to perform this test at other sites.
   // Verify that the intersection point is on the plane of the half space.
   using std::abs;
@@ -175,7 +175,8 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
      Input polygon is represented as a sequence of positions of its vertices.
      The input polygon is allowed to have zero area.
  @param[in] H_F
-     The clipping half space H in frame F.
+     The clipping half space H in frame F, represented by its boundary plane
+     with the plane's normal pointing out of the half space.
  @return
      Output polygon is represented as a sequence of positions of its vertices.
      It could be an empty sequence if the input polygon is entirely outside
@@ -204,8 +205,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
 */
 template <typename T>
 std::vector<Vector3<T>> ClipPolygonByHalfSpace(
-    const std::vector<Vector3<T>>& polygon_vertices_F,
-    const HalfSpace<T>& H_F) {
+    const std::vector<Vector3<T>>& polygon_vertices_F, const Plane<T>& H_F) {
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
   // clipping a polygon.
   std::vector<Vector3<T>> output_vertices_F;
@@ -382,7 +382,7 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     const Vector3<T>& p_MC = p_MVs[face_vertex[2]];
     const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA).normalized();
     T height = normal_M.dot(p_MA);
-    HalfSpace<T> half_space_M(normal_M, height);
+    Plane<T> half_space_M(normal_M, height);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     polygon_M = ClipPolygonByHalfSpace(polygon_M, half_space_M);
@@ -469,13 +469,17 @@ void AddPolygonToMeshData(
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
 //  remove the note in the function documentation.
 
+// TODO(tehbelinda): Restructure how the intersecting mesh and field are
+// returned and stop passing around bare pointers to unique_ptrs.
+
 /** Samples a field on a two-dimensional manifold. The field is defined over
  a volume mesh and the manifold is the intersection of the volume mesh and a
  surface mesh. The resulting manifold's topology is a function of both the
  volume and surface mesh topologies and has normals drawn from the surface mesh.
  Computes the intersecting surface `surface_MN` between a soft geometry M
  and a rigid geometry N, and sets the pressure field and the normal vector
- field on `surface_MN`.
+ field on `surface_MN`. This does not use any broadphase culling but compares
+ each element of the meshes.
  @param[in] volume_field_M
      The field to sample from. The field contains the volume mesh M that defines
      its domain. The vertex positions of the mesh are measured and expressed in
@@ -502,23 +506,11 @@ void SampleVolumeFieldOnSurface(
     const math::RigidTransform<T>& X_MN,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN) {
-
-  // TODO(DamrongGuoy): Store normal_field_N in SurfaceMesh to avoid
-  //  recomputing every time. Right now it is not straightforward to store
-  //  SurfaceMeshField inside SurfaceMesh due to imperfect library packaging.
-  //  SurfaceMeshField already depended on SurfaceMesh, and storing
-  //  SurfaceMeshField inside SurfaceMesh will make SurfaceMesh depend on
-  //  SurfaceMeshField. This circular dependency might need both SurfaceMesh
-  //  and SurfaceMeshField to be in the same header file, or we might need to
-  //  break the .h into .h and -inl.h like in multibody_tree{-inl}.h.
   std::vector<SurfaceFace> surface_faces;
   std::vector<SurfaceVertex<T>> surface_vertices_M;
   std::vector<T> surface_e;
-  std::vector<Vector3<T>> surface_normals_M;
   const auto& mesh_M = volume_field_M.mesh();
 
-  // TODO(DamrongGuoy): Use the broadphase to avoid O(n^2) check of all
-  //  tetrahedrons against all triangles.
   for (VolumeElementIndex tet_index(0); tet_index < mesh_M.num_elements();
        ++tet_index) {
     for (SurfaceFaceIndex tri_index(0); tri_index < surface_N.num_faces();
@@ -548,21 +540,80 @@ void SampleVolumeFieldOnSurface(
       }
     }
   }
+
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
-  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
-      std::move(surface_faces), std::move(surface_vertices_M));
-  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get());
+  if (surface_vertices_M.size() > 0) {
+    *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
+        std::move(surface_faces), std::move(surface_vertices_M));
+    *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+        "e", std::move(surface_e), surface_MN_M->get());
+  }
+}
+
+/** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
+ reduce the number of element-pairs evaluated.  */
+template <typename T>
+void SampleVolumeFieldOnSurface(
+    const VolumeMeshField<T, T>& volume_field_M,
+    const BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M,
+    const SurfaceMesh<T>& surface_N,
+    const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_N,
+    const math::RigidTransform<T>& X_MN,
+    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
+    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN) {
+  std::vector<SurfaceFace> surface_faces;
+  std::vector<SurfaceVertex<T>> surface_vertices_M;
+  std::vector<T> surface_e;
+  const auto& mesh_M = volume_field_M.mesh();
+
+  auto callback = [&volume_field_M, &surface_N, &surface_faces,
+                   &surface_vertices_M, &surface_e, &mesh_M,
+                   &X_MN](VolumeElementIndex tet_index,
+                          SurfaceFaceIndex tri_index) -> BvttCallbackResult {
+    // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
+    //  positions. Specifically, each vertex will be transformed M times (once
+    //  per tetrahedron. Even with broadphase culling, this vertex will get
+    //  transformed once for each tet-tri pair where the tri is incidental
+    //  to the vertex and the tet-tri pair can't be conservatively culled.
+    //  This is O(mn), where m is the number of faces incident to the vertex
+    //  and n is the number of tet BVs that overlap this triangle BV. However,
+    //  if the broadphase culling determines the surface and volume are
+    //  disjoint regions, *no* vertices will be transformed. Unclear what the
+    //  best balance for best average performance.
+    std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
+        tet_index, mesh_M, tri_index, surface_N, X_MN);
+    const int num_previous_vertices = surface_vertices_M.size();
+    AddPolygonToMeshData(polygon_vertices_M, &surface_faces,
+                         &surface_vertices_M);
+    const int num_current_vertices = surface_vertices_M.size();
+    // Calculate values of the pressure field and the normal field at the
+    // new vertices.
+    for (int v = num_previous_vertices; v < num_current_vertices; ++v) {
+      const Vector3<T>& r_MV = surface_vertices_M[v].r_MV();
+      const T pressure = volume_field_M.EvaluateCartesian(tet_index, r_MV);
+      surface_e.push_back(pressure);
+    }
+    return BvttCallbackResult::Continue;
+  };
+  bvh_M.Collide(bvh_N, X_MN, callback);
+
+  DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
+  if (surface_vertices_M.size() > 0) {
+    *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
+        std::move(surface_faces), std::move(surface_vertices_M));
+    *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+        "e", std::move(surface_e), surface_MN_M->get());
+  }
 }
 
 /** Computes the contact surface between a soft geometry S and a rigid
- geometry R.
+ geometry R. This does not use any broadphase culling.
  @param[in] id_S
      Id of the soft geometry S.
  @param[in] field_S
      A scalar field defined on the soft volume mesh S. Mesh S's vertices are
-     defined in S's frame. The scalar field is likewise defined in frame S (that
-     is, it can only be evaluated on points which have been measured and
+     defined in S's frame. The scalar field is likewise defined in frame S
+ (that is, it can only be evaluated on points which have been measured and
      expressed in frame S). For hydroelastic contact, the scalar field is a
      "pressure" field.
  @param[in] X_WS
@@ -576,11 +627,11 @@ void SampleVolumeFieldOnSurface(
  @param[in] X_WR
      The pose of the rigid frame R in the world frame W.
  @return
-     The contact surface between M and N. Geometries S and R map to M and N with
-     a consistent mapping (as documented in ContactSurface) but without any
+     The contact surface between M and N. Geometries S and R map to M and N
+ with a consistent mapping (as documented in ContactSurface) but without any
      guarantee as to what that mapping is. Positions of vertex coordinates are
-     expressed in the world frame. The pressure distribution comes from the soft
-     geometry S. The normal vector field, expressed in the world frame frame,
+     expressed in the world frame. The pressure distribution comes from the
+ soft geometry S. The normal vector field, expressed in the world frame frame,
      comes from the rigid geometry R.
 
                      ooo   soft S
@@ -597,8 +648,50 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
-    const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
+    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
+    const SurfaceMesh<T>& mesh_R, const math::RigidTransform<T>& X_WR) {
+  // TODO(SeanCurtis-TRI): This function is insufficiently templated.
+  // Generally,
+  //  there are three types of scalars: the pose scalar, the mesh field
+  //  *value* scalar, and the mesh vertex-position scalar. However, short
+  //  term, it is probably unnecessary to distinguish all three here. If we
+  //  assume that this function is *only* called to find the contact surface
+  //  between two declared geometries, then the volume mesh values and vertex
+  //  positions will always be in double. However, even dividing between pose
+  //  and mesh scalars has *huge* downstream implications on how the meshes
+  //  and mesh fields are defined. We're deferring this work by simply
+  //  disallowing invocation of this method on AutoDiffXd (see below). It
+  //  compiles, but throws.
+
+  // Compute the transformation from the rigid frame to the soft frame.
+  const math::RigidTransform<T> X_SR = X_WS.inverse() * X_WR;
+
+  // The mesh will be computed in Frame S and then transformed to the world
+  // frame.
+  std::unique_ptr<SurfaceMesh<T>> surface_SR;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
+
+  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR, &e_SR);
+
+  if (surface_SR == nullptr) return nullptr;
+
+  // Transform the mesh from the S frame to the world frame.
+  surface_SR->TransformVertices(X_WS);
+
+  return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
+                                             std::move(e_SR));
+}
+
+/** A variant of ComputeContactSurfaceFromSoftVolumeRigidSurface but with
+ broad-phase culling to reduce the number of element-pairs evaluated.  */
+template <typename T>
+std::unique_ptr<ContactSurface<T>>
+ComputeContactSurfaceFromSoftVolumeRigidSurface(
+    const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
+    const BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_S,
+    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
+    const SurfaceMesh<T>& mesh_R,
+    const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_R,
     const math::RigidTransform<T>& X_WR) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
@@ -619,13 +712,16 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
-  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR, &e_SR);
+  SampleVolumeFieldOnSurface(field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR,
+                             &e_SR);
+
+  if (surface_SR == nullptr) return nullptr;
 
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
 
-  return std::make_unique<ContactSurface<T>>(
-      id_S, id_R, std::move(surface_SR), std::move(e_SR));
+  return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
+                                             std::move(e_SR));
 }
 
 // NOTE: This is a short-term hack to allow ProximityEngine to compile when
@@ -639,8 +735,17 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<AutoDiffXd>&, const GeometryId,
     const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&);
 
+std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurfaceFromSoftVolumeRigidSurface(
+    const GeometryId, const VolumeMeshField<double, double>&,
+    const BoundingVolumeHierarchy<VolumeMesh<double>>&,
+    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
+    const SurfaceMesh<double>&,
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
+    const math::RigidTransform<AutoDiffXd>&);
+
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
 
-}  // namespace mesh_intersection
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
