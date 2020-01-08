@@ -164,20 +164,26 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // TODO(edrumwri) Consider computing the Jacobian matrix around tf.
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
-  // around (t0, xt0).
-  // TODO(edrumwri) Consider computing the Jacobian matrix around xtplus. This
-  //                would give a better Jacobian, but would complicate the
-  //                logic, since the Jacobian would no longer (necessarily) be
-  //                fresh upon fallback to a smaller step size.
-  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial,
-      compute_and_factor_iteration_matrix, iteration_matrix)) {
+  // around (t0, xt0). We do not do this calculation if full Newton is in use;
+  // the calculation will be performed at the beginning of the loop instead.
+  // TODO(edrumwri) Consider computing the Jacobian matrix around tf and/or
+  //                xtplus. This would give a better Jacobian, but would
+  //                complicate the logic, since the Jacobian would no longer
+  //                (necessarily) be fresh upon fallback to a smaller step size.
+  if (!this->get_use_full_newton() &&
+      !this->MaybeFreshenMatrices(t0, xt0, h, trial,
+                                  compute_and_factor_iteration_matrix,
+                                  iteration_matrix)) {
     return false;
   }
 
   // Do the Newton-Raphson iterations.
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
+    this->FreshenMatricesIfFullNewton(tf, *xtplus, h,
+                                      compute_and_factor_iteration_matrix,
+                                      iteration_matrix);
+
     // Evaluate the residual error using:
     // g(x(t0+h)) = x(t0+h) - x(t0) - h f(t0+h,x(t0+h)).
     VectorX<T> goutput = g();
@@ -246,7 +252,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   DRAKE_LOGGER_DEBUG("StepAbstract() convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
-  // is nothing else we can try.
+  // is nothing else we can try.  Note that get_reuse() returns false if
+  // "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 
