@@ -129,6 +129,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        "//geometry:shape_specification",
         "//third_party/com_github_finetjul_bender:vtkCapsuleSource",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkFiltersSources",

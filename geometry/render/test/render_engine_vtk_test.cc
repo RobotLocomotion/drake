@@ -64,12 +64,13 @@ const double kColorPixelTolerance = 1.001;
 // 2 at the point of the sphere directly underneath the camera (the sphere's
 // "peak"). However, with an even-valued window dimension, we never really
 // sample that point. We sample the center of pixels all evenly arrayed around
-// that point. So, that introduces some error. As the image gets *smaller* the
-// pixels get bigger and so the distance away from the peak center increases,
-// which, in turn, increase the measured distance for the fragment. This
-// tolerance accounts for the test case where one image has pixels that are *4X*
-// larger (in area) than the default image size.
-const double kDepthTolerance = 2e-4;
+// that point. So, that introduces some error. This error is further increased
+// in ellipsoid tests when sampling around the elongated ends. As the image gets
+// *smaller* the pixels get bigger and so the distance away from the peak center
+// increases, which, in turn, increase the measured distance for the fragment.
+// This tolerance accounts for the test case where one image has pixels that are
+// *4X* larger (in area) than the default image size.
+const double kDepthTolerance = 1e-3;
 
 // Background (sky) and terrain colors.
 const ColorI kBgColor = {254u, 127u, 0u};
@@ -695,7 +696,7 @@ TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
   }
 }
 
-// Performs the shape-centered-in-the-image test  with a cylinder.
+// Performs the shape-centered-in-the-image test with a cylinder.
 TEST_F(RenderEngineVtkTest, CylinderTest) {
   for (const bool use_texture : {false, true}) {
     Init(X_WC_, true);
@@ -716,6 +717,52 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
         use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
     PerformCenterShapeTest(renderer_.get(), "Cylinder test");
   }
+}
+
+// Performs the shape-centered-in-the-image test with an ellipsoid rotated
+// three different ways for confirming each extent axis.
+TEST_F(RenderEngineVtkTest, EllipsoidTest) {
+  Init(X_WC_, true);
+
+  // Sets up an ellipsoid.
+  const double a = 0.25;
+  const double b = 0.4;
+  const double c = 0.5;
+  Ellipsoid ellipsoid(a, b, c);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, ellipsoid, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+
+  const double target_z = 1.0;
+
+  // By default the 'c' extent of the ellipsoid is aligned with the z-axis of
+  // the world. For the test we need to align the top of the ellipsoid to be at
+  // the target height above the terrain, so we move it by (target_z - c) units
+  // along the z-axis.
+  RigidTransformd X_WV{Vector3d{0, 0, target_z - c}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: c extent");
+
+  // Rotate the ellipsoid so that the 'b' extent is aligned with the z-axis of
+  // the world, then move it by (target_z - b) units along the z-axis.
+  X_WV =
+      RigidTransformd{RotationMatrixd{AngleAxisd(-M_PI / 2, Vector3d::UnitX())},
+                      Vector3d{0, 0, target_z - b}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: b extent");
+
+  // Rotate the ellipsoid so that the 'a' extent is aligned with the z-axis of
+  // the world, then move it by (target_z - a) units along the z-axis.
+  X_WV =
+      RigidTransformd{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
+                      Vector3d{0, 0, target_z - a}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: a extent");
 }
 
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
