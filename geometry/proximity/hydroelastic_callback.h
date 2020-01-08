@@ -131,19 +131,22 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
     //  this.
     const SoftGeometry& soft = data.geometries.soft_geometry(id_S);
     const VolumeMeshField<double, double>& field_S = soft.pressure_field();
+    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
     const RigidGeometry& rigid = data.geometries.rigid_geometry(id_R);
     const SurfaceMesh<double>& mesh_R = rigid.mesh();
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
     // TODO(SeanCurtis-TRI): There are multiple heap allocations implicit in
     // this (resizing vector, constructing mesh and pressure field), this *may*
     // prove to be too expensive to be in the inner loop of the simulation.
     // Keep an eye on this.
     std::unique_ptr<ContactSurface<T>> surface =
-        mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-            id_S, field_S, X_WS, id_R, mesh_R, X_WR);
-
-    DRAKE_DEMAND(surface->id_M() < surface->id_N());
-    data.surfaces.emplace_back(std::move(*surface));
+        ComputeContactSurfaceFromSoftVolumeRigidSurface(
+            id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
+    if (surface != nullptr) {
+      DRAKE_DEMAND(surface->id_M() < surface->id_N());
+      data.surfaces.emplace_back(std::move(*surface));
+    }
   }
   // Tell the broadphase to keep searching.
   return false;
