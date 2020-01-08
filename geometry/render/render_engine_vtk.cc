@@ -13,7 +13,7 @@
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkProperty.h>
-#include <vtkSphereSource.h>
+#include <vtkTexturedSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
@@ -225,7 +225,7 @@ void RenderEngineVtk::RenderLabelImage(const CameraProperties& camera,
 }
 
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  vtkNew<vtkSphereSource> vtk_sphere;
+  vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
@@ -513,18 +513,23 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   // Legacy support for *implied* texture maps. If we have mesh.obj, we look for
   // mesh.png (unless one has been specifically called out in the properties).
   // TODO(SeanCurtis-TRI): Remove this legacy texture when objects and materials
-  // are coherently specified by SDF/URDF/obj/mtl, etc.
+  //  are coherently specified by SDF/URDF/obj/mtl, etc.
   std::string texture_name;
   std::ifstream file_exist(diffuse_map_name);
   if (file_exist) {
     texture_name = diffuse_map_name;
-  } else if (diffuse_map_name.empty() && data.mesh_filename) {
-    // This is the hack to search for mesh.png as a possible texture.
-    const std::string
-        alt_texture_name(RemoveFileExtension(*data.mesh_filename) +
-        ".png");
-    std::ifstream alt_file_exist(alt_texture_name);
-    if (alt_file_exist) texture_name = alt_texture_name;
+  } else {
+    if (!diffuse_map_name.empty()) {
+      log()->warn("Requested diffuse map could not be found: {}",
+                  diffuse_map_name);
+    }
+    if (diffuse_map_name.empty() && data.mesh_filename) {
+      // This is the hack to search for mesh.png as a possible texture.
+      const std::string alt_texture_name(
+          RemoveFileExtension(*data.mesh_filename) + ".png");
+      std::ifstream alt_file_exist(alt_texture_name);
+      if (alt_file_exist) texture_name = alt_texture_name;
+    }
   }
   if (!texture_name.empty()) {
     vtkNew<vtkPNGReader> texture_reader;

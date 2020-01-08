@@ -531,7 +531,8 @@ ModelInstanceIndex ParseUrdf(
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    ParseMaterial(material_node, &materials);
+    ParseMaterial(material_node, true /* name_required */, package_map,
+                  root_dir, &materials);
   }
 
   const ModelInstanceIndex model_instance =

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -16,16 +17,79 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// TODO(sammy-tri) Add support for texture-based materials, see #2588.
-/** A map from the name of a material to its color. The color is specified in
- RGBA (Red, Green, Blue, Alpha) format. */
-typedef std::map<std::string, Eigen::Vector4d> MaterialMap;
+/** A URDF-defined material consists of:
 
-/** Parses a "material" element in @p node and adds the result to @p materials.
+    - A normalized RGBA color (Red, Green, Blue, and Alpha values in the
+      range [0, 1]) and/or
+    - the absolute path to an image file to apply as a diffuse texture map.
 
- @throws std::runtime_error if the material is missing required attributes
- or if it was already defined with different properties. */
-void ParseMaterial(const tinyxml2::XMLElement* node, MaterialMap* materials);
+ If both pieces of information are provided in the URDF file, both will be
+ reported and it is up to the downstream consumer of this data to devise a
+ policy for reconciling the data. */
+struct UrdfMaterial {
+  std::optional<Eigen::Vector4d> rgba;
+  std::optional<std::string> diffuse_map;
+};
+
+/** A map from the name of a material to its definition.  */
+typedef std::map<std::string, UrdfMaterial> MaterialMap;
+
+/** Adds a material to the supplied `materials` map.
+
+ If the input material is missing an rgba value, a default rgba value will be
+ assigned (a fully transparent black).
+
+ @param[in] material_name A human-understandable name of the material.
+ @param[in] material The definition of the URDF material to associate with the
+ name.
+ @param[in] abort_if_name_clash If true, this method will abort if
+ @p material_name is already in @p materials regardless of whether the
+ material values are the same. If false, this method will abort if
+ @p material_name is already in @p materials and material values don't
+ match.
+ @param[out] materials A pointer to the map in which to store the material.
+ This cannot be nullptr.
+
+ @returns The material with the given name stored in @p materials.
+*/
+UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
+                                      UrdfMaterial material,
+                                      bool abort_if_name_clash,
+                                      MaterialMap* materials);
+
+/** Returns the material specified by a <material> @p node. If the material has
+ a name associated with it, the material will be reconciled with the given
+ set of @p materials (and added to the set as appropriate).
+
+ It has the following error-throwing conditions:
+    1. `name_required` is true, but the tag has no name attribute.
+    2. a material with a new name (i.e. it does not appear in @p materials)
+       has no color or texture information.
+    3. the named material conflicts with a previous material in @p materials
+       with the same name.
+    4. The file referenced by a texture does not exist.
+
+ If none of the error conditions apply, and the material has no color or
+ texture information, it is defined as fully transparent black.
+
+ @param[in] node The <material> XML node.
+ @param[in] name_required If true, throws if the tag doesn't have the name
+ attribute.
+ @param[in] package_map A map where the keys are ROS package names and the
+ values are the paths to the packages. This is only used if @p filename
+ starts with "package:"or "model:".
+ @param[in] root_dir The absolute path to the root directory of the URDF.
+ @param[in|out] materials The set of parsed materials; a *new* material will
+ be conditionally added (throwing if not possible).
+ @pre @p node is a <material> node.
+ @note This capability is not specified by the official URDF specification (see:
+       http://wiki.ros.org/urdf/XML/link), but is needed by certain URDFs
+       released by companies and organizations like Robotiq and ROS Industrial
+       (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).  */
+UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
+                           const PackageMap& package_map,
+                           const std::string& root_dir,
+                           MaterialMap* materials);
 
 /** Parses a "visual" element in @p node.
 
