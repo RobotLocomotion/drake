@@ -113,7 +113,8 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
  @param vertices_F the vertices from the input mesh as position vectors measured
         and expressed in Frame F.
  @param triangle a single face from the input mesh.
- @param half_space_F the half space with normal to surface expressed in Frame F.
+ @param half_space_F the half space represented by its boundary plane such that
+        the plane's normal points out of the half space, expressed in Frame F.
  @param[in,out] new_vertices_F the accumulator for all of the vertices in the
                 intersecting mesh. It should be empty to start and will
                 gradually accumulate all of the vertices with each subsequent
@@ -144,8 +145,7 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const std::vector<SurfaceVertex<T>>& vertices_F,
-    const SurfaceFace& triangle,
-    const mesh_intersection::HalfSpace<T>& half_space_F,
+    const SurfaceFace& triangle, const Plane<T>& half_space_F,
     std::vector<SurfaceVertex<T>>* new_vertices_F,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
@@ -290,14 +290,15 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
  a half space.
  @param input_mesh_F the mesh with vertices measured and expressed in some
         frame, F.
- @param half_space_F the half space, expressed in Frame F.
+ @param half_space_F the half space represented by its boundary plane such that
+        the plane's normal points out of the half space, expressed in Frame F.
  @returns the SurfaceMesh corresponding to the intersection, the vertices of
           which will be measured and expressed in Frame F.
  */
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<T>& input_mesh_F,
-    const mesh_intersection::HalfSpace<T>& half_space_F) {
+    const internal::Plane<T>& half_space_F) {
   std::vector<SurfaceVertex<T>> new_vertices_F;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
