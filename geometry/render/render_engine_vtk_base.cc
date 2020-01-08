@@ -49,6 +49,23 @@ void TransformToDrakeCylinder(vtkTransform* transform,
   transform_filter->Update();
 }
 
+void CreateVtkEllipsoid(vtkTransformPolyDataFilter* transform_filter, double a,
+                        double b, double c) {
+  vtkNew<vtkSphereSource> vtk_ellipsoid;
+  vtk_ellipsoid->SetRadius(1.0);
+  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
+  vtk_ellipsoid->SetThetaResolution(50);
+  vtk_ellipsoid->SetPhiResolution(50);
+
+  // Scale sphere by each axis extent to generate the ellipsoid.
+  vtkNew<vtkTransform> transform;
+  transform->Scale(a, b, c);
+
+  transform_filter->SetInputConnection(vtk_ellipsoid->GetOutputPort());
+  transform_filter->SetTransform(transform);
+  transform_filter->Update();
+}
+
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

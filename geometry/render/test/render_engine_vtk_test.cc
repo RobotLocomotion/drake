@@ -675,7 +675,7 @@ TEST_F(RenderEngineVtkTest, CapsuleRotatedTest) {
   }
 }
 
-// Performs the shape-centered-in-the-image test  with a cylinder.
+// Performs the shape-centered-in-the-image test with a cylinder.
 TEST_F(RenderEngineVtkTest, CylinderTest) {
   Init(X_WC_, true);
 
@@ -692,6 +692,55 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
   PerformCenterShapeTest(renderer_.get(), "Cylinder test");
+}
+
+// Performs the shape-centered-in-the-image test with an ellipsoid.
+TEST_F(RenderEngineVtkTest, EllipsoidTest) {
+  Init(X_WC_, true);
+
+  // Sets up an ellipsoid.
+  const double a = 0.25;
+  const double b = 1;
+  const double c = 0.5;
+  Ellipsoid ellipsoid(a, b, c);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, ellipsoid, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+  // Position the top of the ellipsoid to be 1 m above the terrain.
+  RigidTransformd X_WV{Vector3d{0, 0, 0.5}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid test");
+}
+
+// Performs the shape-centered-in-the-image test with an ellipsoid rotated such
+// that its length along the z-axis can be seen in the camera view (as opposed
+// to a top-down view of the x and y axes).
+TEST_F(RenderEngineVtkTest, EllipsoidRotatedTest) {
+  Init(X_WC_, true);
+
+  // Sets up an ellipsoid.
+  const double a = 0.25;
+  const double b = 1;
+  const double c = 0.5;
+  Ellipsoid ellipsoid(a, b, c);
+  expected_label_ = RenderLabel(2);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, ellipsoid, simple_material(),
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+  // Position the ellipsoid so that it lies along the x-axis. Since its x-axis
+  // extent is 0.25, we need to shift it by an additional 0.75 to be 1m above
+  // the terrain.
+  RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI / 2, Vector3d::UnitY())},
+                       Vector3d{0, 0, 0.75}};
+  renderer_->UpdatePoses(
+      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+  PerformCenterShapeTest(renderer_.get(), "Ellipsoid rotated test");
 }
 
 // Performs the shape-centered-in-the-image test with a mesh (which happens to

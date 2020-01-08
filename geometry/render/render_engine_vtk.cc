@@ -266,6 +266,14 @@ void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
   ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
 
+void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                        void* user_data) {
+  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  CreateVtkEllipsoid(transform_filter, ellipsoid.a(), ellipsoid.b(),
+                   ellipsoid.c());
+  ImplementGeometry(transform_filter.GetPointer(), user_data);
+}
+
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
   ImplementObj(mesh.filename(), mesh.scale(), user_data);
 }

@@ -14,6 +14,10 @@ namespace render {
 void CreateVtkCapsule(vtkTransformPolyDataFilter* transform_filter,
                       double radius, double length);
 
+// Creates a VTK ellipsoid scaled from a sphere.
+void CreateVtkEllipsoid(vtkTransformPolyDataFilter* transform_filter, double a,
+                        double b, double c);
+
 // Sets common sphere options such as its dimensions and resolution.
 void SetSphereOptions(vtkSphereSource* vtk_sphere, double radius);
 
