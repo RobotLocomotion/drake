@@ -8,8 +8,8 @@ def uritemplate_py_repository(
     github_archive(
         name = name,
         repository = "python-hyper/uritemplate",
-        commit = "3.0.0",
-        sha256 = "733fef5b17c4d9bb86b52fcd5c97a008bfc2fcfdbc1d04a06b2e881935944b0e",  # noqa
+        commit = "3.0.1",
+        sha256 = "0dbac32598f33bcbbf871a06285c81e175e061284403792b054d1254486c609d",  # noqa
         build_file = "@drake//tools/workspace/uritemplate_py:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )

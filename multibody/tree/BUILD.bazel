@@ -54,12 +54,14 @@ drake_cc_library(
     name = "multibody_tree_caches",
     srcs = [
         "acceleration_kinematics_cache.cc",
+        "articulated_body_force_bias_cache.cc",
         "articulated_body_inertia_cache.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
+        "articulated_body_force_bias_cache.h",
         "articulated_body_inertia_cache.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
@@ -436,6 +438,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:gradient",
     ],

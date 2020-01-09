@@ -7,6 +7,7 @@ import collections
 import os
 import subprocess
 
+# TODO(jwnimmer-tri) Remove protobuf support on or after 2020-02-01.
 import google.protobuf.text_format
 import yaml
 
@@ -218,7 +219,7 @@ def generate_set_to_named_variables(hh, caller_context, fields):
 
 
 DO_CLONE = """
-  DRAKE_NODISCARD %(camel)s<T>* DoClone() const final {
+  [[nodiscard]] %(camel)s<T>* DoClone() const final {
     return new %(camel)s;
   }
 """
@@ -253,7 +254,7 @@ ACCESSOR_FIELD_METHODS = """
   }
   /// Fluent setter that matches %(field)s().
   /// Returns a copy of `this` with %(field)s set to a new value.
-  DRAKE_NODISCARD %(camel)s<T>
+  [[nodiscard]] %(camel)s<T>
   with_%(field)s(const T& %(field)s) const {
     %(camel)s<T> result(*this);
     result.set_%(field)s(%(field)s);
@@ -409,7 +410,6 @@ VECTOR_HH_PREAMBLE = """
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/name_value.h"
 #include "drake/common/never_destroyed.h"
@@ -553,7 +553,8 @@ def generate_code(
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
 
-    # The C++ namespace open & close dance is as requested in the protobuf.
+    # The C++ namespace open & close dance is as requested in the
+    # `*.named_vector.yaml` specification.
     opening_namespace = "".join(["namespace " + x + "{\n"
                                  for x in namespace_list])
     closing_namespace = "".join(["}  // namespace " + x + "\n"

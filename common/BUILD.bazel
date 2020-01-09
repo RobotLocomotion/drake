@@ -46,6 +46,7 @@ drake_cc_package_library(
         ":random",
         ":reset_after_move",
         ":reset_on_copy",
+        ":scope_exit",
         ":scoped_singleton",
         ":sorted_pair",
         ":sorted_vectors_have_intersection",
@@ -533,6 +534,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scope_exit",
+    hdrs = ["scope_exit.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "scoped_singleton",
     hdrs = ["scoped_singleton.h"],
     deps = [
@@ -588,9 +597,6 @@ install(
         ":libdrake_marker.so",
         ":resource_tool",
     ],
-    # TODO(jwnimmer-tri) The install rule should offer more specific options
-    # for programs not in bin/, and including the workspace and/or package name
-    # in the installed path.  For now, we'll just specify it manually.
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
@@ -800,6 +806,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_nodiscard_test",
+    copts = [
+        "-Wno-cpp",
+    ],
     deps = [
         ":essential",
         ":unused",
@@ -1324,6 +1333,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "scope_exit_test",
+    deps = [
+        ":scope_exit",
+    ],
+)
+
+drake_cc_googletest(
     name = "scoped_singleton_test",
     deps = [
         ":scoped_singleton",
@@ -1367,10 +1383,6 @@ drake_py_unittest(
         ":resource_tool",
         "//examples/pendulum:models",
     ],
-    # Fails when run under Valgrind tools due to stdout/stderr mixing.
-    # TODO(jwnimmer-tri): Amend the test to stream stderr separately and then
-    # re-enable Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(
@@ -1382,11 +1394,6 @@ drake_cc_googletest(
         "//systems/framework/test_utilities:my_vector",
     ],
 )
-
-# TODO(jwnimmer-tri) These tests are currently missing...
-# - drake_assert_test in fancy variants
-# - drake_assert_test_compile in fancy variants
-# - cpplint_wrapper_test.py
 
 add_lint_tests(
     python_lint_extra_srcs = [

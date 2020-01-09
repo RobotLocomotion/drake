@@ -79,8 +79,9 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
-    DefineTemplateClassWithDefault<Simulator<T>>(
-        m, "Simulator", GetPyParam<T>(), doc.Simulator.doc)
+    auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
+        m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
+    cls  // BR
         .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
             py::arg("system"), py::arg("context") = nullptr,
             // Keep alive, reference: `self` keeps `system` alive.
@@ -93,10 +94,6 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.AdvanceTo.doc)
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
             doc.Simulator.AdvancePendingEvents.doc)
-        .def("StepTo",
-            WrapDeprecated(
-                doc.Simulator.StepTo.doc_deprecated, &Simulator<T>::AdvanceTo),
-            doc.Simulator.StepTo.doc_deprecated)
         .def("get_context", &Simulator<T>::get_context, py_reference_internal,
             doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,
@@ -109,18 +106,24 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.has_context.doc)
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
             // Keep alive, ownership: `context` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
-        // TODO(eric.cousineau): Bind `release_context` once some form of the
-        // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
+            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc);
+    // TODO(eric.cousineau): Bind `release_context` once some form of the
+    // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("reset_integrator",
-            [](Simulator<T>* self,
-                std::unique_ptr<IntegratorBase<T>> integrator) {
-              return self->reset_integrator(std::move(integrator));
-            },
+            WrapDeprecated(doc.Simulator.reset_integrator.doc_deprecated_1args,
+                [](Simulator<T>* self,
+                    std::unique_ptr<IntegratorBase<T>> integrator) {
+                  return self->reset_integrator(std::move(integrator));
+                }),
             py::arg("integrator"),
             // Keep alive, ownership: `integrator` keeps `self` alive.
             py::keep_alive<2, 1>(),
-            doc.Simulator.reset_integrator.doc_1args_stduniqueptr)
+            doc.Simulator.reset_integrator.doc_deprecated_1args);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step,
             doc.Simulator.set_publish_every_time_step.doc)

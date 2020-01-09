@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools/skylark:py.bzl", "py_library")
+
 licenses(["notice"])  # NCSA
 
 py_library(

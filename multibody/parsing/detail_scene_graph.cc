@@ -7,7 +7,9 @@
 
 #include <sdf/sdf.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -22,9 +24,13 @@ using std::make_unique;
 
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
+using geometry::ProximityProperties;
 using math::RigidTransformd;
 
 namespace {
+
+// TODO(DamrongGuoy): Refactor this function into detail_sdf_common.h/cc.
+//  It has a non-const version in detail_sdf_parser.cc.
 
 // Helper to return the child element of `element` named `child_name`.
 // Returns nullptr if not present.
@@ -60,18 +66,6 @@ const sdf::Element& GetChildElementOrThrow(
   return *const_cast<sdf::Element &>(element).GetElement(child_name);
 }
 
-// Helper to return the mutable child element of `element` named
-// `child_name`.  Returns nullptr if not present.
-sdf::Element* MaybeGetChildElement(
-    sdf::Element* element, const std::string &child_name) {
-  // First verify <child_name> is present (otherwise GetElement() has the
-  // side effect of adding new elements if not present!!).
-  if (element->HasElement(child_name)) {
-    return element->GetElement(child_name).get();
-  }
-  return nullptr;
-}
-
 // Helper to return the value of a child of `element` named `child_name`.
 // A std::runtime_error is thrown if the `<child_name>` tag is missing from the
 // SDF file, or the tag has a bad or missing value.
@@ -98,7 +92,7 @@ T GetChildElementValueOrThrow(const sdf::Element& element,
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
-    const sdf::Geometry& sdf_geometry) {
+    const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
   switch (sdf_geometry.Type()) {
@@ -157,7 +151,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
           MaybeGetChildElement(*geometry_element, "mesh");
       DRAKE_DEMAND(mesh_element != nullptr);
       const std::string file_name =
-          GetChildElementValueOrThrow<std::string>(*mesh_element, "uri");
+          resolve_filename(
+              GetChildElementValueOrThrow<std::string>(*mesh_element, "uri"));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         const ignition::math::Vector3d& scale_vector =
@@ -187,7 +182,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual) {
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
+    const math::RigidTransformd& X_LG) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
     // The file either specifies an EMPTY geometry or one that isn't recognized
@@ -198,10 +194,6 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       return std::unique_ptr<GeometryInstance>(nullptr);
     }
   }
-
-  // Retrieve the pose of the visual frame G in the parent link L in which
-  // geometry gets defined.
-  const RigidTransformd X_LG = ToRigidTransform(sdf_visual.Pose());
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
@@ -246,17 +238,25 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   }
 
   auto instance = make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry), sdf_visual.Name());
+      X_LC, MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename),
+      sdf_visual.Name());
   instance->set_illustration_properties(
-      MakeVisualPropertiesFromSdfVisual(sdf_visual));
+      MakeVisualPropertiesFromSdfVisual(sdf_visual, resolve_filename));
   return instance;
 }
 
 IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-    const sdf::Visual& sdf_visual) {
-  // TODO(SeanCurtis-TRI): Update this to use the sdf API when
-  // https://bitbucket.org/osrf/sdformat/pull-requests/445/material-dom/diff
-  // merges.
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename) {
+  // This doesn't directly use the sdf::Material API on purpose. In the current
+  // version, if a parameter (e.g., diffuse) is missing it will *not* be
+  // included in the geometry properties. Using the sdf::Material, it is
+  // impossible to tell if this is happening. If the material exists, then
+  // diffuse, ambient, etc., all have default values and those values will be
+  // written to the geometry properties. This breaks the ability of the
+  // downstream consumer to supply its own defaults (because it can't
+  // distinguish between a value that was specified by the user and one that was
+  // provided by sdformat's default value.
+
   // The existence of a visual element will *always* require an
   // IllustrationProperties instance. How we populate it depends on the material
   // values.
@@ -271,8 +271,22 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
       MaybeGetChildElement(*visual_element, "material");
 
   if (material_element != nullptr) {
-    auto add_property = [material_element](
-        const char* property, IllustrationProperties* props) {
+    if (material_element->HasElement("drake:diffuse_map")) {
+      auto[texture_name, has_value] =
+          material_element->Get<std::string>("drake:diffuse_map", {});
+      if (has_value) {
+        const std::string resolved_path =
+            resolve_filename(texture_name);
+        if (resolved_path.empty()) {
+          throw std::runtime_error(fmt::format(
+              "Unable to locate the texture file: {}", texture_name));
+        }
+        properties.AddProperty("phong", "diffuse_map", resolved_path);
+      }
+    }
+
+    auto add_property = [material_element](const char* property,
+                                           IllustrationProperties* props) {
       if (!material_element->HasElement(property)) return;
       using ignition::math::Color;
       const std::pair<Color, bool> value_pair =
@@ -295,11 +309,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 }
 
 RigidTransformd MakeGeometryPoseFromSdfCollision(
-    const sdf::Collision& sdf_collision) {
-  // Retrieve the pose of the collision frame G in the parent link L in which
-  // geometry gets defined.
-  const RigidTransformd X_LG = ToRigidTransform(sdf_collision.Pose());
-
+    const sdf::Collision& sdf_collision, const RigidTransformd& X_LG) {
   // GeometryInstance defines its shapes in a "canonical frame" C. The canonical
   // frame C is the frame in which the geometry is defined and it generally
   // coincides with the geometry frame G (G is specified in the SDF file).
@@ -350,6 +360,70 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
   return X_LC;
 }
 
+ProximityProperties MakeProximityPropertiesForCollision(
+    const sdf::Collision& sdf_collision) {
+  const sdf::ElementPtr collision_element = sdf_collision.Element();
+  DRAKE_DEMAND(collision_element != nullptr);
+
+  const sdf::Element* const drake_element =
+      MaybeGetChildElement(*collision_element, "drake:proximity_properties");
+
+  geometry::ProximityProperties properties;
+  if (drake_element != nullptr) {
+    auto read_double =
+        [drake_element](const char* element_name) -> std::optional<double> {
+      if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
+        return GetChildElementValueOrThrow<double>(*drake_element,
+                                                   element_name);
+      }
+      return {};
+    };
+
+    const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
+    const bool is_soft = drake_element->HasElement("drake:soft_hydroelastic");
+
+    if (is_rigid && is_soft) {
+      throw std::runtime_error(
+          "A <collision> geometry has defined mutually-exclusive tags "
+          "<drake:rigid_hydroelastic> and <drake:soft_hydroelastic>. Only one "
+          "can be provided.");
+    }
+
+    properties = ParseProximityProperties(read_double, is_rigid, is_soft);
+  }
+
+  if (!properties.HasProperty(geometry::internal::kMaterialGroup,
+                              geometry::internal::kFriction)) {
+    properties.AddProperty(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
+        MakeCoulombFrictionFromSdfCollisionOde(sdf_collision));
+  } else {
+    // We parsed friction from <drake:proximity_properties>; test for the
+    // existence of the legacy mechanism and warn we're not using it.
+    const sdf::Element* const surface_element =
+        MaybeGetChildElement(*collision_element, "surface");
+    if (surface_element) {
+      const sdf::Element* friction_element =
+          MaybeGetChildElement(*surface_element, "friction");
+      if (friction_element) {
+        const sdf::Element* ode_element =
+            MaybeGetChildElement(*friction_element, "ode");
+        if (MaybeGetChildElement(*ode_element, "mu") ||
+        MaybeGetChildElement(*ode_element, "mu2")) {
+          logging::Warn one_time(
+              "When drake contact parameters are fully specified in the "
+              "<drake:proximity_properties> tag, the <surface><friction><ode>"
+              "<mu*> tags are ignored. While parsing, there was at least one "
+              "instance where friction coefficients were defined in both "
+              "locations.");
+        }
+      }
+    }
+  }
+
+  return properties;
+}
+
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision) {
 
@@ -378,41 +452,6 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
       GetChildElementValueOrThrow<double>(ode_element, "mu2");
 
   return CoulombFriction<double>(static_friction, dynamic_friction);
-}
-
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const PackageMap& package_map,
-                             const std::string& root_dir) {
-  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
-  sdf::Element* geom_element =
-      MaybeGetChildElement(visual_element.get(), "geometry");
-  if (geom_element) {
-    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
-    if (mesh_element) {
-      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
-      if (uri_element) {
-        const std::string uri = uri_element->Get<std::string>();
-        const std::string resolved_name =
-            ResolveUri(uri, package_map, root_dir);
-        if (!resolved_name.empty()) {
-          uri_element->Set(resolved_name);
-        } else {
-          throw std::runtime_error(
-              std::string(__FILE__) + ": " + __func__ +
-              ": ERROR: Mesh file name could not be resolved from the "
-              "provided uri \"" + uri + "\".");
-        }
-      } else {
-        throw std::runtime_error(
-            std::string(__FILE__) + ": " + __func__ +
-            ": ERROR: <mesh> tag specified without <uri?>");
-      }
-    }
-  }
-
-  sdf::Visual visual;
-  visual.Load(visual_element);
-  return visual;
 }
 
 }  // namespace internal

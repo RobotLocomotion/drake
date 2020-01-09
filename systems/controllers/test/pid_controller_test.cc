@@ -28,14 +28,13 @@ class PidControllerTest : public ::testing::Test {
     derivatives_ = controller_.AllocateTimeDerivatives();
 
     // State:
-    auto vec0 = std::make_unique<BasicVector<double>>(port_size_ * 2);
-    vec0->get_mutable_value().setZero();
-    context_->FixInputPort(0, std::move(vec0));
+    VectorX<double> vec0 = VectorX<double>::Zero(port_size_ * 2);
+    controller_.get_input_port(0).FixValue(context_.get(), vec0);
 
     // Desired state:
-    auto vec1 = std::make_unique<BasicVector<double>>(port_size_ * 2);
-    vec1->get_mutable_value() << error_signal_, error_rate_signal_;
-    context_->FixInputPort(1, std::move(vec1));
+    VectorX<double> vec1(port_size_ * 2);
+    vec1 << error_signal_, error_rate_signal_;
+    controller_.get_input_port(1).FixValue(context_.get(), vec1);
   }
 
   const int port_size_{3};
@@ -224,9 +223,9 @@ GTEST_TEST(PidIOProjectionTest, Test) {
   VectorX<double> integral = VectorX<double>::Random(num_controlled_q);
 
   // State:
-  context->FixInputPort(0, std::make_unique<BasicVector<double>>(x));
+  dut.get_input_port(0).FixValue(context.get(), x);
   // Desired state:
-  context->FixInputPort(1, std::make_unique<BasicVector<double>>(x_d));
+  dut.get_input_port(1).FixValue(context.get(), x_d);
   // Integral:
   dut.set_integral_value(context.get(), integral);
 

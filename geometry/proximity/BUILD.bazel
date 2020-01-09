@@ -49,7 +49,11 @@ drake_cc_library(
     srcs = ["bounding_volume_hierarchy.cc"],
     hdrs = ["bounding_volume_hierarchy.h"],
     deps = [
+        ":surface_mesh",
+        ":volume_mesh",
         "//common",
+        "//geometry:utilities",
+        "//math:geometric_transform",
     ],
 )
 
@@ -167,6 +171,7 @@ drake_cc_library(
         "//geometry/proximity:make_ellipsoid_mesh",
         "//geometry/proximity:make_sphere_field",
         "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:obj_to_surface_mesh",
         "//geometry/proximity:proximity_utilities",
         "@fmt",
     ],
@@ -478,9 +483,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "hydroelastic_internal_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
     deps = [
         ":hydroelastic_internal",
         ":proximity_utilities",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

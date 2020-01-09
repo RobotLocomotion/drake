@@ -39,10 +39,7 @@ class OptitrackPoseTest : public ::testing::Test {
 
   math::RigidTransform<double> UpdateStateCalcOutput(
       const optitrack::optitrack_frame_t& input_frame) {
-    std::unique_ptr<AbstractValue> input(
-        new Value<optitrack::optitrack_frame_t>());
-    input->set_value(input_frame);
-    context_->FixInputPort(0 /* input port ID*/, std::move(input));
+    dut_->get_input_port(0).FixValue(context_.get(), input_frame);
 
     dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());

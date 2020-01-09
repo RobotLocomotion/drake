@@ -169,20 +169,54 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
       MakeKeyframes(all_keyframes, brick_joint_ordering, headers);
 
   // Set the brick's initial pose (expressed in the gripper frame G).
-  (*brick_initial_pose)(0) = brick_joint_keyframes(0, 0);  // y-translate
-  (*brick_initial_pose)(1) = brick_joint_keyframes(0, 1);  // z-translate
-  (*brick_initial_pose)(2) = brick_joint_keyframes(0, 2);  // x-revolute
+  if (brick_initial_pose != EigenPtr<Vector3<double>>(nullptr)) {
+    (*brick_initial_pose)(0) = brick_joint_keyframes(0, 0);  // y-translate
+    (*brick_initial_pose)(1) = brick_joint_keyframes(0, 1);  // z-translate
+    (*brick_initial_pose)(2) = brick_joint_keyframes(0, 2);  // x-revolute
+  }
 
   finger_joint_keyframes.transposeInPlace();
 
-  // Create the finger joint name to column index map.
-  std::map<std::string, int> finger_joint_name_to_col_index_map;
+  // Create the finger joint name to row index map.
+  std::map<std::string, int> finger_joint_name_to_row_index_map;
   for (size_t i = 0; i < finger_joint_ordering.size(); i++) {
-    finger_joint_name_to_col_index_map[finger_joint_ordering[i]] = i;
+    finger_joint_name_to_row_index_map[finger_joint_ordering[i]] = i;
   }
 
   return std::make_pair(finger_joint_keyframes,
-                        finger_joint_name_to_col_index_map);
+                        finger_joint_name_to_row_index_map);
+}
+
+MatrixX<double> ReorderKeyframesForPlant(
+    const MultibodyPlant<double>& plant, const MatrixX<double> keyframes,
+    std::map<std::string, int>* finger_joint_name_to_row_index_map) {
+  DRAKE_DEMAND(finger_joint_name_to_row_index_map != nullptr);
+  if (static_cast<int>(finger_joint_name_to_row_index_map->size()) !=
+      keyframes.rows()) {
+    throw std::runtime_error(
+        "The number of keyframe rows must match the size of "
+        "finger_joint_name_to_row_index_map.");
+  }
+  if (keyframes.rows() != kNumJoints) {
+    throw std::runtime_error(
+        "The number of keyframe rows must match the number of planar-gripper "
+        "joints");
+  }
+  if (plant.num_positions() != kNumJoints) {
+    throw std::runtime_error(
+        "The number of plant positions must exactly match the number of "
+        "planar-gripper joints.");
+  }
+  std::map<std::string, int> original_map = *finger_joint_name_to_row_index_map;
+  MatrixX<double> reordered_keyframes(keyframes);
+  for (auto iter = original_map.begin(); iter != original_map.end(); ++iter) {
+    auto joint_vel_start_index =
+        plant.GetJointByName(iter->first).velocity_start();
+    reordered_keyframes.row(joint_vel_start_index) =
+        keyframes.row(iter->second);
+    (*finger_joint_name_to_row_index_map)[iter->first] = joint_vel_start_index;
+  }
+  return reordered_keyframes;
 }
 
 const RigidTransformd X_WGripper() {

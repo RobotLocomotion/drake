@@ -84,13 +84,28 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// that using fresh Jacobians and factorizations buys- which can permit
   /// increased step sizes but should have no effect on solution accuracy- can
   /// outweigh the small factorization cost.
-  /// @sa get_reuse
+  /// @note The reuse setting will have no effect when
+  ///       get_use_full_newton() `== true`.
+  /// @see get_reuse()
+  /// @see set_use_full_newton()
   void set_reuse(bool reuse) { reuse_ = reuse; }
 
   /// Gets whether the integrator attempts to reuse Jacobian matrices and
   /// iteration matrix factorizations.
-  /// @sa set_reuse()
-  bool get_reuse() const { return reuse_; }
+  /// @see set_reuse()
+  /// @note This method always returns `false` when full-Newton mode is on.
+  bool get_reuse() const { return !use_full_newton_ && reuse_; }
+
+  /// Sets whether the method operates in "full Newton" mode, in which case
+  /// Jacobian and iteration matrices are freshly computed on every
+  /// Newton-Raphson iteration. When set to `true`, this mode overrides
+  /// the reuse mode.
+  /// @see set_reuse()
+  void set_use_full_newton(bool flag) { use_full_newton_ = flag; }
+
+  /// Gets whether this method is operating in "full Newton" mode.
+  /// @see set_use_full_newton()
+  bool get_use_full_newton() const { return use_full_newton_; }
 
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
@@ -226,8 +241,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   };
 
   /// Computes necessary matrices (Jacobian and iteration matrix) for
-  /// Newton-Raphson (NR) iterations, as necessary. his method has been designed
-  /// for use in DoImplicitIntegratorStep() processes that follow this model:
+  /// Newton-Raphson (NR) iterations, as necessary. This method has been
+  /// designed for use in DoImplicitIntegratorStep() processes that follow this
+  /// model:
   /// 1. DoImplicitIntegratorStep(h) is called;
   /// 2. One or more NR iterations is performed until either (a) convergence is
   ///    identified, (b) the iteration is found to diverge, or (c) too many
@@ -258,6 +274,24 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   ///       return; if altered, it will be set to (t, xt).
   bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
       int trial,
+      const std::function<void(const MatrixX<T>& J, const T& h,
+          typename ImplicitIntegrator<T>::IterationMatrix*)>&
+      compute_and_factor_iteration_matrix,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
+  /// Computes necessary matrices (Jacobian and iteration matrix) for full
+  /// Newton-Raphson (NR) iterations, if full Newton-Raphson method is activated
+  /// (if it's not activated, this method is a no-op).
+  /// @param t the time at which to compute the Jacobian.
+  /// @param xt the continuous state at which the Jacobian is computed.
+  /// @param h the integration step size (for computing iteration matrices).
+  /// @param compute_and_factor_iteration_matrix a function pointer for
+  ///        computing and factoring the iteration matrix.
+  /// @param[out] iteration_matrix the updated and factored iteration matrix on
+  ///             return.
+  /// @post the state in the internal context will be set to (t, xt) and this
+  ///       will store the updated Jacobian matrix, on return.
+  void FreshenMatricesIfFullNewton(const T& t, const VectorX<T>& xt, const T& h,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
       compute_and_factor_iteration_matrix,
@@ -362,6 +396,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
   // will not be reused.
   bool reuse_{true};
+
+  // If set to `true`, Jacobian matrices and iteration matrix factorizations
+  // will be freshly computed on every Newton-Raphson iteration. This should
+  // only ever be useful in debugging.
+  bool use_full_newton_{false};
 
   // Various combined statistics.
   int64_t num_iter_factorizations_{0};
@@ -612,7 +651,7 @@ inline void ImplicitIntegrator<AutoDiffXd>::IterationMatrix::
 
 // Solves a linear system Ax = b for x using the iteration matrix (A)
 // factored using LU decomposition.
-// @sa Factor()
+// @see Factor()
 template <class T>
 VectorX<T> ImplicitIntegrator<T>::IterationMatrix::Solve(
     const VectorX<T>& b) const {
@@ -621,7 +660,7 @@ VectorX<T> ImplicitIntegrator<T>::IterationMatrix::Solve(
 
 // Solves the linear system Ax = b for x using the iteration matrix (A)
 // factored using QR decomposition.
-// @sa Factor()
+// @see Factor()
 // Note: must be declared inline because it's specialized and located in the
 // header file (to avoid multiple definition errors).
 template <>
@@ -687,6 +726,25 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
   context->SetTimeAndContinuousState(t_current, x_current);
 
   return J_;
+}
+
+template <class T>
+void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
+    const T& t, const VectorX<T>& xt, const T& h,
+    const std::function<void(const MatrixX<T>&, const T&,
+        typename ImplicitIntegrator<T>::IterationMatrix*)>&
+        compute_and_factor_iteration_matrix,
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+  DRAKE_DEMAND(iteration_matrix);
+
+  // Return immediately if full-Newton is not in use.
+  if (!get_use_full_newton()) return;
+
+  // Compute the initial Jacobian and iteration matrices and factor them.
+  MatrixX<T>& J = get_mutable_jacobian();
+  J = CalcJacobian(t, xt);
+  ++num_iter_factorizations_;
+  compute_and_factor_iteration_matrix(J, h, iteration_matrix);
 }
 
 template <class T>

@@ -36,8 +36,6 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.IiwaCollisionModel.kBoxCollision.doc)
       .export_values();
 
-  // TODO(siyuan.feng): Add RegisterRgbdCamera when we have bindings for
-  // creating a geometry::dev::render::DepthCameraProperties struct.
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
           doc.ManipulationStation.ctor.doc)
@@ -50,6 +48,9 @@ PYBIND11_MODULE(manipulation_station, m) {
           py::arg("X_WCameraBody") = std::nullopt,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupClutterClearingStation.doc)
+      .def("SetupPlanarIiwaStation",
+          &ManipulationStation<T>::SetupPlanarIiwaStation,
+          doc.ManipulationStation.SetupPlanarIiwaStation.doc)
       .def("AddManipulandFromFile",
           &ManipulationStation<T>::AddManipulandFromFile, py::arg("model_file"),
           py::arg("X_WObject"),
@@ -57,11 +58,15 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("RegisterIiwaControllerModel",
           &ManipulationStation<T>::RegisterIiwaControllerModel,
           doc.ManipulationStation.RegisterIiwaControllerModel.doc)
+      .def("RegisterRgbdSensor", &ManipulationStation<T>::RegisterRgbdSensor,
+          doc.ManipulationStation.RegisterRgbdSensor.doc)
       .def("RegisterWsgControllerModel",
           &ManipulationStation<T>::RegisterWsgControllerModel,
           doc.ManipulationStation.RegisterWsgControllerModel.doc)
       .def("Finalize", py::overload_cast<>(&ManipulationStation<T>::Finalize),
           doc.ManipulationStation.Finalize.doc_0args)
+      .def("num_iiwa_joints", &ManipulationStation<T>::num_iiwa_joints,
+          doc.ManipulationStation.num_iiwa_joints.doc)
       .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
           py_reference_internal,
           doc.ManipulationStation.get_multibody_plant.doc)

@@ -26,7 +26,7 @@ TEST_P(ParseTest, Quantities) {
       "drake/manipulation/models/allegro_hand_description/{}/"
       "allegro_hand_description_left.{}", file_extension, file_extension));
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   const ModelInstanceIndex right_hand_index =
       parser.AddModelFromFile(path_right);

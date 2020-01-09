@@ -61,6 +61,15 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "call_python",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_call_python.lcm",
+        "lcmt_call_python_data.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "constrained_values",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_constrained_values.lcm"],
@@ -107,13 +116,22 @@ drake_lcm_cc_library(
     name = "hydroelastic_contact_surface_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_hydroelastic_contact_surface_for_viz.lcm"],
-    deps = [":hydroelastic_contact_surface_tri_for_viz"],
+    deps = [
+        ":hydroelastic_contact_surface_tri_for_viz",
+        ":hydroelastic_quadrature_per_point_data_for_viz",
+    ],
 )
 
 drake_lcm_cc_library(
     name = "hydroelastic_contact_surface_tri_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_hydroelastic_contact_surface_tri_for_viz.lcm"],
+)
+
+drake_lcm_cc_library(
+    name = "hydroelastic_quadrature_per_point_data_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_hydroelastic_quadrature_per_point_data_for_viz.lcm"],
 )
 
 drake_lcm_cc_library(
@@ -190,6 +208,24 @@ drake_lcm_cc_library(
         ":desired_body_motion",
         ":desired_centroidal_momentum_dot",
         ":desired_dof_motions",
+    ],
+)
+
+drake_lcm_cc_library(
+    name = "planar_manipuland_status",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_planar_manipuland_status.lcm"],
+)
+
+drake_lcm_cc_library(
+    name = "planar_gripper",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_planar_gripper_command.lcm",
+        "lcmt_planar_gripper_status.lcm",
+        "lcmt_planar_gripper_finger_command.lcm",
+        "lcmt_planar_gripper_finger_status.lcm",
+        "lcmt_force_torque.lcm",
     ],
 )
 
@@ -313,6 +349,7 @@ LCMTYPES_CC = [
     ":body_acceleration",
     ":body_motion_data",
     ":body_wrench_data",
+    ":call_python",
     ":constrained_values",
     ":contact_information",
     ":contact_results_for_viz",
@@ -328,6 +365,8 @@ LCMTYPES_CC = [
     ":joint_pd_override",
     ":manipulator_plan_move_end_effector",
     ":piecewise_polynomial",
+    ":planar_manipuland_status",
+    ":planar_gripper",
     ":plan_eval_debug_info",
     ":point_pair_contact_info_for_viz",
     ":polynomial",

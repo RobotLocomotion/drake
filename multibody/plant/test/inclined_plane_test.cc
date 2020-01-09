@@ -133,8 +133,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // We want an implicit integrator for this test since the computational
   // stiffness is high. 3rd order Radau is about 4x as fast as implicit
   // Euler.
-  simulator.reset_integrator<RadauIntegrator<double, 2>>(
-      *diagram, &simulator.get_mutable_context());
+  simulator.reset_integrator<RadauIntegrator<double, 2>>();
 
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   integrator.set_maximum_step_size(1e-3);    // Reasonable for this problem.

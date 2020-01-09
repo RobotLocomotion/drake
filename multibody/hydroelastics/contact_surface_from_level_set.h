@@ -208,7 +208,9 @@ int IntersectTetWithLevelSet(
   V prev(num_vertices + num_intersections - 1);
   for (int i = 0; i < num_intersections; ++i) {
     V current(i + num_vertices);
-    faces->emplace_back(prev, current, centroid_index);
+    // Note: the face ordering below ensures that the normal will point into the
+    // rigid object.
+    faces->emplace_back(prev, centroid_index, current);
     prev = current;
   }
 
@@ -270,9 +272,9 @@ int IntersectTetWithLevelSet(
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
 /// defined by `mesh_M`.  The triangulation is measured and expressed in frame
-/// N. The right handed normal of each triangle points towards the positive side
-/// of the level set function `φ(V)` (the normals point out of the rigid object
-/// represented by the level set field and into the soft volume mesh).
+/// N. The right handed normal of each triangle points towards the negative side
+/// of the level set function `φ(V)` (the normals point out of the soft volume
+/// mesh and into the rigid object represented by the level set field.
 ///
 /// @note  The geometry::SurfaceMesh may have duplicate vertices.
 template <typename T>
@@ -290,6 +292,7 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
   std::array<Vector3<T>, 4> tet_vertices_N;
   Vector4<T> phi;
   Vector4<T> e_m;
+  int num_intersections = 0;
   for (const auto& tet : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
@@ -306,9 +309,11 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
     std::swap(phi[1], phi[2]);
     std::swap(e_m[1], e_m[2]);
-    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, &vertices_N, &faces,
-                             e_m_surface);
+    num_intersections += IntersectTetWithLevelSet(
+        tet_vertices_N, phi, e_m, &vertices_N, &faces, e_m_surface);
   }
+
+  if (num_intersections == 0) return nullptr;
 
   return std::make_unique<geometry::SurfaceMesh<T>>(std::move(faces),
                                                     std::move(vertices_N));

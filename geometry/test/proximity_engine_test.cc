@@ -59,7 +59,7 @@ class ProximityEngineTester {
   }
 
   template <typename T>
-  static hydroelastic::HydroelasticType hydroelastic_type(
+  static HydroelasticType hydroelastic_type(
       GeometryId id, const ProximityEngine<T>& engine) {
     return engine.hydroelastic_geometries().hydroelastic_type(id);
   }
@@ -69,7 +69,6 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
-using hydroelastic::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -110,7 +109,8 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
 GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityEngine<double> engine;
   // All of the geometries will have a scale comparable to edge_length, so that
-  // the mesh creation is as cheap as possible.
+  // the mesh creation is as cheap as possible. The exception is Mesh
+  // geometry since we have no re-meshing.
   const double edge_length = 0.5;
   const double E = 1e8;  // Elastic modulus.
   ProximityProperties soft_properties;
@@ -181,12 +181,16 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kRigid);
   }
 
-  // TODO(SeanCurtis-TRI): Add test for rigid mesh when ProximityEngine no
-  //  longer blindly throws. See note in proximity_engine.cc:
-  //  ImplementGeometry(Mesh).
-
-  // Case: meshes. Not tested because currently, proximity engine throws at
-  // any attempt to add one.
+  // Case: meshes.
+  {
+    Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
+        1.0 /* scale */};
+    const GeometryId mesh_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(mesh, mesh_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
+              HydroelasticType::kRigid);
+  }
 
   // Case: rigid convex (unsupported)
   {
@@ -198,6 +202,67 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
               HydroelasticType::kUndefined);
   }
+}
+
+// Confirms that Mesh is supported in ComputeContactSurfaces() but not other
+// queries. We set up an anchored soft sphere S and a dynamic rigid mesh M, so
+// that they contact. Then, we verify that ComputeContactSurfaces() gives one
+// contact surface between S and M, but other queries give no result from M.
+GTEST_TEST(ProximityEngineTests, MeshComputeContactSurfacesOnly) {
+  ProximityEngine<double> engine;
+
+  Sphere sphere_S{0.2};
+  RigidTransformd X_WS = RigidTransformd::Identity();
+  const GeometryId id_S = GeometryId::get_new_id();
+  const double edge_length = 0.5;
+  const double E = 1e8;  // Elastic modulus.
+  ProximityProperties soft_properties;
+  soft_properties.AddProperty(kMaterialGroup, kElastic, E);
+  AddSoftHydroelasticProperties(edge_length, &soft_properties);
+  engine.AddAnchoredGeometry(sphere_S, X_WS, id_S, soft_properties);
+
+  Mesh mesh_M{
+      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
+      1.0 /* scale */};
+  const GeometryId id_M = GeometryId::get_new_id();
+  // Infinite elastic modulus for rigid geometry.
+  const double E_infinity = std::numeric_limits<double>::infinity();
+  ProximityProperties rigid_properties;
+  rigid_properties.AddProperty(kMaterialGroup, kElastic, E_infinity);
+  AddRigidHydroelasticProperties(edge_length, &rigid_properties);
+  engine.AddDynamicGeometry(mesh_M, id_M, rigid_properties);
+  RigidTransformd X_WM = RigidTransformd::Identity();
+
+  const unordered_map<GeometryId, RigidTransformd> dynamic_poses = {
+      {id_M, X_WM}};
+
+  engine.UpdateWorldPoses(dynamic_poses);
+
+  const unordered_map<GeometryId, RigidTransformd> all_poses = {{id_S, X_WS},
+                                                                {id_M, X_WM}};
+
+  const auto contact_surfaces = engine.ComputeContactSurfaces(all_poses);
+  EXPECT_EQ(1, contact_surfaces.size());
+
+  const double max_distance = std::numeric_limits<double>::infinity();
+  const auto signed_distance_pairs =
+      engine.ComputeSignedDistancePairwiseClosestPoints(all_poses,
+                                                        max_distance);
+  EXPECT_EQ(0, signed_distance_pairs.size());
+
+  const auto signed_distances_to_point =
+      engine.ComputeSignedDistanceToPoint(Vector3d::Zero(),  // p_WQ
+                                          all_poses, max_distance);
+  ASSERT_EQ(1, signed_distances_to_point.size());
+  EXPECT_EQ(id_S, signed_distances_to_point[0].id_G);
+
+  const auto point_pairs = engine.ComputePointPairPenetration();
+  EXPECT_EQ(0, point_pairs.size());
+
+  const auto collision_candidates = engine.FindCollisionCandidates();
+  EXPECT_EQ(0, collision_candidates.size());
+
+  EXPECT_FALSE(engine.HasCollisions());
 }
 
 // Tests simple addition of anchored geometry.
@@ -3581,27 +3646,6 @@ TEST_F(BoxPenetrationTest, TangentProneCapsule1) {
 TEST_F(BoxPenetrationTest, TangentProneCapsule2) {
   // TODO(tehbelinda): We should check why we cannot use a smaller tolerance.
   TestCollision2(TangentProneCapsule, 1e-4);
-}
-
-// Attempting to add a dynamic Mesh should cause an abort.
-GTEST_TEST(ProximityEngineTests, AddDynamicMesh) {
-  ProximityEngine<double> engine;
-  Mesh mesh{"invalid/path/thing.obj", 1.0};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddDynamicGeometry(mesh, GeometryId::get_new_id()),
-      std::exception,
-      ".*The proximity engine does not support meshes yet.*");
-}
-
-// Attempting to add a anchored Mesh should cause an abort.
-GTEST_TEST(ProximityEngineTests, AddAnchoredMesh) {
-  ProximityEngine<double> engine;
-  Mesh mesh{"invalid/path/thing.obj", 1.0};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddAnchoredGeometry(mesh, RigidTransformd::Identity(),
-                                 GeometryId::get_new_id()),
-      std::exception,
-      ".*The proximity engine does not support meshes yet.*");
 }
 
 // This is a one-off test. Exposed in issue #10577. A point penetration pair

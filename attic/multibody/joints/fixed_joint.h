@@ -115,10 +115,6 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
   Eigen::VectorXd randomConfiguration(
       std::default_random_engine& generator) const override;
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("2019-12-31", "Please use get_position_name().")
-  std::string getPositionName(int index) const override;
-
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

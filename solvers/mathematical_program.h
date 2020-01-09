@@ -2633,6 +2633,32 @@ class MathematicalProgram {
     return y;
   }
 
+  /**
+   * Given the value of all decision variables, namely
+   * this.decision_variable(i) takes the value prog_var_vals(i), returns the
+   * vector that contains the value of the variables in binding.variables().
+   * @param binding binding.variables() must be decision variables in this
+   * MathematicalProgram.
+   * @param prog_var_vals The value of ALL the decision variables in this
+   * program.
+   * @return binding_variable_vals binding_variable_vals(i) is the value of
+   * binding.variables()(i) in prog_var_vals.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  GetBindingVariableValues(
+      const Binding<C>& binding,
+      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    DRAKE_DEMAND(prog_var_vals.rows() == num_vars());
+    VectorX<typename DerivedX::Scalar> result(binding.GetNumElements());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      result(i) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
+    }
+    return result;
+  }
+
   /** Evaluates all visualization callbacks registered with the
    * MathematicalProgram.
    *

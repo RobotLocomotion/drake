@@ -20,7 +20,7 @@ class GoodVector : public BasicVector<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GoodVector)
   GoodVector() : BasicVector<double>(2) {}
-  DRAKE_NODISCARD GoodVector* DoClone() const override {
+  [[nodiscard]] GoodVector* DoClone() const override {
     return new GoodVector;
   }
 };
@@ -45,7 +45,7 @@ class NotQuiteGoodVector : public GoodVector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector)
   NotQuiteGoodVector() {}
-  DRAKE_NODISCARD GoodVector* DoClone() const override {
+  [[nodiscard]] GoodVector* DoClone() const override {
     return new GoodVector;
   }
 };

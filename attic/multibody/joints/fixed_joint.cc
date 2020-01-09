@@ -16,11 +16,6 @@ Eigen::VectorXd FixedJoint::randomConfiguration(
   return Eigen::VectorXd::Zero(0);
 }
 
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-std::string FixedJoint::getPositionName(int index) const {
-  return get_position_name(index);
-}
-
 std::unique_ptr<DrakeJoint> FixedJoint::DoClone() const {
   auto joint = std::make_unique<FixedJoint>(get_name(),
                                             get_transform_to_parent_body());

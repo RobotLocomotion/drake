@@ -155,13 +155,12 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       const DepthImageToPointCloud dut(camera_info, kConfiguredPixelType,
                                        scale.value_or(1.0), kFields);
       auto context = dut.CreateDefaultContext();
-      context->FixInputPort(0, Value<ConfiguredImage>(depth_image));
+      dut.get_input_port(0).FixValue(context.get(), depth_image);
       if (kFields & pc_flags::kRGBs) {
-        context->FixInputPort(1, Value<ImageRgba8U>(color_image.value()));
+        dut.get_input_port(1).FixValue(context.get(), color_image.value());
       }
       if (camera_pose) {
-        const Value<RigidTransformd> camera_pose_as_value(*camera_pose);
-        context->FixInputPort(2, camera_pose_as_value);
+        dut.get_input_port(2).FixValue(context.get(), *camera_pose);
       }
       return dut.get_output_port(0).Eval<PointCloud>(*context);
     } else {
@@ -190,13 +189,12 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       const DepthImageToPointCloud dut(camera_info, kConfiguredPixelType,
                                        scale.value_or(1.0), kFields);
       auto context = dut.CreateDefaultContext();
-      context->FixInputPort(0, Value<ConfiguredImage>(depth_image));
+      dut.get_input_port(0).FixValue(context.get(), depth_image);
       if (kFields & pc_flags::kRGBs) {
-        context->FixInputPort(1, Value<ImageRgba8U>(color_image.value()));
+        dut.get_input_port(1).FixValue(context.get(), color_image.value());
       }
       if (camera_pose) {
-        const Value<RigidTransformd> camera_pose_as_value(*camera_pose);
-        context->FixInputPort(2, camera_pose_as_value);
+        dut.get_input_port(2).FixValue(context.get(), *camera_pose);
       }
       dut.get_output_port(0).Calc(*context, cloud);
     } else {

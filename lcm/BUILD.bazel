@@ -55,6 +55,8 @@ drake_cc_library(
     deps = [
         ":interface",
         "//common:essential",
+        "//common:scope_exit",
+        "@glib",
         "@lcm",
     ],
 )

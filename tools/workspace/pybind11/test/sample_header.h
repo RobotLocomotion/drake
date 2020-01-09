@@ -365,9 +365,7 @@ enum Enum {
 /// Enumeration class. Malesuada fames ac turpis egestas integer eget aliquet
 /// nibh praesent.
 enum EnumClass {
-  /// Enumeration class constant. Vestibulum mattis ullamcorper velit sed
-  /// ullamcorper.
-  EnumClassConstant,
+  EnumClassConstant,  ///< Enumeration class constant. Vestibulum mattis.
 };
 
 /// Anonymous values are ignored.

@@ -43,12 +43,10 @@ GTEST_TEST(SchunkWsgPdControllerTest, BasicTest) {
 void FixInputsAndHistory(const SchunkWsgPositionController& controller,
                          double desired_position, double force_limit,
                          systems::Context<double>* controller_context) {
-  controller_context->FixInputPort(
-      controller.get_desired_position_input_port().get_index(),
-      Vector1d(desired_position));
-  controller_context->FixInputPort(
-      controller.get_force_limit_input_port().get_index(),
-      Vector1d(force_limit));
+  controller.get_desired_position_input_port().FixValue(controller_context,
+                                                        desired_position);
+  controller.get_force_limit_input_port().FixValue(controller_context,
+                                                   force_limit);
   controller.set_initial_position(controller_context, desired_position);
 }
 

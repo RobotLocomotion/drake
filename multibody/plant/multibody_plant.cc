@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -51,6 +52,11 @@ using systems::State;
 
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
+using drake::multibody::internal::AccelerationKinematicsCache;
+using drake::multibody::internal::ArticulatedBodyForceBiasCache;
+using drake::multibody::internal::ArticulatedBodyInertiaCache;
+using drake::multibody::internal::PositionKinematicsCache;
+using drake::multibody::internal::VelocityKinematicsCache;
 using drake::multibody::MultibodyForces;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -269,6 +275,39 @@ MultibodyPlant<T>::MultibodyPlant(
 }
 
 template <typename T>
+std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
+  std::string graphviz = "digraph MultibodyPlant {\n";
+  graphviz += "label=\"" + this->get_name() + "\";\n";
+  graphviz += "rankdir=BT;\n";
+  graphviz += "labelloc=t;\n";
+  // Create a subgraph for each model instance, with the bodies as nodes.
+  // Note that the subgraph name must have the "cluster" prefix in order to
+  // have the box drawn.
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    graphviz += fmt::format("subgraph cluster{} {{\n", model_instance_index);
+    graphviz += fmt::format(" label=\"{}\";\n",
+                            GetModelInstanceName(model_instance_index));
+    for (const BodyIndex& body_index : GetBodyIndices(model_instance_index)) {
+      const Body<T>& body = get_body(body_index);
+      graphviz +=
+          fmt::format(" body{} [label=\"{}\"];\n", body.index(), body.name());
+    }
+    graphviz += "}\n";
+  }
+  // Add the graph edges (via the joints).
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    graphviz += fmt::format(
+        "body{} -> body{} [label=\"{} [{}]\"];\n", joint.child_body().index(),
+        joint.parent_body().index(), joint.name(), joint.type_name());
+  }
+  // TODO(russt): Consider adding actuators, frames, forces, etc.
+  graphviz += "}\n";
+  return graphviz;
+}
+
+template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
@@ -360,6 +399,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
       "phong", "diffuse",
       properties.GetPropertyOrDefault(
           "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  if (properties.HasProperty("phong", "diffuse_map")) {
+    perception_props.AddProperty(
+        "phong", "diffuse_map",
+        properties.GetProperty<std::string>("phong", "diffuse_map"));
+  }
   member_scene_graph().AssignRole(*source_id_, id, perception_props);
 
   const int visual_index = geometry_id_to_visual_index_.size();
@@ -379,29 +423,42 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction) {
+    geometry::ProximityProperties properties) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  DRAKE_THROW_UNLESS(properties.HasProperty("material", "coulomb_friction"));
+
+  const CoulombFriction<double> coulomb_friction =
+      properties.GetProperty<CoulombFriction<double>>("material",
+                                                      "coulomb_friction");
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id =
-      RegisterGeometry(body, X_BG, shape,
-                       GetScopedName(*this, body.model_instance(), name));
+  GeometryId id = RegisterGeometry(
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
-  // TODO(SeanCurtis-TRI): Push the contact parameters into the
-  // ProximityProperties.
-  member_scene_graph().AssignRole(
-      *source_id_, id, geometry::ProximityProperties());
+  member_scene_graph().AssignRole(*source_id_, id, std::move(properties));
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
       static_cast<int>(default_coulomb_friction_.size()) == collision_index);
+  // TODO(SeanCurtis-TRI): Stop storing coulomb friction in MBP and simply
+  //  acquire it from SceneGraph.
   default_coulomb_friction_.push_back(coulomb_friction);
   DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
   collision_geometries_[body.index()].push_back(id);
   return id;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const CoulombFriction<double>& coulomb_friction) {
+  geometry::ProximityProperties props;
+  props.AddProperty("material", "coulomb_friction", coulomb_friction);
+  return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
 template <typename T>
@@ -481,6 +538,25 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   return geometry_id;
 }
 
+template <typename T>
+void MultibodyPlant<T>::RegisterGeometryFramesForAllBodies() {
+  DRAKE_ASSERT(geometry_source_is_registered());
+  // Loop through the bodies to make sure that all bodies get a geometry frame.
+  // If not, create and attach one.
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const auto& body = get_body(body_index);
+    if (!body_has_registered_frame(body)) {
+      FrameId frame_id = member_scene_graph().RegisterFrame(
+          source_id_.value(),
+          GeometryFrame(
+              GetScopedName(*this, body.model_instance(), body.name()),
+              body.model_instance()));
+      body_index_to_frame_id_[body.index()] = frame_id;
+      frame_id_to_body_index_[frame_id] = body.index();
+    }
+  }
+}
+
 template<typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
@@ -551,6 +627,7 @@ void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
   if (geometry_source_is_registered()) {
+    RegisterGeometryFramesForAllBodies();
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
@@ -621,24 +698,28 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
         joint_limits_parameters_.damping.push_back(penalty_parameters.second);
       }
     }
+  }
 
-    // Since currently MBP only handles joint limits for discrete models, verify
-    // there are no joint limits when the model is continuous.
-    // Therefore we throw an exception with an appropriate message when a user
-    // specifies joint limits for a continuous model.
-    if (!is_discrete()) {
-      for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
-        const double stiffness = joint_limits_parameters_.stiffness[i];
-        if (!std::isinf(stiffness)) {
-          const JointIndex index =
-              joint_limits_parameters_.joints_with_limits[i];
-          throw std::logic_error(
-              "Currently MultibodyPlant does not handle joint limits for "
-              "continuous models. However a limit was specified for joint `"
-              "`" + get_joint(index).name() + "`.");
-        }
-      }
+  // Since currently MBP only handles joint limits for discrete models, we
+  // verify that there are no joint limits when the model is continuous.
+  // Therefore we print an appropriate warning message when a user
+  // specifies joint limits for a continuous model.
+  if (!is_discrete() && !joint_limits_parameters_.joints_with_limits.empty()) {
+    drake::log()->warn(
+        "Currently MultibodyPlant does not handle joint limits for "
+        "continuous models. "
+        "However some joints do specify limits. "
+        "Consider setting a non-zero time step in the MultibodyPlant "
+        "constructor; this will put MultibodyPlant in discrete-time mode, "
+        "which does support joint limits.");
+
+    std::string joints_names;
+    for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
+      const JointIndex index = joint_limits_parameters_.joints_with_limits[i];
+      if (i > 0) joints_names += ", ";
+      joints_names += fmt::format("`{}`", get_joint(index).name());
     }
+    drake::log()->warn("Joints that specify limits are: {}.", joints_names);
   }
 }
 
@@ -788,6 +869,24 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   }
   member_scene_graph().ExcludeCollisionsWithin(visual);
   member_scene_graph().ExcludeCollisionsBetween(visual, collision);
+}
+
+template <typename T>
+void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+    const std::pair<std::string, geometry::GeometrySet>&
+        collision_filter_group_a,
+    const std::pair<std::string, geometry::GeometrySet>&
+        collision_filter_group_b) {
+  DRAKE_DEMAND(!is_finalized());
+  DRAKE_DEMAND(geometry_source_is_registered());
+
+  if (collision_filter_group_a.first == collision_filter_group_b.first) {
+    member_scene_graph().ExcludeCollisionsWithin(
+        collision_filter_group_a.second);
+  } else {
+    member_scene_graph().ExcludeCollisionsBetween(
+        collision_filter_group_a.second, collision_filter_group_b.second);
+  }
 }
 
 template<typename T>
@@ -1382,12 +1481,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
     const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
 
-    // Pack everything calculator needs. The contact surface has normals
-    // pointing *into* geometry N, so it leads to the traction acting on body B.
-    // So, we order the parameters here as B, A and compute the force on B
-    // below.
+    // Pack everything calculator needs.
     typename internal::HydroelasticTractionCalculator<T>::Data data(
-        X_WB, X_WA, V_WB, V_WA, &surface);
+        X_WA, X_WB, V_WA, V_WB, &surface);
 
     // Combined Hunt & Crossley dissipation.
     const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
@@ -1395,14 +1491,14 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Integrate the hydroelastic traction field over the contact surface.
     std::vector<HydroelasticQuadraturePointData<T>> traction_output;
-    SpatialForce<T> F_Bc_W;
+    SpatialForce<T> F_Ac_W;
     traction_calculator.ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        data, dissipation, dynamic_friction, &traction_output, &F_Bc_W);
+        data, dissipation, dynamic_friction, &traction_output, &F_Ac_W);
 
     // Shift the traction at the centroid to tractions at the body origins.
     SpatialForce<T> F_Ao_W, F_Bo_W;
     traction_calculator.ShiftSpatialForcesAtCentroidToBodyOrigins(
-        data, F_Bc_W, &F_Bo_W, &F_Ao_W);
+        data, F_Ac_W, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array.at(bodyA.node_index()) += F_Ao_W;
@@ -1413,7 +1509,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     }
 
     // Add the information for contact reporting.
-    contact_info.emplace_back(&surface, F_Bc_W, std::move(traction_output));
+    contact_info.emplace_back(&surface, F_Ac_W, std::move(traction_output));
   }
 }
 
@@ -1806,6 +1902,45 @@ void MultibodyPlant<T>::CalcTamsiResults(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache(
+    const systems::Context<T>& context,
+    ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+  DRAKE_DEMAND(aba_force_bias_cache != nullptr);
+
+  // Applied forces including force elements (function of state x) and external
+  // inputs u.
+  MultibodyForces<T> forces(*this);
+  CalcAppliedForces(context, &forces);
+
+  // Add the contribution of contact forces.
+  std::vector<SpatialForce<T>>& Fapp_BBo_W_array = forces.mutable_body_forces();
+  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
+      EvalSpatialContactForcesContinuous(context);
+  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
+    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
+
+  // Perform the tip-to-base pass to compute the force bias terms needed by ABA.
+  internal_tree().CalcArticulatedBodyForceBiasCache(context, forces,
+                                                    aba_force_bias_cache);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcForwardDynamics(
+    const systems::Context<T>& context,
+    AccelerationKinematicsCache<T>* ac) const {
+  DRAKE_DEMAND(ac != nullptr);
+
+  // Evaluate the ABA cache, function of state x and inputs u.
+  const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache =
+      EvalArticulatedBodyForceBiasCache(context);
+
+  // Perform the last base-to-tip pass to compute accelerations using the O(n)
+  // ABA.
+  internal_tree().CalcArticulatedBodyAccelerations(context,
+                                                   aba_force_bias_cache, ac);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedAccelerations(
     const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
   DRAKE_DEMAND(vdot != nullptr);
@@ -1813,7 +1948,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerations(
   if (is_discrete())
     CalcGeneralizedAccelerationsDiscrete(context, vdot);
   else
-    CalcGeneralizedAccelerationsContinuous(context, vdot);
+    *vdot = EvalForwardDynamics(context).get_vdot();
 }
 
 template <typename T>
@@ -1996,7 +2131,6 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  if (is_discrete()) return;
   const int nq = num_positions();
   const int nv = num_velocities();
 
@@ -2014,7 +2148,6 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  if (is_discrete()) return;
   const int nq = num_positions();
   const int nv = num_velocities();
 
@@ -2364,6 +2497,31 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {dependency_ticket});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
+  // Articulated Body Algorithm (ABA) force bias cache.
+  auto& aba_force_bias_cache_entry = this->DeclareCacheEntry(
+      std::string("ABA force bias cache."),
+      ArticulatedBodyForceBiasCache<T>(internal_tree().get_topology()),
+      &MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache,
+      // ABA computes quantities such as Zplus which are needed for the
+      // computation of acceleration and thus depend on both state and inputs.
+      // All sources include: time, accuracy, state, input ports, and
+      // parameters.
+      {this->all_sources_ticket()});
+  cache_indexes_.aba_force_bias_cache =
+      aba_force_bias_cache_entry.cache_index();
+
+  // Last pass of the ABA for forward dynamics.
+  auto& aba_accelerations_cache_entry = this->DeclareCacheEntry(
+      std::string("ABA accelerations."),
+      AccelerationKinematicsCache<T>(internal_tree().get_topology()),
+      &MultibodyPlant<T>::CalcForwardDynamics,
+      // Accelerations depend on both state and inputs.
+      // All sources include: time, accuracy, state, input ports, and
+      // parameters.
+      {this->all_sources_ticket()});
+  cache_indexes_.aba_accelerations =
+      aba_accelerations_cache_entry.cache_index();
+
   // Cache generalized accelerations.
   auto& vdot_cache_entry = this->DeclareCacheEntry(
       std::string("Generalized Accelerations (vdot)."),
@@ -2616,8 +2774,10 @@ void MultibodyPlant<T>::CalcReactionForces(
   // we can make an estimation based on the trace of the mass matrix (Jain 2011,
   // Eq. 4.21). For now we only ASSERT though with a better estimation we could
   // promote this to a DEMAND.
-  DRAKE_ASSERT(tau_id.norm() <
-               100 * num_velocities() * std::numeric_limits<double>::epsilon());
+  // TODO(amcastro-tri) Uncomment this line once issue #12473 is resolved.
+  // DRAKE_ASSERT(tau_id.norm() <
+  //              100 * num_velocities() *
+  //              std::numeric_limits<double>::epsilon());
 
   // Map mobilizer reaction forces to joint reaction forces and perform the
   // necessary frame conversions.
@@ -2745,7 +2905,7 @@ AddMultibodyPlantSceneGraph(
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
   if (!plant) {
-    plant = std::make_unique<MultibodyPlant<T>>();
+    plant = std::make_unique<MultibodyPlant<T>>(0.0);
     plant->set_name("plant");
   }
   if (!scene_graph) {

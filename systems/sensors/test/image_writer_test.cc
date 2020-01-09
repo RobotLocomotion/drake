@@ -263,8 +263,7 @@ class ImageWriterTest : public ::testing::Test {
         port_name, path.string(), period, start_time);
     auto events = writer.AllocateCompositeEventCollection();
     auto context = writer.AllocateContext();
-    context->FixInputPort(port.get_index(),
-                          AbstractValue::Make<Image<kPixelType>>(image));
+    port.FixValue(context.get(), image);
     context->SetTime(0.);
     writer.CalcNextUpdateTime(*context, events.get());
 
@@ -622,9 +621,7 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
           std::logic_error, ".*InputPort.* is not connected");
 
       // Confirms that a valid publish increments the counter.
-      context->FixInputPort(
-          port.get_index(),
-          AbstractValue::Make<ImageRgba8U>(test_image<PixelType::kRgba8U>()));
+      port.FixValue(context.get(), test_image<PixelType::kRgba8U>());
 
       const std::string expected_name = tester.MakeFileName(
           tester.port_format(port.get_index()), pixel_type, context->get_time(),

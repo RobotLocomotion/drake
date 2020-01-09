@@ -55,7 +55,7 @@ def main():
 
     # Construct Plant + SceneGraph.
     builder = DiagramBuilder()
-    plant = builder.AddSystem(MultibodyPlant())
+    plant = builder.AddSystem(MultibodyPlant(0.0))
     scene_graph = builder.AddSystem(SceneGraph())
     plant.RegisterAsSourceForSceneGraph(scene_graph)
     builder.Connect(

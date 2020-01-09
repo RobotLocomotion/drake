@@ -16,7 +16,7 @@
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkProperty.h>
-#include <vtkSphereSource.h>
+#include <vtkTexturedSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
@@ -172,7 +172,7 @@ void RenderEngineOspray::ImplementGeometry(const Sphere& sphere,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive sphere; find some way to
   //  exercise *that* instead of needlessly tessellating.
-  vtkNew<vtkSphereSource> vtk_sphere;
+  vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
@@ -211,9 +211,12 @@ void RenderEngineOspray::ImplementGeometry(const Box& box, void* user_data) {
 
 void RenderEngineOspray::ImplementGeometry(const Capsule& capsule,
                                            void* user_data) {
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  CreateVtkCapsule(transform_filter, capsule.radius(), capsule.length());
-  ImplementGeometry(transform_filter.GetPointer(), user_data);
+  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(), user_data);
+}
+
+void RenderEngineOspray::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                           void* user_data) {
+  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Mesh& mesh, void* user_data) {
@@ -473,13 +476,18 @@ void RenderEngineOspray::ImplementGeometry(vtkPolyDataAlgorithm* source,
   std::ifstream file_exist(diffuse_map_name);
   if (file_exist) {
     texture_name = diffuse_map_name;
-  } else if (diffuse_map_name.empty() && data.mesh_filename) {
-    // This is the hack to search for mesh.png as a possible texture.
-    const std::string
-    alt_texture_name(RemoveFileExtension(*data.mesh_filename) +
-        ".png");
-    std::ifstream alt_file_exist(alt_texture_name);
-    if (alt_file_exist) texture_name = alt_texture_name;
+  } else {
+    if (!diffuse_map_name.empty()) {
+      log()->warn("Requested diffuse map could not be found: {}",
+                  diffuse_map_name);
+    }
+    if (diffuse_map_name.empty() && data.mesh_filename) {
+      // This is the hack to search for mesh.png as a possible texture.
+      const std::string alt_texture_name(
+          RemoveFileExtension(*data.mesh_filename) + ".png");
+      std::ifstream alt_file_exist(alt_texture_name);
+      if (alt_file_exist) texture_name = alt_texture_name;
+    }
   }
   if (!texture_name.empty()) {
     vtkNew<vtkPNGReader> texture_reader;

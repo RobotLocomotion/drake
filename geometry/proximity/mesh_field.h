@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
@@ -54,7 +53,7 @@ class MeshField {
    does not own the mesh. In fact, several %MeshField objects can use the same
    mesh.
    */
-  DRAKE_NODISCARD std::unique_ptr<MeshField> CloneAndSetMesh(
+  [[nodiscard]] std::unique_ptr<MeshField> CloneAndSetMesh(
       const MeshType* new_mesh) const {
     DRAKE_DEMAND(new_mesh != nullptr);
     DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
@@ -74,13 +73,13 @@ class MeshField {
     DRAKE_DEMAND(mesh_ != nullptr);
   }
 
-  DRAKE_NODISCARD std::unique_ptr<MeshField> CloneWithNullMesh() const {
+  [[nodiscard]] std::unique_ptr<MeshField> CloneWithNullMesh() const {
     return DoCloneWithNullMesh();
   }
   /** Derived classes must implement this method to clone themselves given
    that the pointer to the mesh is null.
    */
-  DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
+  [[nodiscard]] virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
       const = 0;
 
  private:

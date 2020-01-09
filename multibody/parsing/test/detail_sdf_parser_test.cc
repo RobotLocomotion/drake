@@ -13,6 +13,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -40,7 +41,7 @@ const double kEps = std::numeric_limits<double>::epsilon();
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
@@ -66,7 +67,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_name = FindResourceOrThrow(
@@ -200,7 +201,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
       "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
   const RigidTransformd X_MF3(Vector3d(0.7, 0.8, 0.9));
   check_frame(
-      "_instance1_sdf_model_frame", "model_scope_model_frame_implicit", X_MF3);
+      "__model__", "model_scope_model_frame_implicit", X_MF3);
 }
 
 struct PlantAndSceneGraph {
@@ -336,7 +337,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
       "negative_damping_joint.sdf");
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(sdf_file_path);
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromSdfFile(sdf_file_path, "", package_map, &plant),
       std::runtime_error,
@@ -350,7 +351,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
   sdf::addURIPath("model://", filesystem::path(full_name).parent_path());
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   // We start with the world and default model instances.
   ASSERT_EQ(plant.num_model_instances(), 2);
@@ -418,7 +419,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     AddModelsFromSdfFile(full_name, package_map, &plant, &scene_graph);
     plant.Finalize();
@@ -427,7 +428,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   EXPECT_NE(num_visuals_explicit, 0);
   {
     // Test implicitly specifying.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     AddModelsFromSdfFile(full_name, package_map, &plant);
@@ -438,7 +439,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
 
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
 
   const std::string full_name = FindResourceOrThrow(
@@ -485,7 +486,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
 GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
 
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
@@ -518,52 +519,199 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
       std::logic_error, "There is no joint actuator named '.*' in the model.");
 }
 
-void ExpectUnsupportedFrame(const std::string& inner) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(inner),
-      std::runtime_error,
-      R"(<pose frame='\{non-empty\}'/> is presently not supported )"
-      R"(outside of the <frame/> tag.)");
-}
-
-GTEST_TEST(SdfParser, TestUnsupportedFrames) {
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <pose frame='hello'/>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'><pose frame='hello'/></link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'>
-    <inertial><pose frame='hello'/></inertial>
+GTEST_TEST(SdfParser, TestSupportedFrames) {
+  // Test `//link/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <pose relative_to='my_frame'/>
   </link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'>"
-    <visual name='b'><pose frame='hello'/></visual>
+</model>
+)");
+  // Test `//link/visual/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <visual name='my_visual'>
+      <pose relative_to='my_frame'/>
+    </visual>
   </link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
-  <link name='a'>"
-    <collision name='b'><pose frame='hello'/></collision>
+</model>
+)");
+  // Test `//link/collision/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <collision name='my_collision'>
+      <pose relative_to='my_frame'/>
+    </collision>
   </link>
-</model>)");
-  ExpectUnsupportedFrame(R"(
-<model name='bad'>
+</model>
+)");
+  // Test `//joint/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
   <link name='a'/>
+  <frame name='my_frame'/>
   <joint name='b' type='fixed'>"
-    <pose frame='hello'/>"
+    <pose relative_to='my_frame'/>"
     <parent>world</parent>
     <child>a</child>"
   </joint>
 </model>)");
 }
 
+void FailWithUnsupportedRelativeTo(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
+      R"(in <inertial/> or <model/> tags.)");
+}
+
+void FailWithInvalidWorld(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
+      R"(with name\[.*\] does not match a link, joint, or )"
+      R"(frame name in model with name\[bad\][\s\S]*)");
+}
+
+void FailWithReservedName(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*The supplied frame name \[.*\] is reserved.[\s\S]*)");
+}
+
+GTEST_TEST(SdfParser, TestUnsupportedFrames) {
+  // Model frames cannnot attach to / nor be relative to the world frame.
+  FailWithInvalidWorld(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='model_scope_world_frame' attached_to='world'>
+    <pose>0 0 0 0 0 0</pose>
+  </frame>
+</model>
+)");
+  FailWithInvalidWorld(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='model_scope_world_relative_frame'>
+    <pose relative_to='world'>0 0 0 0 0 0</pose>
+  </frame>
+</model>
+)");
+  for (std::string bad_name : {"world", "__model__", "__anything__"}) {
+    FailWithReservedName(fmt::format(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='{}'/>  <!-- Invalid name -->
+</model>
+)", bad_name));
+  }
+
+  FailWithUnsupportedRelativeTo(R"(
+<model name='bad'>
+  <pose relative_to='invalid_usage'/>
+  <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
+</model>)");
+  FailWithUnsupportedRelativeTo(R"(
+<model name='bad'>
+  <frame name='my_frame'/>
+  <link name='a'>
+    <inertial><pose relative_to='my_frame'/></inertial>
+  </link>
+</model>)");
+}
+
+// Reports if the frame with the given id has a geometry with the given role
+// whose name is the same as what ShapeName(ShapeType{}) would produce.
+template <typename ShapeType>
+::testing::AssertionResult FrameHasShape(geometry::FrameId frame_id,
+                                         geometry::Role role,
+                                         const SceneGraph<double>& scene_graph,
+                                         const ShapeType& shape) {
+  const auto& inspector = scene_graph.model_inspector();
+  const std::string name = geometry::ShapeName(shape).name();
+  try {
+    // Note: MBP prepends the model index to the geometry name; in this case
+    // that model instance  name is "test_robot".
+    const geometry::GeometryId geometry_id =
+        inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
+    const std::string shape_type =
+        geometry::ShapeName(inspector.GetShape(geometry_id)).name();
+    if (shape_type != name) {
+      return ::testing::AssertionFailure()
+        << "Geometry with role " << role << " has wrong shape type."
+        << "\n  Expected: " << name
+        << "\n  Found: " << shape_type;
+    }
+  } catch (const std::exception& e) {
+    return ::testing::AssertionFailure()
+           << "Frame " << frame_id << " does not have a geometry with role "
+           << role << " and name " << name
+           << ". Exception message: " << e.what();
+  }
+  return ::testing::AssertionSuccess();
+}
+
+// Confirms that all supported geometries in an SDF file are registered. The
+// *details* of the geometries are ignored -- we assume that that functionality
+// is tested in detail_scene_graph_test.cc. This merely makes sure that *that*
+// functionality is exercised appropriately.
+void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
+  const std::string full_name = FindResourceOrThrow(sdf_name);
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  plant.Finalize();
+
+  const auto frame_id =
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link1").index());
+
+  const std::string mesh_uri = "drake/multibody/parsing/test/tri_cube.obj";
+
+  // Note: the parameters for the various example shapes do not matter to this
+  // test.
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Box{0.1, 0.1, 0.1}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Capsule{0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Convex{mesh_uri, 1.0}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Cylinder{0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Ellipsoid{0.1, 0.1, 0.1}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::HalfSpace{}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Mesh{mesh_uri, 1.0}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Sphere{0.1}));
+}
+
+GTEST_TEST(SdfParser, CollisionGeometryParsing) {
+  TestForParsedGeometry(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "all_geometries_as_collision.sdf",
+      geometry::Role::kProximity);
+}
+
+GTEST_TEST(SdfParser, VisualGeometryParsing) {
+  TestForParsedGeometry(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "all_geometries_as_visual.sdf",
+      geometry::Role::kPerception);
+}
 
 }  // namespace
 }  // namespace internal

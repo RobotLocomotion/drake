@@ -1,18 +1,14 @@
 # -*- python -*-
 
-package(default_visibility = ["//visibility:public"])
-
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
 
 # Used by :python_env.bzl.
 config_setting(
     name = "linux",
     values = {"cpu": "k8"},
-)
-
-py_binary(
-    name = "drake_proto_ubsan_fix",
-    srcs = ["drake_proto_ubsan_fix.py"],
 )
 
 exports_files([

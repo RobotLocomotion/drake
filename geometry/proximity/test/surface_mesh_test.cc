@@ -144,37 +144,6 @@ GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
   EXPECT_EQ(surface_mesh->num_faces(), 2);
 }
 
-// Tests that referring_triangles() produces the correct sets of referring
-// triangles.
-GTEST_TEST(SurfaceMeshTest, ReferringTriangles) {
-  auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  ASSERT_EQ(surface_mesh->num_vertices(), 4);
-
-  // Get the four sets.
-  const std::set<SurfaceFaceIndex>& tris_referring_to_0 =
-      surface_mesh->referring_triangles(SurfaceVertexIndex(0));
-  const std::set<SurfaceFaceIndex>& tris_referring_to_1 =
-      surface_mesh->referring_triangles(SurfaceVertexIndex(1));
-  const std::set<SurfaceFaceIndex>& tris_referring_to_2 =
-      surface_mesh->referring_triangles(SurfaceVertexIndex(2));
-  const std::set<SurfaceFaceIndex>& tris_referring_to_3 =
-      surface_mesh->referring_triangles(SurfaceVertexIndex(3));
-
-  // Construct the expected sets.
-  std::set<SurfaceFaceIndex> expected_tris_referring_to_0{
-      SurfaceFaceIndex(0), SurfaceFaceIndex(1) };
-  std::set<SurfaceFaceIndex> expected_tris_referring_to_1{SurfaceFaceIndex(0)};
-  std::set<SurfaceFaceIndex> expected_tris_referring_to_2{
-      SurfaceFaceIndex(0), SurfaceFaceIndex(1) };
-  std::set<SurfaceFaceIndex> expected_tris_referring_to_3{SurfaceFaceIndex(1)};
-
-  // Check the results.
-  EXPECT_EQ(expected_tris_referring_to_0, tris_referring_to_0);
-  EXPECT_EQ(expected_tris_referring_to_1, tris_referring_to_1);
-  EXPECT_EQ(expected_tris_referring_to_2, tris_referring_to_2);
-  EXPECT_EQ(expected_tris_referring_to_3, tris_referring_to_3);
-}
-
 // Checks the area calculations.
 GTEST_TEST(SurfaceMeshTest, TestArea) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
@@ -183,8 +152,7 @@ GTEST_TEST(SurfaceMeshTest, TestArea) {
   EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 1.0, tol);
   EXPECT_NEAR(surface_mesh->total_area(), 1.5, tol);
 
-  // Verify that the empty mesh and the zero area mesh both give zero area.
-  EXPECT_NEAR(GenerateEmptyMesh()->total_area(), 0.0, tol);
+  // Verify that the zero area mesh gives zero area.
   EXPECT_NEAR(GenerateZeroAreaMesh()->total_area(), 0.0, tol);
 }
 
@@ -222,7 +190,6 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
 
   // The documentation for the centroid method specifies particular behavior
   // when the total area is zero. Test that.
-  EXPECT_NEAR(GenerateEmptyMesh()->centroid().norm(), 0.0, tol);
   EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, tol);
 }
 
@@ -386,14 +353,23 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
 
 // Checks the equality calculations.
 GTEST_TEST(SurfaceMeshTest, TestEqual) {
-  const auto empty_mesh = GenerateEmptyMesh();
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
   SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
   EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
-  EXPECT_FALSE(empty_mesh->Equal(*zero_area_mesh));
   EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
-  EXPECT_FALSE(triangle_mesh->Equal(*empty_mesh));
+}
+
+// Checks that constructing an empty mesh throws.
+GTEST_TEST(SurfaceMeshTest, TestEmptyMeshElements) {
+  EXPECT_THROW(GenerateEmptyMesh(), std::logic_error);
+}
+
+GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {
+  auto mesh = TestSurfaceMesh<double>();
+  const auto[center, size] = mesh->CalcBoundingBox();
+  EXPECT_EQ(center, Vector3d(7.5, 7.5, 0));
+  EXPECT_EQ(size, Vector3d(15, 15, 0));
 }
 
 }  // namespace

@@ -21,7 +21,7 @@ int DoMain() {
   // The plant and its context.
   PendulumPlant<AutoDiffXd> system;
   auto context = system.CreateDefaultContext();
-  context->FixInputPort(0, Vector1<AutoDiffXd>::Constant(0.0));
+  system.get_input_port().FixValue(context.get(), AutoDiffXd(0.0));
 
   // Retrieve the (mutable) state from context so that we can set it.
   PendulumState<AutoDiffXd>& state =

@@ -4,14 +4,19 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <stack>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/utilities.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -25,12 +30,13 @@ class Aabb {
   /**
    @pre half_width.x(), half_width.y(), half_width.z() are not negative.
   */
-  Aabb(const Vector3<double> center, const Vector3<double> half_width)
+  Aabb(Vector3<double> center, Vector3<double> half_width)
       : center_(std::move(center)), half_width_(std::move(half_width)) {
-    // TODO(tehbelinda): Introduce epsilon tolerance for robust bounding box.
     DRAKE_DEMAND(half_width.x() >= 0.0);
     DRAKE_DEMAND(half_width.y() >= 0.0);
     DRAKE_DEMAND(half_width.z() >= 0.0);
+
+    PadBoundary();
   }
 
   /** Returns the center. */
@@ -40,10 +46,10 @@ class Aabb {
   const Vector3<double>& half_width() const { return half_width_; }
 
   /** Returns the upper bounding point. */
-  const Vector3<double> upper() const { return center_ + half_width_; }
+  Vector3<double> upper() const { return center_ + half_width_; }
 
   /** Returns the lower bounding point. */
-  const Vector3<double> lower() const { return center_ - half_width_; }
+  Vector3<double> lower() const { return center_ - half_width_; }
 
   /** @return Volume of the bounding box.  */
   double CalcVolume() const {
@@ -52,7 +58,25 @@ class Aabb {
     return half_width_[0] * half_width_[1] * half_width_[2] * 8;
   }
 
+  /** Checks whether the two bounding volumes overlap by applying the transform
+   between the two boxes and using Gottschalk's OBB overlap test.  */
+  static bool HasOverlap(const Aabb& a, const Aabb& b,
+                         const math::RigidTransform<double>& X_AB);
+
  private:
+  friend class AabbTester;
+
+  // Pad this box in place by a small amount to ensure there will be no
+  // roundoff problems. The amount to pad depends on the default tolerance for
+  // this precision, the dimensions, and the position of the box in space.
+  // A very large box, or a box that is very far from the origin, must be
+  // padded more than a small one at the origin.
+  void PadBoundary();
+
+  // Default tolerance for double precision. This is the minimum amount of
+  // padding to be added to the boundary, regardless of size or position.
+  static constexpr double kTolerance = 2e-14;
+
   // Center point of the box.
   Vector3<double> center_;
   // Half width extents along each axes.
@@ -61,35 +85,99 @@ class Aabb {
 
 /** Node of the tree structure representing the BoundingVolumeHierarchy.  */
 template <class MeshType>
-struct BvNode {
-  explicit BvNode(Aabb aabb_in) : aabb(std::move(aabb_in)) {}
+class BvNode {
+ public:
+  /** Constructor for leaf nodes.
+   @param aabb The bounding volume encompassing the element.
+   @param index The index into the mesh for retrieving the element.
+   */
+  BvNode(Aabb aabb, typename MeshType::ElementIndex index)
+      : aabb_(std::move(aabb)), child_(index) {}
 
-  BvNode(const BvNode& node) : aabb(node.aabb) { *this = node; }
+  /** Constructor for branch/internal nodes.
+   @param aabb The bounding volume encompassing the elements in child branches.
+   @param left Unique pointer to the left child branch.
+   @param right Unique pointer to the right child branch.
+   @pre Both children must be distinct and not null.
+   */
+  BvNode(Aabb aabb, std::unique_ptr<BvNode<MeshType>> left,
+         std::unique_ptr<BvNode<MeshType>> right)
+      : aabb_(std::move(aabb)),
+        child_(NodeChildren(std::move(left), std::move(right))) {}
 
-  BvNode& operator=(const BvNode& node) {
-    if (&node == this) return *this;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
 
-    aabb = node.aabb;
-    element_index = node.element_index;
-    if (node.left != nullptr) {
-      left = std::make_unique<BvNode<MeshType>>(*node.left);
-    }
-    if (node.right != nullptr) {
-      right = std::make_unique<BvNode<MeshType>>(*node.right);
-    }
-    return *this;
+  /** Returns the bounding volume.  */
+  const Aabb& aabb() const { return aabb_; }
+
+  /** Returns the index into the mesh's elements.
+   @pre Assumes that is_leaf() returns true.  */
+  typename MeshType::ElementIndex element_index() const {
+    return std::get<typename MeshType::ElementIndex>(child_);
   }
 
-  BvNode(BvNode&&) = default;
-  BvNode& operator=(BvNode&&) = default;
+  /** Returns the left child branch.
+   @pre Assumes that is_leaf() returns false.  */
+  const BvNode<MeshType>& left() const {
+    return *(std::get<NodeChildren>(child_).left);
+  }
 
-  Aabb aabb;
-  /** Leaf node's index to the mesh element (i.e., tri or tet) bounded by the
-   node's bounding volume.  */
-  typename MeshType::ElementIndex element_index;
-  std::unique_ptr<BvNode<MeshType>> left;
-  std::unique_ptr<BvNode<MeshType>> right;
+  /** Returns the right child branch.
+   @pre Assumes that is_leaf() returns false.  */
+  const BvNode<MeshType>& right() const {
+    return *(std::get<NodeChildren>(child_).right);
+  }
+
+  /** Returns whether this is a leaf node as a opposed to a branch node.  */
+  bool is_leaf() const {
+    return std::holds_alternative<typename MeshType::ElementIndex>(child_);
+  }
+
+ private:
+  struct NodeChildren {
+    std::unique_ptr<BvNode<MeshType>> left;
+    std::unique_ptr<BvNode<MeshType>> right;
+
+    NodeChildren(std::unique_ptr<BvNode<MeshType>> left_in,
+                 std::unique_ptr<BvNode<MeshType>> right_in)
+        : left(std::move(left_in)), right(std::move(right_in)) {
+      DRAKE_DEMAND(left != nullptr);
+      DRAKE_DEMAND(right != nullptr);
+      DRAKE_DEMAND(left != right);
+    }
+
+    NodeChildren(const NodeChildren& other)
+        : NodeChildren{std::make_unique<BvNode<MeshType>>(*other.left),
+                       std::make_unique<BvNode<MeshType>>(*other.right)} {}
+
+    NodeChildren& operator=(NodeChildren other) {
+      std::swap(left, other.left);
+      std::swap(right, other.right);
+      return *this;
+    }
+  };
+
+  Aabb aabb_;
+
+  // If this is a leaf node then the child refers to an index into the mesh's
+  // elements (i.e., a tri or a tet) bounded by the node's bounding volume.
+  // Otherwise, it refers to child nodes further down the tree.
+  std::variant<typename MeshType::ElementIndex, NodeChildren> child_;
 };
+
+/** Resulting instruction from performing the bounding volume tree traversal
+ (BVTT) callback on two potentially colliding pairs. Note that this is not the
+ mathematical result but information on how the traversal should proceed.  */
+enum BvttCallbackResult {
+  Continue,
+  Terminate
+};
+
+/** Bounding volume tree traversal (BVTT) callback. Returns a BvttCallbackResult
+ for further action, e.g. deciding whether to exit early.  */
+template <class MeshType, class OtherMeshType>
+using BvttCallback = std::function<BvttCallbackResult(
+    typename MeshType::ElementIndex, typename OtherMeshType::ElementIndex)>;
 
 /** BoundingVolumeHierarchy is an acceleration structure for performing spatial
  queries against a collection of objects (in this case, triangles or
@@ -108,18 +196,9 @@ struct BvNode {
 template <class MeshType>
 class BoundingVolumeHierarchy {
  public:
-  explicit BoundingVolumeHierarchy(const MeshType& mesh) {
-    // Generate element indices and corresponding centroids. These are used
-    // for calculating the split point of the volumes.
-    const int num_elements = mesh.num_elements();
-    std::vector<CentroidPair> element_centroids;
-    for (typename MeshType::ElementIndex i(0); i < num_elements; ++i) {
-      element_centroids.emplace_back(i, ComputeCentroid(mesh, i));
-    }
+  using IndexType = typename MeshType::ElementIndex;
 
-    root_node_ =
-        BuildBVTree(mesh, element_centroids.begin(), element_centroids.end());
-  }
+  explicit BoundingVolumeHierarchy(const MeshType& mesh);
 
   BoundingVolumeHierarchy(const BoundingVolumeHierarchy& bvh) { *this = bvh; }
 
@@ -133,83 +212,90 @@ class BoundingVolumeHierarchy {
   BoundingVolumeHierarchy(BoundingVolumeHierarchy&&) = default;
   BoundingVolumeHierarchy& operator=(BoundingVolumeHierarchy&&) = default;
 
+  const BvNode<MeshType>& root_node() const { return *root_node_; }
+
+  /** Perform a query of this bvh's mesh elements against the given bvh's
+   mesh elements and runs the callback for each unculled pair.  */
+  template <class OtherMeshType>
+  void Collide(const BoundingVolumeHierarchy<OtherMeshType>& bvh,
+               const math::RigidTransform<double>& X_AB,
+               BvttCallback<MeshType, OtherMeshType> callback) const {
+    using NodePair =
+        std::pair<const BvNode<MeshType>&, const BvNode<OtherMeshType>&>;
+    std::stack<NodePair, std::vector<NodePair>> node_pairs;
+    node_pairs.emplace(root_node(), bvh.root_node());
+
+    while (!node_pairs.empty()) {
+      const auto& [node_a, node_b] = node_pairs.top();
+      node_pairs.pop();
+
+      // Check if the bounding volumes overlap.
+      if (!Aabb::HasOverlap(node_a.aabb(), node_b.aabb(), X_AB)) {
+        continue;
+      }
+
+      // Run the callback on the pair if they are both leaf nodes, otherwise
+      // check each branch.
+      if (node_a.is_leaf() && node_b.is_leaf()) {
+        BvttCallbackResult result =
+            callback(node_a.element_index(), node_b.element_index());
+        if (result == BvttCallbackResult::Terminate) return;  // Exit early.
+      } else if (node_b.is_leaf()) {
+        node_pairs.emplace(node_a.left(), node_b);
+        node_pairs.emplace(node_a.right(), node_b);
+      } else if (node_a.is_leaf()) {
+        node_pairs.emplace(node_a, node_b.left());
+        node_pairs.emplace(node_a, node_b.right());
+      } else {
+        node_pairs.emplace(node_a.left(), node_b.left());
+        node_pairs.emplace(node_a.right(), node_b.left());
+        node_pairs.emplace(node_a.left(), node_b.right());
+        node_pairs.emplace(node_a.right(), node_b.right());
+      }
+    }
+  }
+
+  /** Wrapper around `Collide` with a callback that accumulates each pair of
+   collision candidates and returns them all.
+   @return Vector of element index pairs whose bounding volumes are candidates
+   for collision.  */
+  template <class OtherMeshType>
+  std::vector<std::pair<IndexType, typename OtherMeshType::ElementIndex>>
+  GetCollisionCandidates(const BoundingVolumeHierarchy<OtherMeshType>& bvh,
+                         const math::RigidTransform<double>& X_AB) const {
+    std::vector<std::pair<IndexType, typename OtherMeshType::ElementIndex>>
+        result;
+    auto callback =
+        [&result](
+            IndexType a,
+            typename OtherMeshType::ElementIndex b) -> BvttCallbackResult {
+      result.emplace_back(a, b);
+      return BvttCallbackResult::Continue;
+    };
+    Collide(bvh, X_AB, callback);
+    return result;
+  }
+
  private:
   // Convenience class for testing.
   friend class BVHTester;
 
-  using CentroidPair =
-      std::pair<typename MeshType::ElementIndex, Vector3<double>>;
+  using CentroidPair = std::pair<IndexType, Vector3<double>>;
 
-  static std::unique_ptr<BvNode<MeshType>> BuildBVTree(const MeshType& mesh,
-      const typename std::vector<CentroidPair>::iterator start,
-      const typename std::vector<CentroidPair>::iterator end) {
-    // Generate bounding volume.
-    const Aabb aabb = ComputeBoundingVolume(mesh, start, end);
-
-    auto node = std::make_unique<BvNode<MeshType>>(aabb);
-    const int num_elements = end - start;
-    if (num_elements == 1) {
-      // Store element index in this leaf node.
-      node->element_index = start->first;
-    } else {
-      // Sort by centroid along the axis of greatest spread.
-      int axis{};
-      aabb.half_width().maxCoeff(&axis);
-      // TODO(tehbelinda): Use a better heuristic for splitting into branches,
-      // e.g. surface area.
-      std::sort(start, end,
-                [axis](const CentroidPair& a, const CentroidPair& b) {
-                  return a.second[axis] < b.second[axis];
-                });
-
-      // Continue with the next branches.
-      const typename std::vector<CentroidPair>::iterator mid =
-          start + num_elements / 2;
-      node->left = BuildBVTree(mesh, start, mid);
-      node->right = BuildBVTree(mesh, mid, end);
-    }
-    return node;
-  }
-
-  static const Aabb ComputeBoundingVolume(
+  static std::unique_ptr<BvNode<MeshType>> BuildBVTree(
       const MeshType& mesh,
-      const typename std::vector<CentroidPair>::iterator start,
-      const typename std::vector<CentroidPair>::iterator end) {
-    // Keep track of the min/max bounds to create the bounding box.
-    Vector3<double> max_bounds, min_bounds;
-    max_bounds.setConstant(std::numeric_limits<double>::lowest());
-    min_bounds.setConstant(std::numeric_limits<double>::max());
+      const typename std::vector<CentroidPair>::iterator& start,
+      const typename std::vector<CentroidPair>::iterator& end);
 
-    // Check each mesh element in the given range.
-    for (auto pair = start; pair < end; ++pair) {
-      const auto& element = mesh.element(pair->first);
-      // Check each vertex in the element.
-      for (int v = 0; v < kElementVertexCount; ++v) {
-        const auto& vertex = mesh.vertex(element.vertex(v)).r_MV();
-        // Compare its extent along each of the 3 axes.
-        min_bounds = min_bounds.cwiseMin(vertex);
-        max_bounds = max_bounds.cwiseMax(vertex);
-      }
-    }
-    const Vector3<double> center = (min_bounds + max_bounds) / 2;
-    const Vector3<double> half_width = max_bounds - center;
-    return Aabb(center, half_width);
-  }
+  static Aabb ComputeBoundingVolume(
+      const MeshType& mesh,
+      const typename std::vector<CentroidPair>::iterator& start,
+      const typename std::vector<CentroidPair>::iterator& end);
 
   // TODO(tehbelinda): Move this funtion into SurfaceMesh/VolumeMesh directly
   // and rename to CalcElementCentroid(ElementIndex).
   static Vector3<double> ComputeCentroid(const MeshType& mesh,
-      const typename MeshType::ElementIndex i) {
-    Vector3<double> centroid{0, 0, 0};
-    const auto& element = mesh.element(i);
-    // Calculate average from all vertices.
-    for (int v = 0; v < kElementVertexCount; ++v) {
-      const auto& vertex = mesh.vertex(element.vertex(v)).r_MV();
-      centroid += vertex;
-    }
-    centroid /= kElementVertexCount;
-    return centroid;
-  }
+                                         IndexType i);
 
   static constexpr int kElementVertexCount = MeshType::kDim + 1;
 
@@ -219,3 +305,8 @@ class BoundingVolumeHierarchy {
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+
+extern template class drake::geometry::internal::BoundingVolumeHierarchy<
+    drake::geometry::SurfaceMesh<double>>;
+extern template class drake::geometry::internal::BoundingVolumeHierarchy<
+    drake::geometry::VolumeMesh<double>>;

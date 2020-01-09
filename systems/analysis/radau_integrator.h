@@ -451,6 +451,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   using std::max;
   using std::min;
 
+  // Compute the time at the end of the step.
+  const T tf = t0 + h;
+
   // Verify the trial number is valid.
   DRAKE_ASSERT(1 <= trial && trial <= 4);
 
@@ -480,8 +483,17 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     ComputeRadauIterationMatrix(J, dt, this->A_, iteration_matrix);
   };
 
-  // Calculate Jacobian and iteration matrices (and factorizations), as needed.
-  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
+  // Calculate Jacobian and iteration matrices (and factorizations), as needed,
+  // around (t0, xt0). We do not do this calculation if full Newton is in use;
+  // the calculation will be performed at the beginning of the loop
+  // instead.
+
+  // TODO(edrumwri) Consider computing the Jacobian matrix around tf and/or
+  //                xtplus. This would give a better Jacobian, but would
+  //                complicate the logic, since the Jacobian would no longer
+  //                (necessarily) be fresh upon fallback to a smaller step size.
+  if (!this->get_use_full_newton() &&
+      !this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
       &iteration_matrix_radau_)) {
     return false;
   }
@@ -492,6 +504,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // Do the Newton-Raphson iterations.
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
+
+    this->FreshenMatricesIfFullNewton(
+        tf, *xtplus, h, construct_iteration_matrix, &iteration_matrix_radau_);
 
     // Update the number of Newton-Raphson iterations.
     ++num_nr_iterations_;
@@ -551,7 +566,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try; otherwise, the following code will recurse
-  // into this function again, and freshen computations as helpful.
+  // into this function again, and freshen computations as helpful.  Note that
+  // get_reuse() returns false if "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 
@@ -650,7 +667,8 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
       "h={}, trial={}", t0, h, trial);
 
   // Advance the context time; this means that all derivatives will be computed
-  // at t+h.
+  // at t+h. Compare against StepRadau, which uses ComputeFofZ (which
+  // automatically updates the Context to the correct time and state).
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
 
@@ -664,7 +682,8 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   //                would give a better Jacobian, but would complicate the
   //                logic, since the Jacobian would no longer (necessarily) be
   //                fresh upon fallback to a smaller step size.
-  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial,
+  if (!this->get_use_full_newton() &&
+      !this->MaybeFreshenMatrices(t0, xt0, h, trial,
                                   ComputeImplicitTrapezoidIterationMatrix,
                                   &iteration_matrix_implicit_trapezoid_)) {
     return false;
@@ -673,6 +692,11 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
     ++num_nr_iterations_;
+
+    this->FreshenMatricesIfFullNewton(tf, *xtplus, h,
+                                      ComputeImplicitTrapezoidIterationMatrix,
+                                      &iteration_matrix_implicit_trapezoid_);
+
 
     // Evaluate the residual error using the current x(t+h).
     VectorX<T> goutput = g();
@@ -706,7 +730,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
       "failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
-  // is nothing else we can try.
+  // is nothing else we can try. Note that get_reuse() returns false if
+  // "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 

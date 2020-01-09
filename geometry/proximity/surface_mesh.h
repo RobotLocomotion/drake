@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <limits>
 #include <set>
 #include <utility>
 #include <vector>
@@ -181,13 +182,6 @@ class SurfaceMesh {
     return vertices_[v];
   }
 
-  /**
-   Gets the set of triangles that refer to the specified vertex.
-   */
-  const std::set<SurfaceFaceIndex>& referring_triangles(VertexIndex v) const {
-    return referring_triangles_[v];
-  }
-
   /** Returns the number of vertices in the mesh.
    */
   int num_vertices() const { return vertices_.size(); }
@@ -211,7 +205,9 @@ class SurfaceMesh {
         vertices_(std::move(vertices)),
         area_(faces_.size()),  // Pre-allocate here, not yet calculated.
         face_normals_(faces_.size()) {  // Pre-allocate, not yet calculated.
-    SetReferringTriangles();
+    if (faces_.empty()) {
+      throw std::logic_error("A mesh must contain at least one triangle");
+    }
     CalcAreasNormalsAndCentroid();
   }
 
@@ -363,6 +359,29 @@ class SurfaceMesh {
   // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
+  // TODO(DamrongGuoy): Consider sharing this code with
+  //  bounding_volume_hierarchy.h. Currently we have a problem that
+  //  SurfaceMesh and its vertices are templated on T, but Aabb in
+  //  bounding_volume_hierarchy.h is for double only.
+  /**
+   Calculates the axis-aligned bounding box of this surface mesh M.
+   @returns the center and the size vector of the box expressed in M's frame.
+   */
+  std::pair<Vector3<T>, Vector3<T>> CalcBoundingBox() const {
+    Vector3<T> min_extent =
+        Vector3<T>::Constant(std::numeric_limits<double>::max());
+    Vector3<T> max_extent =
+        Vector3<T>::Constant(std::numeric_limits<double>::lowest());
+    for (SurfaceVertexIndex i(0); i < num_vertices(); ++i) {
+      Vector3<T> vertex = this->vertex(i).r_MV();
+      min_extent = min_extent.cwiseMin(vertex);
+      max_extent = max_extent.cwiseMax(vertex);
+    }
+    Vector3<T> center = (max_extent + min_extent) / 2.0;
+    Vector3<T> size = max_extent - min_extent;
+    return std::make_pair(center, size);
+  }
+
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given SurfaceMesh object is equal via deep
    exact comparison. NaNs are treated as not equal as per the IEEE standard.
@@ -395,26 +414,12 @@ class SurfaceMesh {
   // and the centroid of the surface.
   void CalcAreasNormalsAndCentroid();
 
-  // Determines the triangular faces that refer to each vertex.
-  void SetReferringTriangles() {
-    referring_triangles_.resize(num_vertices());
-
-    for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
-      const int kNumVerticesPerFace = 3;
-      for (int j = 0; j < kNumVerticesPerFace; ++j)
-        referring_triangles_[element(i).vertex(j)].insert(i);
-    }
-  }
-
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
   // The vertices that are shared among the triangles.
   std::vector<SurfaceVertex<T>> vertices_;
 
   // Computed in initialization.
-
-  // Triangles that reference each vertex.
-  std::vector<std::set<SurfaceFaceIndex>> referring_triangles_;
 
   // Area of the triangles.
   std::vector<T> area_;
@@ -464,6 +469,8 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
     p_MSc_ /= (3. * total_area_);
 }
 
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class SurfaceMesh)
+
 }  // namespace geometry
 }  // namespace drake
-

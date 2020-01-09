@@ -98,7 +98,7 @@ namespace geometry {
 
   In practice, the contact surface is approximated with a discrete triangle
   mesh. The triangle mesh's normals are defined *per face*. The normal of each
-  face is guaranteed to point "out of" M and "into" N. They can be accessed via
+  face is guaranteed to point "out of" N and "into" M. They can be accessed via
   `mesh_W().face_normal(face_index)`.
 
   The pressure values on the contact surface are represented as a continuous,

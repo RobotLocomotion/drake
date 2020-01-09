@@ -1,0 +1,18 @@
+package drake;
+
+struct lcmt_hydroelastic_quadrature_per_point_data_for_viz {
+  // The quadrature point Q, as an offset vector in the world frame W, at which
+  // the traction and slip velocities are evaluated.
+  double p_WQ[3];
+
+  // Denoting Point Aq as the point of Body A coincident with Q and Point Bq as
+  // the point of Body B coincident with Q, calculates vr (the velocity
+  // of Bq relative to Aq) and then calculates the component perpendicular to
+  // the unit surface normal n̂ as vt = vr - (vr⋅n̂)n̂.
+  // The resulting vector vt is expressed in the world frame W.
+  double vt_BqAq_W[3];
+
+  // The traction vector, expressed in the world frame and with units of Pa,
+  // applied to Body A at Point Q (i.e., Frame A is shifted to Aq).
+  double traction_Aq_W[3];
+}

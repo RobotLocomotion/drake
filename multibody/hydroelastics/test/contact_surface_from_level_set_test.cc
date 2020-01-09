@@ -141,7 +141,7 @@ TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
   // The fan of triangles expected for when the intersecting polygon is a
   // triangle.
   const std::vector<Vector3<int>> expected_faces{
-      {2, 0, 3}, {0, 1, 3}, {1, 2, 3}};
+      {2, 3, 0}, {0, 3, 1}, {1, 3, 2}};
 
   // Compute the triangle normal for the given set of vertex indices forming
   // the triangle. The normal is computed in the same frame as the vertices.
@@ -173,7 +173,10 @@ TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
       EXPECT_EQ(face, expected_faces[v]);
 
       const Vector3<double> n_hat = tri_normal(face);
-      EXPECT_TRUE(CompareMatrices(n_hat, grad_phi_hat, kTolerance));
+
+      // Note: the normal to the surface should be the negated gradient of the
+      // level set.
+      EXPECT_TRUE(CompareMatrices(n_hat, -grad_phi_hat, kTolerance));
     }
 
     ASSERT_EQ(vertices.size(), expected_added_vertex_count);
@@ -205,8 +208,10 @@ TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
                               faces[v].vertex(2));
       EXPECT_EQ(face, expected_faces[v]);
 
+      // Note: the normal to the surface should be the negated gradient of the
+      // level set.
       const Vector3<double> n_hat = tri_normal(face);
-      EXPECT_TRUE(CompareMatrices(n_hat, grad_phi_hat, kTolerance));
+      EXPECT_TRUE(CompareMatrices(n_hat, -grad_phi_hat, kTolerance));
     }
 
     ASSERT_EQ(vertices.size(), expected_added_vertex_count);
@@ -258,8 +263,10 @@ TEST_F(TetrahedronIntersectionTest, FourSidedPolygon) {
     // the problem, for which we have a regular tetrahedron and we set all
     // vertices to have the same absolute value of phi_N. With this setup, all
     // triangles lie on the same plane, thus with the same normal.
+    // Note: the normal should be the negated gradient of the level set, hence
+    //       the negation operator.
     const Vector3<double> expected_normal =
-        calc_unit_vector_from_negative_edge_to_positive_edge(phi_N);
+        -calc_unit_vector_from_negative_edge_to_positive_edge(phi_N);
 
     for (int i = 0; i < 4; ++i) {
       const SurfaceFace& t = faces[i];
@@ -460,9 +467,6 @@ TEST_F(BoxPlaneIntersectionTest, VerifySurfaceFieldsInterpolations) {
 
 // Verify the algorithm returns no intersections when the box is over the plane.
 TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
-  const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kTolerance = 5.0 * kEpsilon;
-
   const auto Rx_pi_2 = RollPitchYawd(M_PI_2, 0.0, 0.0);
   const auto Ry_pi_2 = RollPitchYawd(0.0, M_PI_2, 0.0);
   const auto Rx_pi = RollPitchYawd(M_PI, 0.0, 0.0);
@@ -494,7 +498,7 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
     std::unique_ptr<SurfaceMesh<double>> contact_surface =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
                                      &e_b_surface);
-    EXPECT_NEAR(CalcSurfaceArea(*contact_surface), 0.0, kTolerance);
+    EXPECT_EQ(contact_surface, nullptr);
   }
 }
 
@@ -571,7 +575,7 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
     EXPECT_NEAR(e_m_surface[v], em_expected, kTolerance);
   }
 
-  // Verify all normals point towards the positive side of the plane.
+  // Verify all normals point towards the negative side of the plane.
   for (SurfaceFaceIndex f(0); f < contact_surface_W->num_faces(); ++f) {
     const SurfaceFace& face = contact_surface_W->element(f);
     std::vector<SurfaceVertex<double>> vertices_W = {
@@ -590,7 +594,7 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
     // We empirically determined the tolerance used for the tests below to
     // be a representative number of the precission loss that we observed.
     EXPECT_TRUE(
-        CompareMatrices(normal_W, Vector3<double>::UnitZ(), 40 * kTolerance));
+        CompareMatrices(normal_W, -Vector3<double>::UnitZ(), 40 * kTolerance));
   }
 }
 

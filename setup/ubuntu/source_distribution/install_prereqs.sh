@@ -71,6 +71,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 1.2.0 \
-  https://releases.bazel.build/1.2.0/release/bazel_1.2.0-linux-x86_64.deb \
-  640fbbd9d6e6f1bb225929c1b5ffcae650560f8ce1208745acd170451926d190
+  bazel 2.0.0 \
+  https://releases.bazel.build/2.0.0/release/bazel_2.0.0-linux-x86_64.deb \
+  575c77b96bc6202f83c7ff233cd44541aa30ff1b2bc211eaf8c99a8987272c68

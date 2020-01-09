@@ -71,7 +71,7 @@ VectorX<T> pendulum_bases(const VectorX<T>& x) {
 GTEST_TEST(LyapunovTest, PendulumSampleBasedLyapunov) {
   examples::pendulum::PendulumPlant<double> pendulum;
   auto context = pendulum.CreateDefaultContext();
-  context->FixInputPort(0, Vector1d{0.0});
+  pendulum.get_input_port().FixValue(context.get(), 0.0);
 
   Eigen::VectorXd q_samples =
       Eigen::VectorXd::LinSpaced(31, -1.5 * M_PI, 1.5 * M_PI);

@@ -166,7 +166,7 @@ class MoveDemoRunner {
 
   ::lcm::LCM lcm_;
   std::string urdf_;
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   multibody::ModelInstanceIndex instance_;
   std::unique_ptr<systems::Context<double>> context_;
   int status_count_{0};

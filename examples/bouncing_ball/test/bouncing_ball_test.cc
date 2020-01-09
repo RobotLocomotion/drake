@@ -172,8 +172,7 @@ TEST_F(BouncingBallTest, Simulate) {
   // TODO(edrumwri): Update the code below when accuracy is settable purely
   // from the context.
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
-  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
-      &simulator.get_mutable_context());
+  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>();
   simulator.get_mutable_context().SetAccuracy(accuracy);
   simulator.get_mutable_integrator().request_initial_step_size_target(1e-3);
   simulator.get_mutable_integrator().set_target_accuracy(accuracy);

@@ -1,12 +1,17 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
 #include <limits>
+#include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
+#include <utility>
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
@@ -134,14 +139,91 @@ void ParseBody(const multibody::PackageMap& package_map,
     for (XMLElement* collision_node = node->FirstChildElement("collision");
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {
-      CoulombFriction<double> friction;
       geometry::GeometryInstance geometry_instance =
-          ParseCollision(body_name, package_map, root_dir, collision_node,
-                         &friction);
-      plant->RegisterCollisionGeometry(body, geometry_instance.pose(),
-                                       geometry_instance.shape(),
-                                       geometry_instance.name(), friction);
+          ParseCollision(body_name, package_map, root_dir, collision_node);
+      DRAKE_DEMAND(geometry_instance.proximity_properties());
+      plant->RegisterCollisionGeometry(
+          body, geometry_instance.pose(), geometry_instance.shape(),
+          geometry_instance.name(),
+          std::move(*geometry_instance.mutable_proximity_properties()));
     }
+  }
+}
+
+// Parse the collision filter group tag information into the collision filter
+// groups and a set of pairs between which the collisions will be excluded.
+void RegisterCollisionFilterGroup(
+    const MultibodyPlant<double>& plant, XMLElement* node,
+    std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
+    std::set<SortedPair<std::string>>* collision_filter_pairs) {
+  std::string drake_ignore;
+  if (ParseStringAttribute(node, "ignore", &drake_ignore) &&
+      drake_ignore == std::string("true")) {
+    return;
+  }
+
+  std::string group_name;
+  if (!ParseStringAttribute(node, "name", &group_name)) {
+    throw std::runtime_error("ERROR: group tag is missing name attribute.");
+  }
+
+  geometry::GeometrySet collision_filter_geometry_set;
+  for (XMLElement* member_node = node->FirstChildElement("drake:member");
+       member_node;
+       member_node = member_node->NextSiblingElement("drake:member")) {
+    const char* body_name = member_node->Attribute("link");
+    if (!body_name) {
+      throw std::runtime_error(
+          fmt::format("'{}':'{}':'{}': Collision filter group '{}' provides a "
+                      "member tag without specifying the \"link\" attribute.",
+                      __FILE__, __func__, node->GetLineNum(), group_name));
+    }
+    const auto& body = plant.GetBodyByName(body_name);
+    collision_filter_geometry_set.Add(
+        plant.GetBodyFrameIdOrThrow(body.index()));
+  }
+  collision_filter_groups->insert({group_name, collision_filter_geometry_set});
+
+  for (XMLElement* ignore_node =
+           node->FirstChildElement("drake:ignored_collision_filter_group");
+       ignore_node; ignore_node = ignore_node->NextSiblingElement(
+                        "drake:ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("name");
+    if (!target_name) {
+      throw std::runtime_error(fmt::format(
+          "'{}':'{}':'{}': Collision filter group provides a tag specifying a "
+          "group to ignore without specifying the \"name\" attribute.",
+          __FILE__, __func__, node->GetLineNum()));
+    }
+    // These two group names are allowed to be identical, which means the bodies
+    // inside this collision filter group should be collision excluded among
+    // each other.
+    collision_filter_pairs->insert({group_name, target_name});
+  }
+}
+
+void ParseCollisionFilterGroup(XMLElement* node,
+                               MultibodyPlant<double>* plant) {
+  std::map<std::string, geometry::GeometrySet> collision_filter_groups;
+  std::set<SortedPair<std::string>> collision_filter_pairs;
+  for (XMLElement* group_node =
+           node->FirstChildElement("drake:collision_filter_group");
+       group_node; group_node = group_node->NextSiblingElement(
+                       "drake:collision_filter_group")) {
+    RegisterCollisionFilterGroup(*plant, group_node, &collision_filter_groups,
+                                 &collision_filter_pairs);
+  }
+  for (const auto& collision_filter_pair : collision_filter_pairs) {
+    const auto collision_filter_group_a =
+        collision_filter_groups.find(collision_filter_pair.first());
+    DRAKE_DEMAND(collision_filter_group_a != collision_filter_groups.end());
+    const auto collision_filter_group_b =
+        collision_filter_groups.find(collision_filter_pair.second());
+    DRAKE_DEMAND(collision_filter_group_b != collision_filter_groups.end());
+
+    plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+        {collision_filter_group_a->first, collision_filter_group_a->second},
+        {collision_filter_group_b->first, collision_filter_group_b->second});
   }
 }
 
@@ -449,7 +531,8 @@ ModelInstanceIndex ParseUrdf(
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    ParseMaterial(material_node, &materials);
+    ParseMaterial(material_node, true /* name_required */, package_map,
+                  root_dir, &materials);
   }
 
   const ModelInstanceIndex model_instance =
@@ -463,9 +546,9 @@ ModelInstanceIndex ParseUrdf(
               &materials, plant);
   }
 
-  // TODO(sam.creasey) Parse collision filter groups.
-  if (node->FirstChildElement("collision_filter_group")) {
-    drake::log()->warn("Skipping collision_filter_group elements");
+  // Parses the collision filter groups only if the scene graph is registered.
+  if (plant->geometry_source_is_registered()) {
+    ParseCollisionFilterGroup(node, plant);
   }
 
   // Parses the model's joint elements.

@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_runfiles_binary.bzl",
@@ -64,8 +65,9 @@ config_setting(
     values = {"define": "WITH_SNOPT=ON"},
 )
 
-# TODO(jwnimmer-tri) Figure out how to deprecate and remove this
-# config_setting, in favor of just with_snopt (no mention of fortran).
+# TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
+# The --config=snopt_fortran spelling is no longer supported.
+# Instead, use --config=snopt for the same effect.
 config_setting(
     name = "with_snopt_fortran",
     values = {"define": "WITH_SNOPT_FORTRAN=ON"},

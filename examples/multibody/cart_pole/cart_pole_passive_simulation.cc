@@ -75,8 +75,7 @@ int do_main() {
       diagram->GetMutableSubsystemContext(cart_pole, diagram_context.get());
 
   // There is no input actuation in this example for the passive dynamics.
-  cart_pole_context.FixInputPort(
-      cart_pole.get_actuation_input_port().get_index(), Vector1d(0));
+  cart_pole.get_actuation_input_port().FixValue(&cart_pole_context, 0.);
 
   // Get joints so that we can set initial conditions.
   const PrismaticJoint<double>& cart_slider =

@@ -88,10 +88,9 @@ int DoMain() {
 
   // Reset the integrator with parameters that support stable gripping, given
   // the contact parameters.
-  systems::Context<double>& context = simulator.get_mutable_context();
   const double max_step_size = 1e-4;
   simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
-      *diagram, max_step_size, &context);
+      max_step_size);
 
   // Set the initial joint positions to be something more interesting. Note that
   // the joint position order is the same as the order you get when you read the

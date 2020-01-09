@@ -58,7 +58,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
 // generalized configuration (using a rigid body).
 GTEST_TEST(IntegratorTest, RigidBody) {
   // Instantiate a multibody plant consisting of a single rigid body.
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   const double radius = 0.05;   // m
   const double mass = 0.1;      // kg
   auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);

@@ -18,7 +18,7 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
 fi
 
 /usr/local/bin/brew update
-/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
+/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v /usr/local/bin/pip3 &>/dev/null; then
   echo 'ERROR: pip3 is NOT installed. The post-install step for the python formula may have failed.' >&2

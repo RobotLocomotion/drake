@@ -19,15 +19,12 @@ GTEST_TEST(ManipulationStationHardwareInterfaceTest, CheckPorts) {
   auto context = station.CreateDefaultContext();
 
   // Check sizes and names of the input ports.
-  context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
-                        VectorXd::Zero(kNumIiwaDofs));
-  context->FixInputPort(
-      station.GetInputPort("iiwa_feedforward_torque").get_index(),
-      VectorXd::Zero(kNumIiwaDofs));
-  context->FixInputPort(station.GetInputPort("wsg_position").get_index(),
-                        Vector1d::Zero());
-  context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
-                        Vector1d::Zero());
+  station.GetInputPort("iiwa_position")
+      .FixValue(context.get(), VectorXd::Zero(kNumIiwaDofs));
+  station.GetInputPort("iiwa_feedforward_torque")
+      .FixValue(context.get(), VectorXd::Zero(kNumIiwaDofs));
+  station.GetInputPort("wsg_position").FixValue(context.get(), 0.);
+  station.GetInputPort("wsg_force_limit").FixValue(context.get(), 0.);
 
   // Check sizes and names of the output ports.
   EXPECT_EQ(station.GetOutputPort("iiwa_position_commanded")

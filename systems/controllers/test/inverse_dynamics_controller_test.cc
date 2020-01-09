@@ -51,27 +51,23 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   vd_r << 1, 2, 3, 4, 5, 6, 7;
 
   // Connects inputs.
-  auto state_input = std::make_unique<BasicVector<double>>(
-      robot_plant.num_positions() + robot_plant.num_velocities());
-  state_input->get_mutable_value() << q, v;
+  VectorX<double> state_input(robot_plant.num_positions() +
+                              robot_plant.num_velocities());
+  state_input << q, v;
 
-  auto reference_state_input = std::make_unique<BasicVector<double>>(
-      robot_plant.num_positions() + robot_plant.num_velocities());
-  reference_state_input->get_mutable_value() << q_r, v_r;
+  VectorX<double> reference_state_input(robot_plant.num_positions() +
+                                        robot_plant.num_velocities());
+  reference_state_input << q_r, v_r;
 
-  auto reference_acceleration_input =
-      std::make_unique<BasicVector<double>>(robot_plant.num_velocities());
-  reference_acceleration_input->get_mutable_value() << vd_r;
+  VectorX<double> reference_acceleration_input(robot_plant.num_velocities());
+  reference_acceleration_input << vd_r;
 
-  inverse_dynamics_context->FixInputPort(
-      dut->get_input_port_estimated_state().get_index(),
-      std::move(state_input));
-  inverse_dynamics_context->FixInputPort(
-      dut->get_input_port_desired_state().get_index(),
-      std::move(reference_state_input));
-  inverse_dynamics_context->FixInputPort(
-      dut->get_input_port_desired_acceleration().get_index(),
-      std::move(reference_acceleration_input));
+  dut->get_input_port_estimated_state().FixValue(inverse_dynamics_context.get(),
+                                                 state_input);
+  dut->get_input_port_desired_state().FixValue(inverse_dynamics_context.get(),
+                                               reference_state_input);
+  dut->get_input_port_desired_acceleration().FixValue(
+      inverse_dynamics_context.get(), reference_acceleration_input);
 
   // Sets integrated position error.
   VectorX<double> q_int(dim);

@@ -32,9 +32,7 @@ GTEST_TEST(MultibodyPlantSymbolicTest, Pendulum) {
   const symbolic::Variable tau("tau");
   const symbolic::Variable theta("theta");
   const symbolic::Variable thetadot("thetadot");
-  context->FixInputPort(
-      pendulum_double->get_actuation_input_port().get_index(),
-      Vector1<T>::Constant(tau));
+  dut->get_actuation_input_port().FixValue(context.get(), T(tau));
   dut->SetPositionsAndVelocities(context.get(), Vector2<T>(theta, thetadot));
 
   // Check the symbolic derivatives.

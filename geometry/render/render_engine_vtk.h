@@ -129,6 +129,7 @@ class RenderEngineVtk final : public RenderEngine,
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final;
   void ImplementGeometry(const Box& box, void* user_data) final;
   void ImplementGeometry(const Capsule& capsule, void* user_data) final;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) final;
   void ImplementGeometry(const Mesh& mesh, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;
   //@}

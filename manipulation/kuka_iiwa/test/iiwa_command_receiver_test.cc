@@ -23,9 +23,7 @@ class IiwaCommandReceiverTest : public testing::Test {
 
   // For use only by our constructor.
   systems::FixedInputPortValue& FixInput() {
-    return context_.FixInputPort(
-        dut_.get_input_port().get_index(),
-        Value<lcmt_iiwa_command>{});
+    return dut_.get_input_port().FixValue(&context_, lcmt_iiwa_command{});
   }
 
   // Test cases should call this to set the DUT's input value.

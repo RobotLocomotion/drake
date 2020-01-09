@@ -56,17 +56,44 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
 
 // Fails fast if a user attempts to specify `<pose frame='...'/>` in an
 // unsupported location.
-// See https://bitbucket.org/osrf/sdformat/issues/200 (tracked by #10590).
 void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
+  // TODO(eric.cousineau): Fix this for `<inertial/>` and `<model/>`.
   if (element->HasElement("pose")) {
     sdf::ElementPtr pose = element->GetElement("pose");
-    const std::string frame_name = pose->Get<std::string>("frame");
+    const std::string frame_name = pose->Get<std::string>("relative_to");
     if (!frame_name.empty()) {
       throw std::runtime_error(
-          "<pose frame='{non-empty}'/> is presently not supported outside of "
-          "the <frame/> tag.");
+          "<pose relative_to='{non-empty}'/> is presently not supported "
+          "in <inertial/> or <model/> tags.");
     }
   }
+}
+
+// Throws an exception if there are any errors present in the `errors` list.
+void ThrowAnyErrors(const sdf::Errors& errors) {
+  if (!errors.empty()) {
+    std::ostringstream os;
+    os << "From AddModelFromSdfFile():";
+    for (const auto& e : errors)
+      os << "\nError: " + e.Message();
+    throw std::runtime_error(os.str());
+  }
+}
+
+// This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
+// and resolves its value with respect to another frame.
+math::RigidTransformd ResolveRigidTransform(
+    const sdf::SemanticPose& semantic_pose,
+    const std::string& relative_to = "") {
+  ignition::math::Pose3d pose;
+  ThrowAnyErrors(semantic_pose.Resolve(pose, relative_to));
+  return ToRigidTransform(pose);
+}
+
+Eigen::Vector3d ResolveAxisXyz(const sdf::JointAxis& axis) {
+  ignition::math::Vector3d xyz;
+  ThrowAnyErrors(axis.ResolveXyz(xyz));
+  return ToVector3(xyz);
 }
 
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
@@ -127,6 +154,7 @@ const Body<double>& GetBodyByLinkSpecificationName(
 // Extracts a Vector3d representation of the joint axis for joints with an axis.
 Vector3d ExtractJointAxis(const sdf::Model& model_spec,
                           const sdf::Joint& joint_spec) {
+  unused(model_spec);
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
 
@@ -137,21 +165,8 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  // Joint axis, by default in the joint frame J.
-  // TODO(amcastro-tri): Verify JointAxis::UseParentModelFrame is actually
-  // supported by sdformat.
-  Vector3d axis_J = ToVector3(axis->Xyz());
-  if (axis->UseParentModelFrame()) {
-    // RotationMatrix of the joint frame J in the frame of the child link C.
-    ThrowIfPoseFrameSpecified(joint_spec.Element());
-    const RotationMatrixd R_CJ = ToRigidTransform(joint_spec.Pose()).rotation();
-    // Get the RotationMatrix of the child link C in the model frame M.
-    const RotationMatrixd R_MC = ToRigidTransform(
-        model_spec.LinkByName(joint_spec.ChildLinkName())->Pose()).rotation();
-    const RotationMatrixd R_MJ = R_MC * R_CJ;
-    // axis_J actually contains axis_M, expressed in the model frame M.
-    axis_J = R_MJ.transpose() * axis_J;
-  }
+  // Joint axis in the joint frame J.
+  Vector3d axis_J = ResolveAxisXyz(*axis);
   return axis_J;
 }
 
@@ -264,32 +279,20 @@ std::tuple<double, double, double> ParseJointLimits(
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
 // specification object.
 void AddJointFromSpecification(
-    const sdf::Model& model_spec, const sdf::Joint& joint_spec,
-    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
+    const sdf::Model& model_spec, const RigidTransformd& X_WM,
+    const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
+    MultibodyPlant<double>* plant,
     std::set<sdf::JointType>* joint_types) {
-  // Pose of the model frame M in the world frame W.
-  const RigidTransformd X_WM = ToRigidTransform(model_spec.Pose());
-
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
 
   // Get the pose of frame J in the frame of the child link C, as specified in
-  // <joint> <pose> ... </pose></joint>.
-  // TODO(eric.cousineau): Verify sdformat supports frame specifications
-  // correctly.
-  ThrowIfPoseFrameSpecified(joint_spec.Element());
-  const RigidTransformd X_CJ = ToRigidTransform(joint_spec.Pose());
-
-  // Get the pose of the child link C in the model frame M.
-  // TODO(eric.cousineau): Figure out how to use link poses when they are NOT
-  // connected to a joint.
-  const RigidTransformd X_MC = ToRigidTransform(
-      model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
-
-  // Pose of the joint frame J in the model frame M.
-  const RigidTransformd X_MJ = X_MC * X_CJ;
+  // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
+  // joint will be the child link.
+  const RigidTransformd X_CJ =
+      ResolveRigidTransform(joint_spec.SemanticPose());
 
   // Pose of the frame J in the parent body frame P.
   std::optional<RigidTransformd> X_PJ;
@@ -297,12 +300,12 @@ void AddJointFromSpecification(
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
   if (parent_body.index() == world_index()) {
+    const RigidTransformd X_MJ =
+        ResolveRigidTransform(joint_spec.SemanticPose(), "__model__");
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
-    // Get the pose of the parent link P in the model frame M.
-    const RigidTransformd X_MP = ToRigidTransform(
-        model_spec.LinkByName(joint_spec.ParentLinkName())->Pose());
-    X_PJ = X_MP.inverse() * X_MJ;
+    X_PJ = ResolveRigidTransform(
+        joint_spec.SemanticPose(), joint_spec.ParentLinkName());
   }
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
@@ -368,15 +371,7 @@ std::string LoadSdf(
   const std::string full_path = GetFullPath(file_name);
 
   // Load the SDF file.
-  sdf::Errors errors = root->Load(full_path);
-
-  // Check for any errors.
-  if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfFile():\n");
-    for (const auto& e : errors)
-      error_accumulation += "Error: " + e.Message() + "\n";
-    throw std::runtime_error(error_accumulation);
-  }
+  ThrowAnyErrors(root->Load(full_path));
 
   // Uses the directory holding the SDF to be the root directory
   // in which to search for files referenced within the SDF file.
@@ -409,9 +404,6 @@ std::vector<LinkInfo> AddLinksFromSpecification(
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
 
-    // Fail fast for `<pose frame='...'/>`.
-    ThrowIfPoseFrameSpecified(link.Element());
-
     // Get the link's inertia relative to the Bcm frame.
     // sdf::Link::Inertial() provides a representation for the SpatialInertia
     // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
@@ -431,7 +423,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     // Register information.
-    const RigidTransformd X_ML = ToRigidTransform(link.Pose());
+    const RigidTransformd X_ML = ResolveRigidTransform(link.SemanticPose());
     const RigidTransformd X_WL = X_WM * X_ML;
     link_infos.push_back(LinkInfo{&body, X_WL});
 
@@ -440,13 +432,26 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     plant->SetDefaultFreeBodyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
+      ResolveFilename resolve_filename =
+        [&package_map, &root_dir](std::string uri) {
+          const std::string resolved_name =
+              ResolveUri(uri, package_map, root_dir);
+          if (resolved_name.empty()) {
+            throw std::runtime_error(
+                "ERROR: Mesh file name could not be resolved from the "
+                "provided uri \"" + uri + "\".");
+          }
+          return resolved_name;
+      };
+
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual sdf_visual = ResolveVisualUri(
-            *link.VisualByIndex(visual_index), package_map, root_dir);
+        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+        const RigidTransformd X_LG = ResolveRigidTransform(
+            sdf_visual.SemanticPose());
         unique_ptr<GeometryInstance> geometry_instance =
-            MakeGeometryInstanceFromSdfVisual(sdf_visual);
-        ThrowIfPoseFrameSpecified(sdf_visual.Element());
+            MakeGeometryInstanceFromSdfVisual(
+                sdf_visual, resolve_filename, X_LG);
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -467,17 +472,19 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         const sdf::Collision& sdf_collision =
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
-        ThrowIfPoseFrameSpecified(sdf_collision.Element());
-        if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
-          const RigidTransformd X_LG(
-              MakeGeometryPoseFromSdfCollision(sdf_collision));
-          std::unique_ptr<geometry::Shape> shape =
-              MakeShapeFromSdfGeometry(sdf_geometry);
-          const CoulombFriction<double> coulomb_friction =
-              MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
-          plant->RegisterCollisionGeometry(body, X_LG, *shape,
+
+        std::unique_ptr<geometry::Shape> shape =
+            MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
+        if (shape != nullptr) {
+          const RigidTransformd X_LG = ResolveRigidTransform(
+              sdf_collision.SemanticPose());
+          const RigidTransformd X_LC =
+              MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
+          geometry::ProximityProperties props =
+              MakeProximityPropertiesForCollision(sdf_collision);
+          plant->RegisterCollisionGeometry(body, X_LC, *shape,
                                            sdf_collision.Name(),
-                                           coulomb_friction);
+                                           std::move(props));
         }
       }
     }
@@ -485,48 +492,24 @@ std::vector<LinkInfo> AddLinksFromSpecification(
   return link_infos;
 }
 
-template <typename T>
-const Frame<T>& GetFrameOrWorldByName(
-    const MultibodyPlant<T>& plant, const std::string& name,
-    ModelInstanceIndex model_instance) {
-  if (name == "world") {
-    return plant.world_frame();
+const Frame<double>& AddFrameFromSpecification(
+    const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
+    const Frame<double>& default_frame, MultibodyPlant<double>* plant) {
+  const Frame<double>* parent_frame{};
+  // TODO(eric.cousineau): Without supplying AttachedTo(), this ResolvePose
+  // call fails. Debug why.
+  const RigidTransformd X_PF = ResolveRigidTransform(
+      frame_spec.SemanticPose(), frame_spec.AttachedTo());
+  if (frame_spec.AttachedTo().empty()) {
+    parent_frame = &default_frame;
   } else {
-    return plant.GetFrameByName(name, model_instance);
+    parent_frame = &plant->GetFrameByName(
+        frame_spec.AttachedTo(), model_instance);
   }
-}
-
-void AddFramesFromSpecification(
-    ModelInstanceIndex model_instance,
-    sdf::ElementPtr parent_element,
-    const Frame<double>& parent_frame,
-    MultibodyPlant<double>* plant) {
-  // Per its API documentation, `GetElement(...)` will create a new element if
-  // one does not already exist rather than return `nullptr`; use
-  // `HasElement(...)` instead.
-  if (parent_element->HasElement("frame")) {
-    sdf::ElementPtr frame_element = parent_element->GetElement("frame");
-    while (frame_element) {
-      std::string name = frame_element->Get<std::string>("name");
-      sdf::ElementPtr pose_element = frame_element->GetElement("pose");
-      const Frame<double>* pose_frame = &parent_frame;
-      // SDF makes frame have a value of '' by default, even if unspecified.
-      DRAKE_DEMAND(pose_element->HasAttribute("frame"));
-      const std::string pose_frame_name =
-          pose_element->Get<std::string>("frame");
-      if (!pose_frame_name.empty()) {
-        // TODO(eric.cousineau): Prevent instance name from leaking in? Throw
-        // an error if a user ever specifies it?
-        pose_frame = &GetFrameOrWorldByName(
-            *plant, pose_frame_name, model_instance);
-      }
-      const RigidTransformd X_PF =
-          ToRigidTransform(pose_element->Get<ignition::math::Pose3d>());
+  const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          name, *pose_frame, X_PF));
-      frame_element = frame_element->GetNextElement("frame");
-    }
-  }
+          frame_spec.Name(), *parent_frame, X_PF));
+  return frame;
 }
 
 // Helper to determine if two links are welded together.
@@ -556,27 +539,34 @@ ModelInstanceIndex AddModelFromSpecification(
   // frame is not the world. At present, we assume the parent frame is the
   // world.
   ThrowIfPoseFrameSpecified(model.Element());
-  const RigidTransformd X_WM = ToRigidTransform(model.Pose());
-  // Add the SDF "model frame" given the model name so that way any frames added
-  // to the plant are associated with this current model instance.
-  // N.B. We mangle this name to dis-incentivize users from wanting to use
-  // this frame. At present, SDFormat does not concretely specify what the
-  // semantics of a "model frame" are. This current interpretation expects that
-  // the SDF "model frame" is where the model is *added*, and thus is going to
-  // be attached to the world, and cannot be welded to another body. This means
-  // the SDF "model frame" will not "follow" the other link of a body if that
-  // link is welded elsewhere.
-  const std::string sdf_model_frame_name =
-      "_" + model_name + "_sdf_model_frame";
-  const Frame<double>& sdf_model_frame =
-      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
+  const RigidTransformd X_WM = ToRigidTransform(model.RawPose());
 
-  // TODO(eric.cousineau): Register and use frames from SDFormat once we have
-  // the libsdformat-provided pose graph.
+  drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
+  drake::log()->trace("sdf_parser: Resolve canonical link");
+  std::string canonical_link_name = model.CanonicalLinkName();
+  if (canonical_link_name.empty()) {
+    // TODO(eric.cousineau): Should libsdformat auto-resolve this?
+    DRAKE_DEMAND(model.LinkCount() > 0);
+    canonical_link_name = model.LinkByIndex(0)->Name();
+  }
+  const Frame<double>& canonical_link_frame = plant->GetFrameByName(
+      canonical_link_name, model_instance);
+  const RigidTransformd X_MLc = ResolveRigidTransform(
+      model.LinkByName(canonical_link_name)->SemanticPose());
+
+  // Add the SDF "model frame" given the model name so that way any frames added
+  // to the plant are associated with this current model instance.
+  // N.B. This follows SDFormat's convention.
+  const std::string sdf_model_frame_name = "__model__";
+  const Frame<double>& model_frame =
+      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          sdf_model_frame_name, canonical_link_frame, X_MLc.inverse(),
+          model_instance));
+
+  drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
   std::set<sdf::JointType> joint_types;
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
@@ -585,17 +575,16 @@ ModelInstanceIndex AddModelFromSpecification(
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(
-        model, joint, model_instance, plant, &joint_types);
+        model, X_WM, joint, model_instance, plant, &joint_types);
   }
 
+  drake::log()->trace("sdf_parser: Add explicit frames");
   // Add frames at root-level of <model>.
-  // TODO(eric.cousineau): Address additional items:
-  // - adding frames nested in other elements (joints, visuals, etc.)
-  // - implicit frames for other elements (joints, visuals, etc.)
-  // - explicitly referring to SDF model frame?
-  // See: https://bitbucket.org/osrf/sdformat/issues/200
-  AddFramesFromSpecification(
-      model_instance, model.Element(), sdf_model_frame, plant);
+  for (uint64_t frame_index = 0; frame_index < model.FrameCount();
+       ++frame_index) {
+    const sdf::Frame& frame = *model.FrameByIndex(frame_index);
+    AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+  }
 
   if (model.Static()) {
     // Only weld / fixed joints are permissible.
@@ -621,6 +610,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   return model_instance;
 }
+
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdfFile(
@@ -702,6 +692,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   } else {
     // Load the world and all the models in the world.
     const sdf::World& world = *root.WorldByIndex(0);
+
+    // TODO(eric.cousineau): Either support or explicitly prevent adding joints
+    // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
+
+    for (uint64_t frame_index = 0; frame_index < world.FrameCount();
+        ++frame_index) {
+      const sdf::Frame& frame = *world.FrameByIndex(frame_index);
+      AddFrameFromSpecification(
+          frame, world_model_instance(), plant->world_frame(), plant);
+    }
 
     for (uint64_t model_index = 0; model_index < world.ModelCount();
         ++model_index) {

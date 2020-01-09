@@ -155,7 +155,11 @@ class VolumeMesh {
    enforce this convention and it is thus the responsibility of the user.  */
   VolumeMesh(std::vector<VolumeElement>&& elements,
              std::vector<VolumeVertex<T>>&& vertices)
-      : elements_(std::move(elements)), vertices_(std::move(vertices)) {}
+      : elements_(std::move(elements)), vertices_(std::move(vertices)) {
+    if (elements_.empty()) {
+      throw std::logic_error("A mesh must contain at least one tetrahedron");
+    }
+  }
 
   const VolumeElement& element(ElementIndex e) const {
     DRAKE_DEMAND(0 <= e && num_elements());

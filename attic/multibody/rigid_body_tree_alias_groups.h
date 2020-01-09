@@ -5,13 +5,12 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 /**
  * This class provides a way to create aliases to groups of RigidBody or
- * DrakeJoint objects. The creation of these groups can be done either
- * programmatically or via an AliasGroups protobuf config file.
+ * DrakeJoint objects. The creation of these groups can be done
+ * programmatically.
  *
  * For example, suppose we have a RigidBodyTree with 6 links named
  * [link0 ~ link5], and 6 joints [base, joint0 ~ joint4]. We can "rename"
