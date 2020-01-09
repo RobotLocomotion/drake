@@ -125,7 +125,7 @@ class ContextBase : public internal::ContextMessageInterface {
                                 : system_name_;
   }
 
-  /// Gets the id of the subsystem to which this Context belongs.
+  /** Gets the id of the subsystem which created this Context. */
   int64_t get_system_id() const { return system_id_; }
 
   /** Returns the full pathname of the subsystem for which this is the Context.
@@ -593,8 +593,8 @@ class ContextBase : public internal::ContextMessageInterface {
   // Records the name of the system whose context this is.
   void set_system_name(const std::string& name) { system_name_ = name; }
 
-  // Records the id of the system that this context was created for.
-  void set_system_id(int64_t id) { system_id_ = id; }
+  // Records the id of the system that this context was created by.
+  void set_system_id(uint64_t id) { system_id_ = id; }
 
   // Fixes the input port at `index` to the internal value source `port_value`.
   // If the port wasn't previously fixed, assigns a ticket and tracker for the
@@ -663,7 +663,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Unique ID of the subsystem whose subcontext this is. Only positive values
   // are valid.
-  int64_t system_id_{0};
+  uint64_t system_id_{0};
 
   // Used to validate that System-derived classes didn't forget to invoke the
   // SystemBase method that properly sets up the ContextBase.

@@ -772,18 +772,20 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /// Checks whether the given context was created for this system.
   void ValidateContext(const ContextBase& context) const {
-    if (context.get_system_id() != reinterpret_cast<int64_t>(this)) {
-      throw std::logic_error(fmt::format(
-          "Context was not created for system '{}'", this->get_name()));
+    if (context.get_system_id() != reinterpret_cast<uint64_t>(this)) {
+      throw std::logic_error(
+          fmt::format("Context was not created for {} system {}",
+                      this->GetSystemType(), this->GetSystemPathname()));
     }
   }
 
   /// Checks whether the given context was created for this system.
   void ValidateContext(ContextBase* context) const {
     DRAKE_DEMAND(context);
-    if (context->get_system_id() != reinterpret_cast<int64_t>(this)) {
-      throw std::logic_error(fmt::format(
-          "Context was not created for system '{}'", this->get_name()));
+    if (context->get_system_id() != reinterpret_cast<uint64_t>(this)) {
+      throw std::logic_error(
+          fmt::format("Context was not created for {} system {}",
+                      this->GetSystemType(), this->GetSystemPathname()));
     }
   }
 

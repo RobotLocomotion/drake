@@ -257,6 +257,9 @@ class SystemTest : public ::testing::Test {
 
 TEST_F(SystemTest, ContextBelongsWithSystem) {
   LeafContext<double> other_context;
+
+  // These just uses a couple of arbitrary methods to test that a Context not
+  // created by a System throws the appropriate exception.
   DRAKE_EXPECT_THROWS_MESSAGE(system_.Publish(other_context), std::logic_error,
                               "Context was not created for system.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system_.SetDefaultContext(&other_context),
