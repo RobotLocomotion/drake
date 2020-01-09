@@ -20,6 +20,12 @@ using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
+// Friend class for accessing AAbb's protected/private functionality.
+class AabbTester : public ::testing::Test {
+ public:
+  static constexpr double kTolerance = Aabb::kTolerance;
+};
+
 // Friend class for accessing BoundingVolumeHierarchy's protected/private
 // functionality.
 class BVHTester {
@@ -75,7 +81,8 @@ TEST_F(BVHTest, TestComputeBoundingVolume) {
   Aabb aabb = BVHTester::ComputeBoundingVolume<SurfaceMesh<double>>(
       mesh_, tri_centroids.begin(), tri_centroids.end());
   EXPECT_TRUE(CompareMatrices(aabb.center(), Vector3d(0., 0., 0.)));
-  EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d(1.5, 1.5, 1.5)));
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d(1.5, 1.5, 1.5),
+                              AabbTester::kTolerance));
 
   // Test with a volume mesh. As above, the centroids are still irrelevant. The
   // bounding box should encompass the whole ellipsoid with a center of 0 and
@@ -88,7 +95,8 @@ TEST_F(BVHTest, TestComputeBoundingVolume) {
   aabb = BVHTester::ComputeBoundingVolume<VolumeMesh<double>>(
       volume_mesh, tet_centroids.begin(), tet_centroids.end());
   EXPECT_TRUE(CompareMatrices(aabb.center(), Vector3d(0., 0., 0.)));
-  EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d(1., 2., 3.)));
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d(1., 2., 3.),
+                              AabbTester::kTolerance));
 }
 
 // Tests properties from building the bounding volume tree.
@@ -270,19 +278,55 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestComputeCentroid) {
   EXPECT_TRUE(CompareMatrices(centroid, Vector3d(0.25, 0.5, 0.75)));
 }
 
-// Tests calculating the bounding box volume.
-GTEST_TEST(AABBTest, TestVolume) {
+// Tests calculating the bounding box volume. Due to boundary padding, the
+// volume is increased from 8abc to 8((a + ε)*(b + ε)*(c+ε)), i.e.:
+// 8[abc + (ab + bc + ac)ε + (a + b + c)ε² + ε³].
+TEST_F(AabbTester, TestVolume) {
   Aabb aabb = Aabb(Vector3d(-1, 2, 1), Vector3d(2, 0.5, 2.7));
-  EXPECT_EQ(aabb.CalcVolume(), 21.6);
+  // In this case the dominating error term is 8(ab + bc + ac)ε, which caps
+  // out under kTolerance * 70.
+  const double volume = aabb.CalcVolume();
+  EXPECT_NEAR(volume, 21.6, kTolerance * 70);
+  EXPECT_GT(volume, 21.6);
   Aabb zero_aabb = Aabb(Vector3d(3, -4, 1.3), Vector3d(0, 0, 0));
-  EXPECT_EQ(zero_aabb.CalcVolume(), 0);
+  // Since a, b and c are 0, only the ε³ term is left and kTolerance³ is
+  // within kTolerance.
+  const double zero_volume = zero_aabb.CalcVolume();
+  EXPECT_NEAR(zero_volume, 0, kTolerance);
+  EXPECT_GT(zero_volume, 0);
 }
 
 // Tests calculating the bounding points.
-GTEST_TEST(AABBTest, TestBounds) {
+TEST_F(AabbTester, TestBounds) {
   Aabb aabb = Aabb(Vector3d(-1, 2, 1), Vector3d(2, 0.5, 2.7));
-  EXPECT_TRUE(CompareMatrices(aabb.upper(), Vector3d(1, 2.5, 3.7)));
-  EXPECT_TRUE(CompareMatrices(aabb.lower(), Vector3d(-3, 1.5, -1.7), 1e-15));
+  EXPECT_TRUE(
+      CompareMatrices(aabb.upper(), Vector3d(1, 2.5, 3.7),
+                      kTolerance + std::numeric_limits<double>::epsilon()));
+  EXPECT_TRUE(
+      CompareMatrices(aabb.lower(), Vector3d(-3, 1.5, -1.7),
+                      kTolerance + std::numeric_limits<double>::epsilon()));
+}
+
+// Tests padding the boundary of the bounding box volume.
+TEST_F(AabbTester, TestPadBoundary) {
+  Aabb aabb = Aabb(Vector3d(-1, 0.5, 1), Vector3d(1.2, 2.5, 0.3));
+  Vector3d padded = Vector3d(1.2, 2.5, 0.3).array() + kTolerance;
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), padded));
+
+  // Large boxes should have a bigger padding based on either the maximum
+  // half width or position in the frame.
+  const double padding = 300 * std::numeric_limits<double>::epsilon();
+  ASSERT_GT(padding, kTolerance);
+  // Max is set from half_width.z.
+  aabb = Aabb(Vector3d(-1, 1.5, 1), Vector3d(120, 250, 300));
+  padded = Vector3d(120, 250, 300).array() + padding;
+  // Expect the two Vector3d to be exactly equal down to the last bit.
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), padded));
+  // Max is set from |center.x|.
+  aabb = Aabb(Vector3d(-300, 50, 100), Vector3d(1, 2, 0.5));
+  padded = Vector3d(1, 2, 0.5).array() + padding;
+  // Expect the two Vector3d to be exactly equal down to the last bit.
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), padded));
 }
 
 // We want to compute X_AB such that B is posed relative to A as documented in
