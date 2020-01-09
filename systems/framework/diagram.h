@@ -1109,7 +1109,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (SubsystemIndex i(0); i < num_systems; ++i) {
       std::unique_ptr<EventCollection<EventType>> subevent_collection =
-          allocater_func(registered_systems_[i].get());
+          allocator_func(registered_systems_[i].get());
 
       // The DiagramEventCollection should own these subevents- this function
       // will not maintain its own references to them.
