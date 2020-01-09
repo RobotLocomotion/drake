@@ -261,10 +261,10 @@ TEST_F(SystemTest, ContextBelongsWithSystem) {
   // These just uses a couple of arbitrary methods to test that a Context not
   // created by a System throws the appropriate exception.
   DRAKE_EXPECT_THROWS_MESSAGE(system_.Publish(other_context), std::logic_error,
-                              "Context was not created for system.*");
+                              "Context was not created for.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system_.SetDefaultContext(&other_context),
                               std::logic_error,
-                              "Context was not created for system.*");
+                              "Context was not created for.*");
 }
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {

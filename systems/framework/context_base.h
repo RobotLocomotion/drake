@@ -126,7 +126,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Gets the id of the subsystem which created this Context. */
-  int64_t get_system_id() const { return system_id_; }
+  uint64_t get_system_id() const { return system_id_; }
 
   /** Returns the full pathname of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
