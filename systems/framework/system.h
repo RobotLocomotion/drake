@@ -2075,6 +2075,9 @@ class System : public SystemBase {
   }
   //@}
 
+  /// Totals the number of continuous state variables in this System or Diagram.
+  virtual int do_get_num_continuous_states() const = 0;
+
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
