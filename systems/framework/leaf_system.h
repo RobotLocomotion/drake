@@ -425,8 +425,8 @@ class LeafSystem : public System<T> {
       return;
     }
 
-    // Find the minimum next sample time across all registered events, and
-    // the set of registered events that will occur at that time.
+    // Find the minimum next sample time across all declared periodic events,
+    // and store the set of declared events that will occur at that time.
     std::vector<const Event<T>*> next_events;
     for (const auto& event_pair : periodic_events_) {
       const PeriodicEventData& event_data = event_pair.first;
@@ -650,7 +650,7 @@ class LeafSystem : public System<T> {
   /// to one of the three available types of event dispatcher: publish (read
   /// only), discrete update, and unrestricted update.
   ///
-  /// @note If you want to generate timed events that are _not_ periodic
+  /// @note If you want to handle timed events that are _not_ periodic
   /// (timers, alarms, etc.), overload DoCalcNextUpdateTime() rather than using
   /// the methods in this section.
   ///
@@ -1132,8 +1132,8 @@ class LeafSystem : public System<T> {
   /// are dispatched first for the whole Diagram, then initialization-triggered
   /// discrete update events are dispatched for the whole Diagram. No other
   /// _update_ events occur during initialization. On the other hand, any
-  /// triggered _publish_ events, including initialization-triggered, per-step,
-  /// and time-triggered publish events scheduled for the initial time, are
+  /// _publish_ events, including initialization-triggered, per-step,
+  /// and time-triggered publish events that trigger at the initial time, are
   /// dispatched together during initialization.
   ///
   /// Template arguments to these methods are inferred from the argument lists
@@ -1307,7 +1307,7 @@ class LeafSystem : public System<T> {
   /// @note It's rare that an event needs to be triggered by force. Please
   /// consider per-step and periodic triggered events first.
   ///
-  /// @warning Simulator generates forced publish events at initialization
+  /// @warning Simulator handles forced publish events at initialization
   /// and on a per-step basis when its "publish at initialization" and
   /// "publish every time step" options are set.
   /// @see Simulator::set_publish_at_initialization()
@@ -1316,9 +1316,10 @@ class LeafSystem : public System<T> {
 
   /// Declares a function that is called whenever a user directly calls
   /// Publish(const Context&). Multiple calls to
-  /// DeclareForcedPublishEvent() will register multiple callbacks, which will
-  /// be called with the same const Context in arbitrary order. The handler
-  /// should be a class member function (method) with this signature:
+  /// DeclareForcedPublishEvent() will cause multiple handlers to be called
+  /// upon a call to Publish(); these handlers which will be called with the
+  /// same const Context in arbitrary order. The handler should be a class
+  /// member function (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
   /// @endcode
@@ -1352,10 +1353,10 @@ class LeafSystem : public System<T> {
 
   /// Declares a function that is called whenever a user directly calls
   /// CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
-  /// calls to DeclareForcedDiscreteUpdateEvent() will register
-  /// multiple callbacks, which will be called with the same const Context in
-  /// arbitrary order. The handler should be a class member function (method)
-  /// with this signature:
+  /// calls to DeclareForcedDiscreteUpdateEvent() will cause multiple handlers
+  /// to be called upon a call to CalcDiscreteVariableUpdates(); these handlers
+  /// which will be called with the same const Context in arbitrary order. The
+  /// handler should be a class member function (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyDiscreteVariableUpdates(const Context<T>&,
   ///   DiscreteValues<T>*);
@@ -1393,11 +1394,11 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares a function that is called whenever a user directly calls
-  /// CalcUnrestrictedUpdate(const Context&, State<T>*). Multiple
-  /// calls to DeclareForcedUnrestrictedUpdateEvent() will register
-  /// multiple callbacks, which will be called with the same const Context in
-  /// arbitrary order. The handler should be a class member function (method)
-  /// with this signature:
+  /// CalcUnrestrictedUpdate(const Context&, State<T>*). Multiple calls to
+  /// DeclareForcedUnrestrictedUpdateEvent() will cause multiple handlers to be
+  /// called upon a call to CalcUnrestrictedUpdate(); these handlers which will
+  /// be called with the same const Context in arbitrary order.The handler
+  /// should be a class member function (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyUnrestrictedUpdates(const Context<T>&,
   ///   State<T>*);
@@ -2748,12 +2749,12 @@ class LeafSystem : public System<T> {
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
-  // Periodic Update or Publish events registered on this system.
+  // Periodic Update or Publish events declared by this system.
   std::vector<std::pair<PeriodicEventData,
                         std::unique_ptr<Event<T>>>>
       periodic_events_;
 
-  // Update or Publish events registered on this system for every simulator
+  // Update or Publish events declared by this system for every simulator
   // major time step.
   LeafCompositeEventCollection<T> per_step_events_;
 

@@ -1093,16 +1093,26 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return false;
   }
 
+  // Allocates a collection of homogeneous events (e.g., publish events) for
+  // this Diagram.
+  // @param allocator_func A function for allocating an event collection of the
+  //                       given type, thus allowing this method to allocate
+  //                       collections for publish events, discrete update
+  //                       events, or unrestricted update events using a
+  //                       single mechanism.
   template <typename EventType>
   std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
       std::function<
-      std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
-  allocater_func) const {
+          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+          allocator_func) const {
     const int num_systems = num_subsystems();
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (SubsystemIndex i(0); i < num_systems; ++i) {
       std::unique_ptr<EventCollection<EventType>> subevent_collection =
-          allocater_func(registered_systems_[i].get());
+          allocator_func(registered_systems_[i].get());
+
+      // The DiagramEventCollection should own these subevents- this function
+      // will not maintain its own references to them.
       ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
     }
     return ret;
