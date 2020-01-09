@@ -144,11 +144,6 @@ class ImplicitIntegrator : public IntegratorBase<T> {
         num_jacobian_evaluations_;
   }
 
-  /// @name Cumulative statistics functions.
-  /// The functions return statistics specific to the implicit integration
-  /// process.
-  /// @{
-
   /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
   /// of equation solving process since the last call to ResetStatistics(). This
   /// count includes those Newton-Raphson iterations used during error
