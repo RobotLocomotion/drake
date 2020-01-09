@@ -47,7 +47,7 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(const Sphere& sphere,
   //     layers, and define linear pressure fields in each offset with
   //     different elastic modulus.
   DRAKE_DEMAND(elastic_modulus > T(0));
-  const T radius = sphere.get_radius();
+  const T radius = sphere.radius();
   std::vector<T> pressure_values;
   pressure_values.reserve(mesh_S->num_vertices());
   // A threshold to treat near-zero extent as zero extent. Some boundary

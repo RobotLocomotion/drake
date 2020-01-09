@@ -3,6 +3,7 @@ coinor-libcoinutils3v5
 coinor-libipopt1v5
 default-jre
 graphviz
+jupyter-notebook
 libamd2
 libblas3
 libboost-all-dev
@@ -32,6 +33,7 @@ libxml2
 libxt6
 libyaml-cpp0.5v5
 python3
+python3-ipywidgets
 python3-lxml
 python3-matplotlib
 python3-numpy

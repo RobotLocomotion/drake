@@ -37,9 +37,7 @@ void DecodeImageArray(
     LcmImageArrayToImages* dut, const image_array_t& lcm_images,
     ImageRgba8U* color_image, ImageDepth32F* depth_image) {
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  auto input_value = std::make_unique<Value<image_array_t>>(lcm_images);
-  context->FixInputPort(dut->image_array_t_input_port().get_index(),
-                        std::move(input_value));
+  dut->image_array_t_input_port().FixValue(context.get(), lcm_images);
 
   *color_image = dut->color_image_output_port().Eval<ImageRgba8U>(*context);
   *depth_image = dut->depth_image_output_port().Eval<ImageDepth32F>(*context);

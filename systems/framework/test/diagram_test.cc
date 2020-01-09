@@ -1517,7 +1517,7 @@ class SecondOrderStateVector : public BasicVector<double> {
   void set_v(double v) { SetAtIndex(1, v); }
 
  protected:
-  DRAKE_NODISCARD SecondOrderStateVector* DoClone() const override {
+  [[nodiscard]] SecondOrderStateVector* DoClone() const override {
     return new SecondOrderStateVector;
   }
 };
@@ -1796,7 +1796,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Set the time to 8.5, so only hold2 updates.
   context_->SetTime(8.5);
 
-  // Request the next update time.
+  // Request the next update time. Note that CalcNextUpdateTime() clears the
+  // event collection.
   auto events = diagram_.AllocateCompositeEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
   EXPECT_EQ(9.0, time);
@@ -1820,7 +1821,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Restore hold2 to its original value.
   ctx2.get_mutable_discrete_state(0)[0] = 1002.0;
-  // Set the time to 11.5, so both hold1 and hold2 update.
+  // Set the time to 11.5, so both hold1 and hold2 update.  Note that
+  // CalcNextUpdateTime() clears the event collection.
   context_->SetTime(11.5);
   time = diagram_.CalcNextUpdateTime(*context_, events.get());
   EXPECT_EQ(12.0, time);
@@ -2002,7 +2004,8 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdates) {
   EXPECT_EQ(context->get_discrete_state(0)[0], kSys1Id + time);  // == 3
   EXPECT_EQ(context->get_discrete_state(1)[0], kSys2Id);
 
-  // Sets time to 5.5, both systems should be updating at 6 sec.
+  // Sets time to 5.5, both systems should be updating at 6 sec.  Note that
+  // CalcNextUpdateTime() clears the event collection.
   context->SetTime(5.5);
   EXPECT_EQ(diagram.CalcNextUpdateTime(*context, events.get()), 6.);
   for (int i : {kSys1Id, kSys2Id}) {
@@ -2199,7 +2202,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), kSys1Id + time);  // == 3
   EXPECT_EQ(get_sys2_abstract_data_as_double(), kSys2Id);
 
-  // Sets time to 5.5, both systems should be updating at 6 sec.
+  // Sets time to 5.5, both systems should be updating at 6 sec.  Note that
+  // CalcNextUpdateTime() clears the event collection.
   context_->SetTime(5.5);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6.);
   for (int i : {kSys1Id, kSys2Id}) {

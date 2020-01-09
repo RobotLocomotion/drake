@@ -54,9 +54,9 @@ VolumeMeshFieldLinear<T, T> MakeEllipsoidPressureField(
   //     layers, and define linear pressure fields in each offset with
   //     different elastic modulus.
   DRAKE_DEMAND(elastic_modulus > T(0));
-  const T a = ellipsoid.get_a();
-  const T b = ellipsoid.get_b();
-  const T c = ellipsoid.get_c();
+  const T a = ellipsoid.a();
+  const T b = ellipsoid.b();
+  const T c = ellipsoid.c();
   // For scaling a position vector in the ellipsoid to the unit sphere.
   const Vector3<T> scale{T(1.0) / a, T(1.0) / b, T(1.0) / c};
   std::vector<T> pressure_values;

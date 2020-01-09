@@ -656,46 +656,10 @@ bool GeometryState<T>::IsValidGeometryName(
   return NameIsUnique(frame_id, role, name);
 }
 
-namespace {
-// Small class for identifying mesh geometries.
-class MeshIdentifier final : public ShapeReifier {
- public:
-  bool is_mesh() const { return is_mesh_; }
-
-  // Implementation of ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Sphere&, void*) final {}
-  void ImplementGeometry(const Cylinder&, void*) final {}
-  void ImplementGeometry(const HalfSpace&, void*) final {}
-  void ImplementGeometry(const Box&, void*) final {}
-  void ImplementGeometry(const Capsule&, void*) final {}
-  void ImplementGeometry(const Mesh& mesh, void*) final {
-    is_mesh_ = true;
-    drake::log()->warn("Meshes are _not_ supported for proximity: ({})",
-                       mesh.filename());
-  }
-  void ImplementGeometry(const Convex&, void*) final {}
-
- private:
-  bool is_mesh_{false};
-};
-}  // namespace
-
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   ProximityProperties properties,
                                   RoleAssign assign) {
-  // TODO(SeanCurtis-TRI): When meshes are supported for proximity roles, remove
-  // this test and the MeshIdentifier class.
-  {
-    const InternalGeometry* g = GetGeometry(geometry_id);
-    if (g) {
-      MeshIdentifier identifier;
-      g->shape().Reify(&identifier);
-      if (identifier.is_mesh()) return;
-    }
-  }
-
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
 
@@ -788,6 +752,13 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   IllustrationProperties properties,
                                   RoleAssign assign) {
+  if (properties.HasProperty("phong", "diffuse_map")) {
+    static logging::Warn log_once(
+        "Explicitly defined values for the ('phong', 'diffuse_map') property "
+        "are not currently used in illustration roles -- only perception "
+        "roles");
+  }
+
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
   // TODO(SeanCurtis-TRI): Ideally, if assign == RoleAssign::kReplace, this

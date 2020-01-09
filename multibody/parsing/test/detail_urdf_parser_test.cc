@@ -8,6 +8,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 
 namespace drake {
@@ -23,7 +24,7 @@ using geometry::SceneGraph;
 GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
@@ -39,7 +40,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
 
   // Read in the URDF file.
   AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant,
-      &scene_graph);
+                       &scene_graph);
   plant.Finalize();
 
   // Verify the number of model instances.
@@ -47,7 +48,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
@@ -66,17 +67,16 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
 
   // Sample a couple of frames.
   const Frame<double>& frame_on_link1 = plant.GetFrameByName("frame_on_link1");
-  EXPECT_EQ(
-      frame_on_link1.body().index(), plant.GetBodyByName("link1").index());
+  EXPECT_EQ(frame_on_link1.body().index(),
+            plant.GetBodyByName("link1").index());
 
   math::RollPitchYaw<double> rpy_expected(-1, 0.1, 0.2);
   Vector3d xyz_expected(0.8, -0.2, 0.3);
-  math::RigidTransform<double> X_BF_expected(
-      rpy_expected.ToRotationMatrix(), xyz_expected);
+  math::RigidTransform<double> X_BF_expected(rpy_expected.ToRotationMatrix(),
+                                             xyz_expected);
 
-  EXPECT_TRUE(CompareMatrices(
-      frame_on_link1.GetFixedPoseInBodyFrame().matrix(),
-      X_BF_expected.GetAsMatrix4(), 1e-10));
+  EXPECT_TRUE(CompareMatrices(frame_on_link1.GetFixedPoseInBodyFrame().matrix(),
+                              X_BF_expected.GetAsMatrix4(), 1e-10));
 
   const Frame<double>& link2_com = plant.GetFrameByName("link2_com");
   EXPECT_EQ(link2_com.body().index(), plant.GetBodyByName("link2").index());
@@ -86,7 +86,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
 // "package://" syntax internally to the URDF (at least for packages which are
 // successfully found in the same directory at the URDF.
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
@@ -102,13 +102,13 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   const std::string resource_dir{
-    "drake/multibody/parsing/test/urdf_parser_test/"};
-  const std::string model_file = FindResourceOrThrow(
-      resource_dir + "zero_dof_robot.urdf");
+      "drake/multibody/parsing/test/urdf_parser_test/"};
+  const std::string model_file =
+      FindResourceOrThrow(resource_dir + "zero_dof_robot.urdf");
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(model_file);
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(model_file, "", package_map, &plant, &scene_graph);
   plant.Finalize();
@@ -125,7 +125,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
     plant.Finalize();
@@ -134,7 +134,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   EXPECT_NE(num_visuals_explicit, 0);
   {
     // Test implicitly specifying.
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     AddModelFromUrdfFile(full_name, "", package_map, &plant);
@@ -150,31 +150,31 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(full_name);
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
   const Joint<double>& revolute_joint = plant.GetJointByName("revolute_joint");
-  EXPECT_TRUE(CompareMatrices(
-      revolute_joint.position_lower_limits(), Vector1d(-1)));
-  EXPECT_TRUE(CompareMatrices(
-      revolute_joint.position_upper_limits(), Vector1d(2)));
-  EXPECT_TRUE(CompareMatrices(
-      revolute_joint.velocity_lower_limits(), Vector1d(-100)));
-  EXPECT_TRUE(CompareMatrices(
-      revolute_joint.velocity_upper_limits(), Vector1d(100)));
+  EXPECT_TRUE(
+      CompareMatrices(revolute_joint.position_lower_limits(), Vector1d(-1)));
+  EXPECT_TRUE(
+      CompareMatrices(revolute_joint.position_upper_limits(), Vector1d(2)));
+  EXPECT_TRUE(
+      CompareMatrices(revolute_joint.velocity_lower_limits(), Vector1d(-100)));
+  EXPECT_TRUE(
+      CompareMatrices(revolute_joint.velocity_upper_limits(), Vector1d(100)));
 
   const Joint<double>& prismatic_joint =
       plant.GetJointByName("prismatic_joint");
-  EXPECT_TRUE(CompareMatrices(
-      prismatic_joint.position_lower_limits(), Vector1d(-2)));
-  EXPECT_TRUE(CompareMatrices(
-      prismatic_joint.position_upper_limits(), Vector1d(1)));
-  EXPECT_TRUE(CompareMatrices(
-      prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
-  EXPECT_TRUE(CompareMatrices(
-      prismatic_joint.velocity_upper_limits(), Vector1d(5)));
+  EXPECT_TRUE(
+      CompareMatrices(prismatic_joint.position_lower_limits(), Vector1d(-2)));
+  EXPECT_TRUE(
+      CompareMatrices(prismatic_joint.position_upper_limits(), Vector1d(1)));
+  EXPECT_TRUE(
+      CompareMatrices(prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
+  EXPECT_TRUE(
+      CompareMatrices(prismatic_joint.velocity_upper_limits(), Vector1d(5)));
 
   const Joint<double>& no_limit_joint =
       plant.GetJointByName("revolute_joint_no_limits");
@@ -185,6 +185,146 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "collision_filter_group_parsing_test.urdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+
+  // Get geometry ids for all the bodies.
+  const geometry::SceneGraphInspector<double>& inspector =
+      scene_graph.model_inspector();
+  const auto geometry_id_link1 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link1").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link1_sphere");
+  const auto geometry_id_link2 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link2").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link2_sphere");
+  const auto geometry_id_link3 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link3").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link3_sphere");
+  const auto geometry_id_link4 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link4").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link4_sphere");
+
+  // Make sure the plant is not finalized such that the adjacent joint filter
+  // has not taken into effect yet. This guarantees that the collision filtering
+  // is applied due to the collision filter group parsing.
+  ASSERT_FALSE(plant.is_finalized());
+
+  // We have four geometries and six possible pairs, each with a particular
+  // disposition.
+  // (1, 2) - unfiltered
+  // (1, 3) - filtered by group_link_3 ignores group_link_14
+  // (1, 4) - filtered by group_link_14 ignores itself
+  // (2, 3) - filtered by group_link_2 ignores group_link_3
+  // (2, 4) - unfiltered (although declared in an *ignored* self-filtering
+  // group_link_24).
+  // (3, 4) - filtered by group_link_3 ignores group_link_14
+  EXPECT_FALSE(
+      inspector.CollisionFiltered(geometry_id_link1, geometry_id_link2));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link1, geometry_id_link3));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link1, geometry_id_link4));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link2, geometry_id_link3));
+  EXPECT_FALSE(
+      inspector.CollisionFiltered(geometry_id_link2, geometry_id_link4));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link3, geometry_id_link4));
+}
+// Reports if the frame with the given id has a geometry with the given role
+// whose name is the same as what ShapeName(ShapeType{}) would produce.
+template <typename ShapeType>
+::testing::AssertionResult FrameHasShape(geometry::FrameId frame_id,
+                                         geometry::Role role,
+                                         const SceneGraph<double>& scene_graph,
+                                         const ShapeType& shape) {
+  const auto& inspector = scene_graph.model_inspector();
+  const std::string name = geometry::ShapeName(shape).name();
+  try {
+    // Note: MBP prepends the model index to the geometry name; in this case
+    // that model instance name is "test_robot".
+    const geometry::GeometryId geometry_id =
+        inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
+    const std::string shape_type =
+        geometry::ShapeName(inspector.GetShape(geometry_id)).name();
+    if (shape_type != name) {
+      return ::testing::AssertionFailure()
+          << "Geometry with role " << role << " has wrong shape type."
+          << "\nExpected: " << name
+          << "\nFound: " << shape_type;
+    }
+  } catch (const std::exception& e) {
+    return ::testing::AssertionFailure()
+        << "Frame " << frame_id << " does not have a geometry with role "
+        << role << " and name " << name
+        << ".\n  Exception message: " << e.what();
+  }
+  return ::testing::AssertionSuccess();
+}
+
+// Confirms that all supported geometries in an URDF file are registered. The
+// *details* of the geometries are ignored -- we assume that that functionality
+// is tested in detail_urdf_geometry_test.cc. This merely makes sure that *that*
+// functionality is exercised appropriately.
+void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
+  const std::string full_name = FindResourceOrThrow(sdf_name);
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  plant.Finalize();
+
+  const auto frame_id =
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link1").index());
+
+  const std::string mesh_uri = "drake/multibody/parsing/test/tri_cube.obj";
+
+  // Note: the parameters for the various example shapes do not matter to this
+  // test.
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Box{0.1, 0.1, 0.1}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Capsule{0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Convex{mesh_uri, 1.0}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Cylinder{0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Ellipsoid{0.1, 0.1, 0.1}));
+  EXPECT_TRUE(FrameHasShape(frame_id, role, scene_graph,
+                            geometry::Mesh{mesh_uri, 1.0}));
+  EXPECT_TRUE(
+      FrameHasShape(frame_id, role, scene_graph, geometry::Sphere{0.1}));
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionGeometryParsing) {
+  TestForParsedGeometry(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "all_geometries_as_collision.urdf",
+      geometry::Role::kProximity);
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, VisualGeometryParsing) {
+  TestForParsedGeometry(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "all_geometries_as_visual.urdf",
+      geometry::Role::kPerception);
 }
 
 }  // namespace

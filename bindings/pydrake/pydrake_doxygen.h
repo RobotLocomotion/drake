@@ -94,6 +94,12 @@ When testing the values of NumPy matrices, please review the documentation in
 
 - `*_py`: A Python library (can be pure Python or pybind)
   - File Names: `*.py`, `*_py.cc`
+    - Each `*_py.cc` file should only define one package (a module; optionally
+    with multiple submodules under it).
+    - *Note*: If you need to split up a `{module}_py.cc` file for compilation
+    speed and clarity, use `{module}_py_{part}.cc` for source and
+    `{module}_py_{part}.h` for headers, and then include the headers into the
+    original module source file. `{part}` may not necessarily be a submodule.
 
 - `*_pybind`: A C++ library for adding pybind-specific utilities to be consumed
   by C++.
@@ -218,8 +224,8 @@ To browse the generated documentation strings that are available for use (or
 especially, to find out the names for overloaded functions' documentation),
 generate and open the docstring header:
 
-    bazel build //bindings/pydrake:generate_pybind_documentation_header
-    $EDITOR bazel-genfiles/bindings/pydrake/documentation_pybind.h
+    bazel build //bindings/pydrake:documentation_pybind.h
+    $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
 
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
@@ -227,6 +233,17 @@ line corresponding to the symbol that the docstring was pulled from.
 
 @note This file may be large, on the order of ~100K lines; be sure to use an
 efficient editor!
+
+@note If you are debugging a certain file and want quicker generation and a
+smaller generated file, you can hack `mkdoc.py` to focus only on your include
+file of chioce. As an example, debugging `mathematical_program.h`:
+~~~{.py}
+    ...
+    assert len(include_files) > 0  # Existing code.
+    include_files = ["drake/solvers/mathematical_program.h"]  # HACK
+~~~
+This may break the bindings themselves, and should only be used for inspecting
+the output.
 
 For more detail:
 

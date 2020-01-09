@@ -20,7 +20,6 @@ drake_cc_package_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Move code to a trajectory.cc file
 drake_cc_library(
     name = "trajectory",
     hdrs = ["trajectory.h"],

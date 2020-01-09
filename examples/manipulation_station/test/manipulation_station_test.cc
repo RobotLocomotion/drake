@@ -73,22 +73,20 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   }
 
   // Check position command pass through.
-  context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
-                        q_command);
+  station.GetInputPort("iiwa_position").FixValue(context.get(), q_command);
   EXPECT_TRUE(CompareMatrices(q_command,
                               station.GetOutputPort("iiwa_position_commanded")
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
 
   // Check feedforward_torque command.
-  context->FixInputPort(
-      station.GetInputPort("iiwa_feedforward_torque").get_index(),
-      VectorXd::Zero(7));
+  station.GetInputPort("iiwa_feedforward_torque")
+      .FixValue(context.get(), VectorXd::Zero(7));
   VectorXd tau_with_no_ff = station.GetOutputPort("iiwa_torque_commanded")
                                 .Eval<BasicVector<double>>(*context)
                                 .get_value();
-  context->FixInputPort(
-      station.GetInputPort("iiwa_feedforward_torque").get_index(), tau_ff);
+  station.GetInputPort("iiwa_feedforward_torque")
+      .FixValue(context.get(), tau_ff);
   EXPECT_TRUE(CompareMatrices(tau_with_no_ff + tau_ff,
                               station.GetOutputPort("iiwa_torque_commanded")
                                   .Eval<BasicVector<double>>(*context)
@@ -97,10 +95,8 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   // All ports must be connected if later on we'll ask questions like: "what's
   // the external contact torque?". We therefore fix the gripper related ports.
   double wsg_position = station.GetWsgPosition(*context);
-  context->FixInputPort(station.GetInputPort("wsg_position").get_index(),
-                        Vector1d(wsg_position));
-  context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
-                        Vector1d(40));
+  station.GetInputPort("wsg_position").FixValue(context.get(), wsg_position);
+  station.GetInputPort("wsg_force_limit").FixValue(context.get(), 40.);
 
   // Check iiwa_torque_commanded == iiwa_torque_measured.
   EXPECT_TRUE(CompareMatrices(station.GetOutputPort("iiwa_torque_commanded")
@@ -145,16 +141,13 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
   station.SetIiwaPosition(context.get(), iiwa_position);
   station.SetIiwaVelocity(context.get(), iiwa_velocity);
 
-  context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
+  station.GetInputPort("iiwa_position").FixValue(context.get(),
                         iiwa_position);
-  context->FixInputPort(
-      station.GetInputPort("iiwa_feedforward_torque").get_index(),
-      VectorXd::Zero(7));
+  station.GetInputPort("iiwa_feedforward_torque").FixValue(
+      context.get(), VectorXd::Zero(7));
   double wsg_position = station.GetWsgPosition(*context);
-  context->FixInputPort(station.GetInputPort("wsg_position").get_index(),
-                        Vector1d(wsg_position));
-  context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
-                        Vector1d(40));
+  station.GetInputPort("wsg_position").FixValue(context.get(), wsg_position);
+  station.GetInputPort("wsg_force_limit").FixValue(context.get(), 40.);
 
   // Set desired position to actual position and the desired velocity to the
   // actual velocity.
@@ -297,6 +290,20 @@ GTEST_TEST(ManipulationStationTest, SetupClutterClearingStation) {
   RandomGenerator generator;
   station.SetRandomContext(context.get(), &generator);
 }
+
+GTEST_TEST(ManipulationStationTest, SetupPlanarIiwaStation) {
+  ManipulationStation<double> station(0.002);
+  station.SetupPlanarIiwaStation();
+  station.Finalize();
+
+  // Make sure we get through the setup and initialization.
+  auto context = station.CreateDefaultContext();
+
+  // Check that domain randomization works.
+  RandomGenerator generator;
+  station.SetRandomContext(context.get(), &generator);
+}
+
 
 // Check that making many stations does not exhaust resources.
 GTEST_TEST(ManipulationStationTest, MultipleInstanceTest) {

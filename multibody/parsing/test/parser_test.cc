@@ -20,7 +20,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
   // Load from SDF using plural method.
   // Add a second one with an overridden model_name.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(dut.AddAllModelsFromFile(sdf_name).size(), 1);
     dut.AddModelFromFile(sdf_name, "foo");
@@ -29,7 +29,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
   // Load from URDF using plural method.
   // Add a second one with an overridden model_name.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(dut.AddAllModelsFromFile(urdf_name).size(), 1);
     dut.AddModelFromFile(urdf_name, "foo");
@@ -37,7 +37,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
 
   // Load an SDF then a URDF.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     dut.AddModelFromFile(sdf_name, "foo");
     dut.AddModelFromFile(urdf_name, "bar");
@@ -50,7 +50,7 @@ GTEST_TEST(FileParserTest, MultiModelTest) {
 
   // Check that the plural method loads two models.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     EXPECT_EQ(Parser(&plant).AddAllModelsFromFile(sdf_name).size(), 2);
   }
 
@@ -60,7 +60,7 @@ GTEST_TEST(FileParserTest, MultiModelTest) {
 
   // Check the singular method without model_name.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Parser(&plant).AddModelFromFile(sdf_name),
         std::exception, expected_error);
@@ -68,7 +68,7 @@ GTEST_TEST(FileParserTest, MultiModelTest) {
 
   // Check the singular method with empty model_name.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Parser(&plant).AddModelFromFile(sdf_name, ""),
         std::exception, expected_error);
@@ -76,7 +76,7 @@ GTEST_TEST(FileParserTest, MultiModelTest) {
 
   // Check the singular method with non-empty model_name.
   {
-    MultibodyPlant<double> plant;
+    MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Parser(&plant).AddModelFromFile(sdf_name, "foo"),
         std::exception, expected_error);
@@ -86,7 +86,7 @@ GTEST_TEST(FileParserTest, MultiModelTest) {
 GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   // An unknown extension is an error.
   // (Check both singular and plural overloads.)
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.foo"),
       std::exception,
@@ -111,7 +111,7 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
 GTEST_TEST(FileParserTest, PackageMapTest) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   geometry::SceneGraph<double> scene_graph;
   Parser parser(&plant, &scene_graph);
   ASSERT_EQ(plant.num_model_instances(), 2);

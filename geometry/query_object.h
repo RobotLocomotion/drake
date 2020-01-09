@@ -180,36 +180,45 @@ class QueryObject {
    -->
 
    @returns A vector populated with all detected penetrations characterized as
-            point pairs. */
+            point pairs.
+   @note    Silently ignore Mesh geometries. */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
   /**
-   Reports pair-wise intersections and characterizes each non-empty
-   intersection as a ContactSurface. The computation is subject to collision
-   filtering.
+   Reports pairwise intersections and characterizes each non-empty
+   intersection as a ContactSurface for hydroelastic contact model.
+   The computation is subject to collision filtering.
 
    For two intersecting geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
    `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
-   In the current incarnation, this function represents the most bare-bones
-   implementation possible.
+   In the current incarnation, this function represents a simple implementation.
 
-     - Only collision between spheres and boxes is supported. If an unfiltered
-       geometry pair of any other type pairing cannot be culled in the
-       broadphase an error will be thrown.
-     - The sphere will *always* be considered soft, and the box rigid.
-     - The elasticity modulus for the sphere is hard-coded and arbitrary (but
-       consistent with being a medium rubber).
-     - The sphere's pressure function is is simply: p_0(e) = Ee. Where
-       E = 1e8 N/m^2.
-     - The tessellation of the corresponding meshes will be coarse.
+     - This table shows the supported shapes and compliance modes.
+
+       |   Shape   | Soft  | Rigid |
+       | :-------: | :---: | :---- |
+       | Sphere    |  yes  |  yes  |
+       | Cylinder  |  yes  |  yes  |
+       | Box       |  yes  |  yes  |
+       | Capsule   |  no   |  no   |
+       | Ellipsoid |  yes  |  yes  |
+       | HalfSpace |  no   |  no   |
+       | Mesh      |  no   |  yes  |
+       | Convex    |  no   |  no   |
+
+     - One geometry must be soft, and the other must be rigid. There is no
+       support for soft-soft collision or rigid-rigid collision.
+     - The elasticity modulus E (N/m^2) of each geometry is set in
+       ProximityProperties (see proximity_properties.cc). A rigid geometry must
+       have E = ∞.
+     - The tessellation of the corresponding meshes is controlled by the
+       resolution hint, as defined by AddSoftHydroelasticProperties() and
+       AddRigidHydroelasticProperties().
      - Attempting to invoke this method with T = AutoDiffXd will throw an
        exception if there are *any* geometry pairs that couldn't be culled.
-
-   In the near future, this behavior will extend to be configurable and more
-   general.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
@@ -221,11 +230,13 @@ class QueryObject {
    b) *known* to be separated. The caller is responsible for confirming that
    the remaining, unculled geometry pairs are *actually* in collision.
 
-   @returns A vector populated with collision pair candidates. */
+   @returns A vector populated with collision pair candidates.
+   @note    Silently ignore Mesh geometries. */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
-   world.  */
+   world.
+   @note Silently ignore Mesh geometries. */
   bool HasCollisions() const;
 
   //@}
@@ -315,6 +326,16 @@ class QueryObject {
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
+
+  /** A variant of ComputeSignedDistancePairwiseClosestPoints() which computes
+   the signed distance (and witnesses) between a specific pair of geometries
+   indicated by id. This function has the same restrictions on scalar report
+   as ComputeSignedDistancePairwiseClosestPoints().
+
+   @throws if either geometry id is invalid, or if the pair (id_A, id_B) has
+           been marked as filtered.  */
+  SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B) const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed

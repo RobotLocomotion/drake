@@ -1,0 +1,18 @@
+package drake;
+
+// Message to support asynchronous remote procedure calls to a Python
+// client. For historical reasons, interface is modeled on mexCallMATLAB
+// (see https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html) but
+// with output arguments assigned in the remote client workspace due to the
+// asynchronous nature of the protocol.
+struct lcmt_call_python {
+  // Any expression that resolves to a callable Python object.
+  string function_name;
+
+  // Unique id for variable held in the client workspace.
+  int64_t lhs;
+
+  // Input argument data.
+  int32_t num_rhs;
+  lcmt_call_python_data rhs[num_rhs];
+}

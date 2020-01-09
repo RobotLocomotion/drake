@@ -148,10 +148,8 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
   if (input_port) {
-    auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
-    input_vector->SetFromVector(std::get<1>(autodiff_args));
-    autodiff_context->FixInputPort(input_port->get_index(),
-                                   std::move(input_vector));
+    VectorX<AutoDiffXd> input_vector = std::get<1>(autodiff_args);
+    input_port->FixValue(autodiff_context.get(), input_vector);
   }
 
   Eigen::MatrixXd A(num_states, num_states), B(num_states, num_inputs);

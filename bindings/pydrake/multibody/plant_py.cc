@@ -108,29 +108,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("num_contacts",
-            [](Class* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around "
-                  "2019-12-01. Use num_point_pair_contacts() instead.");
-              return self->num_point_pair_contacts();
-            },
-            (std::string("(Deprecated.) ") +
-                cls_doc.num_point_pair_contacts.doc)
-                .c_str())
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
-        .def("contact_info",
-            [](Class* self, int i) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around "
-                  "2019-12-01. Use point_pair_contact_info() instead.");
-              return self->point_pair_contact_info(i);
-            },
-            py::arg("i"),
-            (std::string("(Deprecated. )") +
-                cls_doc.point_pair_contact_info.doc)
-                .c_str())
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
     AddValueInstantiation<Class>(m);
@@ -150,6 +129,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("dynamic_friction", &Class::dynamic_friction,
             cls_doc.dynamic_friction.doc);
 
+    AddValueInstantiation<CoulombFriction<T>>(m);
+
     m.def("CalcContactFrictionFromSurfaceProperties",
         [](const multibody::CoulombFriction<T>& surface_properties1,
             const multibody::CoulombFriction<T>& surface_properties2) {
@@ -167,8 +148,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "MultibodyPlant", param, cls_doc.doc);
     // N.B. These are defined as they appear in the class declaration.
     // Forwarded methods from `MultibodyTree`.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def(py_init_deprecated<Class>(cls_doc.ctor.doc_deprecated),
+        cls_doc.ctor.doc_deprecated);
+#pragma GCC diagnostic pop
     cls  // BR
-        .def(py::init<double>(), py::arg("time_step") = 0.)
+        .def(py::init<double>(), py::arg("time_step"), cls_doc.ctor.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
         .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
@@ -187,12 +173,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_velocities",
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_velocities),
-            cls_doc.num_velocities.doc_1args)
-        .def("num_multibody_states", &Class::num_multibody_states,
-            cls_doc.num_multibody_states.doc)
+            py::arg("model_instance"), cls_doc.num_velocities.doc_1args)
+        .def("num_multibody_states",
+            overload_cast_explicit<int>(&Class::num_multibody_states),
+            cls_doc.num_multibody_states.doc_0args)
+        .def("num_multibody_states",
+            overload_cast_explicit<int, ModelInstanceIndex>(
+                &Class::num_multibody_states),
+            py::arg("model_instance"), cls_doc.num_multibody_states.doc_1args)
         .def("num_actuated_dofs",
             overload_cast_explicit<int>(&Class::num_actuated_dofs),
-            cls_doc.num_actuated_dofs.doc_0args);
+            cls_doc.num_actuated_dofs.doc_0args)
+        .def("num_actuated_dofs",
+            overload_cast_explicit<int, ModelInstanceIndex>(
+                &Class::num_actuated_dofs),
+            py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
     // Construction.
     cls  // BR
         .def("AddJoint",
@@ -577,7 +572,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<ModelInstanceIndex, const string&>(
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_reference_internal,
-            cls_doc.GetModelInstanceByName.doc);
+            cls_doc.GetModelInstanceByName.doc)
+        .def("GetTopologyGraphvizString", &Class::GetTopologyGraphvizString,
+            cls_doc.GetTopologyGraphvizString.doc);
     // Geometry.
     cls  // BR
         .def("RegisterAsSourceForSceneGraph",
@@ -612,10 +609,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
+                geometry::ProximityProperties>(
+                &Class::RegisterCollisionGeometry),
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("properties"),
+            cls_doc.RegisterCollisionGeometry
+                .doc_5args_body_X_BG_shape_name_properties)
+        .def("RegisterCollisionGeometry",
+            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
+                const geometry::Shape&, const std::string&,
                 const CoulombFriction<double>&>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), cls_doc.RegisterCollisionGeometry.doc)
+            py::arg("coulomb_friction"),
+            cls_doc.RegisterCollisionGeometry
+                .doc_5args_body_X_BG_shape_name_coulomb_friction)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_reference_internal,

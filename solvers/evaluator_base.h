@@ -44,6 +44,7 @@ class EvaluatorBase {
             Eigen::VectorXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
+    DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
   // TODO(eric.cousineau): Move this to DifferentiableConstraint derived class
@@ -57,6 +58,7 @@ class EvaluatorBase {
   void Eval(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
+    DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
   /**
@@ -68,6 +70,7 @@ class EvaluatorBase {
             VectorX<symbolic::Expression>* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
+    DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
   /**

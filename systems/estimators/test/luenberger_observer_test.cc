@@ -62,8 +62,8 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
 
   Eigen::Vector3d xhatdot = A * xhat + B * u + L * (y - C * xhat - D * u);
 
-  context->FixInputPort(0, y);
-  context->FixInputPort(1, u);
+  observer->get_input_port(0).FixValue(context.get(), y);
+  observer->get_input_port(1).FixValue(context.get(), u);
   context->get_mutable_continuous_state_vector().SetFromVector(xhat);
 
   observer->CalcTimeDerivatives(*context, derivatives.get());

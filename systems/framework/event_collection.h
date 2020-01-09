@@ -112,11 +112,9 @@ class EventCollection {
   }
 
   /**
-   * Adds all of `other`'s events to the end of `this`. If `other` ==
-   * `this`, does nothing. See derived DoAddEventsToEnd() for more details.
+   * Adds all of `other`'s events to the end of `this`.
    */
   void AddToEnd(const EventCollection<EventType>& other) {
-    if (&other == this) return;
     DoAddToEnd(other);
   }
 
@@ -143,10 +141,6 @@ class EventCollection {
    */
   EventCollection() = default;
 
-  /**
-   * Derived implementation can assume that `other` is not null and that
-   * `other != this`.
-   */
   virtual void DoAddToEnd(const EventCollection<EventType>& other) = 0;
 };
 
@@ -343,8 +337,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
 
  protected:
   /**
-   * All events in `other_collection` are concatanated to this. Aborts if
-   * `other_collection` is null.
+   * All events in `other_collection` are concatanated to this.
    *
    * Here is an example. Suppose this collection stores the following events:
    * <pre>

@@ -12,11 +12,6 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
-load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_cc_proto_library",
-    "drake_py_proto_library",
-)
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -27,25 +22,8 @@ drake_cc_package_library(
     deps = [
         ":call_python",
         ":protobuf",
-        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
     ],
-)
-
-drake_cc_proto_library(
-    name = "python_remote_message_proto",
-    srcs = [
-        "python_remote_message.proto",
-    ],
-    visibility = ["//visibility:private"],
-)
-
-drake_py_proto_library(
-    name = "python_remote_message_proto_py",
-    srcs = [
-        "python_remote_message.proto",
-    ],
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_library(
@@ -59,7 +37,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "@com_google_protobuf//:protobuf",
+        "@libprotobuf",
     ],
 )
 
@@ -68,10 +46,9 @@ drake_cc_library(
     srcs = ["call_python.cc"],
     hdrs = ["call_python.h"],
     deps = [
-        ":python_remote_message_proto",
         ":rpc_pipe_temp_directory",
-        "//common:copyable_unique_ptr",
         "//common:essential",
+        "//lcmtypes:call_python",
     ],
 )
 
@@ -80,7 +57,7 @@ drake_py_library(
     srcs = ["call_python_client.py"],
     imports = ["."],
     deps = [
-        ":python_remote_message_proto_py",
+        "//lcmtypes:lcmtypes_drake_py",
     ],
 )
 
@@ -89,30 +66,7 @@ drake_py_binary(
     srcs = ["call_python_client.py"],
     main = "call_python_client.py",
     deps = [
-        # Use @drake// not just // so that "import drake.common..." works.
-        # TODO(jwnimmer-tri) We should use a project-wide solution so that
-        # Drake's import paths are consistent without having to use weird
-        # spellings such as this one.
-        "@drake//common/proto:call_python_client",
-    ],
-)
-
-_UBSAN_H = "//third_party:com_github_google_protobuf/protobuf-ubsan-fixup.h"
-
-# This library is used by //tools/skylark:drake_proto.bzl.  Developers should
-# never need to mention it directly.  The source code is placed in third_party
-# because it is forked from protobuf upstream, and thus copyright by Google.
-cc_library(
-    name = "protobuf_ubsan_fixup",
-    hdrs = [_UBSAN_H],
-    include_prefix = "drake/common/proto",
-    strip_include_prefix = "/third_party/com_github_google_protobuf",
-    tags = [
-        # Developers should not use this directly.
-        "exclude_from_package",
-        # Don't install via cc_library; instead, rely on the :install rule
-        # below to handle the install path correctly.
-        "exclude_from_libdrake",
+        ":call_python_client",
     ],
 )
 
@@ -125,14 +79,6 @@ drake_cc_library(
         "//common:essential",
         "//common:filesystem",
     ],
-)
-
-install(
-    name = "install",
-    hdrs = [_UBSAN_H],
-    hdr_dest = "include/drake/common/proto",
-    hdr_strip_prefix = ["com_github_google_protobuf"],
-    allowed_externals = [_UBSAN_H],
 )
 
 # === test/ ===

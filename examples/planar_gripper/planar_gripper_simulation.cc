@@ -2,10 +2,15 @@
 ///
 /// This demo simulates a planar-gripper (three two-degree-of-freedom fingers
 /// moving in a plane) which reorients a brick through contact-interactions.
-/// The simulation interpolates a sequence of joint poses (keyframes) for the
-/// fingers, where each keyframe represents a static-equilibrium condition for
-/// the brick (i.e., the net wrench on the brick is zero). In this example, we
-/// simulate a playback of these keyframes at an arbitrarily set speed.
+///
+/// This simulation can be configured to run in one of two control modes:
+/// position control or torque control. In position control mode, desired state
+/// is communicated via LCM and fed into a trajectory tracking
+/// InverseDynamicsController. In torque control mode, desired torques are
+/// communicated via LCM but are instead directly fed into the actuation input
+/// port of the MBP. The control mode can be configured by setting the flag
+/// `use_position_control` to true (default) for position control mode, and
+/// setting it to false for torque control mode.
 ///
 /// The planar-gripper coordinate frame is illustrated in
 /// `planar_gripper_common.h`. Users have the option to either orient the
@@ -50,9 +55,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
+#include "drake/examples/planar_gripper/planar_gripper_lcm.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -61,8 +66,9 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/trajectory_source.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
 
 namespace drake {
 namespace examples {
@@ -88,11 +94,6 @@ DEFINE_double(time_step, 1e-3,
             "If greater than zero, the plant is modeled as a system with "
             "discrete updates and period equal to this time_step. "
             "If 0, the plant is modeled as a continuous system.");
-DEFINE_double(
-    keyframe_dt, 0.1,
-    "Defines the time step to take between keyframes. Note that keyframe "
-    "data in postures.txt contains static equilibrium poses and we "
-    "play these back at an arbitrary speed for this simulation.");
 DEFINE_double(penetration_allowance, 1e-3,
               "The contact penetration allowance.");
 DEFINE_double(floor_coef_static_friction, 0.5,
@@ -108,6 +109,10 @@ DEFINE_string(orientation, "vertical",
               "horizontal}.");
 DEFINE_bool(visualize_contacts, false,
             "Visualize contacts in Drake visualizer.");
+DEFINE_bool(
+    use_position_control, true,
+    "If true (default) we simulate position control via inverse dynamics "
+    "control. If false we actuate torques directly.");
 
 /// Adds a floor to the simulation, modeled as a thin cylinder.
 void AddFloor(MultibodyPlant<double>* plant,
@@ -130,7 +135,7 @@ void AddFloor(MultibodyPlant<double>* plant,
               plant->GetBodyByName("brick_link").index()),
           geometry::Role::kProximity, "brick::sphere1_collision"));
   const double sphere_radius =
-      dynamic_cast<const geometry::Sphere&>(sphere_shape).get_radius();
+      dynamic_cast<const geometry::Sphere&>(sphere_shape).radius();
   const math::RigidTransformd X_WS =
       inspector.GetPoseInFrame(inspector.GetGeometryIdByName(
           plant->GetBodyFrameIdOrThrow(
@@ -154,21 +159,21 @@ void AddFloor(MultibodyPlant<double>* plant,
       "FloorCollisionGeometry", coef_friction_floor);
 }
 
-/// Converts the generalized force output of the ID controller (internally using
-/// a control plant with only the gripper) to the generalized force input for
-/// the full simulation plant (containing gripper and brick).
-class ControlToSimPlantForceConverter : public systems::LeafSystem<double> {
+/// Reorders the generalized force output vector of the ID controller
+/// (internally using a control plant with only the gripper) to match the
+/// actuation input ordering for the full simulation plant (containing gripper
+/// and brick).
+class GeneralizedForceToActuationOrdering : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ControlToSimPlantForceConverter);
-  ControlToSimPlantForceConverter(const MultibodyPlant<double>* plant,
-                                 ModelInstanceIndex gripper_instance)
-      : plant_(plant), gripper_instance_(gripper_instance) {
-    DRAKE_DEMAND(plant != nullptr);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeneralizedForceToActuationOrdering);
+  explicit GeneralizedForceToActuationOrdering(
+      const MultibodyPlant<double>& plant)
+      : Binv_(plant.MakeActuationMatrix().inverse()) {
     this->DeclareVectorInputPort(
-        "input", systems::BasicVector<double>(plant->num_actuators()));
+        "tau", systems::BasicVector<double>(plant.num_actuators()));
     this->DeclareVectorOutputPort(
-        "output", systems::BasicVector<double>(plant->num_velocities()),
-        &ControlToSimPlantForceConverter::remap_output);
+        "u", systems::BasicVector<double>(plant.num_actuators()),
+        &GeneralizedForceToActuationOrdering::remap_output);
   }
 
   void remap_output(const systems::Context<double>& context,
@@ -177,12 +182,55 @@ class ControlToSimPlantForceConverter : public systems::LeafSystem<double> {
     auto input_value = this->EvalVectorInput(context, 0)->get_value();
 
     output_value.setZero();
-    plant_->SetVelocitiesInArray(gripper_instance_, input_value, &output_value);
+    output_value = Binv_ * input_value;
   }
 
  private:
-  const MultibodyPlant<double>* plant_;
-  const ModelInstanceIndex gripper_instance_;
+  const MatrixX<double> Binv_;
+};
+
+/// A system whose input port takes in MBP joint reaction forces and whose
+/// outputs correspond to the (planar-only) forces felt at the force sensor,
+/// for all three fingers (i.e., fy and fz). Because the task is planar, we
+/// ignore any forces/torques not acting in the y-z plane.
+class ForceSensorEvaluator : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ForceSensorEvaluator);
+  explicit ForceSensorEvaluator(const MultibodyPlant<double>& plant) {
+    const int num_sensors = 3;
+    for (int i = 1; i <= num_sensors; i++) {
+      std::string joint_name =
+          "finger" + std::to_string(i) + "_sensor_weldjoint";
+      sensor_joint_indices_.push_back(
+          plant.GetJointByName<multibody::WeldJoint>(joint_name).index());
+    }
+    this->DeclareAbstractInputPort(
+            "spatial_forces_in",
+            Value<std::vector<multibody::SpatialForce<double>>>())
+        .get_index();
+    this->DeclareVectorOutputPort("force_sensors_out",
+                                  systems::BasicVector<double>(num_sensors * 2),
+                                  &ForceSensorEvaluator::CalcOutput)
+        .get_index();
+  }
+
+  void CalcOutput(const drake::systems::Context<double>& context,
+                 drake::systems::BasicVector<double>* output) const {
+    const std::vector<multibody::SpatialForce<double>>& spatial_vec =
+        this->get_input_port(0)
+            .Eval<std::vector<multibody::SpatialForce<double>>>(context);
+    auto output_value = output->get_mutable_value();
+    // Force sensor (fy, fz) values, measured in the "tip_link" frame.
+    output_value.head<2>() =
+        spatial_vec[sensor_joint_indices_[0]].translational().tail(2);
+    output_value.segment<2>(2) =
+        spatial_vec[sensor_joint_indices_[1]].translational().tail(2);
+    output_value.tail<2>() =
+        spatial_vec[sensor_joint_indices_[2]].translational().tail(2);
+  }
+
+ private:
+  std::vector<multibody::JointIndex> sensor_joint_indices_;
 };
 
 int DoMain() {
@@ -248,87 +296,94 @@ int DoMain() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(plant.geometry_source_is_registered());
 
-  // Create the gains for the inverse dynamics controller. These gains were
-  // chosen arbitrarily.
-  const int kNumJoints = 6;
-  Vector<double, kNumJoints> Kp, Kd, Ki;
-  Kp.setConstant(1500); Kd.setConstant(500); Ki.setConstant(500);
-
-  auto id_controller =
-      builder.AddSystem<systems::controllers::InverseDynamicsController>(
-          control_plant, Kp, Ki, Kd, false);
-
-  // Connect the ID controller.
-  builder.Connect(plant.get_state_output_port(gripper_index),
-                  id_controller->get_input_port_estimated_state());
-
-  // Parse the keyframes from a file and also return initial brick pose. The
-  // brick's pose consists of {y_position, z_position, x_rotation_angle}.
-  const std::string keyframe_path =
-      "drake/examples/planar_gripper/postures.txt";
-  MatrixX<double> keyframes;
-  std::map<std::string, int> finger_joint_name_to_col_index_map;
-  Vector3<double>
-      brick_initial_2D_pose_G;  // (y, z, theta) where (y,z) are expressed in G.
-  std::tie(keyframes, finger_joint_name_to_col_index_map) =
-      ParseKeyframes(keyframe_path, &brick_initial_2D_pose_G);
-  // Here we assume the gripper frame G is aligned with the world frame W, e.g.,
-  // as given by calling WeldGripperFrames(). We enforce this by checking here.
-  DRAKE_DEMAND(
-      X_WGripper().IsExactlyEqualTo(math::RigidTransform<double>::Identity()));
-
-  // Creates the time vector for the plan interpolator.
-  Eigen::VectorXd times = Eigen::VectorXd::Zero(keyframes.cols());
-  for (int i = 1; i < keyframes.cols(); ++i) {
-    times(i) = i * FLAGS_keyframe_dt;
-  }
-  const auto pp =
-      trajectories::PiecewisePolynomial<double>::Pchip(times, keyframes);
-  auto traj_src = builder.AddSystem<systems::TrajectorySource<double>>(
-      pp, 1 /* with one derivative */);
-  builder.Connect(traj_src->get_output_port(),
-                  id_controller->get_input_port_desired_state());
-
-  // The inverse dynamics controller internally uses a "controlled plant", which
-  // contains the gripper model *only* (i.e., no brick). Therefore, its output
-  // must be re-mapped to the input of the full "simulation plant", which
-  // contains both gripper and brick. The system
-  // ControlToSimPlantForceConverter fills this role.
-  auto generalized_force_map =
-      builder.AddSystem<ControlToSimPlantForceConverter>(&plant, gripper_index);
-  builder.Connect(*id_controller, *generalized_force_map);
-  builder.Connect(generalized_force_map->get_output_port(0),
-                  plant.get_applied_generalized_force_input_port());
-
-  // Connect a constant zero vector to the actuation input port of MBP since we
-  // don't use it (we use the generalized forces input).
-  auto const_src = builder.AddSystem<systems::ConstantVectorSource>(
-      VectorX<double>::Zero(kNumJoints));
-  builder.Connect(const_src->get_output_port(),
-                  plant.get_actuation_input_port());
-
-  // Connect MBP snd SG.
+  // Connect MBP and SG.
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  lcm::DrakeLcm lcm;
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+  systems::lcm::LcmInterfaceSystem* lcm =
+      builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
+
+  auto command_sub = builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<
+          drake::lcmt_planar_gripper_command>("PLANAR_GRIPPER_COMMAND", lcm));
+  auto command_decoder = builder.AddSystem<GripperCommandDecoder>();
+  builder.Connect(command_sub->get_output_port(),
+                  command_decoder->get_input_port(0));
+
+  // The planar gripper "command" LCM message contains entries for both desired
+  // state and desired torque. However, the boolean gflag `use_position_control`
+  // ultimately controls whether the diagram is wired for position control mode
+  // (desired torques are ignored) or torque control mode (desired state is
+  // ignored).
+  if (FLAGS_use_position_control) {
+    // Create the gains for the inverse dynamics controller. These gains were
+    // chosen arbitrarily.
+    Vector<double, kNumJoints> Kp, Kd, Ki;
+    Kp.setConstant(1500); Kd.setConstant(500); Ki.setConstant(500);
+
+    auto id_controller =
+        builder.AddSystem<systems::controllers::InverseDynamicsController>(
+            control_plant, Kp, Ki, Kd, false);
+
+    // Connect the ID controller.
+    builder.Connect(plant.get_state_output_port(gripper_index),
+                    id_controller->get_input_port_estimated_state());
+
+    builder.Connect(command_decoder->get_state_output_port(),
+                    id_controller->get_input_port_desired_state());
+    // The inverse dynamics controller internally uses a "controlled plant",
+    // which contains the gripper model *only* (i.e., no brick). Therefore, its
+    // output must be re-mapped to the actuation input of the full "simulation
+    // plant", which contains both gripper and brick. The system
+    // GeneralizedForceToActuationOrdering fills this role.
+    auto force_to_actuation =
+        builder.AddSystem<GeneralizedForceToActuationOrdering>(control_plant);
+    builder.Connect(*id_controller, *force_to_actuation);
+    builder.Connect(force_to_actuation->get_output_port(0),
+                    plant.get_actuation_input_port(gripper_index));
+  } else {  // Use torque control.
+    builder.Connect(command_decoder->get_torques_output_port(),
+                    plant.get_actuation_input_port());
+  }
+
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph, lcm);
 
   // Publish contact results for visualization.
   if (FLAGS_visualize_contacts) {
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, lcm);
   }
+
+  // Publish planar gripper status via LCM.
+  auto status_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<drake::lcmt_planar_gripper_status>(
+          "PLANAR_GRIPPER_STATUS", lcm, kGripperLcmStatusPeriod));
+  auto status_encoder = builder.AddSystem<GripperStatusEncoder>();
+  builder.Connect(plant.get_state_output_port(gripper_index),
+                  status_encoder->get_state_input_port());
+  auto force_sensor_evaluator = builder.AddSystem<ForceSensorEvaluator>(plant);
+  builder.Connect(plant.get_reaction_forces_output_port(),
+                  force_sensor_evaluator->get_input_port(0));
+  builder.Connect(force_sensor_evaluator->get_output_port(0),
+                  status_encoder->get_force_input_port());
+  builder.Connect(status_encoder->get_output_port(0),
+                  status_pub->get_input_port());
 
   auto diagram = builder.Build();
 
-  // Create a context for this system:
-  std::unique_ptr<systems::Context<double>> diagram_context =
-      diagram->CreateDefaultContext();
-  systems::Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+  // Extract the initial gripper and brick poses by parsing the keyframe file.
+  // The brick's pose consists of {y_position, z_position, x_rotation_angle}.
+  const std::string keyframe_path =
+      "drake/examples/planar_gripper/postures.txt";
+  MatrixX<double> keyframes;
+  std::map<std::string, int> finger_joint_name_to_row_index_map;
+  Vector3<double> brick_initial_2D_pose_G;
+  std::tie(keyframes, finger_joint_name_to_row_index_map) =
+      ParseKeyframes(keyframe_path, &brick_initial_2D_pose_G);
+  keyframes = ReorderKeyframesForPlant(control_plant, keyframes,
+                                       &finger_joint_name_to_row_index_map);
 
   // Create the initial condition vector. Set initial joint velocities to zero.
   VectorX<double> gripper_initial_conditions =
@@ -336,17 +391,29 @@ int DoMain() {
   gripper_initial_conditions.head(kNumJoints) =
       keyframes.block(0, 0, kNumJoints, 1);
 
+  // Create a context for this system:
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+
+  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  systems::Context<double>& simulator_context = simulator.get_mutable_context();
+  command_decoder->set_initial_position(
+      &diagram->GetMutableSubsystemContext(*command_decoder,
+                                           &simulator_context),
+      gripper_initial_conditions.head(kNumJoints));
+
   // All fingers consist of two joints: a base joint and a mid joint.
   // Set the initial finger joint positions.
-  const int kNumFingers = 3;
   for (int i = 0; i < kNumFingers; i++) {
-    std::string finger = "finger" + std::to_string(i+1);
+    std::string finger = "finger" + std::to_string(i + 1);
     const RevoluteJoint<double>& base_pin =
         plant.GetJointByName<RevoluteJoint>(finger + "_BaseJoint");
     const RevoluteJoint<double>& mid_pin =
         plant.GetJointByName<RevoluteJoint>(finger + "_MidJoint");
-    int base_index = finger_joint_name_to_col_index_map[finger + "_BaseJoint"];
-    int mid_index = finger_joint_name_to_col_index_map[finger + "_MidJoint"];
+    int base_index = finger_joint_name_to_row_index_map[finger + "_BaseJoint"];
+    int mid_index = finger_joint_name_to_row_index_map[finger + "_MidJoint"];
     base_pin.set_angle(&plant_context, gripper_initial_conditions(base_index));
     mid_pin.set_angle(&plant_context, gripper_initial_conditions(mid_index));
   }
@@ -362,7 +429,6 @@ int DoMain() {
   z_translate.set_translation(&plant_context, brick_initial_2D_pose_G(1));
   x_revolute.set_angle(&plant_context, brick_initial_2D_pose_G(2));
 
-  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

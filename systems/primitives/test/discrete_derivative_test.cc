@@ -100,8 +100,7 @@ GTEST_TEST(StateInterpolatorWithDiscreteDerivativeTest, BasicTest) {
   auto context = position_to_state.CreateDefaultContext();
 
   const Eigen::Vector2d current_position(0.643, 0.821);
-  context->FixInputPort(position_to_state.get_input_port().get_index(),
-                        current_position);
+  position_to_state.get_input_port().FixValue(context.get(), current_position);
 
   // Use setter that zeros the initial velocity output:
   const Eigen::Vector2d last_position(0.123, 0.456);

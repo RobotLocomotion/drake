@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -255,22 +256,22 @@ class ShapeMatcher final : public ShapeReifier {
 template <>
 template <>
 void ShapeMatcher<Sphere>::TestShapeParameters(const Sphere& test) {
-  if (test.get_radius() != expected_.get_radius()) {
-    error() << "\nExpected sphere radius " << expected_.get_radius() << ", "
-            << "received sphere radius " << test.get_radius();
+  if (test.radius() != expected_.radius()) {
+    error() << "\nExpected sphere radius " << expected_.radius() << ", "
+            << "received sphere radius " << test.radius();
   }
 }
 
 template <>
 template <>
 void ShapeMatcher<Cylinder>::TestShapeParameters(const Cylinder& test) {
-  if (test.get_radius() != expected_.get_radius()) {
-    error() << "\nExpected cylinder radius " << expected_.get_radius() << ", "
-            << "received cylinder radius " << test.get_radius();
+  if (test.radius() != expected_.radius()) {
+    error() << "\nExpected cylinder radius " << expected_.radius() << ", "
+            << "received cylinder radius " << test.radius();
   }
-  if (test.get_length() != expected_.get_length()) {
-    error() << "\nExpected cylinder length " << expected_.get_length()
-            << ", received cylinder length " << test.get_length();
+  if (test.length() != expected_.length()) {
+    error() << "\nExpected cylinder length " << expected_.length()
+            << ", received cylinder length " << test.length();
   }
 }
 
@@ -294,13 +295,13 @@ void ShapeMatcher<Box>::TestShapeParameters(const Box& test) {
 template <>
 template <>
 void ShapeMatcher<Capsule>::TestShapeParameters(const Capsule& test) {
-  if (test.get_radius() != expected_.get_radius()) {
-    error() << "\nExpected capsule radius " << expected_.get_radius() << ", "
-            << "received capsule radius " << test.get_radius();
+  if (test.radius() != expected_.radius()) {
+    error() << "\nExpected capsule radius " << expected_.radius() << ", "
+            << "received capsule radius " << test.radius();
   }
-  if (test.get_length() != expected_.get_length()) {
-    error() << "\nExpected capsule length " << expected_.get_length()
-            << ", received capsule length " << test.get_length();
+  if (test.length() != expected_.length()) {
+    error() << "\nExpected capsule length " << expected_.length()
+            << ", received capsule length " << test.length();
   }
 }
 
@@ -2834,25 +2835,6 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
   geometry_state_.AssignRole(source_id_, anchored_geometry_,
                              IllustrationProperties());
   ASSERT_TRUE(expected_roles(world_id, 1, 1, 1));
-}
-
-// Confirms that assigning a proximity role to a mesh is a no-op. If it
-// *weren't* no-op, the ProximityEngine would abort; so not aborting is
-// correlated with its no-op-ness. This test will go away when meshes are fully
-// supported in collision.
-TEST_F(GeometryStateTest, ProximityRoleOnMesh) {
-  SetUpSingleSourceTree();
-
-  // Add a mesh to a frame.
-  const GeometryId mesh_id = geometry_state_.RegisterGeometry(
-      source_id_, frames_[0],
-      make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                    make_unique<Mesh>("path", 1.0), "mesh"));
-  const InternalGeometry* mesh = gs_tester_.GetGeometry(mesh_id);
-  ASSERT_NE(mesh, nullptr);
-  ASSERT_FALSE(mesh->has_proximity_role());
-  geometry_state_.AssignRole(source_id_, mesh_id, ProximityProperties());
-  ASSERT_FALSE(mesh->has_proximity_role());
 }
 
 // Confirms that attempting to remove the "unassigned" role has no effect.

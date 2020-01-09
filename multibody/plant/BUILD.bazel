@@ -58,6 +58,7 @@ drake_cc_library(
         ":tamsi_solver",
         ":tamsi_solver_results",
         "//common:default_scalars",
+        "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:scene_graph",
@@ -242,6 +243,7 @@ drake_cc_googletest(
     deps = [
         ":hydroelastic_traction",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],
 )
@@ -306,6 +308,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
         "//multibody/parsing",
+        "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
     ],
@@ -348,6 +351,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//multibody/parsing",
+        "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/framework",
     ],
 )
@@ -367,6 +371,15 @@ drake_cc_library(
         "//common:find_resource",
         "//math:geometric_transform",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_forward_dynamics_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -535,6 +548,13 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_scalar_conversion_test",
+    deps = [
+        ":plant",
     ],
 )
 

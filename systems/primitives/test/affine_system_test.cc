@@ -185,7 +185,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   context->get_mutable_discrete_state(0).SetFromVector(x0);
   double u0 = 29;
-  context->FixInputPort(0, Vector1d::Constant(u0));
+  system.get_input_port().FixValue(context.get(), u0);
 
   auto update = system.AllocateDiscreteVariables();
   system.CalcDiscreteVariableUpdates(*context, update.get());
@@ -251,7 +251,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
   auto context = sys.CreateDefaultContext();
   context->SetTime(t);
   context->get_mutable_continuous_state_vector().SetFromVector(x);
-  context->FixInputPort(0, BasicVector<double>::Make(42.0));
+  sys.get_input_port().FixValue(context.get(), 42.0);
 
   auto derivs = sys.AllocateTimeDerivatives();
   sys.CalcTimeDerivatives(*context, derivs.get());
@@ -270,7 +270,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   auto context = sys.CreateDefaultContext();
   context->SetTime(t);
   context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(x);
-  context->FixInputPort(0, BasicVector<double>::Make(42.0));
+  sys.get_input_port().FixValue(context.get(), 42.0);
 
   auto updates = sys.AllocateDiscreteVariables();
   sys.CalcDiscreteVariableUpdates(*context, updates.get());

@@ -65,7 +65,7 @@ GTEST_TEST(MeshFieldTest, TestClone) {
       return FieldValue(0);
     }
    private:
-    DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoCloneWithNullMesh() const
+    [[nodiscard]] std::unique_ptr<MeshFieldBase> DoCloneWithNullMesh() const
     final {
       return std::make_unique<MeshFieldSubclass>(*this);
     }

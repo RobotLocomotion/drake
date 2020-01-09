@@ -74,11 +74,11 @@ TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
   // Arbitrary step, valid as long as it doesn't match the same
   // steps taken by the integrator. Otherwise, dense output accuracy
   // would not be checked.
-  const double dt = 0.01;
-  const int n_steps = (t_final / dt);
+  const double h = 0.01;
+  const int n_steps = (t_final / h);
   for (int i = 1; i <= n_steps; ++i) {
     // Integrate the whole step.
-    this->integrator_->IntegrateWithMultipleStepsToTime(i * dt);
+    this->integrator_->IntegrateWithMultipleStepsToTime(i * h);
 
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
@@ -94,7 +94,7 @@ TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
   EXPECT_FALSE(this->integrator_->get_dense_output());
 
   // Integrate one more step.
-  this->integrator_->IntegrateWithMultipleStepsToTime(t_final + dt);
+  this->integrator_->IntegrateWithMultipleStepsToTime(t_final + h);
 
   // Verify that the dense output was not updated.
   EXPECT_LT(dense_output->end_time(), this->context_->get_time());

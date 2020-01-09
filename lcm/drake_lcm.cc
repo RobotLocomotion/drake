@@ -5,9 +5,12 @@
 #include <utility>
 #include <vector>
 
+#include <glib.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/scope_exit.h"
 
 namespace drake {
 namespace lcm {
@@ -90,6 +93,11 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
       HandlerFunction handler) {
     DRAKE_DEMAND(native_instance != nullptr);
 
+    // The argument to subscribeFunction is regex (not a string literal), so
+    // we'll need to escape the channel name before calling subscribeFunction.
+    char* const channel_regex = g_regex_escape_string(channel.c_str(), -1);
+    ScopeExit guard([channel_regex](){ g_free(channel_regex); });
+
     // Create the result.
     auto result = std::make_shared<DrakeSubscription>();
     result->native_instance_ = native_instance;
@@ -97,7 +105,7 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     result->weak_self_reference_ = result;
     result->strong_self_reference_ = result;
     result->native_subscription_ = native_instance->subscribeFunction(
-      channel, &DrakeSubscription::NativeCallback, result.get());
+        channel_regex, &DrakeSubscription::NativeCallback, result.get());
     result->native_subscription_->setQueueCapacity(1);
 
     // Sanity checks.  (The use_count will be 2 because both 'result' and

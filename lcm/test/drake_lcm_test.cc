@@ -150,6 +150,33 @@ TEST_F(DrakeLcmTest, AcceptanceTest) {
   });
 }
 
+// Ensure that regex characters in the channel named are treated as literals,
+// not regex directives.
+TEST_F(DrakeLcmTest, SubscribeNotRegexTest) {
+  const std::string channel1 = "DrakeLcmTest_SubscribeNotRegexTest";
+  const std::string channel2 = "DrakeLcmTest_.*";
+
+  Subscriber<lcmt_drake_signal> channel1_subscriber(dut_.get(), channel1);
+  Subscriber<lcmt_drake_signal> channel2_subscriber(dut_.get(), channel2);
+
+  // Publishing one channel is only ever received by its own subscriber.
+  LoopUntilDone(&channel1_subscriber.message(), 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel1, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_GE(channel1_subscriber.count(), 0);
+  EXPECT_EQ(channel2_subscriber.count(), 0);
+  channel1_subscriber.clear();
+  channel2_subscriber.clear();
+
+  LoopUntilDone(&channel2_subscriber.message(), 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel2, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(channel1_subscriber.count(), 0);
+  EXPECT_GE(channel2_subscriber.count(), 0);
+}
+
 // Tests DrakeLcm's unsubscribe.
 TEST_F(DrakeLcmTest, UnsubscribeTest) {
   const std::string channel_name = "DrakeLcmTest.UnsubscribeTest";
@@ -209,6 +236,34 @@ TEST_F(DrakeLcmTest, QueueCapacityTest) {
   ASSERT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 0);
   EXPECT_EQ(count, 3);
   count = 0;
+}
+
+// Tests that upstream LCM actually obeys the IP address in the URL.
+TEST_F(DrakeLcmTest, AddressFilterAcceptanceTest) {
+  const std::string channel_name = "DrakeLcmTest.AddressFilterAcceptanceTest";
+
+  // The device that should never receive any traffic.
+  dut_ = std::make_unique<DrakeLcm>(kUdpmUrl);
+  int count = 0;
+  auto subscription = dut_->Subscribe(channel_name, [&count](const void*, int) {
+    ++count;
+  });
+
+  // A crosstalker with the same port number but different address.
+  std::string crosstalk_url{kUdpmUrl};
+  const int port_number_sep = 20;
+  DRAKE_DEMAND(crosstalk_url.at(port_number_sep) == ':');
+  DRAKE_DEMAND(crosstalk_url.at(port_number_sep - 1) == '7');
+  crosstalk_url[port_number_sep - 1] = '8';
+  ASSERT_NE(crosstalk_url, kUdpmUrl);
+  auto crosstalker = std::make_unique<DrakeLcm>(crosstalk_url);
+
+  // Transmit on the crosstalker, should not receive on the dut.
+  for (int i = 0; i < 10; ++i) {
+    Publish(crosstalker.get(), channel_name, message_);
+    dut_->HandleSubscriptions(100 /* millis */);
+  }
+  EXPECT_EQ(count, 0);
 }
 
 }  // namespace

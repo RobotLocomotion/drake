@@ -8,8 +8,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -152,7 +152,7 @@ class BodyAttorney {
 /// does it make any assumptions about the underlying physical model or
 /// approximation.
 /// As an element or component of a MultibodyTree, a body is a
-/// MultibodyTreeElement, and therefore it has a unique index of type BodyIndex
+/// MultibodyElement, and therefore it has a unique index of type BodyIndex
 /// within the multibody tree it belongs to.
 ///
 /// A %Body contains a unique BodyFrame; see BodyFrame class documentation for
@@ -160,7 +160,7 @@ class BodyAttorney {
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
+class Body : public MultibodyElement<Body, T, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
@@ -168,7 +168,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// with a given `default_mass` and a BodyFrame associated with it.
   Body(const std::string& name, ModelInstanceIndex model_instance,
        double default_mass)
-      : MultibodyTreeElement<Body<T>, BodyIndex>(model_instance),
+      : MultibodyElement<Body, T, BodyIndex>(model_instance),
         name_(name),
         body_frame_(*this), default_mass_(default_mass) {}
 
@@ -393,7 +393,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     }
   }
 
-  // Implementation for MultibodyTreeElement::DoSetTopology().
+  // Implementation for MultibodyElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(

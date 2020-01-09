@@ -1,0 +1,16 @@
+package drake;
+
+struct lcmt_planar_manipuland_status
+{
+  // The timestamp in microseconds
+  int64_t utime;
+
+  // The translational position of the manipuland.
+  double position[2];
+  // The angle of the manipuland.
+  double theta;
+  // The translational velocity of the manipuland.
+  double velocity[2];
+  // The angular velocity of the manipuland.
+  double thetadot;
+}

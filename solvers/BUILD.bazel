@@ -42,7 +42,6 @@ drake_cc_package_library(
         ":ipopt_solver",
         ":linear_system_solver",
         ":mathematical_program",
-        ":mathematical_program_lite",
         ":mathematical_program_result",
         ":minimum_value_constraint",
         ":mixed_integer_optimization_util",
@@ -322,23 +321,6 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "mathematical_program_lite",
-    deprecation = " ".join([
-        "The label @drake//solvers:mathematical_program_lite is deprecated.",
-        "Use the new spelling @drake//solvers:mathematical_program instead.",
-        "The deprecated spelling will be removed on 2020-01-01.",
-    ]),
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        ":mathematical_program",
-        ":solver_interface",
     ],
 )
 
@@ -737,6 +719,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//math:eigen_sparse_triplet",
+            "//common:scope_exit",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
             "@fmt",
@@ -780,43 +763,36 @@ drake_cc_library(
     }),
 )
 
-# If --config snopt (or --config snopt_fortran) is used, this target builds
-# object code that satisfies SolverInterface by calling SNOPT. Otherwise, this
-# target builds dummy object code that fails at runtime.
+# If --config snopt is used, this target builds object code that satisfies
+# SolverInterface by calling SNOPT. Otherwise, this target builds dummy object
+# code that fails at runtime.
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
-        # For `--config snopt` or `--config snopt_fortran`.
         "//tools:with_snopt": [
             "snopt_solver.cc",
             "snopt_solver_common.cc",
         ],
-        "//tools:with_snopt_fortran": [
-            "snopt_solver.cc",
-            "snopt_solver_common.cc",
-        ],
-        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             "no_snopt.cc",
             "snopt_solver_common.cc",
         ],
     }),
     hdrs = ["snopt_solver.h"],
+    copts = select({
+        "//tools:with_snopt_fortran": [
+            "-DWITH_SNOPT_FORTRAN=1",
+        ],
+        "//conditions:default": [],
+    }),
     deps = select({
-        # For `--config snopt` or `--config snopt_fortran`.
         "//tools:with_snopt": [
             ":mathematical_program",
             ":solver_base",
+            "//common:scope_exit",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
         ],
-        "//tools:with_snopt_fortran": [
-            ":mathematical_program",
-            ":solver_base",
-            "//math:autodiff",
-            "@snopt//:snopt_cwrap",
-        ],
-        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             ":mathematical_program",
             ":solver_base",

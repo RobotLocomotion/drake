@@ -267,9 +267,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             "Quaternion multiplication");
-    constexpr char doc_deprecated_position[] =
-        "Please use multiply(vector=...) instead. This will be "
-        "removed on or around 2019-11-15";
     auto multiply_vector = [](const Class& self, const Vector3<T>& vector) {
       return self * vector;
     };
@@ -286,12 +283,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             "Multiplication by a vector expressed in a frame")
         .def("multiply", multiply_vector_list, py::arg("vector"),
             "Multiplication by a list of vectors expressed in the same frame")
-        .def("multiply",
-            WrapDeprecated(doc_deprecated_position, multiply_vector),
-            py::arg("position"), doc_deprecated_position)
-        .def("multiply",
-            WrapDeprecated(doc_deprecated_position, multiply_vector_list),
-            py::arg("position"), doc_deprecated_position)
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); })
         .def(py::pickle(

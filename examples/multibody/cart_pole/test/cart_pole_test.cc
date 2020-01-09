@@ -61,8 +61,7 @@ class CartPoleTest : public ::testing::Test {
 
     // Create a context to store the state for this model:
     context_ = cart_pole_.CreateDefaultContext();
-    context_->FixInputPort(cart_pole_.get_actuation_input_port().get_index(),
-                           Vector1d(0));
+    cart_pole_.get_actuation_input_port().FixValue(context_.get(), 0.);
   }
 
   // Makes the mass matrix for the cart-pole system.
@@ -104,7 +103,7 @@ class CartPoleTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> cart_pole_;
+  MultibodyPlant<double> cart_pole_{0.0};
   const PrismaticJoint<double>* cart_slider_{nullptr};
   const RevoluteJoint<double>* pole_pin_{nullptr};
   std::unique_ptr<Context<double>> context_;

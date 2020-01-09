@@ -47,9 +47,10 @@ TEST_F(MultiplexerTest, Basic) {
   ASSERT_EQ(6, mux_->get_output_port(0).size());
 
   // Provide input data.
-  context_->FixInputPort(0, BasicVector<double>::Make({11.0, 22.0}));
-  context_->FixInputPort(1, BasicVector<double>::Make({21.0}));
-  context_->FixInputPort(2, BasicVector<double>::Make({31.0, 32.0, 33.0}));
+  mux_->get_input_port(0).FixValue(context_.get(), Eigen::Vector2d(11.0, 22.0));
+  mux_->get_input_port(1).FixValue(context_.get(), 21.0);
+  mux_->get_input_port(2).FixValue(context_.get(),
+                                   Eigen::Vector3d(31.0, 32.0, 33.0));
 
   // Confirm output data.
   const auto& value = mux_->get_output_port(0).Eval(*context_);
@@ -89,8 +90,8 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
   ASSERT_EQ(2, mux_->get_output_port(0).size());
 
   // Confirm that the vector is truly MyVector2d.
-  context_->FixInputPort(0, {0.0});
-  context_->FixInputPort(1, {0.0});
+  mux_->get_input_port(0).FixValue(context_.get(), 0.0);
+  mux_->get_input_port(1).FixValue(context_.get(), 0.0);
   ASSERT_NO_THROW(mux_->get_output_port(0).Eval<MyVector2d>(*context_));
 }
 

@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
@@ -24,6 +25,13 @@ py_binary(
     ],
     visibility = ["//visibility:public"],
     deps = ["@clang_cindex_python3//:clang"],
+)
+
+drake_py_unittest(
+    name = "mkdoc_test",
+    deps = [
+        ":mkdoc",
+    ],
 )
 
 drake_cc_library(

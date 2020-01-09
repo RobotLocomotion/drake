@@ -22,4 +22,15 @@ struct lcmt_hydroelastic_contact_surface_for_viz {
 
   // The contact surface mesh and associated data.
   lcmt_hydroelastic_contact_surface_tri_for_viz triangles[num_triangles];
+
+  // The number of quadrature points.
+  int32_t num_quadrature_points;
+
+  // The quadrature point data. Quadrature points are stored sequentially with
+  // the triangles, meaning that quadrature point data at indices 0, 1, 2
+  // correspond to the triangle with index 0; quadrature point data at indices
+  // 3, 4, 5 correspond to the triangle with index 1; etc. (given, in this
+  // example, three quadrature points per triangle).
+  lcmt_hydroelastic_quadrature_per_point_data_for_viz
+      quadrature_point_data[num_quadrature_points];
 }

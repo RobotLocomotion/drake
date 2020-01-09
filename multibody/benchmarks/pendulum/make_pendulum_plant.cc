@@ -19,7 +19,7 @@ using geometry::Sphere;
 std::unique_ptr<MultibodyPlant<double>>
 MakePendulumPlant(const PendulumParameters& params,
                   SceneGraph<double>* scene_graph) {
-  auto plant = std::make_unique<MultibodyPlant<double>>();
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
 
   // Position of the com of the pendulum's body (in this case a point mass) in
   // the body's frame. The body's frame's origin Bo is defined to be at the

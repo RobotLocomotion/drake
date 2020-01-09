@@ -10,11 +10,9 @@ from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
-from pydrake.multibody.parsing import Parser
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
@@ -23,7 +21,8 @@ from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.systems.planar_scenegraph_visualizer import \
+    PlanarSceneGraphVisualizer
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
@@ -32,7 +31,12 @@ from robotlocomotion import image_array_t
 
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.
 class EndEffectorTeleop(LeafSystem):
-    def __init__(self):
+    def __init__(self, planar=False):
+        """
+        @param planar if True, restricts the GUI and the output to have y=0,
+                      roll=0, yaw=0.
+        """
+
         LeafSystem.__init__(self)
         self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
                                      self.DoCalcOutput)
@@ -40,46 +44,56 @@ class EndEffectorTeleop(LeafSystem):
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
         self.DeclarePeriodicPublish(0.01, 0.0)
+        self.planar = planar
 
         self.window = tk.Tk()
         self.window.title("End-Effector TeleOp")
 
         self.roll = tk.Scale(self.window, from_=-2 * np.pi, to=2 * np.pi,
                              resolution=-1,
-                             label="roll",
+                             label="roll (keys: ctrl-right, ctrl-left)",
                              length=800,
                              orient=tk.HORIZONTAL)
         self.roll.pack()
+        self.roll.set(0)
         self.pitch = tk.Scale(self.window, from_=-2 * np.pi, to=2 * np.pi,
                               resolution=-1,
-                              label="pitch",
+                              label="pitch (keys: ctrl-d, ctrl-a)",
                               length=800,
                               orient=tk.HORIZONTAL)
-        self.pitch.pack()
+        if not planar:
+            self.pitch.pack()
+        self.pitch.set(0)
         self.yaw = tk.Scale(self.window, from_=-2 * np.pi, to=2 * np.pi,
                             resolution=-1,
-                            label="yaw",
+                            label="yaw (keys: ctrl-up, ctrl-down)",
                             length=800,
                             orient=tk.HORIZONTAL)
-        self.yaw.pack()
+        if not planar:
+            self.yaw.pack()
+        self.yaw.set(1.57)
         self.x = tk.Scale(self.window, from_=-0.6, to=0.8,
                           resolution=-1,
-                          label="x",
+                          label="x (keys: right, left)",
                           length=800,
                           orient=tk.HORIZONTAL)
         self.x.pack()
+        self.x.set(0)
         self.y = tk.Scale(self.window, from_=-0.8, to=0.3,
                           resolution=-1,
-                          label="y",
+                          label="y (keys: d, a)",
                           length=800,
                           orient=tk.HORIZONTAL)
-        self.y.pack()
+        if not planar:
+            self.y.pack()
+        self.y.set(0)
         self.z = tk.Scale(self.window, from_=0, to=1.1,
                           resolution=-1,
-                          label="z",
+                          label="z (keys: up, down)",
                           length=800,
                           orient=tk.HORIZONTAL)
         self.z.pack()
+        self.z.set(0)
 
         # The key bindings below provide teleop functionality via the
         # keyboard, and are somewhat arbitrary (inspired by gaming
@@ -96,18 +110,24 @@ class EndEffectorTeleop(LeafSystem):
         # Linear motion key bindings.
         self.window.bind("<Up>", update(self.z, +position_delta))
         self.window.bind("<Down>", update(self.z, -position_delta))
-        self.window.bind("<d>", update(self.y, +position_delta))
-        self.window.bind("<a>", update(self.y, -position_delta))
-        self.window.bind("<w>", update(self.x, +position_delta))
-        self.window.bind("<s>", update(self.x, -position_delta))
+        if (not planar):
+            self.window.bind("<d>", update(self.y, +position_delta))
+            self.window.bind("<a>", update(self.y, -position_delta))
+        self.window.bind("<Right>", update(self.x, +position_delta))
+        self.window.bind("<Left>", update(self.x, -position_delta))
 
         # Rotational motion key bindings.
-        self.window.bind("<Control-d>", update(self.pitch, +rotation_delta))
-        self.window.bind("<Control-a>", update(self.pitch, -rotation_delta))
-        self.window.bind("<Control-w>", update(self.roll, +rotation_delta))
-        self.window.bind("<Control-s>", update(self.roll, -rotation_delta))
-        self.window.bind("<Control-Up>", update(self.yaw, +rotation_delta))
-        self.window.bind("<Control-Down>", update(self.yaw, -rotation_delta))
+        self.window.bind("<Control-Right>", update(self.roll, +rotation_delta))
+        self.window.bind("<Control-Left>", update(self.roll, -rotation_delta))
+        if (not planar):
+            self.window.bind("<Control-d>",
+                             update(self.pitch, +rotation_delta))
+            self.window.bind("<Control-a>",
+                             update(self.pitch, -rotation_delta))
+            self.window.bind("<Control-Up>",
+                             update(self.yaw, +rotation_delta))
+            self.window.bind("<Control-Down>",
+                             update(self.yaw, -rotation_delta))
 
     def SetPose(self, pose):
         """
@@ -115,22 +135,24 @@ class EndEffectorTeleop(LeafSystem):
         """
         tf = RigidTransform(pose)
         self.SetRPY(RollPitchYaw(tf.rotation()))
-        self.SetXYZ(pose.translation())
+        self.SetXYZ(tf.translation())
 
     def SetRPY(self, rpy):
         """
         @param rpy is a RollPitchYaw object
         """
         self.roll.set(rpy.roll_angle())
-        self.pitch.set(rpy.pitch_angle())
-        self.yaw.set(rpy.yaw_angle())
+        if not self.planar:
+            self.pitch.set(rpy.pitch_angle())
+            self.yaw.set(rpy.yaw_angle())
 
     def SetXYZ(self, xyz):
         """
         @param xyz is a 3 element vector of x, y, z.
         """
         self.x.set(xyz[0])
-        self.y.set(xyz[1])
+        if not self.planar:
+            self.y.set(xyz[1])
         self.z.set(xyz[2])
 
     def DoPublish(self, context, event):
@@ -175,7 +197,7 @@ parser.add_argument(
 parser.add_argument(
     '--setup', type=str, default='manipulation_class',
     help="The manipulation station setup to simulate. ",
-    choices=['manipulation_class', 'clutter_clearing'])
+    choices=['manipulation_class', 'clutter_clearing', 'planar'])
 
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
@@ -199,6 +221,11 @@ else:
         ycb_objects = CreateClutterClearingYcbObjectList()
         for model_file, X_WObject in ycb_objects:
             station.AddManipulandFromFile(model_file, X_WObject)
+    elif args.setup == 'planar':
+        station.SetupPlanarIiwaStation()
+        station.AddManipulandFromFile(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
 
     station.Finalize()
 
@@ -211,6 +238,11 @@ else:
             open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
+    elif args.setup == 'planar':
+        pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+            station.get_scene_graph()))
+        builder.Connect(station.GetOutputPort("pose_bundle"),
+                        pyplot_visualizer.get_input_port(0))
     else:
         ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                                station.GetOutputPort("pose_bundle"))
@@ -245,18 +277,21 @@ params.set_timestep(time_step)
 # True velocity limits for the IIWA14 (in rad, rounded down to the first
 # decimal)
 iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
+if args.setup == 'planar':
+    # Extract the 3 joints that are not welded in the planar version.
+    iiwa14_velocity_limits = iiwa14_velocity_limits[1:6:2]
+    params.set_end_effector_velocity_gain([1, 0, 0, 0, 1, 1])  # in body frame.
 # Stay within a small fraction of those limits for this teleop demo.
 factor = args.velocity_limit_factor
 params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
                                   factor*iiwa14_velocity_limits))
-
 differential_ik = builder.AddSystem(DifferentialIK(
     robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
 
 builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                 station.GetInputPort("iiwa_position"))
 
-teleop = builder.AddSystem(EndEffectorTeleop())
+teleop = builder.AddSystem(EndEffectorTeleop(args.setup == 'planar'))
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
 filter = builder.AddSystem(
@@ -281,8 +316,8 @@ simulator.set_publish_every_time_step(False)
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
-station_context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+station.GetInputPort("iiwa_feedforward_torque").FixValue(
+    station_context, np.zeros(station.num_iiwa_joints()))
 
 simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(

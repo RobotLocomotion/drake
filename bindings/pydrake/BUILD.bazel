@@ -10,7 +10,6 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
     "drake_py_unittest",
 )
 load(
@@ -412,12 +411,16 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "forward_diff_test",
-    deps = [":autodiffutils_py"],
+    deps = [
+        ":autodiffutils_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 drake_py_unittest(
     name = "geometry_test",
     data = [
+        "//geometry:test_obj_files",
         "//systems/sensors:test_models",
     ],
     deps = [
@@ -493,6 +496,11 @@ drake_py_binary(
     deps = [
         ":math_py",
     ],
+)
+
+drake_py_unittest(
+    name = "parse_models_test",
+    deps = [":pydrake"],
 )
 
 drake_py_unittest(

@@ -14,6 +14,8 @@ import drake as lcmdrakemsg
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
 
+# TODO(seancurtis-tri) Refactor this out of show_hydroelastic_contact.py and
+#                      show_point_pair_contact.py.
 class ContactVisModes:
     '''Common specification of contact visualization modes'''
     @staticmethod

@@ -89,7 +89,7 @@ void TestLQRAffineSystemAgainstKnownSolution(
   Eigen::VectorXd x0 = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(m);
 
-  context->FixInputPort(0, u0);
+  sys.get_input_port().FixValue(context.get(), u0);
   if (sys.time_period() == 0.0) {
     context->get_mutable_continuous_state().SetFromVector(x0);
   } else {

@@ -21,7 +21,7 @@ namespace multibody {
 /// remarkable `O(n)` Articulated Body Algorithm (ABA) for solving forward
 /// dynamics. Recall that the Newton-Euler equations allow us to describe the
 /// combined rotational and translational dynamics of a rigid body: <pre>
-///   F_BBo_W = M_B_W * A_WB + Fb_Bo_W                                    (1)
+///   F_BBo_W = M_B_W * A_WB + Fb_Bo_W                                     (1)
 /// </pre>
 /// where the spatial inertia (see SpatialInertia) `M_B_W` of body B expressed
 /// in the world frame W linearly relates the spatial acceleration (see
@@ -33,10 +33,12 @@ namespace multibody {
 /// at the base (or root). Even though the bodies in this multibody system are
 /// allowed to have relative motions among them, there still is a linear
 /// relationship between the spatial force `F_BBo_W` applied on this body and
-/// the resulting acceleration `A_WB`: <pre>
-///   F_BBo_W = P_B_W * A_WB + z_Bo_W                                       (2)
+/// the resulting acceleration `A_WB`:
+/// @anchor abi_eq_definition
+/// <pre>
+///   F_BBo_W = P_B_W * A_WB + Z_Bo_W                                       (2)
 /// </pre>
-/// where `P_B_W` is the articulated body inertia of body B and `z_Bo_W` is a
+/// where `P_B_W` is the articulated body inertia of body B and `Z_Bo_W` is a
 /// bias force that includes the gyroscopic and Coriolis forces and becomes zero
 /// when all body velocities and all applied generalized forces outboard
 /// from body B are zero [Jain 2010, §7.2.1]. The articulated body inertia
@@ -103,7 +105,7 @@ class ArticulatedBodyInertia {
 
   /// Default ArticulatedBodyInertia constructor initializes all matrix values
   /// to NaN for a quick detection of uninitialized values.
-  ArticulatedBodyInertia();
+  ArticulatedBodyInertia() = default;
 
   /// Constructs an articulated body inertia for an articulated body consisting
   /// of a single rigid body given its spatial inertia. From an input spatial
@@ -257,7 +259,8 @@ class ArticulatedBodyInertia {
 
     // Update J according to J + (p×)Fᵀ - Fp(p×) = J - ((F(p×))ᵀ + Fp(p×)).
     // Costs 66 flops (54 for cross product and 12 for triangular addition).
-    // TODO(bobbyluig): Optimize to only compute lower triangular region.
+    // TODO(bobbyluig): Optimize to only compute lower triangular region. See
+    // #12435.
     J -= (F.rowwise().cross(px).transpose() + Fp.rowwise().cross(px));
 
     // Overwrite F (in the lower left) with Fp. M doesn't change.
@@ -308,6 +311,16 @@ class ArticulatedBodyInertia {
     return *this;
   }
 
+  /// Subtracts `P_BQ_E` from `this` articulated body inertia. `P_BQ_E` must be
+  /// for the same articulated body B as this ABI (about the same point Q and
+  /// expressed in the same frame E). The resulting inertia will have the same
+  /// properties.
+  ArticulatedBodyInertia<T>&
+  operator-=(const ArticulatedBodyInertia<T>& P_BQ_E) {
+    matrix_.template triangularView<Eigen::Lower>() = matrix_ - P_BQ_E.matrix_;
+    return *this;
+  }
+
   /// Multiplies `this` articulated body inertia on the right by a matrix or
   /// vector.
   ///
@@ -319,6 +332,12 @@ class ArticulatedBodyInertia {
                        OtherDerived>
   operator*(const Eigen::MatrixBase<OtherDerived>& rhs) const {
     return matrix_.template selfadjointView<Eigen::Lower>() * rhs;
+  }
+
+  /// Multiplies `this` articulated body inertia on the right by a spatial
+  /// acceleration. See @ref abi_eq_definition "Eq. (2)" for an example.
+  SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
+    return SpatialForce<T>((*this) * A_WB_E.get_coeffs());
   }
 
   /// Multiplies `this` articulated body inertia on the left by a matrix or
@@ -356,20 +375,20 @@ class ArticulatedBodyInertia {
   // Checks that the ArticulatedBodyInertia is physically valid and throws an
   // exception if not. This is mostly used in Debug builds to throw an
   // appropriate exception.
+  // Since this method is used within assertions or demands, we do not try to
+  // attempt a smart way throw based on a given symbolic::Formula but instead we
+  // make these methods a no-op for non-numeric types.
   void CheckInvariants() const {
-    if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting articulated body inertia is not physically valid. "
-              "See ArticulatedBodyInertia::IsPhysicallyValid()");
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (!IsPhysicallyValid()) {
+        throw std::runtime_error(
+            "The resulting articulated body inertia is not physically valid. "
+            "See ArticulatedBodyInertia::IsPhysicallyValid()");
+      }
     }
   }
 };
 
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-ArticulatedBodyInertia<T>::ArticulatedBodyInertia() = default;
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertia)
 
 }  // namespace multibody

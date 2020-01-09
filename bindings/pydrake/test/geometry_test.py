@@ -9,10 +9,16 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
-from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
+from pydrake.systems.framework import (
+    AbstractValue,
+    DiagramBuilder_,
+    InputPort_,
+    OutputPort_,
+)
 from pydrake.systems.sensors import (
     ImageRgba8U,
     ImageDepth32F,
@@ -61,12 +67,47 @@ class TestGeometry(unittest.TestCase):
         scene_graph.AddRenderer("test_renderer",
                                 mut.render.MakeRenderEngineVtk(
                                     mut.render.RenderEngineVtkParams()))
+        self.assertTrue(scene_graph.HasRenderer("test_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 1)
 
         # Test SceneGraphInspector API
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_frames(), 3)
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_geometries(), 3)
+
+        # Check AssignRole bits.
+        proximity = mut.ProximityProperties()
+        perception = mut.PerceptionProperties()
+        perception.AddProperty("label", "id", mut.render.RenderLabel(0))
+        illustration = mut.IllustrationProperties()
+        props = [
+            proximity,
+            perception,
+            illustration,
+        ]
+        context = scene_graph.CreateDefaultContext()
+        for prop in props:
+            # Check SceneGraph mutating variant.
+            scene_graph.AssignRole(
+                source_id=global_source, geometry_id=global_geometry,
+                properties=prop, assign=mut.RoleAssign.kNew)
+            # Check Context mutating variant.
+            scene_graph.AssignRole(
+                context=context, source_id=global_source,
+                geometry_id=global_geometry, properties=prop,
+                assign=mut.RoleAssign.kNew)
+
+        # Check property accessors.
+        self.assertIsInstance(
+            inspector.GetProximityProperties(geometry_id=global_geometry),
+            mut.ProximityProperties)
+        self.assertIsInstance(
+            inspector.GetIllustrationProperties(geometry_id=global_geometry),
+            mut.IllustrationProperties)
+        self.assertIsInstance(
+            inspector.GetPerceptionProperties(geometry_id=global_geometry),
+            mut.PerceptionProperties)
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
@@ -178,15 +219,21 @@ class TestGeometry(unittest.TestCase):
 
     def test_shapes(self):
         sphere = mut.Sphere(radius=1.0)
-        self.assertEqual(sphere.get_radius(), 1.0)
+        self.assertEqual(sphere.radius(), 1.0)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
-        self.assertEqual(cylinder.get_radius(), 1.0)
-        self.assertEqual(cylinder.get_length(), 2.0)
+        self.assertEqual(cylinder.radius(), 1.0)
+        self.assertEqual(cylinder.length(), 2.0)
         box = mut.Box(width=1.0, depth=2.0, height=3.0)
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+
+        # Test for existence of deprecated accessors.
+        with catch_drake_warnings(expected_count=3):
+            cylinder.get_radius()
+            cylinder.get_length()
+            sphere.get_radius()
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
@@ -205,6 +252,45 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(geometry.shape(), mut.Shape)
         self.assertIsInstance(geometry.release_shape(), mut.Shape)
         self.assertEqual(geometry.name(), "sphere")
+        geometry.set_proximity_properties(mut.ProximityProperties())
+        geometry.set_illustration_properties(mut.IllustrationProperties())
+        geometry.set_perception_properties(mut.PerceptionProperties())
+        self.assertIsInstance(geometry.mutable_proximity_properties(),
+                              mut.ProximityProperties)
+        self.assertIsInstance(geometry.proximity_properties(),
+                              mut.ProximityProperties)
+        self.assertIsInstance(geometry.mutable_illustration_properties(),
+                              mut.IllustrationProperties)
+        self.assertIsInstance(geometry.illustration_properties(),
+                              mut.IllustrationProperties)
+        self.assertIsInstance(geometry.mutable_perception_properties(),
+                              mut.PerceptionProperties)
+        self.assertIsInstance(geometry.perception_properties(),
+                              mut.PerceptionProperties)
+
+    def test_geometry_properties_api(self):
+        self.assertIsInstance(
+            mut.MakePhongIllustrationProperties([0, 0, 1, 1]),
+            mut.IllustrationProperties)
+        prop = mut.ProximityProperties()
+        self.assertEqual(str(prop), "[__default__]")
+        default_group = prop.default_group_name()
+        self.assertTrue(prop.HasGroup(group_name=default_group))
+        self.assertEqual(prop.num_groups(), 1)
+        self.assertTrue(default_group in prop.GetGroupNames())
+        prop.AddProperty(group_name=default_group, name="test", value=3)
+        self.assertTrue(prop.HasProperty(group_name=default_group,
+                                         name="test"))
+        self.assertEqual(
+            prop.GetProperty(group_name=default_group, name="test"), 3)
+        self.assertEqual(
+            prop.GetPropertyOrDefault(
+                group_name=default_group, name="empty", default_value=5),
+            5)
+        group_values = prop.GetPropertiesInGroup(group_name=default_group)
+        for name, value in group_values.items():
+            self.assertIsInstance(name, str)
+            self.assertIsInstance(value, AbstractValue)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
@@ -236,6 +322,7 @@ class TestGeometry(unittest.TestCase):
         value = 10
         obj = RenderLabel(value)
 
+        self.assertIs(value, int(obj))
         self.assertEqual(value, obj)
         self.assertEqual(obj, value)
 
@@ -275,6 +362,17 @@ class TestGeometry(unittest.TestCase):
         results = query_object.FindCollisionCandidates()
         self.assertEqual(len(results), 0)
 
+        # ComputeSignedDistancePairClosestPoints() requires two valid geometry
+        # ids. There are none in this SceneGraph instance. Rather than
+        # populating the SceneGraph, we look for the exception thrown in
+        # response to invalid ids as evidence of correct binding.
+        self.assertRaisesRegex(
+            RuntimeError,
+            "The geometry given by id \\d+ does not reference a geometry" +
+            " that can be used in a signed distance query",
+            query_object.ComputeSignedDistancePairClosestPoints,
+            mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())
+
         # Confirm rendering API returns images of appropriate type.
         d_camera = mut.render.DepthCameraProperties(
             width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
@@ -291,3 +389,23 @@ class TestGeometry(unittest.TestCase):
             camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
+
+    def test_read_obj_to_surface_mesh(self):
+        mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
+        mesh = mut.ReadObjToSurfaceMesh(mesh_path)
+        vertices = mesh.vertices()
+
+        # This test relies on the specific content of the file quad_cube.obj.
+        # These coordinates came from the first section of quad_cube.obj.
+        expected_vertices = [
+            [1.000000, -1.000000, -1.000000],
+            [1.000000, -1.000000,  1.000000],
+            [-1.000000, -1.000000,  1.000000],
+            [-1.000000, -1.000000, -1.000000],
+            [1.000000,  1.000000, -1.000000],
+            [1.000000,  1.000000,  1.000001],
+            [-1.000000,  1.000000,  1.000000],
+            [-1.000000,  1.000000, -1.000000],
+        ]
+        for i, expected in enumerate(expected_vertices):
+            self.assertListEqual(list(vertices[i].r_MV()), expected)

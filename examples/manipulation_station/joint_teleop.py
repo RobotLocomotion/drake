@@ -7,18 +7,18 @@ import argparse
 
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
-from pydrake.examples.manipulation_station import \
-    (ManipulationStation, ManipulationStationHardwareInterface)
+from pydrake.examples.manipulation_station import (
+    ManipulationStation, ManipulationStationHardwareInterface,
+    CreateClutterClearingYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.systems.planar_scenegraph_visualizer import \
+    PlanarSceneGraphVisualizer
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -35,6 +35,10 @@ parser.add_argument(
 parser.add_argument(
     "--test", action='store_true',
     help="Disable opening the gui window for testing.")
+parser.add_argument(
+    '--setup', type=str, default='manipulation_class',
+    help="The manipulation station setup to simulate. ",
+    choices=['manipulation_class', 'clutter_clearing', 'planar'])
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
 
@@ -49,10 +53,24 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.SetupManipulationClassStation()
-    station.AddManipulandFromFile(
-        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
-        RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
+
+    # Initializes the chosen station type.
+    if args.setup == 'manipulation_class':
+        station.SetupManipulationClassStation()
+        station.AddManipulandFromFile(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
+    elif args.setup == 'clutter_clearing':
+        station.SetupClutterClearingStation()
+        ycb_objects = CreateClutterClearingYcbObjectList()
+        for model_file, X_WObject in ycb_objects:
+            station.AddManipulandFromFile(model_file, X_WObject)
+    elif args.setup == 'planar':
+        station.SetupPlanarIiwaStation()
+        station.AddManipulandFromFile(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
+
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
@@ -63,14 +81,19 @@ else:
                 open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
+    if args.setup == 'planar':
+        pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+            station.get_scene_graph()))
+        builder.Connect(station.GetOutputPort("pose_bundle"),
+                        pyplot_visualizer.get_input_port(0))
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                         length=800))
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
 
-filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
-                                                   size=7))
+filter = builder.AddSystem(FirstOrderLowPassFilter(
+    time_constant=2.0, size=station.num_iiwa_joints()))
 builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
 builder.Connect(filter.get_output_port(0),
                 station.GetInputPort("iiwa_position"))
@@ -90,8 +113,8 @@ simulator.set_publish_every_time_step(False)
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
-station_context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+station.GetInputPort("iiwa_feedforward_torque").FixValue(
+    station_context, np.zeros(station.num_iiwa_joints()))
 
 # Eval the output port once to read the initial positions of the IIWA.
 simulator.AdvanceTo(1e-6)

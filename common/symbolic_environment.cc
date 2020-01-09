@@ -8,6 +8,8 @@
 #include <string>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -68,6 +70,23 @@ void Environment::insert(const key_type& key, const mapped_type& elem) {
   throw_if_dummy(key);
   throw_if_nan(elem);
   map_.emplace(key, elem);
+}
+
+void Environment::insert(
+    const Eigen::Ref<const MatrixX<key_type>>& keys,
+    const Eigen::Ref<const MatrixX<mapped_type>>& elements) {
+  if (keys.rows() != elements.rows() || keys.cols() != elements.cols()) {
+    throw runtime_error(fmt::format(
+        "symbolic::Environment::insert: The size of keys ({} x {}) "
+        "does not match the size of elements ({} x {}).",
+        keys.rows(), keys.cols(), elements.rows(), elements.cols()));
+  }
+
+  for (Eigen::Index i = 0; i < keys.cols(); ++i) {
+    for (Eigen::Index j = 0; j < keys.rows(); ++j) {
+      insert(keys(j, i), elements(j, i));
+    }
+  }
 }
 
 Variables Environment::domain() const {

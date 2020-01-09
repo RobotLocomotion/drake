@@ -60,7 +60,8 @@ class LinearModelPredictiveController : public LeafSystem<T> {
   /// of dimension num_inputs.
   /// @pre base_context must have discrete states set as appropriate for the
   /// given @p model.  The input must also be initialized via
-  /// `base_context->FixInputPort(0, u0)`, or otherwise initialized via Diagram.
+  /// `input_port.FixValue(base_context, u0)`, or otherwise initialized via
+  /// Diagram.
   LinearModelPredictiveController(
       std::unique_ptr<systems::System<double>> model,
       std::unique_ptr<systems::Context<double>> base_context,

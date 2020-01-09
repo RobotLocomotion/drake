@@ -42,7 +42,7 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
           floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
     }
 
-    context->FixInputPort(0, angle);
+    encoders.get_input_port().FixValue(context.get(), angle);
     encoders.CalcOutput(*context, output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement,
@@ -72,7 +72,7 @@ GTEST_TEST(TestEncoders, SelectorOnly) {
     angle = Eigen::Vector4d::Random();
     desired_measurement = angle.segment(1, 2);
 
-    context->FixInputPort(0, angle);
+    encoders.get_input_port().FixValue(context.get(), angle);
     encoders.CalcOutput(*context, output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement,
@@ -104,7 +104,7 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
   srand(42);
   for (int i = 0; i < 10; i++) {
     angle = Eigen::Vector4d::Random();
-    context->FixInputPort(0, angle);
+    encoders.get_input_port().FixValue(context.get(), angle);
 
     using std::floor;
     using std::ceil;
@@ -147,7 +147,7 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
   srand(42);
   for (int i = 0; i < 10; i++) {
     angle = Eigen::Vector2d::Random();
-    context->FixInputPort(0, angle);
+    encoders.get_input_port().FixValue(context.get(), angle);
 
     angle -= offsets;
     using std::floor;
@@ -188,7 +188,7 @@ GTEST_TEST(TestEncoders, ScalarConversion) {
       symbolic::Variable("u2"),
       symbolic::Variable("u3")
     };
-    context->FixInputPort(0, input);
+    dut.get_input_port().FixValue(context.get(), input);
 
     // Obtain the symbolic outputs.
     auto outputs = dut.AllocateOutput();

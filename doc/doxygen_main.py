@@ -26,7 +26,7 @@ def _run_doxygen(drake_workspace, args):
     else:
         path = "/usr/bin:/bin"
     env = {"PATH": path}
-    dot = subprocess.check_output(["which", "dot"], env=env).strip()
+    dot = subprocess.check_output(["which", "dot"], env=env).decode().strip()
 
     # Prepare the input and output folders.  We will copy the requested input
     # file(s) into a temporary scratch directory, so that Doxygen doesn't root

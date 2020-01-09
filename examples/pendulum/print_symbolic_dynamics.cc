@@ -28,8 +28,8 @@ VectorX<Expression> PendulumPlantDynamics() {
 
   // Obtain the symbolic dynamics.
   auto context = symbolic_plant.CreateDefaultContext();
-  context->FixInputPort(
-      0, Vector1<Expression>::Constant(Variable("tau")));
+  symbolic_plant.get_input_port().FixValue(context.get(),
+                                           Expression(Variable("tau")));
   context->get_mutable_continuous_state_vector().SetAtIndex(
       0, Variable("theta"));
   context->get_mutable_continuous_state_vector().SetAtIndex(
@@ -42,7 +42,7 @@ VectorX<Expression> PendulumPlantDynamics() {
 VectorX<Expression> MultibodyPlantDynamics() {
   // Load the Pendulum.urdf into a symbolic MultibodyPlant.
   const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
@@ -52,9 +52,8 @@ VectorX<Expression> MultibodyPlantDynamics() {
 
   // Obtain the symbolic dynamics.
   auto context = symbolic_plant.CreateDefaultContext();
-  context->FixInputPort(
-      symbolic_plant.get_actuation_input_port().get_index(),
-      Vector1<Expression>::Constant(Variable("tau")));
+  symbolic_plant.get_actuation_input_port().FixValue(
+      context.get(), Expression(Variable("tau")));
   symbolic_plant.SetPositionsAndVelocities(
       context.get(), Vector2<Expression>(
           Variable("theta"), Variable("thetadot")));

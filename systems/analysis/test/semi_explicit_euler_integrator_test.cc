@@ -19,21 +19,21 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Setup the integration step size.
-  const double dt = 1e-3;
+  const double h = 1e-3;
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
   // Create the integrator.
   SemiExplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());  // Use default Context.
+      spring_mass, h, context.get());  // Use default Context.
 
   integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  const double target_time = context->get_time() + dt;
+  const double target_time = context->get_time() + h;
   EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(
     target_time, target_time, target_time), std::logic_error);
 }
@@ -42,15 +42,15 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
   SpringMassSystem<double> spring_mass(1., 1., 0.);
-  const double dt = 1e-3;
+  const double h = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
   SemiExplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());
+      spring_mass, h, context.get());
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_error_estimation(), false);
   EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
-  EXPECT_THROW(integrator.request_initial_step_size_target(dt),
+  EXPECT_THROW(integrator.request_initial_step_size_target(h),
                std::logic_error);
 }
 
@@ -58,7 +58,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
 // generalized configuration (using a rigid body).
 GTEST_TEST(IntegratorTest, RigidBody) {
   // Instantiate a multibody plant consisting of a single rigid body.
-  multibody::MultibodyPlant<double> plant;
+  multibody::MultibodyPlant<double> plant(0.0);
   const double radius = 0.05;   // m
   const double mass = 0.1;      // kg
   auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
@@ -78,8 +78,8 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   plant.SetVelocities(context.get(), generalized_velocities);
 
   // Integrate for one second of virtual time using explicit Euler integrator.
-  const double small_dt = 1e-4;
-  ExplicitEulerIntegrator<double> ee(plant, small_dt, context.get());
+  const double small_h = 1e-4;
+  ExplicitEulerIntegrator<double> ee(plant, small_h, context.get());
   ee.Initialize();
   const double t_final = 1.0;
   do {
@@ -94,7 +94,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   context->SetTime(0.);
   plant.SetDefaultState(*context, &context->get_mutable_state());
   plant.SetVelocities(context.get(), generalized_velocities);
-  SemiExplicitEulerIntegrator<double> see(plant, small_dt, context.get());
+  SemiExplicitEulerIntegrator<double> see(plant, small_h, context.get());
   see.Initialize();
 
   // Integrate for one second.
@@ -127,12 +127,12 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Setup the integration size and infinity.
-  const double dt = 1e-6;
+  const double h = 1e-6;
   const double inf = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
   SemiExplicitEulerIntegrator<double> integrator(
-      spring_mass, dt, context.get());  // Use default Context.
+      spring_mass, h, context.get());  // Use default Context.
 
   // Setup the initial position and initial velocity.
   const double kInitialPosition = 0.1;
@@ -152,10 +152,10 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Integrate for 1 second.
   const double kTFinal = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - kTFinal) > dt; t += dt)
+  for (t = 0.0; std::abs(t - kTFinal) > h; t += h)
     integrator.IntegrateNoFurtherThanTime(inf, inf, kTFinal);
 
-  EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
+  EXPECT_NEAR(context->get_time(), t, h);  // Should be exact.
 
   // Get the final position.
   const double x_final =

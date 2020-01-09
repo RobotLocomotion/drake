@@ -512,6 +512,13 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddConstraint),
           doc.MathematicalProgram.AddConstraint.doc_1args_f)
+      .def("AddConstraint",
+          static_cast<Binding<Constraint> (MathematicalProgram::*)(
+              std::shared_ptr<Constraint>,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars)>(
+              &MathematicalProgram::AddConstraint),
+          py::arg("constraint"), py::arg("vars"),
+          doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -631,11 +638,20 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddQuadraticCost),
+          py::arg("Q"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddQuadraticCost.doc_3args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddQuadraticCost),
+          py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("vars"),
+          doc.MathematicalProgram.AddQuadraticCost.doc_4args)
+      .def("AddQuadraticCost",
+          static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddQuadraticCost),
-          doc.MathematicalProgram.AddQuadraticCost.doc_1args)
+          py::arg("e"), doc.MathematicalProgram.AddQuadraticCost.doc_1args)
       .def("AddQuadraticErrorCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -734,10 +750,15 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
+      .def("decision_variable_index",
+          &MathematicalProgram::decision_variable_index,
+          doc.MathematicalProgram.decision_variable_index.doc)
       .def("indeterminates", &MathematicalProgram::indeterminates,
           doc.MathematicalProgram.indeterminates.doc)
       .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
           doc.MathematicalProgram.indeterminate.doc)
+      .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
+          doc.MathematicalProgram.indeterminates_index.doc)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
@@ -770,6 +791,14 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
+      .def("GetBindingVariableValues",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<double>& prog_var_vals) {
+            return prog.GetBindingVariableValues(binding, prog_var_vals);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.GetBindingVariableValues.doc)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
@@ -968,6 +997,13 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& lb,
+                        const Eigen::VectorXd& ub) {
+        return std::unique_ptr<LinearConstraint>(
+            new LinearConstraint(A, lb, ub));
+      }),
+          py::arg("A"), py::arg("lb"), py::arg("ub"),
+          doc.LinearConstraint.ctor.doc)
       .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
       .def("UpdateCoefficients",
           [](LinearConstraint& self, const Eigen::MatrixXd& new_A,

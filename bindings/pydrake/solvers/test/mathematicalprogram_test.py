@@ -2,6 +2,7 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
+    LinearConstraint,
     MathematicalProgramResult,
     SolverOptions,
     SolverType,
@@ -21,6 +22,7 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
+
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
@@ -118,6 +120,9 @@ class TestMathematicalProgram(unittest.TestCase):
         a = np.array([1.0, 2.0, 3.0])
         prog.AddLinearConstraint(a.dot(x) <= 4)
         prog.AddLinearConstraint(x[0] + x[1], 1, np.inf)
+        prog.AddConstraint(
+            LinearConstraint(np.array([[1., 1.]]), np.array([1]),
+                             np.array([np.inf])), [x[0], x[1]])
         solver = GurobiSolver()
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
@@ -137,6 +142,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # the workaround overloads from `pydrake.math`.
         prog.AddLinearConstraint(ge(x, 1))
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        prog.AddQuadraticCost(np.eye(2), np.zeros(2), 1, x)
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
@@ -167,6 +173,8 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertEqual(prog.FindDecisionVariableIndices(vars=[x[0], x[1]]),
                          [0, 1])
+        self.assertEqual(prog.decision_variable_index()[x[0].get_id()], 0)
+        self.assertEqual(prog.decision_variable_index()[x[1].get_id()], 1)
 
         for binding in prog.GetAllCosts():
             self.assertIsInstance(binding.evaluator(), mp.Cost)
@@ -332,6 +340,17 @@ class TestMathematicalProgram(unittest.TestCase):
             y_i = evaluator.Eval(x=[x_i, x_i])
             self.assertIsInstance(y_i[0], T_y_i)
 
+    def test_get_binding_variable_values(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        binding1 = prog.AddBoundingBoxConstraint(-1, 1, x[0])
+        binding2 = prog.AddLinearEqualityConstraint(x[1] + 2*x[2], 2)
+        x_val = np.array([-2., 1., 2.])
+        np.testing.assert_allclose(
+            prog.GetBindingVariableValues(binding1, x_val), np.array([-2]))
+        np.testing.assert_allclose(
+            prog.GetBindingVariableValues(binding2, x_val), np.array([1, 2]))
+
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 2, "x")
@@ -372,10 +391,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # d(0) + d(1) = 1
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
+        self.assertEqual(prog.indeterminates_index()[x[0].get_id()], 0)
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)
         y = prog.NewIndeterminates(1, "y")
+        self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])))
         d = prog.NewContinuousVariables(2, "d")

@@ -222,6 +222,8 @@ std::unique_ptr<System<T>> SystemScalarConverter::Convert(
 
 namespace system_scalar_converter_internal {
 // When Traits says that conversion is supported.
+// N.B. This logic should be reflected in `TemplateSystem._make` in the file
+// `scalar_conversion.py`.
 template <template <typename> class S, typename T, typename U>
 static std::unique_ptr<System<T>> Make(
     bool subtype_preservation, const System<U>& other, std::true_type) {

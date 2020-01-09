@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity_properties.h"
@@ -105,74 +106,6 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   }
 }
 
-// Tests the classification of proximity properties.
-GTEST_TEST(Hydroelastic, Classify) {
-  // Case: props with no declared "hydroelastic" group is, by definition, an
-  // unclassified hydroelastic type.
-  EXPECT_EQ(Classify(ProximityProperties()), HydroelasticType::kUndefined);
-
-  // Case: Presence of elastic modulus is insufficient to trigger hydroelastic.
-  {
-    ProximityProperties props;
-    props.AddProperty(kMaterialGroup, kElastic, 1e8);
-    EXPECT_EQ(Classify(props), HydroelasticType::kUndefined);
-  }
-
-  // The *presence* of the kHydroGroup will trigger the attempt to classify a
-  // hydroelastic representation. This uses a property that has no bearing on
-  // that classification to be that trigger.
-  ProximityProperties trigger_hydro;
-  trigger_hydro.AddProperty(kHydroGroup, "dummy", 1);
-
-  // Case: missing elastic modulus is a classification error.
-  {
-    DRAKE_EXPECT_THROWS_MESSAGE(Classify(trigger_hydro), std::logic_error,
-        "Properties .+ missing .+ property; compliance cannot be determined");
-  }
-
-  // Case: Infinite "elastic_modulus" should report as rigid.
-  {
-    ProximityProperties props(trigger_hydro);
-    props.AddProperty(kMaterialGroup, kElastic,
-                      std::numeric_limits<double>::infinity());
-    EXPECT_EQ(Classify(props), HydroelasticType::kRigid);
-  }
-
-  // Case: Really, really huge, but not infinite "elastic modulus" should report
-  // as soft.
-  {
-    ProximityProperties props(trigger_hydro);
-    props.AddProperty(kMaterialGroup, kElastic,
-                      std::numeric_limits<double>::max());
-    EXPECT_EQ(Classify(props), HydroelasticType::kSoft);
-  }
-
-  // Case: Microscopically small elastic modulus should report as soft.
-  {
-    ProximityProperties props(trigger_hydro);
-    props.AddProperty(kMaterialGroup, kElastic, 1e-14);
-    EXPECT_EQ(Classify(props), HydroelasticType::kSoft);
-  }
-
-  // Case: Zero elastic modulus should throw an error.
-  {
-    ProximityProperties props(trigger_hydro);
-    props.AddProperty(kMaterialGroup, kElastic, 0.0);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        Classify(props), std::logic_error,
-        fmt::format(".+bad value for .+'{}'.*", kElastic));
-  }
-
-  // Case: Negative elastic modulus should throw an error.
-  {
-    ProximityProperties props(trigger_hydro);
-    props.AddProperty(kMaterialGroup, kElastic, -1.0);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        Classify(props), std::logic_error,
-        fmt::format(".+bad value for .+'{}'.*", kElastic));
-  }
-}
-
 class HydroelasticRigidGeometryTest : public ::testing::Test {
  protected:
   /** Creates a simple set of properties for generating rigid geometry. */
@@ -185,25 +118,19 @@ class HydroelasticRigidGeometryTest : public ::testing::Test {
 
 // TODO(SeanCurtis-TRI): As new shape specifications are added, they are
 //  implicitly unsupported and should be added here (and in
-//  UnsupportedSofthapes). I'm particularly thinking of capsule and ellipsoid.
+//  UnsupportedSofthapes). I'm particularly thinking of capsule.
 // Smoke test for shapes that are *known* to be unsupported as rigid objects.
 // NOTE: This will spew warnings to the log.
 TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
   ProximityProperties props = rigid_properties();
 
-  EXPECT_EQ(MakeRigidRepresentation(Cylinder(1, 1), props), std::nullopt);
-
   EXPECT_EQ(MakeRigidRepresentation(Capsule(1, 1), props), std::nullopt);
-
-  EXPECT_EQ(MakeRigidRepresentation(Ellipsoid(1, 2, 3), props), std::nullopt);
 
   EXPECT_EQ(MakeRigidRepresentation(HalfSpace(), props), std::nullopt);
 
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
   EXPECT_EQ(MakeRigidRepresentation(Convex(obj, 1.0), props), std::nullopt);
-
-  EXPECT_EQ(MakeRigidRepresentation(Mesh(obj, 1.0), props), std::nullopt);
 }
 
 // Confirm support for a rigid Sphere. Tests that a hydroelastic representation
@@ -249,6 +176,89 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   }
 }
 
+template <typename T>
+std::array<T, 3> unpack(Vector3<T> x) { return {x(0), x(1), x(2) }; }
+
+// Confirm support for a rigid Cylinder. Tests that a hydroelastic
+// representation is made, and samples the representation to look for
+// evidence of it being the *right* representation.
+TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  // Pick a characteristic length *larger* than the cylinder dimensions to
+  // get the coarsest mesh. This is merely evidence that the mesh generator is
+  // called -- we rely on tests of that functionality to create more
+  // elaborate meshes with smaller edge lengths.
+  ProximityProperties props = rigid_properties(1.5 * length);
+
+  std::optional<RigidGeometry> cylinder =
+      MakeRigidRepresentation(Cylinder(radius, length), props);
+  EXPECT_NE(cylinder, std::nullopt);
+
+  // Smoke test the surface mesh.
+  const SurfaceMesh<double>& mesh = cylinder->mesh();
+  EXPECT_EQ(mesh.num_vertices(), 14);
+  EXPECT_EQ(mesh.num_faces(), 24);
+  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+    const auto[x, y, z] = unpack(mesh.vertex(v).r_MV());
+    // Only check that the vertex is within the cylinder. It does not check
+    // that the vertex is near the surface of the cylinder.  We rely on the
+    // correctness of the mesh generator.
+    ASSERT_LE(pow(x, 2) + pow(y, 2), pow(radius, 2) + 1e-15);
+    ASSERT_LE(pow(z, 2), pow(length / 2, 2) + 1e-15);
+  }
+}
+
+// Confirm support for a rigid Ellipsoid. Tests that a hydroelastic
+// representation is made, and samples the representation to look for
+// evidence of it being the *right* representation.
+TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
+  // Lengths of the three semi-principal axes of the ellipsoid:
+  //     (x/a)^2 + (y/b)^2 + (z/c)^2 = 1
+  const double a = 0.5;
+  const double b = 0.8;
+  const double c = 0.3;
+  // Pick a characteristic length *larger* than the ellipsoid dimensions to
+  // get the coarsest mesh. This is merely evidence that the mesh generator is
+  // called -- we rely on tests of that functionality to create more
+  // elaborate meshes with smaller edge lengths.
+  ProximityProperties props = rigid_properties(2.0 * b);
+
+  std::optional<RigidGeometry> ellipsoid =
+      MakeRigidRepresentation(Ellipsoid(a, b, c), props);
+  EXPECT_NE(ellipsoid, std::nullopt);
+
+  // Smoke test the surface mesh.
+  const SurfaceMesh<double>& mesh = ellipsoid->mesh();
+  EXPECT_EQ(mesh.num_vertices(), 6);
+  EXPECT_EQ(mesh.num_faces(), 8);
+  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+    const auto[x, y, z] = unpack(mesh.vertex(v).r_MV());
+    ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
+  }
+}
+
+// Confirm support for a rigid Mesh. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Mesh) {
+  std::string file =
+    FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+  const double scale = 1.1;
+  // Empty props since its contents do not matter.
+  ProximityProperties props;
+
+  std::optional<RigidGeometry> mesh_rigid_geometry =
+      MakeRigidRepresentation(Mesh(file, scale), props);
+  EXPECT_NE(mesh_rigid_geometry, std::nullopt);
+
+  // We only check that the obj file was read by verifying the number of
+  // vertices and triangles, which depend on the specific content of
+  // the obj file.
+  const SurfaceMesh<double>& surface_mesh = mesh_rigid_geometry->mesh();
+  EXPECT_EQ(surface_mesh.num_vertices(), 5);
+  EXPECT_EQ(surface_mesh.num_faces(), 6);
+}
+
 // Template magic to instantiate a particular kind of shape at compile time.
 template <typename ShapeType>
 ShapeType make_default_shape() {
@@ -265,6 +275,16 @@ Sphere make_default_shape<Sphere>() {
 template <>
 Box make_default_shape<Box>() {
   return Box(0.5, 1.25, 3.5);
+}
+
+template <>
+Cylinder make_default_shape<Cylinder>() {
+  return Cylinder(0.5, 1.25);
+}
+
+template <>
+Ellipsoid make_default_shape<Ellipsoid>() {
+  return Ellipsoid(0.5, 0.8, 0.3);
 }
 
 // Boilerplate for testing error conditions relating to properties. Its purpose
@@ -349,7 +369,7 @@ void TestPropertyErrors(
 // Test suite for testing the common failure conditions for generating rigid
 // geometry. Specifically, they just need to be tessellated into a triangle mesh
 // and, therefore, only depend on the (hydroelastic, characteristic_length)
-// value. This actively excludes half spaces because they don't get
+// value. This actively excludes HalfSpace and Mesh because they don't get
 // tessellated (see the `RigidErrorShapeTypes` declaration below.) It should
 // include every *other* supported rigid shape type.
 template <typename ShapeType>
@@ -371,7 +391,7 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadCharacteristicLength) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
                            BadCharacteristicLength);
-typedef ::testing::Types<Sphere, Box> RigidErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                               RigidErrorShapeTypes);
 
@@ -388,19 +408,15 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
 
 // TODO(SeanCurtis-TRI): As new shape specifications are added, they are
 //  implicitly unsupported and should be added here (and in
-//  UnsupportedRigidShapes). I'm particularly thinking of capsule and ellipsoid.
+//  UnsupportedRigidShapes). I'm particularly thinking of capsule.
 // Smoke test for shapes that are *known* to be unsupported as soft objects.
 // NOTE: This will spew warnings to the log.
 TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
   ProximityProperties props = soft_properties();
 
-  EXPECT_EQ(MakeSoftRepresentation(Box(1, 1, 1), props), std::nullopt);
-
-  EXPECT_EQ(MakeSoftRepresentation(Cylinder(1, 1), props), std::nullopt);
-
   EXPECT_EQ(MakeSoftRepresentation(Capsule(1, 1), props), std::nullopt);
 
-  EXPECT_EQ(MakeSoftRepresentation(Ellipsoid(1, 2, 3), props), std::nullopt);
+  EXPECT_EQ(MakeSoftRepresentation(HalfSpace(), props), std::nullopt);
 
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
@@ -456,16 +472,94 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Zero on outside, 1 on inside.
     const double expected_p = pressure(vertex.r_MV());
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
-                kEps);
+                kEps * E);
+  }
+}
+
+// Test construction of a soft box.
+TEST_F(HydroelasticSoftGeometryTest, Box) {
+  const Box box_spec(0.2, 0.4, 0.8);
+
+  // Confirm that characteristic length is being fed in properly. The length
+  // 0.1 should create mesh vertices on a 3 x 5 x 9 Cartesian grid.
+  ProximityProperties properties = soft_properties(0.1);
+  std::optional<SoftGeometry> box =
+      MakeSoftRepresentation(box_spec, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 3 * 5 * 9;
+  EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
+  const double E =
+      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+  for (VolumeVertexIndex v(0); v < box->mesh().num_vertices(); ++v) {
+    const double pressure = box->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
+// Test construction of a soft cylinder.
+TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  const Cylinder cylinder_spec(radius, length);
+
+  // Confirm that characteristic length is being fed in properly. Pick a
+  // characteristic length *larger* than the cylinder dimensions to get the
+  // coarsest mesh with 15 vertices.
+  ProximityProperties properties = soft_properties(1.5 * length);
+  std::optional<SoftGeometry> cylinder =
+      MakeSoftRepresentation(cylinder_spec, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 15;
+  EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
+  const double E =
+      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+  for (VolumeVertexIndex v(0); v < cylinder->mesh().num_vertices(); ++v) {
+    const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
+// Test construction of a soft ellipsoid.
+TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
+  // Lengths of the three semi-principal axes of the ellipsoid:
+  //     (x/a)^2 + (y/b)^2 + (z/c)^2 = 1
+  const double a = 0.05;
+  const double b = 0.08;
+  const double c = 0.03;
+  const Ellipsoid ellipsoid_spec(a, b, c);
+
+  // Confirm that characteristic length is being fed in properly. Pick a
+  // characteristic length *larger* than the ellipsoid dimensions to get the
+  // coarsest mesh with 7 vertices.
+  ProximityProperties properties = soft_properties(0.16);
+  std::optional<SoftGeometry> ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 7;
+  EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
+  const double E =
+      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+  for (VolumeVertexIndex v(0); v < ellipsoid->mesh().num_vertices(); ++v) {
+    const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
   }
 }
 
 // Test suite for testing the common failure conditions for generating soft
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes half spaces because they
-// are treated specially (they don't get tessellated).
-// (See the `RigidErrorShapeTypes` declaration below.) It should include every
-// *other* supported rigid shape type.
+// and define a pressure field. This actively excludes HalfSpace and Mesh
+// because they are treated specially (they don't get tessellated).
+// (See the `SoftErrorShapeTypes` declaration below.) It should include every
+// *other* supported soft shape type.
 template <typename ShapeType>
 class HydroelasticSoftGeometryErrorTests : public ::testing::Test {};
 
@@ -500,7 +594,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                            BadCharacteristicLength, BadElasticModulus);
-typedef ::testing::Types<Sphere> SoftErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                               SoftErrorShapeTypes);
 

@@ -187,17 +187,13 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   // Asserts exactly one input for this case expecting an external force.
   ASSERT_EQ(1, context_->num_input_ports());
 
-  // Creates a vector holding the data entry to the supplied input force.
-  auto force_vector = make_unique<BasicVector<double>>(1 /* size */);
-
   // Sets the input force.
   const double kExternalForce = 1.0;
-  force_vector->get_mutable_value() << kExternalForce;
 
   // Creates a free standing input port not actually connected to the output of
-  // another system but that has its own data in force_vector.
+  // another system but that has its own data.
   // This is done in order to be able to test this system standalone.
-  context_->FixInputPort(0, std::move(force_vector));
+  system_->get_input_port(0).FixValue(context_.get(), kExternalForce);
 
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
   system_->CalcTimeDerivatives(*context_, system_derivatives_.get());

@@ -101,8 +101,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
       dut.AllocateOutput();
-  context->FixInputPort(dut.get_plan_input_port().get_index(),
-                        AbstractValue::Make(plan));
+  dut.get_plan_input_port().FixValue(context.get(), plan);
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
                  &context->get_mutable_state());
 
@@ -198,8 +197,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
 
   plan.num_states = 0;
   plan.plan.clear();
-  context->FixInputPort(dut.get_plan_input_port().get_index(),
-                        AbstractValue::Make(plan));
+  dut.get_plan_input_port().FixValue(context.get(), plan);
   dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   position = output->get_vector_data(

@@ -26,104 +26,103 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
 namespace test {
 
-DRAKE_NODISCARD inline bool VarEqual(const Variable& v1, const Variable& v2) {
+[[nodiscard]] inline bool VarEqual(const Variable& v1, const Variable& v2) {
   return v1.equal_to(v2);
 }
 
-DRAKE_NODISCARD inline bool VarNotEqual(const Variable& v1,
+[[nodiscard]] inline bool VarNotEqual(const Variable& v1,
                                         const Variable& v2) {
   return !VarEqual(v1, v2);
 }
 
-DRAKE_NODISCARD inline bool VarLess(const Variable& v1, const Variable& v2) {
+[[nodiscard]] inline bool VarLess(const Variable& v1, const Variable& v2) {
   return v1.less(v2);
 }
 
-DRAKE_NODISCARD inline bool VarNotLess(const Variable& v1, const Variable& v2) {
+[[nodiscard]] inline bool VarNotLess(const Variable& v1, const Variable& v2) {
   return !VarLess(v1, v2);
 }
 
-DRAKE_NODISCARD inline bool ExprEqual(const Expression& e1,
+[[nodiscard]] inline bool ExprEqual(const Expression& e1,
                                       const Expression& e2) {
   return e1.EqualTo(e2);
 }
 
-DRAKE_NODISCARD inline bool ExprNotEqual(const Expression& e1,
+[[nodiscard]] inline bool ExprNotEqual(const Expression& e1,
                                          const Expression& e2) {
   return !ExprEqual(e1, e2);
 }
 
-DRAKE_NODISCARD inline bool ExprLess(const Expression& e1,
+[[nodiscard]] inline bool ExprLess(const Expression& e1,
                                      const Expression& e2) {
   return e1.Less(e2);
 }
 
-DRAKE_NODISCARD inline bool ExprNotLess(const Expression& e1,
+[[nodiscard]] inline bool ExprNotLess(const Expression& e1,
                                         const Expression& e2) {
   return !ExprLess(e1, e2);
 }
 
-DRAKE_NODISCARD inline bool PolyEqual(const Polynomial& p1,
+[[nodiscard]] inline bool PolyEqual(const Polynomial& p1,
                                       const Polynomial& p2) {
   return p1.EqualTo(p2);
 }
 
-DRAKE_NODISCARD inline bool PolyNotEqual(const Polynomial& p1,
+[[nodiscard]] inline bool PolyNotEqual(const Polynomial& p1,
                                          const Polynomial& p2) {
   return !PolyEqual(p1, p2);
 }
 
-DRAKE_NODISCARD inline bool PolyEqualAfterExpansion(const Polynomial& p1,
+[[nodiscard]] inline bool PolyEqualAfterExpansion(const Polynomial& p1,
                                                     const Polynomial& p2) {
   return p1.EqualToAfterExpansion(p2);
 }
 
-DRAKE_NODISCARD inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
+[[nodiscard]] inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
                                                        const Polynomial& p2) {
   return !p1.EqualToAfterExpansion(p2);
 }
 
-DRAKE_NODISCARD inline bool RationalFunctionEqual(const RationalFunction& f1,
+[[nodiscard]] inline bool RationalFunctionEqual(const RationalFunction& f1,
                                                   const RationalFunction& f2) {
   return f1.EqualTo(f2);
 }
 
-DRAKE_NODISCARD inline bool RationalFunctionNotEqual(
+[[nodiscard]] inline bool RationalFunctionNotEqual(
     const RationalFunction& f1, const RationalFunction& f2) {
   return !RationalFunctionEqual(f1, f2);
 }
 
 template <typename F>
-DRAKE_NODISCARD bool all_of(const std::vector<Formula>& formulas, const F& f) {
+[[nodiscard]] bool all_of(const std::vector<Formula>& formulas, const F& f) {
   return std::all_of(formulas.begin(), formulas.end(), f);
 }
 
 template <typename F>
-DRAKE_NODISCARD bool any_of(const std::vector<Formula>& formulas, const F& f) {
+[[nodiscard]] bool any_of(const std::vector<Formula>& formulas, const F& f) {
   return std::any_of(formulas.begin(), formulas.end(), f);
 }
 
-DRAKE_NODISCARD inline bool FormulaEqual(const Formula& f1, const Formula& f2) {
+[[nodiscard]] inline bool FormulaEqual(const Formula& f1, const Formula& f2) {
   return f1.EqualTo(f2);
 }
 
-DRAKE_NODISCARD inline bool FormulaNotEqual(const Formula& f1,
+[[nodiscard]] inline bool FormulaNotEqual(const Formula& f1,
                                             const Formula& f2) {
   return !FormulaEqual(f1, f2);
 }
 
-DRAKE_NODISCARD inline bool FormulaLess(const Formula& f1, const Formula& f2) {
+[[nodiscard]] inline bool FormulaLess(const Formula& f1, const Formula& f2) {
   return f1.Less(f2);
 }
 
-DRAKE_NODISCARD inline bool FormulaNotLess(const Formula& f1,
+[[nodiscard]] inline bool FormulaNotLess(const Formula& f1,
                                            const Formula& f2) {
   return !FormulaLess(f1, f2);
 }
@@ -135,7 +134,7 @@ DRAKE_NODISCARD inline bool FormulaNotLess(const Formula& f1,
  * @param p2 A polynomial.
  * @param tol The tolerance on the coefficients of p1 - p2.
  */
-DRAKE_NODISCARD inline ::testing::AssertionResult PolynomialEqual(
+[[nodiscard]] inline ::testing::AssertionResult PolynomialEqual(
     const symbolic::Polynomial& p1, const symbolic::Polynomial& p2,
     double tol) {
   const symbolic::Polynomial diff = p1 - p2;

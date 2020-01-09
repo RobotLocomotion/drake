@@ -64,6 +64,8 @@ sh_test(
     name = "print_host_settings_test",
     srcs = ["test/print_host_settings_test.sh"],
     data = [":print_host_settings"],
+    # Valgrind Memcheck reports numerous leaks in the python executable.
+    tags = ["no_memcheck"],
 )
 
 add_lint_tests()

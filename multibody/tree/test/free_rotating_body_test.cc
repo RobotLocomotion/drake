@@ -88,14 +88,13 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   free_body_plant.set_angular_velocity(&context, w0_WB);
 
   simulator.Initialize();
-  RungeKutta3Integrator<double>* integrator =
-          simulator.reset_integrator<RungeKutta3Integrator<double>>(
-              free_body_plant, &context);
-  integrator->set_maximum_step_size(kMaxDt);
-  EXPECT_FALSE(integrator->get_fixed_step_mode());
-  EXPECT_TRUE(integrator->supports_error_estimation());
-  integrator->set_target_accuracy(kAccuracy);
-  EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
+  RungeKutta3Integrator<double>& integrator =
+          simulator.reset_integrator<RungeKutta3Integrator<double>>();
+  integrator.set_maximum_step_size(kMaxDt);
+  EXPECT_FALSE(integrator.get_fixed_step_mode());
+  EXPECT_TRUE(integrator.supports_error_estimation());
+  integrator.set_target_accuracy(kAccuracy);
+  EXPECT_EQ(integrator.get_target_accuracy(), kAccuracy);
 
   // Simulate:
   simulator.AdvanceTo(kEndTime);

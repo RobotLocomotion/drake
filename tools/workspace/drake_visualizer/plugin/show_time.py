@@ -48,6 +48,15 @@ class TimeVisualizer(object):
 
     def handle_message(self, msg):
         msg_time = msg.timestamp * 1e-3  # convert from milliseconds
+
+        # Since the plugin can remain open during multiple simulations, we
+        # clear the lists of times if we receive a message with a time earlier
+        # than the last time received (which indicates that a new simulation
+        # has been run).
+        if self._msg_time and self._msg_time[-1] > msg_time:
+            self._real_time.clear()
+            self._msg_time.clear()
+
         self._real_time.append(time.time())
         self._msg_time.append(msg_time)
 
@@ -63,6 +72,8 @@ class TimeVisualizer(object):
             rt_ratio = dt / dt_real_time
 
             my_text = my_text + ', real time factor: %.2f' % rt_ratio
+        else:
+            my_text = my_text + ', real time factor: (still computing)'
 
         updateText(my_text, 'text')
 

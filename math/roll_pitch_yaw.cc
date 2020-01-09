@@ -15,55 +15,17 @@ RotationMatrix<T> RollPitchYaw<T>::ToRotationMatrix() const {
   return RotationMatrix<T>(*this);
 }
 
-template <typename T>
-void RollPitchYaw<T>::SetFromRotationMatrix(const RotationMatrix<T>& R) {
-  SetFromQuaternionAndRotationMatrix(R.ToQuaternion(), R);
-}
-
-template <typename T>
-void RollPitchYaw<T>::SetFromQuaternion(
-    const Eigen::Quaternion<T>& quaternion) {
-  SetFromQuaternionAndRotationMatrix(quaternion, RotationMatrix<T>(quaternion));
-}
-
-template <typename T>
-void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
-    const Eigen::Quaternion<T>& quaternion, const RotationMatrix<T>& R) {
-  const Vector3<T> rpy =
-      CalcRollPitchYawFromQuaternionAndRotationMatrix(quaternion, R.matrix());
-  SetOrThrowIfNotValidInDebugBuild(rpy);
-
-#ifdef DRAKE_ASSERT_IS_ARMED
-  // Verify that arguments to this method make sense.  Ensure the
-  // rotation_matrix and quaternion correspond to the same orientation.
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-  const RotationMatrix<T> R_quaternion(quaternion);
-  constexpr double tolerance = 20 * kEpsilon;
-  if (!R_quaternion.IsNearlyEqualTo(R, tolerance)) {
-    std::string message = fmt::format("RollPitchYaw::{}():"
-        " An element of the RotationMatrix R passed to this method differs by"
-        " more than {:G} from the corresponding element of the RotationMatrix"
-        " formed by the Quaternion passed to this method.  To avoid this"
-        " inconsistency, ensure the orientation of R and Quaternion align."
-        " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
-    throw std::logic_error(message);
-  }
-
-  // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
-  // It is tested by converting the returned %RollPitchYaw to a %RotationMatrix
-  // and verifying the rotation matrices are within kEpsilon of each other.
-  // Assuming sine, cosine are accurate to 4*(standard double-precision epsilon
-  // = 2.22E-16) and there are two sets of two multiplies and one addition for
-  // each rotation matrix element, I decided to test with 20 * kEpsilon:
-  // (1+4*eps)*(1+4*eps)*(1+4*eps) = 1 + 3*(4*eps) + 3*(4*eps)^2 + (4*eps)^3.
-  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
-  // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
-  const RollPitchYaw<T> roll_pitch_yaw(rpy);
-  const RotationMatrix<T> R_rpy = RotationMatrix<T>(roll_pitch_yaw);
-  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(R, 20 * kEpsilon));
-#endif
-}
-
+// Uses a quaternion and its associated rotation matrix `R` to accurately
+// and efficiently calculate the roll-pitch-yaw angles (SpaceXYZ Euler angles)
+// that underlie `this` @RollPitchYaw, even when the pitch angle p is very
+// near a singularity (e.g., when p is within 1E-6 of π/2 or -π/2).
+// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
+// @param[in] R The %RotationMatrix corresponding to `quaternion`.
+// @return [r, p, y] with `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+// @note The caller of this function is responsible for ensuring `quaternion`
+// satisfies `e0^2 + e1^2 + e2^2 + e3^2 = 1` and that the matrix `R` is the
+// rotation matrix that corresponds to `quaternion'.
+//-----------------------------------------------------------------------------
 // <h3>Theory</h3>
 //
 // This algorithm was created October 2016 by Paul Mitiguy for TRI (Toyota).
@@ -185,6 +147,55 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
   // Return in Drake/ROS conventional SpaceXYZ q1, q2, q3 (roll-pitch-yaw) order
   // (which is equivalent to BodyZYX q3, q2, q1 order).
   return Vector3<T>(q1, q2, q3);
+}
+
+template <typename T>
+void RollPitchYaw<T>::SetFromRotationMatrix(const RotationMatrix<T>& R) {
+  SetFromQuaternionAndRotationMatrix(R.ToQuaternion(), R);
+}
+
+template <typename T>
+void RollPitchYaw<T>::SetFromQuaternion(
+    const Eigen::Quaternion<T>& quaternion) {
+  SetFromQuaternionAndRotationMatrix(quaternion, RotationMatrix<T>(quaternion));
+}
+
+template <typename T>
+void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
+    const Eigen::Quaternion<T>& quaternion, const RotationMatrix<T>& R) {
+  const Vector3<T> rpy =
+      CalcRollPitchYawFromQuaternionAndRotationMatrix(quaternion, R.matrix());
+  SetOrThrowIfNotValidInDebugBuild(rpy);
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // Verify that arguments to this method make sense.  Ensure the
+  // rotation_matrix and quaternion correspond to the same orientation.
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  const RotationMatrix<T> R_quaternion(quaternion);
+  constexpr double tolerance = 20 * kEpsilon;
+  if (!R_quaternion.IsNearlyEqualTo(R, tolerance)) {
+    std::string message = fmt::format("RollPitchYaw::{}():"
+        " An element of the RotationMatrix R passed to this method differs by"
+        " more than {:G} from the corresponding element of the RotationMatrix"
+        " formed by the Quaternion passed to this method.  To avoid this"
+        " inconsistency, ensure the orientation of R and Quaternion align."
+        " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
+    throw std::logic_error(message);
+  }
+
+  // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
+  // It is tested by converting the returned %RollPitchYaw to a %RotationMatrix
+  // and verifying the rotation matrices are within kEpsilon of each other.
+  // Assuming sine, cosine are accurate to 4*(standard double-precision epsilon
+  // = 2.22E-16) and there are two sets of two multiplies and one addition for
+  // each rotation matrix element, I decided to test with 20 * kEpsilon:
+  // (1+4*eps)*(1+4*eps)*(1+4*eps) = 1 + 3*(4*eps) + 3*(4*eps)^2 + (4*eps)^3.
+  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
+  // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
+  const RollPitchYaw<T> roll_pitch_yaw(rpy);
+  const RotationMatrix<T> R_rpy = RotationMatrix<T>(roll_pitch_yaw);
+  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(R, 20 * kEpsilon));
+#endif
 }
 
 template <typename T>

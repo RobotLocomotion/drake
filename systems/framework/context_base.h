@@ -47,7 +47,8 @@ class ContextBase : public internal::ContextMessageInterface {
   ContextBase& operator=(ContextBase&&) = delete;
   /** @} */
 
-  /** Creates an identical copy of the concrete context object. */
+  /** Creates an identical copy of the concrete context object.
+  @throws std::logic_error if this is not the root context. */
   std::unique_ptr<ContextBase> Clone() const;
 
   ~ContextBase() override;

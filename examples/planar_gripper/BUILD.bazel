@@ -3,11 +3,6 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
-)
-load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
@@ -32,6 +27,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "planar_gripper_lcm",
+    srcs = ["planar_gripper_lcm.cc"],
+    hdrs = ["planar_gripper_lcm.h"],
+    deps = [
+        "//lcmtypes:planar_gripper",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "planar_manipuland_lcm",
+    srcs = ["planar_manipuland_lcm.cc"],
+    hdrs = ["planar_manipuland_lcm.h"],
+    deps = [
+        "//lcmtypes:planar_manipuland_status",
+        "//systems/framework:event_collection",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "brick_static_equilibrium_constraint",
     srcs = ["brick_static_equilibrium_constraint.cc"],
     hdrs = ["brick_static_equilibrium_constraint.h"],
@@ -51,8 +67,7 @@ drake_cc_library(
     srcs = ["gripper_brick.cc"],
     hdrs = ["gripper_brick.h"],
     data = [
-        "//examples/planar_gripper:planar_brick.sdf",
-        "//examples/planar_gripper:planar_gripper.sdf",
+        ":models",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -67,12 +82,32 @@ drake_cc_library(
 )
 
 drake_cc_binary(
+    name = "run_planar_gripper_trajectory_publisher",
+    srcs = ["run_planar_gripper_trajectory_publisher.cc"],
+    data = [
+        ":models",
+        "//examples/planar_gripper:postures.txt",
+    ],
+    deps = [
+        ":planar_gripper_common",
+        ":planar_gripper_lcm",
+        "//common:find_resource",
+        "//lcm",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:trajectory_source",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "planar_gripper_simulation",
     srcs = ["planar_gripper_simulation.cc"],
     add_test_rule = 1,
     data = [
-        "//examples/planar_gripper:planar_brick.sdf",
-        "//examples/planar_gripper:planar_gripper.sdf",
+        ":models",
         "//examples/planar_gripper:postures.txt",
     ],
     test_rule_args = [
@@ -81,21 +116,16 @@ drake_cc_binary(
     ],
     deps = [
         ":planar_gripper_common",
-        "//common:add_text_logging_gflags",
+        ":planar_gripper_lcm",
         "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial",
         "//geometry:geometry_visualization",
-        "//lcm:drake_lcm",
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
-        "//systems/primitives:constant_vector_source",
-        "//systems/primitives:trajectory_source",
         "@gflags",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -132,6 +162,38 @@ drake_cc_googletest(
     deps = [
         ":gripper_brick_planning_constraint_helper",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_manipuland_lcm_test",
+    deps = [
+        ":planar_manipuland_lcm",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_gripper_lcm_test",
+    deps = [
+        ":planar_gripper_lcm",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_gripper_common_test",
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":planar_gripper_common",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

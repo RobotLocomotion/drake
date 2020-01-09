@@ -16,7 +16,10 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
-load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
 
 # TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
 # such that no downstream users can use it?
@@ -30,15 +33,25 @@ install_cmake_config(
     versioned = 0,
 )
 
-# The Drake binary package. libdrake.so contains all the symbols from all the
-# LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
-# that the binary package will not contain any references to shared libraries
-# inside the build tree.
-drake_cc_binary(
+# Annotate all of the LIBDRAKE_COMPONENTS as `alwayslink = True`, so that we
+# use the --whole-archive linker flag on them when creating libdrake.so
+cc_whole_archive_library(
+    name = "libdrake_components_whole_archive",
+    deps = LIBDRAKE_COMPONENTS,
+)
+
+# The Drake binary package libdrake.so contains all the symbols from all the
+# LIBDRAKE_COMPONENTS plus the statically-linked Drake externals used by the
+# LIBDRAKE_COMPONENTS.  We use linkstatic=1 here so that the library will not
+# contain any references to constituent shared libraries inside the build tree.
+cc_binary(
     name = "libdrake.so",
     linkshared = 1,
     linkstatic = 1,
-    deps = LIBDRAKE_COMPONENTS,
+    deps = [
+        ":libdrake_components_whole_archive",
+        ":libdrake_runtime_so_deps",
+    ],
 )
 
 # Gather all of libdrake.so's dependent headers, excluding headers that are
@@ -167,18 +180,9 @@ cc_library(
 )
 
 # Provide a cc_library target that provides libdrake.so, its headers, its
-# header-only dependencies, and its required *.so's that are WORKSPACE
-# downloads (such as VTK, Gurobi, etc). This is aliased by
+# header-only dependencies, and its required *.so's.  This is aliased by
 # `//:drake_shared_library`, which is what downstream users will consume if
 # they wish to link to `libdrake.so`.
-#
-# TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
-# *.so files for us, without us having to know up-front here which dependencies
-# are coming from the WORKSPACE in the form of *.so.
-#
-# TODO(jwnimmer-tri) Ideally, drake_cc_library's installed_headers support
-# would capture a list of headerfile dependencies, so that we don't need to
-# write out the "list of libraries directly mentioned in Drake headers" below.
 cc_library(
     name = "drake_shared_library",
     srcs = [":libdrake.so"],
@@ -190,9 +194,21 @@ cc_library(
     strip_include_prefix = "/",
     visibility = ["//:__pkg__"],
     deps = [
+        ":libdrake_header_only_deps",
         ":libdrake_headers_only_attic_cc_library",
-        # The list of depended-on *.so files. These should ONLY be shared
-        # libraries; do not add static dependencies here.
+        ":libdrake_runtime_so_deps",
+    ],
+)
+
+# The list of depended-on *.so files. These should ONLY be shared libraries; do
+# not add static dependencies here.
+#
+# TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
+# *.so files for us, without us having to know up-front here which dependencies
+# are coming from the WORKSPACE in the form of *.so.
+cc_library(
+    name = "libdrake_runtime_so_deps",
+    deps = [
         ":dreal_deps",
         ":gurobi_deps",
         ":ipopt_deps",
@@ -206,9 +222,18 @@ cc_library(
         "@spdlog",
         "@tinyxml2",
         "@yaml_cpp",
-    ] + [
-        # The list of depended-on header-only libraries that libdrake's header
-        # files depend on.
+    ],
+)
+
+# The list of depended-on header-only libraries that libdrake's header files
+# depend on.  Do not add any object code (shared nor static) here.
+#
+# TODO(jwnimmer-tri) Ideally, drake_cc_library's installed_headers support
+# would capture a list of headerfile dependencies, so that we don't need to
+# write out the "list of libraries directly mentioned in Drake headers" below.
+cc_library(
+    name = "libdrake_header_only_deps",
+    deps = [
         "//lcmtypes:lcmtypes_drake_cc",
         "@eigen",
         "@fmt",

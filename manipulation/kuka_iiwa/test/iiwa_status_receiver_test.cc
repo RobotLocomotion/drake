@@ -19,9 +19,8 @@ class IiwaStatusReceiverTest : public testing::Test {
       : dut_(),
         context_ptr_(dut_.CreateDefaultContext()),
         context_(*context_ptr_),
-        fixed_input_(context_.FixInputPort(
-            dut_.get_input_port().get_index(),
-            Value<lcmt_iiwa_status>{})) {}
+        fixed_input_(
+            dut_.get_input_port().FixValue(&context_, lcmt_iiwa_status{})) {}
 
   void Copy(const Eigen::VectorXd& from, std::vector<double>* to) {
     *to = {from.data(), from.data() + from.size()};

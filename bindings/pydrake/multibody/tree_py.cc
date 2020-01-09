@@ -22,6 +22,7 @@
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -39,16 +40,16 @@ This API using Isometry3 is / will be deprecated soon with the resolution of
 
 namespace {
 
-// Binds `MultibodyTreeElement` methods.
+// Binds `MultibodyElement` methods.
 // N.B. We do this rather than inheritance because this template is more of a
 // mixin than it is a parent class (since it is not used for its dynamic
 // polymorphism).
 // TODO(jamiesnape): Add documentation for bindings generated with this
 // function.
 template <typename PyClass>
-void BindMultibodyTreeElementMixin(PyClass* pcls) {
+void BindMultibodyElementMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
-  // TODO(eric.cousineau): Fix docstring generation for `MultibodyTreeElement`.
+  // TODO(eric.cousineau): Fix docstring generation for `MultibodyElement`.
   auto& cls = *pcls;
   cls  // BR
       .def("index", &Class::index)
@@ -71,6 +72,10 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
+  m.def("world_model_instance", &world_model_instance,
+      doc.world_model_instance.doc);
+  m.def("default_model_instance", &default_model_instance,
+      doc.default_model_instance.doc);
 
   {
     using Enum = JacobianWrtVariable;
@@ -101,7 +106,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Frame;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Frame", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body", &Class::body, py_reference_internal, cls_doc.body.doc)
@@ -145,7 +150,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Body;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Body", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
@@ -180,7 +185,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.Joint;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Joint", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("parent_body", &Class::parent_body, py_reference_internal,
@@ -292,7 +297,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.JointActuator;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "JointActuator", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc);
@@ -304,7 +309,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.ForceElement;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ForceElement", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin(&cls);
+    BindMultibodyElementMixin(&cls);
   }
 
   {
@@ -317,7 +322,28 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  const Vector3<double>&, double, double, double>(),
             py::arg("bodyA"), py::arg("p_AP"), py::arg("bodyB"),
             py::arg("p_BQ"), py::arg("free_length"), py::arg("stiffness"),
-            py::arg("damping"), cls_doc.ctor.doc);
+            py::arg("damping"), cls_doc.ctor.doc)
+        .def("bodyA", &Class::bodyA, py_reference_internal, cls_doc.bodyA.doc)
+        .def("bodyB", &Class::bodyB, py_reference_internal, cls_doc.bodyB.doc)
+        .def("p_AP", &Class::p_AP, cls_doc.p_AP.doc)
+        .def("p_BQ", &Class::p_BQ, cls_doc.p_BQ.doc)
+        .def("free_length", &Class::free_length, cls_doc.free_length.doc)
+        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc);
+  }
+
+  {
+    using Class = RevoluteSpring<T>;
+    constexpr auto& cls_doc = doc.RevoluteSpring;
+    auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
+        m, "RevoluteSpring", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const RevoluteJoint<T>&, double, double>(),
+            py::arg("joint"), py::arg("nominal_angle"), py::arg("stiffness"),
+            cls_doc.ctor.doc)
+        .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc)
+        .def("nominal_angle", &Class::nominal_angle, cls_doc.nominal_angle.doc)
+        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
   }
 
   {

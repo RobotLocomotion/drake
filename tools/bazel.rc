@@ -3,13 +3,8 @@ import %workspace%/tools/cc_toolchain/bazel.rc
 import %workspace%/tools/dynamic_analysis/bazel.rc
 import %workspace%/tools/lint/bazel.rc
 
-# Continue to obtain the python runtime from the --python_version flag rather
-# than a toolchain in Bazel 0.27 and above until #11660 is resolved.
-build --incompatible_use_python_toolchains=false
-
-# Continue to use --whole-archive for cc_binary rules that have linkshared = 1
-# and either linkstatic = 1 or -static in linkopts in Bazel 1.0 and above.
-build --incompatible_remove_legacy_whole_archive=false
+# Disable native Python rules in Bazel versions before 2.0.
+build --incompatible_load_python_rules_from_bzl=yes
 
 # Default to an optimized build.
 build -c opt
@@ -80,6 +75,10 @@ build:mosek --define=WITH_MOSEK=ON
 # -- To run tests that require SNOPT, also specify a set of test_tag_filters
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
+
+# TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
+# The --config=snopt_fortran spelling is no longer supported.
+# Instead, use --config=snopt for the same effect.
 build:snopt_fortran --define=WITH_SNOPT_FORTRAN=ON
 
 ### A configuration that enables all optional dependencies. ###

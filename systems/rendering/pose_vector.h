@@ -46,7 +46,7 @@ class PoseVector : public BasicVector<T> {
   static constexpr int kSize = 7;
 
  protected:
-  DRAKE_NODISCARD PoseVector<T>* DoClone() const override;
+  [[nodiscard]] PoseVector<T>* DoClone() const override;
 };
 
 }  // namespace rendering

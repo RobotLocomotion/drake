@@ -16,6 +16,7 @@ drake_cc_package_library(
     name = "tree",
     deps = [
         ":articulated_body_inertia",
+        ":multibody_element",
         ":multibody_tree_caches",
         ":multibody_tree_core",
         ":multibody_tree_element",
@@ -53,12 +54,14 @@ drake_cc_library(
     name = "multibody_tree_caches",
     srcs = [
         "acceleration_kinematics_cache.cc",
+        "articulated_body_force_bias_cache.cc",
         "articulated_body_inertia_cache.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
+        "articulated_body_force_bias_cache.h",
         "articulated_body_inertia_cache.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
@@ -74,13 +77,40 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multibody_element",
+    srcs = [],
+    hdrs = [
+        "multibody_element.h",
+    ],
+    deps = [
+        ":multibody_tree_topology",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_tree_element",
     srcs = [],
     hdrs = [
         "multibody_tree_element.h",
     ],
+    deprecation = "DRAKE DEPRECATED: The header drake/multibody/tree/multibody_tree_element.h is being removed on or after 2020-03-01. Please use drake/multibody/tree/multibody_element.h instead.",  # noqa
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
     deps = [
-        ":multibody_tree_topology",
+        ":multibody_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_tree_element_test",
+    # Ignore #warning for deprecation via command-line, since "GCC diagnostic"
+    # does not suppress it.
+    copts = ["-Wno-cpp"],
+    deps = [
+        ":multibody_tree_core",
+        ":multibody_tree_element",
     ],
 )
 
@@ -144,8 +174,8 @@ drake_cc_library(
     # "//multibody/tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
+        ":multibody_element",
         ":multibody_tree_caches",
-        ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//common:autodiff",
@@ -408,6 +438,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
         "//math:gradient",
     ],

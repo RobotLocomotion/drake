@@ -61,7 +61,7 @@ class MyVector : public BasicVector<T> {
  private:
   // BasicVector's Clone() method handles copying the values; DoClone() is
   // only supposed to allocate a vector of the right concrete type and size.
-  DRAKE_NODISCARD MyVector* DoClone() const override {
+  [[nodiscard]] MyVector* DoClone() const override {
     return new MyVector();
   }
 };

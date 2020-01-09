@@ -12,6 +12,11 @@ from PythonQt import QtCore, QtGui
 import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
+from drake.tools.workspace.drake_visualizer.plugin.show_point_pair_contact \
+     import ContactVisModes
+
+# TODO(seancurtis-TRI) Make the dialog box for scaling force arrows in
+# show_point_pair_contact.py accessible to this plugin too.
 
 # TODO(seancurtis-TRI) Convert the modal dialog to a mode-less dialog to allow
 # continual tweaking of the visualization.
@@ -61,8 +66,10 @@ class ColorMapModes:
 class _ColorMapConfigurationDialog(QtGui.QDialog):
     '''A simple dialog for configuring the hydroelastic visualization'''
     def __init__(self, visualizer, show_contact_edges_state,
-                 show_pressure_state, max_pressure_observed,
-                 reset_max_pressure_observed_functor, parent=None):
+                 show_pressure_state, show_spatial_force_state,
+                 show_traction_vectors_state, show_slip_velocity_vectors_state,
+                 max_pressure_observed, reset_max_pressure_observed_functor,
+                 parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.setWindowTitle('Hydroelastic contact visualization settings')
         self.reset_max_pressure_observed_functor = \
@@ -147,6 +154,39 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         self.show_contact_edges.setToolTip('Renders the edges of the '
                                            'contact surface.')
         layout.addWidget(self.show_contact_edges, row, 1)
+        row += 1
+
+        # Whether to show the force and moment vectors.
+        layout.addWidget(QtGui.QLabel('Render contact forces and moments'),
+                         row, 0)
+        self.show_spatial_force = QtGui.QCheckBox()
+        self.show_spatial_force.setChecked(show_spatial_force_state)
+        self.show_spatial_force.setToolTip('Renders the contact forces (in '
+                                           'red) and moments (in blue)')
+        layout.addWidget(self.show_spatial_force, row, 1)
+        row += 1
+
+        # Whether to show the per-quadrature-point traction vectors.
+        layout.addWidget(QtGui.QLabel('Render traction vectors'),
+                         row, 0)
+        self.show_traction_vectors = QtGui.QCheckBox()
+        self.show_traction_vectors.setChecked(show_traction_vectors_state)
+        self.show_traction_vectors.setToolTip('Renders the traction vectors '
+                                              '(per quadrature point) in '
+                                              'magenta')
+        layout.addWidget(self.show_traction_vectors, row, 1)
+        row += 1
+
+        # Whether to show the per-quadrature-point slip velocity vectors.
+        layout.addWidget(QtGui.QLabel('Render slip velocity vectors'),
+                         row, 0)
+        self.show_slip_velocity_vectors = QtGui.QCheckBox()
+        self.show_slip_velocity_vectors.setChecked(
+            show_slip_velocity_vectors_state)
+        self.show_slip_velocity_vectors.setToolTip('Renders the slip velocity '
+                                                   'vectors (per quadrature '
+                                                   'point) in cyan')
+        layout.addWidget(self.show_slip_velocity_vectors, row, 1)
         row += 1
 
         # The maximum pressure value recorded and a button to reset it.
@@ -336,6 +376,14 @@ class HydroelasticContactVisualizer(object):
         self.show_contact_edges = True
         self.show_pressure = True
         self.max_pressure_observed = 0
+        self.show_spatial_force = True
+        self.show_traction_vectors = False
+        self.show_slip_velocity_vectors = False
+        # TODO(SeanCurtis-TRI): Make these variables settable through a dialog
+        #  box.
+        self.magnitude_mode = ContactVisModes.kFixedLength
+        self.global_scale = 0.3
+        self.min_magnitude = 1e-4
 
         menu_bar = applogic.getMainWindow().menuBar()
         plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
@@ -363,6 +411,9 @@ class HydroelasticContactVisualizer(object):
         dlg = _ColorMapConfigurationDialog(self,
                                            self.show_contact_edges,
                                            self.show_pressure,
+                                           self.show_spatial_force,
+                                           self.show_traction_vectors,
+                                           self.show_slip_velocity_vectors,
                                            self.max_pressure_observed,
                                            self.reset_max_pressure_observed)
         if dlg.exec_() == QtGui.QDialog.Accepted:
@@ -372,7 +423,11 @@ class HydroelasticContactVisualizer(object):
             self.min_pressure = float(dlg.min_pressure.text)
             self.max_pressure = float(dlg.max_pressure.text)
             self.show_contact_edges = dlg.show_contact_edges.isChecked()
+            self.show_spatial_force = dlg.show_spatial_force.isChecked()
             self.show_pressure = dlg.show_pressure.isChecked()
+            self.show_slip_velocity_vectors =\
+                dlg.show_slip_velocity_vectors.isChecked()
+            self.show_traction_vectors = dlg.show_traction_vectors.isChecked()
 
     def add_subscriber(self):
         if self._sub is not None:
@@ -421,10 +476,163 @@ class HydroelasticContactVisualizer(object):
         # Set the color map.
         color_map = self.create_color_map()
 
+        # The scale value attributable to auto-scale.
+        auto_force_scale = 1.0
+        auto_moment_scale = 1.0
+        auto_traction_scale = 1.0
+        auto_slip_velocity_scale = 1.0
+        max_force = -1
+        max_moment = -1
+        max_traction = -1
+        max_slip = -1
+
+        # TODO(sean-curtis-TRI) Remove the following comment when this
+        # code can be exercised.
+        # The following code is not exercised presently because the
+        # magnitude mode is always set to kFixedLength.
+        # Determine scaling magnitudes if autoscaling is activated.
+        if self.magnitude_mode == ContactVisModes.kAutoScale:
+            if self.show_spatial_force:
+                for surface in msg.hydroelastic_contacts:
+                    force = np.array([surface.force_C_W[0],
+                                      surface.force_C_W[1],
+                                      surface.force_C_W[2]])
+                    moment = np.array([surface.moment_C_W[0],
+                                       surface.moment_C_W[1],
+                                       surface.moment_C_W[2]])
+                    force_mag = np.linalg.norm(force)
+                    moment_mag = np.linalg.norm(moment)
+                    if force_mag > max_force:
+                        max_force = force_mag
+                    if moment_mag > max_moment:
+                        max_moment = moment_mag
+
+            # Prepare scaling information for the traction vectors.
+            if self.show_traction_vectors:
+                for quad_point_data in surface.quadrature_point_data:
+                    traction = np.array([quad_point_data.traction_Aq_W[0],
+                                         quad_point_data.traction_Aq_W[1],
+                                         quad_point_data.traction_Aq_W[2]])
+                    max_traction = max(max_traction,
+                                       np.linalg.norm(traction))
+
+            # Prepare scaling information for the slip velocity vectors.
+            if self.show_slip_velocity_vectors:
+                for quad_point_data in surface.quadrature_point_data:
+                    slip_speed = np.array([quad_point_data.vt_BqAq_W[0],
+                                           quad_point_data.vt_BqAq_W[1],
+                                           quad_point_data.vt_BqAq_W[2]])
+                    max_slip_speed = max(max_slip_speed,
+                                         np.linalg.norm(slip_speed))
+
+            # Compute scaling factors.
+            auto_force_scale = 1.0 / max_force
+            auto_moment_scale = 1.0 / max_moment
+            auto_traction_scale = 1.0 / max_traction
+            auto_slip_velocity_scale = 1.0 / max_slip_speed
+
         # TODO(drum) Consider exiting early if no visualization options are
         # enabled.
-        # Iterate over all triangles.
         for surface in msg.hydroelastic_contacts:
+            # Draw the spatial force.
+            if self.show_spatial_force:
+                point = np.array([surface.centroid_W[0],
+                                  surface.centroid_W[1],
+                                  surface.centroid_W[2]])
+                force = np.array([surface.force_C_W[0],
+                                  surface.force_C_W[1],
+                                  surface.force_C_W[2]])
+                moment = np.array([surface.moment_C_W[0],
+                                   surface.moment_C_W[1],
+                                   surface.moment_C_W[2]])
+                force_mag = np.linalg.norm(force)
+                moment_mag = np.linalg.norm(moment)
+
+                # Draw the force arrow if it's of sufficient magnitude.
+                if force_mag > self.min_magnitude:
+                    scale = self.global_scale
+                    if self.magnitude_mode == ContactVisModes.kFixedLength:
+                        # magnitude must be > 0 otherwise this force would be
+                        # skipped.
+                        scale /= force_mag
+
+                    d.addArrow(start=point,
+                               end=point + auto_force_scale * force * scale,
+                               tubeRadius=0.005,
+                               headRadius=0.01, color=[1, 0, 0])
+
+                # Draw the moment arrow if it's of sufficient magnitude.
+                if moment_mag > self.min_magnitude:
+                    scale = self.global_scale
+                    if self.magnitude_mode == ContactVisModes.kFixedLength:
+                        # magnitude must be > 0 otherwise this moment would be
+                        # skipped.
+                        scale /= moment_mag
+
+                    d.addArrow(start=point,
+                               end=point + auto_moment_scale * moment * scale,
+                               tubeRadius=0.005,
+                               headRadius=0.01, color=[0, 0, 1])
+
+            # Iterate over all quadrature points, drawing traction and slip
+            # velocity vectors.
+            if self.show_traction_vectors or self.show_slip_velocity_vectors:
+                for quad_point_data in surface.quadrature_point_data:
+                    origin = np.array([quad_point_data.p_WQ[0],
+                                       quad_point_data.p_WQ[1],
+                                       quad_point_data.p_WQ[2]])
+
+                    if self.show_traction_vectors:
+                        traction = np.array([quad_point_data.traction_Aq_W[0],
+                                             quad_point_data.traction_Aq_W[1],
+                                             quad_point_data.traction_Aq_W[2]])
+                        traction_mag = np.linalg.norm(traction)
+
+                        # Draw the arrow only if it's of sufficient magnitude.
+                        if traction_mag > self.min_magnitude:
+                            scale = self.global_scale
+                            if self.magnitude_mode ==\
+                                    ContactVisModes.kFixedLength:
+                                # magnitude must be > 0 otherwise this traction
+                                #  would be skipped.
+                                scale /= traction_mag
+
+                            d.addArrow(start=origin, end=origin +
+                                       auto_traction_scale *
+                                       traction * scale,
+                                       tubeRadius=0.000125,
+                                       headRadius=0.00025, color=[1, 0, 1])
+                        else:
+                            d.addSphere(center=origin,
+                                        radius=0.000125,
+                                        color=[1, 0, 1])
+
+                    if self.show_slip_velocity_vectors:
+                        slip = np.array([quad_point_data.vt_BqAq_W[0],
+                                         quad_point_data.vt_BqAq_W[1],
+                                         quad_point_data.vt_BqAq_W[2]])
+                        slip_mag = np.linalg.norm(slip)
+
+                        # Draw the arrow only if it's of sufficient magnitude.
+                        if slip_mag > self.min_magnitude:
+                            scale = self.global_scale
+                            if self.magnitude_mode ==\
+                                    ContactVisModes.kFixedLength:
+                                # magnitude must be > 0 otherwise this slip
+                                # vector would be skipped.
+                                scale /= slip_mag
+
+                            d.addArrow(start=origin, end=origin +
+                                       auto_slip_velocity_scale *
+                                       slip * scale,
+                                       tubeRadius=0.000125,
+                                       headRadius=0.00025, color=[0, 1, 1])
+                        else:
+                            d.addSphere(center=origin,
+                                        radius=0.000125,
+                                        color=[0, 1, 1])
+
+            # Iterate over all triangles.
             for tri in surface.triangles:
                 va = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
                 vb = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
@@ -493,7 +701,7 @@ class HydroelasticContactVisualizer(object):
 
             # Conditional necessary to keep DrakeVisualizer from spewing
             # messages to the console when the contact surface is empty.
-            if len(surface.triangles) > 0:
+            if len(msg.hydroelastic_contacts) > 0:
                 item.colorBy('RGB255')
 
 

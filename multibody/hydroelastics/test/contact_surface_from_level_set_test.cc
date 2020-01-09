@@ -58,6 +58,31 @@ class TetrahedronIntersectionTest : public ::testing::Test {
     return vertices;
   }
 
+  // For a field `φ`, computes the gradient of the *linearized* field `L(φ)` in
+  // the domain of a single tetrahedron.
+  //
+  // @param tet_F  The positions of the four tet vertices measured and expressed
+  //               in some frame F.
+  // @param phi    The values of `φ` evaluated at each tet vertex. (Defines the
+  //               basis of `L(φ)`).
+  // @returns `∇L(φ)` expressed in frame F.
+  static Vector3<double> FieldGradient(
+      const std::array<Vector3<double>, 4> tet_F, const Vector4<double>& phi) {
+    // The value of phi at a point in the test (x, y, z) can be found as:
+    //         |                |⁻¹   | x |
+    //  phiᵀ * | v0  v1  v2  v3 |   * | y |
+    //         |                |     | z |
+    //         |  1   1   1   1 |     | 1 |
+    //
+    //  = phiᵀ * A⁻¹ * x
+    //  = grad_phiᵀ * x
+    //
+    // The gradient is just the first three elements of grad_phi.
+    Matrix4<double> A = Matrix4<double>::Ones();
+    for (int c = 0; c < 4; ++c) A.block<3, 1>(0, c) = tet_F[c];
+    return (phi.transpose() * A.inverse()).block<1, 3>(0, 0);
+  }
+
   std::array<Vector3<double>, 4> unit_tet_;
 };
 
@@ -116,7 +141,16 @@ TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
   // The fan of triangles expected for when the intersecting polygon is a
   // triangle.
   const std::vector<Vector3<int>> expected_faces{
-      {2, 0, 3}, {0, 1, 3}, {1, 2, 3}};
+      {2, 3, 0}, {0, 3, 1}, {1, 3, 2}};
+
+  // Compute the triangle normal for the given set of vertex indices forming
+  // the triangle. The normal is computed in the same frame as the vertices.
+  auto tri_normal = [&vertices](const Vector3<int>& face) -> Vector3<double> {
+    const Vector3<double>& p_MA = vertices[face(0)].r_MV();
+    const Vector3<double>& p_MB = vertices[face(1)].r_MV();
+    const Vector3<double>& p_MC = vertices[face(2)].r_MV();
+    return (p_MB - p_MA).cross(p_MC - p_MA).normalized();
+  };
 
   // All vertices are positive but the i-th vertex.
   for (int i = 0; i < 4; ++i) {
@@ -130,10 +164,19 @@ TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
 
     ASSERT_EQ(faces.size(), 3);
 
+    // The direction of phi's gradient in the domain of the tet.
+    const Vector3<double> grad_phi_hat =
+        FieldGradient(unit_tet_, phi_N).normalized();
     for (int v = 0; v < 3; ++v) {
       const Vector3<int> face(faces[v].vertex(0), faces[v].vertex(1),
                               faces[v].vertex(2));
       EXPECT_EQ(face, expected_faces[v]);
+
+      const Vector3<double> n_hat = tri_normal(face);
+
+      // Note: the normal to the surface should be the negated gradient of the
+      // level set.
+      EXPECT_TRUE(CompareMatrices(n_hat, -grad_phi_hat, kTolerance));
     }
 
     ASSERT_EQ(vertices.size(), expected_added_vertex_count);
@@ -156,10 +199,19 @@ TEST_F(TetrahedronIntersectionTest, ThreeSidedPolygon) {
               expected_added_vertex_count);
 
     ASSERT_EQ(faces.size(), 3);
+
+    // The direction of phi's gradient in the domain of the tet.
+    const Vector3<double> grad_phi_hat =
+        FieldGradient(unit_tet_, phi_N).normalized();
     for (int v = 0; v < 3; ++v) {
       const Vector3<int> face(faces[v].vertex(0), faces[v].vertex(1),
                               faces[v].vertex(2));
       EXPECT_EQ(face, expected_faces[v]);
+
+      // Note: the normal to the surface should be the negated gradient of the
+      // level set.
+      const Vector3<double> n_hat = tri_normal(face);
+      EXPECT_TRUE(CompareMatrices(n_hat, -grad_phi_hat, kTolerance));
     }
 
     ASSERT_EQ(vertices.size(), expected_added_vertex_count);
@@ -211,8 +263,10 @@ TEST_F(TetrahedronIntersectionTest, FourSidedPolygon) {
     // the problem, for which we have a regular tetrahedron and we set all
     // vertices to have the same absolute value of phi_N. With this setup, all
     // triangles lie on the same plane, thus with the same normal.
+    // Note: the normal should be the negated gradient of the level set, hence
+    //       the negation operator.
     const Vector3<double> expected_normal =
-        calc_unit_vector_from_negative_edge_to_positive_edge(phi_N);
+        -calc_unit_vector_from_negative_edge_to_positive_edge(phi_N);
 
     for (int i = 0; i < 4; ++i) {
       const SurfaceFace& t = faces[i];
@@ -316,7 +370,6 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
 TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
   std::vector<double> e_b_surface;
-  std::vector<Vector3<double>> level_set_gradient_H;
 
   // The box overlaps the plane by kEpsilon. Expect intersection.
   {
@@ -324,7 +377,7 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
         Translation3<double>(0.0, 0.0, 0.5 - 5 * kEpsilon);
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &level_set_gradient_H),
+                                     &e_b_surface),
         std::logic_error,
         "One or more faces of this tetrahedron are close to being in the "
         "zero.*");
@@ -336,7 +389,7 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
         Translation3<double>(0.0, 0.0, 0.5 + 5 * kEpsilon);
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &level_set_gradient_H),
+                                     &e_b_surface),
         std::logic_error,
         "One or more faces of this tetrahedron are close to being in the "
         "zero.*");
@@ -381,11 +434,10 @@ TEST_F(BoxPlaneIntersectionTest, VerifyContactArea) {
       RigidTransformd(Ry_pi, highest)};
 
   std::vector<double> e_b_surface;
-  std::vector<Vector3<double>> level_set_gradient_H;
   for (const auto& X_HB : poses) {
     std::unique_ptr<SurfaceMesh<double>> contact_surface_H =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &level_set_gradient_H);
+                                     &e_b_surface);
     EXPECT_NEAR(CalcSurfaceArea(*contact_surface_H), 1.0, kTolerance);
   }
 }
@@ -399,32 +451,22 @@ TEST_F(BoxPlaneIntersectionTest, VerifySurfaceFieldsInterpolations) {
   const std::vector<double> heights = {-0.4, -0.2, 0.0, 0.2, 0.4};
 
   std::vector<double> e_b_surface;
-  std::vector<Vector3<double>> level_set_gradient_H;
   for (const auto& h : heights) {
     const RigidTransformd X_HB = Translation3<double>(0.0, 0.0, h);
     std::unique_ptr<SurfaceMesh<double>> contact_surface_H =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &level_set_gradient_H);
+                                     &e_b_surface);
 
     const double eb_expected = 0.5 - h;
     for (SurfaceVertexIndex v(0); v < contact_surface_H->num_vertices(); ++v) {
       const double eb = e_b_surface[v];
-      const Vector3<double>& grad_level_set_H = level_set_gradient_H[v];
-      const Vector3<double>& p_HV = contact_surface_H->vertex(v).r_MV();
-      const Vector3<double> level_set_gradient_H_expected =
-          half_space_H_->gradient(p_HV);
       EXPECT_NEAR(eb, eb_expected, kTolerance);
-      EXPECT_TRUE(CompareMatrices(grad_level_set_H,
-                                  level_set_gradient_H_expected, kTolerance));
     }
   }
 }
 
 // Verify the algorithm returns no intersections when the box is over the plane.
 TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
-  const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kTolerance = 5.0 * kEpsilon;
-
   const auto Rx_pi_2 = RollPitchYawd(M_PI_2, 0.0, 0.0);
   const auto Ry_pi_2 = RollPitchYawd(0.0, M_PI_2, 0.0);
   const auto Rx_pi = RollPitchYawd(M_PI, 0.0, 0.0);
@@ -453,11 +495,10 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
 
   for (const auto& X_HB : poses) {
     std::vector<double> e_b_surface;
-    std::vector<Vector3<double>> level_set_gradient_H;
     std::unique_ptr<SurfaceMesh<double>> contact_surface =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &level_set_gradient_H);
-    EXPECT_NEAR(CalcSurfaceArea(*contact_surface), 0.0, kTolerance);
+                                     &e_b_surface);
+    EXPECT_EQ(contact_surface, nullptr);
   }
 }
 
@@ -508,10 +549,9 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
   // The contact surface is expressed in the frame of the level set, in this
   // case the world frame W.
   std::vector<double> e_m_surface;
-  std::vector<Vector3<double>> level_set_gradient_W;
   std::unique_ptr<SurfaceMesh<double>> contact_surface_W =
       CalcZeroLevelSetInMeshDomain(sphere_M, half_space_W, X_WM, em_volume,
-                                   &e_m_surface, &level_set_gradient_W);
+                                   &e_m_surface);
   // Assert non-empty intersection.
   ASSERT_GT(contact_surface_W->num_faces(), 0);
 
@@ -533,16 +573,9 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
     // expression (modulo machine precision).
     const double em_expected = (1.0 + p_WV[1]) / 2.0;
     EXPECT_NEAR(e_m_surface[v], em_expected, kTolerance);
-
-    // Similarly for the gradient.
-    const Vector3<double> level_set_gradient_W_expected =
-        half_space_W.gradient(p_WV);
-    EXPECT_TRUE(CompareMatrices(level_set_gradient_W[v],
-                                level_set_gradient_W_expected,
-                                40 * kTolerance));
   }
 
-  // Verify all normals point towards the positive side of the plane.
+  // Verify all normals point towards the negative side of the plane.
   for (SurfaceFaceIndex f(0); f < contact_surface_W->num_faces(); ++f) {
     const SurfaceFace& face = contact_surface_W->element(f);
     std::vector<SurfaceVertex<double>> vertices_W = {
@@ -561,7 +594,7 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
     // We empirically determined the tolerance used for the tests below to
     // be a representative number of the precission loss that we observed.
     EXPECT_TRUE(
-        CompareMatrices(normal_W, Vector3<double>::UnitZ(), 40 * kTolerance));
+        CompareMatrices(normal_W, -Vector3<double>::UnitZ(), 40 * kTolerance));
   }
 }
 

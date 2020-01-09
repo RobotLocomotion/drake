@@ -3,6 +3,7 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
+load("//tools/skylark:py.bzl", "py_library")
 load("@drake//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -16,21 +17,6 @@ exports_files([
     ".clang-format",
     ".drake-find_resource-sentinel",
 ])
-
-alias(
-    name = "protoc",
-    actual = "@com_google_protobuf//:protoc",
-)
-
-alias(
-    name = "protobuf",
-    actual = "@com_google_protobuf//:protobuf",
-)
-
-alias(
-    name = "protobuf_python",
-    actual = "@com_google_protobuf//:protobuf_python",
-)
 
 # Drake's top-level module; all drake_py_stuff rules add this to deps.
 # (We use py_library here because drake_py_library would be circular.)
@@ -48,16 +34,17 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-_INSTALL_TEST_COMMANDS = "install_test_commands"
-
+# To create a manifest of all installed files for use by drake_bazel_installed,
+# we declare an install target that contains almost everything -- but it can't
+# contain the bazel logic that is generated based on the manifest, so we'll add
+# that in below in the final :install target.
 install(
-    name = "install",
-    install_tests_script = _INSTALL_TEST_COMMANDS,
+    name = "all_install_targets_except_bazel",
     docs = ["LICENSE.TXT"],
+    visibility = ["//tools/install/bazel:__pkg__"],
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
-        "//common/proto:install",
         "//examples:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
@@ -66,6 +53,17 @@ install(
         "//tools/install/cmake:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
+    ],
+)
+
+_INSTALL_TEST_COMMANDS = "install_test_commands"
+
+install(
+    name = "install",
+    install_tests_script = _INSTALL_TEST_COMMANDS,
+    deps = [
+        ":all_install_targets_except_bazel",
+        "//tools/install/bazel:install",
     ],
 )
 

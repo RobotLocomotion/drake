@@ -13,7 +13,7 @@ namespace rendering {
 namespace {
 
 GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
-  multibody::MultibodyPlant<double> mbp;
+  multibody::MultibodyPlant<double> mbp(0.0);
   geometry::SceneGraph<double> scene_graph;
   mbp.RegisterAsSourceForSceneGraph(&scene_graph);
   multibody::Parser(&mbp).AddModelFromFile(
@@ -31,7 +31,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
 
   const Eigen::VectorXd position =
       Eigen::VectorXd::LinSpaced(mbp.num_positions(), 0.123, 0.456);
-  context->FixInputPort(dut.get_input_port().get_index(), position);
+  dut.get_input_port().FixValue(context.get(), position);
 
   const auto& output =
       dut.get_output_port().Eval<geometry::FramePoseVector<double>>(*context);

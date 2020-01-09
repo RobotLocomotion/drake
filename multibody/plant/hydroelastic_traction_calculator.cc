@@ -142,13 +142,10 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
-  const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(
-      face_index, Q_barycentric);
-  // TODO(edrumwri): Remove this TODO or update this code when we know whether
-  // h_W can ever be zero in expected cases.
-  const T norm_grad_h_W = grad_h_W.norm();
-  DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
-  const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
+  // Contact surfaces are documented to have face normals that point *out of* N
+  // and *into* M -- which is the face normal of the contact surface (as
+  // documented).
+  const Vector3<T> nhat_W = data.surface.mesh_W().face_normal(face_index);
 
   return CalcTractionAtQHelper(data, face_index, e, nhat_W, dissipation,
                                mu_coulomb, p_WQ);

@@ -61,6 +61,51 @@ GTEST_TEST(RadauIntegratorTest, Reuse) {
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 1);
 }
 
+// Tests that the full-Newton approach computes a Jacobian matrix and factorizes
+// the iteration matrix on every Newton-Raphson iteration.
+GTEST_TEST(RadauIntegratorTest, FullNewton) {
+  std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
+    std::make_unique<analysis::test::RobertsonSystem<double>>();
+  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
+
+  // Create the Euler integrator.
+  RadauIntegrator<double, 1> euler(*robertson, context.get());
+
+  euler.request_initial_step_size_target(1e0);
+  euler.set_throw_on_minimum_step_size_violation(false);
+  euler.set_fixed_step_mode(true);
+  euler.set_use_full_newton(true);    // The whole point of this test.
+
+  // Attempt to integrate the system. Our past experience indicates that this
+  // system fails to converge from the initial state for this large step size.
+  // This tests the case where the Jacobian matrix has yet to be formed.
+  euler.Initialize();
+  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
+  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
+            euler.get_num_newton_raphson_iterations());
+  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
+            euler.get_num_newton_raphson_iterations());
+
+  // Now integrate again but with a smaller size. Again, past experience tells
+  // us that this step size should be sufficiently small for the integrator to
+  // converge.
+  euler.ResetStatistics();
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(1e-6));
+  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
+            euler.get_num_newton_raphson_iterations());
+  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
+            euler.get_num_newton_raphson_iterations());
+
+  // Again try taking a large step, which we expect will be too large to
+  // converge.
+  euler.ResetStatistics();
+  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
+  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
+            euler.get_num_newton_raphson_iterations());
+  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
+            euler.get_num_newton_raphson_iterations());
+}
+
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
 GTEST_TEST(RadauIntegratorTest, Stationary) {
@@ -102,18 +147,18 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   // Create the integrator using two stages.
   RadauIntegrator<double, 2> radau3(cubic, context.get());
 
-  const double dt = 1.0;
-  radau3.set_maximum_step_size(dt);
+  const double h = 1.0;
+  radau3.set_maximum_step_size(h);
   radau3.set_fixed_step_mode(true);
 
   // Integrate the system
   radau3.Initialize();
-  ASSERT_TRUE(radau3.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(radau3.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the solution.
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], cubic.Evaluate(dt),
+  EXPECT_NEAR(state[0], cubic.Evaluate(h),
       std::numeric_limits<double>::epsilon());
 
   // Reset the state.
@@ -124,15 +169,15 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(cubic, context.get());
   euler.set_fixed_step_mode(true);
-  euler.set_maximum_step_size(dt);
+  euler.set_maximum_step_size(h);
 
   // Integrate the system
   euler.Initialize();
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the integrator failed to produce the solution.
   state = context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_GT(std::abs(state[0] - cubic.Evaluate(dt)),
+  EXPECT_GT(std::abs(state[0] - cubic.Evaluate(h)),
       1e9 * std::numeric_limits<double>::epsilon());
 }
 
@@ -151,18 +196,18 @@ GTEST_TEST(RadauIntegratorTest, LinearSystem) {
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(linear, context.get());
 
-  const double dt = 1.0;
-  euler.set_maximum_step_size(dt);
+  const double h = 1.0;
+  euler.set_maximum_step_size(h);
 
   // Integrate the system
   euler.Initialize();
   euler.set_fixed_step_mode(true);
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the solution.
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], linear.Evaluate(dt),
+  EXPECT_NEAR(state[0], linear.Evaluate(h),
       std::numeric_limits<double>::epsilon());
 }
 
