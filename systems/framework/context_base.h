@@ -125,6 +125,9 @@ class ContextBase : public internal::ContextMessageInterface {
                                 : system_name_;
   }
 
+  /// Gets the id of the subsystem to which this Context belongs.
+  int64_t get_system_id() const { return system_id_; }
+
   /** Returns the full pathname of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemPathname() for details. */
@@ -590,6 +593,9 @@ class ContextBase : public internal::ContextMessageInterface {
   // Records the name of the system whose context this is.
   void set_system_name(const std::string& name) { system_name_ = name; }
 
+  // Records the id of the system that this context was created for.
+  void set_system_id(int64_t id) { system_id_ = id; }
+
   // Fixes the input port at `index` to the internal value source `port_value`.
   // If the port wasn't previously fixed, assigns a ticket and tracker for the
   // `port_value`, then subscribes the input port to the source's tracker.
@@ -655,6 +661,10 @@ class ContextBase : public internal::ContextMessageInterface {
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;
 
+  // Unique ID of the subsystem whose subcontext this is. Only positive values
+  // are valid.
+  int64_t system_id_{0};
+
   // Used to validate that System-derived classes didn't forget to invoke the
   // SystemBase method that properly sets up the ContextBase.
   bool is_context_base_initialized_{false};
@@ -678,6 +688,11 @@ class SystemBaseContextBaseAttorney {
     DRAKE_DEMAND(context != nullptr);
     context->set_system_name(name);
   }
+  static void set_system_id(ContextBase* context, int64_t id) {
+    DRAKE_DEMAND(context != nullptr);
+    context->set_system_id(id);
+  }
+
   static const ContextBase* get_parent_base(const ContextBase& context) {
     return context.get_parent_base();
   }

@@ -173,6 +173,8 @@ class System : public SystemBase {
   // Sets Context fields to their default values.  User code should not
   // override.
   void SetDefaultContext(Context<T>* context) const {
+    this->ValidateContext(context);
+
     // Set the default state, checking that the number of state variables does
     // not change.
     const int n_xc = context->num_continuous_states();
@@ -205,6 +207,7 @@ class System : public SystemBase {
   /// @see @ref stochastic_systems
   virtual void SetRandomState(const Context<T>& context, State<T>* state,
                               RandomGenerator* generator) const {
+    ValidateContext(context);
     unused(generator);
     SetDefaultState(context, state);
   }
@@ -223,6 +226,7 @@ class System : public SystemBase {
   virtual void SetRandomParameters(const Context<T>& context,
                                    Parameters<T>* parameters,
                                    RandomGenerator* generator) const {
+    ValidateContext(context);
     unused(generator);
     SetDefaultParameters(context, parameters);
   }
@@ -230,6 +234,8 @@ class System : public SystemBase {
   // Sets Context fields to random values.  User code should not
   // override.
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
+    ValidateContext(context);
+
     // Set the default state, checking that the number of state variables does
     // not change.
     const int n_xc = context->num_continuous_states();
@@ -254,6 +260,8 @@ class System : public SystemBase {
   /// that this System requires, and binds it to the port, disconnecting any
   /// prior input. Does not assign any values to the fixed inputs.
   void AllocateFixedInputs(Context<T>* context) const {
+    ValidateContext(context);
+
     for (InputPortIndex i(0); i < num_input_ports(); ++i) {
       const InputPort<T>& port = get_input_port(i);
       if (port.get_data_type() == kVectorValued) {
@@ -319,7 +327,7 @@ class System : public SystemBase {
   /// since a smaller integrator step produces a more accurate solution.
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DispatchPublishHandler(context, events);
   }
 
@@ -403,6 +411,7 @@ class System : public SystemBase {
   ///            configuration given in `context`.
   /// @see CalcPotentialEnergy()
   const T& EvalPotentialEnergy(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(potential_energy_cache_index_);
     return entry.Eval<T>(context);
@@ -426,6 +435,7 @@ class System : public SystemBase {
   ///            configuration and velocity given in `context`.
   /// @see CalcKineticEnergy()
   const T& EvalKineticEnergy(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(kinetic_energy_cache_index_);
     return entry.Eval<T>(context);
@@ -457,6 +467,7 @@ class System : public SystemBase {
   /// @see CalcConservativePower(), EvalNonConservativePower(),
   ///      EvalPotentialEnergy(), EvalKineticEnergy()
   const T& EvalConservativePower(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(conservative_power_cache_index_);
     return entry.Eval<T>(context);
@@ -483,6 +494,7 @@ class System : public SystemBase {
   ///             the contents of the given `context`.
   /// @see CalcNonConservativePower(), EvalConservativePower()
   const T& EvalNonConservativePower(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(nonconservative_power_cache_index_);
     return entry.Eval<T>(context);
@@ -509,6 +521,8 @@ class System : public SystemBase {
     static_assert(
         std::is_base_of<BasicVector<T>, Vec<T>>::value,
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
+
+    ValidateContext(context);
 
     // The API allows an int but we'll use InputPortIndex internally.
     if (port_index < 0)
@@ -543,8 +557,8 @@ class System : public SystemBase {
   /// @see EvalVectorInput()
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
-    if (port_index < 0)
-      ThrowNegativePortIndex(__func__, port_index);
+    ValidateContext(context);
+    if (port_index < 0) ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -692,7 +706,7 @@ class System : public SystemBase {
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const {
     DRAKE_DEMAND(derivatives != nullptr);
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DoCalcTimeDerivatives(context, derivatives);
   }
 
@@ -706,7 +720,7 @@ class System : public SystemBase {
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
 
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
@@ -731,6 +745,7 @@ class System : public SystemBase {
   void ApplyDiscreteVariableUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const {
+    ValidateContext(context);
     DoApplyDiscreteVariableUpdate(events, discrete_state, context);
   }
 
@@ -757,7 +772,7 @@ class System : public SystemBase {
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     const int continuous_state_dim = state->get_continuous_state().size();
     const int discrete_state_dim = state->get_discrete_state().num_groups();
     const int abstract_state_dim = state->get_abstract_state().size();
@@ -791,6 +806,7 @@ class System : public SystemBase {
   void ApplyUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const {
+    ValidateContext(context);
     DoApplyUnrestrictedUpdate(events, state, context);
   }
 
@@ -819,7 +835,7 @@ class System : public SystemBase {
   /// @p events cannot be null. @p events will be cleared on entry.
   T CalcNextUpdateTime(const Context<T>& context,
                        CompositeEventCollection<T>* events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     T time{NAN};
@@ -843,7 +859,7 @@ class System : public SystemBase {
   /// @p events cannot be null. @p events will be cleared on entry.
   void GetPerStepEvents(const Context<T>& context,
                         CompositeEventCollection<T>* events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     DoGetPerStepEvents(context, events);
@@ -856,7 +872,7 @@ class System : public SystemBase {
   /// @p events cannot be null. @p events will be cleared on entry.
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     DoGetInitializationEvents(context, events);
@@ -906,7 +922,7 @@ class System : public SystemBase {
   /// of entries of the right types.
   void CalcOutput(const Context<T>& context, SystemOutput<T>* outputs) const {
     DRAKE_DEMAND(outputs != nullptr);
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
     for (OutputPortIndex i(0); i < num_output_ports(); ++i) {
       // TODO(sherm1) Would be better to use Eval() here but we don't have
@@ -923,7 +939,7 @@ class System : public SystemBase {
   ///
   /// @see EvalPotentialEnergy() for more information.
   T CalcPotentialEnergy(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcPotentialEnergy(context);
   }
 
@@ -933,7 +949,7 @@ class System : public SystemBase {
   ///
   /// @see EvalKineticEnergy() for more information.
   T CalcKineticEnergy(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcKineticEnergy(context);
   }
 
@@ -943,7 +959,7 @@ class System : public SystemBase {
   ///
   /// @see EvalConservativePower() for more information.
   T CalcConservativePower(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcConservativePower(context);
   }
 
@@ -953,7 +969,7 @@ class System : public SystemBase {
   ///
   /// @see EvalNonConservativePower() for more information.
   T CalcNonConservativePower(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcNonConservativePower(context);
   }
 
@@ -1047,6 +1063,7 @@ class System : public SystemBase {
   /// @pre The given `context` is valid for use with `this` %System.
   const Context<T>& GetSubsystemContext(const System<T>& subsystem,
                                         const Context<T>& context) const {
+    ValidateContext(context);
     auto ret = DoGetTargetSystemContext(subsystem, &context);
     if (ret != nullptr) return *ret;
 
@@ -1064,6 +1081,7 @@ class System : public SystemBase {
   Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const {
     DRAKE_ASSERT(context != nullptr);
+    ValidateContext(context);
     // Make use of the const method to avoid code duplication.
     const Context<T>& subcontext = GetSubsystemContext(subsystem, *context);
     return const_cast<Context<T>&>(subcontext);
@@ -1318,6 +1336,7 @@ class System : public SystemBase {
   /// SystemConstraint::CheckSatisfied.
   boolean<T> CheckSystemConstraintsSatisfied(
       const Context<T>& context, double tol) const {
+    ValidateContext(context);
     DRAKE_DEMAND(tol >= 0.0);
     boolean<T> result{true};
     for (const auto& constraint : constraints_) {
@@ -1649,14 +1668,14 @@ class System : public SystemBase {
                            std::vector<const WitnessFunction<T>*>* w) const {
     DRAKE_DEMAND(w);
     DRAKE_DEMAND(w->empty());
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DoGetWitnessFunctions(context, w);
   }
 
   /// Evaluates a witness function at the given context.
   T CalcWitnessValue(const Context<T>& context,
                      const WitnessFunction<T>& witness_func) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcWitnessValue(context, witness_func);
   }
 

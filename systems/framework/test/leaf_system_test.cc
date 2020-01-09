@@ -1688,13 +1688,13 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 // templated on AutoDiffXd. Protects against regression on #4431.
 GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   TestSystem<AutoDiffXd> system;
-  LeafContext<AutoDiffXd> context;
+  std::unique_ptr<Context<AutoDiffXd>> context = system.CreateDefaultContext();
 
-  context.SetTime(21.0);
+  context->SetTime(21.0);
   system.AddPeriodicUpdate();
 
   auto event_info = system.AllocateCompositeEventCollection();
-  auto time = system.CalcNextUpdateTime(context, event_info.get());
+  auto time = system.CalcNextUpdateTime(*context, event_info.get());
 
   EXPECT_EQ(25.0, time);
 }

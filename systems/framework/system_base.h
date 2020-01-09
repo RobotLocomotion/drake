@@ -129,8 +129,8 @@ class SystemBase : public internal::SystemMessageInterface {
        System::EvalEigenVectorInput() */
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
-    if (port_index < 0)
-      ThrowNegativePortIndex(__func__, port_index);
+    ValidateContext(context);
+    if (port_index < 0) ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
     return EvalAbstractInputImpl(__func__, context, port);
   }
@@ -151,8 +151,8 @@ class SystemBase : public internal::SystemMessageInterface {
   @tparam V The type of data expected. */
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
-    if (port_index < 0)
-      ThrowNegativePortIndex(__func__, port_index);
+    ValidateContext(context);
+    if (port_index < 0) ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const AbstractValue* const abstract_value =
@@ -772,6 +772,23 @@ class SystemBase : public internal::SystemMessageInterface {
  protected:
   /** (Internal use only) Default constructor. */
   SystemBase() = default;
+
+  /// Checks whether the given context was created for this system.
+  void ValidateContext(const ContextBase& context) const {
+    if (context.get_system_id() != reinterpret_cast<int64_t>(this)) {
+      throw std::logic_error(fmt::format(
+          "Context was not created for system '{}'", this->get_name()));
+    }
+  }
+
+  /// Checks whether the given context was created for this system.
+  void ValidateContext(ContextBase* context) const {
+    DRAKE_DEMAND(context);
+    if (context->get_system_id() != reinterpret_cast<int64_t>(this)) {
+      throw std::logic_error(fmt::format(
+          "Context was not created for system '{}'", this->get_name()));
+    }
+  }
 
   /** (Internal use only) Adds an already-constructed input port to this System.
   Insists that the port already contains a reference to this System, and that
