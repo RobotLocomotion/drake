@@ -272,9 +272,8 @@ TEST_P(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(
-      kuka_plant_->actuator_command_input_port().get_index(),
-      make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
+  kuka_plant_->actuator_command_input_port().FixValue(
+      context_.get(), Eigen::VectorXd::Zero(kuka_plant_->get_num_actuators()));
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
@@ -323,10 +322,8 @@ TEST_P(KukaArmTest, EvalOutput) {
   for (int i = 0; i < kuka_plant_->get_num_actuators(); i++) {
     expected_torque[i] = i + 1;
   }
-  context_->FixInputPort(
-      kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
-          .get_index(),
-      make_unique<BasicVector<double>>(expected_torque));
+  kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
+      .FixValue(context_.get(), expected_torque);
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -477,10 +474,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Apply a constant force on the input.
   Vector1d input;
   input << applied_force;
-  auto input_vector = std::make_unique<BasicVector<double>>(1);
-  input_vector->set_value(input);
-  context->FixInputPort(plant.actuator_command_input_port().get_index(),
-                        move(input_vector));
+  plant.actuator_command_input_port().FixValue(context.get(), input);
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = plant.AllocateTimeDerivatives();
@@ -807,7 +801,7 @@ GTEST_TEST(RigidBodyPlantTest, LinearizePendulumTest) {
   auto context = pendulum.CreateDefaultContext();
   auto& state = context->get_mutable_continuous_state_vector();
   state.SetFromVector(Eigen::Vector2d{M_PI, 0.});
-  context->FixInputPort(0, Vector1d{0.});
+  pendulum.get_input_port(0).FixValue(context.get(), 0.);
 
   std::unique_ptr<LinearSystem<double>> linearized_pendulum =
       systems::Linearize(pendulum, *context);

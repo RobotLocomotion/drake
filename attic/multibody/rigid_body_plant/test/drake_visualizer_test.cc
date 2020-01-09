@@ -479,9 +479,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   // Initializes the system's input vector to contain all zeros.
   const int vector_size =
       tree->get_num_positions() + tree->get_num_velocities();
-  auto input_data = make_unique<BasicVector<double>>(vector_size);
-  input_data->set_value(Eigen::VectorXd::Zero(vector_size));
-  context->FixInputPort(0, std::move(input_data));
+  dut.get_input_port(0).FixValue(context.get(),
+                                 Eigen::VectorXd::Zero(vector_size));
 
   // Publishes the `RigidBodyTree` visualization messages.
   PublishLoadRobotModelMessageHelper(dut, *context);
@@ -510,8 +509,8 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
 
   const int kPortNumber = 0;
   const int num_inputs = tree->get_num_positions() + tree->get_num_velocities();
-  context->FixInputPort(kPortNumber,
-      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
+  dut.get_input_port(kPortNumber)
+      .FixValue(context.get(), Eigen::VectorXd::Zero(num_inputs));
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));

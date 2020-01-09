@@ -25,9 +25,6 @@ class TestControllers(unittest.TestCase):
             return tree.massMatrix(cache).dot(v_dot) + \
                 tree.dynamicsBiasTerm(cache, {})
 
-        estimated_state_port = 0
-        desired_acceleration_port = 1
-
         def check_torque_example(controller, q, v, v_dot_desired=None):
             if controller.is_pure_gravity_compensation():
                 v_dot_desired = np.zeros(num_v)
@@ -35,10 +32,9 @@ class TestControllers(unittest.TestCase):
             context = controller.CreateDefaultContext()
 
             x = np.concatenate([q, v])
-            context.FixInputPort(estimated_state_port, BasicVector(x))
+            controller.get_input_port(0).FixValue(context, x)
             if not controller.is_pure_gravity_compensation():
-                context.FixInputPort(desired_acceleration_port,
-                                     BasicVector(v_dot_desired))
+                controller.get_input_port(1).FixValue(context, v_dot_desired)
 
             output = controller.AllocateOutput()
             controller.CalcOutput(context, output)
@@ -84,19 +80,15 @@ class TestControllers(unittest.TestCase):
         context = controller.CreateDefaultContext()
         output = controller.AllocateOutput()
 
-        estimated_state_port = 0
-        desired_state_port = 1
-        desired_acceleration_port = 2
-        control_port = 0
+        estimated_state_port = controller.get_input_port(0)
+        desired_state_port = controller.get_input_port(1)
+        desired_acceleration_port = controller.get_input_port(2)
+        control_port = controller.get_output_port(0)
 
-        self.assertEqual(
-            controller.get_input_port(desired_acceleration_port).size(), 7)
-        self.assertEqual(
-            controller.get_input_port(estimated_state_port).size(), 14)
-        self.assertEqual(
-            controller.get_input_port(desired_state_port).size(), 14)
-        self.assertEqual(
-            controller.get_output_port(control_port).size(), 7)
+        self.assertEqual(desired_acceleration_port.size(), 7)
+        self.assertEqual(estimated_state_port.size(), 14)
+        self.assertEqual(desired_state_port.size(), 14)
+        self.assertEqual(control_port.size(), 7)
 
         # current state
         q = np.array([-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3])
@@ -113,9 +105,9 @@ class TestControllers(unittest.TestCase):
 
         vd_d = vd_r + kp*(q_r-q) + kd*(v_r-v) + ki*integral_term
 
-        context.FixInputPort(estimated_state_port, BasicVector(x))
-        context.FixInputPort(desired_state_port, BasicVector(x_r))
-        context.FixInputPort(desired_acceleration_port, BasicVector(vd_r))
+        estimated_state_port.FixValue(context, x)
+        desired_state_port.FixValue(context, x_r)
+        desired_acceleration_port.FixValue(context, vd_r)
         controller.set_integral_value(context, integral_term)
 
         # compute the expected torque

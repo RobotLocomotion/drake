@@ -69,9 +69,8 @@ void DoEmptyWorldTest(const char* const name,
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
 
-  int input_port_index = dut.get_rigid_body_tree_state_input_port().get_index();
-  context->FixInputPort(
-      input_port_index,
+  dut.get_rigid_body_tree_state_input_port().FixValue(
+      context.get(),
       VectorXd::Zero(tree.get_num_positions() + tree.get_num_velocities()));
 
   dut.CalcOutput(*context, output.get());
@@ -170,10 +169,9 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
 
-  int input_port_index = dut.get_rigid_body_tree_state_input_port().get_index();
-  context->FixInputPort(input_port_index,
-                        Eigen::VectorXd::Zero(tree.get_num_positions() +
-                                              tree.get_num_velocities()));
+  dut.get_rigid_body_tree_state_input_port().FixValue(
+      context.get(), Eigen::VectorXd::Zero(tree.get_num_positions() +
+                                           tree.get_num_velocities()));
 
   dut.CalcOutput(*context, output.get());
 

@@ -79,9 +79,7 @@ TEST_F(TestGyroscope, TestFreeFall) {
   VectorX<double> state_vector(num_states_);
   state_vector << tree_->getZeroConfiguration(),
                   VectorX<double>::Zero(tree_->get_num_velocities());
-  context_->FixInputPort(
-      dut_->get_input_port().get_index(),
-      make_unique<BasicVector<double>>(state_vector));
+  dut_->get_input_port().FixValue(context_.get(), state_vector);
 
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput();
   ASSERT_EQ(output->num_ports(), 1);
@@ -115,9 +113,7 @@ TEST_F(TestGyroscope, TestNonZeroRotationalVelocity) {
          0,                    // base_vy velocity
          0;                    // base_vz velocity
 
-  context_->FixInputPort(
-      dut_->get_input_port().get_index(),
-      make_unique<BasicVector<double>>(state_vector));
+  dut_->get_input_port().FixValue(context_.get(), state_vector);
 
   unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput();
   ASSERT_EQ(output->num_ports(), 1);
