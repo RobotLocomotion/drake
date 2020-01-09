@@ -955,79 +955,72 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     EXPECT_EQ(properties.GetProperty<double>(group, property), value);
   };
 
-  // Case: has resolution hint; contains hint and default friction coefficients.
+  // This parser uses the ParseProximityProperties found in detail_common
+  // (which already has exhaustive tests). So, we'll put in a smoke test to
+  // confirm that all of the basic tags get parsed and focus on the logic that
+  // is unique to `MakeProximityPropertiesForCollision()`.
   {
     unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
+    <drake:elastic_modulus>3.5</drake:elastic_modulus>
+    <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
+    <drake:mu_dynamic>4.5</drake:mu_dynamic>
+    <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)_");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
-    assert_friction(properties, default_friction());
-  }
-
-  // Case: has elastic_modulus; contains modulus and default friction
-  // coefficients.
-  {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
-  <drake:proximity_properties>
-    <drake:elastic_modulus>3.5</drake:elastic_modulus>
-  </drake:proximity_properties>)_");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
     assert_single_property(properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kElastic, 3.5);
-    assert_friction(properties, default_friction());
-  }
-
-  // Case: has dissipation; contains dissipation and default friction
-  // coefficients.
-  {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
-  <drake:proximity_properties>
-    <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
-  </drake:proximity_properties>)_");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
     assert_single_property(properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 4.5);
-    assert_friction(properties, default_friction());
-  }
-
-  // Case: has dynamic friction.
-  {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
-  <drake:proximity_properties>
-    <drake:mu_dynamic>4.5</drake:mu_dynamic>
-  </drake:proximity_properties>)_");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
-    assert_friction(properties, {4.5, 4.5});
-  }
-
-  // Case: has static friction.
-  {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
-  <drake:proximity_properties>
-    <drake:mu_static>4.75</drake:mu_static>
-  </drake:proximity_properties>)_");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
-    assert_friction(properties, {4.75, 4.75});
-  }
-
-  // Case: has static and dynamic friction.
-  {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
-  <drake:proximity_properties>
-    <drake:mu_dynamic>4.5</drake:mu_dynamic>
-    <drake:mu_static>4.75</drake:mu_static>
-  </drake:proximity_properties>)_");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
     assert_friction(properties, {4.75, 4.5});
+  }
+
+  // Case: specifies rigid hydroelastic.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:rigid_hydroelastic/>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+                                       geometry::internal::kComplianceType));
+    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
+        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+              geometry::internal::HydroelasticType::kRigid);
+  }
+
+  // Case: specifies soft hydroelastic.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:soft_hydroelastic/>
+  </drake:proximity_properties>)_");
+    ProximityProperties properties =
+        MakeProximityPropertiesForCollision(*sdf_collision);
+    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+                                       geometry::internal::kComplianceType));
+    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
+        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+              geometry::internal::HydroelasticType::kSoft);
+  }
+
+  // Case: specifies both -- should be an error.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+  <drake:proximity_properties>
+    <drake:rigid_hydroelastic/>
+    <drake:soft_hydroelastic/>
+  </drake:proximity_properties>)_");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeProximityPropertiesForCollision(*sdf_collision),
+        std::runtime_error,
+        "A <collision> geometry has defined mutually-exclusive tags .*rigid.* "
+        "and .*soft.*");
   }
 
   // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2

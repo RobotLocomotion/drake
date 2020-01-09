@@ -36,7 +36,7 @@ namespace internal {
 
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
-using drake::geometry::internal::hydroelastic::HydroelasticType;
+using drake::geometry::internal::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using std::make_shared;

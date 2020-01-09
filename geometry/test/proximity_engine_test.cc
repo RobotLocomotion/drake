@@ -59,7 +59,7 @@ class ProximityEngineTester {
   }
 
   template <typename T>
-  static hydroelastic::HydroelasticType hydroelastic_type(
+  static HydroelasticType hydroelastic_type(
       GeometryId id, const ProximityEngine<T>& engine) {
     return engine.hydroelastic_geometries().hydroelastic_type(id);
   }
@@ -69,7 +69,6 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
-using hydroelastic::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;

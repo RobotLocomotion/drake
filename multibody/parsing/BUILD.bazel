@@ -77,6 +77,7 @@ drake_cc_library(
     deps = [
         ":package_map",
         "//common:essential",
+        "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant:coulomb_friction",
         "@sdformat",
@@ -224,6 +225,13 @@ drake_cc_googletest(
         "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_common_test",
+    deps = [
+        ":detail_misc",
     ],
 )
 

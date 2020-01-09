@@ -22,23 +22,6 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-// TODO(SeanCurtis-TRI): Update this to have an additional classification: kBoth
-//  when we have the need from the algorithm. For example: when we have two
-//  very stiff objects, we'd want to process them as soft. But when one
-//  very stiff and one very soft object interact, it might make sense to
-//  consider the stiff object as effectively rigid and simplify the computation.
-//  In this case, the object would get two representations.
-/** Classification of the type of representation a shape has for the
- hydroelastic contact model: rigid or soft.  */
-enum class HydroelasticType {
-  kUndefined,
-  kRigid,
-  kSoft
-};
-
-/** Streaming operator for writing hydroelastic type to output stream.  */
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
-
 // TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
 /** Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
@@ -232,24 +215,6 @@ class Geometries final : public ShapeReifier {
   // The representations of all rigid geometries.
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
 };
-
-/** Assesses the properties to determine *if* the geometry with the given
- `properties` requires a geometric representation and, if so, whether that
- representation is soft or rigid.
-
- The conditions are as follows:
-
-   - If `properties` does not have the group "hydroelastic", then it requires no
-     hydroelastic representation.
-   - Otherwise, its compliance is based on the (material, elastic modulus)
-     property. The disposition based on the property is:
-       - absent --> error
-       - infinity --> rigid
-       - greater than zero and less than infinity --> soft
-       - less than or equal to zero --> error
-
- @throws std::logic_error if any of the above error conditions are met.  */
-HydroelasticType Classify(const ProximityProperties& properties);
 
 /** @name Creating hydroelastic representations of shapes
 

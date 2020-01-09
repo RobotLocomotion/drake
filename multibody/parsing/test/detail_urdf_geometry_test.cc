@@ -549,93 +549,16 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   const PackageMap package_map;     // An empty package map.
   const std::string root_dir(".");  // Arbitrary, un-used root directory.
 
-  // Case: has resolution hint; contains hint and default friction coefficients.
+  // This parser uses the ParseProximityProperties found in detail_common
+  // (which already has exhaustive tests). So, we'll put in a smoke test to
+  // confirm that all of the basic tags get parsed and focus on the logic that
+  // is unique to `ParseCollision()`.
   {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint value="2.5"/>
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint, 2.5);
-    verify_friction(properties, default_friction());
-  }
-
-  // Case: has elastic_modulus; contains modulus and default friction
-  // coefficients.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
     <drake:elastic_modulus value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic, 3.5);
-    verify_friction(properties, default_friction());
-  }
-
-  // Case: has dissipation; contains dissipation and default friction
-  // coefficients.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
     <drake:hunt_crossley_dissipation value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation, 3.5);
-    verify_friction(properties, default_friction());
-  }
-
-  // Case: has dynamic friction.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:mu_dynamic value="3.5" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.5, 3.5});
-  }
-
-  // Case: has static friction.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
-    <drake:mu_static value="3.25" />
-  </drake:proximity_properties>)_");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.25, 3.25});
-  }
-
-  // Case: has static and dynamic friction.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
-  <drake:proximity_properties>
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
   </drake:proximity_properties>)_");
@@ -645,9 +568,71 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
+    verify_single_property(properties, geometry::internal::kHydroGroup,
+                           geometry::internal::kRezHint, 2.5);
+    verify_single_property(properties, geometry::internal::kMaterialGroup,
+                           geometry::internal::kElastic, 3.5);
+    verify_single_property(properties, geometry::internal::kMaterialGroup,
+                           geometry::internal::kHcDissipation, 3.5);
     verify_friction(properties, {3.5, 3.25});
   }
 
+  // Case: specifies rigid hydroelastic.
+  {
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+  <drake:proximity_properties>
+    <drake:rigid_hydroelastic/>
+  </drake:proximity_properties>)_");
+    const XMLElement* collision_node = doc->FirstChildElement("collision");
+    ASSERT_NE(collision_node, nullptr);
+    GeometryInstance instance =
+        ParseCollision("link_name", package_map, root_dir, collision_node);
+    ASSERT_NE(instance.proximity_properties(), nullptr);
+    const ProximityProperties& properties = *instance.proximity_properties();
+    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+                                       geometry::internal::kComplianceType));
+    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
+        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+            geometry::internal::HydroelasticType::kRigid);
+  }
+
+  // Case: specifies soft hydroelastic.
+  {
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+  <drake:proximity_properties>
+    <drake:soft_hydroelastic/>
+  </drake:proximity_properties>)_");
+    const XMLElement* collision_node = doc->FirstChildElement("collision");
+    ASSERT_NE(collision_node, nullptr);
+    GeometryInstance instance =
+        ParseCollision("link_name", package_map, root_dir, collision_node);
+    ASSERT_NE(instance.proximity_properties(), nullptr);
+    const ProximityProperties& properties = *instance.proximity_properties();
+    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+                                       geometry::internal::kComplianceType));
+    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
+        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+              geometry::internal::HydroelasticType::kSoft);
+  }
+
+  // Case: specifies both -- should be an error.
+  {
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+  <drake:proximity_properties>
+    <drake:soft_hydroelastic/>
+    <drake:rigid_hydroelastic/>
+  </drake:proximity_properties>)_");
+    const XMLElement* collision_node = doc->FirstChildElement("collision");
+    ASSERT_NE(collision_node, nullptr);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ParseCollision("link_name", package_map, root_dir, collision_node),
+        std::runtime_error,
+        "Collision geometry has defined mutually-exclusive tags .*rigid.* and "
+        ".*soft.*");
+  }
+
+  // TODO(SeanCurtis-TRI): This is the *old* interface; the new
+  //  drake::proximity_properties should supplant it. Deprecate and remove this.
   // Case: has no drake:proximity_properties coefficients, only drake_compliance
   // coeffs.
   {

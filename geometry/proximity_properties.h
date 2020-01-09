@@ -7,6 +7,8 @@
  no way limit the inclusion of any other additional, arbitrary properties.
  */
 
+#include <ostream>
+
 #include "drake/geometry/geometry_roles.h"
 
 namespace drake {
@@ -57,8 +59,28 @@ extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
  */
 //@{
 
-extern const char* const kHydroGroup;      ///< Hydroelastic group name.
-extern const char* const kRezHint;         ///< Resolution hint property name.
+extern const char* const kHydroGroup;       ///< Hydroelastic group name.
+extern const char* const kRezHint;          ///< Resolution hint property name.
+extern const char* const kComplianceType;   ///< Compliance type property name.
+
+//@}
+
+// TODO(SeanCurtis-TRI): Update this to have an additional classification: kBoth
+//  when we have the need from the algorithm. For example: when we have two
+//  very stiff objects, we'd want to process them as soft. But when one
+//  very stiff and one very soft object interact, it might make sense to
+//  consider the stiff object as effectively rigid and simplify the computation.
+//  In this case, the object would get two representations.
+/** Classification of the type of representation a shape has for the
+ hydroelastic contact model: rigid or soft.  */
+enum class HydroelasticType {
+  kUndefined,
+  kRigid,
+  kSoft
+};
+
+/** Streaming operator for writing hydroelastic type to output stream.  */
+std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal
 
@@ -78,8 +100,8 @@ void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties);
 
 /** Overload, intended for shapes that don't get tessellated in their
- hydroelastic representation (e.g., HalfSpace and Mesh),
- see `@ref MODULE_NOT_WRITTEN_YET`.  */
+ hydroelastic representation (e.g., HalfSpace and Mesh).
+ See @ref MODULE_NOT_WRITTEN_YET.  */
 void AddRigidHydroelasticProperties(ProximityProperties* properties);
 
 // TODO(SeanCurtis-TRI): Add module that explains resolution hint and reference
@@ -100,6 +122,11 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
       contains a valid elastic modulus value. */
 void AddSoftHydroelasticProperties(double resolution_hint,
                                    ProximityProperties* properties);
+
+/** Overload, intended for shapes that don't get tessellated in their
+ hydroelastic representation (e.g., HalfSpace).
+ See @ref MODULE_NOT_WRITTEN_YET.  */
+void AddSoftHydroelasticProperties(ProximityProperties* properties);
 
 //@}
 

@@ -136,7 +136,7 @@ class HydroelasticCallbackTyped : public ::testing::Test {
 
 // Confirms that if the intersecting pair is missing hydroelastic representation
 // that an exception is thrown. This test should apply *no* collision filters
-// to guarantee that the body off the callback gets exercised in all cases.
+// to guarantee that the body of the callback gets exercised in all cases.
 TYPED_TEST(HydroelasticCallbackTyped,
            ThrowForMissingHydroelasticRepresentation) {
   using T = TypeParam;
