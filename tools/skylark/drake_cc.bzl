@@ -57,6 +57,11 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
         result = GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
     else:
         result = rule_copts
+
+    # We can't handle select() yet.
+    # TODO(jwnimmer-tri) We should handle select.
+    if type(result) != "list":
+        return result
     return select({
         "//tools:drake_werror": result,
         "//conditions:default": [

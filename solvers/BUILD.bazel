@@ -763,30 +763,29 @@ drake_cc_library(
     }),
 )
 
-# If --config snopt (or --config snopt_fortran) is used, this target builds
-# object code that satisfies SolverInterface by calling SNOPT. Otherwise, this
-# target builds dummy object code that fails at runtime.
+# If --config snopt is used, this target builds object code that satisfies
+# SolverInterface by calling SNOPT. Otherwise, this target builds dummy object
+# code that fails at runtime.
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
-        # For `--config snopt` or `--config snopt_fortran`.
         "//tools:with_snopt": [
             "snopt_solver.cc",
             "snopt_solver_common.cc",
         ],
-        "//tools:with_snopt_fortran": [
-            "snopt_solver.cc",
-            "snopt_solver_common.cc",
-        ],
-        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             "no_snopt.cc",
             "snopt_solver_common.cc",
         ],
     }),
     hdrs = ["snopt_solver.h"],
+    copts = select({
+        "//tools:with_snopt_fortran": [
+            "-DWITH_SNOPT_FORTRAN=1",
+        ],
+        "//conditions:default": [],
+    }),
     deps = select({
-        # For `--config snopt` or `--config snopt_fortran`.
         "//tools:with_snopt": [
             ":mathematical_program",
             ":solver_base",
@@ -794,14 +793,6 @@ drake_cc_library(
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
         ],
-        "//tools:with_snopt_fortran": [
-            ":mathematical_program",
-            ":solver_base",
-            "//common:scope_exit",
-            "//math:autodiff",
-            "@snopt//:snopt_cwrap",
-        ],
-        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             ":mathematical_program",
             ":solver_base",
