@@ -998,6 +998,7 @@ class System : public SystemBase {
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const {
+    this->ValidateContext(context);
     DoMapVelocityToQDot(context, generalized_velocity, qdot);
   }
 
@@ -1030,6 +1031,7 @@ class System : public SystemBase {
   void MapQDotToVelocity(const Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          VectorBase<T>* generalized_velocity) const {
+    this->ValidateContext(context);
     DoMapQDotToVelocity(context, qdot, generalized_velocity);
   }
 
@@ -1383,7 +1385,7 @@ class System : public SystemBase {
   /// @tparam T1 the scalar type of the Context to check.
   // TODO(sherm1) This method needs to be unit tested.
   template <typename T1 = T>
-  void CheckValidContextT(const Context<T1>& context) const {
+  void CheckContextConsistentWithThisT(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.num_input_ports() ==
@@ -1611,10 +1613,11 @@ class System : public SystemBase {
   void FixInputPortsFrom(const System<double>& other_system,
                          const Context<double>& other_context,
                          Context<T>* target_context) const {
-    DRAKE_ASSERT_VOID(CheckValidContextT(other_context));
-    DRAKE_ASSERT_VOID(CheckValidContext(*target_context));
-    DRAKE_ASSERT_VOID(other_system.CheckValidContext(other_context));
-    DRAKE_ASSERT_VOID(other_system.CheckValidContextT(*target_context));
+    ValidateContext(target_context);
+    other_system.ValidateContext(other_context);
+    DRAKE_ASSERT_VOID(CheckContextConsistentWithThisT(other_context));
+    DRAKE_ASSERT_VOID(
+        other_system.CheckContextConsistentWithThisT(*target_context));
 
     for (int i = 0; i < num_input_ports(); ++i) {
       const auto& input_port = get_input_port(i);
@@ -2343,10 +2346,11 @@ class System : public SystemBase {
       const InputPort<T>& input_port) const = 0;
 
   // SystemBase override checks a Context of same type T.
-  void DoCheckValidContext(const ContextBase& context_base) const final {
+  void DoCheckContextConsistentWithThis(
+      const ContextBase& context_base) const final {
     const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
     DRAKE_THROW_UNLESS(context != nullptr);
-    CheckValidContextT(*context);
+    CheckContextConsistentWithThisT(*context);
   }
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(

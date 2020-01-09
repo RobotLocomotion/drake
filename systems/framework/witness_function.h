@@ -187,8 +187,8 @@ class WitnessFunction final {
   WitnessFunctionDirection direction_type() const { return direction_type_; }
 
   /// Evaluates the witness function at the given context.
-  T CalcWitnessValue(const Context <T>& context) const {
-    DRAKE_ASSERT_VOID(system_->CheckValidContext(context));
+  T CalcWitnessValue(const Context<T>& context) const {
+    system_->ValidateContext(context);
     return calc_function_(context);
   }
 

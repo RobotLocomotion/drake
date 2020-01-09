@@ -160,7 +160,7 @@ class MySystemBase final : public SystemBase {
     return context;
   }
 
-  void DoCheckValidContext(const ContextBase&) const final {}
+  void DoCheckContextConsistentWithThis(const ContextBase&) const final {}
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex /* unused */) const final {

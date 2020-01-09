@@ -692,7 +692,6 @@ class SystemBaseContextBaseAttorney {
     DRAKE_DEMAND(context != nullptr);
     context->set_system_id(id);
   }
-
   static const ContextBase* get_parent_base(const ContextBase& context) {
     return context.get_parent_base();
   }

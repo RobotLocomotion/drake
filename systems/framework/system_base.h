@@ -77,7 +77,7 @@ class SystemBase : public internal::SystemMessageInterface {
   the error message should explain. This can be an expensive check so you may
   want to limit it to Debug builds. */
   void ThrowIfContextNotCompatible(const ContextBase& context) const final {
-    CheckValidContext(context);
+    CheckContextConsistentWithThis(context);
   }
 
   /** Returns a Context suitable for use with this System. Context resources
@@ -464,17 +464,18 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
-  /** Checks whether the given context is valid for this System and throws
-  an exception with a helpful message if not. This is *very* expensive and
-  should generally be done only in Debug builds, like this:
+  /** Checks whether the given context is "consistent" for this System, meaning
+  that it has a structure (e.g., ports, states, etc.) compatible with this.
+  This method throws an exception with a helpful message if not. This is *very*
+  expensive and should generally be done only in Debug builds, like this:
   @code
-     DRAKE_ASSERT_VOID(CheckValidContext(context));
+     DRAKE_ASSERT_VOID(CheckContextConsistentWithThis(context));
   @endcode */
-  void CheckValidContext(const ContextBase& context) const {
+  void CheckContextConsistentWithThis(const ContextBase& context) const {
     // TODO(sherm1) Add base class checks.
 
     // Let derived classes have their say.
-    DoCheckValidContext(context);
+    DoCheckContextConsistentWithThis(context);
   }
 
   //============================================================================
@@ -769,10 +770,6 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
- protected:
-  /** (Internal use only) Default constructor. */
-  SystemBase() = default;
-
   /// Checks whether the given context was created for this system.
   void ValidateContext(const ContextBase& context) const {
     if (context.get_system_id() != reinterpret_cast<int64_t>(this)) {
@@ -789,6 +786,10 @@ class SystemBase : public internal::SystemMessageInterface {
           "Context was not created for system '{}'", this->get_name()));
     }
   }
+
+ protected:
+  /** (Internal use only) Default constructor. */
+  SystemBase() = default;
 
   /** (Internal use only) Adds an already-constructed input port to this System.
   Insists that the port already contains a reference to this System, and that
@@ -1056,10 +1057,10 @@ class SystemBase : public internal::SystemMessageInterface {
   virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
   /** Derived classes must implement this to verify that the supplied
-  Context is suitable, and throw an exception if not. This is a runtime check
-  but may be expensive so is not guaranteed to be invoked except in Debug
-  builds. */
-  virtual void DoCheckValidContext(const ContextBase&) const = 0;
+  Context has structure consistent with this system, and throw an exception if
+  not. This is a runtime check but may be expensive so is not guaranteed to be
+  invoked except in Debug builds. */
+  virtual void DoCheckContextConsistentWithThis(const ContextBase&) const = 0;
 
  private:
   void CreateSourceTrackers(ContextBase*) const;
