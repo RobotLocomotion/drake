@@ -21,8 +21,8 @@ using ResolveFilename = std::function<std::string (std::string)>;
 /** Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
  specification.
- For `sdf_geometry.Type() == sdf::GeometryType::EMPTY`, corresponding to the
- <empty/> SDF tag, it returns `nullptr`.  */
+ If no recognizable geometry is specified, nullptr is returned. If the geometry
+ is recognized, but malformed, an exception is thrown.  */
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename);
 
