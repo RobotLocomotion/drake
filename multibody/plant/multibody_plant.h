@@ -251,8 +251,8 @@ enum class ContactModel {
 /// @code
 ///   MultibodyPlant<double>* plant{};
 ///   SceneGraph<double>* scene_graph{};
-///   std::tie(plant, scene_graph) = 
-///     AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */); 
+///   std::tie(plant, scene_graph) =
+///     AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
 ///   plant->DoFoo(...);
 ///   scene_graph->DoBar(...);
 /// @endcode
