@@ -4215,6 +4215,14 @@ struct AddMultibodyPlantSceneGraphResult final {
     return std::tie(plant_ptr, scene_graph_ptr);
   }
 
+  template <std::size_t N>
+  decltype(auto) get() const {
+    if constexpr (N == 0)
+      return plant;
+    else if constexpr (N == 1)
+      return scene_graph;
+  }
+
 #ifndef DRAKE_DOXYGEN_CXX
   // Only the move constructor is enabled; copy/assign/move-assign are deleted.
   AddMultibodyPlantSceneGraphResult(
@@ -4271,6 +4279,35 @@ void MultibodyPlant<symbolic::Expression>::
 
 }  // namespace multibody
 }  // namespace drake
+
+namespace std {
+template <typename T>
+struct tuple_size<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>
+    : std::integral_constant<std::size_t, 2> {};
+
+/*
+template <std::size_t N, typename T>
+struct tuple_element<N,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = decltype(
+      std::declval<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>()
+          .get<N>());
+};
+*/
+template <typename T>
+struct tuple_element<0,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::multibody::MultibodyPlant<T>;
+};
+
+template <typename T>
+struct tuple_element<1,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::geometry::SceneGraph<T>;
+};
+
+}  // namespace std
+
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)
