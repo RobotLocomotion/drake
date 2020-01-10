@@ -141,6 +141,11 @@ class TestPlant(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             MultibodyPlant_[float]()
 
+    def test_deprecated_construction_api(self):
+        builder = DiagramBuilder_[float]()
+        with catch_drake_warnings(expected_count=1):
+            AddMultibodyPlantSceneGraph(builder)
+
     @numpy_compare.check_nonsymbolic_types
     def test_multibody_plant_construction_api(self, T):
         # SceneGraph does not support `Expression` type.

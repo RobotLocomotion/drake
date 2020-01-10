@@ -57,7 +57,8 @@ class TestAll(unittest.TestCase):
         import pydrake.all
 
         builder = pydrake.systems.framework.DiagramBuilder()
-        plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(
+            builder, 0.0)
         pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
             pydrake.common.FindResourceOrThrow(
                 "drake/examples/pendulum/Pendulum.urdf"))
