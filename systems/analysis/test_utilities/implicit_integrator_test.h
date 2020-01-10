@@ -21,7 +21,7 @@ namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
 
-template <typename T>
+template <typename IntegratorType>
 class ImplicitIntegratorTest : public ::testing::Test {
  public:
   ImplicitIntegratorTest() {
@@ -47,15 +47,13 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Separate context necessary for the double spring mass system.
     dspring_context_ = stiff_double_system_->CreateDefaultContext();
-    T integrator(*spring_, context_.get());
-    integrator_supports_error_control_ = integrator.supports_error_estimation();
-    integrator_supports_central_and_auto_diff_ =
-        integrator.supports_autodiff_and_central_differencing();
+
+    integrator_supports_central_and_auto_diff_ = true;
   }
 
   void MiscAPITest(ReuseType type) {
     // Create the integrator for a System<double>.
-    T integrator(*spring_, context_.get());
+    IntegratorType integrator(*spring_, context_.get());
 
     // Verifies set_reuse(flag) == get_reuse() == flag
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -67,12 +65,14 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verify defaults match documentation.
     EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
-              T::JacobianComputationScheme::kForwardDifference);
+              IntegratorType::JacobianComputationScheme::kForwardDifference);
 
     // Test that setting the target accuracy and initial step size target is
     // successful.
     integrator.set_maximum_step_size(h_);
-    if (integrator_supports_error_control_) {
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports error estimation
+    if (integrator.supports_error_estimation()) {
       integrator.set_target_accuracy(1.0);
       integrator.request_initial_step_size_target(h_);
     }
@@ -80,7 +80,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verifies that setting accuracy too loose (from above) makes the working
     // accuracy different than the target accuracy after initialization.
-    if (integrator_supports_error_control_) {
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports error estimation
+    if (integrator.supports_error_estimation()) {
       EXPECT_NE(integrator.get_accuracy_in_use(),
                 integrator.get_target_accuracy());
     } else {
@@ -97,21 +99,25 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void DoubleSpringMassDamperTest(ReuseType type) {
     // Clone the spring mass system's state.
     std::unique_ptr<State<double>> state_copy = dspring_context_->CloneState();
+    // Set integrator parameters.
+    IntegratorType integrator(*stiff_double_system_, dspring_context_.get());
 
     // For fixed step integrators, we need to use a smaller step size to get
     // the desired accuracy.
-    double h = integrator_supports_error_control_ ? large_h_ : h_;
+    // TODO(antequ): remove these checks once the Velocity-Implicit Euler
+    // supports error estimation
+    double h = integrator.supports_error_estimation() ? large_h_ : h_;
 
-    // Designate the solution tolerance.
-    const double sol_tol_pos = integrator_supports_error_control_ ? 2e-2 : 1e-1;
+    // Designate the solution tolerance. For reference, the true positions are
+    // about 0.4351 and 1.4351
+    const double sol_tol_pos =
+        integrator.supports_error_estimation() ? 2e-2 : 1e-1;
     // The velocity solution needs a looser tolerance in Radau1 and Implicit
-    // Euler.
-    const double sol_tol_vel = sol_tol_pos / h;
+    // Euler. For reference, the true velocity is about -4.772
+    const double sol_tol_vel = 1e-1;
 
-    // Set integrator parameters.
-    T integrator(*stiff_double_system_, dspring_context_.get());
     integrator.set_maximum_step_size(h);
-    if (integrator_supports_error_control_) {
+    if (integrator.supports_error_estimation()) {
       integrator.request_initial_step_size_target(h);
       integrator.set_target_accuracy(1e-5);
     }
@@ -158,7 +164,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // This equation should be stiff.
   void SpringMassDamperStiffTest(ReuseType type) {
     // Create the integrator.
-    T integrator(*spring_damper_, context_.get());
+    IntegratorType integrator(*spring_damper_, context_.get());
     integrator.set_maximum_step_size(large_h_);
     integrator.set_requested_minimum_step_size(small_h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
@@ -167,7 +173,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Set error controlled integration parameters.
     const double xtol = 1e-6;
     const double vtol = xtol * 100;
-    if (integrator_supports_error_control_) {
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports error estimation
+    if (integrator.supports_error_estimation()) {
       integrator.set_target_accuracy(xtol);
     }
 
@@ -209,10 +217,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Verify that integrator statistics are valid, and reset the statistics.
     CheckGeneralStatsValidity(&integrator);
 
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports autodiff and central differencing
     if (integrator_supports_central_and_auto_diff_) {
       // Switch to central differencing.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kCentralDifference);
+          IntegratorType::JacobianComputationScheme::kCentralDifference);
 
       // Reset the time, position, and velocity.
       context_->SetTime(0.0);
@@ -232,7 +242,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
       // Switch to automatic differencing.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kAutomatic);
+          IntegratorType::JacobianComputationScheme::kAutomatic);
 
       // Reset the time, position, and velocity.
       context_->SetTime(0.0);
@@ -259,10 +269,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // discontinuity in the velocity derivative at spring position x = 0.
   void DiscontinuousSpringMassDamperTest(ReuseType type) {
     // Create the integrator.
-    T integrator(*mod_spring_damper_, context_.get());
+    IntegratorType integrator(*mod_spring_damper_, context_.get());
     integrator.set_maximum_step_size(h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
-    if (integrator_supports_error_control_) {
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports error estimation
+    if (integrator.supports_error_estimation()) {
       integrator.set_target_accuracy(1e-5);
     }
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -313,10 +325,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
 
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports autodiff and central differencing
     if (integrator_supports_central_and_auto_diff_) {
       // Switch the Jacobian scheme to central differencing.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kCentralDifference);
+          IntegratorType::JacobianComputationScheme::kCentralDifference);
 
       // Reset the time, position, and velocity.
       context_->SetTime(0.0);
@@ -336,7 +350,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
       // Switch the Jacobian scheme to automatic differentiation.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kAutomatic);
+          IntegratorType::JacobianComputationScheme::kAutomatic);
 
       // Reset the time, position, and velocity.
       context_->SetTime(0.0);
@@ -365,12 +379,14 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Set integrator parameters; we want error control to initially "fail",
     // necessitating step size adjustment.
-    T integrator(spring_mass, context_.get());
+    IntegratorType integrator(spring_mass, context_.get());
     // For fixed step integrators, we need to use a smaller step size to get
     // the desired accuracy.
-    double h = integrator_supports_error_control_ ? large_h_ : 0.5 * h_;
+    // TODO(antequ): remove these checks once the Velocity-Implicit Euler
+    // supports error estimation
+    double h = integrator.supports_error_estimation() ? large_h_ : 0.5 * h_;
     integrator.set_maximum_step_size(h);
-    if (integrator_supports_error_control_) {
+    if (integrator.supports_error_estimation()) {
       integrator.request_initial_step_size_target(h);
       integrator.set_target_accuracy(5e-5);
     }
@@ -411,10 +427,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verify that integrator statistics are valid and reset the statistics.
     CheckGeneralStatsValidity(&integrator);
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports autodiff and central differencing
     if (integrator_supports_central_and_auto_diff_) {
       // Switch to central differencing.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kCentralDifference);
+          IntegratorType::JacobianComputationScheme::kCentralDifference);
 
       // Reset the time, position, and velocity.
       context_->SetTime(0.0);
@@ -434,7 +452,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
       // Switch to automatic differentiation.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kAutomatic);
+          IntegratorType::JacobianComputationScheme::kAutomatic);
 
       // Reset the time, position, and velocity.
       context_->SetTime(0.0);
@@ -464,21 +482,27 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void ErrorEstimationTest(ReuseType type) {
     const double spring_k = 300.0;  // N/m
 
-    if (!integrator_supports_error_control_) GTEST_SKIP();
-
     // Create a new spring-mass system.
     SpringMassSystem<double> spring_mass(spring_k, mass_, false);
 
     // Set the integrator to operate in fixed step mode.
-    T integrator(spring_mass, context_.get());
+    IntegratorType integrator(spring_mass, context_.get());
+
+    // Skip this test if the integrator doesn't have error estimate.
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports error estimation
+    if (!integrator.supports_error_estimation()) GTEST_SKIP();
+
     integrator.set_maximum_step_size(large_h_);
     integrator.set_fixed_step_mode(true);
     integrator.set_reuse(reuse_type_to_bool(type));
 
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports autodiff and central differencing
     if (integrator_supports_central_and_auto_diff_) {
       // Use automatic differentiation because we can.
       integrator.set_jacobian_computation_scheme(
-          T::JacobianComputationScheme::kAutomatic);
+          IntegratorType::JacobianComputationScheme::kAutomatic);
     }
 
     // Create the initial positions and velocities.
@@ -551,13 +575,15 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void SpringMassStepAccuracyEffectsTest(ReuseType type) {
     const double spring_k = 300.0;  // N/m
 
-    if (!integrator_supports_error_control_) GTEST_SKIP();
 
     // Create a new spring-mass system.
     SpringMassSystem<double> spring_mass(spring_k, mass_, false);
 
     // Spring-mass system is necessary only to setup the problem.
-    T integrator(spring_mass, context_.get());
+    IntegratorType integrator(spring_mass, context_.get());
+    // TODO(antequ): remove this check once the Velocity-Implicit Euler
+    // supports error estimation
+    if (!integrator.supports_error_estimation()) GTEST_SKIP();
     integrator.set_maximum_step_size(large_h_);
     integrator.set_requested_minimum_step_size(small_h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
@@ -611,9 +637,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   Context<double>& context() { return *context_; }
   double constant_force_magnitude() const { return constant_force_mag_; }
   double semistiff_spring_stiffness() const { return semistiff_spring_k_; }
-  bool integrator_supports_error_control() const {
-    return integrator_supports_error_control_;
-  }
 
  private:
   bool reuse_type_to_bool(ReuseType type) {
@@ -625,9 +648,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
   }
 
   // Checks the validity of general integrator statistics and resets statistics.
-  void CheckGeneralStatsValidity(T* integrator) {
+  void CheckGeneralStatsValidity(IntegratorType* integrator) {
     EXPECT_GT(integrator->get_num_newton_raphson_iterations(), 0);
-    if (integrator_supports_error_control_) {
+    // TODO(antequ): remove these checks once the Velocity-Implicit Euler
+    // supports error estimation
+    if (integrator->supports_error_estimation()) {
       EXPECT_GT(
           integrator->get_num_error_estimator_newton_raphson_iterations(), 0);
     }
@@ -635,23 +660,23 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
     EXPECT_GE(integrator->get_num_steps_taken(), 0);
     EXPECT_GT(integrator->get_num_derivative_evaluations(), 0);
-    if (integrator_supports_error_control_) {
+    if (integrator->supports_error_estimation()) {
       EXPECT_GE(
           integrator->get_num_error_estimator_derivative_evaluations(), 0);
     }
     EXPECT_GT(integrator->get_num_derivative_evaluations_for_jacobian(), 0);
-    if (integrator_supports_error_control_) {
+    if (integrator->supports_error_estimation()) {
       EXPECT_GE(
           integrator
               ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
               0);
     }
     EXPECT_GE(integrator->get_num_jacobian_evaluations(), 0);
-    if (integrator_supports_error_control_) {
+    if (integrator->supports_error_estimation()) {
       EXPECT_GE(integrator->get_num_error_estimator_jacobian_evaluations(), 0);
     }
     EXPECT_GE(integrator->get_num_iteration_matrix_factorizations(), 0);
-    if (integrator_supports_error_control_) {
+    if (integrator->supports_error_estimation()) {
       EXPECT_GE(
           integrator
               ->get_num_error_estimator_iteration_matrix_factorizations(),
@@ -712,7 +737,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   /// that the system is overdamped.
   const double stiff_damping_b_ = 1e8;
 
-  bool integrator_supports_error_control_ = true;
   bool integrator_supports_central_and_auto_diff_ = true;
 };
 TYPED_TEST_SUITE_P(ImplicitIntegratorTest);
@@ -740,8 +764,9 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
   // Create the integrator.
   using Integrator = TypeParam;
   Integrator integrator(*stationary, context.get());
-
-  if (this->integrator_supports_error_control()) {
+  // TODO(antequ): remove this check once the Velocity-Implicit Euler
+  // supports error estimation
+  if (integrator.supports_error_estimation()) {
     integrator.set_maximum_step_size(1.0);
     integrator.set_target_accuracy(1e-3);
     integrator.request_initial_step_size_target(1e-4);
@@ -783,7 +808,9 @@ TYPED_TEST_P(ImplicitIntegratorTest, Robertson) {
   //                  step size (see issue #6329).
   integrator.set_maximum_step_size(10000000.0);
   integrator.set_throw_on_minimum_step_size_violation(false);
-  if (this->integrator_supports_error_control()) {
+  // TODO(antequ): remove this check once the Velocity-Implicit Euler
+  // supports error estimation
+  if (integrator.supports_error_estimation()) {
     integrator.set_target_accuracy(tol);
     integrator.request_initial_step_size_target(1e-4);
   }
@@ -820,7 +847,9 @@ TYPED_TEST_P(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   integrator.set_fixed_step_mode(true);
 
   // Values we have used successfully in other Robertson system tests.
-  if (this->integrator_supports_error_control()) {
+  // TODO(antequ): remove this check once the Velocity-Implicit Euler
+  // supports error estimation
+  if (integrator.supports_error_estimation()) {
     integrator.set_target_accuracy(5e-5);
   }
 
@@ -849,10 +878,13 @@ TYPED_TEST_P(ImplicitIntegratorTest, ContextAccess) {
 
 /// Verifies error estimation is supported.
 TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
-  if (!this->integrator_supports_error_control()) GTEST_SKIP();
   // Spring-mass system is necessary only to setup the problem.
   using Integrator = TypeParam;
   Integrator integrator(this->spring(), &this->context());
+
+  // TODO(antequ): remove this once error estimation is supported in
+  // Velocity-Implicit Euler.
+  if (!integrator.supports_error_estimation()) GTEST_SKIP();
 
   EXPECT_EQ(integrator.supports_error_estimation(), true);
   DRAKE_EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
@@ -881,7 +913,9 @@ TYPED_TEST_P(ImplicitIntegratorTest, LinearTest) {
   integrator1.set_fixed_step_mode(true);
   integrator1.Initialize();
   ASSERT_TRUE(integrator1.IntegrateWithSingleFixedStepToTime(t_final));
-  if (this->integrator_supports_error_control()) {
+  // TODO(antequ): remove this check once the Velocity-Implicit Euler
+  // supports error estimation
+  if (integrator1.supports_error_estimation()) {
     const double err_est = integrator1.get_error_estimate()->get_vector()[0];
 
     // Note the very tight tolerance used, which will likely not hold for

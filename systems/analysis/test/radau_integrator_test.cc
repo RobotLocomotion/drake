@@ -192,10 +192,11 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
       10 * std::numeric_limits<double>::epsilon());
 }
 
-// Tests accuracy for integrating the linear system (with the state at time t
-// corresponding to f(t) ≡ C₁t + C₀, where C₀ is the initial state) over
-// t ∈ [0, 1]. We check that Radau and not Euler+RK2 is used; everything else
-// is tested in ImplicitIntegratorTest::LinearTest.
+// Tests that Radau1 can successfully integrate the linear system (with the
+// state at time t corresponding to f(t) ≡ C₁t + C₀, where C₀ is the initial
+// state) over t ∈ [0, 1], without falling back to Euler+RK2. In
+// ImplicitIntegratorTest::LinearTest, we also test the accuracy of Radau1 and
+// Radau3 while integrating the same system.
 GTEST_TEST(RadauIntegratorTest, LinearRadauTest) {
   LinearScalarSystem linear;
   auto linear_context = linear.CreateDefaultContext();
