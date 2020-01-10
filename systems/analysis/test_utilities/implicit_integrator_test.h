@@ -17,6 +17,8 @@
 
 namespace drake {
 namespace systems {
+template <typename T>
+class VelocityImplicitEulerIntegrator;
 namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
@@ -47,8 +49,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Separate context necessary for the double spring mass system.
     dspring_context_ = stiff_double_system_->CreateDefaultContext();
-
-    integrator_supports_central_and_auto_diff_ = true;
+    if constexpr(std::is_same_v<IntegratorType,
+        VelocityImplicitEulerIntegrator<double>>) {
+      integrator_supports_central_and_auto_diff_ = false;
+    }
   }
 
   void MiscAPITest(ReuseType type) {

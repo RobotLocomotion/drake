@@ -107,12 +107,6 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   bool supports_error_estimation() const final { return false; }
   int get_error_estimate_order() const final { return 0; }
 
- protected:
-  // The integrator does not support autodiff or central differencing.
-  bool do_supports_autodiff_and_central_differencing() const final {
-    return false;
-  }
-
  private:
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
