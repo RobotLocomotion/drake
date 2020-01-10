@@ -44,9 +44,9 @@ class MultibodyForces {
   /// (Advanced) Tree overload.
   explicit MultibodyForces(const internal::MultibodyTree<T>& model);
 
-  /// Number of bodies and number of velocities overload. This constructor is
-  /// useful for constructing the MultibodyForces structure before a
-  /// MultibodyPlant has been consructed.
+  /// Number of bodies and number of generalized velocities overload. This
+  /// constructor is useful for constructing the MultibodyForces structure
+  /// before a MultibodyPlant has been consructed.
   MultibodyForces(int nb, int nv);
 
   /// Sets `this` to store zero forces (no applied forces).

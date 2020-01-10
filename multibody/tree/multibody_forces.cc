@@ -6,10 +6,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-MultibodyForces<T>::MultibodyForces(const internal::MultibodyTree<T>& model) {
+MultibodyForces<T>::MultibodyForces(const internal::MultibodyTree<T>& model)
+    : MultibodyForces(model.num_bodies(), model.num_velocities()) {
   DRAKE_DEMAND(model.topology_is_valid());
-  F_B_W_.resize(model.num_bodies(), SpatialForce<T>::Zero());
-  tau_ = VectorX<T>::Zero(model.num_velocities());
 }
 
 template <typename T>
