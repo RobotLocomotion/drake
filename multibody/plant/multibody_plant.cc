@@ -2925,14 +2925,37 @@ AddMultibodyPlantSceneGraph(
   return {plant_ptr, scene_graph_ptr};
 }
 
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder, double time_step,
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
+  DRAKE_DEMAND(builder != nullptr);
+  DRAKE_DEMAND(time_step >= 0);
+  auto plant = std::make_unique<MultibodyPlant<T>>(time_step);
+  plant->set_name("plant");
+  return AddMultibodyPlantSceneGraph(builder, std::move(plant),
+                                     std::move(scene_graph));
+}
+
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder) {
+  return AddMultibodyPlantSceneGraph(builder, 0.0);
+}
+
 // Add explicit instantiations for `AddMultibodyPlantSceneGraph`.
 // This does *not* support symbolic::Expression.
-template
-AddMultibodyPlantSceneGraphResult<double>
-AddMultibodyPlantSceneGraph(
+template AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<double>* builder,
     std::unique_ptr<MultibodyPlant<double>> plant,
     std::unique_ptr<geometry::SceneGraph<double>> scene_graph);
+
+template AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<double>* builder, double time_step,
+    std::unique_ptr<geometry::SceneGraph<double>> scene_graph);
+
+template AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<double>* builder);
 
 template
 AddMultibodyPlantSceneGraphResult<AutoDiffXd>
@@ -2940,6 +2963,14 @@ AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<AutoDiffXd>* builder,
     std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant,
     std::unique_ptr<geometry::SceneGraph<AutoDiffXd>> scene_graph);
+
+template AddMultibodyPlantSceneGraphResult<AutoDiffXd>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<AutoDiffXd>* builder, double time_step,
+    std::unique_ptr<geometry::SceneGraph<AutoDiffXd>> scene_graph);
+
+template AddMultibodyPlantSceneGraphResult<AutoDiffXd>
+AddMultibodyPlantSceneGraph(systems::DiagramBuilder<AutoDiffXd>* builder);
 
 }  // namespace multibody
 }  // namespace drake
