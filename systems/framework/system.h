@@ -207,7 +207,6 @@ class System : public SystemBase {
   /// @see @ref stochastic_systems
   virtual void SetRandomState(const Context<T>& context, State<T>* state,
                               RandomGenerator* generator) const {
-    ValidateContext(context);
     unused(generator);
     SetDefaultState(context, state);
   }
@@ -226,7 +225,6 @@ class System : public SystemBase {
   virtual void SetRandomParameters(const Context<T>& context,
                                    Parameters<T>* parameters,
                                    RandomGenerator* generator) const {
-    ValidateContext(context);
     unused(generator);
     SetDefaultParameters(context, parameters);
   }
@@ -234,8 +232,6 @@ class System : public SystemBase {
   // Sets Context fields to random values.  User code should not
   // override.
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
-    ValidateContext(context);
-
     // Set the default state, checking that the number of state variables does
     // not change.
     const int n_xc = context->num_continuous_states();
@@ -558,7 +554,8 @@ class System : public SystemBase {
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
     ValidateContext(context);
-    if (port_index < 0) ThrowNegativePortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -1083,7 +1080,6 @@ class System : public SystemBase {
   Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const {
     DRAKE_ASSERT(context != nullptr);
-    ValidateContext(context);
     // Make use of the const method to avoid code duplication.
     const Context<T>& subcontext = GetSubsystemContext(subsystem, *context);
     return const_cast<Context<T>&>(subcontext);

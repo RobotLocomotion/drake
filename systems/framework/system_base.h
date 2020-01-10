@@ -130,7 +130,8 @@ class SystemBase : public internal::SystemMessageInterface {
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
     ValidateContext(context);
-    if (port_index < 0) ThrowNegativePortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
     return EvalAbstractInputImpl(__func__, context, port);
   }
@@ -152,7 +153,8 @@ class SystemBase : public internal::SystemMessageInterface {
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
     ValidateContext(context);
-    if (port_index < 0) ThrowNegativePortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const AbstractValue* const abstract_value =
@@ -770,7 +772,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
-  /// Checks whether the given context was created for this system.
+  /** Checks whether the given context was created for this system. */
   void ValidateContext(const ContextBase& context) const {
     if (context.get_system_id() != reinterpret_cast<uint64_t>(this)) {
       throw std::logic_error(
@@ -779,14 +781,10 @@ class SystemBase : public internal::SystemMessageInterface {
     }
   }
 
-  /// Checks whether the given context was created for this system.
+  /** Checks whether the given context was created for this system. */
   void ValidateContext(ContextBase* context) const {
     DRAKE_DEMAND(context);
-    if (context->get_system_id() != reinterpret_cast<uint64_t>(this)) {
-      throw std::logic_error(
-          fmt::format("Context was not created for {} system {}",
-                      this->GetSystemType(), this->GetSystemPathname()));
-    }
+    ValidateContext(*context);
   }
 
  protected:
