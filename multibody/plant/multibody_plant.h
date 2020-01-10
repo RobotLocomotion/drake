@@ -4124,11 +4124,9 @@ struct AddMultibodyPlantSceneGraphResult;
 ///   items.plant.DoFoo(...);
 ///   items.scene_graph.DoBar(...);
 /// @endcode
-/// or
+/// or taking advantage of C++17's structured binding
 /// @code
-///   auto items = AddMultibodyPlantSceneGraph(&builder);
-///   MultibodyPlant<double>& plant = items.plant;
-///   SceneGraph<double>& scene_graph = items.scene_graph;
+///   auto[plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
 ///   ...
 ///   plant.DoFoo(...);
 ///   scene_graph.DoBar(...);
@@ -4167,6 +4165,18 @@ struct AddMultibodyPlantSceneGraphResult final {
   /// For assignment to a std::tie of pointers.
   operator std::tuple<MultibodyPlant<T>*&, geometry::SceneGraph<T>*&>() {
     return std::tie(plant_ptr, scene_graph_ptr);
+  }
+
+  /// Returns the N-th member referenced by this struct.
+  /// If N = 0, returns the reference to the MultibodyPlant.
+  /// If N = 1, returns the reference to the geometry::SceneGraph.
+  // N.B. Provided to support C++17's structured binding.
+  template <std::size_t N>
+  decltype(auto) get() const {
+    if constexpr (N == 0)
+      return plant;
+    else if constexpr (N == 1)
+      return scene_graph;
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -4225,6 +4235,28 @@ void MultibodyPlant<symbolic::Expression>::
 
 }  // namespace multibody
 }  // namespace drake
+
+// Specializations provided to support C++17's structured binding for
+// AddMultibodyPlantSceneGraphResult.
+namespace std {
+template <typename T>
+struct tuple_size<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>
+    : std::integral_constant<std::size_t, 2> {};
+
+template <typename T>
+struct tuple_element<0,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::multibody::MultibodyPlant<T>;
+};
+
+template <typename T>
+struct tuple_element<1,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::geometry::SceneGraph<T>;
+};
+
+}  // namespace std
+
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)
