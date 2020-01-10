@@ -21,7 +21,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/examples/multibody/cart_pole/cart_pole.sdf")
         builder = DiagramBuilder()
-        cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         Parser(plant=cart_pole).AddModelFromFile(file_name)
         cart_pole.Finalize()
         self.assertTrue(cart_pole.geometry_source_is_registered())
@@ -58,7 +58,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
             "drake/manipulation/models/iiwa_description/sdf/"
             "iiwa14_no_collision.sdf")
         builder = DiagramBuilder()
-        kuka, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        kuka, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         Parser(plant=kuka).AddModelFromFile(file_name)
         kuka.Finalize()
 
@@ -99,7 +99,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         non-default / non-world model instance).
         """
         builder = DiagramBuilder()
-        mbp, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        mbp, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         world_body = mbp.world_body()
         box_shape = Box(1., 2., 3.)
         # This rigid body will be added to the world model instance since

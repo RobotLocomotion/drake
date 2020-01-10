@@ -39,7 +39,7 @@ class HydroelasticModelTests : public ::testing::Test {
  protected:
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
     AddGround(kFrictionCoefficient_, plant_);
     body_ = &AddObject(plant_, kSphereRadius_, kFrictionCoefficient_);

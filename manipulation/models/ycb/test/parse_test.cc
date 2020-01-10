@@ -55,7 +55,7 @@ TEST_P(ParseTest, Quantities) {
   DiagramBuilder<double> builder;
   MultibodyPlant<double>* plant{};
   SceneGraph<double>* scene_graph{};
-  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(plant).AddModelFromFile(filename);
   ConnectDrakeVisualizer(&builder, *scene_graph);
   plant->Finalize();

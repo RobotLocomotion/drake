@@ -96,7 +96,7 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
     geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
     FrameIndex* sphere2_index) {
   systems::DiagramBuilder<T> builder;
-  std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   AddTwoFreeBodiesToPlant(*plant);
   const auto& sphere1 = (*plant)->GetBodyByName("body1");
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
@@ -138,7 +138,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
     const Eigen::Vector3d& box_size, double radius, MultibodyPlant<T>** plant,
     geometry::SceneGraph<T>** scene_graph) {
   systems::DiagramBuilder<T> builder;
-  std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   const auto& box = (*plant)->AddRigidBody(
       "box", SpatialInertia<double>(1, Eigen::Vector3d(0, 0, 0),
                                     UnitInertia<double>(1, 1, 1)));

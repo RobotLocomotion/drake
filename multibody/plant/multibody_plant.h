@@ -238,7 +238,7 @@ enum class ContactModel {
 /// @endcode
 /// or
 /// @code
-///   auto items = AddMultibodyPlantSceneGraph(&builder);
+///   auto items = AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
 ///   MultibodyPlant<double>& plant = items.plant;
 ///   SceneGraph<double>& scene_graph = items.scene_graph;
 ///   ...
