@@ -200,50 +200,22 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
-    // The check below looks for convergence by identifying cases where the
-    // update to the state results in no change. We do this check only after
-    // at least one Newton-Raphson update has been applied to ensure that there
-    // is at least some change to the state, no matter how small, on a
-    // non-stationary system.
-    if (i > 0 && this->IsUpdateZero(*xtplus, dx)) {
-      DRAKE_LOGGER_DEBUG("Converged with zero update. xt+: {}",
-          xtplus->transpose());
-      return true;
-    }
-
     // Update the state vector.
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
 
-    // Compute the convergence rate and check convergence.
-    // [Hairer, 1996] notes that this convergence strategy should only be
-    // applied after *at least* two iterations (p. 121).
-    if (i > 1) {
-      const T theta = dx_norm / last_dx_norm;
-      const T eta = theta / (1 - theta);
-      DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
-          i, theta, eta);
-
-      // Look for divergence.
-      if (theta > 1) {
-        DRAKE_LOGGER_DEBUG("Newton-Raphson divergence detected for "
-            "h={}", h);
-        break;
-      }
-
-      // Look for convergence using Equation 8.10 from [Hairer, 1996].
-      // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with Radau5 (a fifth order
-      // implicit integrator), p. 121. We select a value halfway in-between.
-      const double kappa = 0.05;
-      const double k_dot_tol = kappa * this->get_accuracy_in_use();
-      if (eta * dx_norm < k_dot_tol) {
-        DRAKE_LOGGER_DEBUG(
-            "Newton-Raphson converged; η = {}, h = {}, xt+ = {}",
-            eta, h, xtplus->transpose());
-        return true;
-      }
-    }
+    // Check for Newton-Raphson convergence.
+    typename ImplicitIntegrator<T>::ConvergenceStatus status =
+        this->CheckNewtonConvergence(i, *xtplus, dx, dx_norm, last_dx_norm);
+    // If it converged, we're done.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
+      return true;
+    // If it diverged, we have to abort and try again.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
+      break;
+    // Otherwise, continue to the next Newton-Raphson iteration.
+    DRAKE_DEMAND(status ==
+                 ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;

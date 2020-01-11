@@ -116,13 +116,6 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
-  enum class ConvergenceStatus {
-    kDiverged,
-    kConverged,
-    kNotConverged,
-  };
-  ConvergenceStatus CheckConvergence(int iteration, const VectorX<T>& xtplus,
-      const VectorX<T>& dx, const T& dx_norm, const T& last_dx_norm) const;
   void ComputeSolutionFromIterate(
       const VectorX<T>& xt0, const VectorX<T>& Z, VectorX<T>* xtplus) const;
   void ComputeAndSetErrorEstimate(
@@ -383,56 +376,6 @@ void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
   *xtplus += xt0;
 }
 
-// Checks the Newton-Raphson iteration process for convergence.
-template <typename T, int num_stages>
-typename RadauIntegrator<T, num_stages>::ConvergenceStatus
-RadauIntegrator<T, num_stages>::CheckConvergence(
-    int iteration, const VectorX<T>& xtplus, const VectorX<T>& dx,
-    const T& dx_norm, const T& last_dx_norm) const {
-  // The check below looks for convergence by identifying cases where the
-  // update to the state results in no change. We do this check only after
-  // at least one Newton-Raphson update has been applied to ensure that there
-  // is at least some change to the state, no matter how small, on a
-  // non-stationary system.
-  if (iteration > 0 && this->IsUpdateZero(xtplus, dx)) {
-    DRAKE_LOGGER_DEBUG("magnitude of state update indicates convergence");
-    return ConvergenceStatus::kConverged;
-  }
-
-  // Compute the convergence rate and check convergence.
-  // [Hairer, 1996] notes that this convergence strategy should only be
-  // applied after *at least* two iterations (p. 121).
-  if (iteration > 1) {
-    // TODO(edrumwri) Hairer's RADAU5 implementation (allegedly) uses
-    // theta = sqrt(dx[k] / dx[k-2]) while DASSL uses
-    // theta = pow(dx[k] / dx[0], 1/k), so investigate setting
-    // theta to these alternative values for minimizing convergence failures.
-    const T theta = dx_norm / last_dx_norm;
-    const T eta = theta / (1 - theta);
-    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
-                 iteration, theta, eta);
-
-    // Look for divergence.
-    if (theta > 1) {
-      DRAKE_LOGGER_DEBUG("Newton-Raphson divergence detected");
-      return ConvergenceStatus::kDiverged;
-    }
-
-    // Look for convergence using Equation IV.8.10 from [Hairer, 1996].
-    // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-    // efficiently on a number of test problems with *Radau5* (a fifth order
-    // implicit integrator), p. 121. We select a value halfway in-between.
-    const double kappa = 0.05;
-    const double k_dot_tol = kappa * this->get_accuracy_in_use();
-    if (eta * dx_norm < k_dot_tol) {
-      DRAKE_LOGGER_DEBUG("Newton-Raphson converged; η = {}", eta);
-      return ConvergenceStatus::kConverged;
-    }
-  }
-
-  return ConvergenceStatus::kNotConverged;
-}
-
 // Computes the next continuous state (at t0 + h) using the Radau method,
 // assuming that the method is able to converge at that step size.
 // @param t0 the initial time.
@@ -551,12 +494,18 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Compute the update.
     ComputeSolutionFromIterate(xt0, Z_, &(*xtplus));
 
-    // Check for convergence.
-    ConvergenceStatus status =
-        CheckConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
-    if (status == ConvergenceStatus::kConverged) return true;  // We win.
-    if (status == ConvergenceStatus::kDiverged) break;  // Try something else.
-    DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
+    // Check for Newton-Raphson convergence.
+    typename ImplicitIntegrator<T>::ConvergenceStatus status =
+        this->CheckNewtonConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
+    // If it converged, we're done.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
+      return true;
+    // If it diverged, we have to abort and try again.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
+      break;
+    // Otherwise, continue to the next Newton-Raphson iteration.
+    DRAKE_DEMAND(status ==
+                 ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
@@ -715,12 +664,18 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
 
-    // Check for convergence.
-    ConvergenceStatus status =
-        CheckConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
-    if (status == ConvergenceStatus::kConverged) return true;  // We win.
-    if (status == ConvergenceStatus::kDiverged) break;  // Try something else.
-    DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
+    // Check for Newton-Raphson convergence.
+    typename ImplicitIntegrator<T>::ConvergenceStatus status =
+        this->CheckNewtonConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
+    // If it converged, we're done.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
+      return true;
+    // If it diverged, we have to abort and try again.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
+      break;
+    // Otherwise, continue to the next Newton-Raphson iteration.
+    DRAKE_DEMAND(status ==
+                 ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
