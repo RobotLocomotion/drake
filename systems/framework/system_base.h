@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <map>
 #include <memory>
@@ -772,24 +773,28 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
-  /** Checks whether the given context was created for this system. */
+  /** Checks whether the given context was created for this system.
+   @note This method is sufficiently fast for performance sensitive code.
+  */
   void ValidateContext(const ContextBase& context) const {
-    if (context.get_system_id() != reinterpret_cast<uint64_t>(this)) {
+    if (context.get_system_id() != system_id_) {
       throw std::logic_error(
           fmt::format("Context was not created for {} system {}",
                       this->GetSystemType(), this->GetSystemPathname()));
     }
   }
 
-  /** Checks whether the given context was created for this system. */
+  /** Checks whether the given context was created for this system.
+   @note This method is sufficiently fast for performance sensitive code.
+   */
   void ValidateContext(ContextBase* context) const {
-    DRAKE_DEMAND(context);
+    DRAKE_THROW_UNLESS(context != nullptr);
     ValidateContext(*context);
   }
 
  protected:
-  /** (Internal use only) Default constructor. */
-  SystemBase() = default;
+  /** (Internal use only). */
+  SystemBase() { system_id_ = get_next_id(); }
 
   /** (Internal use only) Adds an already-constructed input port to this System.
   Insists that the port already contains a reference to this System, and that
@@ -1065,6 +1070,13 @@ class SystemBase : public internal::SystemMessageInterface {
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
+  static uint64_t get_next_id() {
+    // Note that id 0 is used to indicate that the id has not been initialized.
+    // So we have an invariant "get_next_id() > 0".
+    static never_destroyed<std::atomic<uint64_t>> next_id(1);
+    return next_id.access()++;
+  }
+
   // Used to create trackers for variable-number System-allocated objects.
   struct TrackerInfo {
     DependencyTicket ticket;
@@ -1126,6 +1138,10 @@ class SystemBase : public internal::SystemMessageInterface {
 
   // Name of this system.
   std::string name_;
+
+  // Unique ID of the subsystem whose subcontext this is. The default value
+  // (zero) should be treated as uninitialized and invalid.
+  uint64_t system_id_{0};
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

@@ -64,7 +64,7 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
   internal::SystemBaseContextBaseAttorney::set_system_name(
       &context, get_name());
   internal::SystemBaseContextBaseAttorney::set_system_id(
-      &context, reinterpret_cast<int64_t>(this));
+      &context, system_id_);
 
   // Add the independent-source trackers and wire them up appropriately. That
   // includes input ports since their dependencies are external.

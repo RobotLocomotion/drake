@@ -688,7 +688,7 @@ class SystemBaseContextBaseAttorney {
     DRAKE_DEMAND(context != nullptr);
     context->set_system_name(name);
   }
-  static void set_system_id(ContextBase* context, int64_t id) {
+  static void set_system_id(ContextBase* context, uint64_t id) {
     DRAKE_DEMAND(context != nullptr);
     context->set_system_id(id);
   }
