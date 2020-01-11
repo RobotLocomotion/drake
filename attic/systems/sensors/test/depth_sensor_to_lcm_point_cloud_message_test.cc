@@ -39,21 +39,19 @@ class TestDepthSensorToLcmPointCloudMessage : public ::testing::Test {
         dut.pose_input_port();
     EXPECT_EQ(pose_input_port.size(), PoseVector<double>::kSize);
 
-    auto depth_sensor_output =
-        std::make_unique<DepthSensorOutput<double>>(spec_);
+    auto depth_sensor_output = DepthSensorOutput<double>(spec_);
     const double half_range = (spec_.max_range() - spec_.min_range()) / 2;
-    depth_sensor_output->SetFromVector(Eigen::VectorXd::Ones(
+    depth_sensor_output.SetFromVector(Eigen::VectorXd::Ones(
         spec_.num_depth_readings()) * half_range);
 
     std::unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-    context->FixInputPort(sensor_data_input_port.get_index(),
-        std::move(depth_sensor_output));
+    sensor_data_input_port.FixValue(context.get(), depth_sensor_output);
 
     if (fix_pose_input_port) {
-      auto pose_input =  std::make_unique<PoseVector<double>>();
-      pose_input->set_translation(X_WS.get_translation());
-      pose_input->set_rotation(X_WS.get_rotation());
-      context->FixInputPort(pose_input_port.get_index(), std::move(pose_input));
+      auto pose_input =  PoseVector<double>();
+      pose_input.set_translation(X_WS.get_translation());
+      pose_input.set_rotation(X_WS.get_rotation());
+      pose_input_port.FixValue(context.get(), pose_input);
     }
 
     output_ = dut.AllocateOutput();

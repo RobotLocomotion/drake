@@ -129,9 +129,8 @@ class TransformPointCloudTest : public ::testing::Test {
     state_input_.head(tree_->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0;
 
     context_ = transformer_->CreateDefaultContext();
-    context_->FixInputPort(
-        0, AbstractValue::Make<PointCloud>(*cloud_input_.get()));
-    context_->FixInputPort(1, state_input_);
+    transformer_->get_input_port(0).FixValue(context_.get(), *cloud_input_);
+    transformer_->get_input_port(1).FixValue(context_.get(), state_input_);
   }
 };
 

@@ -225,7 +225,7 @@ class TestRigidBodyPlant(unittest.TestCase):
         # - Force publish to ensure we have enough knot points.
         context = viz.CreateDefaultContext()
         x0 = np.zeros(tree.get_num_positions() + tree.get_num_velocities())
-        context.FixInputPort(0, BasicVector(x0))
+        viz.get_input_port(0).FixValue(context, x0)
         context.SetTime(0.)
         viz.Publish(context)
         # Use a small time period, since it uses realtime playback.
