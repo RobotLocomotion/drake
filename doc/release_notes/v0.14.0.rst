@@ -2,6 +2,131 @@
 Drake v0.14.0
 *************
 
+Newly-deprecated APIs
+---------------------
+
+* drake::multibody::MultibodyPlant default constructor with no arguments
+  (`#12525`_)
+
+  - Use constructor with time_step argument explicit specified instead.
+
+* pydrake.multibody.rigid_body_tree.RigidBodyTree.number_of_positions
+  (`#12514`_)
+
+  - Use pydrake.multibody.rigid_body_tree.RigidBodyTree.get_num_positions
+    instead.
+
+* pydrake.multibody.rigid_body_tree.RigidBodyTree.number_of_velocities
+  (`#12514`_)
+
+  - Use pydrake.multibody.rigid_body_tree.RigidBodyTree.get_num_velocities
+    instead.
+
+Removal of deprecated APIs
+--------------------------
+
+* drake::systems::Simulator::StepTo (`#12515`_)
+
+  - Use drake::systems::Simulator::AdvanceTo instead.
+
+* Bazel label @drake//solvers:mathematical_program_lite (`#12515`_)
+
+  - Use @drake//solvers:mathematical_program instead.
+
+* Attic removals (`#12514`_)
+
+  * DrakeJoint::getNumPositions
+
+    - Use DrakeJoint::get_num_positions instead.
+
+  * DrakeJoint::getNumVelocities
+
+    - Use DrakeJoint::get_num_velocities instead.
+
+  * DrakeJoint::getTransformToParentBody
+
+    - Use DrakeJoint::get_transform_to_parent_body instead.
+
+  * DrakeJoint::getName
+
+    - Use DrakeJoint::get_name instead.
+
+  * DrakeJoint::getPositionName
+
+    - Use DrakeJoint::get_position_name instead.
+
+  * DrakeJoint::getVelocityName
+
+    - Use DrakeJoint::get_velocity_name instead.
+
+  * DrakeJoint::isFloating
+
+    - Use DrakeJoint::is_floating instead.
+
+  * Several overloads of AddModelInstanceFromUrdfString
+
+    - Use more specific overload names.
+
+  * RigidBody::hasParent
+
+    - Use RigidBody::has_parent_body instead.
+
+  * RigidBodyTree::get_number_of_model_instances
+
+    - Use RigidBodyTree::get_num_model_instances instead.
+
+  * RigidBodyTree::getPositionName
+
+    - Use RigidBodyTree::get_position_name instead.
+
+  * RigidBodyTree::getVelocityName
+
+    - Use RigidBodyTree::get_velocity_name instead.
+
+  * RigidBodyTree::findAncestorBodies
+
+    - Use RigidBodyTree::FindAncestorBodies instead.
+
+  * RigidBodyTree::findLinkId
+
+    - Use RigidBodyTree::FindBodyIndex instead.
+
+  * RigidBodyTree::findJointId
+
+    - Use RigidBodyTree::FindIndexOfChildBodyOfJoint instead.
+
+  * RigidBodyTree::get_number_of_bodies
+
+    - Use RigidBodyTree::get_num_bodies instead.
+
+  * RigidBodyTree::number_of_positions
+
+    - Use RigidBodyTree::get_num_positions instead.
+
+  * RigidBodyTree::number_of_velocities
+
+    - Use RigidBodyTree::get_num_velocities instead.
+
+  * RigidBodyTree::bodies
+
+    - Use RigidBodyTree::get_bodies and RigidBodyTree::add_rigid_body instead.
+
+  * RigidBodyTree::frames
+
+    -  Use RigidBodyTree::get_frames and RigidBodyTree::addFrame instead.
+
+  * ``InverseDynamics(const RigidBodyTree<T>*, bool)``
+
+    - Use constructor with InverseDynamicsType instead.
+
+  * InverseDynamics::get_output_port_torque
+
+    - Use InverseDynamics::get_output_port_force instead.
+
+  * InverseDynamicsController::get_robot_for_control
+
+    - Use InverseDynamicsController::get_rigid_body_tree_for_control instead.
+
 .. _#10987: https://github.com/RobotLocomotion/drake/pull/10987
 .. _#12418: https://github.com/RobotLocomotion/drake/pull/12418
 .. _#12423: https://github.com/RobotLocomotion/drake/pull/12423
@@ -84,11 +209,9 @@ Raw Output from relnotes
 * Parse the collision filter group for urdfs (`#12495`_)
 * pydrake: Test parsing all models (`#12508`_)
 * Add binding for RegisterRgbdSensor in manipulation station (`#12513`_)
-* Remove deprecated code (2020-01) (`#12515`_)
 * pydrake: Use np.asarray in gradient and jacobian (`#12511`_)
 * workspace: Move GitHub token filename to command line, not environ (`#12518`_)
 * Added traction and slip vector visualization for hydroelastic contact (`#12493`_)
-* attic: Remove deprecated methods (2020-01) (`#12514`_)
 * workspace: Upgrade bullet to latest release 2.89 (`#12516`_)
 * workspace: Upgrade meshcat to latest commit (`#12516`_)
 * workspace: Upgrade semantic_version to latest release 2.8.4 (`#12516`_)
@@ -102,7 +225,6 @@ Raw Output from relnotes
 * mkdoc: Fix comment handling edge cases (`#12519`_)
 * evaluator_base: Check output size (`#10987`_)
 * Bug fix warning on unsupported joint limits for continuous models (`#12531`_)
-* Deprecates default ctor with no arguments. Argument time_step is now required (`#12525`_)
 * systems/controllers: Change context.FixInputPort() to port.FixValue() (`#12535`_)
 * systems/primitives: Change context.FixInputPort() to port.FixValue() (`#12535`_)
 * systems/sensors: Change context.FixInputPort() to port.FixValue() (`#12535`_)
