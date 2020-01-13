@@ -8,12 +8,9 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -36,8 +33,6 @@ DEFINE_double(realtime_factor, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int do_main() {
-  systems::DiagramBuilder<double> builder;
-
   AcrobotPlant<double> acrobot;
   auto context = acrobot.CreateDefaultContext();
 
@@ -79,27 +74,17 @@ int do_main() {
     return 1;
   }
 
+  // Now construct a diagram to visualize the results.
+  systems::DiagramBuilder<double> builder;
   const trajectories::PiecewisePolynomial<double> pp_xtraj =
       dircol.ReconstructStateTrajectory(result);
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
-      multibody::joints::kFixed, tree.get());
-
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-
-  // By default, the simulator triggers a publish event at the end of each time
-  // step of the integrator. However, since this system is only meant for
-  // playback, there is no continuous state and the integrator does not even get
-  // called. Therefore, we explicitly set the publish frequency for the
-  // visualizer.
-  publisher->set_publish_period(1.0 / 60.0);
-
-  builder.Connect(state_source->get_output_port(),
-                  publisher->get_input_port(0));
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  AcrobotGeometry::AddToBuilder(
+      &builder, state_source->get_output_port(),
+      AcrobotParams<double>(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
 
   auto diagram = builder.Build();
 

@@ -65,7 +65,12 @@
       </geometry>
     </collision>
   </link>
-  
+
+  <joint name="base_weld" type="fixed">
+    <parent link="world" />
+    <child link="base_link" />
+  </joint>
+
   <joint name="shoulder" type="continuous">
     <parent link="base_link" />
     <child link="upper_link" />

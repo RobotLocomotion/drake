@@ -26,6 +26,13 @@ element {
     min_value: "0.0"
 }
 element {
+    name: "l2"
+    doc: "Length of link 2."
+    doc_units: "m"
+    default_value: "2.0"
+    min_value: "0.0"
+}
+element {
     name: "lc1"
     doc: "Vertical distance from shoulder joint to center of mass of link 1."
     doc_units: "m"

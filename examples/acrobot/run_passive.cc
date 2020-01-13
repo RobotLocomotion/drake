@@ -2,14 +2,10 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/examples/acrobot/gen/acrobot_state.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -29,17 +25,14 @@ DEFINE_double(realtime_factor, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int do_main() {
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
-      multibody::joints::kFixed, tree.get());
-
   systems::DiagramBuilder<double> builder;
   auto acrobot = builder.AddSystem<AcrobotPlant>();
   acrobot->set_name("acrobot");
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  AcrobotGeometry::AddToBuilder(
+      &builder, acrobot->get_output_port(0),
+      AcrobotParams<double>(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
