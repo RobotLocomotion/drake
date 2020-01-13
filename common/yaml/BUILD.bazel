@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "yaml",
     deps = [
         ":yaml_read_archive",
+        ":yaml_write_archive",
     ],
 )
 
@@ -30,6 +31,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "yaml_write_archive",
+    srcs = ["yaml_write_archive.cc"],
+    hdrs = ["yaml_write_archive.h"],
+    deps = [
+        "//common:essential",
+        "//common:name_value",
+        "@yaml_cpp",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -38,6 +50,14 @@ drake_cc_googletest(
         ":yaml_read_archive",
         "//common:name_value",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_write_archive_test",
+    deps = [
+        ":yaml_write_archive",
+        "//common:name_value",
     ],
 )
 
