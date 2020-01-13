@@ -3,15 +3,11 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/proto/call_python.h"
+#include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/examples/acrobot/gen/acrobot_state.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/estimators/kalman_filter.h"
 #include "drake/systems/framework/diagram.h"
@@ -46,15 +42,11 @@ int do_main() {
   auto acrobot = acrobot_w_encoder->acrobot_plant();
 
   // Attach a DrakeVisualizer so we can animate the robot.
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
-      multibody::joints::kFixed, tree.get());
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
-  builder.Connect(acrobot_w_encoder->get_output_port(1),
-                  publisher->get_input_port(0));
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  AcrobotGeometry::AddToBuilder(
+      &builder, acrobot_w_encoder->get_output_port(1),
+      AcrobotParams<double>(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
 
   // Make a Kalman filter observer.
   auto observer_acrobot = std::make_unique<AcrobotWEncoder<double>>();

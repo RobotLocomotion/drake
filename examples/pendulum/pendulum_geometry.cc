@@ -16,8 +16,6 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;

@@ -1,5 +1,5 @@
 /*
- * An acrobot Spong controller that communicates to acrobot_plang_w_lcm
+ * An acrobot Spong controller that communicates to run_plant_w_lcm
  * through LCM, implemented by the following diagram system:
  *
  * LcmSubscriberSystem—>
