@@ -2,6 +2,15 @@
 Drake v0.14.0
 *************
 
+Breaking Changes
+----------------
+
+* SDFormat 1.7 backwards-incompatible changes (`#12505`_)
+
+  - Models must have at least one link
+  - The model frame is now attached to a link
+  - Model frames can no longer reference "world"
+
 Dynamical Systems
 -----------------
 
@@ -28,6 +37,42 @@ Fixes
 
 * Check output size in EvaluatorBase (`#10987`_)
 * Fix scope_exit deps for snopt_fortran (`#12545`_)
+
+Multibody Dynamics
+------------------
+
+New features
+
+* Use Articulated Body Algorithm (ABA) in
+  MultibodyPlant::DoCalcTimeDerivatives() (`#12470`_)
+* Add drake contact material properties to SDFormat/URDF parsing (`#12491`_)
+* Parse the collision filter group for URDFs (`#12495`_)
+* Register a geometry frame for all MultibodyPlant bodies (`#12489`_)
+* Add ability to construct MultibodyForces before constructing a MultibodyPlant
+  (`#12556`_)
+* Support ellipsoid rendering (`#12547`_)
+* Add graphviz visualization of multibodyplant topology (`#12485`_)
+* Support parsing SDFormat 1.7 (`#12505`_). Incorporates the `pose frame
+  semantics <https://bit.ly/2ZSl1kH>`_ proposal.
+
+Fixes
+
+* Bug fix warning on unsupported joint limits for continuous models (`#12531`_)
+* Fix scalar conversion bug in RevoluteSpring (`#12522`_)
+* Pad bounding box volumes to avoid roundoff issues (`#12538`_)
+* Confirm that all supported geometries are nominally parsed (`#12541`_)
+* Provide more helpful message on joint limit support in MBP (`#12499`_)
+* Test parsing of all models reachable via pydrake (URDF / SDFormat) (`#12508`_)
+* Hotfix for memory leak in libsdformat's Converter.cc (`#12533`_)
+
+New hydroelastic contact model in progress (still only experimental):
+
+* Collide BVHs using OBB intersection test with callback on the resulting pairs
+  (`#12418`_)
+* Add LCM messages for traction and slip velocity vectors (`#12471`_)
+* Add traction and slip vector visualization for hydroelastic contact
+  (`#12493`_)
+* Modify parsing semantics for hydroelastics (`#12529`_)
 
 Newly-deprecated APIs
 ---------------------
@@ -217,39 +262,25 @@ Raw Output from relnotes
 ------------------------
 
 * Add python bindings for PendulumGeometry (`#12569`_)
-* Adding drake contact material properties to sdf/urdf parsing (`#12491`_)  # This introduces a new XML sub-tree that is largely common between both SDF and URDF. SDF version: <drake:proximity_properties> <drake:mesh_resolution_hint>1.3</drake:hydroelastic_resolution_hint> <drake:elastic_modulus>1e8</drake:elastic_modulus> <drake:hunt_crossley_dissipation>0.25</drake:hunt_crossley_dissipation> <drake:mu_dynamic>0.7</drake:mu_dynamic> <drake:mu_static>0.7</drake:mu_static> </drake:proximity_properties> URDF version: <drake:proximity_properties> <drake:mesh_resolution_hint value="1.3" /> <drake:elastic_modulus value="1e8" /> <drake:hunt_crossley_dissipation value="0.25" /> <drake:mu_dynamic value="0.7" /> <drake:mu_static value="0.7" /> </drake:proximity_properties> (URDF differs because URDF has a style that uses attributes whereas SDF eschews them.) - Parsing collision geometry now creates a populated ProximityProperties and stores the parsed properties there. - There is some code that provides legacy compatibility with old mechanisms for specifying coefficients of friction so that existing files will still work (albeit with warnings). - MBP API has been extended to accept proximity properties compatible with this parsing logic. The old API needs to be deprecated (in a follow up commit). We still need to add "soft" deprecation for when we use the legacy functionality. It can't be compile-time, so it'll have to be warnings with a time stamp.
-* Add LCM messages for traction and slip velocity vectors (`#12471`_)
-* Add a function to register frame to all bodies (#12118) (`#12489`_)  # * Register a geometry frame to all bodies (#12118) Change the fundamental behaivor that every body now has at least one corresponding geometry frame registered. This registration happens in the finalization. An API has been provided for this functionality.
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Adds LCM messaging to the planar-gripper simulation (`#12469`_)  # Also adds a fix to properly order keyframe joints according to MBP velocity index ordering.
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
-* More helpful message on joint limit support in MBP (`#12499`_)  # Related to #12498
 * Add Dockerfile for Binder (`#12472`_)
-* Add graphviz visualization of multibodyplant topology (`#12485`_)  # Resolves #11441
 * Add planar iiwa urdf and use it in ManipulationStation (`#12502`_)  # Includes generalizing the num_iiwa_joints method and a proof of life example.
 * manipulation: Change context.FixInputPort() to port.FixValue() (`#12504`_)
 * perception: Change context.FixInputPort() to port.FixValue() (`#12504`_)
 * Add planar iiwa joint teleop example (`#12503`_)  # and necessary python bindings. * planar iiwa end effector teleop with sliders add spacebar instruction to gripper UI
 * Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)  # Relates #11962 and moby/moby#35018.
-* Parse the collision filter group for urdfs (`#12495`_)
-* pydrake: Test parsing all models (`#12508`_)
 * Add binding for RegisterRgbdSensor in manipulation station (`#12513`_)
 * pydrake: Use np.asarray in gradient and jacobian (`#12511`_)
 * workspace: Move GitHub token filename to command line, not environ (`#12518`_)
-* Added traction and slip vector visualization for hydroelastic contact (`#12493`_)
 * workspace: Upgrade bullet to latest release 2.89 (`#12516`_)
 * workspace: Upgrade meshcat to latest commit (`#12516`_)
 * workspace: Upgrade semantic_version to latest release 2.8.4 (`#12516`_)
 * workspace: Upgrade uritemplate_py to latest release 3.0.1 (`#12516`_)
 * setup: Remove ipopt,mumps uninstall on macOS (`#12517`_)
 * Drake Lcm comment/documentation cleanups (`#12521`_)  # * The constructor comment describes an interface that was deprecated and removed months ago; remove it as the ctor behaviour is trivial. * The inconsistent regex support (#12523) was not noted; note it now.
-* Fixes scalar conversion bug in RevoluteSpring (`#12522`_)  # * Implements force element getters. * Bug fix to RevoluteSpring * Implements scalar conversion unit test
-* Enables ABA in MBP::DoCalcTimeDerivatives() (`#12470`_)
-* sdformat: Update to libsdformat 9.0 (SDFormat 1.7) (`#12505`_)  # This PR incorporates libsdformat 9.0, which supports the specification of SDFormat 1.7. Specifically, this incorporates pose frame semantics for SDFormat, which are described in this proposal: http://sdformat.org/tutorials?tut=pose_frame_semantics_proposal&cat=pose_semantics_docs (source permalink: https://bit.ly/2ZSl1kH) A brief summary of the changes from the proposal: * Users may now specify poses relative to another frame using `//pose/@relative_to` * Before, this was `//pose/@frame`, and was not described in the spec and only partially supported in Drake, but nowhere else. * Poses and frames within models cannot refer to the "world" frame. * Users may now specify explicit frames, which will be exposed as `MultibodyPlant` frames, and can be used within `//pose/@relative_to`. * Users can specify the attached-to fame using `//frame/@attached_to`. Before, this was specified using `//frame/pose/@frame`, and was only partially supported in Drake and nowhere else. * All SDFormat models now have a canonical link, and all models have a model frame attached to this canonical link. * For this reason, all models must have at least one link. * `//joint/axis/xyz/@expressed_in` can be used to express an axis in a given frame. `//joint/axis/use_parent_model_frame` has been removed in SDFormat 1.7, but will be converted automatically from SDFormat 1.6 to 1.7. (Note: The above paths are using XPath syntax.)
-* sdformat: Hotfix for memory leak in Converter.cc (`#12533`_)
 * mkdoc: Fix comment handling edge cases (`#12519`_)
-* Bug fix warning on unsupported joint limits for continuous models (`#12531`_)
-* Collide BVHs using OBB intersection test with callback on the resulting pairs (`#12418`_)  # - pass transform for comparing the AABBs using OBB intersection test - early exit option as soon as a potential collision pair is found - accumulator wrapper helper function for getting a list of all the pairs
 * systems/cleanup: Change context.FixInputPort() to port.FixValue() (`#12535`_)
 * common: Add scope_exit class (`#12537`_)
 * lcm: Escape regex characters in DrakeLcm channel names (`#12534`_)  # Drake no longer accidentally supports regexes for channel names.
@@ -258,9 +289,4 @@ Raw Output from relnotes
 * common: Deprecate drake_nodiscard.h (`#12539`_)
 * Textured objects (`#12423`_)  # Previously, the only textured objects allowed were for mesh objects and the texture had to be the same name as the mesh file. This opens the door to applying textures to any of the primitives. Furthermore, the texture can be specified in either URDF or SDF (via a custom drake tag). The textures are used *only* in rendering (RenderEngine*). Currently, arbitrary textures are *not* communicated to drake visualizer. The concept is tested in examples/scene_graph/bouncing_ball_run_dynamics.cc -- the balls now have rainbow textures. Updates MBP so that when a "visual" geometry is introduced, pre-existing ('phong', 'diffuse_map') properties get passed along. Finally, parsing infrastructure was modified to support deferred image validation. (After all, an image can be specified in URDF/SDF but if it isn't consumed in the system, missing the image isn't actually a problem.)
 * tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
-* Confirming that all supported geometries are nominally parsed (`#12541`_)  # Although the sub-components (e.g., reading a Drake::Shape from an sdf <geometry> tag) are tested, the proper exercise of those components is *not* tested. This adds those tests. In the process of those tests, the following happened: 1. Fixed bug in sdf parser that prevented capsules and ellipsoids from being added as collision geometries. 2. Added parsing of ellipsoids to URDF.
-* Modifying parsing semantics for hydroelastics (`#12529`_)  # 1. No longer determine compliance from <drake:elastic_modulus/>. 2. Requires at most one of <drake:soft_hydroelastic/> or <drake:rigid_hydroelastic/>. 3. Changing the logic for triggering hydroelastic representation generation to make use of the declared property.
-* Pad bounding box volumes to avoid roundoff issues (`#12538`_)
-* Support ellipsoid rendering (`#12547`_)
-* Adds ability to construct MultibodyForces before constructing a MultibodyPlant (`#12556`_)  # Adds ability to construct MultibodyForces without a MultibodyPlant..
 * Add python bindings for PendulumGeometry (`#12569`_)
