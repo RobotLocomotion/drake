@@ -76,7 +76,9 @@ class SystemBase : public internal::SystemMessageInterface {
   not compatible with this System. Restrictions may vary for different systems;
   the error message should explain. This can be an expensive check so you may
   want to limit it to Debug builds. */
-  DRAKE_DEPRECATED("2020-05-01", "This method is no longer necessary.")
+  DRAKE_DEPRECATED("2020-05-01",
+                   "This method is no longer necessary. See ValidateContext() "
+                   "for a possible replacement.")
   void ThrowIfContextNotCompatible(const ContextBase& context) const final {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

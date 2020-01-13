@@ -36,6 +36,9 @@ struct StepInfo {
 /// (for composite System Diagrams). Users are forbidden to extend
 /// DiagramContext and are discouraged from subclassing LeafContext.
 ///
+/// A %Context is designed to be used only with the System that created it.
+/// State and Parameter data can be copied between contexts for compatible
+/// systems as necessary.
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
