@@ -303,8 +303,6 @@ Raw Output from relnotes
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
 * Add Dockerfile for Binder (`#12472`_)
-* manipulation: Change context.FixInputPort() to port.FixValue() (`#12504`_)
-* perception: Change context.FixInputPort() to port.FixValue() (`#12504`_)
 * Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)  # Relates #11962 and moby/moby#35018.
 * workspace: Move GitHub token filename to command line, not environ (`#12518`_)
 * workspace: Upgrade bullet to latest release 2.89 (`#12516`_)
@@ -313,7 +311,6 @@ Raw Output from relnotes
 * workspace: Upgrade uritemplate_py to latest release 3.0.1 (`#12516`_)
 * setup: Remove ipopt,mumps uninstall on macOS (`#12517`_)
 * mkdoc: Fix comment handling edge cases (`#12519`_)
-* systems/cleanup: Change context.FixInputPort() to port.FixValue() (`#12535`_)
 * Update recommended Bazel version to 2.0 (`#12526`_)
 * Textured objects (`#12423`_)  # Previously, the only textured objects allowed were for mesh objects and the texture had to be the same name as the mesh file. This opens the door to applying textures to any of the primitives. Furthermore, the texture can be specified in either URDF or SDF (via a custom drake tag). The textures are used *only* in rendering (RenderEngine*). Currently, arbitrary textures are *not* communicated to drake visualizer. The concept is tested in examples/scene_graph/bouncing_ball_run_dynamics.cc -- the balls now have rainbow textures. Updates MBP so that when a "visual" geometry is introduced, pre-existing ('phong', 'diffuse_map') properties get passed along. Finally, parsing infrastructure was modified to support deferred image validation. (After all, an image can be specified in URDF/SDF but if it isn't consumed in the system, missing the image isn't actually a problem.)
 * tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
