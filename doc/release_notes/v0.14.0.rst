@@ -2,6 +2,11 @@
 Drake v0.14.0
 *************
 
+Announcements
+-------------
+
+* Drake's `tutorials`_ are directly runnable using Binder (`#12472`_)
+
 Breaking Changes
 ----------------
 
@@ -110,6 +115,23 @@ Newly bound
 * pydrake.examples.manipulation_station.ManipulationStation.SetupPlanarIiwaStation (`#12503`_)
 * pydrake.examples.manipulation_station.ManipulationStation.num_iiwa_joints (`#12503`_)
 * pydrake.examples.manipulation_station.ManipulationStation.RegisterRgbdSensor (`#12513`_)
+
+Build system and dependencies
+-----------------------------
+
+* Add Dockerfile for Binder (`#12472`_)
+* Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)
+* Error out on now-unsupported --config=snopt_fortran (`#12549`_)
+* Update recommended Bazel version to 2.0 (`#12526`_)
+* Fix mkdoc comment handling edge cases (`#12519`_)
+* Upgrade bullet to latest release 2.89 (`#12516`_)
+* Upgrade libsdformat to latest release 9.0 (`#12505`_)
+* Upgrade meshcat to latest commit (`#12516`_)
+* Upgrade semantic_version to latest release 2.8.4 (`#12516`_)
+* Upgrade uritemplate_py to latest release 3.0.1 (`#12516`_)
+* Remove uninstall of ipopt and mumps on macOS (`#12517`_)
+* Move GitHub token filename for relnotes to command line, not environ
+  (`#12518`_)
 
 Newly-deprecated APIs
 ---------------------
@@ -304,14 +326,3 @@ Raw Output from relnotes
 
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
-* Add Dockerfile for Binder (`#12472`_)
-* Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)  # Relates #11962 and moby/moby#35018.
-* workspace: Move GitHub token filename to command line, not environ (`#12518`_)
-* workspace: Upgrade bullet to latest release 2.89 (`#12516`_)
-* workspace: Upgrade meshcat to latest commit (`#12516`_)
-* workspace: Upgrade semantic_version to latest release 2.8.4 (`#12516`_)
-* workspace: Upgrade uritemplate_py to latest release 3.0.1 (`#12516`_)
-* setup: Remove ipopt,mumps uninstall on macOS (`#12517`_)
-* mkdoc: Fix comment handling edge cases (`#12519`_)
-* Update recommended Bazel version to 2.0 (`#12526`_)
-* tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
