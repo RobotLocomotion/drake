@@ -53,7 +53,7 @@ TEST_P(ParseTest, Quantities) {
       "drake/manipulation/models/ycb/sdf/{}.sdf", object_name));
 
   DiagramBuilder<double> builder;
-  auto[plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
+  auto[plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelFromFile(filename);
   ConnectDrakeVisualizer(&builder, scene_graph);
   plant.Finalize();

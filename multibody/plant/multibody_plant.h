@@ -4284,22 +4284,31 @@ void MultibodyPlant<symbolic::Expression>::
 // Specializations provided to support C++17's structured binding for
 // AddMultibodyPlantSceneGraphResult.
 namespace std {
+// The GCC standard library defines tuple_size as class and struct which
+// triggers a warning here.
+// We found this solution in: https://github.com/nlohmann/json/issues/1401
+#if defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-tags"
+#endif
 template <typename T>
-class tuple_size<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>
+struct tuple_size<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>
     : std::integral_constant<std::size_t, 2> {};
 
 template <typename T>
-class tuple_element<0, drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
- public:
+struct tuple_element<0,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
   using type = drake::multibody::MultibodyPlant<T>;
 };
 
 template <typename T>
-class tuple_element<1, drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
- public:
+struct tuple_element<1,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
   using type = drake::geometry::SceneGraph<T>;
 };
-
+#if defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 }  // namespace std
 #endif
 
