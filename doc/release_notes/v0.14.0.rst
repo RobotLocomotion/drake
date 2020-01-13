@@ -74,6 +74,22 @@ New hydroelastic contact model in progress (still only experimental):
   (`#12493`_)
 * Modify parsing semantics for hydroelastics (`#12529`_)
 
+pydrake bindings
+----------------
+
+New features
+
+Fixes
+
+* Use np.asarray in gradient and jacobian (`#12511`_)
+
+Newly bound
+
+* pydrake.examples.pendulum.PendulumGeometry (`#12569`_)
+* pydrake.examples.manipulation_station.ManipulationStation.SetupPlanarIiwaStation (`#12503`_)
+* pydrake.examples.manipulation_station.ManipulationStation.num_iiwa_joints (`#12503`_)
+* pydrake.examples.manipulation_station.ManipulationStation.RegisterRgbdSensor (`#12513`_)
+
 Newly-deprecated APIs
 ---------------------
 
@@ -269,10 +285,7 @@ Raw Output from relnotes
 * Add planar iiwa urdf and use it in ManipulationStation (`#12502`_)  # Includes generalizing the num_iiwa_joints method and a proof of life example.
 * manipulation: Change context.FixInputPort() to port.FixValue() (`#12504`_)
 * perception: Change context.FixInputPort() to port.FixValue() (`#12504`_)
-* Add planar iiwa joint teleop example (`#12503`_)  # and necessary python bindings. * planar iiwa end effector teleop with sliders add spacebar instruction to gripper UI
 * Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)  # Relates #11962 and moby/moby#35018.
-* Add binding for RegisterRgbdSensor in manipulation station (`#12513`_)
-* pydrake: Use np.asarray in gradient and jacobian (`#12511`_)
 * workspace: Move GitHub token filename to command line, not environ (`#12518`_)
 * workspace: Upgrade bullet to latest release 2.89 (`#12516`_)
 * workspace: Upgrade meshcat to latest commit (`#12516`_)
@@ -289,4 +302,3 @@ Raw Output from relnotes
 * common: Deprecate drake_nodiscard.h (`#12539`_)
 * Textured objects (`#12423`_)  # Previously, the only textured objects allowed were for mesh objects and the texture had to be the same name as the mesh file. This opens the door to applying textures to any of the primitives. Furthermore, the texture can be specified in either URDF or SDF (via a custom drake tag). The textures are used *only* in rendering (RenderEngine*). Currently, arbitrary textures are *not* communicated to drake visualizer. The concept is tested in examples/scene_graph/bouncing_ball_run_dynamics.cc -- the balls now have rainbow textures. Updates MBP so that when a "visual" geometry is introduced, pre-existing ('phong', 'diffuse_map') properties get passed along. Finally, parsing infrastructure was modified to support deferred image validation. (After all, an image can be specified in URDF/SDF but if it isn't consumed in the system, missing the image isn't actually a problem.)
 * tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
-* Add python bindings for PendulumGeometry (`#12569`_)
