@@ -18,11 +18,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 
-// TODO(jeremy.nimmer) Once this code has stabilized, we should move it into
-// drake/common/yaml (next to yaml_read_archive).
-
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 
 /// Saves data from a C++ structure into a YAML file, using the Serialize /
 /// Archive pattern.
@@ -333,5 +330,5 @@ class YamlWriteArchive final {
   std::vector<std::string> visit_order_;
 };
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake

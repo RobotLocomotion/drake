@@ -1,4 +1,4 @@
-#include "common/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_write_archive.h"
 
 #include <cmath>
 #include <vector>
@@ -7,7 +7,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-using anzu::common::YamlWriteArchive;
+#include "drake/common/name_value.h"
+
+using drake::yaml::YamlWriteArchive;
 
 namespace {
 
@@ -183,8 +185,8 @@ struct OuterStruct {
 
 }  // namespace
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 namespace {
 
 // A test fixture with common helpers.
@@ -203,7 +205,7 @@ class YamlWriteArchiveTest : public ::testing::Test {
 };
 
 TEST_F(YamlWriteArchiveTest, Double) {
-  const auto test = [this](const double value, const std::string& expected) {
+  const auto test = [](const double value, const std::string& expected) {
     const DoubleStruct x{value};
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
@@ -224,8 +226,7 @@ TEST_F(YamlWriteArchiveTest, Double) {
 }
 
 TEST_F(YamlWriteArchiveTest, String) {
-  const auto test = [this](const std::string& value,
-                           const std::string& expected) {
+  const auto test = [](const std::string& value, const std::string& expected) {
     const StringStruct x{value};
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
@@ -235,8 +236,8 @@ TEST_F(YamlWriteArchiveTest, String) {
 }
 
 TEST_F(YamlWriteArchiveTest, StdArray) {
-  const auto test = [this](const std::array<double, 3>& value,
-                           const std::string& expected) {
+  const auto test = [](const std::array<double, 3>& value,
+                       const std::string& expected) {
     const ArrayStruct x{value};
     EXPECT_EQ(Save(x), expected);
   };
@@ -247,8 +248,8 @@ TEST_F(YamlWriteArchiveTest, StdArray) {
 }
 
 TEST_F(YamlWriteArchiveTest, StdVector) {
-  const auto test = [this](const std::vector<double>& value,
-                           const std::string& expected) {
+  const auto test = [](const std::vector<double>& value,
+                       const std::string& expected) {
     const VectorStruct x{value};
     EXPECT_EQ(Save(x), expected);
   };
@@ -334,8 +335,8 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
 }
 
 TEST_F(YamlWriteArchiveTest, Optional) {
-  const auto test = [this](const std::optional<double>& value,
-                           const std::string& expected) {
+  const auto test = [](const std::optional<double>& value,
+                       const std::string& expected) {
     const OptionalStruct x{value};
     EXPECT_EQ(Save(x), expected);
   };
@@ -345,8 +346,7 @@ TEST_F(YamlWriteArchiveTest, Optional) {
 }
 
 TEST_F(YamlWriteArchiveTest, Variant) {
-  const auto test = [this](const Variant3& value,
-                           const std::string& expected) {
+  const auto test = [](const Variant3& value, const std::string& expected) {
     const VariantStruct x{value};
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
@@ -355,8 +355,8 @@ TEST_F(YamlWriteArchiveTest, Variant) {
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {
-  const auto test = [this](const Eigen::VectorXd& value,
-                           const std::string& expected) {
+  const auto test = [](const Eigen::VectorXd& value,
+                       const std::string& expected) {
     const EigenVecStruct x{value};
     EXPECT_EQ(Save(x), expected);
     const EigenVec3Struct x3{value};
@@ -369,8 +369,8 @@ TEST_F(YamlWriteArchiveTest, EigenVector) {
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVectorX) {
-  const auto test = [this](const Eigen::VectorXd& value,
-                           const std::string& expected) {
+  const auto test = [](const Eigen::VectorXd& value,
+                       const std::string& expected) {
     const EigenVecStruct x{value};
     EXPECT_EQ(Save(x), expected);
   };
@@ -385,8 +385,7 @@ TEST_F(YamlWriteArchiveTest, EigenVectorX) {
 
 TEST_F(YamlWriteArchiveTest, EigenMatrix) {
   using Matrix34d = Eigen::Matrix<double, 3, 4>;
-  const auto test = [this](const Matrix34d& value,
-                           const std::string& expected) {
+  const auto test = [](const Matrix34d& value, const std::string& expected) {
     const EigenMatrixStruct x{value};
     EXPECT_EQ(Save(x), expected);
     const EigenMatrix34Struct x3{value};
@@ -417,5 +416,5 @@ TEST_F(YamlWriteArchiveTest, Nested) {
 }
 
 }  // namespace
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake

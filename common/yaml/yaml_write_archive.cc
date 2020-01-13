@@ -1,4 +1,4 @@
-#include "common/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_write_archive.h"
 
 #include <algorithm>
 #include <utility>
@@ -6,8 +6,8 @@
 
 #include "drake/common/drake_assert.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 
 // This function uses the same approach as YAML::NodeEvents::Emit.
 // https://github.com/jbeder/yaml-cpp/blob/release-0.5.2/src/nodeevents.cpp#L55
@@ -88,5 +88,5 @@ std::string YamlWriteArchive::YamlDumpWithSortedMaps(
   return emitter.c_str();
 }
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake
