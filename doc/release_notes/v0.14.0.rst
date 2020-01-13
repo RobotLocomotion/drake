@@ -2,6 +2,25 @@
 Drake v0.14.0
 *************
 
+Dynamical Systems
+-----------------
+
+New features
+
+* Add ability to do full-Newton to implicit integrators (`#12524`_)
+
+Fixes
+
+* Update Simulator's interface for changing integrators (`#12520`_)
+* Correct SymbolicVectorSystem "container" population (`#12500`_)
+* Change context.FixInputPort() to port.FixValue() (`#12504`_, `#12535`_,
+  `#12555`_)
+
+Documentation
+
+* Add high level event documentation (`#12501`_)
+* Remove duplicated @name from integrator docs (`#12550`_)
+
 Newly-deprecated APIs
 ---------------------
 
@@ -200,10 +219,8 @@ Raw Output from relnotes
 * Add Dockerfile for Binder (`#12472`_)
 * Add graphviz visualization of multibodyplant topology (`#12485`_)  # Resolves #11441
 * Add planar iiwa urdf and use it in ManipulationStation (`#12502`_)  # Includes generalizing the num_iiwa_joints method and a proof of life example.
-* multibody: Change context.FixInputPort() to port.FixValue() (`#12504`_)
 * manipulation: Change context.FixInputPort() to port.FixValue() (`#12504`_)
 * perception: Change context.FixInputPort() to port.FixValue() (`#12504`_)
-* Correct SymbolicVectorSystem "container" population (`#12500`_)  # When evaluating various expressions (output, dynamics, or discrete updates), SymbolicVectorSystem builds an Environment or Substitution in order to map inputs to results. The original implementation would conservatively attempt to populate the container with every defined variable, even if the expression being evaluated didn't need it. This meant if there were *any* input variables, the input port would be evaluated. In small plant-controller loops, this quickly leads to spurious algebraic loops as input invokes output and vice versa forever. This changes the population algorithm to strategically evaluate the input ports based on a *known* need.
 * Add planar iiwa joint teleop example (`#12503`_)  # and necessary python bindings. * planar iiwa end effector teleop with sliders add spacebar instruction to gripper UI
 * Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)  # Relates #11962 and moby/moby#35018.
 * Parse the collision filter group for urdfs (`#12495`_)
@@ -225,28 +242,19 @@ Raw Output from relnotes
 * mkdoc: Fix comment handling edge cases (`#12519`_)
 * evaluator_base: Check output size (`#10987`_)
 * Bug fix warning on unsupported joint limits for continuous models (`#12531`_)
-* systems/controllers: Change context.FixInputPort() to port.FixValue() (`#12535`_)
-* systems/primitives: Change context.FixInputPort() to port.FixValue() (`#12535`_)
-* systems/sensors: Change context.FixInputPort() to port.FixValue() (`#12535`_)
-* systems/rendering: Change context.FixInputPort() to port.FixValue() (`#12535`_)
 * Collide BVHs using OBB intersection test with callback on the resulting pairs (`#12418`_)  # - pass transform for comparing the AABBs using OBB intersection test - early exit option as soon as a potential collision pair is found - accumulator wrapper helper function for getting a list of all the pairs
 * systems/cleanup: Change context.FixInputPort() to port.FixValue() (`#12535`_)
-* Updated Simulator's interface for changing integrators (`#12520`_)
 * common: Add scope_exit class (`#12537`_)
 * lcm: Escape regex characters in DrakeLcm channel names (`#12534`_)  # Drake no longer accidentally supports regexes for channel names.
 * Update recommended Bazel version to 2.0 (`#12526`_)
 * common: Remove stale TODOs (`#12540`_)
 * common: Deprecate drake_nodiscard.h (`#12539`_)
-* Adds ability to do full-Newton to implicit integrators (`#12524`_)
 * solvers: Fix scope_exit deps for snopt_fortran (`#12545`_)  # This repairs a bug in b14c7254e4c1679bb6173669f705acf2f063c634.
 * Textured objects (`#12423`_)  # Previously, the only textured objects allowed were for mesh objects and the texture had to be the same name as the mesh file. This opens the door to applying textures to any of the primitives. Furthermore, the texture can be specified in either URDF or SDF (via a custom drake tag). The textures are used *only* in rendering (RenderEngine*). Currently, arbitrary textures are *not* communicated to drake visualizer. The concept is tested in examples/scene_graph/bouncing_ball_run_dynamics.cc -- the balls now have rainbow textures. Updates MBP so that when a "visual" geometry is introduced, pre-existing ('phong', 'diffuse_map') properties get passed along. Finally, parsing infrastructure was modified to support deferred image validation. (After all, an image can be specified in URDF/SDF but if it isn't consumed in the system, missing the image isn't actually a problem.)
-* Adds high level event documentation (`#12501`_)
 * tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
 * Confirming that all supported geometries are nominally parsed (`#12541`_)  # Although the sub-components (e.g., reading a Drake::Shape from an sdf <geometry> tag) are tested, the proper exercise of those components is *not* tested. This adds those tests. In the process of those tests, the following happened: 1. Fixed bug in sdf parser that prevented capsules and ellipsoids from being added as collision geometries. 2. Added parsing of ellipsoids to URDF.
 * Modifying parsing semantics for hydroelastics (`#12529`_)  # 1. No longer determine compliance from <drake:elastic_modulus/>. 2. Requires at most one of <drake:soft_hydroelastic/> or <drake:rigid_hydroelastic/>. 3. Changing the logic for triggering hydroelastic representation generation to make use of the declared property.
 * Pad bounding box volumes to avoid roundoff issues (`#12538`_)
 * Support ellipsoid rendering (`#12547`_)
-* Removes duplicated @name from integrator docs (`#12550`_)
 * Adds ability to construct MultibodyForces before constructing a MultibodyPlant (`#12556`_)  # Adds ability to construct MultibodyForces without a MultibodyPlant..
-* attic: Change context.FixInputPort() to port.FixValue() (`#12555`_)
 * Add python bindings for PendulumGeometry (`#12569`_)
