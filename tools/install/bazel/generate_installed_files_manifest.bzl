@@ -2,6 +2,7 @@
 # vi: set ft=python :
 
 load("@drake//tools/install:install.bzl", "InstallInfo")
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 
 def _impl(ctx):
     known_non_runfiles = [
@@ -13,18 +14,24 @@ def _impl(ctx):
         "setup/requirements.txt",
     ]
     drake_runfiles = []
+    drake_prologue = "share/drake/"
+    lcmtypes_drake_py_files = []
+    lcmtypes_drake_py_prologue = PYTHON_SITE_PACKAGES_RELPATH + "/drake/"
     for dest in ctx.attr.target[InstallInfo].installed_files:
-        prologue = "share/drake/"
-        if not dest.startswith(prologue):
-            continue
-        drake_relative_path = dest[len(prologue):]
-        if drake_relative_path in known_non_runfiles:
-            continue
-        drake_runfiles.append(drake_relative_path)
+        if dest.startswith(drake_prologue):
+            relative_path = dest[len(drake_prologue):]
+            if relative_path in known_non_runfiles:
+                continue
+            drake_runfiles.append(relative_path)
+        elif dest.startswith(lcmtypes_drake_py_prologue):
+            relative_path = dest[len(lcmtypes_drake_py_prologue):]
+            lcmtypes_drake_py_files.append(relative_path)
     content = {
         "runfiles": {
             "drake": sorted(drake_runfiles),
         },
+        "lcmtypes_drake_py": sorted(lcmtypes_drake_py_files),
+        "python_site_packages_relpath": PYTHON_SITE_PACKAGES_RELPATH,
     }
     ctx.actions.write(
         output = ctx.outputs.out,
