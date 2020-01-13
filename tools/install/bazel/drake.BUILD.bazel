@@ -57,6 +57,12 @@ filegroup(
 
 _IMPORT = ".lib/python3.6/site-packages"
 
+# N.B. This is not a standalone Python library.
+py_library(
+    name = ".drake_lcmtypes",
+    srcs = glob(["*.py"]),
+)
+
 py_library(
     name = ".pydrake",
     srcs = glob(include = [
@@ -67,6 +73,9 @@ py_library(
     ]) + [
         ":.all_runfiles",
         ":.drake_shared_library",
+    ],
+    deps = [
+        ":.drake_lcmtypes",
     ],
     imports = [
         _IMPORT,

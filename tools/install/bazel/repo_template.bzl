@@ -73,6 +73,29 @@ def _drake_impl(repo_ctx):
     for path, body in _BUILD_FILE_CONTENTS.items():
         repo_ctx.file(path, content = body, executable = False)
 
+    # Symlink all drake LCM types to this repository's root package, since it
+    # should be named `drake` (see #3998).
+    # WARNING: These LCM types will not be importable via `drake` if this
+    # repository is not named `drake`. To fix this, we would have to duplicate
+    # the `drake` package.
+    # TODO(eric.cousineau): Make this part of manifest generation?
+    drake_lcmtypes_package = ".lib/python3.6/site-packages/drake"
+    find_prefix = drake_lcmtypes_package + "/"
+    result = repo_ctx.execute(
+        ["find", find_prefix, "-name", "*.py"],
+    )
+    if result.return_code != 0:
+        fail("Could not find drake lcmtypes files:\n{}\n{}".format(
+            result.stdout,
+            result.stderr,
+        ))
+    relpaths = result.stdout.strip().split("\n")
+    for relpath in relpaths:
+        if not relpath.startswith(find_prefix):
+            fail("Error")
+        relpath_drake = relpath[len(find_prefix):]
+        repo_ctx.symlink(relpath, relpath_drake)
+
     # Symlink the data resources into the repository.  These must exactly match
     # a Drake source tree's physical structure, since we cannot easily alter
     # the path for runfiles via our BUILD files.
