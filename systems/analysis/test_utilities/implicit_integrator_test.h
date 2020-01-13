@@ -54,7 +54,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
   void MiscAPITest(ReuseType type) {
     // Create the integrator for a System<double>.
-    T integrator(*spring_mass_, &spring_mass_context());
+    T integrator(*spring_mass_, spring_mass_context_.get());
 
     // Verifies set_reuse(flag) == get_reuse() == flag
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -597,14 +597,19 @@ class ImplicitIntegratorTest : public ::testing::Test {
   double constant_force_magnitude() const { return constant_force_mag_; }
   double semistiff_spring_stiffness() const { return semistiff_spring_k_; }
   const SpringMassSystem<double>& spring_mass() const { return *spring_mass_; }
-  Context<double>& spring_mass_context() { return *spring_mass_context_; }
-  Context<double>& spring_mass_damper_context() {
-    return *spring_mass_damper_context_;
-  }
-  Context<double>& mod_spring_mass_damper_context() {
-    return *mod_spring_mass_damper_context_;
-  }
 
+  std::unique_ptr<Context<double>> spring_mass_context_;
+  std::unique_ptr<Context<double>> spring_mass_damper_context_;
+  std::unique_ptr<Context<double>> mod_spring_mass_damper_context_;
+  std::unique_ptr<Context<double>> dspring_context_;
+  std::unique_ptr<SpringMassSystem<double>> spring_mass_;
+  std::unique_ptr<implicit_integrator_test::SpringMassDamperSystem<double>>
+      spring_mass_damper_;
+  std::unique_ptr<
+      implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>>
+      mod_spring_mass_damper_;
+  std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
+      stiff_double_system_;
 
  private:
   bool reuse_type_to_bool(ReuseType type) {
@@ -641,19 +646,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
     integrator->ResetStatistics();
   }
-
-  std::unique_ptr<Context<double>> spring_mass_context_;
-  std::unique_ptr<Context<double>> spring_mass_damper_context_;
-  std::unique_ptr<Context<double>> mod_spring_mass_damper_context_;
-  std::unique_ptr<Context<double>> dspring_context_;
-  std::unique_ptr<SpringMassSystem<double>> spring_mass_;
-  std::unique_ptr<implicit_integrator_test::SpringMassDamperSystem<double>>
-      spring_mass_damper_;
-  std::unique_ptr<
-      implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>>
-      mod_spring_mass_damper_;
-  std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
-      stiff_double_system_;
 
   const double h_ = 1e-3;                 // Default integration step size.
   const double large_h_ = 1e-1;           // Large integration step size.
@@ -735,7 +727,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
 TYPED_TEST_P(ImplicitIntegratorTest, ContextAccess) {
   // Create the integrator.
   using Integrator = TypeParam;
-  Integrator integrator(this->spring_mass(), &this->spring_mass_context());
+  Integrator integrator(this->spring_mass(), this->spring_mass_context_.get());
 
   integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
@@ -750,7 +742,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, ContextAccess) {
 TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
   using Integrator = TypeParam;
-  Integrator integrator(this->spring_mass(), &this->spring_mass_context());
+  Integrator integrator(this->spring_mass(), this->spring_mass_context_.get());
 
   EXPECT_EQ(integrator.supports_error_estimation(), true);
   DRAKE_EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
