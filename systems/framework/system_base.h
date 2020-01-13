@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <functional>
 #include <map>
 #include <memory>
@@ -77,8 +76,12 @@ class SystemBase : public internal::SystemMessageInterface {
   not compatible with this System. Restrictions may vary for different systems;
   the error message should explain. This can be an expensive check so you may
   want to limit it to Debug builds. */
+  DRAKE_DEPRECATED("2020-05-01", "This method is no longer necessary.")
   void ThrowIfContextNotCompatible(const ContextBase& context) const final {
-    CheckContextConsistentWithThis(context);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    CheckValidContext(context);
+#pragma GCC diagnostic pop
   }
 
   /** Returns a Context suitable for use with this System. Context resources
@@ -467,18 +470,14 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
-  /** Checks whether the given context is "consistent" for this System, meaning
-  that it has a structure (e.g., ports, states, etc.) compatible with this.
-  This method throws an exception with a helpful message if not. This is *very*
-  expensive and should generally be done only in Debug builds, like this:
-  @code
-     DRAKE_ASSERT_VOID(CheckContextConsistentWithThis(context));
-  @endcode */
-  void CheckContextConsistentWithThis(const ContextBase& context) const {
+  DRAKE_DEPRECATED(
+      "2020-05-01",
+      "This method's functionality has been replaced by ValidateContext().")
+  void CheckValidContext(const ContextBase& context) const {
     // TODO(sherm1) Add base class checks.
 
     // Let derived classes have their say.
-    DoCheckContextConsistentWithThis(context);
+    DoCheckValidContext(context);
   }
 
   //============================================================================
@@ -779,8 +778,10 @@ class SystemBase : public internal::SystemMessageInterface {
   void ValidateContext(const ContextBase& context) const {
     if (context.get_system_id() != system_id_) {
       throw std::logic_error(
-          fmt::format("Context was not created for {} system {}",
-                      this->GetSystemType(), this->GetSystemPathname()));
+          fmt::format("Context was not created for {} system {}; it was "
+                      "created for system {}",
+                      this->GetSystemType(), this->GetSystemPathname(),
+                      context.GetSystemPathname()));
     }
   }
 
@@ -794,7 +795,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
  protected:
   /** (Internal use only). */
-  SystemBase() { system_id_ = get_next_id(); }
+  SystemBase() = default;
 
   /** (Internal use only) Adds an already-constructed input port to this System.
   Insists that the port already contains a reference to this System, and that
@@ -1061,21 +1062,14 @@ class SystemBase : public internal::SystemMessageInterface {
   parameters and state should be allocated. */
   virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
-  /** Derived classes must implement this to verify that the supplied
-  Context has structure consistent with this system, and throw an exception if
-  not. This is a runtime check but may be expensive so is not guaranteed to be
-  invoked except in Debug builds. */
-  virtual void DoCheckContextConsistentWithThis(const ContextBase&) const = 0;
+  // TODO(jwnimmer-tri) Remove this function with CheckValidContext() has been
+  // removed.
+  virtual void DoCheckValidContext(const ContextBase&) const {}
 
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
-  static uint64_t get_next_id() {
-    // Note that id 0 is used to indicate that the id has not been initialized.
-    // So we have an invariant "get_next_id() > 0".
-    static never_destroyed<std::atomic<uint64_t>> next_id(1);
-    return next_id.access()++;
-  }
+  static uint64_t get_next_id();
 
   // Used to create trackers for variable-number System-allocated objects.
   struct TrackerInfo {
@@ -1139,9 +1133,9 @@ class SystemBase : public internal::SystemMessageInterface {
   // Name of this system.
   std::string name_;
 
-  // Unique ID of the subsystem whose subcontext this is. The default value
-  // (zero) should be treated as uninitialized and invalid.
-  uint64_t system_id_{0};
+  // Unique ID of this system. The default value (zero) should be treated as
+  // uninitialized and invalid.
+  const uint64_t system_id_{get_next_id()};
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

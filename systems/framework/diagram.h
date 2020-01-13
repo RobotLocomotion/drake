@@ -1117,7 +1117,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
-    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
     const DiagramEventCollection<PublishEvent<T>>& info =
@@ -1143,7 +1142,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final {
-    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
     auto diagram_discrete =
@@ -1202,7 +1200,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final {
-    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);

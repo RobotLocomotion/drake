@@ -232,6 +232,8 @@ class System : public SystemBase {
   // Sets Context fields to random values.  User code should not
   // override.
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
+    ValidateContext(context);
+
     // Set the default state, checking that the number of state variables does
     // not change.
     const int n_xc = context->num_continuous_states();
@@ -1374,14 +1376,11 @@ class System : public SystemBase {
     }
   }
 
-  /// Checks that @p context is consistent for this System template. Supports
-  /// any scalar type, but expects T by default.
-  ///
-  /// @throws std::exception unless `context` is valid for this system.
-  /// @tparam T1 the scalar type of the Context to check.
-  // TODO(sherm1) This method needs to be unit tested.
   template <typename T1 = T>
-  void CheckContextConsistentWithThisT(const Context<T1>& context) const {
+  DRAKE_DEPRECATED(
+      "2020-05-01",
+      "This method's functionality has been replaced by ValidateContext().")
+  void CheckValidContextT(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.num_input_ports() ==
@@ -1611,9 +1610,6 @@ class System : public SystemBase {
                          Context<T>* target_context) const {
     ValidateContext(target_context);
     other_system.ValidateContext(other_context);
-    DRAKE_ASSERT_VOID(CheckContextConsistentWithThisT(other_context));
-    DRAKE_ASSERT_VOID(
-        other_system.CheckContextConsistentWithThisT(*target_context));
 
     for (int i = 0; i < num_input_ports(); ++i) {
       const auto& input_port = get_input_port(i);
@@ -2341,12 +2337,16 @@ class System : public SystemBase {
   virtual std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const = 0;
 
+  // TODO(jwnimmer-tri) Remove this function when CheckValidContext() has been
+  // removed.
   // SystemBase override checks a Context of same type T.
-  void DoCheckContextConsistentWithThis(
-      const ContextBase& context_base) const final {
+  void DoCheckValidContext(const ContextBase& context_base) const final {
     const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
     DRAKE_THROW_UNLESS(context != nullptr);
-    CheckContextConsistentWithThisT(*context);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    CheckValidContextT(*context);
+#pragma GCC diagnostic pop
   }
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(

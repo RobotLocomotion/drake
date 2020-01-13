@@ -49,14 +49,6 @@ class MySystemBase final : public SystemBase {
     return context;
   }
 
-  void DoCheckContextConsistentWithThis(
-      const ContextBase& context) const final {
-    auto& my_context = dynamic_cast<const MyContextBase&>(context);
-    if (my_context.is_good())
-      return;
-    throw std::logic_error("This Context is totally unacceptable!");
-  }
-
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex) const override {
     return {};
@@ -83,14 +75,6 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
 
   EXPECT_EQ(system.GetSystemType(),
             "drake::systems::system_base_test_internal::MySystemBase");
-
-  auto context = system.AllocateContext();
-  DRAKE_EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
-
-  MyContextBase bad_context(false);
-  DRAKE_EXPECT_THROWS_MESSAGE(system.ThrowIfContextNotCompatible(bad_context),
-                              std::logic_error,
-                              ".*Context.*unacceptable.*");
 }
 
 }  // namespace system_base_test_internal
