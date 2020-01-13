@@ -262,6 +262,12 @@ Removal of deprecated APIs
 
     - Use InverseDynamicsController::get_rigid_body_tree_for_control instead.
 
+This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.14.0>`__ named ``drake-20120113-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
+
+.. _tutorials: https://github.com/RobotLocomotion/drake/tree/master/tutorials
+
 .. _#10987: https://github.com/RobotLocomotion/drake/pull/10987
 .. _#12418: https://github.com/RobotLocomotion/drake/pull/12418
 .. _#12423: https://github.com/RobotLocomotion/drake/pull/12423
