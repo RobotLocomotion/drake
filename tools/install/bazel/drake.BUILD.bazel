@@ -7,6 +7,8 @@ package(default_visibility = ["//:__subpackages__"])
 
 _DRAKE_RUNFILES = MANIFEST["runfiles"]["drake"]
 
+_PYTHON_SITE_PACKAGES_RELPATH = MANIFEST["python_site_packages_relpath"]
+
 _DRAKE_ROOT_PACKAGE_RUNFILES = [x for x in _DRAKE_RUNFILES if "/" not in x]
 
 _EXPECTED_DRAKE_RUNFILES_PACKAGES = [
@@ -55,7 +57,16 @@ filegroup(
     ]),
 )
 
-_IMPORT = ".lib/python3.6/site-packages"
+_IMPORT = "." + _PYTHON_SITE_PACKAGES_RELPATH
+
+# N.B. This is not a standalone Python library.
+# TODO(eric.cousineau): Expose this as an alias
+# `@drake//lcmtypes:lcmtypes_drake_py` when it can only depend on specific
+# parts of the runfiles (not all of pydrake).
+py_library(
+    name = ".lcmtypes_drake_py",
+    srcs = glob(["*.py"]),
+)
 
 py_library(
     name = ".pydrake",
@@ -67,6 +78,9 @@ py_library(
     ]) + [
         ":.all_runfiles",
         ":.drake_shared_library",
+    ],
+    deps = [
+        ":.lcmtypes_drake_py",
     ],
     imports = [
         _IMPORT,
