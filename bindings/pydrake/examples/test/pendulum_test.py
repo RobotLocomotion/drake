@@ -1,14 +1,12 @@
-import copy
 import unittest
-import numpy as np
 
-import pydrake.systems.framework as framework
 from pydrake.examples.pendulum import (
-    PendulumInput, PendulumParams, PendulumPlant, PendulumState
+    PendulumGeometry, PendulumInput, PendulumParams, PendulumPlant,
+    PendulumState
     )
-from pydrake.systems.analysis import (
-    Simulator
-    )
+from pydrake.geometry import SceneGraph
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestPendulum(unittest.TestCase):
@@ -40,6 +38,16 @@ class TestPendulum(unittest.TestCase):
         state.set_thetadot(2.)
         self.assertEqual(state.theta(), 1.)
         self.assertEqual(state.thetadot(), 2.)
+
+    def test_geometry(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(PendulumPlant())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = PendulumGeometry.AddToBuilder(
+            builder=builder, pendulum_state_port=plant.get_output_port(0),
+            scene_graph=scene_graph)
+        builder.Build()
+        self.assertIsInstance(geom, PendulumGeometry)
 
     def test_simulation(self):
         # Basic constant-torque pendulum simulation.
