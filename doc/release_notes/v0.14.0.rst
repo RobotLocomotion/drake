@@ -21,6 +21,14 @@ Documentation
 * Add high level event documentation (`#12501`_)
 * Remove duplicated @name from integrator docs (`#12550`_)
 
+Mathematical Program
+--------------------
+
+Fixes
+
+* Check output size in EvaluatorBase (`#10987`_)
+* Fix scope_exit deps for snopt_fortran (`#12545`_)
+
 Newly-deprecated APIs
 ---------------------
 
@@ -240,7 +248,6 @@ Raw Output from relnotes
 * sdformat: Update to libsdformat 9.0 (SDFormat 1.7) (`#12505`_)  # This PR incorporates libsdformat 9.0, which supports the specification of SDFormat 1.7. Specifically, this incorporates pose frame semantics for SDFormat, which are described in this proposal: http://sdformat.org/tutorials?tut=pose_frame_semantics_proposal&cat=pose_semantics_docs (source permalink: https://bit.ly/2ZSl1kH) A brief summary of the changes from the proposal: * Users may now specify poses relative to another frame using `//pose/@relative_to` * Before, this was `//pose/@frame`, and was not described in the spec and only partially supported in Drake, but nowhere else. * Poses and frames within models cannot refer to the "world" frame. * Users may now specify explicit frames, which will be exposed as `MultibodyPlant` frames, and can be used within `//pose/@relative_to`. * Users can specify the attached-to fame using `//frame/@attached_to`. Before, this was specified using `//frame/pose/@frame`, and was only partially supported in Drake and nowhere else. * All SDFormat models now have a canonical link, and all models have a model frame attached to this canonical link. * For this reason, all models must have at least one link. * `//joint/axis/xyz/@expressed_in` can be used to express an axis in a given frame. `//joint/axis/use_parent_model_frame` has been removed in SDFormat 1.7, but will be converted automatically from SDFormat 1.6 to 1.7. (Note: The above paths are using XPath syntax.)
 * sdformat: Hotfix for memory leak in Converter.cc (`#12533`_)
 * mkdoc: Fix comment handling edge cases (`#12519`_)
-* evaluator_base: Check output size (`#10987`_)
 * Bug fix warning on unsupported joint limits for continuous models (`#12531`_)
 * Collide BVHs using OBB intersection test with callback on the resulting pairs (`#12418`_)  # - pass transform for comparing the AABBs using OBB intersection test - early exit option as soon as a potential collision pair is found - accumulator wrapper helper function for getting a list of all the pairs
 * systems/cleanup: Change context.FixInputPort() to port.FixValue() (`#12535`_)
@@ -249,7 +256,6 @@ Raw Output from relnotes
 * Update recommended Bazel version to 2.0 (`#12526`_)
 * common: Remove stale TODOs (`#12540`_)
 * common: Deprecate drake_nodiscard.h (`#12539`_)
-* solvers: Fix scope_exit deps for snopt_fortran (`#12545`_)  # This repairs a bug in b14c7254e4c1679bb6173669f705acf2f063c634.
 * Textured objects (`#12423`_)  # Previously, the only textured objects allowed were for mesh objects and the texture had to be the same name as the mesh file. This opens the door to applying textures to any of the primitives. Furthermore, the texture can be specified in either URDF or SDF (via a custom drake tag). The textures are used *only* in rendering (RenderEngine*). Currently, arbitrary textures are *not* communicated to drake visualizer. The concept is tested in examples/scene_graph/bouncing_ball_run_dynamics.cc -- the balls now have rainbow textures. Updates MBP so that when a "visual" geometry is introduced, pre-existing ('phong', 'diffuse_map') properties get passed along. Finally, parsing infrastructure was modified to support deferred image validation. (After all, an image can be specified in URDF/SDF but if it isn't consumed in the system, missing the image isn't actually a problem.)
 * tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
 * Confirming that all supported geometries are nominally parsed (`#12541`_)  # Although the sub-components (e.g., reading a Drake::Shape from an sdf <geometry> tag) are tested, the proper exercise of those components is *not* tested. This adds those tests. In the process of those tests, the following happened: 1. Fixed bug in sdf parser that prevented capsules and ellipsoids from being added as collision geometries. 2. Added parsing of ellipsoids to URDF.
