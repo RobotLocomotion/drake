@@ -54,6 +54,8 @@ New features
 * Add graphviz visualization of multibodyplant topology (`#12485`_)
 * Support parsing SDFormat 1.7 (`#12505`_). Incorporates the `pose frame
   semantics <https://bit.ly/2ZSl1kH>`_ proposal.
+* Support textures for primitive objects, not just meshes (`#12423`_). This
+  only applies to rendering (RenderEngine*).
 
 Fixes
 
@@ -312,5 +314,4 @@ Raw Output from relnotes
 * setup: Remove ipopt,mumps uninstall on macOS (`#12517`_)
 * mkdoc: Fix comment handling edge cases (`#12519`_)
 * Update recommended Bazel version to 2.0 (`#12526`_)
-* Textured objects (`#12423`_)  # Previously, the only textured objects allowed were for mesh objects and the texture had to be the same name as the mesh file. This opens the door to applying textures to any of the primitives. Furthermore, the texture can be specified in either URDF or SDF (via a custom drake tag). The textures are used *only* in rendering (RenderEngine*). Currently, arbitrary textures are *not* communicated to drake visualizer. The concept is tested in examples/scene_graph/bouncing_ball_run_dynamics.cc -- the balls now have rainbow textures. Updates MBP so that when a "visual" geometry is introduced, pre-existing ('phong', 'diffuse_map') properties get passed along. Finally, parsing infrastructure was modified to support deferred image validation. (After all, an image can be specified in URDF/SDF but if it isn't consumed in the system, missing the image isn't actually a problem.)
 * tools: Error out on now-unsupported --config=snopt_fortran (`#12549`_)  # Instead, use --config=snopt for the same effect.
