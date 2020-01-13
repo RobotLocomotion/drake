@@ -2914,10 +2914,11 @@ AddMultibodyPlantSceneGraph(
   //   plant->set_name("plant");
   if (!plant) {
     static const logging::Warn log_once(
-        "DRAKE DEPRECATED: Use alternative overloads explicitly providing a "
+        "DRAKE DEPRECATED: AddMultibodyPlantSceneGraph(builder, nullptr) is "
+        "now deprecated. Use alternative overloads explicitly providing a "
         "continuous or discrete MultibodyPlant modality. To retain the prior "
         "behavior of using a continuous-time plant, pass time_step = 0.0. The "
-        "deprecated code will be removed from Drake on or after 2020-05-01."
+        "deprecated code will be removed from Drake on or after 2020-05-01.");
     plant = std::make_unique<MultibodyPlant<T>>(0.0);
     plant->set_name("plant");
   }
