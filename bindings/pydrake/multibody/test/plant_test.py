@@ -141,6 +141,11 @@ class TestPlant(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             MultibodyPlant_[float]()
 
+    def test_deprecated_construction_api(self):
+        builder = DiagramBuilder_[float]()
+        with catch_drake_warnings(expected_count=1):
+            AddMultibodyPlantSceneGraph(builder)
+
     @numpy_compare.check_nonsymbolic_types
     def test_multibody_plant_construction_api(self, T):
         # SceneGraph does not support `Expression` type.
@@ -150,7 +155,7 @@ class TestPlant(unittest.TestCase):
         CoulombFriction = CoulombFriction_[T]
 
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
@@ -1230,7 +1235,7 @@ class TestPlant(unittest.TestCase):
 
         builder_f = DiagramBuilder_[float]()
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f)
+        plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
         parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
         parser.AddModelFromFile(
             FindResourceOrThrow(

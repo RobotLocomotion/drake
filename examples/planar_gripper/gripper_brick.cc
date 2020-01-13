@@ -55,7 +55,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
     geometry::SceneGraph<T>** scene_graph) {
   systems::DiagramBuilder<T> builder;
   std::tie(*plant, *scene_graph) =
-      multibody::AddMultibodyPlantSceneGraph(&builder);
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
   const std::string gripper_path =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   multibody::Parser parser(*plant, *scene_graph);

@@ -251,7 +251,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Read the two bodies into the plant.
     DiagramBuilder<double> builder;
     SceneGraph<double>* scene_graph;
-    std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
     MultibodyPlant<double>& plant = *plant_;
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/plant/test/block_on_halfspace.sdf");

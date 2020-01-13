@@ -42,7 +42,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   const int num_spheres = static_cast<int>(spheres_.size());
   const int num_boxes = static_cast<int>(boxes_.size());
   systems::DiagramBuilder<T> builder;
-  std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+  std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   // Add spheres and register collision geometry.
   for (int i = 0; i < num_spheres; ++i) {
     const auto& sphere =

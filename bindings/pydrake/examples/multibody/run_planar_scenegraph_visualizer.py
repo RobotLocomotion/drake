@@ -19,7 +19,7 @@ from pydrake.systems.planar_scenegraph_visualizer import (
 
 def run_pendulum_example(args):
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
     parser = Parser(plant)
     parser.AddModelFromFile(FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf"))

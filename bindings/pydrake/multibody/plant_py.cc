@@ -805,7 +805,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
   }
 
-  if (!std::is_same<T, symbolic::Expression>::value) {
+  if constexpr (!std::is_same<T, symbolic::Expression>::value) {
     m.def("AddMultibodyPlantSceneGraph",
         [](systems::DiagramBuilder<T>* builder,
             std::unique_ptr<MultibodyPlant<T>> plant,
@@ -822,8 +822,53 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Keep alive, ownership: `scene_graph` keeps `builder` alive.
               py_keep_alive(scene_graph_py, builder_py));
         },
-        py::arg("builder"), py::arg("plant") = nullptr,
-        py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
+        py::arg("builder"), py::arg("plant"), py::arg("scene_graph") = nullptr,
+        doc.AddMultibodyPlantSceneGraph
+            .doc_3args_systemsDiagramBuilder_stduniqueptr_stduniqueptr);
+
+    m.def("AddMultibodyPlantSceneGraph",
+        [](systems::DiagramBuilder<T>* builder, double time_step,
+            std::unique_ptr<SceneGraph<T>> scene_graph) {
+          auto pair = AddMultibodyPlantSceneGraph<T>(
+              builder, time_step, std::move(scene_graph));
+          // Must do manual keep alive to dig into tuple.
+          py::object builder_py = py::cast(builder, py_reference);
+          py::object plant_py = py::cast(pair.plant, py_reference);
+          py::object scene_graph_py = py::cast(pair.scene_graph, py_reference);
+          return py::make_tuple(
+              // Keep alive, ownership: `plant` keeps `builder` alive.
+              py_keep_alive(plant_py, builder_py),
+              // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+              py_keep_alive(scene_graph_py, builder_py));
+        },
+        py::arg("builder"), py::arg("time_step"),
+        py::arg("scene_graph") = nullptr,
+        doc.AddMultibodyPlantSceneGraph
+            .doc_3args_systemsDiagramBuilder_double_stduniqueptr);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    m.def("AddMultibodyPlantSceneGraph",
+        WrapDeprecated(
+            doc.AddMultibodyPlantSceneGraph
+                .doc_deprecated_deprecated_1args_systemsDiagramBuilder,
+            [](systems::DiagramBuilder<T>* builder) {
+              auto pair = AddMultibodyPlantSceneGraph<T>(builder);
+              // Must do manual keep alive to dig into tuple.
+              py::object builder_py = py::cast(builder, py_reference);
+              py::object plant_py = py::cast(pair.plant, py_reference);
+              py::object scene_graph_py =
+                  py::cast(pair.scene_graph, py_reference);
+              return py::make_tuple(
+                  // Keep alive, ownership: `plant` keeps `builder` alive.
+                  py_keep_alive(plant_py, builder_py),
+                  // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+                  py_keep_alive(scene_graph_py, builder_py));
+            }),
+        py::arg("builder"),
+        doc.AddMultibodyPlantSceneGraph
+            .doc_deprecated_deprecated_1args_systemsDiagramBuilder);
+#pragma GCC diagnostic pop
   }
 
   // ExternallyAppliedSpatialForce
