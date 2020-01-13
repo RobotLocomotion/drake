@@ -300,7 +300,6 @@ Removal of deprecated APIs
 Raw Output from relnotes
 ------------------------
 
-* Add python bindings for PendulumGeometry (`#12569`_)
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
 * Add Dockerfile for Binder (`#12472`_)
