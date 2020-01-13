@@ -224,7 +224,7 @@ enum class ContactModel {
 /// Assign to a MultibodyPlant reference (ignoring the SceneGraph):
 /// @code
 ///   MultibodyPlant<double>& plant =
-///     AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
+///       AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
 ///   plant.DoFoo(...);
 /// @endcode
 /// This flavor is the simplest, when the SceneGraph is not explicitly needed.
@@ -252,13 +252,12 @@ enum class ContactModel {
 ///   MultibodyPlant<double>* plant{};
 ///   SceneGraph<double>* scene_graph{};
 ///   std::tie(plant, scene_graph) =
-///     AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
+///       AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
 ///   plant->DoFoo(...);
 ///   scene_graph->DoBar(...);
 /// @endcode
 /// This flavor is most useful when the pointers are class member fields
 /// (and so perhaps cannot be references).
-/// @{
 ///
 /// @anchor mbp_adding_elements
 ///                    ### Adding modeling elements
@@ -4140,31 +4139,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 template <typename T>
 struct AddMultibodyPlantSceneGraphResult;
 
-/// Adds a MultibodyPlant and a SceneGraph instance to a diagram
-/// builder, connecting the geometry ports.
-/// @note Usage examples in @ref add_multibody_plant_scene_graph
-/// "AddMultibodyPlantSceneGraph".
-///
-/// @param[in,out] builder
-///   Builder to add to.
-/// @param[in] plant
-///   Constructed plant with preferred modeling scheme (e.g. for using a
-///   discrete plant). Please refer to the documentation provided in
-///   MultibodyPlant::MultibodyPlant(double) which describes each modeling
-///   modality as well as their competing strengths and weaknesses.
-/// @param[in] scene_graph (optional)
-///   Constructed scene graph. If none is provided, one will be created and
-///   used.
-/// @return Pair of the registered plant and scene graph.
-/// @pre `builder` and `plant` must be non-null.
-/// @relates MultibodyPlant
-template <typename T>
-AddMultibodyPlantSceneGraphResult<T>
-AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<T>* builder,
-    std::unique_ptr<MultibodyPlant<T>> plant,
-    std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
-
 /// Makes a new MultibodyPlant with discrete update period `time_step` and
 /// adds it to a diagram builder together with the provided SceneGraph instance,
 /// connecting the geometry ports.
@@ -4176,8 +4150,8 @@ AddMultibodyPlantSceneGraph(
 /// @param[in] time_step
 ///   The discrete update period for the new MultibodyPlant to be added.
 ///   Please refer to the documentation provided in
-///   MultibodyPlant::MultibodyPlant(double) for further details on the paramter
-///   `time_step`.
+///   MultibodyPlant::MultibodyPlant(double) for further details on the
+///   parameter `time_step`.
 /// @param[in] scene_graph (optional)
 ///   Constructed scene graph. If none is provided, one will be created and
 ///   used.
@@ -4191,9 +4165,31 @@ AddMultibodyPlantSceneGraph(
     double time_step,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
 
+/// Adds a MultibodyPlant and a SceneGraph instance to a diagram
+/// builder, connecting the geometry ports.
+/// @note Usage examples in @ref add_multibody_plant_scene_graph
+/// "AddMultibodyPlantSceneGraph".
+///
+/// @param[in,out] builder
+///   Builder to add to.
+/// @param[in] plant
+///   Plant to be added to the builder.
+/// @param[in] scene_graph (optional)
+///   Constructed scene graph. If none is provided, one will be created and
+///   used.
+/// @return Pair of the registered plant and scene graph.
+/// @pre `builder` and `plant` must be non-null.
+/// @relates MultibodyPlant
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant,
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
+
 /// Adds a new continuous MultibodyPlant to `builder`.
 template <typename T>
-DRAKE_DEPRECATED("2020-05-01", "Use alternative overloads explicitly providing a continuous or discrete MultibodyPlant modality.")  // NOLINT(whitespace/line_length)
+DRAKE_DEPRECATED("2020-05-01", "Use alternative overloads explicitly providing a continuous or discrete MultibodyPlant modality. To retain the prior behavior of using a continuous-time plant, pass time_step = 0.0.")  // NOLINT(whitespace/line_length)
 AddMultibodyPlantSceneGraphResult<T>
 AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder);

@@ -2904,7 +2904,20 @@ AddMultibodyPlantSceneGraph(
     std::unique_ptr<MultibodyPlant<T>> plant,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
+
+  // This if-branch for AddMultibodyPlantSceneGraph(builder, nullptr) is now
+  // deprecated. However we cannot use DRAKE_DEPRECATED for it. Therefore we
+  // warn here with a console message. When this code is purged in three months
+  // the maintainer should enforce the documented precondition that `plant` must
+  // be non-null. That is, replace this if-branch with:
+  //   DRAKE_DEMAND(plant != nullptr);
+  //   plant->set_name("plant");
   if (!plant) {
+    static const logging::Warn log_once(
+        "DRAKE DEPRECATED: Use alternative overloads explicitly providing a "
+        "continuous or discrete MultibodyPlant modality. To retain the prior "
+        "behavior of using a continuous-time plant, pass time_step = 0.0. The "
+        "deprecated code will be removed from Drake on or after 2020-05-01."
     plant = std::make_unique<MultibodyPlant<T>>(0.0);
     plant->set_name("plant");
   }
@@ -2930,7 +2943,6 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder, double time_step,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
-  DRAKE_DEMAND(time_step >= 0);
   auto plant = std::make_unique<MultibodyPlant<T>>(time_step);
   plant->set_name("plant");
   return AddMultibodyPlantSceneGraph(builder, std::move(plant),
