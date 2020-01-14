@@ -5,9 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/parsing/parser.h"
 
 namespace drake {
 namespace examples {
@@ -17,25 +15,25 @@ namespace {
 // Tests that the hand-derived dynamics (from the textbook) match the dynamics
 // generated from the urdf via the RigidBodyPlant class.
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-    FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
-    multibody::joints::kFixed, tree.get());
+  const double kTimeStep = 0.0;
+  multibody::MultibodyPlant<double> mbp(kTimeStep);
+  multibody::Parser(&mbp).AddModelFromFile(
+      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"));
+  mbp.Finalize();
 
-  systems::RigidBodyPlant<double> rbp(std::move(tree));
   AcrobotPlant<double> p;
 
-  auto context_rbp = rbp.CreateDefaultContext();
+  auto context_mbp = mbp.CreateDefaultContext();
   auto context_p = p.CreateDefaultContext();
 
-  auto& u_rbp = rbp.get_input_port(0).FixValue(context_rbp.get(), 0.0);
+  auto& u_mbp = mbp.get_actuation_input_port().FixValue(context_mbp.get(), 0.0);
   auto& u_p = p.get_input_port(0).FixValue(context_p.get(), 0.0);
 
   Eigen::Vector4d x;
   Vector1d u;
-  auto xdot_rbp = rbp.AllocateTimeDerivatives();
+  auto xdot_mbp = mbp.AllocateTimeDerivatives();
   auto xdot_p = p.AllocateTimeDerivatives();
-  auto y_rbp = rbp.AllocateOutput();
+  auto y_mbp = mbp.AllocateOutput();
   auto y_p = p.AllocateOutput();
 
   srand(42);
@@ -43,23 +41,23 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
     x = Eigen::Vector4d::Random();
     u = Vector1d::Random();
 
-    context_rbp->get_mutable_continuous_state_vector().SetFromVector(x);
+    context_mbp->get_mutable_continuous_state_vector().SetFromVector(x);
     context_p->get_mutable_continuous_state_vector().SetFromVector(x);
 
-    u_rbp.GetMutableVectorData<double>()->SetFromVector(u);
+    u_mbp.GetMutableVectorData<double>()->SetFromVector(u);
     u_p.GetMutableVectorData<double>()->SetFromVector(u);
 
-    rbp.CalcTimeDerivatives(*context_rbp, xdot_rbp.get());
+    mbp.CalcTimeDerivatives(*context_mbp, xdot_mbp.get());
     p.CalcTimeDerivatives(*context_p, xdot_p.get());
 
-    EXPECT_TRUE(CompareMatrices(xdot_rbp->CopyToVector(),
+    EXPECT_TRUE(CompareMatrices(xdot_mbp->CopyToVector(),
                                 xdot_p->CopyToVector(), 1e-8,
                                 MatrixCompareType::absolute));
 
-    rbp.CalcOutput(*context_rbp, y_rbp.get());
+    mbp.CalcOutput(*context_mbp, y_mbp.get());
     p.CalcOutput(*context_p, y_p.get());
 
-    EXPECT_TRUE(CompareMatrices(y_rbp->get_vector_data(0)->CopyToVector(),
+    EXPECT_TRUE(CompareMatrices(y_mbp->get_vector_data(0)->CopyToVector(),
                                 y_p->get_vector_data(0)->CopyToVector(), 1e-8,
                                 MatrixCompareType::absolute));
   }

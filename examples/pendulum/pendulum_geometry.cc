@@ -16,8 +16,6 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
@@ -51,7 +49,7 @@ const PendulumGeometry* PendulumGeometry::AddToBuilder(
 
 PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
-  source_id_ = scene_graph->RegisterSource("pendulum");
+  source_id_ = scene_graph->RegisterSource();
   frame_id_ = scene_graph->RegisterFrame(source_id_, GeometryFrame("arm"));
 
   this->DeclareVectorInputPort("state", PendulumState<double>());
