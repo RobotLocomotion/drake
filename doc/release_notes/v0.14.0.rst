@@ -313,10 +313,20 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 
 ..
   Changelog oldest_commit f09a56e68b31b2bd35db66362b0ac3bde638ec67 (inclusive).
-  Changelog newest_commit 6cce1fd2620f2247b6c88a879a020fd7ed01c0c6 (inclusive).
+  Changelog newest_commit 40fd5f21699957b02b3ebce40ab42d9d80bce857 (inclusive).
 
 Raw Output from relnotes
 ------------------------
 
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
+* Add python bindings for PendulumGeometry (`#12569`_)
+* yaml: Copy yaml_write_archive from Anzu (`#12568`_)  # Co-authored-by: Sam Creasey <sam.creasey@tri.global> Co-authored-by: Calder Phillips-Grafflin <calder.phillips-grafflin@tri.global>
+* yaml: Adapt yaml_write_archive to Drake and add to BUILD (`#12568`_)
+* AddMultibodyPlantSceneGraph() requires time_step argument (`#12558`_)
+* Systems reject Contexts that they did not create (`#12551`_)
+* Purge RigidBody from examples/Acrobot (`#12567`_)  # Adds AcrobotGeometry (mostly because I couldn't wait for #10775) and uses it throughout the acrobot examples. Progress towards  https://github.com/RussTedrake/underactuated/issues/203
+* Add python bindings for AcrobotGeometry (`#12574`_)  # Re-run build_components_refresh.py.
+* install: Ensure drake lcmtypes are exposed in repository (`#12573`_)
+* Unused constraint equations removal from system framework (`#12553`_)
+* Adds C++17 structured binding support to AddMultibodyPlantSceneGraphResult (`#12559`_)
