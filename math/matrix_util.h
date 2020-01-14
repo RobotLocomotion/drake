@@ -130,9 +130,11 @@ ToSymmetricMatrixFromLowerTriangularColumns(
 /// min_eigenvalue >= tolerance * max(1, max_abs_eigenvalue).
 template <typename Derived>
 bool IsPositiveDefinite(const Eigen::MatrixBase<Derived>& matrix,
-                        double tolerance = 0.0) {
-  DRAKE_DEMAND(tolerance >= 0);
-  if (!IsSymmetric(matrix)) return false;
+                        double eigenvalue_tolerance = 0.0,
+                        double symmetry_tolerance = 0.0) {
+  DRAKE_DEMAND(eigenvalue_tolerance >= 0);
+  DRAKE_DEMAND(symmetry_tolerance >= 0);
+  if (!IsSymmetric(matrix, symmetry_tolerance)) return false;
 
   // Note: Eigen's documentation clearly warns against using the faster LDLT
   // for this purpose, as the algorithm cannot handle indefinite matrices.
@@ -145,7 +147,7 @@ bool IsPositiveDefinite(const Eigen::MatrixBase<Derived>& matrix,
   const double max_abs_eigenvalue =
       eigensolver.eigenvalues().cwiseAbs().maxCoeff();
   return eigensolver.eigenvalues().minCoeff() >=
-         tolerance * std::max(1., max_abs_eigenvalue);
+         eigenvalue_tolerance * std::max(1., max_abs_eigenvalue);
 }
 
 }  // namespace math
