@@ -18,7 +18,6 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/mathematical_program.h"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
