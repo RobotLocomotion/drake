@@ -104,6 +104,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         data.geometries.hydroelastic_type(encoding_b.id());
     if (type_A == HydroelasticType::kUndefined ||
         type_B == HydroelasticType::kUndefined) {
+      // TODO(SeanCurtis-TRI): I may need to turn this into a `return false;`if
+      //  I want to exercise this code in the current state of affairs and
+      //  simply ignore unsupported geometry.
       throw std::logic_error(fmt::format(
           "Requested a contact surface between a pair of geometries without "
           "hydroelastic representation for at least one shape: a {} {} with id "
@@ -142,8 +145,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
             id_S, field_S, X_WS, id_R, mesh_R, X_WR);
 
-    DRAKE_DEMAND(surface->id_M() < surface->id_N());
-    data.surfaces.emplace_back(std::move(*surface));
+    if (surface != nullptr) {
+      DRAKE_DEMAND(surface->id_M() < surface->id_N());
+      data.surfaces.emplace_back(std::move(*surface));
+    }
   }
   // Tell the broadphase to keep searching.
   return false;
