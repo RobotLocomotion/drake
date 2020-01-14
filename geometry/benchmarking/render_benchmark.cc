@@ -100,11 +100,9 @@ RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms       
  parameters of the form:
 
  ```
- BenchmarkName/TestName/camera_count/sphere_count/image_width/image_height
+ RenderEngineBenchmark/TestName/camera_count/sphere_count/image_width/image_height
  ```
 
-   - __Benchmarkname__: `RenderEngineBenchmark` for all results in this
-      executable.
    - __TestName__: One of
      - __VtkColor__: Renders the color image from RenderEngineVtk.
      - __VtkDepth__: Renders the depth image from RenderEngineVtk.
