@@ -12,6 +12,7 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -320,7 +321,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
 GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   systems::DiagramBuilder<double> builder;
-  auto pair = AddMultibodyPlantSceneGraph(&builder);
+  auto pair = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
   MultibodyPlant<double>* plant{};
   geometry::SceneGraph<double>* scene_graph{};
@@ -331,6 +332,15 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // Check referencing.
   MultibodyPlant<double>& plant_ref = pair;
   EXPECT_EQ(&plant_ref, plant);
+
+  // Check support for C++17's structured binding.
+  auto[first_element, second_element] =
+      AddMultibodyPlantSceneGraph(&builder, 0.0);
+  // Verify the expected types.
+  EXPECT_EQ(drake::NiceTypeName::Get(first_element),
+            drake::NiceTypeName::Get<MultibodyPlant<double>>());
+  EXPECT_EQ(drake::NiceTypeName::Get(second_element),
+            drake::NiceTypeName::Get<SceneGraph<double>>());
 
   // These should fail:
   // AddMultibodyPlantSceneGraphResult<double> extra(plant, scene_graph);
@@ -444,7 +454,7 @@ class AcrobotPlantTests : public ::testing::Test {
     // Finalize() conditions.
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
     Parser(plant_).AddModelFromFile(full_name);
     // Sanity check on the availability of the optional source id before using
     // it.
@@ -958,7 +968,7 @@ class SphereChainScenario {
       std::function<void(SphereChainScenario*)> apply_filters = nullptr) {
     using std::to_string;
     systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
     // A half-space for the ground geometry.
     ground_id_ = plant_->RegisterCollisionGeometry(

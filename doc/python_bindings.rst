@@ -175,7 +175,7 @@ Here's an example snippet of code from ``pydrake``:
     from pydrake.systems.framework import DiagramBuilder
 
     builder = DiagramBuilder()
-    plant, _ = AddMultibodyPlantSceneGraph(builder)
+    plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
     Parser(plant).AddModelFromFile(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
     plant.Finalize()
@@ -189,7 +189,7 @@ automatically. If you are writing non-prototype code, avoid using
 ``pydrake.all``; for more details, see ``help(pydrake.all)``.
 
 In all cases, try to avoid using ``from pydrake.all import *``, as it may
-introduce symbol collisions that are difficiult to debug.
+introduce symbol collisions that are difficult to debug.
 
 The above example, but using ``pydrake.all``:
 
@@ -200,7 +200,7 @@ The above example, but using ``pydrake.all``:
         Parser, Simulator)
 
     builder = DiagramBuilder()
-    plant, _ = AddMultibodyPlantSceneGraph(builder)
+    plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
     Parser(plant).AddModelFromFile(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
     plant.Finalize()
@@ -215,7 +215,7 @@ explicitly refer to each symbol:
     import pydrake.all
 
     builder = pydrake.systems.framework.DiagramBuilder()
-    plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder)
+    plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder, 0.0)
     pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
         pydrake.common.FindResourceOrThrow(
             "drake/examples/pendulum/Pendulum.urdf"))

@@ -53,11 +53,8 @@ typename BeadOnAWire<T>::ArcLength
   return atan2(v(1), v(0));
 }
 
-/// Evaluates the constraint equations for a bead represented in absolute
-/// coordinates (no constraint equations are used for a bead represented in
-/// minimal coordinates).
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
+Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquations(
     const systems::Context<T>& context) const {
   // Return a zero vector if this system is in minimal coordinates.
   if (coordinate_type_ == BeadOnAWire<T>::kMinimalCoordinates)
@@ -88,10 +85,8 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   return xprime;
 }
 
-/// Computes the time derivative of the constraint equations, evaluated at
-/// the current generalized coordinates and generalized velocity.
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
+Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationsDot(
     const systems::Context<T>& context) const {
   constexpr int three_d = 3;
 
@@ -149,21 +144,14 @@ void BeadOnAWire<T>::CopyStateOut(const systems::Context<T>& context,
       context.get_continuous_state().CopyToVector();
 }
 
-/// Gets the number of constraint equations used for dynamics.
 template <class T>
-int BeadOnAWire<T>::do_get_num_constraint_equations(
+int BeadOnAWire<T>::get_num_constraint_equations(
     const systems::Context<T>&) const {
   return (coordinate_type_ == kAbsoluteCoordinates) ? 3 : 0;
 }
 
-/// Computes the change in generalized velocity from applying constraint
-/// impulses @p lambda.
-/// @param context The current state of the system.
-/// @param lambda The vector of constraint forces.
-/// @returns a `n` dimensional vector, where `n` is the dimension of the
-///          quasi-coordinates.
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
+Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>&, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
 
@@ -171,7 +159,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
   //                 (necessarily removing abort() first).
   if (true) {
     throw std::logic_error(
-        "DoCalcVelocityChangeFromConstraintImpulses requires testing.");
+        "CalcVelocityChangeFromConstraintImpulses requires testing.");
   }
 
   // The bead on the wire is unit mass, so the velocity change is equal to
@@ -228,7 +216,6 @@ template <typename T>
 void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   using std::sin;
   using std::cos;
   using std::abs;

@@ -173,6 +173,8 @@ class System : public SystemBase {
   // Sets Context fields to their default values.  User code should not
   // override.
   void SetDefaultContext(Context<T>* context) const {
+    this->ValidateContext(context);
+
     // Set the default state, checking that the number of state variables does
     // not change.
     const int n_xc = context->num_continuous_states();
@@ -230,6 +232,8 @@ class System : public SystemBase {
   // Sets Context fields to random values.  User code should not
   // override.
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
+    ValidateContext(context);
+
     // Set the default state, checking that the number of state variables does
     // not change.
     const int n_xc = context->num_continuous_states();
@@ -254,6 +258,8 @@ class System : public SystemBase {
   /// that this System requires, and binds it to the port, disconnecting any
   /// prior input. Does not assign any values to the fixed inputs.
   void AllocateFixedInputs(Context<T>* context) const {
+    ValidateContext(context);
+
     for (InputPortIndex i(0); i < num_input_ports(); ++i) {
       const InputPort<T>& port = get_input_port(i);
       if (port.get_data_type() == kVectorValued) {
@@ -318,7 +324,7 @@ class System : public SystemBase {
   /// since a smaller integrator step produces a more accurate solution.
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DispatchPublishHandler(context, events);
   }
 
@@ -402,6 +408,7 @@ class System : public SystemBase {
   ///            configuration given in `context`.
   /// @see CalcPotentialEnergy()
   const T& EvalPotentialEnergy(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(potential_energy_cache_index_);
     return entry.Eval<T>(context);
@@ -425,6 +432,7 @@ class System : public SystemBase {
   ///            configuration and velocity given in `context`.
   /// @see CalcKineticEnergy()
   const T& EvalKineticEnergy(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(kinetic_energy_cache_index_);
     return entry.Eval<T>(context);
@@ -456,6 +464,7 @@ class System : public SystemBase {
   /// @see CalcConservativePower(), EvalNonConservativePower(),
   ///      EvalPotentialEnergy(), EvalKineticEnergy()
   const T& EvalConservativePower(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(conservative_power_cache_index_);
     return entry.Eval<T>(context);
@@ -482,6 +491,7 @@ class System : public SystemBase {
   ///             the contents of the given `context`.
   /// @see CalcNonConservativePower(), EvalConservativePower()
   const T& EvalNonConservativePower(const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry =
         this->get_cache_entry(nonconservative_power_cache_index_);
     return entry.Eval<T>(context);
@@ -508,6 +518,8 @@ class System : public SystemBase {
     static_assert(
         std::is_base_of<BasicVector<T>, Vec<T>>::value,
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
+
+    ValidateContext(context);
 
     // The API allows an int but we'll use InputPortIndex internally.
     if (port_index < 0)
@@ -542,6 +554,7 @@ class System : public SystemBase {
   /// @see EvalVectorInput()
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
+    ValidateContext(context);
     if (port_index < 0)
       ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
@@ -558,81 +571,6 @@ class System : public SystemBase {
   //----------------------------------------------------------------------------
   /// @name               Constraint-related functions
   //@{
-
-  /// Gets the number of constraint equations for this system using the given
-  /// context (useful in case the number of constraints is dependent upon the
-  /// current state (as might be the case with a system modeled using piecewise
-  /// differential algebraic equations).
-  int num_constraint_equations(const Context<T>& context) const {
-    return do_get_num_constraint_equations(context);
-  }
-
-  /// Evaluates the constraint equations for the system at the generalized
-  /// coordinates and generalized velocity specified by the context. The context
-  /// allows the set of constraints to be dependent upon the current system
-  /// state (as might be the case with a system modeled using piecewise
-  /// differential algebraic equations).
-  /// @returns a vector of dimension num_constraint_equations(); the
-  ///          zero vector indicates that the algebraic constraints are all
-  ///          satisfied.
-  Eigen::VectorXd EvalConstraintEquations(const Context<T>& context) const {
-    return DoEvalConstraintEquations(context);
-  }
-
-  /// Computes the time derivative of each constraint equation, evaluated at
-  /// the generalized coordinates and generalized velocity specified by the
-  /// context. The context allows the set of constraints to be dependent upon
-  /// the current system state (as might be the case with a system modeled using
-  /// piecewise differential algebraic equations).
-  /// @returns a vector of dimension num_constraint_equations().
-  Eigen::VectorXd EvalConstraintEquationsDot(const Context<T>& context) const {
-    return DoEvalConstraintEquationsDot(context);
-  }
-
-  /// Computes the change in velocity from applying the given constraint forces
-  /// to the system at the given context.
-  /// @param context the current system state, provision of which also yields
-  ///        the ability of the constraints to be dependent upon the current
-  ///        system state (as might be the case with a piecewise differential
-  ///        algebraic equation).
-  /// @param J a m × n constraint Jacobian matrix of the `m` constraint
-  ///          equations `g()` differentiated with respect to the `n`
-  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
-  ///          the time derivatives of the generalized coordinates of the system
-  ///          are not identical to the generalized velocity (in general they
-  ///          need not be, e.g., if generalized coordinates use unit
-  ///          unit quaternions to represent 3D orientation), `J` should instead
-  ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
-  ///          (dependent on `q`) of the generalized coordinates with respect
-  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
-  ///          the generalized velocities).
-  /// @param lambda the vector of constraint forces (of same dimension as the
-  ///        number of rows in the Jacobian matrix, @p J)
-  /// @returns a `n` dimensional vector, where `n` is the dimension of the
-  ///          quasi-coordinates.
-  Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
-      const Context<T>& context, const Eigen::MatrixXd& J,
-      const Eigen::VectorXd& lambda) const {
-    DRAKE_ASSERT(lambda.size() == num_constraint_equations(context));
-    DRAKE_ASSERT(J.rows() == num_constraint_equations(context));
-    DRAKE_ASSERT(
-        J.cols() ==
-        context.get_continuous_state().get_generalized_velocity().size());
-    return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
-  }
-
-  /// Computes the norm on constraint error (used as a metric for comparing
-  /// errors between the outputs of algebraic equations applied to two
-  /// different state variable instances). This norm need be neither continuous
-  /// nor differentiable.
-  /// @throws std::logic_error if the dimension of @p err is not equivalent to
-  ///         the output of num_constraint_equations().
-  double CalcConstraintErrorNorm(const Context<T>& context,
-                                 const Eigen::VectorXd& error) const {
-    if (error.size() != num_constraint_equations(context))
-      throw std::logic_error("Error vector is mis-sized.");
-    return DoCalcConstraintErrorNorm(context, error);
-  }
 
   /// Adds an "external" constraint to this System.
   ///
@@ -691,7 +629,7 @@ class System : public SystemBase {
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const {
     DRAKE_DEMAND(derivatives != nullptr);
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DoCalcTimeDerivatives(context, derivatives);
   }
 
@@ -705,7 +643,7 @@ class System : public SystemBase {
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
 
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
@@ -730,6 +668,7 @@ class System : public SystemBase {
   void ApplyDiscreteVariableUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const {
+    ValidateContext(context);
     DoApplyDiscreteVariableUpdate(events, discrete_state, context);
   }
 
@@ -756,7 +695,7 @@ class System : public SystemBase {
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     const int continuous_state_dim = state->get_continuous_state().size();
     const int discrete_state_dim = state->get_discrete_state().num_groups();
     const int abstract_state_dim = state->get_abstract_state().size();
@@ -790,6 +729,7 @@ class System : public SystemBase {
   void ApplyUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const {
+    ValidateContext(context);
     DoApplyUnrestrictedUpdate(events, state, context);
   }
 
@@ -819,7 +759,7 @@ class System : public SystemBase {
   /// @p events cannot be null. @p events will be cleared on entry.
   T CalcNextUpdateTime(const Context<T>& context,
                        CompositeEventCollection<T>* events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     T time{NAN};
@@ -843,7 +783,7 @@ class System : public SystemBase {
   /// @p events cannot be null. @p events will be cleared on entry.
   void GetPerStepEvents(const Context<T>& context,
                         CompositeEventCollection<T>* events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     DoGetPerStepEvents(context, events);
@@ -856,7 +796,7 @@ class System : public SystemBase {
   /// @p events cannot be null. @p events will be cleared on entry.
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     DoGetInitializationEvents(context, events);
@@ -906,7 +846,7 @@ class System : public SystemBase {
   /// of entries of the right types.
   void CalcOutput(const Context<T>& context, SystemOutput<T>* outputs) const {
     DRAKE_DEMAND(outputs != nullptr);
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
     for (OutputPortIndex i(0); i < num_output_ports(); ++i) {
       // TODO(sherm1) Would be better to use Eval() here but we don't have
@@ -923,7 +863,7 @@ class System : public SystemBase {
   ///
   /// @see EvalPotentialEnergy() for more information.
   T CalcPotentialEnergy(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcPotentialEnergy(context);
   }
 
@@ -933,7 +873,7 @@ class System : public SystemBase {
   ///
   /// @see EvalKineticEnergy() for more information.
   T CalcKineticEnergy(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcKineticEnergy(context);
   }
 
@@ -943,7 +883,7 @@ class System : public SystemBase {
   ///
   /// @see EvalConservativePower() for more information.
   T CalcConservativePower(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcConservativePower(context);
   }
 
@@ -953,7 +893,7 @@ class System : public SystemBase {
   ///
   /// @see EvalNonConservativePower() for more information.
   T CalcNonConservativePower(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcNonConservativePower(context);
   }
 
@@ -982,6 +922,7 @@ class System : public SystemBase {
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const {
+    this->ValidateContext(context);
     DoMapVelocityToQDot(context, generalized_velocity, qdot);
   }
 
@@ -1014,6 +955,7 @@ class System : public SystemBase {
   void MapQDotToVelocity(const Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          VectorBase<T>* generalized_velocity) const {
+    this->ValidateContext(context);
     DoMapQDotToVelocity(context, qdot, generalized_velocity);
   }
 
@@ -1046,6 +988,7 @@ class System : public SystemBase {
   /// @pre The given `context` is valid for use with `this` %System.
   const Context<T>& GetSubsystemContext(const System<T>& subsystem,
                                         const Context<T>& context) const {
+    ValidateContext(context);
     auto ret = DoGetTargetSystemContext(subsystem, &context);
     if (ret != nullptr) return *ret;
 
@@ -1317,6 +1260,7 @@ class System : public SystemBase {
   /// SystemConstraint::CheckSatisfied.
   boolean<T> CheckSystemConstraintsSatisfied(
       const Context<T>& context, double tol) const {
+    ValidateContext(context);
     DRAKE_DEMAND(tol >= 0.0);
     boolean<T> result{true};
     for (const auto& constraint : constraints_) {
@@ -1356,13 +1300,10 @@ class System : public SystemBase {
     }
   }
 
-  /// Checks that @p context is consistent for this System template. Supports
-  /// any scalar type, but expects T by default.
-  ///
-  /// @throws std::exception unless `context` is valid for this system.
-  /// @tparam T1 the scalar type of the Context to check.
-  // TODO(sherm1) This method needs to be unit tested.
   template <typename T1 = T>
+  DRAKE_DEPRECATED(
+      "2020-05-01",
+      "This method's functionality has been replaced by ValidateContext().")
   void CheckValidContextT(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
@@ -1590,10 +1531,8 @@ class System : public SystemBase {
   void FixInputPortsFrom(const System<double>& other_system,
                          const Context<double>& other_context,
                          Context<T>* target_context) const {
-    DRAKE_ASSERT_VOID(CheckValidContextT(other_context));
-    DRAKE_ASSERT_VOID(CheckValidContext(*target_context));
-    DRAKE_ASSERT_VOID(other_system.CheckValidContext(other_context));
-    DRAKE_ASSERT_VOID(other_system.CheckValidContextT(*target_context));
+    ValidateContext(target_context);
+    other_system.ValidateContext(other_context);
 
     for (int i = 0; i < num_input_ports(); ++i) {
       const auto& input_port = get_input_port(i);
@@ -1647,14 +1586,14 @@ class System : public SystemBase {
                            std::vector<const WitnessFunction<T>*>* w) const {
     DRAKE_DEMAND(w);
     DRAKE_DEMAND(w->empty());
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     DoGetWitnessFunctions(context, w);
   }
 
   /// Evaluates a witness function at the given context.
   T CalcWitnessValue(const Context<T>& context,
                      const WitnessFunction<T>& witness_func) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    ValidateContext(context);
     return DoCalcWitnessValue(context, witness_func);
   }
 
@@ -2150,84 +2089,8 @@ class System : public SystemBase {
   }
   //@}
 
-  //----------------------------------------------------------------------------
-  /// @name             Constraint-related functions (protected).
-  //@{
-
   /// Totals the number of continuous state variables in this System or Diagram.
   virtual int do_get_num_continuous_states() const = 0;
-
-  /// Gets the number of constraint equations for this system from the given
-  /// context. The context is supplied in case the number of constraints is
-  /// dependent upon the current state (as might be the case with a piecewise
-  /// differential algebraic equation). Derived classes can override this
-  /// function, which is called by num_constraint_equations().
-  /// @sa num_constraint_equations() for parameter documentation.
-  /// @returns zero by default
-  virtual int do_get_num_constraint_equations(const Context<T>& context) const {
-    unused(context);
-    return 0;
-  }
-
-  /// Evaluates the constraint equations for the system at the generalized
-  /// coordinates and generalized velocity specified by the context. The context
-  /// allows the set of constraints to be dependent upon the current
-  /// system state (as might be the case with a piecewise differential algebraic
-  /// equation). The default implementation of this function returns a
-  /// zero-dimensional vector. Derived classes can override this function,
-  /// which is called by EvalConstraintEquations().
-  /// @sa EvalConstraintEquations() for parameter documentation.
-  /// @returns a vector of dimension num_constraint_equations(); the
-  ///          zero vector indicates that the algebraic constraints are all
-  ///          satisfied.
-  virtual Eigen::VectorXd DoEvalConstraintEquations(
-      const Context<T>& context) const {
-    DRAKE_DEMAND(num_constraint_equations(context) == 0);
-    return Eigen::VectorXd();
-  }
-
-  /// Computes the time derivative of each constraint equation, evaluated at
-  /// the generalized coordinates and generalized velocity specified by the
-  /// context.  The context allows the set of constraints to be dependent upon
-  /// the current system state (as might be the case with a piecewise
-  /// differential algebraic equation). The default implementation of this
-  /// function returns a zero-dimensional vector. Derived classes can override
-  /// this function, which is called by EvalConstraintEquationsDot().
-  /// @returns a vector of dimension num_constraint_equations().
-  /// @sa EvalConstraintEquationsDot() for parameter documentation.
-  virtual Eigen::VectorXd DoEvalConstraintEquationsDot(
-      const Context<T>& context) const {
-    DRAKE_DEMAND(num_constraint_equations(context) == 0);
-    return Eigen::VectorXd();
-  }
-
-  /// Computes the change in velocity from applying the given constraint forces
-  /// to the system at the given context. Derived classes can override this
-  /// function, which is called by CalcVelocityChangeFromConstraintImpulses().
-  /// @returns the zero vector of dimension of the dimension of the
-  ///          quasi-coordinates, by default.
-  /// @sa CalcVelocityChangeFromConstraintImpulses() for parameter
-  ///     documentation.
-  virtual Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
-      const Context<T>& context, const Eigen::MatrixXd& J,
-      const Eigen::VectorXd& lambda) const {
-    unused(J, lambda);
-    DRAKE_DEMAND(num_constraint_equations(context) == 0);
-    const auto& gv = context.get_continuous_state().get_generalized_velocity();
-    return Eigen::VectorXd::Zero(gv.size());
-  }
-
-  /// Computes the norm of the constraint error. This default implementation
-  /// computes a Euclidean norm of the error. Derived classes can override this
-  /// function, which is called by CalcConstraintErrorNorm(). This norm need be
-  /// neither continuous nor differentiable.
-  /// @sa CalcConstraintErrorNorm() for parameter documentation.
-  virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
-                                           const Eigen::VectorXd& error) const {
-    unused(context);
-    return error.norm();
-  }
-  //@}
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
@@ -2321,11 +2184,16 @@ class System : public SystemBase {
   virtual std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const = 0;
 
+  // TODO(jwnimmer-tri) Remove this function when CheckValidContext() has been
+  // removed.
   // SystemBase override checks a Context of same type T.
   void DoCheckValidContext(const ContextBase& context_base) const final {
     const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
     DRAKE_THROW_UNLESS(context != nullptr);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CheckValidContextT(*context);
+#pragma GCC diagnostic pop
   }
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(

@@ -129,6 +129,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -145,6 +146,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* params) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -194,6 +196,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetRandomState(const Context<T>& context, State<T>* state,
                       RandomGenerator* generator) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -210,6 +213,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetRandomParameters(const Context<T>& context, Parameters<T>* params,
                            RandomGenerator* generator) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -391,6 +395,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// this diagram.
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const {
+    this->ValidateContext(context);
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem, context);
     return subcontext.get_mutable_state();
   }

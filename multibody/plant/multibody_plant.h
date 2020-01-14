@@ -213,6 +213,50 @@ enum class ContactModel {
 /// each `<model>` tag found in the file. Please refer to each of these
 /// methods' documentation for further details.
 ///
+/// @anchor add_multibody_plant_scene_graph
+///   ### Adding a %MultibodyPlant connected to a %SceneGraph to your %Diagram
+///
+/// Probably the simplest way to add and wire up a MultibodyPlant with
+/// a SceneGraph in your Diagram is using AddMultibodyPlantSceneGraph().
+///
+/// Recommended usages:
+///
+/// Assign to a MultibodyPlant reference (ignoring the SceneGraph):
+/// @code
+///   MultibodyPlant<double>& plant =
+///       AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
+///   plant.DoFoo(...);
+/// @endcode
+/// This flavor is the simplest, when the SceneGraph is not explicitly needed.
+/// (It can always be retrieved later via GetSubsystemByName("scene_graph").)
+///
+/// Assign to auto, and use the named public fields:
+/// @code
+///   auto items = AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
+///   items.plant.DoFoo(...);
+///   items.scene_graph.DoBar(...);
+/// @endcode
+/// or taking advantage of C++17's structured binding
+/// @code
+///   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
+///   ...
+///   plant.DoFoo(...);
+///   scene_graph.DoBar(...);
+/// @endcode
+/// This is the easiest way to use both the plant and scene_graph.
+///
+/// Assign to already-declared pointer variables:
+/// @code
+///   MultibodyPlant<double>* plant{};
+///   SceneGraph<double>* scene_graph{};
+///   std::tie(plant, scene_graph) =
+///       AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
+///   plant->DoFoo(...);
+///   scene_graph->DoBar(...);
+/// @endcode
+/// This flavor is most useful when the pointers are class member fields
+/// (and so perhaps cannot be references).
+///
 /// @anchor mbp_adding_elements
 ///                    ### Adding modeling elements
 ///
@@ -4093,64 +4137,60 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 template <typename T>
 struct AddMultibodyPlantSceneGraphResult;
 
-/// Adds a MultibodyPlant and a SceneGraph instance to a diagram builder,
+/// Makes a new MultibodyPlant with discrete update period `time_step` and
+/// adds it to a diagram builder together with the provided SceneGraph instance,
 /// connecting the geometry ports.
+/// @note Usage examples in @ref add_multibody_plant_scene_graph
+/// "AddMultibodyPlantSceneGraph".
+///
 /// @param[in,out] builder
 ///   Builder to add to.
-/// @param[in] plant (optional)
-///   Constructed plant (e.g. for using a discrete plant). By default, a
-///   continuous plant is used. Please refer to the documentation provided in
-///   MultibodyPlant::MultibodyPlant(double) which describes each modeling
-///   modality as well as their competing strengths and weaknesses.
+/// @param[in] time_step
+///   The discrete update period for the new MultibodyPlant to be added.
+///   Please refer to the documentation provided in
+///   MultibodyPlant::MultibodyPlant(double) for further details on the
+///   parameter `time_step`.
 /// @param[in] scene_graph (optional)
 ///   Constructed scene graph. If none is provided, one will be created and
 ///   used.
 /// @return Pair of the registered plant and scene graph.
 /// @pre `builder` must be non-null.
-///
-/// Recommended usages:
-///
-/// Assign to a MultibodyPlant reference (ignoring the SceneGraph):
-/// @code
-///   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder);
-///   plant.DoFoo(...);
-/// @endcode
-/// This flavor is the simplest, when the SceneGraph is not explicitly needed.
-/// (It can always be retrieved later via GetSubsystemByName("scene_graph").)
-///
-/// Assign to auto, and use the named public fields:
-/// @code
-///   auto items = AddMultibodyPlantSceneGraph(&builder);
-///   items.plant.DoFoo(...);
-///   items.scene_graph.DoBar(...);
-/// @endcode
-/// or
-/// @code
-///   auto items = AddMultibodyPlantSceneGraph(&builder);
-///   MultibodyPlant<double>& plant = items.plant;
-///   SceneGraph<double>& scene_graph = items.scene_graph;
-///   ...
-///   plant.DoFoo(...);
-///   scene_graph.DoBar(...);
-/// @endcode
-/// This is the easiest way to use both the plant and scene_graph.
-///
-/// Assign to already-declared pointer variables:
-/// @code
-///   MultibodyPlant<double>* plant{};
-///   SceneGraph<double>* scene_graph{};
-///   std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
-///   plant->DoFoo(...);
-///   scene_graph->DoBar(...);
-/// @endcode
-/// This flavor is most useful when the pointers are class member fields
-/// (and so perhaps cannot be references).
+/// @relates MultibodyPlant
 template <typename T>
 AddMultibodyPlantSceneGraphResult<T>
 AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder,
-    std::unique_ptr<MultibodyPlant<T>> plant = nullptr,
+    double time_step,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
+
+/// Adds a MultibodyPlant and a SceneGraph instance to a diagram
+/// builder, connecting the geometry ports.
+/// @note Usage examples in @ref add_multibody_plant_scene_graph
+/// "AddMultibodyPlantSceneGraph".
+///
+/// @param[in,out] builder
+///   Builder to add to.
+/// @param[in] plant
+///   Plant to be added to the builder.
+/// @param[in] scene_graph (optional)
+///   Constructed scene graph. If none is provided, one will be created and
+///   used.
+/// @return Pair of the registered plant and scene graph.
+/// @pre `builder` and `plant` must be non-null.
+/// @relates MultibodyPlant
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant,
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
+
+/// Adds a new continuous MultibodyPlant to `builder`.
+template <typename T>
+DRAKE_DEPRECATED("2020-05-01", "Use alternative overloads explicitly providing a continuous or discrete MultibodyPlant modality. To retain the prior behavior of using a continuous-time plant, pass time_step = 0.0.")  // NOLINT(whitespace/line_length)
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder);
 
 /// Temporary result from `AddMultibodyPlantSceneGraph`. This cannot be
 /// constructed outside of this method.
@@ -4168,6 +4208,20 @@ struct AddMultibodyPlantSceneGraphResult final {
   operator std::tuple<MultibodyPlant<T>*&, geometry::SceneGraph<T>*&>() {
     return std::tie(plant_ptr, scene_graph_ptr);
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // Returns the N-th member referenced by this struct.
+  // If N = 0, returns the reference to the MultibodyPlant.
+  // If N = 1, returns the reference to the geometry::SceneGraph.
+  // Provided to support C++17's structured binding.
+  template <std::size_t N>
+  decltype(auto) get() const {
+    if constexpr (N == 0)
+      return plant;
+    else if constexpr (N == 1)
+      return scene_graph;
+  }
+#endif
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Only the move constructor is enabled; copy/assign/move-assign are deleted.
@@ -4225,6 +4279,38 @@ void MultibodyPlant<symbolic::Expression>::
 
 }  // namespace multibody
 }  // namespace drake
+
+#ifndef DRAKE_DOXYGEN_CXX
+// Specializations provided to support C++17's structured binding for
+// AddMultibodyPlantSceneGraphResult.
+namespace std {
+// The GCC standard library defines tuple_size as class and struct which
+// triggers a warning here.
+// We found this solution in: https://github.com/nlohmann/json/issues/1401
+#if defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-tags"
+#endif
+template <typename T>
+struct tuple_size<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>
+    : std::integral_constant<std::size_t, 2> {};
+
+template <typename T>
+struct tuple_element<0,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::multibody::MultibodyPlant<T>;
+};
+
+template <typename T>
+struct tuple_element<1,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::geometry::SceneGraph<T>;
+};
+#if defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+}  // namespace std
+#endif
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)

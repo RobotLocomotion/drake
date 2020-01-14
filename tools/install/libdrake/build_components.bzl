@@ -43,6 +43,7 @@ LIBDRAKE_COMPONENTS = [
     "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
+    "//examples/acrobot:acrobot_geometry",  # unpackaged
     "//examples/acrobot:acrobot_input",  # unpackaged
     "//examples/acrobot:acrobot_params",  # unpackaged
     "//examples/acrobot:acrobot_plant",  # unpackaged
@@ -56,7 +57,6 @@ LIBDRAKE_COMPONENTS = [
     "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
-    "//examples/planar_gripper:gripper_brick",  # unpackaged
     "//examples/quadrotor:quadrotor_geometry",  # unpackaged
     "//examples/quadrotor:quadrotor_plant",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel",  # unpackaged
@@ -106,4 +106,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
+    # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
 ]

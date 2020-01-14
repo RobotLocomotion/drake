@@ -112,7 +112,7 @@ class SphereVsPlaneTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/hydroelastics/test/sphere_vs_plane.sdf");
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
     Parser(plant_).AddModelFromFile(full_name);
 
     // Retrieve bodies and geometry ids.

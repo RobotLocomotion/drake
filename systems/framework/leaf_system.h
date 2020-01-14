@@ -191,7 +191,7 @@ class LeafSystem : public System<T> {
   // pending resolution of #7058.
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
-    unused(context);
+    this->ValidateContext(context);
     DRAKE_DEMAND(state != nullptr);
     ContinuousState<T>& xc = state->get_mutable_continuous_state();
     if (model_continuous_state_vector_ != nullptr) {
@@ -227,7 +227,7 @@ class LeafSystem : public System<T> {
   /// the number of parameters.
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* parameters) const override {
-    unused(context);
+    this->ValidateContext(context);
     for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
       BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
       auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
@@ -600,6 +600,7 @@ class LeafSystem : public System<T> {
   /// vector-valued parameter of type U at @p index.
   template <template <typename> class U = BasicVector>
   const U<T>& GetNumericParameter(const Context<T>& context, int index) const {
+    this->ValidateContext(context);
     static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
                   "U must be a subclass of BasicVector.");
     const auto& leaf_context =
@@ -615,6 +616,7 @@ class LeafSystem : public System<T> {
   /// vector-valued parameter of type U at @p index.
   template <template <typename> class U = BasicVector>
   U<T>& GetMutableNumericParameter(Context<T>* context, int index) const {
+    this->ValidateContext(context);
     static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
                   "U must be a subclass of BasicVector.");
     auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);

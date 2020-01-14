@@ -175,7 +175,7 @@ GTEST_TEST(MinimumDistanceConstraintTest, MultibodyPlantWithoutCollisionPairs) {
   // no collisions are possible in an MBP with no collision geometry.
 
   systems::DiagramBuilder<double> builder{};
-  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder);
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
   AddTwoFreeBodiesToPlant(&plant);
   plant.Finalize();
   auto diagram = builder.Build();

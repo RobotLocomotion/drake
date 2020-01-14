@@ -37,6 +37,13 @@ py_test(
     deps = ["@drake//bindings/pydrake"],
 )
 
+py_test(
+    name = "import_all_test",
+    srcs = ["import_all_test.py"],
+    size = "small",
+    deps = ["@drake//bindings/pydrake"],
+)
+
 # A stub for unit testing; not required for end users.
 filegroup(name = "dummy_filegroup")
 """)
@@ -46,6 +53,11 @@ filegroup(name = "dummy_filegroup")
 from pydrake.common import FindResourceOrThrow, set_log_level
 set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
+""")
+
+    with open(join(scratch_dir, "import_all_test.py"), "w") as f:
+        f.write(f"""
+import pydrake.all
 """)
 
     # Check that a full `bazel test` passes.
