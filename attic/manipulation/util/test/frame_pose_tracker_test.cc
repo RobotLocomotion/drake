@@ -68,15 +68,9 @@ class FramePoseTrackerTest : public ::testing::Test {
   geometry::FramePoseVector<double> UpdateInputCalcOutput(
       const FramePoseTracker& dut,
       const KinematicsResults<double>& input_results) {
-    std::unique_ptr<AbstractValue> input(
-        new Value<KinematicsResults<double>>(tree_.get()));
-    input->set_value(input_results);
-
     auto context_ = dut.CreateDefaultContext();
     auto output_ = dut.AllocateOutput();
-    context_->FixInputPort(
-        dut.get_kinematics_input_port_index() /* input port ID*/,
-        std::move(input));
+    dut.get_kinematics_input_port().FixValue(context_.get(), input_results);
 
     dut.CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut.CalcOutput(*context_, output_.get());

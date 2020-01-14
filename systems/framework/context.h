@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/value.h"
@@ -36,6 +36,9 @@ struct StepInfo {
 /// (for composite System Diagrams). Users are forbidden to extend
 /// DiagramContext and are discouraged from subclassing LeafContext.
 ///
+/// A %Context is designed to be used only with the System that created it.
+/// State and Parameter data can be copied between contexts for compatible
+/// systems as necessary.
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
@@ -179,7 +182,7 @@ class Context : public ContextBase {
   /// Returns the accuracy setting (if any). Note that the return type is
   /// `optional<double>` rather than the double value itself.
   /// @see SetAccuracy() for details.
-  const optional<double>& get_accuracy() const { return accuracy_; }
+  const std::optional<double>& get_accuracy() const { return accuracy_; }
 
   /// Returns a const reference to this %Context's parameters.
   const Parameters<T>& get_parameters() const { return *parameters_; }
@@ -498,28 +501,17 @@ class Context : public ContextBase {
 
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
-  /// Records the user's requested accuracy. If no accuracy is requested,
-  /// computations are free to choose suitable defaults, or to refuse to
-  /// proceed without an explicit accuracy setting. Any accuracy-dependent
-  /// computation in this Context and its subcontexts may be invalidated
-  /// by a change to the accuracy setting, so out of date notifications are
-  /// sent to all such computations (at least if the accuracy setting has
-  /// actually changed). Accuracy must have the same value in every subcontext
-  /// within the same context tree so may only be modified at the root context
-  /// of a tree.
-  ///
-  /// @throws std::logic_error if this is not the root context.
-  ///
-  /// Requested accuracy is stored in the %Context for two reasons:
-  /// - It permits all computations performed over a System to see the _same_
-  ///   accuracy request since accuracy is stored in one shared place, and
-  /// - it allows us to notify accuracy-dependent cached results that they are
-  ///   out of date when the accuracy setting changes.
-  ///
+  /// Records the user's requested accuracy, which is a unit-less quantity
+  /// designed for use with simulation and other numerical studies. Since
+  /// accuracy is unit-less, algorithms and systems are free to interpret this
+  /// quantity as they wish. The intention is that more computational work is
+  /// acceptable as the accuracy setting is tightened (set closer to zero). If
+  /// no accuracy is requested, computations are free to choose suitable
+  /// defaults, or to refuse to proceed without an explicit accuracy setting.
   /// The accuracy of a complete simulation or other numerical study depends on
   /// the accuracy of _all_ contributing computations, so it is important that
-  /// each computation is done in accordance with the overall requested
-  /// accuracy. Some examples of where this is needed:
+  /// each computation is done in accordance with the requested accuracy. Some
+  /// examples of where this is needed:
   /// - Error-controlled numerical integrators use the accuracy setting to
   ///   decide what step sizes to take.
   /// - The Simulator employs a numerical integrator, but also uses accuracy to
@@ -532,7 +524,22 @@ class Context : public ContextBase {
   /// The common thread among these examples is that they all share the
   /// same %Context, so by keeping accuracy here it can be used effectively to
   /// control all accuracy-dependent computations.
-  void SetAccuracy(const optional<double>& accuracy) {
+  ///
+  /// Any accuracy-dependent computation in this Context and its subcontexts may
+  /// be invalidated by a change to the accuracy setting, so out of date
+  /// notifications are sent to all such computations (at least if the accuracy
+  /// setting has actually changed). Accuracy must have the same value in every
+  /// subcontext within the same context tree so may only be modified at the
+  /// root context of a tree.
+  ///
+  /// Requested accuracy is stored in the %Context for two reasons:
+  /// - It permits all computations performed over a System to see the _same_
+  ///   accuracy request since accuracy is stored in one shared place, and
+  /// - it allows us to notify accuracy-dependent cached results that they are
+  ///   out of date when the accuracy setting changes.
+  ///
+  /// @throws std::logic_error if this is not the root context.
+  void SetAccuracy(const std::optional<double>& accuracy) {
     ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();
     PropagateAccuracyChange(this, accuracy, change_event);
@@ -757,6 +764,7 @@ class Context : public ContextBase {
   //@{
 
   /// Returns a deep copy of this Context.
+  /// @throws std::logic_error if this is not the root context.
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
   std::unique_ptr<Context<T>> Clone() const {
@@ -801,7 +809,7 @@ class Context : public ContextBase {
   /// (Internal use only) Sets a new accuracy and notifies accuracy-dependent
   /// quantities that they are now invalid, as part of a given change event.
   static void PropagateAccuracyChange(Context<T>* context,
-                                      const optional<double>& accuracy,
+                                      const std::optional<double>& accuracy,
                                       int64_t change_event) {
     DRAKE_ASSERT(context != nullptr);
     context->NoteAccuracyChanged(change_event);
@@ -861,7 +869,7 @@ class Context : public ContextBase {
   /// Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
   /// default implementation does nothing, which is suitable for leaf contexts.
   /// Diagram contexts must override.
-  virtual void DoPropagateAccuracyChange(const optional<double>& accuracy,
+  virtual void DoPropagateAccuracyChange(const std::optional<double>& accuracy,
                                          int64_t change_event) {
     unused(accuracy, change_event);
   }
@@ -931,7 +939,7 @@ class Context : public ContextBase {
   StepInfo<T> step_info_;
 
   // Accuracy setting.
-  optional<double> accuracy_;
+  std::optional<double> accuracy_;
 
   // The parameter values (p) for this Context; this is never null.
   copyable_unique_ptr<Parameters<T>> parameters_{

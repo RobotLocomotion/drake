@@ -8,7 +8,7 @@ def optitrack_driver_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/optitrack-driver",
-        commit = "0d71eaed42b52a549e333be3701601a2d55cfc33",
-        sha256 = "52439e87ae7398bab70a3a2155c669a47de7d34d07251e61497f3fa831142d66",  # noqa
+        commit = "7a5ca928094e3dfbff9be1414b3dae67dc6fa7d8",
+        sha256 = "6f6c6c7ac52794adb459c5a0c4ade06af2b12be09162a4dee4eed03197ef45fc",  # noqa
         mirrors = mirrors,
     )

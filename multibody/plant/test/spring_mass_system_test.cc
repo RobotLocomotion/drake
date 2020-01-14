@@ -51,7 +51,7 @@ class SpringMassSystemTest : public ::testing::Test {
         mass * UnitInertia<double>::TriaxiallySymmetric(1.0));
     const RigidBody<double>& body = plant_.AddRigidBody("mass", M_B);
     slider_ = &plant_.AddJoint<PrismaticJoint>("Slider", plant_.world_body(),
-                                               nullopt, body, nullopt,
+                                               std::nullopt, body, std::nullopt,
                                                Vector3<double>::UnitX());
     plant_.AddForceElement<LinearSpringDamper>(
         plant_.world_body(), Vector3<double>::Zero(),
@@ -113,7 +113,7 @@ class SpringMassSystemTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   const PrismaticJoint<double>* slider_{nullptr};
 
   // Parameters of the case.

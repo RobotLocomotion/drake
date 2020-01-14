@@ -82,7 +82,7 @@ def _determine_linux(repository_ctx):
 
     # Match supported Ubuntu release(s). These should match those listed in
     # both doc/developers.rst the root CMakeLists.txt.
-    for ubuntu_release in ["16.04", "18.04"]:
+    for ubuntu_release in ["18.04"]:
         if distro == "Ubuntu " + ubuntu_release:
             return _make_result(ubuntu_release = ubuntu_release)
 
@@ -109,7 +109,7 @@ def _determine_macos(repository_ctx):
     macos_release = ".".join(major_minor_versions)
 
     # Match supported macOS release(s).
-    if macos_release in ["10.13", "10.14"]:
+    if macos_release in ["10.14", "10.15"]:
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.
@@ -130,9 +130,9 @@ def determine_os(repository_ctx):
         - error: str iff any error occurred, else None
         - distribution: str either "ubuntu" or "macos" if no error
         - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "10.14" iff on a supported macOS, else None
+        - macos_release: str like "10.15" iff on a supported macOS, else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
-        - ubuntu_release: str like "16.04" iff on a supported ubuntu, else None
+        - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
     """
 
     os_name = repository_ctx.os.name
@@ -154,7 +154,7 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 16.04" or "macOS 10.14"
+    - Exact release, via e.g., "Ubuntu 18.04" or "macOS 10.15"
     - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """

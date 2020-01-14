@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -94,9 +94,9 @@ class InitialValueProblem {
     /// @param t0_in Specified initial time t₀.
     /// @param x0_in Specified initial state vector 𝐱₀.
     /// @param k_in Specified parameter vector 𝐤.
-    SpecifiedValues(const optional<T>& t0_in,
-                    const optional<VectorX<T>>& x0_in,
-                    const optional<VectorX<T>>& k_in)
+    SpecifiedValues(const std::optional<T>& t0_in,
+                    const std::optional<VectorX<T>>& x0_in,
+                    const std::optional<VectorX<T>>& k_in)
         : t0(t0_in), x0(x0_in), k(k_in) {}
 
     bool operator==(const SpecifiedValues& rhs) const {
@@ -107,9 +107,9 @@ class InitialValueProblem {
       return !operator==(rhs);
     }
 
-    optional<T> t0;  ///< The initial time t₀ for the IVP.
-    optional<VectorX<T>> x0;  ///< The initial state vector 𝐱₀ for the IVP.
-    optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
+    std::optional<T> t0;  ///< The initial time t₀ for the IVP.
+    std::optional<VectorX<T>> x0;  ///< The initial state vector 𝐱₀ for the IVP.
+    std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
 
   /// Constructs an IVP described by the given @p ode_function, using

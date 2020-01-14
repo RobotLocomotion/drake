@@ -1,0 +1,88 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//:.manifest.bzl", "MANIFEST")
+
+package(default_visibility = ["//:__subpackages__"])
+
+_DRAKE_RUNFILES = MANIFEST["runfiles"]["drake"]
+
+_PYTHON_SITE_PACKAGES_RELPATH = MANIFEST["python_site_packages_relpath"]
+
+_DRAKE_ROOT_PACKAGE_RUNFILES = [x for x in _DRAKE_RUNFILES if "/" not in x]
+
+_EXPECTED_DRAKE_RUNFILES_PACKAGES = [
+    "common",
+    "examples",
+    "manipulation",
+]
+
+_COVERED_DRAKE_RUNFILES = _DRAKE_ROOT_PACKAGE_RUNFILES + [
+    x
+    for x in _DRAKE_RUNFILES
+    if any([
+        x.startswith(package + "/")
+        for package in _EXPECTED_DRAKE_RUNFILES_PACKAGES
+    ])
+]
+
+(len(_COVERED_DRAKE_RUNFILES) == len(_DRAKE_RUNFILES)) or fail(
+    "EXPECTED_DRAKE_RUNFILES_PACKAGES {} did not cover {}".format(
+        _EXPECTED_DRAKE_RUNFILES_PACKAGES,
+        _DRAKE_RUNFILES,
+    ),
+)
+
+filegroup(
+    name = ".installed_runfiles",
+    data = _DRAKE_ROOT_PACKAGE_RUNFILES,
+)
+
+filegroup(
+    name = ".all_runfiles",
+    data = [
+        "//:.installed_runfiles",
+    ] + [
+        "//{}:.installed_runfiles".format(x)
+        for x in _EXPECTED_DRAKE_RUNFILES_PACKAGES
+    ],
+)
+
+# TODO(jwnimmer-tri) Use the correct cc_import phrasing, then mark this public.
+filegroup(
+    name = ".drake_shared_library",
+    data = glob([
+        ".lib/*.so",
+        ".lib/*.so.*",
+    ]),
+)
+
+_IMPORT = "." + _PYTHON_SITE_PACKAGES_RELPATH
+
+# N.B. This is not a standalone Python library.
+# TODO(eric.cousineau): Expose this as an alias
+# `@drake//lcmtypes:lcmtypes_drake_py` when it can only depend on specific
+# parts of the runfiles (not all of pydrake).
+py_library(
+    name = ".lcmtypes_drake_py",
+    srcs = glob(["*.py"]),
+)
+
+py_library(
+    name = ".pydrake",
+    srcs = glob(include = [
+        _IMPORT + "/**/*.py",
+    ]),
+    data = glob(include = [
+        _IMPORT + "/**/*.so",
+    ]) + [
+        ":.all_runfiles",
+        ":.drake_shared_library",
+    ],
+    deps = [
+        ":.lcmtypes_drake_py",
+    ],
+    imports = [
+        _IMPORT,
+    ],
+)

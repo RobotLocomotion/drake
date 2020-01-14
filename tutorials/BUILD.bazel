@@ -2,11 +2,6 @@
 # vi: set ft=python :
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/skylark:drake_py.bzl",
-    "drake_py_library",
-    "drake_py_unittest",
-)
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
 drake_jupyter_py_binary(
@@ -27,6 +22,22 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "dynamical_systems",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "rendering_multibody_plant",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "mathematical_program_multibody_plant",
     add_test_rule = 1,
     deps = [
         "//bindings/pydrake",

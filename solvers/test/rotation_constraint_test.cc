@@ -96,7 +96,7 @@ TEST_P(TestRpyLimitsFixture, TestRpyLimits) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestRpyLimitsFixture,
     ::testing::Range(1 << 1, 1 << 7, 2));
 

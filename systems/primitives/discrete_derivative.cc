@@ -15,7 +15,7 @@ using Eigen::MatrixXd;
 
 template <typename T>
 DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step)
-    : LeafSystem<T>(SystemTypeTag<systems::DiscreteDerivative>{}),
+    : LeafSystem<T>(SystemTypeTag<DiscreteDerivative>{}),
       n_(num_inputs),
       time_step_(time_step) {
   DRAKE_DEMAND(n_ > 0);

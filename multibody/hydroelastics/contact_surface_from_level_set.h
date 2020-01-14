@@ -99,7 +99,10 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 // @param[out] vertices_N
 //   Adds the new vertices into `vertices`.
 // @param[out] faces
-//   Adds the new faces into `faces`.
+//   Adds the new faces into `faces`. The faces are guaranteed to be wound such
+//   that the face normal points in the direction of the level set function's
+//   gradient. (I.e., *out* of the rigid object represented by the level set
+//   and *into* the soft mesh that the tet is part of.)
 // @param[out] e_m_surface
 //   The scalar field `e_m` linearly interpolated onto each new vertex in
 //   `vertices`, in the same order.
@@ -176,58 +179,54 @@ int IntersectTetWithLevelSet(
     const Vector3<T> pz_N = w1 * p1_N + w2 * p2_N;
     vertices_N->emplace_back(pz_N);
 
-    // The geometric center is only needed for Case II.
-    if (num_intersections == 4) pc_N += pz_N;
+    // Regardless of whether we get a 3- or 4-sided polygon, we need the
+    // centroid.
+    pc_N += pz_N;
 
     // Interpolate the scalar field e_m at the zero crossing z.
     const T e_m_at_z = w1 * e_m[v1] + w2 * e_m[v2];
     e_m_surface->emplace_back(e_m_at_z);
   }
 
-  // Case I: A single vertex has different sign from the other three. A single
-  // triangle is formed. We form a triangle so that its right handed normal
-  // points in the direction of the positive side of the volume.
+  // Every face must be split around its centroid. This prevents discontinuities
+  // when the intersection goes from a triangle to a quad.
+
   using V = geometry::SurfaceVertexIndex;
-  if (num_intersections == 3) {
-    faces->emplace_back(V(num_vertices), V(num_vertices + 1),
-                        V(num_vertices + 2));
-    return num_intersections;
+  pc_N /= num_intersections;
+  V centroid_index(vertices_N->size());
+  vertices_N->emplace_back(pc_N);
+
+  // Interpolate scalar field e_m at pc_N as the average of the values at the
+  // zero crossings.
+  const T e_m_at_c = std::accumulate(e_m_surface->end() - num_intersections,
+                                     e_m_surface->end(), T(0)) /
+                     T(num_intersections);
+  e_m_surface->emplace_back(e_m_at_c);
+
+  // Build a fan of triangles consisting of an edge from the original polygon
+  // and the centroid vertex.
+  V prev(num_vertices + num_intersections - 1);
+  for (int i = 0; i < num_intersections; ++i) {
+    V current(i + num_vertices);
+    // Note: the face ordering below ensures that the normal will point into the
+    // rigid object.
+    faces->emplace_back(prev, centroid_index, current);
+    prev = current;
   }
 
-  // Case II: Two pairs of vertices with the same sign. We form four new
-  // triangles by placing an additional vertex in the geometry center of the
-  // intersected vertices. The new triangles are oriented such that their
-  // normals point towards the positive side, in accordance to our convention.
-  if (num_intersections == 4) {
-    // Add the geometric center.
-    pc_N /= 4.0;
-    vertices_N->emplace_back(pc_N);
-
-    // Interpolate scalar field e_m at pc_N as the average of the values at the
-    // zero crossings.
-    const T e_m_at_c =
-        std::accumulate(e_m_surface->end() - 4, e_m_surface->end(), T(0)) /
-        T(4.0);
-    e_m_surface->emplace_back(e_m_at_c);
-
-    // Make four triangles sharing the geometric center. All oriented such
-    // that their right-handed normal points towards the positive side.
-    faces->emplace_back(V(0 + num_vertices), V(1 + num_vertices),
-                        V(4 + num_vertices));
-    faces->emplace_back(V(1 + num_vertices), V(2 + num_vertices),
-                        V(4 + num_vertices));
-    faces->emplace_back(V(2 + num_vertices), V(3 + num_vertices),
-                        V(4 + num_vertices));
-    faces->emplace_back(V(3 + num_vertices), V(0 + num_vertices),
-                        V(4 + num_vertices));
-
-    // Five vertices from intersecting four edges plus one additional vertex at
-    // the geometric center.
-    return 5;
-  }
+  return num_intersections + 1;
 
   DRAKE_UNREACHABLE();
 }
+
+// TODO(SeanCurtis-TRI): Correct this documentation if this approach persists.
+//  This doesn't actually compute a triangulation of the level set. It computes
+//  the zero level set of a piecewise-linear approximation of the level set
+//  function. The latter is not necessarily a sampling of the former. (The
+//  distinction arises because the level set function is sampled at each tet
+//  vertex and then the 'zero' is found by linearly interpolating along each
+//  edge -- if the level set function itself is not linear, it will have a
+//  different zero point along the edge.
 
 /// Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
 /// method computes a triangulation of the zero level set of `φ(V)` in the
@@ -266,10 +265,6 @@ int IntersectTetWithLevelSet(
 ///   representation of a continuous scalar field, the values on the contact
 ///   surface will be an linear interpolation of those values.
 ///   Any existing values in `e_m_surface` at input are cleared.
-/// @param[out] phi_gradient_N
-///   The gradient `[∇φ]_N`, expressed in frame N, of `phi_N` sampled at
-///   the surface vertices.
-///   Any existing values in `phi_gradient_N` at input are cleared.
 ///
 /// @note This implementation uses the marching tetrahedra algorithm as
 /// described in Bloomenthal, J., 1994. An Implicit Surface Polygonizer.
@@ -277,17 +272,17 @@ int IntersectTetWithLevelSet(
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
 /// defined by `mesh_M`.  The triangulation is measured and expressed in frame
-/// N. The right handed normal of each triangle points towards the positive side
-/// of the level set function `φ(V)`.
+/// N. The right handed normal of each triangle points towards the negative side
+/// of the level set function `φ(V)` (the normals point out of the soft volume
+/// mesh and into the rigid object represented by the level set field.
 ///
 /// @note  The geometry::SurfaceMesh may have duplicate vertices.
 template <typename T>
 std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     const geometry::VolumeMesh<T>& mesh_M, const LevelSetField<T>& phi_N,
     const math::RigidTransform<T>& X_NM, const std::vector<T>& e_m_volume,
-    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* phi_gradient_N) {
+    std::vector<T>* e_m_surface) {
   DRAKE_DEMAND(e_m_surface != nullptr);
-  DRAKE_ASSERT(phi_gradient_N != nullptr);
   std::vector<geometry::SurfaceVertex<T>> vertices_N;
   std::vector<geometry::SurfaceFace> faces;
   e_m_surface->clear();
@@ -297,6 +292,7 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
   std::array<Vector3<T>, 4> tet_vertices_N;
   Vector4<T> phi;
   Vector4<T> e_m;
+  int num_intersections = 0;
   for (const auto& tet : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
@@ -313,15 +309,11 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
     std::swap(phi[1], phi[2]);
     std::swap(e_m[1], e_m[2]);
-    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, &vertices_N, &faces,
-                             e_m_surface);
+    num_intersections += IntersectTetWithLevelSet(
+        tet_vertices_N, phi, e_m, &vertices_N, &faces, e_m_surface);
   }
 
-  phi_gradient_N->resize(vertices_N.size());
-  for (geometry::SurfaceVertexIndex v(0); v < vertices_N.size(); ++v) {
-    const Vector3<T>& p_NV = vertices_N[v].r_MV();
-    (*phi_gradient_N)[v] = phi_N.gradient(p_NV);
-  }
+  if (num_intersections == 0) return nullptr;
 
   return std::make_unique<geometry::SurfaceMesh<T>>(std::move(faces),
                                                     std::move(vertices_N));

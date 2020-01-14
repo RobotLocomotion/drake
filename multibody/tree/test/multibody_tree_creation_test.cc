@@ -1,3 +1,4 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 /* clang-format off to disable clang-format-includes */
 #include "drake/multibody/tree/multibody_tree-inl.h"
 /* clang-format on */
@@ -18,6 +19,24 @@
 
 namespace drake {
 namespace multibody {
+
+class MultibodyElementTester {
+ public:
+  MultibodyElementTester() = delete;
+  template <template <typename> class ElementType, typename T,
+      typename ElementIndexType>
+  static bool has_parent_tree(
+      const MultibodyElement<ElementType, T, ElementIndexType>& element) {
+    return element.has_parent_tree();
+  }
+
+  template <template <typename> class ElementType, typename T,
+      typename ElementIndexType>
+  static const internal::MultibodyTree<T>& get_parent_tree(
+      const MultibodyElement<ElementType, T, ElementIndexType>& element) {
+    return element.get_parent_tree();
+  }
+};
 
 // Friend class for accessing Joint<T> protected/private internals.
 class JointTester {
@@ -59,9 +78,8 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   const RigidBody<double>& pendulum = model->AddBody<RigidBody>(M_Bo_B);
 
   // Adds a revolute mobilizer.
-  EXPECT_NO_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      world_body.body_frame(), pendulum.body_frame(),
-      Vector3d::UnitZ())));
+  DRAKE_EXPECT_NO_THROW((model->AddMobilizer<RevoluteMobilizer>(
+      world_body.body_frame(), pendulum.body_frame(), Vector3d::UnitZ())));
 
   // We cannot add another mobilizer between the same two frames.
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
@@ -99,7 +117,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   // Topology is invalid before MultibodyTree::Finalize().
   EXPECT_FALSE(model->topology_is_valid());
   // Verifies that the topology of this model gets validated at finalize stage.
-  EXPECT_NO_THROW(model->Finalize());
+  DRAKE_EXPECT_NO_THROW(model->Finalize());
   EXPECT_TRUE(model->topology_is_valid());
 
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
@@ -124,9 +142,9 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 }
 
-// Tests the correctness of MultibodyTreeElement checks to verify one or more
+// Tests the correctness of MultibodyElement checks to verify one or more
 // elements belong to a given MultibodyTree.
-GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
+GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   auto model1 = std::make_unique<MultibodyTree<double>>();
   auto model2 = std::make_unique<MultibodyTree<double>>();
 
@@ -149,13 +167,15 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 
   // Verifies we cannot add a mobilizer between frames that belong to another
   // tree.
-  EXPECT_THROW((model1->AddMobilizer<RevoluteMobilizer>(
-      model1->world_body().body_frame(), /*inboard frame*/
-      body2.body_frame() /*body2 belongs to model2, not model1!!!*/,
-      Vector3d::UnitZ() /*axis of rotation*/)), std::logic_error);
+  EXPECT_THROW(
+      (model1->AddMobilizer<RevoluteMobilizer>(
+          model1->world_body().body_frame(), /*inboard frame*/
+          body2.body_frame() /*body2 belongs to model2, not model1!!!*/,
+          Vector3d::UnitZ() /*axis of rotation*/)),
+      std::logic_error);
 
   // model1 is complete. Expect no-throw.
-  EXPECT_NO_THROW(model1->Finalize());
+  DRAKE_EXPECT_NO_THROW(model1->Finalize());
   // model 1 has a single dof corresponding to the pin joint.
   EXPECT_EQ(model1->num_positions(), 1);
   EXPECT_EQ(model1->num_velocities(), 1);
@@ -163,7 +183,7 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   // model2->Finalize() is not expected to throw an exception. Since body2 has
   // no joint, MultibodyTree will default it to be free and will assign a free
   // mobilizer to it.
-  EXPECT_NO_THROW(model2->Finalize());
+  DRAKE_EXPECT_NO_THROW(model2->Finalize());
   // We now verify the number of dofs corresponds to a quaternion free mobilizer
   // by default.
   EXPECT_EQ(model2->num_positions(), 7);
@@ -171,18 +191,22 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 
   // Tests that the created multibody elements indeed do have a parent
   // MultibodyTree.
-  EXPECT_NO_THROW(body1.HasParentTreeOrThrow());
-  EXPECT_NO_THROW(body2.HasParentTreeOrThrow());
-  EXPECT_NO_THROW(pin1.HasParentTreeOrThrow());
+  EXPECT_TRUE(MultibodyElementTester::has_parent_tree(body1));
+  EXPECT_TRUE(MultibodyElementTester::has_parent_tree(body2));
+  EXPECT_TRUE(MultibodyElementTester::has_parent_tree(pin1));
 
-  // Tests the check to verify that two bodies belong to the same MultibodyTree.
-  EXPECT_THROW(body1.HasSameParentTreeOrThrow(body2), std::logic_error);
-  EXPECT_NO_THROW(model1->world_body().HasSameParentTreeOrThrow(body1));
-  EXPECT_NO_THROW(model2->world_body().HasSameParentTreeOrThrow(body2));
+  // Tests that bodies belong to distinct MultibodyTrees.
+  const auto& body1_tree = MultibodyElementTester::get_parent_tree(body1);
+  const auto& body2_tree = MultibodyElementTester::get_parent_tree(body2);
+  EXPECT_NE(&body1_tree, &body2_tree);
+  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model1->world_body()),
+            &body1_tree);
+  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model2->world_body()),
+            &body2_tree);
 
   // Verifies bodies have the correct parent tree.
-  EXPECT_NO_THROW(body1.HasThisParentTreeOrThrow(model1.get()));
-  EXPECT_NO_THROW(body2.HasThisParentTreeOrThrow(model2.get()));
+  EXPECT_EQ(&body1_tree, model1.get());
+  EXPECT_EQ(&body2_tree, model2.get());
 }
 
 // This unit test builds a MultibodyTree as shown in the schematic below, where
@@ -648,7 +672,7 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   auto AddWeldJoint = [&model](const std::string& name,
                                const Body<double>& parent,
                                const Body<double>& child) {
-    model.AddJoint<WeldJoint>(name, parent, nullopt, child, nullopt,
+    model.AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
                               math::RigidTransformd::Identity());
   };
 

@@ -249,7 +249,7 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(CsdpTest, TestEllipsoidsSeparation,
+INSTANTIATE_TEST_SUITE_P(CsdpTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
@@ -261,7 +261,7 @@ TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CsdpTest, TestFindSpringEquilibrium,
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 

@@ -8,9 +8,16 @@ find .  # Get some debugging output.
 capture_cc_env="$1"
 drake_assert_test_compile_cc="$2"
 
+# TODO(jamiesnape): Determine this information from Bazel.
+if [[ "$(uname -s)" == Darwin ]]; then
+  export DEVELOPER_DIR="$(xcode-select --print-path)"
+  export SDKROOT="$(xcrun --show-sdk-path)"
+fi
+
 # Make sure we know what C++ compiler to use.
 source "$capture_cc_env"
 [[ ! -z "$BAZEL_CC" ]]
+BAZEL_CC=$(python3 -c 'import os; print(os.path.realpath("'"$BAZEL_CC"'"))')
 command -v "$BAZEL_CC"
 "$BAZEL_CC" --version
 
@@ -21,7 +28,7 @@ if [[ ! -e ./drake ]]; then
 fi
 
 # Confirm that it compiles successfully, whether or not assertions are enabled.
-TESTING_CXXFLAGS="$BAZEL_CC_FLAGS -std=c++14 -I . \
+TESTING_CXXFLAGS="$BAZEL_CC_FLAGS -std=c++17 -I . \
     -c $drake_assert_test_compile_cc \
     -o /dev/null"
 "$BAZEL_CC" $TESTING_CXXFLAGS

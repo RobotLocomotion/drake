@@ -1,5 +1,7 @@
 #include "drake/systems/framework/system_base.h"
 
+#include <atomic>
+
 #include <fmt/format.h>
 
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -17,6 +19,13 @@ namespace drake {
 namespace systems {
 
 SystemBase::~SystemBase() {}
+
+uint64_t SystemBase::get_next_id() {
+  // Note that id 0 is used to indicate that the id has not been initialized.
+  // So we have an invariant "get_next_id() > 0".
+  static never_destroyed<std::atomic<uint64_t>> next_id(1);
+  return next_id.access()++;
+}
 
 std::string SystemBase::GetSystemPathname() const {
   const std::string parent_path =
@@ -63,6 +72,8 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
 
   internal::SystemBaseContextBaseAttorney::set_system_name(
       &context, get_name());
+  internal::SystemBaseContextBaseAttorney::set_system_id(
+      &context, system_id_);
 
   // Add the independent-source trackers and wire them up appropriately. That
   // includes input ports since their dependencies are external.

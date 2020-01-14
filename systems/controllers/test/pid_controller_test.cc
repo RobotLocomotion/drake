@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
@@ -27,14 +28,13 @@ class PidControllerTest : public ::testing::Test {
     derivatives_ = controller_.AllocateTimeDerivatives();
 
     // State:
-    auto vec0 = std::make_unique<BasicVector<double>>(port_size_ * 2);
-    vec0->get_mutable_value().setZero();
-    context_->FixInputPort(0, std::move(vec0));
+    VectorX<double> vec0 = VectorX<double>::Zero(port_size_ * 2);
+    controller_.get_input_port(0).FixValue(context_.get(), vec0);
 
     // Desired state:
-    auto vec1 = std::make_unique<BasicVector<double>>(port_size_ * 2);
-    vec1->get_mutable_value() << error_signal_, error_rate_signal_;
-    context_->FixInputPort(1, std::move(vec1));
+    VectorX<double> vec1(port_size_ * 2);
+    vec1 << error_signal_, error_rate_signal_;
+    controller_.get_input_port(1).FixValue(context_.get(), vec1);
   }
 
   const int port_size_{3};
@@ -66,9 +66,9 @@ TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(ki_, controller_.get_Ki_vector());
   ASSERT_EQ(kd_, controller_.get_Kd_vector());
 
-  EXPECT_NO_THROW(controller_.get_Kp_singleton());
-  EXPECT_NO_THROW(controller_.get_Ki_singleton());
-  EXPECT_NO_THROW(controller_.get_Kd_singleton());
+  DRAKE_EXPECT_NO_THROW(controller_.get_Kp_singleton());
+  DRAKE_EXPECT_NO_THROW(controller_.get_Ki_singleton());
+  DRAKE_EXPECT_NO_THROW(controller_.get_Kd_singleton());
 }
 
 TEST_F(PidControllerTest, GetterVectors) {
@@ -77,9 +77,9 @@ TEST_F(PidControllerTest, GetterVectors) {
   const Eigen::Vector2d kd{1.0, 2.0};
   PidController<double> controller{kp, ki, kd};
 
-  EXPECT_NO_THROW(controller.get_Kp_vector());
-  EXPECT_NO_THROW(controller.get_Ki_vector());
-  EXPECT_NO_THROW(controller.get_Kd_vector());
+  DRAKE_EXPECT_NO_THROW(controller.get_Kp_vector());
+  DRAKE_EXPECT_NO_THROW(controller.get_Ki_vector());
+  DRAKE_EXPECT_NO_THROW(controller.get_Kd_vector());
 
   ASSERT_EQ(kp, controller.get_Kp_vector());
   ASSERT_EQ(ki, controller.get_Ki_vector());
@@ -223,9 +223,9 @@ GTEST_TEST(PidIOProjectionTest, Test) {
   VectorX<double> integral = VectorX<double>::Random(num_controlled_q);
 
   // State:
-  context->FixInputPort(0, std::make_unique<BasicVector<double>>(x));
+  dut.get_input_port(0).FixValue(context.get(), x);
   // Desired state:
-  context->FixInputPort(1, std::make_unique<BasicVector<double>>(x_d));
+  dut.get_input_port(1).FixValue(context.get(), x_d);
   // Integral:
   dut.set_integral_value(context.get(), integral);
 

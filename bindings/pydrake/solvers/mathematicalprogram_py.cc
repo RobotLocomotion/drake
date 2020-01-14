@@ -7,7 +7,6 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -180,8 +179,8 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
   }
 
   void Solve(const solvers::MathematicalProgram& prog,
-      const optional<Eigen::VectorXd>& initial_guess,
-      const optional<solvers::SolverOptions>& solver_options,
+      const std::optional<Eigen::VectorXd>& initial_guess,
+      const std::optional<solvers::SolverOptions>& solver_options,
       solvers::MathematicalProgramResult* result) const override {
     PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
         initial_guess, solver_options, result);
@@ -237,8 +236,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("Solve",
           [](const SolverInterface& self,
               const solvers::MathematicalProgram& prog,
-              const optional<Eigen::VectorXd>& initial_guess,
-              const optional<solvers::SolverOptions>& solver_options,
+              const std::optional<Eigen::VectorXd>& initial_guess,
+              const std::optional<solvers::SolverOptions>& solver_options,
               solvers::MathematicalProgramResult* result) {
             self.Solve(prog, initial_guess, solver_options, result);
           },
@@ -248,8 +247,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.
           [](const SolverInterface& self, const MathematicalProgram& prog,
-              const optional<Eigen::VectorXd>& initial_guess,
-              const optional<SolverOptions>& solver_options) {
+              const std::optional<Eigen::VectorXd>& initial_guess,
+              const std::optional<SolverOptions>& solver_options) {
             MathematicalProgramResult result;
             self.Solve(prog, initial_guess, solver_options, &result);
             return result;
@@ -513,6 +512,13 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddConstraint),
           doc.MathematicalProgram.AddConstraint.doc_1args_f)
+      .def("AddConstraint",
+          static_cast<Binding<Constraint> (MathematicalProgram::*)(
+              std::shared_ptr<Constraint>,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars)>(
+              &MathematicalProgram::AddConstraint),
+          py::arg("constraint"), py::arg("vars"),
+          doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -632,11 +638,20 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddQuadraticCost),
+          py::arg("Q"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddQuadraticCost.doc_3args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddQuadraticCost),
+          py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("vars"),
+          doc.MathematicalProgram.AddQuadraticCost.doc_4args)
+      .def("AddQuadraticCost",
+          static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddQuadraticCost),
-          doc.MathematicalProgram.AddQuadraticCost.doc_1args)
+          py::arg("e"), doc.MathematicalProgram.AddQuadraticCost.doc_1args)
       .def("AddQuadraticErrorCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -735,10 +750,15 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
+      .def("decision_variable_index",
+          &MathematicalProgram::decision_variable_index,
+          doc.MathematicalProgram.decision_variable_index.doc)
       .def("indeterminates", &MathematicalProgram::indeterminates,
           doc.MathematicalProgram.indeterminates.doc)
       .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
           doc.MathematicalProgram.indeterminate.doc)
+      .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
+          doc.MathematicalProgram.indeterminates_index.doc)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
@@ -771,6 +791,14 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
+      .def("GetBindingVariableValues",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<double>& prog_var_vals) {
+            return prog.GetBindingVariableValues(binding, prog_var_vals);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.GetBindingVariableValues.doc)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
@@ -911,7 +939,12 @@ top-level documentation for :py:mod:`pydrake.math`.
         .def("get_description", &Class::get_description,
             cls_doc.get_description.doc)
         .def("set_description", &Class::set_description,
-            cls_doc.set_description.doc);
+            cls_doc.set_description.doc)
+        .def("SetGradientSparsityPattern", &Class::SetGradientSparsityPattern,
+            py::arg("gradient_sparsity_pattern"),
+            cls_doc.SetGradientSparsityPattern.doc)
+        .def("gradient_sparsity_pattern", &Class::gradient_sparsity_pattern,
+            cls_doc.gradient_sparsity_pattern.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
@@ -964,6 +997,13 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& lb,
+                        const Eigen::VectorXd& ub) {
+        return std::unique_ptr<LinearConstraint>(
+            new LinearConstraint(A, lb, ub));
+      }),
+          py::arg("A"), py::arg("lb"), py::arg("ub"),
+          doc.LinearConstraint.ctor.doc)
       .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
       .def("UpdateCoefficients",
           [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
@@ -1077,12 +1117,12 @@ top-level documentation for :py:mod:`pydrake.math`.
           "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
       .def("Solve",
           py::overload_cast<const MathematicalProgram&,
-              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
-              &solvers::Solve),
+              const std::optional<Eigen::VectorXd>&,
+              const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
-          py::arg("prog"), py::arg("result"), py::arg("tol") = nullopt,
+          py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
           doc.GetInfeasibleConstraints.doc);
 }  // NOLINT(readability/fn_size)
 

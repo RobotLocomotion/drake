@@ -19,7 +19,7 @@ using geometry::Sphere;
 std::unique_ptr<MultibodyPlant<double>>
 MakePendulumPlant(const PendulumParameters& params,
                   SceneGraph<double>* scene_graph) {
-  auto plant = std::make_unique<MultibodyPlant<double>>();
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
 
   // Position of the com of the pendulum's body (in this case a point mass) in
   // the body's frame. The body's frame's origin Bo is defined to be at the
@@ -56,9 +56,9 @@ MakePendulumPlant(const PendulumParameters& params,
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(
       params.pin_joint_name(),
       /* Shoulder inboard frame IS the world frame W. */
-      plant->world_body(), nullopt,
+      plant->world_body(), std::nullopt,
       /* Pin joint outboard frame IS the body frame B. */
-      point_mass, nullopt,
+      point_mass, std::nullopt,
       Vector3d::UnitY(), /* Pendulum oscillates in the x-z plane. */
       params.damping());
 

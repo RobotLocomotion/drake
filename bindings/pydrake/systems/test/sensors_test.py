@@ -1,5 +1,3 @@
-from __future__ import division
-
 import pydrake.systems.sensors as mut
 
 import unittest
@@ -7,6 +5,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import FrameId
 from pydrake.geometry.render import CameraProperties, DepthCameraProperties
 from pydrake.math import (
@@ -195,6 +194,7 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(info.center_y(), center_y)
             self.assertTrue(
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
+            assert_pickle(self, info, mut.CameraInfo.intrinsic_matrix)
 
     def _check_input(self, value):
         self.assertIsInstance(value, InputPort)

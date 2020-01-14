@@ -14,7 +14,7 @@ RgbdRenderer::RgbdRenderer(const RenderingConfig& config,
 
 RgbdRenderer::~RgbdRenderer() {}
 
-optional<RgbdRenderer::VisualIndex> RgbdRenderer::RegisterVisual(
+std::optional<RgbdRenderer::VisualIndex> RgbdRenderer::RegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   return ImplRegisterVisual(visual, body_id);
 }

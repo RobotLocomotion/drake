@@ -2,11 +2,11 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/lcm/drake_lcm_interface.h"
 
 namespace drake {
@@ -21,14 +21,10 @@ class DrakeMockLcm : public DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeMockLcm);
 
-  /**
-   * A constructor that creates a DrakeMockLcm with loopback disabled, i.e., a
-   * call to Publish() will not result in subscriber callback functions being
-   * executed. To enable loopback behavior, call EnableLoopBack().
-   */
   DrakeMockLcm();
 
-  void Publish(const std::string&, const void*, int, optional<double>) override;
+  void Publish(const std::string&, const void*, int,
+               std::optional<double>) override;
   std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string&, HandlerFunction) override;
   int HandleSubscriptions(int) override;

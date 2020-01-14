@@ -66,11 +66,10 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
 
   // Hook input of the expected size.
   if (!is_abstract_) {
-    context_->FixInputPort(
-        0, std::make_unique<BasicVector<double>>(input_value_));
+    pass_through_->get_input_port(0).FixValue(context_.get(), input_value_);
   } else {
-    context_->FixInputPort(
-        0, AbstractValue::Make(SimpleAbstractType(input_value_)));
+    pass_through_->get_input_port(0).FixValue(context_.get(),
+                                              SimpleAbstractType(input_value_));
   }
 
   // Checks that the number of output ports in the system and in the
@@ -108,7 +107,7 @@ TEST_P(PassThroughTest, ToSymbolic) {
 }
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
-INSTANTIATE_TEST_CASE_P(test, PassThroughTest,
+INSTANTIATE_TEST_SUITE_P(test, PassThroughTest,
     ::testing::Values(false, true));
 
 }  // namespace

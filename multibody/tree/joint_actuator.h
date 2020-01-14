@@ -7,8 +7,8 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
@@ -37,7 +37,7 @@ template<typename T> class Joint;
 /// No other values for T are currently supported.
 template <typename T>
 class JointActuator final
-    : public MultibodyTreeElement<JointActuator<T>, JointActuatorIndex> {
+    : public MultibodyElement<JointActuator, T, JointActuatorIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
 
@@ -98,6 +98,16 @@ class JointActuator final
       const T& tau,
       MultibodyForces<T>* forces) const;
 
+  /// Gets the actuation values for `this` actuator from the actuation vector u
+  /// for the entire model.
+  /// @return a reference to a nv-dimensional vector, where nv is the number
+  ///         of velocity variables of joint().
+  const Eigen::Ref<const VectorX<T>> get_actuation_vector(
+      const VectorX<T>& u) const {
+    DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
+    return u.segment(topology_.actuator_index_start, joint().num_velocities());
+  }
+
   /// Given the actuation values u_instance for `this` actuator, this method
   /// sets the actuation vector u for the entire MultibodyTree model
   /// to which this actuator belongs to.
@@ -156,7 +166,7 @@ class JointActuator final
   std::unique_ptr<JointActuator<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>& tree_clone) const;
 
-  // Implementation for MultibodyTreeElement::DoSetTopology().
+  // Implementation for MultibodyElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each actuator retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const internal::MultibodyTreeTopology&) final;

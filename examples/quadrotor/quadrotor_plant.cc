@@ -32,8 +32,7 @@ template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
                                   const Matrix3d& I_arg, double kF_arg,
                                   double kM_arg)
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<quadrotor::QuadrotorPlant>{}),
+    : systems::LeafSystem<T>(systems::SystemTypeTag<QuadrotorPlant>{}),
       g_{9.81}, m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
   // Four inputs -- one for each propellor.
   this->DeclareInputPort("propellor_force", systems::kVectorValued, 4);
@@ -141,7 +140,7 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
   Eigen::VectorXd u0 = Eigen::VectorXd::Constant(
       4, quadrotor_plant->m() * quadrotor_plant->g() / 4);
 
-  quad_context_goal->FixInputPort(0, u0);
+  quadrotor_plant->get_input_port(0).FixValue(quad_context_goal.get(), u0);
   quad_context_goal->SetContinuousState(x0);
 
   // Setup LQR cost matrices (penalize position error 10x more than velocity

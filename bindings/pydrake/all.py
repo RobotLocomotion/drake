@@ -24,7 +24,6 @@ Note:
 To see example usages, please see `doc/python_bindings.rst`.
 """
 
-from __future__ import absolute_import
 
 # Legacy symbols.
 from .attic.all import *
@@ -33,7 +32,6 @@ from .attic.all import *
 from . import getDrakePath
 from .autodiffutils import *
 from .forwarddiff import *
-from .geometry import *
 from .lcm import *
 from .math import *
 from .perception import *
@@ -43,6 +41,7 @@ from .trajectories import *
 
 # Submodules.
 from .common.all import *
+from .geometry.all import *
 # - `examples` does not offer public Drake library symbols.
 from .manipulation.all import *
 from .multibody.all import *

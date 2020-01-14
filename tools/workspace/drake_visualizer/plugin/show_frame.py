@@ -1,6 +1,6 @@
 # Note that this script runs in the main context of drake-visulizer,
 # where many modules and variables already exist in the global scope.
-from sets import Set
+
 from director import lcmUtils
 from director import applogic
 from director import objectmodel as om

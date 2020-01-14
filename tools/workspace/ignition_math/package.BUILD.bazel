@@ -85,6 +85,7 @@ public_headers_no_gen = [
     "include/ignition/math/Box.hh",
     "include/ignition/math/Color.hh",
     "include/ignition/math/Cylinder.hh",
+    "include/ignition/math/DiffDriveOdometry.hh",
     "include/ignition/math/Filter.hh",
     "include/ignition/math/Frustum.hh",
     "include/ignition/math/Helpers.hh",
@@ -104,6 +105,7 @@ public_headers_no_gen = [
     "include/ignition/math/Pose3.hh",
     "include/ignition/math/Quaternion.hh",
     "include/ignition/math/Rand.hh",
+    "include/ignition/math/RollingMean.hh",
     "include/ignition/math/RotationSpline.hh",
     "include/ignition/math/SemanticVersion.hh",
     "include/ignition/math/SignalStats.hh",
@@ -165,17 +167,19 @@ public_headers = public_headers_no_gen + [
 # upstream's explicitly listed sources plus private headers.  The explicitly
 # listed hdrs= matches upstream's public headers.
 cc_binary(
-    name = "libdrake_ignition_math4.so",
+    name = "libdrake_ignition_math.so",
     srcs = [
         "src/Angle.cc",
         "src/AxisAlignedBox.cc",
         "src/Color.cc",
+        "src/DiffDriveOdometry.cc",
         "src/Frustum.cc",
         "src/Helpers.cc",
         "src/Kmeans.cc",
         "src/Material.cc",
         "src/PID.cc",
         "src/Rand.cc",
+        "src/RollingMean.cc",
         "src/RotationSpline.cc",
         "src/RotationSplinePrivate.cc",
         "src/SemanticVersion.cc",
@@ -190,7 +194,7 @@ cc_binary(
     copts = ["-fvisibility-inlines-hidden"],
     includes = ["include"],
     linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_ignition_math4.so"],
+        ":linux": ["-Wl,-soname,libdrake_ignition_math.so"],
         "//conditions:default": [],
     }),
     linkshared = 1,
@@ -199,13 +203,13 @@ cc_binary(
 
 cc_library(
     name = "ignition_math",
-    srcs = ["libdrake_ignition_math4.so"],
+    srcs = ["libdrake_ignition_math.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
 )
 
-CMAKE_PACKAGE = "ignition-math4"
+CMAKE_PACKAGE = "ignition-math%d" % (PROJECT_MAJOR)
 
 cmake_config(
     package = CMAKE_PACKAGE,
@@ -219,7 +223,7 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":libdrake_ignition_math4.so"],
+    targets = [":libdrake_ignition_math.so"],
     hdrs = public_headers,
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],

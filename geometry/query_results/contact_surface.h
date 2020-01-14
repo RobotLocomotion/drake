@@ -94,6 +94,19 @@ namespace geometry {
   Even though eₘₙ and ∇hₘₙ are defined on different domains (𝕊ₘₙ and 𝕄 ∩ ℕ),
   our implementation only represents them on their common domain, i.e., 𝕊ₘₙ.
 
+  <h2> Discrete Representation </h2>
+
+  In practice, the contact surface is approximated with a discrete triangle
+  mesh. The triangle mesh's normals are defined *per face*. The normal of each
+  face is guaranteed to point "out of" N and "into" M. They can be accessed via
+  `mesh_W().face_normal(face_index)`.
+
+  The pressure values on the contact surface are represented as a continuous,
+  piecewise-linear function, accessed via e_MN().
+
+  The normals of the mesh are discontinuous at triangle boundaries, but the
+  pressure can be meaningfully evaluated over the entire domain of the mesh.
+
   <h2> Barycentric Coordinates </h2>
 
   For Point Q on the surface mesh of the contact surface between Geometry M and
@@ -132,8 +145,6 @@ class ContactSurface {
     // to the new mesh. So, we use CloneAndSetMesh() instead.
     e_MN_.reset(static_cast<SurfaceMeshFieldLinear<T, T>*>(
         surface.e_MN_->CloneAndSetMesh(mesh_W_.get()).release()));
-    grad_h_MN_W_.reset(static_cast<SurfaceMeshFieldLinear<Vector3<T>, T>*>(
-        surface.grad_h_MN_W_->CloneAndSetMesh(mesh_W_.get()).release()));
 
     return *this;
   }
@@ -147,24 +158,17 @@ class ContactSurface {
    @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
                        and N. The mesh vertices are defined in the world frame.
    @param e_MN         Represents the scalar field eₘₙ on the surface mesh.
-   @param grad_h_MN_W  Represents the vector field ∇hₘₙ on the surface mesh,
-                       expressed in the world frame. Due to discretization,
-                       `grad_h_MN_W` at a vertex need not be strictly
-                       orthogonal to every triangle sharing the vertex.
-                       Orthogonality generally does improve with finer
-                       discretization.
-   @note If the id_M is greater than the id_N, we will swap M and N.
-         Therefore, grad_h_MN_W will switch its direction.
+   @pre The face normals in `mesh_W` point *out of* geometry M and *into* N.
+   @note If the id_M is greater than the id_N, we will swap M and N (making any
+         necessary changes to keep the surface consistent with that labeling).
    */
   ContactSurface(
       GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh_W,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
-      std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_W)
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_W_(std::move(mesh_W)),
-        e_MN_(std::move(e_MN)),
-        grad_h_MN_W_(std::move(grad_h_MN_W)) {
+        e_MN_(std::move(e_MN)) {
     if (id_N_ < id_M_) SwapMAndN();
   }
 
@@ -196,36 +200,41 @@ class ContactSurface {
     return e_MN_->EvaluateAtVertex(vertex);
   }
 
-  /** Evaluates the vector field ∇hₘₙ at Point Q on a triangle.
-    Point Q is specified by its barycentric coordinates.
-    @param face         The face index of the triangle.
-    @param barycentric  The barycentric coordinates of Q on the triangle.
-    @retval  grad_h_MN_W is the vector expressed in the world frame.
-   */
-  Vector3<T> EvaluateGrad_h_MN_W(
-      SurfaceFaceIndex face,
-      const typename SurfaceMesh<T>::Barycentric& barycentric) const {
-    return grad_h_MN_W_->Evaluate(face, barycentric);
-  }
-
-  /** Evaluates the vector field ∇hₘₙ at the given vertex on the contact surface
-    mesh.
-    @param vertex       The index of the vertex in the mesh.
-    @retval  grad_h_MN_W is the vector expressed in the world frame.
-   */
-  Vector3<T> EvaluateGrad_h_MN_W(SurfaceVertexIndex vertex) const {
-    return grad_h_MN_W_->EvaluateAtVertex(vertex);
-  }
-
-  DRAKE_DEPRECATED("2019-12-01", "Use mesh_W() instead.")
-  const SurfaceMesh<T>& mesh() const { return mesh_W(); }
-
   /** Returns a reference to the surface mesh whose vertex
    positions are measured and expressed in the world frame.
    */
   const SurfaceMesh<T>& mesh_W() const {
     DRAKE_DEMAND(mesh_W_ != nullptr);
     return *mesh_W_;
+  }
+
+  /** Returns a reference to the scalar field eₘₙ. */
+  const MeshField<T, SurfaceMesh<T>>& e_MN() const { return *e_MN_; }
+
+  // TODO(#12173): Consider NaN==NaN to be true in equality tests.
+  /** Checks to see whether the given ContactSurface object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   @note Currently requires the fields of the objects to be of type
+   MeshFieldLinear, otherwise the current simple checking of equal values at
+   vertices is insufficient.
+   @param surface The contact surface for comparison.
+   @returns `true` if the given contact surface is equal.
+   */
+  bool Equal(const ContactSurface<T>& surface) const {
+    // First check the meshes.
+    if (!this->mesh_W().Equal(surface.mesh_W()))
+      return false;
+
+    // Now examine the pressure field.
+    const auto* pressure_field =
+        dynamic_cast<const MeshFieldLinear<T, SurfaceMesh<T>>*>(
+            &(this->e_MN()));
+    DRAKE_DEMAND(pressure_field);
+    if (!pressure_field->Equal(surface.e_MN()))
+      return false;
+
+    // All checks passed.
+    return true;
   }
 
  private:
@@ -236,12 +245,6 @@ class ContactSurface {
     // documented nor tested that the face winding is guaranteed to be one way
     // or the other. Alternatively, this should be documented and tested.
     mesh_W_->ReverseFaceWinding();
-
-    // Simply reverse the direction of the vector field.
-    std::vector<Vector3<T>>& values = grad_h_MN_W_->mutable_values();
-    for (SurfaceVertexIndex v(0); v < mesh_W_->num_vertices(); ++v) {
-      values[v] = -values[v];
-    }
 
     // Note: the scalar field does not depend on the order of M and N.
   }
@@ -257,11 +260,7 @@ class ContactSurface {
   //  uses a different derivation.
   // Represents the scalar field eₘₙ on the surface mesh.
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
-  // Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
-  // frame.
-  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_W_;
-  // TODO(DamrongGuoy): Remove this when we allow direct access to e_MN and
-  //  grad_h_MN.
+  // TODO(DamrongGuoy): Remove this when we allow direct access to e_MN.
   template <typename U> friend class ContactSurfaceTester;
 };
 

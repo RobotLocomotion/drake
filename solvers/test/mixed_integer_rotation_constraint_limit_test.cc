@@ -141,7 +141,7 @@ TEST_P(TestMinimumDistanceWOrthonormalSocp, Test) {
   SolveAndCheckSolution();
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestMinimumDistance,
     ::testing::Combine(
         ::testing::ValuesIn<
@@ -153,7 +153,7 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<int>>(
             {1, 2, 3})));  // number of binary variables per half axis
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     RotationTest, TestMinimumDistanceWOrthonormalSocp,
     ::testing::Combine(
         ::testing::ValuesIn<

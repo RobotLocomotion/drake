@@ -26,6 +26,11 @@ drake_cc_googletest(
     ],
 )
 
-install_data()
+install_data(
+    extra_prod_models = [
+        "LICENSE.TXT",
+        "iiwa_stack.LICENSE.txt",
+    ],
+)
 
 add_lint_tests()

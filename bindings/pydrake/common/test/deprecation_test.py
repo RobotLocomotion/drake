@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import rlcompleter
-import six
 import sys
 from types import ModuleType
 import unittest
@@ -78,7 +75,7 @@ class TestDeprecation(unittest.TestCase):
     def test_module_import_exec(self):
         # Test `exec` workflow.
         temp = {}
-        six.exec_("from deprecation_example import *", temp, temp)
+        exec("from deprecation_example import *", temp, temp)
         self.assertIsInstance(temp["sub_module"], str)
 
     def test_module_autocomplete(self):
@@ -115,26 +112,25 @@ class TestDeprecation(unittest.TestCase):
             "sub_module",
             "value",
         ]
-        if six.PY3:
-            suffixes_expected += [
-                "__ge__(",
-                "__eq__(",
-                "__le__(",
-                "__lt__(",
-                "__gt__(",
-                "__ne__(",
-            ]
-            if hasattr(deprecation_example, "__init_subclass__"):
-                suffixes_expected.append("__init_subclass__(")
-            # For Bionic Python3, the behavior of autocompletion seems to
-            # constrain behavior depending on underscore prefixes.
-            if "__init__(" not in suffixes:
-                under = get_completion_suffixes(
-                    locals(), prefix="deprecation_example._")
-                suffixes += ["_" + s for s in under]
-                dunder = get_completion_suffixes(
-                    locals(), prefix="deprecation_example.__")
-                suffixes += ["__" + s for s in dunder]
+        suffixes_expected += [
+            "__ge__(",
+            "__eq__(",
+            "__le__(",
+            "__lt__(",
+            "__gt__(",
+            "__ne__(",
+        ]
+        if hasattr(deprecation_example, "__init_subclass__"):
+            suffixes_expected.append("__init_subclass__(")
+        # For Bionic Python3, the behavior of autocompletion seems to
+        # constrain behavior depending on underscore prefixes.
+        if "__init__(" not in suffixes:
+            under = get_completion_suffixes(
+                locals(), prefix="deprecation_example._")
+            suffixes += ["_" + s for s in under]
+            dunder = get_completion_suffixes(
+                locals(), prefix="deprecation_example.__")
+            suffixes += ["__" + s for s in dunder]
         self.assertSetEqual(set(suffixes), set(suffixes_expected))
 
     def _check_warning(self, item, message_expected, check_full=True):

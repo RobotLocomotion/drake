@@ -6,6 +6,7 @@
 #include "drake/examples/pendulum/gen/pendulum_input.h"
 #include "drake/examples/pendulum/gen/pendulum_params.h"
 #include "drake/examples/pendulum/gen/pendulum_state.h"
+#include "drake/examples/pendulum/pendulum_geometry.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 
 using std::make_unique;
@@ -78,6 +79,16 @@ PYBIND11_MODULE(pendulum, m) {
           doc.PendulumState.set_theta.doc)
       .def("set_thetadot", &PendulumState<T>::set_thetadot,
           doc.PendulumState.set_thetadot.doc);
+
+  py::class_<PendulumGeometry, LeafSystem<double>>(
+      m, "PendulumGeometry", doc.PendulumGeometry.doc)
+      .def_static("AddToBuilder", &PendulumGeometry::AddToBuilder,
+          py::arg("builder"), py::arg("pendulum_state_port"),
+          py::arg("scene_graph"),
+          // Keep alive, ownership: `return` keeps `builder` alive.
+          py::keep_alive<0, 1>(),
+          // See #11531 for why `py_reference` is needed.
+          py_reference, doc.PendulumGeometry.AddToBuilder.doc);
 }
 
 }  // namespace pydrake

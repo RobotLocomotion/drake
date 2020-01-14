@@ -1,0 +1,16 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+install_files(
+    name = "install",
+    dest = "lib/cmake/drake/modules",
+    files = [
+        "FindTinyXML2.cmake",
+    ],
+)
+
+add_lint_tests()

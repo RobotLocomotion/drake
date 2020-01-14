@@ -6,6 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+    "drake_cc_test",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -45,6 +46,7 @@ drake_cc_package_library(
         ":random",
         ":reset_after_move",
         ":reset_on_copy",
+        ":scope_exit",
         ":scoped_singleton",
         ":sorted_pair",
         ":sorted_vectors_have_intersection",
@@ -84,7 +86,6 @@ drake_cc_library(
         "@eigen",
         "@fmt",
         "@spdlog",
-        "@stx",
     ],
 )
 
@@ -227,6 +228,7 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         ":random",
+        "@fmt",
     ],
 )
 
@@ -447,16 +449,32 @@ drake_cc_library(
     ],
 )
 
+# This is a Drake-internal utility for use only as a direct dependency
+# of executable (drake_cc_binary) targets.  Thus, we exclude it from
+# the ":common" package library and from libdrake.
+drake_cc_library(
+    name = "add_text_logging_gflags",
+    srcs = ["add_text_logging_gflags.cc"],
+    tags = [
+        "exclude_from_libdrake",
+        "exclude_from_package",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":essential",
+        ":unused",
+        "@gflags",
+    ],
+    alwayslink = 1,
+)
+
+# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
+# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
+# etc).
 drake_cc_library(
     name = "text_logging_gflags",
     hdrs = ["text_logging_gflags.h"],
-    # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
-    # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
-    # throughout our code.
-    linkopts = select({
-        "//tools/cc_toolchain:linux": ["-pthread"],
-        "//conditions:default": [],
-    }),
+    deprecation = "DRAKE DEPRECATED: The drake/common/text_logging_gflags.h convenience header is being removed from Drake on or after 2020-02-01.  Downstream projects should maintain their own implementation of this feature.  See drake/common/add_text_logging_gflags.cc for an example.",  # noqa
     tags = [
         # Don't add this library into the ":common" package library.
         # Only programs with a main() function should ever use this header.
@@ -468,6 +486,8 @@ drake_cc_library(
         # this cc_library entirely, and use a separate rule below for the
         # installation.
         "exclude_from_libdrake",
+        # Avoid 'build //...' yelling at us.
+        "manual",
     ],
     deps = [
         ":essential",
@@ -475,6 +495,10 @@ drake_cc_library(
     ],
 )
 
+# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
+# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
+# etc).
+#
 # Compared to the above rule, this removes the deps attribute; we don't want to
 # link against gflags for libdrake.so, we just want to publish this header for
 # callers who have their own gflags to link against.
@@ -510,6 +534,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scope_exit",
+    hdrs = ["scope_exit.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "scoped_singleton",
     hdrs = ["scoped_singleton.h"],
     deps = [
@@ -534,9 +566,9 @@ drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
     deps = [
+        ":add_text_logging_gflags",
         ":essential",
         ":find_resource",
-        ":text_logging_gflags",
     ],
 )
 
@@ -565,9 +597,6 @@ install(
         ":libdrake_marker.so",
         ":resource_tool",
     ],
-    # TODO(jwnimmer-tri) The install rule should offer more specific options
-    # for programs not in bin/, and including the workspace and/or package name
-    # in the installed path.  For now, we'll just specify it manually.
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
@@ -715,7 +744,7 @@ drake_cc_googletest(
 )
 
 # Functional test of DRAKE_ASSERT at compile time.
-drake_cc_googletest(
+drake_cc_test(
     name = "drake_assert_test_compile",
     deps = [
         ":essential",
@@ -777,6 +806,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_nodiscard_test",
+    copts = [
+        "-Wno-cpp",
+    ],
     deps = [
         ":essential",
         ":unused",
@@ -785,6 +817,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_optional_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":essential",
     ],
@@ -794,11 +830,16 @@ drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":essential",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
 drake_cc_googletest(
     name = "drake_variant_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":essential",
     ],
@@ -823,6 +864,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":nice_type_name",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -871,6 +913,7 @@ drake_cc_googletest(
     deps = [
         ":drake_path",
         ":find_resource",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -951,6 +994,7 @@ drake_cc_googletest(
     deps = [
         ":autodiffxd_make_coherent",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -993,6 +1037,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:random_polynomial_matrix",
     ],
 )
@@ -1114,6 +1159,7 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -1129,6 +1175,7 @@ drake_cc_googletest(
     name = "symbolic_polynomial_test",
     deps = [
         ":symbolic",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1174,6 +1221,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1183,6 +1231,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:is_memcpy_movable",
         "//common/test_utilities:symbolic_test_util",
     ],
@@ -1273,6 +1322,7 @@ drake_cc_googletest(
         ":type_safe_index",
         ":unused",
         "//common:sorted_pair",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1280,6 +1330,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
     deps = [":autodiff"],
+)
+
+drake_cc_googletest(
+    name = "scope_exit_test",
+    deps = [
+        ":scope_exit",
+    ],
 )
 
 drake_cc_googletest(
@@ -1326,10 +1383,6 @@ drake_py_unittest(
         ":resource_tool",
         "//examples/pendulum:models",
     ],
-    # Fails when run under Valgrind tools due to stdout/stderr mixing.
-    # TODO(jwnimmer-tri): Amend the test to stream stderr separately and then
-    # re-enable Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(
@@ -1337,14 +1390,10 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//common:essential",
+        "//common/test_utilities:expect_no_throw",
         "//systems/framework/test_utilities:my_vector",
     ],
 )
-
-# TODO(jwnimmer-tri) These tests are currently missing...
-# - drake_assert_test in fancy variants
-# - drake_assert_test_compile in fancy variants
-# - cpplint_wrapper_test.py
 
 add_lint_tests(
     python_lint_extra_srcs = [

@@ -30,7 +30,7 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
+    : LeafSystem<T>(SystemTypeTag<PidController>{}),
       kp_(kp),
       ki_(ki),
       kd_(kd),

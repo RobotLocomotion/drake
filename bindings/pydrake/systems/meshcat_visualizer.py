@@ -3,7 +3,6 @@ Provides utilities for communicating with the browser-based visualization
 package, Meshcat:
       https://github.com/rdeits/meshcat
 """
-from __future__ import print_function
 import argparse
 import math
 import os
@@ -244,6 +243,8 @@ class MeshcatVisualizer(LeafSystem):
         self.draw_period = draw_period
 
         # Pose bundle (from SceneGraph) input port.
+        # TODO(tehbelinda): Rename the `lcm_visualization` port to match
+        # SceneGraph once its output port has been updated. See #12214.
         self.DeclareAbstractInputPort("lcm_visualization",
                                       AbstractValue.Make(PoseBundle(0)))
 
@@ -333,7 +334,11 @@ class MeshcatVisualizer(LeafSystem):
                     cur_vis.set_transform(element_local_tf)
 
                 # Draw the frames in self.frames_to_draw.
-                robot_name, link_name = self._parse_name(frame_name)
+                if "::" in frame_name:
+                    robot_name, link_name = self._parse_name(frame_name)
+                else:
+                    robot_name = "world"
+                    link_name = frame_name
                 if (robot_name in self.frames_to_draw.keys() and
                         link_name in self.frames_to_draw[robot_name]):
                     prefix = (self.prefix + '/' + source_name + '/' +

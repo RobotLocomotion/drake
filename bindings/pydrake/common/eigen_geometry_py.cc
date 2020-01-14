@@ -179,9 +179,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self * position;
             },
             py::arg("position"), "Position vector list multiplication")
-        .def("inverse", [](const Class* self) { return self->inverse(); });
-    DefPickle(&cls, [](const Class& self) { return self.matrix(); },
-        [](const Matrix4<T>& matrix) { return Class(matrix); });
+        .def("inverse", [](const Class* self) { return self->inverse(); })
+        .def(py::pickle([](const Class& self) { return self.matrix(); },
+            [](const Matrix4<T>& matrix) { return Class(matrix); }));
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
@@ -267,9 +267,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             "Quaternion multiplication");
-    constexpr char doc_deprecated_position[] =
-        "Please use multiply(vector=...) instead. This will be "
-        "removed on or around 2019-11-15";
     auto multiply_vector = [](const Class& self, const Vector3<T>& vector) {
       return self * vector;
     };
@@ -286,23 +283,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             "Multiplication by a vector expressed in a frame")
         .def("multiply", multiply_vector_list, py::arg("vector"),
             "Multiplication by a list of vectors expressed in the same frame")
-        .def("multiply",
-            WrapDeprecated(doc_deprecated_position, multiply_vector),
-            py::arg("position"), doc_deprecated_position)
-        .def("multiply",
-            WrapDeprecated(doc_deprecated_position, multiply_vector_list),
-            py::arg("position"), doc_deprecated_position)
         .def("inverse", [](const Class* self) { return self->inverse(); })
-        .def("conjugate", [](const Class* self) { return self->conjugate(); });
+        .def("conjugate", [](const Class* self) { return self->conjugate(); })
+        .def(py::pickle(
+            // Leverage Python API so we can easily use `wxyz` form.
+            [](py::object self) { return self.attr("wxyz")(); },
+            [py_class_obj](py::object wxyz) -> Class {
+              return py_class_obj(wxyz).cast<Class>();
+            }));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
-    DefPickle(&cls,
-        // Leverage Python API so we can easily use `wxyz` form.
-        [](py::object self) { return self.attr("wxyz")(); },
-        [py_class_obj](py::object wxyz) -> Class {
-          return py_class_obj(wxyz).cast<Class>();
-        });
   }
 
   // Angle-axis.
@@ -381,18 +372,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             py::arg("other"))
-        .def("inverse", [](const Class* self) { return self->inverse(); });
+        .def("inverse", [](const Class* self) { return self->inverse(); })
+        .def(py::pickle(
+            [](const Class& self) {
+              return py::make_tuple(self.angle(), self.axis());
+            },
+            [](py::tuple t) {
+              DRAKE_THROW_UNLESS(t.size() == 2);
+              return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
+            }));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
-    DefPickle(&cls,
-        [](const Class& self) {
-          return py::make_tuple(self.angle(), self.axis());
-        },
-        [](py::tuple t) {
-          DRAKE_THROW_UNLESS(t.size() == 2);
-          return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
-        });
   }
 }
 

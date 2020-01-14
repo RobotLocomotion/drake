@@ -103,21 +103,19 @@ class EventCollection {
   virtual ~EventCollection() {}
 
   /**
-   * Clears all the events maintained by `this` and adds all the events in
-   * @p other to this.
+   * Clears all the events maintained by `this` then adds all of the events in
+   * `other` to this.
    */
   void SetFrom(const EventCollection<EventType>& other) {
     Clear();
-    Merge(other);
+    AddToEnd(other);
   }
 
   /**
-   * Merges all of @p other's events into `this`. If @p `other` == `this`,
-   * does nothing. See derived DoMerge() for more details.
+   * Adds all of `other`'s events to the end of `this`.
    */
-  void Merge(const EventCollection<EventType>& other) {
-    if (&other == this) return;
-    DoMerge(other);
+  void AddToEnd(const EventCollection<EventType>& other) {
+    DoAddToEnd(other);
   }
 
   /**
@@ -143,18 +141,26 @@ class EventCollection {
    */
   EventCollection() = default;
 
-  /**
-   * Derived implementation can assume that @p other is not null and that
-   * `other != this`.
-   */
-  virtual void DoMerge(const EventCollection<EventType>& other) = 0;
+  virtual void DoAddToEnd(const EventCollection<EventType>& other) = 0;
 };
 
 /**
- * A concrete class that holds all simultaneous homogeneous events for a
+ * A concrete class that holds all simultaneous _homogeneous_ events for a
  * Diagram. For each subsystem in the corresponding Diagram, a derived
  * EventCollection instance is maintained internally, thus effectively holding
  * the same recursive tree structure as the corresponding Diagram.
+ *
+ * This class uses an unusual paradigm for storing collections of events
+ * corresponding to subsystems of the diagram ("subevent collections"). The
+ * class owns some subevent collections and maintains pointers to other
+ * subevent collections. The technical reasoning is that the same data may
+ * need to be referenced by multiple collections;
+ * DiagramCompositeEventCollection maintains one collection for all publish
+ * events and another for the events from each subsystem, but maintains only
+ * a single copy of all of the event data.
+ *
+ * End users should never need to use or know about this class. It is for
+ * internal use only.
  */
 template <typename EventType>
 class DiagramEventCollection final : public EventCollection<EventType> {
@@ -188,9 +194,9 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Transfers @p subevent_collection ownership to `this` and associates it
-   * with the subsystem identified by @p index. Aborts if @p index is not in
-   * the range [0, num_subsystems() - 1] or if @p subevent_collection is null.
+   * Transfers `subevent_collection` ownership to `this` and associates it
+   * with the subsystem identified by `index`. Aborts if `index` is not in
+   * the range [0, num_subsystems() - 1] or if `subevent_collection` is null.
    */
   void set_and_own_subevent_collection(
       int index,
@@ -202,11 +208,11 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Associate @p subevent_collection with subsystem identified by @p index.
-   * Ownership of the object that @p subevent_collection is maintained
+   * Associate `subevent_collection` with subsystem identified by `index`.
+   * Ownership of the object that `subevent_collection` is maintained
    * elsewhere, and its life span must be longer than this. Aborts if
-   * @p index is not in the range [0, num_subsystems() - 1] or if
-   * @p subevent_collection is null.
+   * `index` is not in the range [0, num_subsystems() - 1] or if
+   * `subevent_collection` is null.
    */
   void set_subevent_collection(
       int index, EventCollection<EventType>* subevent_collection) {
@@ -216,10 +222,10 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Returns a const pointer to subsystem's EventCollection at @p index.
-   * Aborts if the 0-indexed @p index is greater than or equal to the number of
+   * Returns a const pointer to subsystem's EventCollection at `index`.
+   * Aborts if the 0-indexed `index` is greater than or equal to the number of
    * subsystems specified in this object's construction (see
-   * DiagramEventCollection(int)) or if @p index is not in the range
+   * DiagramEventCollection(int)) or if `index` is not in the range
    * [0, num_subsystems() - 1].
    */
   const EventCollection<EventType>& get_subevent_collection(int index) const {
@@ -228,7 +234,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Returns a mutable pointer to subsystem's EventCollection at @p index.
+   * Returns a mutable pointer to subsystem's EventCollection at `index`.
    */
   EventCollection<EventType>& get_mutable_subevent_collection(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
@@ -257,22 +263,24 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 
  protected:
   /**
-   * Goes through each subevent collection and merges in the corresponding one
-   * in @p other_collection. Aborts if `this` does not have the same number of
-   * subevent collections as @p other_collection. In addition, this method
-   * assumes that `this` and @p other_collection have the exact same topology
-   * (i.e. both are created for the same Diagram.)
-   * @throws std::bad_cast if @p other_collection is not an instance of
+   * Goes through each subevent collection of `this` and adds the corresponding
+   * one in `other_collection` to the subevent collection in `this`. Aborts if
+   * `this` does not have the same number of subevent collections as
+   * `other_collection`. In addition, this method assumes that `this` and
+   * `other_collection` have the exact same topology (i.e. both are created for
+   * the same Diagram.)
+   * @throws std::bad_cast if `other_collection` is not an instance of
    * DiagramEventCollection.
    */
-  void DoMerge(const EventCollection<EventType>& other_collection) override {
+  void DoAddToEnd(
+      const EventCollection<EventType>& other_collection) override {
     const DiagramEventCollection<EventType>& other =
         dynamic_cast<const DiagramEventCollection<EventType>&>(
             other_collection);
     DRAKE_DEMAND(num_subsystems() == other.num_subsystems());
 
     for (int i = 0; i < num_subsystems(); i++) {
-      subevent_collection_[i]->Merge(other.get_subevent_collection(i));
+      subevent_collection_[i]->AddToEnd(other.get_subevent_collection(i));
     }
   }
 
@@ -283,8 +291,11 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 };
 
 /**
- * A concrete class that holds all simultaneous homogeneous events for a
+ * A concrete class that holds all simultaneous _homogeneous_ events for a
  * LeafSystem.
+ *
+ * End users should never need to use or know about this class. It is for
+ * internal use only.
  */
 template <typename EventType>
 class LeafEventCollection final : public EventCollection<EventType> {
@@ -317,7 +328,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
   const std::vector<const EventType*>& get_events() const { return events_; }
 
   /**
-   * Add @p event to the existing collection. Ownership of @p event is
+   * Add `event` to the existing collection. Ownership of `event` is
    * transferred. Aborts if event is null.
    */
   void add_event(std::unique_ptr<EventType> event) override {
@@ -341,26 +352,25 @@ class LeafEventCollection final : public EventCollection<EventType> {
 
  protected:
   /**
-   * All events in @p other_collection are concatanated to this. Aborts if
-   * @p other_collection is null.
+   * All events in `other_collection` are concatanated to this.
    *
    * Here is an example. Suppose this collection stores the following events:
    * <pre>
    *   EventType: {event1, event2, event3}
    * </pre>
-   * @p other_collection has:
+   * `other_collection` has:
    * <pre>
    *   EventType: {event4}
    * </pre>
-   * After calling DoMerge(other_collection), `this` stores:
+   * After calling DoAddToEnd(other_collection), `this` stores:
    * <pre>
    *   EventType: {event1, event2, event3, event4}
    * </pre>
    *
-   * @throws std::bad_cast if @p other_collection is not an instance of
+   * @throws std::bad_cast if `other_collection` is not an instance of
    * LeafEventCollection.
    */
-  void DoMerge(const EventCollection<EventType>& other_collection) override {
+  void DoAddToEnd(const EventCollection<EventType>& other_collection) override {
     const LeafEventCollection<EventType>& other =
         dynamic_cast<const LeafEventCollection<EventType>&>(other_collection);
 
@@ -392,6 +402,9 @@ class LeafEventCollection final : public EventCollection<EventType> {
  * There are two concrete derived classes: LeafCompositeEventCollection and
  * DiagramCompositeEventCollection. Adding new events to the collection is
  * only allowed for LeafCompositeEventCollection.
+ *
+ * End users should never need to use or know about this class.  It is for
+ * internal use only.
  *
  * @tparam T needs to be compatible with Eigen Scalar type.
  */
@@ -444,7 +457,7 @@ class CompositeEventCollection {
 
   /**
    * Assuming the internal publish event collection is an instance of
-   * LeafEventCollection, adds the publish event @p event (ownership is also
+   * LeafEventCollection, adds the publish event `event` (ownership is also
    * transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
@@ -457,7 +470,7 @@ class CompositeEventCollection {
 
   /**
    * Assuming the internal discrete update event collection is an instance of
-   * LeafEventCollection, adds the discrete update event @p event (ownership is
+   * LeafEventCollection, adds the discrete update event `event` (ownership is
    * also transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
@@ -471,7 +484,7 @@ class CompositeEventCollection {
 
   /**
    * Assuming the internal unrestricted update event collection is an instance
-   * of LeafEventCollection, adds the unrestricted update event @p event
+   * of LeafEventCollection, adds the unrestricted update event `event`
    * (ownership is also transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
@@ -485,18 +498,19 @@ class CompositeEventCollection {
   }
 
   /**
-   * Merges the contained homogeneous event collections (e.g.,
+   * Adds the contained homogeneous event collections (e.g.,
    * EventCollection<PublishEvent<T>>, EventCollection<DiscreteUpdateEvent<T>>,
-   * etc.) from `this` and @p other, storing the results in `this`.
+   * etc.) from `other` to the end of `this`.
    */
-  void Merge(const CompositeEventCollection<T>& other) {
-    publish_events_->Merge(other.get_publish_events());
-    discrete_update_events_->Merge(other.get_discrete_update_events());
-    unrestricted_update_events_->Merge(other.get_unrestricted_update_events());
+  void AddToEnd(const CompositeEventCollection<T>& other) {
+    publish_events_->AddToEnd(other.get_publish_events());
+    discrete_update_events_->AddToEnd(other.get_discrete_update_events());
+    unrestricted_update_events_->AddToEnd(
+        other.get_unrestricted_update_events());
   }
 
   /**
-   * Copies the collections of homogeneous events from @p other to `this`.
+   * Copies the collections of homogeneous events from `other` to `this`.
    */
   void SetFrom(const CompositeEventCollection<T>& other) {
     publish_events_->SetFrom(other.get_publish_events());
@@ -554,7 +568,7 @@ class CompositeEventCollection {
 
  protected:
   /**
-   * Takes ownership of @p pub, @p discrete and @p unrestricted. Aborts if any
+   * Takes ownership of `pub`, `discrete` and `unrestricted`. Aborts if any
    * of these are null.
    */
   CompositeEventCollection(
@@ -626,6 +640,9 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
 
 /**
  * CompositeEventCollection for a Diagram.
+ *
+ * End users should never need to use or know about this class.  It is for
+ * internal use only.
  */
 template <typename T>
 class DiagramCompositeEventCollection final
@@ -635,7 +652,9 @@ class DiagramCompositeEventCollection final
 
   /**
    * Allocated CompositeEventCollection for all constituent subsystems are
-   * passed in @p subevents, for which ownership is also transferred to `this`.
+   * passed in `subevents` (a vector of size of the number of subsystems of
+   * the corresponding diagram), for which ownership is also transferred to
+   * `this`.
    */
   explicit DiagramCompositeEventCollection(
       std::vector<std::unique_ptr<CompositeEventCollection<T>>> subevents)
@@ -654,6 +673,7 @@ class DiagramCompositeEventCollection final
       DiagramEventCollection<PublishEvent<T>>& sub_publish =
           dynamic_cast<DiagramEventCollection<PublishEvent<T>>&>(
               this->get_mutable_publish_events());
+
       // Sets sub_publish's i'th subsystem's EventCollection<PublishEvent>
       // pointer to owned_subevent_collection_[i].get_mutable_publish_events().
       // So that sub_publish has the same pointer structure, but does not
@@ -687,16 +707,16 @@ class DiagramCompositeEventCollection final
   }
 
   // Gets a mutable pointer to the CompositeEventCollection specified for the
-  // given subsystem. Aborts if the 0-index @p index is greater than or equal
-  // to the number of subsystems or if @p index is negative.
+  // given subsystem. Aborts if the 0-index `index` is greater than or equal
+  // to the number of subsystems or if `index` is negative.
   CompositeEventCollection<T>& get_mutable_subevent_collection(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     return *owned_subevent_collection_[index].get();
   }
 
   // Gets a const reference to the CompositeEventCollection specified for
-  // the given subsystem. Aborts if the 0-index @p index is greater than or
-  // equal to the number of subsystems or if @p index is negative.
+  // the given subsystem. Aborts if the 0-index `index` is greater than or
+  // equal to the number of subsystems or if `index` is negative.
   const CompositeEventCollection<T>& get_subevent_collection(int index) const {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     return *owned_subevent_collection_[index].get();

@@ -92,6 +92,15 @@ std::vector<SortedPair<GeometryId>> QueryObject<T>::FindCollisionCandidates()
 }
 
 template <typename T>
+bool QueryObject<T>::HasCollisions() const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.HasCollisions();
+}
+
+template <typename T>
 std::vector<ContactSurface<T>>
 QueryObject<T>::ComputeContactSurfaces() const {
   ThrowIfNotCallable();
@@ -110,6 +119,16 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairwiseClosestPoints(max_distance);
+}
+
+template <typename T>
+SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
+    GeometryId id_A, GeometryId id_B) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeSignedDistancePairClosestPoints(id_A, id_B);
 }
 
 template <typename T>

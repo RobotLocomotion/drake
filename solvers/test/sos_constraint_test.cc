@@ -1,3 +1,4 @@
+#include "drake/common/test_utilities/expect_no_throw.h"
 /* clang-format off to disable clang-format-includes */
 #include "drake/solvers/mathematical_program.h"
 /* clang-format on */
@@ -37,7 +38,8 @@ class SosConstraintTest : public ::testing::Test {
       const Variable& decision_variable_i{get_variable(coeff_i)};
       // This decision_variable_i in the polynomial should be a decision
       // variable in the MathematicalProgram.
-      EXPECT_NO_THROW(prog_.FindDecisionVariableIndex(decision_variable_i));
+      DRAKE_EXPECT_NO_THROW(
+          prog_.FindDecisionVariableIndex(decision_variable_i));
     }
   }
 

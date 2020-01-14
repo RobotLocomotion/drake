@@ -166,7 +166,7 @@ TEST_P(DiscreteTimeDelayTest, ToSymbolic) {
 }
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
-INSTANTIATE_TEST_CASE_P(test, DiscreteTimeDelayTest,
+INSTANTIATE_TEST_SUITE_P(test, DiscreteTimeDelayTest,
                         ::testing::Values(false, true));
 
 // Create a simple Diagram to simulate:
@@ -307,8 +307,8 @@ class SymbolicDiscreteTimeDelayTest : public ::testing::Test {
 
     // Initialize the context with symbolic variables.
     context_ = delay_->CreateDefaultContext();
-    context_->FixInputPort(
-        0, BasicVector<symbolic::Expression>::Make(symbolic::Variable("u0")));
+    delay_->get_input_port().FixValue(
+        context_.get(), symbolic::Expression(symbolic::Variable("u0")));
     auto& xd = context_->get_mutable_discrete_state(0);
     for (int ii = 0; ii < (kBuffer + 1); ii++) {
       xd[ii] = symbolic::Variable("x" + std::to_string(ii));

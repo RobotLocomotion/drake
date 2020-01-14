@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_nodiscard.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
@@ -33,7 +32,7 @@ namespace drake {
 /// // Expected: true
 /// @endcode
 template <typename ToType, typename FromType>
-DRAKE_NODISCARD ::testing::AssertionResult is_dynamic_castable(
+[[nodiscard]] ::testing::AssertionResult is_dynamic_castable(
     const FromType* ptr) {
   if (ptr == nullptr) {
     const std::string from_name{NiceTypeName::Get<FromType>()};
@@ -58,7 +57,7 @@ DRAKE_NODISCARD ::testing::AssertionResult is_dynamic_castable(
 /// provide a good diagnostic for what @p ptr _actually_ was when the test
 /// fails.
 template <typename ToType, typename FromType>
-DRAKE_NODISCARD ::testing::AssertionResult is_dynamic_castable(
+[[nodiscard]] ::testing::AssertionResult is_dynamic_castable(
     std::shared_ptr<FromType> ptr) {
   return is_dynamic_castable<ToType, FromType>(ptr.get());
 }
@@ -68,7 +67,7 @@ DRAKE_NODISCARD ::testing::AssertionResult is_dynamic_castable(
 /// provide a good diagnostic for what @p ptr _actually_ was when the test
 /// fails.
 template <typename ToType, typename FromType>
-DRAKE_NODISCARD ::testing::AssertionResult is_dynamic_castable(
+[[nodiscard]] ::testing::AssertionResult is_dynamic_castable(
     const std::unique_ptr<FromType>& ptr) {
   return is_dynamic_castable<ToType, FromType>(ptr.get());
 }

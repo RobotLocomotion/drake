@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include <dreal/dreal.h>
+#include "dreal/api/api.h"
 
 #include "drake/solvers/mathematical_program.h"
 
@@ -393,7 +393,7 @@ dreal::Expression DrealConverter::VisitUninterpretedFunction(
 // -----------------------------
 // Implementation of DrealSolver
 // -----------------------------
-optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
+std::optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
     const symbolic::Formula& f, const double delta) {
   DrealConverter dreal_converter;
   dreal::Box model;
@@ -402,11 +402,11 @@ optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
   if (result) {
     return dreal_converter.Convert(model);
   } else {
-    return nullopt;
+    return std::nullopt;
   }
 }
 
-optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
+std::optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
     const symbolic::Expression& objective, const symbolic::Formula& constraint,
     const double delta, const LocalOptimization local_optimization) {
   DrealConverter dreal_converter;
@@ -421,7 +421,7 @@ optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
   if (result) {
     return dreal_converter.Convert(model);
   } else {
-    return nullopt;
+    return std::nullopt;
   }
 }
 
@@ -562,7 +562,7 @@ void DrealSolver::DoSolve(
           merged_options, "use_local_optimization", 1 /* default */) > 0
           ? LocalOptimization::kUse
           : LocalOptimization::kNotUse};
-  optional<IntervalBox> dreal_result;
+  std::optional<IntervalBox> dreal_result;
   if (costs.size() == 0) {
     // No cost functions in the problem. Call Checksatisfiability.
     dreal_result = CheckSatisfiability(constraints, precision);

@@ -41,7 +41,6 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   const double kGain = 2.0;
   auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* size */);
   auto context = gain->CreateDefaultContext();
-  auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
   VectorX<T> input_vector(3);
@@ -52,9 +51,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   input_vector(1).derivatives() << 0, 0;  // Constant input.
   input_vector(2).derivatives() << 0, 1;  // Second independent variable.
 
-  input->get_mutable_value() << input_vector;
-
-  context->FixInputPort(0, std::move(input));
+  gain->get_input_port().FixValue(context.get(), input_vector);
 
   const auto& output_vector =
       gain->get_output_port().Eval(*context);
@@ -101,10 +98,9 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
   Eigen::Matrix<symbolic::Expression, 3, 1> input_vector(
       drake::symbolic::Expression{1.0}, drake::symbolic::Expression{3.14},
       drake::symbolic::Expression{2.18});
-  input_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context_->FixInputPort(0, move(input_));
+  gain_->get_input_port(0).FixValue(context_.get(), input_vector);
 
   // Checks that the number of output ports in the Gain system and the
   // SystemOutput are consistent.

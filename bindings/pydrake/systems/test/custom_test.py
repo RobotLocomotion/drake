@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import copy
 import unittest
 import warnings
@@ -381,53 +379,6 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
 
-    def test_deprecated_protected_aliases(self):
-        """Tests a subset of protected aliases, pursuant to #9651."""
-
-        class OldSystem(LeafSystem):
-            def __init__(self):
-                LeafSystem.__init__(self)
-                self.called_publish = False
-                # Check a non-overridable method
-                with catch_drake_warnings(expected_count=1):
-                    self._DeclareVectorInputPort("x", BasicVector(1))
-
-            def _DoPublish(self, context, events):
-                self.called_publish = True
-
-        # Ensure old overrides are still used
-        system = OldSystem()
-        context = system.CreateDefaultContext()
-        with catch_drake_warnings(expected_count=1):
-            system.Publish(context)
-        self.assertTrue(system.called_publish)
-
-        # Ensure documentation includes the deprecation message.
-        self.assertIn("deprecated", LeafSystem._DoPublish.__doc__)
-        # This will warn both on (a) calling the method and (b) on the
-        # invocation of the override.
-        with catch_drake_warnings(expected_count=2):
-            LeafSystem._DoPublish(system, context, [])
-
-        class AccidentallyBothSystem(LeafSystem):
-            def __init__(self):
-                LeafSystem.__init__(self)
-                self.called_old_publish = False
-                self.called_new_publish = False
-
-            def DoPublish(self, context, events):
-                self.called_new_publish = True
-
-            def _DoPublish(self, context, events):
-                self.called_old_publish = True
-
-        system = AccidentallyBothSystem()
-        context = system.CreateDefaultContext()
-        # This will trigger no deprecations, as the newer publish is called.
-        system.Publish(context)
-        self.assertTrue(system.called_new_publish)
-        self.assertFalse(system.called_old_publish)
-
     def test_vector_system_overrides(self):
         dt = 0.5
         for is_discrete in [False, True]:
@@ -542,6 +493,10 @@ class TestCustom(unittest.TestCase):
         self.assertIsNot(subcontext, None)
         self.assertIs(
             diagram.GetSubsystemContext(system, context), subcontext)
+        subcontext2 = system.GetMyMutableContextFromRoot(context)
+        self.assertIsNot(subcontext2, None)
+        self.assertIs(subcontext2, subcontext)
+        self.assertIs(system.GetMyContextFromRoot(context), subcontext2)
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.

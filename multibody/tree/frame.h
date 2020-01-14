@@ -178,7 +178,7 @@ class Frame : public FrameBase<T> {
   /// instance.
   explicit Frame(
       const std::string& name, const Body<T>& body,
-      optional<ModelInstanceIndex> model_instance = {})
+      std::optional<ModelInstanceIndex> model_instance = {})
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(name), body_(body) {}
 
@@ -211,7 +211,7 @@ class Frame : public FrameBase<T> {
   /// @}
 
  private:
-  // Implementation for MultibodyTreeElement::DoSetTopology().
+  // Implementation for MultibodyElement::DoSetTopology().
   void DoSetTopology(const internal::MultibodyTreeTopology& tree_topology)
   final {
     topology_ = tree_topology.get_frame(this->index());

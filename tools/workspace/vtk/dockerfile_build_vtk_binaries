@@ -7,7 +7,6 @@
 
 set -euxo pipefail
 
-PYTHON_EXECUTABLE="$1"
 mkdir -p vtk-build /opt/vtk
 pushd vtk-build
 cmake \
@@ -21,7 +20,7 @@ cmake \
   -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
   -DModule_vtkRenderingOSPRay:BOOL=ON \
   -DOSPRAY_INSTALL_DIR:PATH=/opt/vtk \
-  -DPYTHON_EXECUTABLE:PATH="${PYTHON_EXECUTABLE}" \
+  -DPYTHON_EXECUTABLE:PATH=/usr/bin/python3 \
   -DVTK_ENABLE_VTKPYTHON:BOOL=OFF \
   -DVTK_Group_Qt:BOOL=ON \
   -DVTK_LEGACY_REMOVE:BOOL=ON \

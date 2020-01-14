@@ -184,11 +184,13 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistancePairwiseClosestPoints());
+  EXPECT_DEFAULT_ERROR(default_object->ComputeSignedDistancePairClosestPoints(
+      GeometryId::get_new_id(), GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
 
-  EXPECT_DEFAULT_ERROR(default_object->ComputeContactSurfaces());
   EXPECT_DEFAULT_ERROR(default_object->FindCollisionCandidates());
+  EXPECT_DEFAULT_ERROR(default_object->HasCollisions());
   EXPECT_DEFAULT_ERROR(default_object->X_WF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object->X_PF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object->X_WG(GeometryId::get_new_id()));

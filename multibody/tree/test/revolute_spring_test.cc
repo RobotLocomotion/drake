@@ -40,11 +40,12 @@ class SpringTester : public ::testing::Test {
 
     // Allow body B to rotate about the z axis.
     joint_ =
-        &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, nullopt, *bodyB_,
-                                        nullopt, Vector3<double>::UnitZ());
+        &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, std::nullopt,
+                                        *bodyB_, std::nullopt,
+                                        Vector3<double>::UnitZ());
 
-    model->AddJoint<RevoluteJoint>("joint_BC", *bodyB_, nullopt, *bodyC_,
-                                   nullopt, Vector3<double>::UnitX());
+    model->AddJoint<RevoluteJoint>("joint_BC", *bodyB_, std::nullopt, *bodyC_,
+                                   std::nullopt, Vector3<double>::UnitX());
 
     // Add spring
     spring_ = &model->AddForceElement<RevoluteSpring>(*joint_, nominal_angle_,

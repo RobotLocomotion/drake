@@ -9,6 +9,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -29,13 +30,13 @@ using symbolic::Variable;
 
 // With assertion disarmed, expect no exception.
 #define EXPECT_THROW_IF_ARMED(expression, exception) \
-do { \
-  if (kDrakeAssertIsArmed) { \
-    EXPECT_THROW(expression, exception); \
-  } else { \
-    EXPECT_NO_THROW(expression); \
-  } \
-} while (0)
+  do {                                               \
+    if (kDrakeAssertIsArmed) {                       \
+      EXPECT_THROW(expression, exception);           \
+    } else {                                         \
+      DRAKE_EXPECT_NO_THROW(expression);             \
+    }                                                \
+  } while (0)
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 

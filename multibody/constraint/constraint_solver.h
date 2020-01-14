@@ -1330,17 +1330,17 @@ void ConstraintSolver<T>::SolveImpactProblem(
         max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
             num_vars * npivots * zero_tol))) {
     // Report difficulty
-    SPDLOG_DEBUG(drake::log(), "Unable to solve impacting problem LCP without "
+    DRAKE_LOGGER_DEBUG("Unable to solve impacting problem LCP without "
         "progressive regularization");
-    SPDLOG_DEBUG(drake::log(), "zero tolerance for z/w: {}",
+    DRAKE_LOGGER_DEBUG("zero tolerance for z/w: {}",
         num_vars * npivots * zero_tol);
-    SPDLOG_DEBUG(drake::log(), "Solver reports success? {}", success);
-    SPDLOG_DEBUG(drake::log(), "minimum z: {}", zz.minCoeff());
-    SPDLOG_DEBUG(drake::log(), "minimum w: {}", ww.minCoeff());
-    SPDLOG_DEBUG(drake::log(), "zero tolerance for <z,w>: {}",
+    DRAKE_LOGGER_DEBUG("Solver reports success? {}", success);
+    DRAKE_LOGGER_DEBUG("minimum z: {}", zz.minCoeff());
+    DRAKE_LOGGER_DEBUG("minimum w: {}", ww.minCoeff());
+    DRAKE_LOGGER_DEBUG("zero tolerance for <z,w>: {}",
       max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
       npivots * zero_tol);
-    SPDLOG_DEBUG(drake::log(), "z'w: {}", max_dot);
+    DRAKE_LOGGER_DEBUG("z'w: {}", max_dot);
 
     // Use progressive regularization to solve.
     const int min_exp = -16;      // Minimum regularization factor: 1e-16.
@@ -1353,9 +1353,9 @@ void ConstraintSolver<T>::SolveImpactProblem(
       throw std::runtime_error("Progressively regularized LCP solve failed.");
     } else {
       ww = MM * zz + qq;
-      SPDLOG_DEBUG(drake::log(), "minimum z: {}", zz.minCoeff());
-      SPDLOG_DEBUG(drake::log(), "minimum w: {}", ww.minCoeff());
-      SPDLOG_DEBUG(drake::log(), "z'w: ",
+      DRAKE_LOGGER_DEBUG("minimum z: {}", zz.minCoeff());
+      DRAKE_LOGGER_DEBUG("minimum w: {}", ww.minCoeff());
+      DRAKE_LOGGER_DEBUG("z'w: ",
           (zz.array() * ww.array()).abs().maxCoeff());
     }
   }
@@ -1466,8 +1466,8 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
 
       // Transform the impulsive forces to non-impulsive forces.
       lambda = u.tail(num_eq_constraints) / dt;
-      DRAKE_SPDLOG_DEBUG(drake::log(),
-          "Bilateral constraint forces/impulses: {}", lambda.transpose());
+      DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
+          lambda.transpose());
     }
 
     return;
@@ -1486,11 +1486,11 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
   cf->segment(0, num_contacts) = fN;
   cf->segment(num_contacts, num_spanning_vectors) = fD_plus - fD_minus;
   cf->segment(num_contacts + num_spanning_vectors, num_limits) = fL;
-  DRAKE_SPDLOG_DEBUG(drake::log(), "Normal contact forces/impulses: {}",
+  DRAKE_LOGGER_DEBUG("Normal contact forces/impulses: {}",
       fN.transpose());
-  DRAKE_SPDLOG_DEBUG(drake::log(), "Frictional contact forces/impulses: {}",
+  DRAKE_LOGGER_DEBUG("Frictional contact forces/impulses: {}",
       (fD_plus - fD_minus).transpose());
-  DRAKE_SPDLOG_DEBUG(drake::log(), "Generic unilateral constraint "
+  DRAKE_LOGGER_DEBUG("Generic unilateral constraint "
       "forces/impulses: {}", fL.transpose());
 
   // Determine the new velocity and the bilateral constraint forces/
@@ -1521,8 +1521,8 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
 
     // Transform the impulsive forces back to non-impulsive forces.
     lambda = u.tail(num_eq_constraints) / dt;
-    DRAKE_SPDLOG_DEBUG(drake::log(), "Bilateral constraint forces/impulses: {}",
-                       lambda.transpose());
+    DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
+        lambda.transpose());
   }
 }
 

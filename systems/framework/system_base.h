@@ -76,8 +76,14 @@ class SystemBase : public internal::SystemMessageInterface {
   not compatible with this System. Restrictions may vary for different systems;
   the error message should explain. This can be an expensive check so you may
   want to limit it to Debug builds. */
+  DRAKE_DEPRECATED("2020-05-01",
+                   "This method is no longer necessary. See ValidateContext() "
+                   "for a possible replacement.")
   void ThrowIfContextNotCompatible(const ContextBase& context) const final {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CheckValidContext(context);
+#pragma GCC diagnostic pop
   }
 
   /** Returns a Context suitable for use with this System. Context resources
@@ -129,6 +135,7 @@ class SystemBase : public internal::SystemMessageInterface {
        System::EvalEigenVectorInput() */
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
+    ValidateContext(context);
     if (port_index < 0)
       ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
@@ -151,6 +158,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @tparam V The type of data expected. */
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
+    ValidateContext(context);
     if (port_index < 0)
       ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
@@ -464,12 +472,9 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
-  /** Checks whether the given context is valid for this System and throws
-  an exception with a helpful message if not. This is *very* expensive and
-  should generally be done only in Debug builds, like this:
-  @code
-     DRAKE_ASSERT_VOID(CheckValidContext(context));
-  @endcode */
+  DRAKE_DEPRECATED(
+      "2020-05-01",
+      "This method's functionality has been replaced by ValidateContext().")
   void CheckValidContext(const ContextBase& context) const {
     // TODO(sherm1) Add base class checks.
 
@@ -769,8 +774,27 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
+  /** Checks whether the given context was created for this system.
+  @note This method is sufficiently fast for performance sensitive code. */
+  void ValidateContext(const ContextBase& context) const {
+    if (context.get_system_id() != system_id_) {
+      throw std::logic_error(
+          fmt::format("Context was not created for {} system {}; it was "
+                      "created for system {}",
+                      this->GetSystemType(), this->GetSystemPathname(),
+                      context.GetSystemPathname()));
+    }
+  }
+
+  /** Checks whether the given context was created for this system.
+  @note This method is sufficiently fast for performance sensitive code. */
+  void ValidateContext(ContextBase* context) const {
+    DRAKE_THROW_UNLESS(context != nullptr);
+    ValidateContext(*context);
+  }
+
  protected:
-  /** (Internal use only) Default constructor. */
+  /** (Internal use only). */
   SystemBase() = default;
 
   /** (Internal use only) Adds an already-constructed input port to this System.
@@ -828,11 +852,11 @@ class SystemBase : public internal::SystemMessageInterface {
   from the next available input port index.
   @pre `given_name` must not be empty. */
   std::string NextInputPortName(
-      variant<std::string, UseDefaultName> given_name) const {
+      std::variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
            ? std::string("u") + std::to_string(num_input_ports())
-           : get<std::string>(std::move(given_name));
+           : std::get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
   }
@@ -842,11 +866,11 @@ class SystemBase : public internal::SystemMessageInterface {
   from the next available output port index.
   @pre `given_name` must not be empty. */
   std::string NextOutputPortName(
-      variant<std::string, UseDefaultName> given_name) const {
+      std::variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
            ? std::string("y") + std::to_string(num_output_ports())
-           : get<std::string>(std::move(given_name));
+           : std::get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
   }
@@ -1038,14 +1062,14 @@ class SystemBase : public internal::SystemMessageInterface {
   parameters and state should be allocated. */
   virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
-  /** Derived classes must implement this to verify that the supplied
-  Context is suitable, and throw an exception if not. This is a runtime check
-  but may be expensive so is not guaranteed to be invoked except in Debug
-  builds. */
-  virtual void DoCheckValidContext(const ContextBase&) const = 0;
+  // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
+  // removed, also remove this function.
+  virtual void DoCheckValidContext(const ContextBase&) const {}
 
  private:
   void CreateSourceTrackers(ContextBase*) const;
+
+  static uint64_t get_next_id();
 
   // Used to create trackers for variable-number System-allocated objects.
   struct TrackerInfo {
@@ -1108,6 +1132,10 @@ class SystemBase : public internal::SystemMessageInterface {
 
   // Name of this system.
   std::string name_;
+
+  // Unique ID of this system. The default value (zero) should be treated as
+  // uninitialized and invalid.
+  const uint64_t system_id_{get_next_id()};
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

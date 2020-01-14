@@ -63,20 +63,30 @@ class ShapeToLcm : public ShapeReifier {
     return geometry_data_;
   }
 
+  using ShapeReifier::ImplementGeometry;
+
   void ImplementGeometry(const Sphere& sphere, void*) override {
     geometry_data_.type = geometry_data_.SPHERE;
     geometry_data_.num_float_data = 1;
     geometry_data_.float_data.push_back(static_cast<float>(
-                                            sphere.get_radius()));
+                                            sphere.radius()));
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) override {
+    geometry_data_.type = geometry_data_.ELLIPSOID;
+    geometry_data_.num_float_data = 3;
+    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.a()));
+    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.b()));
+    geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.c()));
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void*) override {
     geometry_data_.type = geometry_data_.CYLINDER;
     geometry_data_.num_float_data = 2;
     geometry_data_.float_data.push_back(static_cast<float>(
-                                            cylinder.get_radius()));
+                                            cylinder.radius()));
     geometry_data_.float_data.push_back(static_cast<float>(
-                                            cylinder.get_length()));
+                                            cylinder.length()));
   }
 
   void ImplementGeometry(const HalfSpace&, void*) override {
@@ -105,6 +115,15 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(box.width()));
     geometry_data_.float_data.push_back(static_cast<float>(box.depth()));
     geometry_data_.float_data.push_back(static_cast<float>(box.height()));
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void*) override {
+    geometry_data_.type = geometry_data_.CAPSULE;
+    geometry_data_.num_float_data = 2;
+    geometry_data_.float_data.push_back(
+        static_cast<float>(capsule.radius()));
+    geometry_data_.float_data.push_back(
+        static_cast<float>(capsule.length()));
   }
 
   void ImplementGeometry(const Mesh& mesh, void*) override {

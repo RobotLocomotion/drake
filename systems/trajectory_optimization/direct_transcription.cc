@@ -135,7 +135,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
 };
 
 double get_period(const System<double>* system) {
-  optional<PeriodicEventData> periodic_data =
+  std::optional<PeriodicEventData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
   DRAKE_DEMAND(periodic_data.has_value());
   DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);
@@ -144,7 +144,7 @@ double get_period(const System<double>* system) {
 
 int get_input_port_size(
     const System<double>* system,
-    variant<InputPortSelection, InputPortIndex> input_port_index) {
+    std::variant<InputPortSelection, InputPortIndex> input_port_index) {
   if (system->get_input_port_selection(input_port_index)) {
     return system->get_input_port_selection(input_port_index)->size();
   } else {
@@ -157,7 +157,7 @@ int get_input_port_size(
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
     int num_time_samples,
-    variant<InputPortSelection, InputPortIndex> input_port_index)
+    std::variant<InputPortSelection, InputPortIndex> input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
                        get_period(system)),
@@ -176,7 +176,7 @@ DirectTranscription::DirectTranscription(
 DirectTranscription::DirectTranscription(
     const TimeVaryingLinearSystem<double>* system,
     const Context<double>& context, int num_time_samples,
-    variant<InputPortSelection, InputPortIndex> input_port_index)
+    std::variant<InputPortSelection, InputPortIndex> input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
           context.num_total_states(), num_time_samples,
           std::max(system->time_period(),
@@ -200,7 +200,7 @@ DirectTranscription::DirectTranscription(
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
     int num_time_samples, TimeStep fixed_timestep,
-    variant<InputPortSelection, InputPortIndex> input_port_index)
+    std::variant<InputPortSelection, InputPortIndex> input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
                        fixed_timestep.value),
@@ -313,7 +313,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
 
 void DirectTranscription::AddAutodiffDynamicConstraints(
     const System<double>* system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index) {
+    std::variant<InputPortSelection, InputPortIndex> input_port_index) {
   system_ = system->ToAutoDiffXd();
   DRAKE_DEMAND(system_ != nullptr);
   context_ = system_->CreateDefaultContext();
@@ -330,8 +330,9 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     }
 
     // Provide a fixed value for the input port and keep an alias around.
-    input_port_value_ = &context_->FixInputPort(
-        input_port_->get_index(), system_->AllocateInputVector(*input_port_));
+    input_port_value_ = &input_port_->FixValue(
+        context_.get(),
+        system_->AllocateInputVector(*input_port_)->get_value());
   }
 
   // For N-1 timesteps, add a constraint which depends on the knot
@@ -357,7 +358,7 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
 
 void DirectTranscription::ValidateSystem(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index) {
+    std::variant<InputPortSelection, InputPortIndex> input_port_index) {
   DRAKE_DEMAND(context.has_only_discrete_state());
   DRAKE_DEMAND(context.num_discrete_state_groups() == 1);
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());

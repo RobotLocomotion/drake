@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import pydrake.systems.framework as mut
 
 import copy
@@ -17,7 +15,7 @@ from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     IntegratorBase, IntegratorBase_,
     RungeKutta2Integrator, RungeKutta3Integrator,
-    Simulator, Simulator_,
+    SimulatorStatus, Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
     AbstractValue,
@@ -57,7 +55,6 @@ from pydrake.systems.primitives import (
     SignalLogger,
     ZeroOrderHold,
     )
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -114,6 +111,7 @@ class TestGeneral(unittest.TestCase):
             context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
+        system.SetDefaultContext(context)
 
         context = system.CreateDefaultContext()
         self.assertIsInstance(
@@ -345,6 +343,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is context)
             check_output(context)
             simulator.AdvanceTo(1)
+            simulator.AdvancePendingEvents()
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
@@ -437,6 +436,24 @@ class TestGeneral(unittest.TestCase):
             xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
                            xc_initial)
             self.assertTrue(np.allclose(xc, xc_expected))
+
+    def test_simulator_context_manipulation(self):
+        system = ConstantVectorSource([1])
+        # Use default-constructed context.
+        simulator = Simulator(system)
+        self.assertTrue(simulator.has_context())
+        context_default = simulator.get_mutable_context()
+        # WARNING: Once we call `simulator.reset_context()`, it will delete the
+        # context it currently owns, which is `context_default` in this case.
+        # BE CAREFUL IN SITUATIONS LIKE THIS!
+        # TODO(eric.cousineau): Bind `release_context()`, or migrate context
+        # usage to use `shared_ptr`.
+        context = system.CreateDefaultContext()
+        simulator.reset_context(context)
+        self.assertIs(context, simulator.get_mutable_context())
+        # WARNING: This will also invalidate `context`. Be careful!
+        simulator.reset_context(None)
+        self.assertFalse(simulator.has_context())
 
     def test_simulator_integrator_manipulation(self):
         system = ConstantVectorSource([1])

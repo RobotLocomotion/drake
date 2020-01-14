@@ -20,7 +20,6 @@ drake_cc_package_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Move code to a trajectory.cc file
 drake_cc_library(
     name = "trajectory",
     hdrs = ["trajectory.h"],
@@ -53,6 +52,7 @@ drake_cc_library(
         ":piecewise_trajectory",
         "//common:essential",
         "//common:polynomial",
+        "@fmt",
     ],
 )
 
@@ -94,6 +94,7 @@ drake_cc_googletest(
     deps = [
         ":piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -103,6 +104,7 @@ drake_cc_googletest(
         ":piecewise_polynomial",
         ":random_piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

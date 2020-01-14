@@ -39,7 +39,7 @@ class ParticleTest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<T>> derivatives_;
 };
 
-TYPED_TEST_CASE_P(ParticleTest);
+TYPED_TEST_SUITE_P(ParticleTest);
 
 /// Makes sure a Particle output is consistent with its
 /// state (position and velocity).
@@ -68,11 +68,9 @@ TYPED_TEST_P(ParticleTest, DerivativesTest) {
   // Set input.
   const systems::InputPort<TypeParam>& input_port =
       this->dut_->get_input_port(0);
-  auto input = std::make_unique<systems::BasicVector<TypeParam>>(
-      input_port.size());
-  input->SetZero();
-  input->SetAtIndex(0, static_cast<TypeParam>(1.0));  // u0 = 1 m/s^2
-  this->context_->FixInputPort(0, std::move(input));
+  VectorX<TypeParam> input = VectorX<TypeParam>::Zero(input_port.size());
+  input[0] = static_cast<TypeParam>(1.0);  // u0 = 1 m/s^2
+  this->dut_->get_input_port(0).FixValue(this->context_.get(), input);
   // Set state.
   systems::VectorBase<TypeParam>& continuous_state_vector =
     this->context_->get_mutable_continuous_state_vector();
@@ -91,9 +89,9 @@ TYPED_TEST_P(ParticleTest, DerivativesTest) {
             static_cast<TypeParam>(1.0));  // x1dot == u0
 }
 
-REGISTER_TYPED_TEST_CASE_P(ParticleTest, OutputTest, DerivativesTest);
+REGISTER_TYPED_TEST_SUITE_P(ParticleTest, OutputTest, DerivativesTest);
 
-INSTANTIATE_TYPED_TEST_CASE_P(WithDoubles, ParticleTest, double);
+INSTANTIATE_TYPED_TEST_SUITE_P(WithDoubles, ParticleTest, double);
 
 }  // namespace
 }  // namespace particles

@@ -82,15 +82,15 @@ PYBIND11_MODULE(autodiffutils, m) {
             return pow(base, exponent);
           },
           py::is_operator())
-      .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
-  DefPickle(&autodiff,
-      [](const AutoDiffXd& self) {
-        return py::make_tuple(self.value(), self.derivatives());
-      },
-      [](py::tuple t) {
-        DRAKE_THROW_UNLESS(t.size() == 2);
-        return AutoDiffXd(t[0].cast<double>(), t[1].cast<VectorXd>());
-      });
+      .def("__abs__", [](const AutoDiffXd& x) { return abs(x); })
+      .def(py::pickle(
+          [](const AutoDiffXd& self) {
+            return py::make_tuple(self.value(), self.derivatives());
+          },
+          [](py::tuple t) {
+            DRAKE_THROW_UNLESS(t.size() == 2);
+            return AutoDiffXd(t[0].cast<double>(), t[1].cast<VectorXd>());
+          }));
   DefCopyAndDeepCopy(&autodiff);
 
   py::implicitly_convertible<double, AutoDiffXd>();
@@ -122,6 +122,13 @@ PYBIND11_MODULE(autodiffutils, m) {
         return autoDiffToGradientMatrix(autodiff_matrix);
       },
       py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
+
+  m.def("initializeAutoDiffGivenGradientMatrix",
+      [](const Eigen::VectorXd& val, const Eigen::MatrixXd& gradient) {
+        return initializeAutoDiffGivenGradientMatrix(val, gradient);
+      },
+      py::arg("val"), py::arg("gradient"),
+      doc.initializeAutoDiffGivenGradientMatrix.doc_2args);
 
   ExecuteExtraPythonCode(m);
 }

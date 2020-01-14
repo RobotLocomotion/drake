@@ -15,6 +15,7 @@
 #include "drake/multibody/hydroelastics/hydroelastic_field_sphere.h"
 
 using drake::geometry::Box;
+using drake::geometry::Capsule;
 using drake::geometry::ContactSurface;
 using drake::geometry::Convex;
 using drake::geometry::Cylinder;
@@ -176,7 +177,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     const HydroelasticGeometry<T>& model_R =
         model_M->is_soft() ? *model_N : *model_M;
 
-    optional<ContactSurface<T>> surface =
+    std::optional<ContactSurface<T>> surface =
         CalcContactSurface(id_S, model_S, X_WS, id_R, model_R, X_WR);
     if (surface) all_contact_surfaces.emplace_back(std::move(*surface));
   }
@@ -185,7 +186,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
 }
 
 template <typename T>
-optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
+std::optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
     GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
     const RigidTransform<T>& X_WS,
     GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
@@ -194,42 +195,28 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   DRAKE_DEMAND(!rigid_model_R.is_soft());
   const HydroelasticField<T>& soft_field_S = soft_model_S.hydroelastic_field();
   std::vector<T> e_s_surface;
-  std::vector<Vector3<T>> grad_level_set_R_surface;
 
   const auto X_RS = X_WR.inverse() * X_WS;
   // Surface is measured and expressed in frame R. We'll transform to frame W
   // below if non-empty.
   std::unique_ptr<SurfaceMesh<T>> surface_W = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
-      soft_field_S.scalar_field().values(), &e_s_surface,
-      &grad_level_set_R_surface);
-  if (surface_W->num_vertices() == 0) return nullopt;
+      soft_field_S.scalar_field().values(), &e_s_surface);
+  if (surface_W->num_vertices() == 0) return std::nullopt;
   // Transform with vertices measured and expressed in frame W.
   surface_W->TransformVertices(X_WR);
 
   // TODO(edrumwri): This says that it is a pressure field, but notation
   //                 reflects that it is a strain field. Fix.
   // Compute pressure field.
-  for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
-
-  // TODO(edrumwri): h_RS should be the gradient of a pressure field, but it
-  //                 is currently the gradient of a strain field. Fix.
-  // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
-  // R). Note that the gradient of the level set function points into S (N), so
-  // we flip its direction. We also re-express this field in the world frame in
-  // accordance with the ContactSurface specification.
-  std::vector<Vector3<T>> h_RS_W_vectors = std::move(grad_level_set_R_surface);
-  for (Vector3<T>& grad : h_RS_W_vectors)
-    grad = X_WR.rotation() * -grad;
-
+  for (T& e_s_value : e_s_surface) e_s_value *= soft_model_S.elastic_modulus();
   auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
       "e_MN", std::move(e_s_surface), surface_W.get());
-  auto h_RS_W =
-      std::make_unique<geometry::SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_W", std::move(h_RS_W_vectors), surface_W.get());
 
-  return ContactSurface<T>(id_R, id_S, std::move(surface_W), std::move(e_s),
-                           std::move(h_RS_W));
+  // The calculation between level set and soft mesh produces a surface with
+  // face normals pointing out of the level set and into the soft surface.
+  // The ordering of id_R and id_S reflects this.
+  return ContactSurface<T>(id_R, id_S, std::move(surface_W), std::move(e_s));
 }
 
 template <typename T>
@@ -250,7 +237,7 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   // TODO(amcastro-tri): Make this a user setable parameter.
   const int refinement_level = 2;
   auto sphere_field =
-      MakeSphereHydroelasticField<T>(refinement_level, sphere.get_radius());
+      MakeSphereHydroelasticField<T>(refinement_level, sphere.radius());
   auto model = std::make_unique<HydroelasticGeometry<T>>(
       std::move(sphere_field), elastic_modulus, dissipation);
   model_data_.geometry_id_to_model_[specs.id] = std::move(model);
@@ -288,6 +275,13 @@ void HydroelasticEngine<T>::ImplementGeometry(const Box&, void*) {
   drake::log()->warn(
       "HydroelasticEngine. The current hydroelastic model implementation "
       "does not support box geometries. Geometry ignored.");
+}
+
+template <typename T>
+void HydroelasticEngine<T>::ImplementGeometry(const Capsule&, void*) {
+  drake::log()->warn(
+      "HydroelasticEngine. The current hydroelastic model implementation "
+      "does not support capsule geometries. Geometry ignored.");
 }
 
 template <typename T>

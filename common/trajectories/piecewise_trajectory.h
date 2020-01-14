@@ -23,6 +23,7 @@ namespace trajectories {
 template <typename T>
 class PiecewiseTrajectory : public Trajectory<T> {
  public:
+  // TODO(ggould-tri) This quantity is surprisingly large and never justified.
   /// Minimum delta quantity used for comparing time.
   static constexpr double kEpsilonTime = 1e-10;
 

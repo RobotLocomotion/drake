@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
@@ -94,10 +95,10 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   solver_options.SetOption(id1, "key3", "foo");
 
   // First check a solver id not in solver_options.
-  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id2, {"key1"},
-                                                          {"key2"}, {"key3"}));
+  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
+      id2, {"key1"}, {"key2"}, {"key3"}));
   // Check the solver id in solver_options.
-  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1"},
+  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1"},
                                                           {"key2"}, {"key3"}));
 
   // Check an option not set for id1.
@@ -108,8 +109,8 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
       std::invalid_argument,
       "key2 is not allowed in the SolverOptions for id1.");
 
-  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
-                                                          {"key2"}, {"key3"}));
+  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
+      id1, {"key1", "key2"}, {"key2"}, {"key3"}));
 }
 }  // namespace solvers
 }  // namespace drake

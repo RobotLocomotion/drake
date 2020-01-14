@@ -12,6 +12,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 import textwrap
 
@@ -74,14 +75,6 @@ SKIP_RECURSE_NAMES = [
     'tinyxml2',
 ]
 
-# Exceptions to `SKIP_RECURSE_NAMES`; only one degree of exception is made
-# (i.e., nested symbols are still subject to `SKIP_RECURSE_NAMES`).
-SKIP_RECURSE_EXCEPTIONS = [
-    # TODO(eric.cousineau): Remove this once we figure out why not having
-    # it breaks the doc generation process.
-    ('drake', 'multibody', 'internal'),
-]
-
 # Filter based on partial names.
 SKIP_PARTIAL_NAMES = [
     'operator new',
@@ -107,6 +100,7 @@ class Symbol(object):
     """
     Contains a cursor and additional processed metadata.
     """
+
     def __init__(self, cursor, name_chain, include, line, comment):
         self.cursor = cursor
         self.name_chain = name_chain
@@ -124,14 +118,16 @@ def eprint(*args):
 
 def is_accepted_cursor(cursor, name_chain):
     """
-    Determines if a symbol should be visited or not.
+    Determines if a symbol should be visited or not, given the cursor and the
+    name chain.
     """
     name = utf8(cursor.spelling)
-    if name in SKIP_RECURSE_NAMES:
-        if tuple(name_chain) not in SKIP_RECURSE_EXCEPTIONS:
+    # N.B. See TODO in `get_name_chain`.
+    for piece in name_chain + (name,):
+        if piece in SKIP_RECURSE_NAMES:
             return False
-    for bad in SKIP_PARTIAL_NAMES:
-        if bad in name:
+    for skip_partial_name in SKIP_PARTIAL_NAMES:
+        if skip_partial_name in name:
             return False
     if cursor.access_specifier in SKIP_ACCESS:
         return False
@@ -240,6 +236,9 @@ def process_comment(comment):
             s = s[2:].lstrip('*')
         if s.endswith('*/'):
             s = s[:-2].rstrip('*')
+        # http://www.doxygen.nl/manual/docblocks.html#memberdoc
+        if s.startswith('///<'):
+            s = s[4:]
         if s.startswith('///') or s.startswith('//!'):
             s = s[3:]
         if s.startswith('*'):
@@ -648,7 +647,11 @@ def get_name_chain(cursor):
     """
     Extracts the pieces for a namespace-qualified name for a symbol.
     """
-    name_chain = [utf8(cursor.spelling)]
+    # TODO(eric.cousineau): Try to restrict the name_chain to end with name. I
+    # briefly tried this once by culling based on accepted cursors, but lost
+    # needed symbols because of it.
+    name = utf8(cursor.spelling)
+    name_chain = [name]
     p = cursor.semantic_parent
     while p and p.kind != CursorKind.TRANSLATION_UNIT:
         piece = utf8(p.spelling)
@@ -681,6 +684,7 @@ class SymbolTree(object):
 
     class Node(object):
         """Node for a given name chain."""
+
         def __init__(self):
             # First encountered occurrence of a symbol when extracting, used to
             # label symbols that do not have documentation. Will only be None
@@ -831,10 +835,10 @@ def choose_doc_var_names(symbols):
                 # the argument types" heuristics.
                 result[i] = "doc_move"
             elif (  # Look for a constructor like Foo<T>(const Foo<U>&).
-                  cursor.kind == CursorKind.FUNCTION_TEMPLATE and
-                  cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE and
-                  re.search(r"^(.*)<T>\(const \1<U> *&\)$",
-                            utf8(cursor.displayname))):
+                cursor.kind == CursorKind.FUNCTION_TEMPLATE and
+                cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE and
+                re.search(r"^(.*)<T>\(const \1<U> *&\)$",
+                          utf8(cursor.displayname))):
                 # Special case for scalar conversion constructors; we want to
                 # have a nice short name for these, that doesn't necessarily
                 # conflte with any *other* 1-argument constructor.
@@ -931,7 +935,7 @@ def print_symbols(f, name, node, level=0):
 
     name_var = name
     if not node.first_symbol:
-        assert level == 0
+        assert level == 0, name_var
         full_name = name
     else:
         name_chain = node.first_symbol.name_chain
@@ -1003,19 +1007,28 @@ def main():
     parameters = ['-x', 'c++', '-D__MKDOC_PY__']
     filenames = []
 
+    library_file = None
     if platform.system() == 'Darwin':
-        dev_path = '/Applications/Xcode.app/Contents/Developer/'
-        lib_dir = dev_path + 'Toolchains/XcodeDefault.xctoolchain/usr/lib/'
-        sdk_dir = dev_path + 'Platforms/MacOSX.platform/Developer/SDKs'
-        libclang = lib_dir + 'libclang.dylib'
-
-        if os.path.exists(libclang):
-            cindex.Config.set_library_path(os.path.dirname(libclang))
-
-        if os.path.exists(sdk_dir):
-            sysroot_dir = os.path.join(sdk_dir, next(os.walk(sdk_dir))[1][0])
-            parameters.append('-isysroot')
-            parameters.append(sysroot_dir)
+        completed_process = subprocess.run(['xcrun', '--find', 'clang'],
+                                           stdout=subprocess.PIPE,
+                                           encoding='utf-8')
+        if completed_process.returncode == 0:
+            toolchain_dir = os.path.dirname(os.path.dirname(
+                completed_process.stdout.strip()))
+            library_file = os.path.join(
+                toolchain_dir, 'lib', 'libclang.dylib')
+        completed_process = subprocess.run(['xcrun', '--show-sdk-path'],
+                                           stdout=subprocess.PIPE,
+                                           encoding='utf-8')
+        if completed_process.returncode == 0:
+            sdkroot = completed_process.stdout.strip()
+            if os.path.exists(sdkroot):
+                parameters.append('-isysroot')
+                parameters.append(sdkroot)
+    elif platform.system() == 'Linux':
+        library_file = '/usr/lib/llvm-6.0/lib/libclang.so'
+    if library_file and os.path.exists(library_file):
+        cindex.Config.set_library_path(os.path.dirname(library_file))
 
     quiet = False
     std = '-std=c++11'
@@ -1046,7 +1059,7 @@ def main():
                % sys.argv[0])
         sys.exit(1)
 
-    f = open(output_filename, 'w')
+    f = open(output_filename, 'w', encoding='utf-8')
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
     f.write('''#pragma once

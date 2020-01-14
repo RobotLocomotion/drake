@@ -7,6 +7,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -20,7 +21,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
@@ -909,8 +909,6 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x + c
    * Applied to subset of the variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -1137,8 +1135,7 @@ class MathematicalProgram {
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{2args_con_vars}
    */
   template <typename C>
   auto AddConstraint(std::shared_ptr<C> con,
@@ -2636,6 +2633,32 @@ class MathematicalProgram {
     return y;
   }
 
+  /**
+   * Given the value of all decision variables, namely
+   * this.decision_variable(i) takes the value prog_var_vals(i), returns the
+   * vector that contains the value of the variables in binding.variables().
+   * @param binding binding.variables() must be decision variables in this
+   * MathematicalProgram.
+   * @param prog_var_vals The value of ALL the decision variables in this
+   * program.
+   * @return binding_variable_vals binding_variable_vals(i) is the value of
+   * binding.variables()(i) in prog_var_vals.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  GetBindingVariableValues(
+      const Binding<C>& binding,
+      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    DRAKE_DEMAND(prog_var_vals.rows() == num_vars());
+    VectorX<typename DerivedX::Scalar> result(binding.GetNumElements());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      result(i) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
+    }
+    return result;
+  }
+
   /** Evaluates all visualization callbacks registered with the
    * MathematicalProgram.
    *
@@ -2703,8 +2726,8 @@ class MathematicalProgram {
   }
 
   /**
-   * Returns the mapping from a decision variable to its index in the vector,
-   * containing all the decision variables in the optimization program.
+   * Returns the mapping from a decision variable ID to its index in the vector
+   * containing all the decision variables in the mathematical program.
    */
   const std::unordered_map<symbolic::Variable::Id, int>&
   decision_variable_index() const {
@@ -2731,6 +2754,15 @@ class MathematicalProgram {
    * @param idx_end index of the end of the decision variables.
    */
   void SetVariableScaling(double scale, int idx_start, int idx_end);
+
+  /**
+   * Returns the mapping from an indeterminate ID to its index in the vector
+   * containing all the indeterminates in the mathematical program.
+   */
+  const std::unordered_map<symbolic::Variable::Id, int>& indeterminates_index()
+      const {
+    return indeterminates_index_;
+  }
 
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
@@ -2775,7 +2807,7 @@ class MathematicalProgram {
 
   Eigen::VectorXd x_initial_guess_;
   Eigen::VectorXd x_values_;
-  optional<SolverId> solver_id_;
+  std::optional<SolverId> solver_id_;
   double optimal_cost_{};
   // The lower bound of the objective found by the solver, during the
   // optimization process.

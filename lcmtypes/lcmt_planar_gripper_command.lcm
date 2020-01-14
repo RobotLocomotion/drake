@@ -1,0 +1,14 @@
+package drake;
+
+// Commands a single set of joint states for the planar gripper.  All angular
+// positions/velocities are expressed in radians and radians/second.
+struct lcmt_planar_gripper_command {
+  // The timestamp in microseconds.
+  int64_t utime;
+
+  // The planar gripper consists of N fingers, each finger consists of two
+  // actuated joints.
+  int8_t num_fingers;
+  
+  lcmt_planar_gripper_finger_command finger_command[num_fingers];
+}

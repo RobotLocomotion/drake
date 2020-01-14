@@ -57,6 +57,11 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
         result = GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
     else:
         result = rule_copts
+
+    # We can't handle select() yet.
+    # TODO(jwnimmer-tri) We should handle select.
+    if type(result) != "list":
+        return result
     return select({
         "//tools:drake_werror": result,
         "//conditions:default": [
@@ -85,6 +90,13 @@ def _check_library_deps_blacklist(name, deps):
         # TODO(jwnimmer-tri) We should handle select.
         return
     for dep in deps:
+        if name == "drake_cc_googletest_main":
+            # This library-with-main is a special case.
+            continue
+        if dep.endswith(":add_text_logging_gflags"):
+            fail("The cc_library '" + name + "' must not depend on " +
+                 "//common:add_text_logging_gflags; only cc_binary targets " +
+                 "are allowed to have gflags")
         if dep.endswith(":main"):
             fail("The cc_library '" + name + "' must not depend on a :main " +
                  "function from a cc_library; only cc_binary program should " +
@@ -152,7 +164,8 @@ def installed_headers_for_drake_deps(deps):
         if (
             not x.startswith("@") and
             not x.startswith("//drake/lcmtypes:") and
-            not x == "//:drake_shared_library"
+            not x == "//:drake_shared_library" and
+            not x.startswith("//third_party")
         )
     ]
 

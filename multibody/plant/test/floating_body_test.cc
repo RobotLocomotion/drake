@@ -2,6 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -100,7 +101,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
   const math::RotationMatrixd R_WB_test(AngleAxisd(M_PI / 3.0, axis));
-  mobilizer.SetFromRotationMatrix(&context, R_WB_test.matrix());
+  mobilizer.SetFromRotationMatrix(&context, R_WB_test);
   // Verify we get the right quaternion.
   const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
   const Quaterniond q_WB_test_expected = R_WB_test.ToQuaternion();
@@ -154,14 +155,13 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   benchmark_.set_initial_v_NBcm_B(v0_WB);
 
   simulator.Initialize();
-  RungeKutta3Integrator<double>* integrator =
-          simulator.reset_integrator<RungeKutta3Integrator<double>>(
-              free_body_plant, &context);
-  integrator->set_maximum_step_size(kMaxDt);
-  EXPECT_FALSE(integrator->get_fixed_step_mode());
-  EXPECT_TRUE(integrator->supports_error_estimation());
-  integrator->set_target_accuracy(kAccuracy);
-  EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
+  RungeKutta3Integrator<double>& integrator =
+          simulator.reset_integrator<RungeKutta3Integrator<double>>();
+  integrator.set_maximum_step_size(kMaxDt);
+  EXPECT_FALSE(integrator.get_fixed_step_mode());
+  EXPECT_TRUE(integrator.supports_error_estimation());
+  integrator.set_target_accuracy(kAccuracy);
+  EXPECT_EQ(integrator.get_target_accuracy(), kAccuracy);
 
   // Simulate:
   simulator.AdvanceTo(kEndTime);
@@ -286,14 +286,13 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kEpsilon);
 
   const math::RigidTransformd X_WB(q_WB, p_WB);
-  EXPECT_NO_THROW(
-      model.SetFreeBodyPoseOrThrow(
-          free_body_plant.body(), X_WB, context.get()));
+  DRAKE_EXPECT_NO_THROW(model.SetFreeBodyPoseOrThrow(free_body_plant.body(),
+                                                     X_WB, context.get()));
 
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);
   const Vector3d v_WB(-1.0, 4.0, -0.5);
-  EXPECT_NO_THROW(
+  DRAKE_EXPECT_NO_THROW(
       model.SetFreeBodySpatialVelocityOrThrow(
           free_body_plant.body(), {w_WB, v_WB}, context.get()));
 

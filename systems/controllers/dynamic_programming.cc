@@ -86,7 +86,7 @@ FittedValueIteration(
     cost[input].resize(num_states);
 
     input_mesh.get_mesh_point(input, &input_vec);
-    context.FixInputPort(0, input_vec);
+    system.get_input_port(0).FixValue(&context, input_vec);
 
     for (int state = 0; state < num_states; state++) {
       context.SetTime(0.0);
@@ -216,7 +216,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
   Eigen::VectorXd state_vec(state_size);
   Eigen::VectorXd next_state_vec(state_size);
   for (int input = 0; input < num_inputs; input++) {
-    context.FixInputPort(0, input_samples.col(input));
+    system.get_input_port(0).FixValue(&context, input_samples.col(input));
     for (int state = 0; state < num_states; state++) {
       context.SetTime(0.0);
       state_vec = state_samples.col(state);

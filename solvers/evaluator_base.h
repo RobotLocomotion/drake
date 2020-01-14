@@ -44,6 +44,7 @@ class EvaluatorBase {
             Eigen::VectorXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
+    DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
   // TODO(eric.cousineau): Move this to DifferentiableConstraint derived class
@@ -57,6 +58,7 @@ class EvaluatorBase {
   void Eval(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
+    DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
   /**
@@ -68,6 +70,7 @@ class EvaluatorBase {
             VectorX<symbolic::Expression>* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
+    DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
   /**
@@ -111,8 +114,8 @@ class EvaluatorBase {
    * @retval gradient_sparsity_pattern If nullopt, then we regard all entries of
    * the gradient as potentially non-zero.
    */
-  const optional<std::vector<std::pair<int, int>>>& gradient_sparsity_pattern()
-      const {
+  const std::optional<std::vector<std::pair<int, int>>>&
+      gradient_sparsity_pattern() const {
     return gradient_sparsity_pattern_;
   }
 
@@ -179,7 +182,7 @@ class EvaluatorBase {
   // gradient_sparsity_patten_. When gradient_sparsity_pattern_.has_value() =
   // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
   // the gradient matrix can be non-zero.
-  optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
+  std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
 
 /**

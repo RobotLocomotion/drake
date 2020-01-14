@@ -11,10 +11,6 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_package_library",
 )
-load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_cc_proto_library",
-)
 load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -37,7 +33,6 @@ drake_cc_package_library(
         ":rigid_body_loop",
         ":rigid_body_tree",
         ":rigid_body_tree_alias_groups",
-        ":rigid_body_tree_alias_groups_proto",
         ":rigid_body_tree_cc",
         ":rigid_body_tree_cc_0",
         ":rigid_body_tree_cc_1",
@@ -57,7 +52,7 @@ drake_cc_library(
     ],
     deps = [
         ":rigid_body_tree",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
         "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
     ],
@@ -127,7 +122,7 @@ drake_cc_library(
         ":rigid_body_tree",
         "//common:unused",
         "//math:gradient",
-        "//solvers:mathematical_program_lite",
+        "//solvers:mathematical_program",
         "//solvers:solve",
     ],
 )
@@ -368,23 +363,13 @@ drake_cc_library(
     ],
 )
 
-drake_cc_proto_library(
-    name = "rigid_body_tree_alias_groups_proto",
-    srcs = [
-        "alias_groups.proto",
-    ],
-    visibility = ["//visibility:private"],
-)
-
 drake_cc_library(
     name = "rigid_body_tree_alias_groups",
     srcs = ["rigid_body_tree_alias_groups.cc"],
     hdrs = ["rigid_body_tree_alias_groups.h"],
     deps = [
         ":rigid_body_tree",
-        ":rigid_body_tree_alias_groups_proto",
         "//common:essential",
-        "//common/proto:protobuf",
     ],
 )
 
@@ -615,7 +600,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_test(
     name = "test_kinematics_cache_checks",
     data = ["//examples/atlas:models"],
     deps = [

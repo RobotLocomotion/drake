@@ -21,7 +21,7 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, InputOutput) {
   const Eigen::Translation3d translation(1.0, 2.0, 3.0);
   const PoseVector<double> input(rotation, translation);
   auto context = dut.CreateDefaultContext();
-  context->FixInputPort(dut.get_input_port().get_index(), input);
+  dut.get_input_port().FixValue(context.get(), input);
 
   const auto& output =
       dut.get_output_port().Eval<geometry::FramePoseVector<double>>(

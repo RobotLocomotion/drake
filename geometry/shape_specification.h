@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
@@ -36,15 +37,14 @@ struct ShapeTag{};
 
   When you add a new subclass of Shape, you must:
 
-  1. add a pure virtual function ImplementGeometry() for the new shape in
-     ShapeReifier.
-  2. define ImplementGeometry() for the new shape in the subclasses of
-     ShapeReifier.
-  3. modify CopyShapeOrThrow() of ProximityEngine to support the new shape and
-     add an instance of the new shape to the CopySemantics test in
-     proximity_engine_test.cc.
-  4. test the new shape in the class BoxPenetrationTest of
-     proximity_engine_test.cc
+  1. add a virtual function ImplementGeometry() for the new shape in
+     ShapeReifier that invokes the ThrowUnsupportedGeometry method, and add to
+     the test for it in shape_specification_test.cc.
+  2. implement ImplementGeometry in derived ShapeReifiers to continue support
+     if desired, otherwise ensure unimplemented functions are not hidden in new
+     derivations of ShapeReifier with `using`, for example, `using
+     ShapeReifier::ImplementGeometry`. Existing subclasses should already have
+     this.
 
   Otherwise, you might get a runtime error. We do not have an automatic way to
   enforce them at compile time.
@@ -105,9 +105,15 @@ class Sphere final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
+  /** Constructs a sphere with the given `radius`.
+   @throws std::logic_error if `radius` is negative. Note that a zero radius is
+   is considered valid. */
   explicit Sphere(double radius);
 
+  DRAKE_DEPRECATED("2020-03-01", "Use radius() instead.")
   double get_radius() const { return radius_; }
+
+  double radius() const { return radius_; }
 
  private:
   double radius_{};
@@ -119,10 +125,18 @@ class Cylinder final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
 
+  /** Constructs a cylinder with the given `radius` and `length`.
+   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   */
   Cylinder(double radius, double length);
 
+  DRAKE_DEPRECATED("2020-03-01", "Use radius() instead.")
   double get_radius() const { return radius_; }
+  DRAKE_DEPRECATED("2020-03-01", "Use length() instead.")
   double get_length() const { return length_; }
+
+  double radius() const { return radius_; }
+  double length() const { return length_; }
 
  private:
   double radius_{};
@@ -138,7 +152,9 @@ class Box final : public Shape {
 
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
-   respectively. */
+   respectively.
+   @throws std::logic_error if `width`, `depth` or `height` are not strictly
+   positive. */
   Box(double width, double depth, double height);
 
   /** Constructs a cube with the given `edge_size` for its width, depth, and
@@ -159,6 +175,63 @@ class Box final : public Shape {
 
  private:
   Vector3<double> size_;
+};
+
+/** Definition of a capsule. It is centered in its canonical frame with the
+ length of the capsule parallel with the frame's z-axis. */
+class Capsule final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
+
+  /** Constructs a capsule with the given `radius` and `length`.
+   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   */
+  Capsule(double radius, double length);
+
+  DRAKE_DEPRECATED("2020-03-01", "Use radius() instead.")
+  double get_radius() const { return radius_; }
+  DRAKE_DEPRECATED("2020-03-01", "Use length() instead.")
+  double get_length() const { return length_; }
+
+  double radius() const { return radius_; }
+  double length() const { return length_; }
+
+ private:
+  double radius_{};
+  double length_{};
+};
+
+/** Definition of an ellipsoid. It is centered on the origin of its canonical
+ frame with its dimensions aligned with the frame's axes. The standard
+ equation for the ellipsoid is:
+
+          x²/a² + y²/b² + z²/c² = 1,
+ where a,b,c are the lengths of the principal semi-axes of the ellipsoid.
+ The bounding box of the ellipsoid is [-a,a]x[-b,b]x[-c,c].
+*/
+class Ellipsoid final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
+
+  /** Constructs an ellipsoid with the given lengths of its principal
+   semi-axes.
+   @throws std::logic_error if `a`, `b`, or `c` are not strictly positive.
+   */
+  Ellipsoid(double a, double b, double c);
+
+  DRAKE_DEPRECATED("2020-03-01", "Use a() instead.")
+  double get_a() const { return radii_(0); }
+  DRAKE_DEPRECATED("2020-03-01", "Use b() instead.")
+  double get_b() const { return radii_(1); }
+  DRAKE_DEPRECATED("2020-03-01", "Use c() instead.")
+  double get_c() const { return radii_(2); }
+
+  double a() const { return radii_(0); }
+  double b() const { return radii_(1); }
+  double c() const { return radii_(2); }
+
+ private:
+  Vector3<double> radii_;
 };
 
 /** Definition of a half space. In its canonical frame, the plane defining the
@@ -191,19 +264,22 @@ class HalfSpace final : public Shape {
                                                const Vector3<double>& p_FB);
 };
 
-// TODO(SeanCurtis-TRI): Update documentation when the level of support for
-// meshes extends to collision/rendering.
-/** Limited support for meshes. Meshes declared as such will _not_ serve in
- proximity queries or rendering queries. However, they _will_ be propagated
- to drake_visualizer. The mesh is dispatched to drake visualizer via the
- filename. The mesh is _not_ parsed/loaded by Drake. */
+// TODO(DamrongGuoy): Update documentation when the level of support for
+//  meshes extends to more collision and rendering.
+/** Limited support for meshes. Meshes are supported in Rendering and
+ Illustration roles. For Proximity role, Meshes are supported in
+ ComputeContactSurfaces() query only. No other proximity queries are supported.
+ */
 class Mesh final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
 
   /** Constructs a mesh specification from the mesh file located at the given
    _absolute_ file path. Optionally uniformly scaled by the given scale factor.
-   */
+   @throws std::logic_error if |scale| < 1e-8. Note that a negative scale is
+   considered valid. We want to preclude scales near zero but recognise that
+   scale is a convenience tool for "tweaking" models. 8 orders of magnitude
+   should be plenty without considering revisiting the model itself. */
   explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
@@ -233,7 +309,12 @@ class Convex final : public Shape {
                                 multiple object-name statements (e.g.,
                                 "o object_name"), or if there are faces defined
                                 outside a single object-name statement.
-   */
+   @throws std::logic_error     if |scale| < 1e-8. Note that a negative scale is
+                                considered valid. We want to preclude scales
+                                near zero but recognise that scale is a
+                                convenience tool for "tweaking" models. 8 orders
+                                of magnitude should be plenty without
+                                considering revisiting the model itself. */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
@@ -297,17 +378,21 @@ class ShapeReifier {
  public:
   virtual ~ShapeReifier() = default;
 
-  virtual void ImplementGeometry(const Sphere& sphere, void* user_data) = 0;
-  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
-  virtual void ImplementGeometry(const HalfSpace& half_space,
-                                 void* user_data) = 0;
-  virtual void ImplementGeometry(const Box& box, void* user_data) = 0;
-  virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
-  virtual void ImplementGeometry(const Convex& convex, void* user_data) = 0;
+  virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
+  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data);
+  virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
+  virtual void ImplementGeometry(const Box& box, void* user_data);
+  virtual void ImplementGeometry(const Capsule& capsule, void* user_data);
+  virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
+  virtual void ImplementGeometry(const Convex& convex, void* user_data);
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
+
+ private:
+  void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
 template <typename S>
@@ -326,6 +411,63 @@ Shape::Shape(ShapeTag<S>) {
     reifier->ImplementGeometry(derived_shape, user_data);
   };
 }
+
+// TODO(SeanCurtis-TRI): Merge this into shape_to_string.h so that there's a
+//  single utility for getting a string from a shape.
+/** Class that reports the name of the type of shape being reified (e.g.,
+ Sphere, Box, etc.)  */
+class ShapeName final : public ShapeReifier {
+ public:
+  ShapeName() = default;
+
+  /** Constructs a %ShapeName from the given `shape` such that `string()`
+   already contains the string representation of `shape`.  */
+  explicit ShapeName(const Shape& shape) {
+    shape.Reify(this);
+  }
+
+  /** @name  Implementation of ShapeReifier interface  */
+  //@{
+
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Sphere&, void*) final {
+    string_ = "Sphere";
+  }
+  void ImplementGeometry(const Cylinder&, void*) final {
+    string_ = "Cylinder";
+  }
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    string_ = "HalfSpace";
+  }
+  void ImplementGeometry(const Box&, void*) final {
+    string_ = "Box";
+  }
+  void ImplementGeometry(const Capsule&, void*) final {
+    string_ = "Capsule";
+  }
+  void ImplementGeometry(const Ellipsoid&, void*) final {
+    string_ = "Ellipsoid";
+  }
+  void ImplementGeometry(const Mesh&, void*) final {
+    string_ = "Mesh";
+  }
+  void ImplementGeometry(const Convex&, void*) final {
+    string_ = "Convex";
+  }
+
+  //@}
+
+  /** Returns the name of the last shape reified. Empty if no shape has been
+   reified yet.  */
+  std::string name() const { return string_; }
+
+ private:
+  std::string string_;
+};
+
+/** @relates ShapeName */
+std::ostream& operator<<(std::ostream& out, const ShapeName& name);
 
 }  // namespace geometry
 }  // namespace drake

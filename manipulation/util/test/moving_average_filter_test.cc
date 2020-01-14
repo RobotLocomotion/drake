@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace manipulation {
@@ -16,7 +17,7 @@ namespace {
 const unsigned int kWindowSize{3};
 
 GTEST_TEST(MovingAverageFilterTest, InstantiationTest) {
-  EXPECT_NO_THROW(MovingAverageFilter<double>(2));
+  DRAKE_EXPECT_NO_THROW(MovingAverageFilter<double>(2));
   EXPECT_ANY_THROW(MovingAverageFilter<double>(0));
 }
 

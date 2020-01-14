@@ -1,17 +1,33 @@
 .. _docker_entry:
 
-Building Drake in a Docker Container
-************************************
+Drake in Docker Containers
+**************************
+
+.. _docker_hub:
+
+Using Published Images on Docker Hub
+====================================
+
+Drake's CI has nightly jobs that publishes binary archives that are described
+in the :ref:`nightly-releases` section. The Ubuntu Bionic nightly release is
+also used to publish a Docker image on Docker Hub. You can see the available
+nightlies here:
+
+https://hub.docker.com/r/robotlocomotion/drake/tags
+
+Build Drake using Bazel in Docker
+=================================
 
 .. note::
 
-  These instructions and the Drake Docker images are provided as a courtesy for
+  These instructions for Bazel in Docker are provided as a courtesy for
   developers and users and are not covered by continuous integration. Support
   is on a best-effort basis.
 
   However, there are alternative downstream usages of Drake within a Docker
   container:
 
+  * The published images shown above.
   * `MIT 6.832 (Underactuated Robotics) Spring 2019 Drake Docker Instructions <http://underactuated.csail.mit.edu/Spring2019/install_drake_docker.html>`_
   * `MIT 6.881 (Intelligent Robot Manipulation) Fall 2018 Drake Docker Instructions <http://manipulation.csail.mit.edu/install_drake_docker.html>`_
   * `Spartan's Docker Build <https://github.com/RobotLocomotion/spartan/blob/master/setup/docker/README.md>`_
@@ -19,105 +35,12 @@ Building Drake in a Docker Container
 .. _installing_docker_and_building_and_running_a_drake_docker_image:
 
 Installing Docker and Building and Running a Drake Docker Image
-===============================================================
-
-.. _ubuntu_1604_xenial_xerus:
-
-Ubuntu 16.04 (Xenial Xerus)
----------------------------
-
-Install Docker from the Ubuntu package archive:
-
-::
-
-  sudo apt-get update
-  sudo apt-get install --no-install-recommends docker.io
-  sudo usermod --append --group docker ${USER}
-
-Reboot or log out and log back in again. Clone the Drake Git repository and
-build and run a Drake Docker image:
-
-::
-
-  sudo apt-get install --no-install-recommends git
-  git clone https://github.com/RobotLocomotion/drake.git
-  cd drake
-  docker build --file setup/ubuntu/docker/xenial/Dockerfile --tag drake .
-  docker run --interactive --tty drake bash
-
-.. _ubuntu_1604_xenial_xerus_with_proprietary_nvidia_driver_384_and_cuda_75_support:
-
-Ubuntu 16.04 (Xenial Xerus) with Proprietary NVIDIA Driver 384 and CUDA 7.5 Support
------------------------------------------------------------------------------------
-
-.. warning::
-
-  You MUST first uninstall all previous versions of the proprietary NVIDIA
-  driver, CUDA, and the NVIDIA container runtime for Docker. FAILURE TO DO SO
-  MAY LEAVE YOUR SYSTEM IN A BROKEN STATE. Please carefully read all
-  instructions and proceed with caution. If in doubt, consider following the
-  instructions in the :ref:`previous section <ubuntu_1604_xenial_xerus>` to
-  install and run Docker without proprietary NVIDIA driver and CUDA support.
-
-Install Docker CE from the Docker package archive:
-
-::
-
-  sudo apt-get update
-  sudo apt-get install --no-install-recommends \
-    apt-transport-https \
-    ca-certificates \
-    gnupg \
-    passwd
-  sudo apt-key adv --fetch-keys https://download.docker.com/linux/ubuntu/gpg
-  echo 'deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable' \
-    | sudo tee /etc/apt/sources.list.d/docker.list
-  sudo apt-get update
-  sudo apt-get install --no-install-recommends docker-ce
-  sudo usermod --append --group docker ${USER}
-
-Refer to the warning at the beginning of this section and uninstall all
-previous versions of the proprietary NVIDIA driver,
-`CUDA <https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#handle-uninstallation>`_,
-and the `NVIDIA container runtime for Docker <https://github.com/NVIDIA/nvidia-docker/wiki/Installation-(version-2.0)#removing-nvidia-docker-10>`_.
-
-Install the proprietary NVIDIA driver 384 and CUDA toolkit 7.5 from the Ubuntu
-package archive:
-
-::
-
-  sudo apt-get install --no-install-recommends nvidia-384 nvidia-cuda-toolkit
-
-Install the NVIDIA container runtime 2.0 for Docker from the NVIDIA package
-archive:
-
-::
-
-  sudo apt-get install wget
-  sudo apt-key adv --fetch-keys https://nvidia.github.io/nvidia-docker/gpgkey
-  wget -O - https://nvidia.github.io/nvidia-docker/ubuntu16.04/nvidia-docker.list \
-    | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-  sudo apt-get update
-  sudo apt-get install --no-install-recommends nvidia-docker2
-  sudo pkill -SIGHUP dockerd
-
-Reboot or log out and log back in again. Clone the Drake Git repository and
-build and run a Drake Docker image:
-
-::
-
-  sudo apt-get install --no-install-recommends git
-  git clone https://github.com/RobotLocomotion/drake.git
-  cd drake
-  docker build \
-    --file setup/ubuntu/docker/xenial/Dockerfile.nvidia-cuda-7.5-devel-ubuntu16.04 \
-    --tag drake .
-  docker run --interactive --runtime=nvidia --tty drake bash
+---------------------------------------------------------------
 
 .. _ubuntu_1804_bionic_beaver:
 
 Ubuntu 18.04 (Bionic Beaver)
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install Docker from the Ubuntu package archive:
 
@@ -141,7 +64,7 @@ build and run a Drake Docker image:
 .. _ubuntu_1804_bionic_beaver_with_proprietary_nvidia_driver_390_and_cuda_91_support:
 
 Ubuntu 18.04 (Bionic Beaver) with Proprietary NVIDIA Driver 390 and CUDA 9.1 Support
-------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
@@ -212,7 +135,7 @@ build and run a Drake Docker image:
 .. _other_platforms:
 
 Other Platforms
----------------
+~~~~~~~~~~~~~~~
 
 Follow the instructions on the Docker website to
 `install stable Docker Community Edition <https://docs.docker.com/install/>`_.

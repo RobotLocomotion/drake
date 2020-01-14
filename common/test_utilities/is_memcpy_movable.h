@@ -6,8 +6,6 @@
 #include <memory>
 #include <type_traits>
 
-#include "drake/common/drake_nodiscard.h"
-
 namespace drake {
 namespace test {
 /// Checks if @p value of @p T type is movable via memcpy. That is, it tests
@@ -23,7 +21,7 @@ namespace test {
 /// object. Please see https://github.com/RobotLocomotion/drake/issues/5974 for
 /// more information.
 template <typename T, typename InvariantPred = std::equal_to<T>>
-DRAKE_NODISCARD bool IsMemcpyMovable(
+[[nodiscard]] bool IsMemcpyMovable(
     const T& value, const InvariantPred& invariant_pred = InvariantPred()) {
   // 1. Create ptr_to_original via placement-new.
   auto original_storage = std::make_unique<

@@ -54,12 +54,13 @@ TEST_F(QuaternionFloatingMobilizerTest, StateAccess) {
   mobilizer_->set_position(context_.get(), position_value);
   EXPECT_EQ(mobilizer_->get_position(*context_), position_value);
 
+  // Set mobilizer orientation using a rotation matrix.
   const RotationMatrixd R_WB(RollPitchYawd(M_PI / 5, -M_PI / 7, M_PI / 3));
   const Quaterniond Q_WB = R_WB.ToQuaternion();
-  mobilizer_->SetFromRotationMatrix(context_.get(), R_WB.matrix());
+  mobilizer_->SetFromRotationMatrix(context_.get(), R_WB);
   EXPECT_TRUE(CompareMatrices(mobilizer_->get_quaternion(*context_).coeffs(),
-                              Q_WB.coeffs(),
-                              kTolerance, MatrixCompareType::relative));
+                            Q_WB.coeffs(),
+                            kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {

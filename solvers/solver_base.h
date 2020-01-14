@@ -25,12 +25,12 @@ class SolverBase : public SolverInterface {
   /// return value instead of an output argument.
   MathematicalProgramResult Solve(
       const MathematicalProgram& prog,
-      const optional<Eigen::VectorXd>& initial_guess,
-      const optional<SolverOptions>& solver_options) const;
+      const std::optional<Eigen::VectorXd>& initial_guess,
+      const std::optional<SolverOptions>& solver_options) const;
 
   // Implement the SolverInterface methods.
-  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-             const optional<SolverOptions>&, MathematicalProgramResult*) const
+  void Solve(const MathematicalProgram&, const std::optional<Eigen::VectorXd>&,
+      const std::optional<SolverOptions>&, MathematicalProgramResult*) const
       override;
   bool available() const override;
   SolverId solver_id() const override;

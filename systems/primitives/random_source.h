@@ -1,9 +1,9 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/random.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -65,7 +65,7 @@ namespace systems {
 /// @see @ref stochastic_systems
 ///
 /// @ingroup primitive_systems
-class RandomSource : public LeafSystem<double> {
+class RandomSource final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
 
@@ -89,11 +89,11 @@ class RandomSource : public LeafSystem<double> {
 
   /// Gets this system's fixed random seed (or else nullopt when the seed is
   /// not fixed).  Refer to the class overview documentation for details.
-  optional<Seed> get_fixed_seed() const { return fixed_seed_; }
+  std::optional<Seed> get_fixed_seed() const { return fixed_seed_; }
 
   /// Sets (or clears) this system's fixed random seed.  Refer to the class
   /// overview documentation for details.
-  void set_fixed_seed(const optional<Seed>& seed) { fixed_seed_ = seed; }
+  void set_fixed_seed(const std::optional<Seed>& seed) { fixed_seed_ = seed; }
 
  private:
   void SetDefaultState(const Context<double>&, State<double>*) const final;
@@ -104,7 +104,7 @@ class RandomSource : public LeafSystem<double> {
 
   const RandomDistribution distribution_;
   const Seed instance_seed_;
-  optional<Seed> fixed_seed_;
+  std::optional<Seed> fixed_seed_;
 };
 
 /// For each subsystem input port in @p builder that is (a) not yet connected
@@ -118,45 +118,6 @@ class RandomSource : public LeafSystem<double> {
 /// @see @ref stochastic_systems
 int AddRandomInputs(double sampling_interval_sec,
                     DiagramBuilder<double>* builder);
-
-namespace internal {
-// TODO(jwnimmer-tri) Once this class disappears, update RandomSource to be
-// declared final.
-/// (Deprecated.) A RandomSource with a compile-time RandomDistribution.
-template <RandomDistribution distribution>
-class RandomSourceWithDistribution final : public RandomSource {
- public:
-  RandomSourceWithDistribution(int num_outputs, double sampling_interval_sec)
-      : RandomSource(distribution, num_outputs, sampling_interval_sec) {}
-};
-}  // namespace internal
-
-/// (Deprecated.) Generates uniformly distributed random numbers in the
-/// interval [0.0, 1.0).
-/// @see RandomSource
-using UniformRandomSource
-    DRAKE_DEPRECATED("2019-10-01",
-        "Use primitives::RandomSource(kUniform, ...) instead of "
-        "primitives::UniformRandomSource.")
-    = internal::RandomSourceWithDistribution<RandomDistribution::kUniform>;
-
-/// (Deprecated.) Generates normally distributed random numbers with mean zero
-/// and unit covariance.
-/// @see RandomSource
-using GaussianRandomSource
-    DRAKE_DEPRECATED("2019-10-01",
-        "Use primitives::RandomSource(kGaussian, ...) instead of "
-        "primitives::GaussianRandomSource.")
-    = internal::RandomSourceWithDistribution<RandomDistribution::kGaussian>;
-
-/// (Deprecated.) Generates exponentially distributed random numbers with mean,
-/// standard deviation, and scale parameter (aka 1/λ) set to one.
-/// @see RandomSource
-using ExponentialRandomSource
-    DRAKE_DEPRECATED("2019-10-01",
-        "Use primitives::RandomSource(kExponential, ...) instead of "
-        "primitives::ExponentialRandomSource.")
-    = internal::RandomSourceWithDistribution<RandomDistribution::kExponential>;
 
 }  // namespace systems
 }  // namespace drake

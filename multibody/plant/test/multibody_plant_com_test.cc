@@ -16,11 +16,11 @@ namespace multibody {
 namespace {
 
 GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, GetCenterOfMassPosition) {
-  MultibodyPlant<double> plant_;
-  plant_.Finalize();
-  auto context_ = plant_.CreateDefaultContext();
+  MultibodyPlant<double> plant(0.0);
+  plant.Finalize();
+  auto context_ = plant.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_.CalcCenterOfMassPosition(*context_), std::runtime_error,
+      plant.CalcCenterOfMassPosition(*context_), std::runtime_error,
       "CalcCenterOfMassPosition\\(\\): this MultibodyPlant contains only "
       "world_body\\(\\) so its center of mass is undefined.");
 }
@@ -75,7 +75,7 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   std::unique_ptr<systems::Context<double>> context_;
   ModelInstanceIndex triangle_instance_;
   ModelInstanceIndex sphere_instance_;

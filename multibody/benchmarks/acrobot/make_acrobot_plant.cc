@@ -20,7 +20,7 @@ using drake::math::RigidTransformd;
 std::unique_ptr<MultibodyPlant<double>>
 MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
                  SceneGraph<double>* scene_graph) {
-  auto plant = std::make_unique<MultibodyPlant<double>>();
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
 
   // COM's positions in each link (L1/L2) frame:
   // Frame L1's origin is located at the shoulder outboard frame.
@@ -71,9 +71,9 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
-      plant->world_body(), nullopt,
+      plant->world_body(), std::nullopt,
       /* Shoulder outboard frame So IS frame L1. */
-      link1, nullopt,
+      link1, std::nullopt,
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
   // Pose of the elbow inboard frame Ei in Link 1's frame.
@@ -84,7 +84,7 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
       X_link1_Ei,
       link2,
       /* Elbow outboard frame Eo IS frame L2 for link 2. */
-      optional<RigidTransformd>{},  // `nullopt` is ambiguous
+      std::optional<RigidTransformd>{},  // `nullopt` is ambiguous
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
   // Add acrobot's actuator at the elbow joint.

@@ -50,7 +50,7 @@ GeometryId AddRigidBody(MultibodyPlant<double>* plant,
 }
 
 GTEST_TEST(HydroelasticEngine, CombineSoftAndRigidMaterialProperties) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
@@ -74,7 +74,7 @@ GTEST_TEST(HydroelasticEngine, CombineSoftAndRigidMaterialProperties) {
 }
 
 GTEST_TEST(HydroelasticEngine, CombineSoftAndSoftMaterialProperties) {
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
@@ -112,7 +112,7 @@ class SphereVsPlaneTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/hydroelastics/test/sphere_vs_plane.sdf");
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
     Parser(plant_).AddModelFromFile(full_name);
 
     // Retrieve bodies and geometry ids.
@@ -130,7 +130,7 @@ class SphereVsPlaneTest : public ::testing::Test {
     diagram_ = builder.Build();
     // Sanity check on the availability of the optional source id before using
     // it.
-    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
+    DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
 
     MakeNewContext();
 
@@ -195,10 +195,10 @@ TEST_F(SphereVsPlaneTest, RespectsCollisionFilter) {
   EXPECT_EQ(engine_->ComputeContactSurfaces(*query_object_).size(), 1u);
 
   // Add filter to exclude collisions between the ground and the sphere.
-  optional<geometry::FrameId> ground_id =
+  std::optional<geometry::FrameId> ground_id =
       plant_->GetBodyFrameIdIfExists(ground_->index());
   ASSERT_TRUE(ground_id.has_value());
-  optional<geometry::FrameId> sphere_id =
+  std::optional<geometry::FrameId> sphere_id =
       plant_->GetBodyFrameIdIfExists(sphere_->index());
   ASSERT_TRUE(sphere_id.has_value());
   scene_graph_->ExcludeCollisionsBetween(context_.get(),
@@ -240,13 +240,6 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 
-  // TODO(edrumwri): This is the gradient of the strain field. It should be
-  // the gradient of the pressure field. Fix.
-  // The expected value of ∇hₘₙ, which we expect to point from N towards M.
-  const Vector3<double> expected_grad_h_MN_W =
-      surface.id_M() == sphere_geometry_id_ ? Vector3<double>(0.0, 0.0, 1.0)
-                                            : Vector3<double>(0.0, 0.0, -1.0);
-
   for (geometry::SurfaceVertexIndex v(0); v < mesh_G.num_vertices(); ++v) {
     // Position of a vertex V in the ground frame G.
     const Vector3d p_GV = mesh_G.vertex(v).r_MV();
@@ -260,10 +253,6 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
         std::sqrt(radius_ * radius_ - height_ * height_);
     const double radius = p_GV.norm();  // since z component is zero.
     EXPECT_LE(radius, surface_radius);
-
-    // We expect ∇hₘₙ to point from N towards M.
-    const Vector3<double> grad_h_MN_W = surface.EvaluateGrad_h_MN_W(v);
-    EXPECT_TRUE(CompareMatrices(grad_h_MN_W, expected_grad_h_MN_W, kTolerance));
   }
 
   // The number of models should not change on further queries.

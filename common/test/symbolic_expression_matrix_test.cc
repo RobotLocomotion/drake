@@ -433,7 +433,7 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixVar) {
   EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_var_1_));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, Evaluate) {
+TEST_F(SymbolicExpressionMatrixTest, EvaluateDenseMatrix) {
   const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
 
   // 1. A_ is a fixed-size matrix (3 x 2) = [x  1]
@@ -469,6 +469,21 @@ TEST_F(SymbolicExpressionMatrixTest, Evaluate) {
   // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(Evaluate(C, env), std::runtime_error,
                               "NaN is detected during Symbolic computation.");
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EvaluateSparseMatrix) {
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
+
+  Eigen::SparseMatrix<Expression> A{3, 2};
+  A.insert(0, 0) = x_ + y_;
+  A.insert(2, 1) = 3 + z_;
+
+  const Eigen::SparseMatrix<double> A_eval{Evaluate(A, env)};
+
+  EXPECT_EQ(A.nonZeros(), A_eval.nonZeros());
+
+  EXPECT_EQ(A.coeff(0, 0).Evaluate(env), A_eval.coeff(0, 0));
+  EXPECT_EQ(A.coeff(2, 1).Evaluate(env), A_eval.coeff(2, 1));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {
@@ -535,6 +550,17 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
   };
   EXPECT_TRUE(CompareMatrices(Substitute(M.inverse(), subst),
                               Substitute(M, subst).inverse(), 1e-10));
+}
+
+// We found that the following example could leak memory. This test makes sure
+// that we provide a correct work-around. FYI, `--config asan` option is
+// required to see failures from this test case.
+//
+// See https://github.com/RobotLocomotion/drake/issues/12453 for details.
+TEST_F(SymbolicExpressionMatrixTest, SparseMatrixMultiplicationNoMemoryLeak) {
+  Eigen::SparseMatrix<Expression> M1(2, 2);
+  Eigen::SparseMatrix<Expression> M2(2, 2);
+  (M1 * M2).eval();
 }
 
 }  // namespace

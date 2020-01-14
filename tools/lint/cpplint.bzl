@@ -16,11 +16,7 @@ _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .inc
 """.split("\n") if len(source_ext)]
 
-# Do not lint generated protocol buffer files.
-_IGNORE_EXTENSIONS = [
-    ".pb.h",
-    ".pb.cc",
-]
+_IGNORE_EXTENSIONS = []
 
 # The cpplint.py command-line argument so it doesn't skip our files!
 _EXTENSIONS_ARGS = ["--extensions=" + ",".join(

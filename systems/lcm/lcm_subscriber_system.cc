@@ -153,7 +153,7 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
 }
 
 void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
-  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel_);
+  DRAKE_LOGGER_TRACE("Receiving LCM {} message", channel_);
   DRAKE_DEMAND(magic_number_ == kMagic);
 
   const uint8_t* const rbuf_begin = static_cast<const uint8_t*>(buffer);

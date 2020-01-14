@@ -9,10 +9,6 @@ the "-undefined dynamic_lookup" linker flag, however in the rare cases that
 this would cause an undefined symbol error, a :python_direct_link target is
 provided. On Linux, these targets are identical.
 
-The Python distribution is determined by
-`--action_env=DRAKE_PYTHON_BIN_PATH=<bin>`, which should match Bazel's version
-(via `--python_path=<bin>`).
-
 Example:
     WORKSPACE:
         load("@drake//tools/workspace/python:repository.bzl", "python_repository")  # noqa
@@ -29,22 +25,33 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
+    linux_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:linux platform.
+        Defaults to the value of LINUX_INTERPRETER_PATH in
+        //tools/py_toolchain:interpreter_paths.bzl.
+    macos_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:osx (macOS)
+        platform. Defaults to the value of MACOS_INTERPRETER_PATH in
+        //tools/py_toolchain:interpreter_paths.bzl.
 """
 
+load(
+    "@drake//tools/py_toolchain:interpreter_paths.bzl",
+    "LINUX_INTERPRETER_PATH",
+    "MACOS_INTERPRETER_PATH",
+)
 load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 # The supported Python versions should match those listed in both the root
-# CMakeLists.txt and doc/developers.rst. The first version is the default.
+# CMakeLists.txt and doc/developers.rst.
 _VERSION_SUPPORT_MATRIX = {
-    "ubuntu:16.04": ["2.7"],
-    "ubuntu:18.04": ["3.6", "2.7"],
-    "macos:10.13": ["3.7", "2.7"],
-    "macos:10.14": ["3.7", "2.7"],
+    "ubuntu:18.04": ["3.6"],
+    "macos": ["3.7"],
 }
 
-def _repository_python_info(repository_ctx):
-    # Using `DRAKE_PYTHON_BIN_PATH` from the environment, determine:
+def repository_python_info(repository_ctx):
+    # Given the operating system, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
     # - `site_packages_relpath` - relative to base of FHS
@@ -55,31 +62,20 @@ def _repository_python_info(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
     if os_result.is_macos:
-        os_key = os_result.distribution + ":" + os_result.macos_release
+        os_key = os_result.distribution
     else:
         os_key = os_result.distribution + ":" + os_result.ubuntu_release
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
-    # Bazel does not easily expose its --python_path to repository rules
-    # (analysis phase). We must use a workaround as Tensorflow does in
-    # `python_configure.bzl` (https://git.io/fx4Pp). We check for consistency
-    # during the build (execution) phase using `bazel_python_is_valid`.
-    python_path = repository_ctx.os.environ.get("DRAKE_PYTHON_BIN_PATH")
-    if python_path == None:
-        # TODO(eric.cousineau): Make this an error once `.bazelrc` stops using
-        # `try-import` for configuration.
-        if os_result.is_macos:
-            python_path = "/usr/local/bin/python{}".format(
-                versions_supported[0],
-            )
-        else:
-            python_path = "/usr/bin/python{}".format(versions_supported[0])
-    if not python_path.startswith("/"):
-        fail("`--action_env=DRAKE_PYTHON_BIN_PATH` must provide an " +
-             "absolute path.")
-    if which(repository_ctx, python_path) == None:
-        fail("Executable does not exist: {}".format(python_path))
-    python = str(python_path)
+    if os_result.is_macos:
+        # This value must match the interpreter_path in
+        # @drake//tools/py_toolchain:macos_py3_runtime
+        python = repository_ctx.attr.macos_interpreter_path
+    else:
+        # This value must match the interpreter_path in
+        # @drake//tools/py_toolchain:linux_py3_runtime
+        python = repository_ctx.attr.linux_interpreter_path
+
     version = execute_or_fail(
         repository_ctx,
         [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
@@ -110,15 +106,16 @@ def _repository_python_info(repository_ctx):
     if which(repository_ctx, python_config) == None:
         fail((
             "Cannot find corresponding config executable: {}\n" +
-            "  For interpreter: {}"
-        ).format(python_config, python_path))
+            "  From interpreter: {}"
+        ).format(python_config, python))
 
     # Warn if we do not the correct platform support.
     if version not in versions_supported:
         print((
             "\n\nWARNING: Python {} is not a supported / tested version for " +
-            "use with Drake.\n  Supported versions on {}: {}\n\n"
-        ).format(version, os_key, versions_supported))
+            "use with Drake.\n  Supported versions on {}: {}\n  " +
+            "From interpreter: {}\n\n"
+        ).format(version, os_key, versions_supported, python))
 
     site_packages_relpath = "lib/python{}/site-packages".format(version)
     return struct(
@@ -132,7 +129,7 @@ def _repository_python_info(repository_ctx):
 
 def _impl(repository_ctx):
     # Repository implementation.
-    py_info = _repository_python_info(
+    py_info = repository_python_info(
         repository_ctx,
     )
 
@@ -197,15 +194,6 @@ PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
         content = skylark_content,
         executable = False,
     )
-    repository_ctx.symlink(
-        Label("@drake//tools/workspace/python:check_bazel_python.py"),
-        "_check_bazel_python.py",
-    )
-    repository_ctx.file(
-        "_bazel_python_actionenv.py",
-        content = skylark_content,
-        executable = False,
-    )
 
     build_content = """# -*- python -*-
 
@@ -224,9 +212,6 @@ headers = glob(
 
 cc_library(
     name = "python_headers",
-    # Depend on a Python configuration sanity check for anything that wishes to
-    # generate bindings. See `genrule` below for more information.
-    data = [":bazel_python_is_valid"],
     hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
@@ -245,28 +230,6 @@ cc_library(
     deps = [":python_headers"],
     visibility = ["//visibility:public"],
 )
-
-# See `genrule` below.
-py_binary(
-    name = "check_bazel_python",
-    main = "_check_bazel_python.py",
-    srcs = [
-        "_check_bazel_python.py",
-        "_bazel_python_actionenv.py",
-    ],
-    imports = ["."],
-    visibility = ["//visibility:private"],
-)
-
-# Place this test as a `genrule` to (a) test at build time and (b) be able to
-# access Bazel's Python interpreter from a `py_binary` used in `tools`.
-genrule(
-    name = "bazel_python_is_valid",
-    outs = [".bazel_python_is_valid"],
-    cmd = "$(location :check_bazel_python) > $@",
-    tools = [":check_bazel_python"],
-    visibility = ["//visibility:private"],
-)
 """.format(includes, linkopts, linkopts_direct_link)
 
     repository_ctx.file(
@@ -275,10 +238,19 @@ genrule(
         executable = False,
     )
 
+interpreter_path_attrs = {
+    # The value of this argument should match the interpreter_path for
+    # the py_runtime in the registered Python toolchain on the
+    # @platforms//os:linux platform.
+    "linux_interpreter_path": attr.string(default = LINUX_INTERPRETER_PATH),
+    # The value of this argument should match the interpreter_path for
+    # the py_runtime in the registered Python toolchain on the
+    # @platforms//os:osx platform.
+    "macos_interpreter_path": attr.string(default = MACOS_INTERPRETER_PATH),
+}
+
 python_repository = repository_rule(
     _impl,
-    environ = [
-        "DRAKE_PYTHON_BIN_PATH",
-    ],
+    attrs = interpreter_path_attrs,
     local = True,
 )

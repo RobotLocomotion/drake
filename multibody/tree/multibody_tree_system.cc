@@ -21,14 +21,14 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
     std::unique_ptr<MultibodyTree<T>> tree,
     bool is_discrete)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           false,  // Null tree is not allowed here.
           std::move(tree), is_discrete) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           true,  // Null tree is OK.
           nullptr, is_discrete) {}
 
@@ -46,7 +46,7 @@ template <typename T>
 template <typename U>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<multibody::internal::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<MultibodyTreeSystem>{},
           false,  // Null tree isn't allowed (or possible).
           other.internal_tree().template CloneToScalar<T>(),
           other.is_discrete()) {}
@@ -166,9 +166,9 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.velocity_kinematics =
       velocity_kinematics_cache_entry.cache_index();
 
-  // Allocate cache entry to store b_Bo_W(q, v) for each body.
+  // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
   auto& dynamic_bias_cache_entry = this->DeclareCacheEntry(
-      std::string("dynamic bias (b_Bo_W)"),
+      std::string("dynamic bias (Fb_Bo_W)"),
       [tree = tree_.get()]() {
         return AbstractValue::Make(
             std::vector<SpatialForce<T>>(tree->num_bodies()));
@@ -180,7 +180,7 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
         tree->CalcDynamicBiasCache(context, &dynamic_bias_cache);
       },
-      // The computation of b_Bo_W(q, v) requires updated values of M_Bo_W(q)
+      // The computation of Fb_Bo_W(q, v) requires updated values of M_Bo_W(q)
       // and V_WB(q, v). We make these prerequisites explicit.
       // Another alternative would be to state the dependence on q and v.
       // However this option is not optimal until #9171 gets resolved.
@@ -201,13 +201,28 @@ void MultibodyTreeSystem<T>::Finalize() {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& H_PB_W_cache =
             cache_value->get_mutable_value<std::vector<Vector6<T>>>();
-        tree->CalcAcrossNodeGeometricJacobianExpressedInWorld(
+        tree->CalcAcrossNodeJacobianWrtVExpressedInWorld(
             context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },
       {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
   cache_indexes_.across_node_jacobians = H_PB_W_cache_entry.cache_index();
 
-  // TODO(sherm1) Allocate articulated body inertia cache.
+  // Allocate articulated body inertia cache.
+  auto& abi_cache_entry = this->DeclareCacheEntry(
+      std::string("Articulated Body Inertia"),
+      [tree = tree_.get()]() {
+        return AbstractValue::Make(
+            ArticulatedBodyInertiaCache<T>(tree->get_topology()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& abi_cache =
+            cache_value->get_mutable_value<ArticulatedBodyInertiaCache<T>>();
+        tree->CalcArticulatedBodyInertiaCache(context, &abi_cache);
+      },
+      {this->configuration_ticket()});
+  cache_indexes_.abi_cache_index = abi_cache_entry.cache_index();
 
   already_finalized_ = true;
 }

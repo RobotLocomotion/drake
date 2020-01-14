@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -17,7 +17,7 @@ namespace multibody {
 /// @anchor model_instance
 /// Model instance information for multibody trees.
 ///
-/// A MultiBodyTree is composed of a number of MultibodyTreeElement items.  In
+/// A MultiBodyTree is composed of a number of MultibodyElement items.  In
 /// more complex trees, these items will be loaded from multiple models
 /// (e.g. robot arm, attached gripper, free bodies being manipulated).  Each
 /// model may have a different controller or observer, so the ability to view
@@ -34,7 +34,7 @@ namespace multibody {
 /// explicitly specified), as model parsers should handle creating model
 /// elements as needed.
 ///
-/// For different types of MultibodyTreeElement, the model instance is
+/// For different types of MultibodyElement, the model instance is
 /// sometimes specified explicitly, and sometimes inferred when the
 /// element is created.  The current convention is:
 ///
@@ -62,12 +62,12 @@ namespace internal {
 /// - symbolic::Expression
 template <typename T>
 class ModelInstance :
-      public MultibodyTreeElement<ModelInstance<T>, ModelInstanceIndex> {
+      public MultibodyElement<ModelInstance, T, ModelInstanceIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance)
 
   explicit ModelInstance(ModelInstanceIndex index)
-      : MultibodyTreeElement<ModelInstance<T>, ModelInstanceIndex>(index) {}
+      : MultibodyElement<ModelInstance, T, ModelInstanceIndex>(index) {}
 
   int num_positions() const { return num_positions_; }
   int num_velocities() const { return num_velocities_; }
@@ -84,6 +84,13 @@ class ModelInstance :
     num_actuated_dofs_ += joint_actuator->joint().num_velocities();
     joint_actuators_.push_back(joint_actuator);
   }
+
+  /// Returns an Eigen vector of the actuation for `this` model instance from a
+  /// vector `u` of actuator forces for the entire model.
+  /// @throws std::logic_error if `u` is not of size
+  ///         MultibodyTree::num_actuators().
+  VectorX<T> GetActuationFromArray(
+      const Eigen::Ref<const VectorX<T>>& u) const;
 
   /// Given the actuation values `u_instance` for all actuators in `this` model
   /// instance, this method sets the portion of the actuation vector `u` (which

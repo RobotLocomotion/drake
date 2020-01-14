@@ -17,6 +17,7 @@ Example:
         meshcat_python_repository(name = "foo", mirrors = DEFAULT_MIRRORS)
 
     BUILD:
+        load("//tools/skylark:py.bzl", "py_library")
         py_library(
             name = "foobar",
             deps = ["@foo//:meshcat"],
@@ -41,9 +42,9 @@ def _impl(repository_ctx):
     github_download_and_extract(
         repository_ctx,
         "rdeits/meshcat-python",
-        "aa3865143120f5ace8e62aab71d825e33674d277",
+        "566ffa59000dc9403eeb72c5b96453eb0f863b08",
         repository_ctx.attr.mirrors,
-        sha256 = "e35bdcaf54cc5226db1cab15d5a34ebbeebe829542d00e4842ba3c956d9d9ade",  # noqa
+        sha256 = "93834fa09b738cd0baa2f7c2b2b13d6a3a64afd288b677ae0282e8c8a3f6e323",  # noqa
     )
 
     repository_ctx.symlink(

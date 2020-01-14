@@ -20,7 +20,6 @@ def _python_lint(name_prefix, files, ignore, disallow_executable):
         data = files,
         args = ignore_args + locations,
         main = "@pycodestyle//:pycodestyle.py",
-        srcs_version = "PY2AND3",
         tags = ["pycodestyle", "lint"],
     )
 
@@ -59,6 +58,7 @@ def python_lint(
     Example:
         BUILD:
             load("//tools/lint:python_lint.bzl", "python_lint")
+            load("//tools/skylark:py.bzl", "py_library")
 
             py_library(
                 name = "foo",

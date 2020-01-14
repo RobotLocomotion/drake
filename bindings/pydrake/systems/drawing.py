@@ -1,9 +1,5 @@
 """
 Provides general visualization utilities. This is NOT related to `rendering`.
-
-Note:
-    This is an optional module, dependent on `pydot` and `matplotlib` being
-    installed.
 """
 
 from tempfile import NamedTemporaryFile

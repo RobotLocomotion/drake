@@ -47,7 +47,8 @@ class ContextBase : public internal::ContextMessageInterface {
   ContextBase& operator=(ContextBase&&) = delete;
   /** @} */
 
-  /** Creates an identical copy of the concrete context object. */
+  /** Creates an identical copy of the concrete context object.
+  @throws std::logic_error if this is not the root context. */
   std::unique_ptr<ContextBase> Clone() const;
 
   ~ContextBase() override;
@@ -123,6 +124,9 @@ class ContextBase : public internal::ContextMessageInterface {
     return system_name_.empty() ? internal::SystemMessageInterface::no_name()
                                 : system_name_;
   }
+
+  /** (Internal) Gets the id of the subsystem that created this Context. */
+  uint64_t get_system_id() const { return system_id_; }
 
   /** Returns the full pathname of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
@@ -261,6 +265,9 @@ class ContextBase : public internal::ContextMessageInterface {
     DRAKE_ASSERT(context->current_change_event_ >= 0);
     return ++context->current_change_event_;
   }
+
+  /** Returns true if this context has no parent. */
+  bool is_root_context() const { return parent_ == nullptr; }
 
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
@@ -437,9 +444,6 @@ class ContextBase : public internal::ContextMessageInterface {
   }
   //@}
 
-  /** Returns true if this context has no parent. */
-  bool is_root_context() const { return parent_ == nullptr; }
-
   /** (Internal use only) Returns true if this context provides resources for
   its own individual state variables or parameters. That means those variables
   or parameters were declared by this context's corresponding System. Currently
@@ -589,6 +593,9 @@ class ContextBase : public internal::ContextMessageInterface {
   // Records the name of the system whose context this is.
   void set_system_name(const std::string& name) { system_name_ = name; }
 
+  // Records the id of the system that this context was created by.
+  void set_system_id(uint64_t id) { system_id_ = id; }
+
   // Fixes the input port at `index` to the internal value source `port_value`.
   // If the port wasn't previously fixed, assigns a ticket and tracker for the
   // `port_value`, then subscribes the input port to the source's tracker.
@@ -654,6 +661,10 @@ class ContextBase : public internal::ContextMessageInterface {
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;
 
+  // Unique ID of the subsystem whose subcontext this is. The default value
+  // (zero) should be treated as uninitialized and invalid.
+  uint64_t system_id_{0};
+
   // Used to validate that System-derived classes didn't forget to invoke the
   // SystemBase method that properly sets up the ContextBase.
   bool is_context_base_initialized_{false};
@@ -676,6 +687,10 @@ class SystemBaseContextBaseAttorney {
   static void set_system_name(ContextBase* context, const std::string& name) {
     DRAKE_DEMAND(context != nullptr);
     context->set_system_name(name);
+  }
+  static void set_system_id(ContextBase* context, uint64_t id) {
+    DRAKE_DEMAND(context != nullptr);
+    context->set_system_id(id);
   }
   static const ContextBase* get_parent_base(const ContextBase& context) {
     return context.get_parent_base();

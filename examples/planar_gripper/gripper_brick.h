@@ -91,11 +91,11 @@ class GripperBrickHelper {
         break;
       }
       case Finger::kFinger2: {
-        base_theta = M_PI;
+        base_theta = -1.0 / 3 * M_PI;
         break;
       }
       case Finger::kFinger3: {
-        base_theta = -1.0 / 3 * M_PI;
+        base_theta = M_PI;
         break;
       }
       default: { throw std::runtime_error("Unknown finger."); }

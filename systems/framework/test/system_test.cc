@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/random.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -50,7 +51,7 @@ class TestSystem : public System<double> {
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
-    return nullptr;
+    return std::make_unique<ContinuousState<double>>();
   }
 
   std::unique_ptr<CompositeEventCollection<double>>
@@ -248,21 +249,35 @@ class TestSystem : public System<double> {
 
 class SystemTest : public ::testing::Test {
  protected:
+  void SetUp() override { context_ = system_.CreateDefaultContext(); }
+
   TestSystem system_;
-  LeafContext<double> context_;
+  std::unique_ptr<Context<double>> context_;
 };
+
+TEST_F(SystemTest, ContextBelongsWithSystem) {
+  TestSystem system2;
+
+  // These just uses a couple of arbitrary methods to test that a Context not
+  // created by a System throws the appropriate exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(system2.Publish(*context_), std::logic_error,
+                              "Context was not created for.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system2.SetDefaultContext(context_.get()),
+                              std::logic_error,
+                              "Context was not created for.*");
+}
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);
 
-  system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2);
+  system_.MapVelocityToQDot(*context_, *state_vec1, &state_vec2);
   EXPECT_EQ(1.0, state_vec2[0]);
   EXPECT_EQ(2.0, state_vec2[1]);
   EXPECT_EQ(3.0, state_vec2[2]);
 
   // Test Eigen specialized function specially.
-  system_.MapVelocityToQDot(context_, state_vec1->CopyToVector(), &state_vec2);
+  system_.MapVelocityToQDot(*context_, state_vec1->CopyToVector(), &state_vec2);
   EXPECT_EQ(1.0, state_vec2[0]);
   EXPECT_EQ(2.0, state_vec2[1]);
   EXPECT_EQ(3.0, state_vec2[2]);
@@ -272,13 +287,13 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);
 
-  system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2);
+  system_.MapQDotToVelocity(*context_, *state_vec1, &state_vec2);
   EXPECT_EQ(1.0, state_vec2[0]);
   EXPECT_EQ(2.0, state_vec2[1]);
   EXPECT_EQ(3.0, state_vec2[2]);
 
   // Test Eigen specialized function specially.
-  system_.MapQDotToVelocity(context_, state_vec1->CopyToVector(), &state_vec2);
+  system_.MapQDotToVelocity(*context_, state_vec1->CopyToVector(), &state_vec2);
   EXPECT_EQ(1.0, state_vec2[0]);
   EXPECT_EQ(2.0, state_vec2[1]);
   EXPECT_EQ(3.0, state_vec2[2]);
@@ -288,7 +303,7 @@ TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize + 1);
 
-  EXPECT_THROW(system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2),
+  EXPECT_THROW(system_.MapQDotToVelocity(*context_, *state_vec1, &state_vec2),
                std::runtime_error);
 }
 
@@ -296,16 +311,16 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize + 1);
 
-  EXPECT_THROW(system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2),
+  EXPECT_THROW(system_.MapVelocityToQDot(*context_, *state_vec1, &state_vec2),
                std::runtime_error);
 }
 
 // Tests that the default DoPublish is invoked when no other handler is
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscretePublish) {
-  context_.SetTime(5.0);
+  context_->SetTime(5.0);
   auto event_info = system_.AllocateCompositeEventCollection();
-  system_.CalcNextUpdateTime(context_, event_info.get());
+  system_.CalcNextUpdateTime(*context_, event_info.get());
   const auto& events =
       dynamic_cast<const LeafCompositeEventCollection<double>*>(
           event_info.get())->get_publish_events().get_events();
@@ -313,7 +328,7 @@ TEST_F(SystemTest, DiscretePublish) {
   EXPECT_EQ(events.front()->get_trigger_type(),
             TriggerType::kPeriodic);
 
-  system_.Publish(context_, event_info->get_publish_events());
+  system_.Publish(*context_, event_info->get_publish_events());
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
@@ -321,15 +336,15 @@ TEST_F(SystemTest, DiscretePublish) {
 // handler is
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
-  context_.SetTime(15.0);
+  context_->SetTime(15.0);
 
   auto event_info = system_.AllocateCompositeEventCollection();
-  system_.CalcNextUpdateTime(context_, event_info.get());
+  system_.CalcNextUpdateTime(*context_, event_info.get());
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
   system_.CalcDiscreteVariableUpdates(
-      context_, event_info->get_discrete_update_events(), update.get());
+      *context_, event_info->get_discrete_update_events(), update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }
 
@@ -436,15 +451,15 @@ TEST_F(SystemTest, SystemConstraintTest) {
   const double kInf = std::numeric_limits<double>::infinity();
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-          &system_, calc, SystemConstraintBounds(Vector1d(0), nullopt),
+          &system_, calc, SystemConstraintBounds(Vector1d(0), std::nullopt),
           "test"));
   EXPECT_EQ(test_constraint, 0);
 
-  EXPECT_NO_THROW(system_.get_constraint(test_constraint));
+  DRAKE_EXPECT_NO_THROW(system_.get_constraint(test_constraint));
   EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
 
   const double tol = 1e-6;
-  EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(context_, tol));
+  EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
   ContextConstraintCalc<double> calc_false = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
@@ -453,7 +468,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
   system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
       &system_, calc_false, SystemConstraintBounds(Vector1d(0), Vector1d(kInf)),
       "bad constraint"));
-  EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(context_, tol));
+  EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
 }
 
 // Tests GetMemoryObjectName.
@@ -704,7 +719,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   ASSERT_EQ(system_.num_input_ports(), 4);
 
   // Sanity check that this works with a good port number.
-  EXPECT_NO_THROW(system_.get_input_port(1));
+  DRAKE_EXPECT_NO_THROW(system_.get_input_port(1));
 
   // Try some illegal port numbers.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -753,13 +768,15 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   // Assign values to all ports. All but port 0 are BasicVector ports.
   system_.AllocateFixedInputs(context_.get());
 
-  EXPECT_NO_THROW(system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
+  DRAKE_EXPECT_NO_THROW(
+      system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput<WrongVector>(*context_, 2), std::logic_error,
       ".*EvalVectorInput.*expected.*WrongVector"
           ".*input port.*2.*actual.*MyVector.*");
 
-  EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
+  DRAKE_EXPECT_NO_THROW(
+      system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, 1), std::logic_error,
       ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*MyVector.*");
@@ -767,7 +784,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   // Now induce errors that only apply to abstract-valued input ports.
 
   EXPECT_EQ(*system_.EvalInputValue<std::string>(*context_, 0), "");
-  EXPECT_NO_THROW(system_.EvalAbstractInput(*context_, 0));
+  DRAKE_EXPECT_NO_THROW(system_.EvalAbstractInput(*context_, 0));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput(*context_, 0), std::logic_error,
       ".*EvalVectorInput.*vector port required.*input port.*0.*"

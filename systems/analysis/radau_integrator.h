@@ -94,12 +94,12 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
-    return num_err_est_iter_factorizations_;
+    return num_err_est_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
       const final {
-    return num_err_est_function_evaluations_;
+    return num_err_est_jacobian_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_newton_raphson_iterations()
@@ -395,8 +395,7 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
   // is at least some change to the state, no matter how small, on a
   // non-stationary system.
   if (iteration > 0 && this->IsUpdateZero(xtplus, dx)) {
-    SPDLOG_DEBUG(
-        drake::log(), "magnitude of state update indicates convergence");
+    DRAKE_LOGGER_DEBUG("magnitude of state update indicates convergence");
     return ConvergenceStatus::kConverged;
   }
 
@@ -410,12 +409,12 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
     // theta to these alternative values for minimizing convergence failures.
     const T theta = dx_norm / last_dx_norm;
     const T eta = theta / (1 - theta);
-    SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
+    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
                  iteration, theta, eta);
 
     // Look for divergence.
     if (theta > 1) {
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected");
+      DRAKE_LOGGER_DEBUG("Newton-Raphson divergence detected");
       return ConvergenceStatus::kDiverged;
     }
 
@@ -426,7 +425,7 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
     const double kappa = 0.05;
     const double k_dot_tol = kappa * this->get_accuracy_in_use();
     if (eta * dx_norm < k_dot_tol) {
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
+      DRAKE_LOGGER_DEBUG("Newton-Raphson converged; η = {}", eta);
       return ConvergenceStatus::kConverged;
     }
   }
@@ -452,6 +451,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   using std::max;
   using std::min;
 
+  // Compute the time at the end of the step.
+  const T tf = t0 + h;
+
   // Verify the trial number is valid.
   DRAKE_ASSERT(1 <= trial && trial <= 4);
 
@@ -464,7 +466,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // Verify xtplus
   DRAKE_ASSERT(xtplus && xtplus->size() == state_dim);
 
-  SPDLOG_DEBUG(drake::log(), "StepRadau() entered for t={}, h={}, trial={}",
+  DRAKE_LOGGER_DEBUG("StepRadau() entered for t={}, h={}, trial={}",
                t0, h, trial);
 
   // TODO(edrumwri) Experiment with setting this as recommended in
@@ -473,6 +475,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // the corresponding xt+).
   Z_.setZero(state_dim * num_stages);
   *xtplus = xt0;
+  DRAKE_LOGGER_DEBUG("Starting state: {}", xtplus->transpose());
 
   // Set the iteration matrix construction method.
   auto construct_iteration_matrix = [this](const MatrixX<T>& J, const T& dt,
@@ -480,8 +483,17 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     ComputeRadauIterationMatrix(J, dt, this->A_, iteration_matrix);
   };
 
-  // Calculate Jacobian and iteration matrices (and factorizations), as needed.
-  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
+  // Calculate Jacobian and iteration matrices (and factorizations), as needed,
+  // around (t0, xt0). We do not do this calculation if full Newton is in use;
+  // the calculation will be performed at the beginning of the loop
+  // instead.
+
+  // TODO(edrumwri) Consider computing the Jacobian matrix around tf and/or
+  //                xtplus. This would give a better Jacobian, but would
+  //                complicate the logic, since the Jacobian would no longer
+  //                (necessarily) be fresh upon fallback to a smaller step size.
+  if (!this->get_use_full_newton() &&
+      !this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
       &iteration_matrix_radau_)) {
     return false;
   }
@@ -491,7 +503,10 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 
   // Do the Newton-Raphson iterations.
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
-    SPDLOG_DEBUG(drake::log(), "Newton-Raphson iteration {}", iter);
+    DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
+
+    this->FreshenMatricesIfFullNewton(
+        tf, *xtplus, h, construct_iteration_matrix, &iteration_matrix_radau_);
 
     // Update the number of Newton-Raphson iterations.
     ++num_nr_iterations_;
@@ -502,7 +517,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Compute the state update using (IV.8.4) in [Hairer, 1996], p. 119, i.e.:
     // Solve (I − hA⊗J) ΔZᵏ = h (A⊗I) F(Zᵏ) - Zᵏ for ΔZᵏ, where:
     // A_tp_eye ≡ (A⊗I) and (I − hA⊗J) is the iteration matrix.
-    SPDLOG_DEBUG(drake::log(), "residual: {}",
+    DRAKE_LOGGER_DEBUG("residual: {}",
         (A_tp_eye_ * (h * F_of_Z) - Z_).transpose());
     VectorX<T> dZ = iteration_matrix_radau_.Solve(
         A_tp_eye_ * (h * F_of_Z) - Z_);
@@ -527,7 +542,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     }
 
     dx_state_->SetFromVector(dx);
-    SPDLOG_DEBUG(drake::log(), "dx: {}", dx.transpose());
+    DRAKE_LOGGER_DEBUG("dx: {}", dx.transpose());
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
@@ -547,11 +562,13 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     last_dx_norm = dx_norm;
   }
 
-  SPDLOG_DEBUG(drake::log(), "StepRadau() convergence failed");
+  DRAKE_LOGGER_DEBUG("StepRadau() convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try; otherwise, the following code will recurse
-  // into this function again, and freshen computations as helpful.
+  // into this function again, and freshen computations as helpful.  Note that
+  // get_reuse() returns false if "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 
@@ -577,7 +594,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
     const VectorX<T>& radau_xtplus, VectorX<T>* xtplus) {
   using std::abs;
 
-  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoid(h={}) t={}",
+  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoid(h={}) t={}",
                h, t0);
 
   // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
@@ -644,41 +661,51 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   // O(h) accurate, depending on the number of stages) to the true solution and
   // hence should be an excellent starting point.
   *xtplus = radau_xtplus;
+  DRAKE_LOGGER_DEBUG("Starting state: {}", xtplus->transpose());
 
-  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() entered for t={}, "
+  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoidDetail() entered for t={}, "
       "h={}, trial={}", t0, h, trial);
 
   // Advance the context time; this means that all derivatives will be computed
-  // at t+dt.
+  // at t+h. Compare against StepRadau, which uses ComputeFofZ (which
+  // automatically updates the Context to the correct time and state).
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
-
-  // Evaluate the residual error using the current x(t+h).
-  VectorX<T> goutput = g();
 
   // Initialize the "last" state update norm; this will be used to detect
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
+  // TODO(edrumwri) Consider computing the Jacobian matrix around tf.
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
-  // Note that this method computes the Jacobian matrix around (tf, *xtplus),
-  // where *xtplus is the solution computed by the Radau method, whereas the
-  // Radau3 method computes it around (t0, xt0).
-  if (!this->MaybeFreshenMatrices(t0, *xtplus, h, trial,
-      ComputeImplicitTrapezoidIterationMatrix,
-      &iteration_matrix_implicit_trapezoid_)) {
+  // TODO(edrumwri) Consider computing the Jacobian matrix around xtplus. This
+  //                would give a better Jacobian, but would complicate the
+  //                logic, since the Jacobian would no longer (necessarily) be
+  //                fresh upon fallback to a smaller step size.
+  if (!this->get_use_full_newton() &&
+      !this->MaybeFreshenMatrices(t0, xt0, h, trial,
+                                  ComputeImplicitTrapezoidIterationMatrix,
+                                  &iteration_matrix_implicit_trapezoid_)) {
     return false;
   }
 
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
-    SPDLOG_DEBUG(drake::log(), "Newton-Raphson iteration {}", iter);
+    DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
     ++num_nr_iterations_;
+
+    this->FreshenMatricesIfFullNewton(tf, *xtplus, h,
+                                      ComputeImplicitTrapezoidIterationMatrix,
+                                      &iteration_matrix_implicit_trapezoid_);
+
+
+    // Evaluate the residual error using the current x(t+h).
+    VectorX<T> goutput = g();
 
     // Compute the state update using the equation A*x = -g(), where A is the
     // iteration matrix.
     // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dx = iteration_matrix_implicit_trapezoid_.Solve(-goutput);
-    SPDLOG_DEBUG(drake::log(), "dx: {}", dx.transpose());
+    DRAKE_LOGGER_DEBUG("dx: {}", dx.transpose());
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
@@ -697,16 +724,15 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
-
-    // Update the state in the context and compute g(xⁱ⁺¹).
-    goutput = g();
   }
 
-  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() convergence "
+  DRAKE_LOGGER_DEBUG("StepImplicitTrapezoidDetail() convergence "
       "failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
-  // is nothing else we can try.
+  // is nothing else we can try. Note that get_reuse() returns false if
+  // "full Newton-Raphson" mode is activated (see
+  // ImplicitIntegrator::get_use_full_newton()).
   if (!this->get_reuse())
     return false;
 
@@ -754,7 +780,7 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
 
   // Do the Radau step.
   if (!StepRadau(t0, h, xt0, xtplus_radau)) {
-    SPDLOG_DEBUG(drake::log(), "Radau approach did not converge for "
+    DRAKE_LOGGER_DEBUG("Radau approach did not converge for "
         "step size {}", h);
     return false;
   }
@@ -795,7 +821,7 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
         t0 + h, *xtplus_radau);
     return true;
   } else {
-    SPDLOG_DEBUG(drake::log(), "Implicit trapezoid approach FAILED with a step"
+    DRAKE_LOGGER_DEBUG("Implicit trapezoid approach FAILED with a step"
         "size that succeeded on Radau3.");
     return false;
   }
@@ -812,7 +838,7 @@ void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
   err_est_vec_ = err_est_vec_.cwiseAbs();
 
   // Compute and set the error estimate.
-  SPDLOG_DEBUG(drake::log(), "Error estimate: {}", err_est_vec_.transpose());
+  DRAKE_LOGGER_DEBUG("Error estimate: {}", err_est_vec_.transpose());
   this->get_mutable_error_estimate()->get_mutable_vector().
       SetFromVector(err_est_vec_);
 }
@@ -828,7 +854,7 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
 
   // Save the current time and state.
   const T t0 = context->get_time();
-  SPDLOG_DEBUG(drake::log(), "Radau DoStep(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG("Radau DoStep(h={}) t={}", h, t0);
 
   xt0_ = context->get_continuous_state().CopyToVector();
   xtplus_prop_.resize(xt0_.size());
@@ -838,7 +864,7 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   // using an explicit Bogacki-Shampine/explicit Euler step, depending on the
   // number of stages in use.
   if (h < this->get_working_minimum_step_size()) {
-    SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
+    DRAKE_LOGGER_DEBUG("-- requested step too small, taking explicit "
         "step instead");
 
     // We want to maintain the order of the error estimation process even as we

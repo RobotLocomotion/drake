@@ -32,8 +32,6 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/shapes",
     "//attic/perception",
     "//attic/systems/controllers",
-    "//attic/systems/controllers/plan_eval",
-    "//attic/systems/controllers/qp_inverse_dynamics",
     "//attic/systems/rendering",
     "//attic/systems/robotInterfaces",
     "//attic/systems/sensors",
@@ -45,6 +43,7 @@ LIBDRAKE_COMPONENTS = [
     "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
+    "//examples/acrobot:acrobot_geometry",  # unpackaged
     "//examples/acrobot:acrobot_input",  # unpackaged
     "//examples/acrobot:acrobot_params",  # unpackaged
     "//examples/acrobot:acrobot_plant",  # unpackaged
@@ -82,6 +81,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
+    "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
     "//multibody/optimization",
@@ -93,6 +93,8 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/triangle_quadrature",
     "//perception",
     "//solvers",
+    "//solvers/fbstab",
+    "//solvers/fbstab/components",
     "//systems/analysis",
     "//systems/controllers",
     "//systems/estimators",
@@ -104,6 +106,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
-    # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
+    # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
 ]

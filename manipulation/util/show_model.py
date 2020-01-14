@@ -27,7 +27,6 @@ NOTE: If you use `bazel run`, it is highly encouraged that you use absolute
 paths, as certain models may not be prerequisites of this binary.
 """
 
-from __future__ import print_function
 import argparse
 import os
 import sys
@@ -56,7 +55,7 @@ def main():
 
     # Construct Plant + SceneGraph.
     builder = DiagramBuilder()
-    plant = builder.AddSystem(MultibodyPlant())
+    plant = builder.AddSystem(MultibodyPlant(0.0))
     scene_graph = builder.AddSystem(SceneGraph())
     plant.RegisterAsSourceForSceneGraph(scene_graph)
     builder.Connect(

@@ -656,44 +656,10 @@ bool GeometryState<T>::IsValidGeometryName(
   return NameIsUnique(frame_id, role, name);
 }
 
-namespace {
-// Small class for identifying mesh geometries.
-class MeshIdentifier final : public ShapeReifier {
- public:
-  bool is_mesh() const { return is_mesh_; }
-
-  // Implementation of ShapeReifier interface.
-  void ImplementGeometry(const Sphere&, void*) final {}
-  void ImplementGeometry(const Cylinder&, void*) final {}
-  void ImplementGeometry(const HalfSpace&, void*) final {}
-  void ImplementGeometry(const Box&, void*) final {}
-  void ImplementGeometry(const Mesh& mesh, void*) final {
-    is_mesh_ = true;
-    drake::log()->warn("Meshes are _not_ supported for proximity: ({})",
-                       mesh.filename());
-  }
-  void ImplementGeometry(const Convex&, void*) final {}
-
- private:
-  bool is_mesh_{false};
-};
-}  // namespace
-
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   ProximityProperties properties,
                                   RoleAssign assign) {
-  // TODO(SeanCurtis-TRI): When meshes are supported for proximity roles, remove
-  // this test and the MeshIdentifier class.
-  {
-    const InternalGeometry* g = GetGeometry(geometry_id);
-    if (g) {
-      MeshIdentifier identifier;
-      g->shape().Reify(&identifier);
-      if (identifier.is_mesh()) return;
-    }
-  }
-
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
 
@@ -706,7 +672,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   if (assign == RoleAssign::kNew) {
     if (geometry.is_dynamic()) {
       // Pass the geometry to the engine.
-      geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id);
+      geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id,
+                                           *geometry.proximity_properties());
 
       InternalFrame& frame = frames_[geometry.frame_id()];
 
@@ -753,7 +720,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // If it's not dynamic, it must be anchored. No clique madness required;
       // anchored geometries are not tested against each other by the process.
       geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                            geometry_id);
+                                            geometry_id,
+                                            *geometry.proximity_properties());
     }
   }
   // TODO(SeanCurtis-TRI): Handle the assign == kReplace branch for when
@@ -784,6 +752,13 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   IllustrationProperties properties,
                                   RoleAssign assign) {
+  if (properties.HasProperty("phong", "diffuse_map")) {
+    static logging::Warn log_once(
+        "Explicitly defined values for the ('phong', 'diffuse_map') property "
+        "are not currently used in illustration roles -- only perception "
+        "roles");
+  }
+
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
   // TODO(SeanCurtis-TRI): Ideally, if assign == RoleAssign::kReplace, this
@@ -1105,7 +1080,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // remove itself from its possible parent geometry. If called recursively,
     // it is because the parent geometry is being deleted anyways and removal
     // is implicit in the deletion of that parent geometry.
-    if (optional<GeometryId> parent_id = geometry.parent_id()) {
+    if (std::optional<GeometryId> parent_id = geometry.parent_id()) {
       auto& parent_geometry =
           GetMutableValueOrThrow(*parent_id, &geometries_);
       parent_geometry.remove_child(geometry_id);

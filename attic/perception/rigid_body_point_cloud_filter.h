@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/perception/point_cloud.h"
 #include "drake/systems/framework/context.h"
@@ -19,7 +20,9 @@ namespace perception {
 /// The system has two input ports and one output port. The first input port
 /// consumes a PointCloud and the second takes the state of the RigidBodyTree.
 /// The output port contains the filtered PointCloud.
-class RigidBodyPointCloudFilter final : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED("2020-02-01",
+    "The attic perception package is being removed.")
+RigidBodyPointCloudFilter final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyPointCloudFilter)
 

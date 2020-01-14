@@ -129,6 +129,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -145,6 +146,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* params) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -194,6 +196,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetRandomState(const Context<T>& context, State<T>* state,
                       RandomGenerator* generator) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -210,6 +213,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   void SetRandomParameters(const Context<T>& context, Parameters<T>* params,
                            RandomGenerator* generator) const override {
+    this->ValidateContext(context);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -361,29 +365,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return diagram_discrete_state->get_subdiscrete(i);
   }
 
-  /// Returns a constant reference to the subcontext that corresponds to the
-  /// system @p subsystem.
-  /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the appropriate subcontext. Aborts if
-  /// @p subsystem is not actually a subsystem of this diagram.
-  const Context<T>& GetSubsystemContext(const System<T>& subsystem,
-                                        const Context<T>& context) const {
-    auto ret = DoGetTargetSystemContext(subsystem, &context);
-    DRAKE_DEMAND(ret != nullptr);
-    return *ret;
-  }
-
-  /// Returns the subcontext that corresponds to the system @p subsystem.
-  /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the appropriate subcontext. Aborts if
-  /// @p subsystem is not actually a subsystem of this diagram.
-  Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
-                                         Context<T>* context) const {
-    auto ret = DoGetMutableTargetSystemContext(subsystem, context);
-    DRAKE_DEMAND(ret != nullptr);
-    return *ret;
-  }
-
   /// Returns the const subsystem composite event collection from @p events
   /// that corresponds to @p subsystem. Aborts if @p subsystem is not a
   /// subsystem of this diagram.
@@ -414,6 +395,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// this diagram.
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const {
+    this->ValidateContext(context);
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem, context);
     return subcontext.get_mutable_state();
   }
@@ -614,6 +596,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return false;
   }
 
+  using System<T>::GetSubsystemContext;
+  using System<T>::GetMutableSubsystemContext;
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
@@ -621,7 +606,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// same support.
   Diagram() : System<T>(
       SystemScalarConverter(
-          SystemTypeTag<systems::Diagram>{},
+          SystemTypeTag<Diagram>{},
           SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
 
   /// (Advanced) Constructs an uninitialized Diagram.  Subclasses that use this
@@ -710,19 +695,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
                         temp_witnesses.end());
       ++index;
     }
-  }
-
-  /// Returns a pointer to mutable context if @p target_system is a sub system
-  /// of this, nullptr is returned otherwise.
-  Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>& target_system, Context<T>* context) const final {
-    if (&target_system == this)
-      return context;
-
-    return GetSubsystemStuff<Context<T>, DiagramContext<T>>(
-        target_system, context,
-        &System<T>::DoGetMutableTargetSystemContext,
-        &DiagramContext<T>::GetMutableSubsystemContext);
   }
 
   /// Returns a pointer to const context if @p target_system is a subsystem
@@ -841,6 +813,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
       const int num_v = sub_xc.get_generalized_velocity().size();
+      if (num_v == 0) continue;
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
@@ -888,6 +861,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc.get_generalized_position().size();
+      if (num_q == 0) continue;
       const Eigen::Ref<const VectorX<T>>& dq_slice =
           qdot.segment(q_index, num_q);
 
@@ -1074,6 +1048,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return this->GetSystemPathname();
   }
 
+  const SystemBase& GetRootSystemBase() const final {
+    const auto* parent_service = this->get_parent_service();
+    return parent_service ? parent_service->GetRootSystemBase() : *this;
+  }
+
   // Returns true if there might be direct feedthrough from the given
   // @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool DiagramHasDirectFeedthrough(int input_port, int output_port) const {
@@ -1119,16 +1098,26 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return false;
   }
 
+  // Allocates a collection of homogeneous events (e.g., publish events) for
+  // this Diagram.
+  // @param allocator_func A function for allocating an event collection of the
+  //                       given type, thus allowing this method to allocate
+  //                       collections for publish events, discrete update
+  //                       events, or unrestricted update events using a
+  //                       single mechanism.
   template <typename EventType>
   std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
       std::function<
-      std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
-  allocater_func) const {
+          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+          allocator_func) const {
     const int num_systems = num_subsystems();
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (SubsystemIndex i(0); i < num_systems; ++i) {
       std::unique_ptr<EventCollection<EventType>> subevent_collection =
-          allocater_func(registered_systems_[i].get());
+          allocator_func(registered_systems_[i].get());
+
+      // The DiagramEventCollection should own these subevents- this function
+      // will not maintain its own references to them.
       ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
     }
     return ret;
@@ -1273,9 +1262,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // Tries to recursively find @p target_system's BaseStuff
   // (context / state / etc). nullptr is returned if @p target_system is not
   // a subsystem of this diagram. This template function should only be used
-  // to reduce code repetition for DoGetMutableTargetSystemContext(),
-  // DoGetTargetSystemContext(), DoGetMutableTargetSystemState(), and
-  // DoGetTargetSystemState().
+  // to reduce code repetition for DoGetTargetSystemContext(),
+  // DoGetMutableTargetSystemState(), and DoGetTargetSystemState().
   // @param target_system The subsystem of interest.
   // @param my_stuff BaseStuff that's associated with this diagram.
   // @param recursive_getter A member function of System that returns sub
@@ -1586,8 +1574,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const OutputPortIndex port_index(id.second);
     const OutputPort<T>& port = system->get_output_port(port_index);
     const SubsystemIndex i = GetSystemIndexOrAbort(system);
-    SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
-                 system->GetSystemPathname(), port_index);
+    DRAKE_LOGGER_TRACE("Evaluating output for subsystem {}, port {}",
+        system->GetSystemPathname(), port_index);
     const Context<T>& subsystem_context = context.GetSubsystemContext(i);
     return port.template Eval<AbstractValue>(subsystem_context);
   }

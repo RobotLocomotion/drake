@@ -12,7 +12,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -283,8 +282,7 @@ int DoMain() {
   // advancing once the gripper grasps the box.  Grasping makes the
   // problem computationally stiff, which brings the default RK3
   // integrator to its knees.
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
-      FLAGS_dt, &simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(FLAGS_dt);
   simulator.set_publish_every_time_step(false);
   simulator.AdvanceTo(FLAGS_simulation_sec);
 
@@ -298,6 +296,5 @@ int DoMain() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::DoMain();
 }

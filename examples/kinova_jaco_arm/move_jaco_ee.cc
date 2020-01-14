@@ -11,7 +11,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
@@ -167,7 +166,7 @@ class MoveDemoRunner {
 
   ::lcm::LCM lcm_;
   std::string urdf_;
-  MultibodyPlant<double> plant_;
+  MultibodyPlant<double> plant_{0.0};
   multibody::ModelInstanceIndex instance_;
   std::unique_ptr<systems::Context<double>> context_;
   int status_count_{0};
@@ -182,7 +181,6 @@ class MoveDemoRunner {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   drake::examples::kinova_jaco_arm::MoveDemoRunner runner;
   runner.Run();
 }

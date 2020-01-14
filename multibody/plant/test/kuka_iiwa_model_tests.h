@@ -38,10 +38,10 @@ class KukaIiwaModelTests : public ::testing::Test {
         "drake/manipulation/models/iiwa_description/sdf/"
         "iiwa14_no_collision.sdf");
 
-    // Create a model of a Kuka arm. Notice we do not weld the robot's base
-    // to the world and therefore the model is free floating in space. This
-    // makes for a more interesting setup to test the computation of
-    // analytical Jacobians.
+    // Create a model of a Kuka arm. Notice we do not weld the robot's base to
+    // the world and therefore the model is free floating in space. This makes
+    // for a more interesting setup to test the computation of Jacobians with
+    // respect to q̇ (time-derivative of generalized positions).
     plant_ = std::make_unique<MultibodyPlant<double>>();
     Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
@@ -53,6 +53,11 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     context_ = plant_->CreateDefaultContext();
 
+    // Fix input ports.
+    const VectorX<double> tau =
+        VectorX<double>::Zero(plant_->num_actuated_dofs());
+    plant_->get_actuation_input_port().FixValue(context_.get(), tau);
+
     // Scalar-convert the model and create a default context for it.
     plant_autodiff_ = std::make_unique<MultibodyPlant<AutoDiffXd>>(*plant_);
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
@@ -60,19 +65,35 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   // If unit_quaternion = false then the quaternion for the free floating base
   // is not normalized. This configuration is useful to verify the computation
-  // of analytical Jacobians even if the state stores a non-unit quaternion.
+  // of Jacobians with respect to q̇ (time-derivative of generalized positions),
+  // even if the state stores a non-unit quaternion.
   void SetArbitraryConfiguration(bool unit_quaternion = true) {
     // Get an arbitrary set of angles and velocities for each joint.
     const VectorX<double> x0 = GetArbitraryJointConfiguration();
+    SetState(x0);
+     if (!unit_quaternion) {
+        VectorX<double> q = plant_->GetPositions(*context_);
+        // TODO(amcastro-tri): This assumes the first 4 entries in the
+        // generalized positions correspond to the quaternion for the free
+        // floating robot base. Provide API to access these values.
+        q.head<4>() *= 2;  // multiply quaternion by a factor.
+        plant_->SetPositions(context_.get(), q);
+    }
+  }
 
+  // Sets the state of the joints according to x_joints. The pose and spatial
+  // velocity of the base is set arbitrarily to a non-identity pose and non-zero
+  // spatial velocity.
+  void SetState(const VectorX<double>& x_joints) {
     EXPECT_EQ(plant_->num_joints(), 7);
     for (JointIndex joint_index(0); joint_index < plant_->num_joints();
          ++joint_index) {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->get_joint(joint_index));
-      joint.set_angle(context_.get(), x0[joint_index]);
-      joint.set_angular_rate(context_.get(), x0[kNumJoints + joint_index]);
+      joint.set_angle(context_.get(), x_joints[joint_index]);
+      joint.set_angular_rate(context_.get(),
+                             x_joints[kNumJoints + joint_index]);
     }
 
     // Set an arbitrary (though non-identity) pose of the floating base link.
@@ -85,17 +106,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // Set an arbitrary non-zero spatial velocity of the floating base link.
     const Vector3<double> w_WB{-1, 1, -1};
     const Vector3<double> v_WB{1, -1, 1};
-    plant_->SetFreeBodySpatialVelocity(
-        context_.get(), base_body, {w_WB, v_WB});
-
-    if (!unit_quaternion) {
-        VectorX<double> q = plant_->GetPositions(*context_);
-        // TODO(amcastro-tri): This assumes the first 4 entries in the
-        // generalized positions correspond to the quaternion for the free
-        // floating robot base. Provide API to access these values.
-        q.head<4>() *= 2;  // multiply quaternion by a factor.
-        plant_->SetPositions(context_.get(), q);
-    }
+    plant_->SetFreeBodySpatialVelocity(context_.get(), base_body, {w_WB, v_WB});
   }
 
   // Gets an arm state to an arbitrary configuration in which joint angles and
@@ -126,37 +137,6 @@ class KukaIiwaModelTests : public ::testing::Test {
     x << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
 
     return x;
-  }
-
-  // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_EPi in the end
-  // effector frame.
-  // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
-  // TODO(amcastro-tri): Rename this method as per issue #10155.
-  // TODO(Mitiguy): If this method is not used, delete it per issue #10155.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity().")
-  void CalcPointsOnEndEffectorAnalyticJacobian(
-      const MultibodyPlant<T>& plant_on_T,
-      const Context<T>& context_on_T,
-      const MatrixX<T>& p_EoEi_E,
-      MatrixX<T>* p_WoEi_W,
-      MatrixX<T>* Jq_v_WEi_W) const {
-    const Frame<T>& frame_W = plant_on_T.world_frame();
-    const Frame<T>& frame_E =  /* End-effector frame E */
-        (plant_on_T.get_body(end_effector_link_->index())).body_frame();
-
-    plant_on_T.CalcJacobianTranslationalVelocity(context_on_T,
-                                                 JacobianWrtVariable::kQDot,
-                                                 frame_E,
-                                                 p_EoEi_E,
-                                                 frame_W,
-                                                 frame_W,
-                                                 Jq_v_WEi_W);
-    plant_on_T.CalcPointsPositions(context_on_T,
-                                   frame_E, p_EoEi_E,     /* From frame E */
-                                   frame_W, p_WoEi_W);   /* To world frame W */
   }
 
  protected:

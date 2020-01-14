@@ -23,16 +23,16 @@ SolverBase::~SolverBase() = default;
 
 MathematicalProgramResult SolverBase::Solve(
     const MathematicalProgram& prog,
-    const optional<Eigen::VectorXd>& initial_guess,
-    const optional<SolverOptions>& solver_options) const {
+    const std::optional<Eigen::VectorXd>& initial_guess,
+    const std::optional<SolverOptions>& solver_options) const {
   MathematicalProgramResult result;
   this->Solve(prog, initial_guess, solver_options, &result);
   return result;
 }
 
 void SolverBase::Solve(const MathematicalProgram& prog,
-                       const optional<Eigen::VectorXd>& initial_guess,
-                       const optional<SolverOptions>& solver_options,
+                       const std::optional<Eigen::VectorXd>& initial_guess,
+                       const std::optional<SolverOptions>& solver_options,
                        MathematicalProgramResult* result) const {
   *result = {};
   if (!available()) {

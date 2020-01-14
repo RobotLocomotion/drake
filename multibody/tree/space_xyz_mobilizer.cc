@@ -28,14 +28,10 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
 
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
-    systems::Context<T>* context, const Matrix3<T>& R_FM) const {
+    systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
   auto q = this->get_mutable_positions(&*context);
   DRAKE_ASSERT(q.size() == kNq);
-  // Project matrix to closest orthonormal matrix in case the user provides a
-  // rotation matrix with round-off errors.
-  const math::RotationMatrix<T> Rproj_FM =
-      math::RotationMatrix<T>::ProjectToRotationMatrix(R_FM);
-  q = math::RollPitchYaw<T>(Rproj_FM).vector();
+  q = math::RollPitchYaw<T>(R_FM).vector();
   return *this;
 }
 

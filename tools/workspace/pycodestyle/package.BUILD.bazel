@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("@drake//tools/skylark:py.bzl", "py_binary")
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # MIT
@@ -34,5 +35,4 @@ py_binary(
         "pycodestyle.py",
     ],
     main = "pycodestyle.py",
-    srcs_version = "PY2AND3",
 )

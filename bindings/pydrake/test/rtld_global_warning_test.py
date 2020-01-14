@@ -1,8 +1,7 @@
+import importlib
 import sys
 import unittest
 import warnings
-
-from six.moves import reload_module
 
 import pydrake
 
@@ -16,7 +15,7 @@ class TestRtldGlobalWarning(unittest.TestCase):
             warnings.simplefilter("once", Warning)
             # Use `reload` to retrigger the relevant code in
             # `pydrake/__init__.py`.
-            reload_module(pydrake)
+            importlib.reload(pydrake)
 
         self.assertEqual(len(caught), 1)
         self.assertEqual(caught[0].category, pydrake._DrakeImportWarning)

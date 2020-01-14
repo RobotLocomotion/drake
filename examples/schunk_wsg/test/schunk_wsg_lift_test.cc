@@ -413,8 +413,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   // with our current models is yielding much slower running times without
   // discernible improvements in accuracy.
   const double dt = 1e-4;
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(
-      *model, dt, &context);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(dt);
   simulator.Initialize();
 
   // Simulate to one second beyond the trajectory motion.
@@ -513,7 +512,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
 }
 
 // Instantiate the tests.
-INSTANTIATE_TEST_CASE_P(CompliantAndTimeSteppingTest, SchunkWsgLiftTest,
+INSTANTIATE_TEST_SUITE_P(CompliantAndTimeSteppingTest, SchunkWsgLiftTest,
                         ::testing::Bool());
 
 }  // namespace

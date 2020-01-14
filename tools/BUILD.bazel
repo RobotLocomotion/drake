@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_runfiles_binary.bzl",
@@ -23,7 +24,6 @@ py_binary(
     data = [
         "//examples:prod_models",
         "@drake_visualizer",
-        "@drake_visualizer//:lcm_python2",
     ],
     main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
     # Python libraries to import.
@@ -65,14 +65,12 @@ config_setting(
     values = {"define": "WITH_SNOPT=ON"},
 )
 
+# TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
+# The --config=snopt_fortran spelling is no longer supported.
+# Instead, use --config=snopt for the same effect.
 config_setting(
     name = "with_snopt_fortran",
     values = {"define": "WITH_SNOPT_FORTRAN=ON"},
-)
-
-config_setting(
-    name = "with_snopt_f2c",
-    values = {"define": "WITH_SNOPT_F2C=ON"},
 )
 
 # CSDP is an open-source solver, and is included in the Drake build by default.

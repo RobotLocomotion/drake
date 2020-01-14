@@ -344,7 +344,9 @@ PYBIND11_MODULE(symbolic, m) {
       .def("min", &symbolic::min, doc.min.doc)
       .def("max", &symbolic::max, doc.max.doc)
       .def("ceil", &symbolic::ceil, doc.ceil.doc)
-      .def("floor", &symbolic::floor, doc.floor.doc);
+      .def("__ceil__", &symbolic::ceil, doc.ceil.doc)
+      .def("floor", &symbolic::floor, doc.floor.doc)
+      .def("__floor__", &symbolic::floor, doc.floor.doc);
   DefCopyAndDeepCopy(&expr_cls);
 
   // TODO(eric.cousineau): These should actually exist on the class, and should
@@ -367,7 +369,7 @@ PYBIND11_MODULE(symbolic, m) {
         return Evaluate(M, Environment{env}, random_generator);
       },
       py::arg("m"), py::arg("env") = Environment::map{},
-      py::arg("generator") = nullptr, doc.Evaluate.doc);
+      py::arg("generator") = nullptr, doc.Evaluate.doc_3args);
 
   m.def("Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {

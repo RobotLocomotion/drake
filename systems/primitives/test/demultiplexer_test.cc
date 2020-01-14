@@ -23,12 +23,10 @@ class DemultiplexerTest : public ::testing::Test {
   void SetUp() override {
     demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
-    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> demux_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<BasicVector<double>> input_;
 };
 
 // Tests that the input signal gets demultiplexed into its individual
@@ -39,10 +37,9 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   ASSERT_EQ(1, context_->num_input_ports());
   ASSERT_EQ(1, demux_->num_input_ports());
   Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
-  input_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context_->FixInputPort(0, std::move(input_));
+  demux_->get_input_port(0).FixValue(context_.get(), input_vector);
 
   // The number of output ports must match the size of the input vector.
   ASSERT_EQ(input_vector.size(), demux_->num_output_ports());
@@ -66,7 +63,6 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   auto demux = make_unique<Demultiplexer<double>>(
       kInputSize /* size */, kOutputSize /* output_ports_size */);
   auto context = demux->CreateDefaultContext();
-  auto input = make_unique<BasicVector<double>>(kInputSize /* size */);
 
   // Checks that the number of input ports in the system and in the context
   // are consistent.
@@ -74,10 +70,9 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   ASSERT_EQ(1, demux->num_input_ports());
   Eigen::VectorXd input_vector =
       Eigen::VectorXd::LinSpaced(kInputSize, 1.0, 6.0);
-  input->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context->FixInputPort(0, std::move(input));
+  demux->get_input_port(0).FixValue(context.get(), input_vector);
 
   // The number of output ports must equal the size of the input port divided
   // by the size of the output ports provided in the constructor, in this case
@@ -109,7 +104,6 @@ GTEST_TEST(VectorizedOutputSize, SizeDifferentFromOne) {
   auto demux = make_unique<Demultiplexer<double>>(
       kOutputPortsSizes /* output_ports_sizes */);
   auto context = demux->CreateDefaultContext();
-  auto input = make_unique<BasicVector<double>>(kInputSize /* size */);
 
   // Checks that the number of input ports in the system and in the context
   // are consistent.
@@ -117,10 +111,9 @@ GTEST_TEST(VectorizedOutputSize, SizeDifferentFromOne) {
   ASSERT_EQ(1, demux->num_input_ports());
   Eigen::VectorXd input_vector =
       Eigen::VectorXd::LinSpaced(kInputSize, 1.0, 6.0);
-  input->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context->FixInputPort(0, std::move(input));
+  demux->get_input_port(0).FixValue(context.get(), input_vector);
 
   // The number of output ports must equal the length of the vector
   // kOutputPortsSizes.

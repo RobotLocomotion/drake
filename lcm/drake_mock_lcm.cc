@@ -11,7 +11,7 @@ namespace lcm {
 DrakeMockLcm::DrakeMockLcm() {}
 
 void DrakeMockLcm::Publish(const std::string& channel, const void* data,
-                           int data_size, optional<double>) {
+                           int data_size, std::optional<double>) {
   DRAKE_THROW_UNLESS(!channel.empty());
   LastPublishedMessage* per_channel_data{};
   auto iter = last_published_messages_.find(channel);

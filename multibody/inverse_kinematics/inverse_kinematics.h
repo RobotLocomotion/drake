@@ -48,7 +48,7 @@ class InverseKinematics {
    * plant_context, the steps are
    * // 1. Add a diagram containing the MultibodyPlant and SceneGraph
    * systems::DiagramBuilder<double> builder;
-   * auto items = AddMultibodyPlantSceneGraph(&builder);
+   * auto items = AddMultibodyPlantSceneGraph(&builder, 0.0);
    * // 2. Add collision geometries to the plant
    * Parser(&(items.plant)).AddModelFromFile("model.sdf");
    * // 3. Construct the diagram
@@ -207,6 +207,16 @@ class InverseKinematics {
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
       double minimum_distance, double influence_distance_offset = 1);
 
+  /**
+   * Adds the constraint that the distance between a pair of geometries is
+   * within some bounds.
+   * @param geometry_pair The pair of geometries between which the distance is
+   * constrained. Notice that we only consider the distance between a static
+   * geometry and a dynamic geometry, or a pair of dynamic geometries. We don't
+   * allow constraining the distance between two static geometries.
+   * @param distance_lower The lower bound on the distance.
+   * @param distance_upper The upper bound on the distance.
+   */
   solvers::Binding<solvers::Constraint> AddDistanceConstraint(
       const SortedPair<geometry::GeometryId>& geometry_pair,
       double distance_lower, double distance_upper);

@@ -38,7 +38,7 @@ x = np.zeros(tree.get_num_positions() + tree.get_num_velocities())
 
 # Allocate context and render.
 context = camera.CreateDefaultContext()
-context.FixInputPort(0, BasicVector(x))
+camera.get_input_port(0).FixValue(context, x)
 output = camera.AllocateOutput()
 camera.CalcOutput(context, output)
 

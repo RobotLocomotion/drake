@@ -68,6 +68,14 @@ class SpatialQuantityTest : public ::testing::Test {
   // A spatial quantity related to the above rotational and translational
   // components.
   SpatialQuantityType V_{w_, v_};
+
+  // Two non-zero arbitrary spatial vector.
+  const Vector3<ScalarType> r1_{1.0, 2.0, 3.0};
+  const Vector3<ScalarType> t1_{4.0, 5.0, 6.0};
+  const SpatialQuantityType V1_{r1_, t1_};
+  const Vector3<ScalarType> r2_{-1.0, 1.5, -0.5};
+  const Vector3<ScalarType> t2_{5.0, 7.0, 8.0};
+  const SpatialQuantityType V2_{r2_, t2_};
 };
 
 // Create a list of SpatialVector types to be tested.
@@ -84,7 +92,7 @@ typedef ::testing::Types<
     SpatialForce<Expression>,
     SpatialAcceleration<Expression>,
     SpatialMomentum<Expression>> SpatialQuantityTypes;
-TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
+TYPED_TEST_SUITE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
 TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
@@ -279,6 +287,17 @@ TYPED_TEST(SpatialQuantityTest, ShiftOperatorIntoStream) {
   EXPECT_EQ(expected_string, stream.str());
 }
 
+TYPED_TEST(SpatialQuantityTest, MultiplicationAssignmentOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const T scalar = 3.0;
+  SpatialQuantity V(this->V1_);
+  V *= scalar;
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), Vector3<T>(this->r1_ * scalar));
+  EXPECT_EQ(V.translational(), Vector3<T>(this->t1_ * scalar));
+}
+
 // Test the multiplication of a spatial quantity by a scalar.
 TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
@@ -316,6 +335,44 @@ TYPED_TEST(SpatialQuantityTest, UnaryMinusOperator) {
   // Verify the result using Eigen operations.
   EXPECT_EQ(V.rotational(), -Vminus.rotational());
   EXPECT_EQ(V.translational(), -Vminus.translational());
+}
+
+TYPED_TEST(SpatialQuantityTest, AdditionAssignmentOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  SpatialQuantity V(this->V1_);
+  V += this->V2_;
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), Vector3<T>(this->r1_ + this->r2_));
+  EXPECT_EQ(V.translational(), Vector3<T>(this->t1_ + this->t2_));
+}
+
+TYPED_TEST(SpatialQuantityTest, AdditionOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity V = this->V1_ + this->V2_;
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), Vector3<T>(this->r1_ + this->r2_));
+  EXPECT_EQ(V.translational(), Vector3<T>(this->t1_ + this->t2_));
+}
+
+TYPED_TEST(SpatialQuantityTest, SubtractionAssignmentOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  SpatialQuantity V(this->V1_);
+  V -= this->V2_;
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), Vector3<T>(this->r1_ - this->r2_));
+  EXPECT_EQ(V.translational(), Vector3<T>(this->t1_ - this->t2_));
+}
+
+TYPED_TEST(SpatialQuantityTest, SubtractionOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity V = this->V1_ - this->V2_;
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), Vector3<T>(this->r1_ - this->r2_));
+  EXPECT_EQ(V.translational(), Vector3<T>(this->t1_ - this->t2_));
 }
 
 // Re-express in another frame. Given a spatial vector V_F expressed in a frame
@@ -360,7 +417,7 @@ class SpatialVelocityTest : public ::testing::Test {
   // Spatial velocity of a frame Y measured in X and expressed in A.
   SpatialVelocity<ScalarType> V_XY_A_{w_XY_A_, v_XY_A_};
 };
-TYPED_TEST_CASE(SpatialVelocityTest, ScalarTypes);
+TYPED_TEST_SUITE(SpatialVelocityTest, ScalarTypes);
 
 // Unit tests for the composition of spatial velocities:
 // - Shift(): shift of a spatial velocity between two moving frames rigidly
@@ -504,7 +561,7 @@ typedef ::testing::Types<
     SpatialMomentum<AutoDiffXd>,
     SpatialForce<Expression>,
     SpatialMomentum<Expression>> ElementsInF6Types;
-TYPED_TEST_CASE(ElementsInF6Test, ElementsInF6Types);
+TYPED_TEST_SUITE(ElementsInF6Test, ElementsInF6Types);
 
 // Tests the shifting of a spatial force between two moving frames rigidly
 // attached to each other.
@@ -550,7 +607,7 @@ class SpatialAccelerationTest : public ::testing::Test {
   // Useful typedefs when witting unit tests to access types.
   typedef T ScalarType;
 };
-TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
+TYPED_TEST_SUITE(SpatialAccelerationTest, ScalarTypes);
 
 // Unit test for the method SpatialAcceleration::Shift().
 // Case 1:
@@ -750,7 +807,7 @@ typedef ::testing::Types<
     SpatialForce<Expression>,
     SpatialAcceleration<Expression>,
     SpatialMomentum<Expression>> SymbolicSpatialQuantityTypes;
-TYPED_TEST_CASE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
+TYPED_TEST_SUITE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
 
 TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
   std::stringstream V_stream;
@@ -775,7 +832,7 @@ class MomentumDotVelocityTest : public ::testing::Test {
   SpatialVelocity<T> V_WBp_{Vector3<T>{7, 8, 9}, Vector3<T>{-1, -2, -3}};
   Vector3<T> p_PQ_{7, -3, 5};
 };
-TYPED_TEST_CASE(MomentumDotVelocityTest, ScalarTypes);
+TYPED_TEST_SUITE(MomentumDotVelocityTest, ScalarTypes);
 
 // Verifies the result of the dot product of a spatial momentum L_WBp (of a body
 // B in a frame W about a point P) with the spatial velocity V_WBp of frame Bp

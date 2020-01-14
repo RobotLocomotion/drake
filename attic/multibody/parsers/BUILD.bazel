@@ -70,6 +70,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":parsers",
+        "//common:filesystem",
         "//common:find_resource",
     ],
 )
@@ -78,13 +79,14 @@ drake_cc_googletest(
     name = "urdf_parser_test",
     srcs = ["test/urdf_parser_test.cc"],
     data = [
+        ":test_models",
         "//examples/atlas:models",
         "//multibody/parsing:test_models",
     ],
     deps = [
         ":parsers",
+        "//common:filesystem",
         "//common:find_resource",
-        "@spruce",
     ],
 )
 

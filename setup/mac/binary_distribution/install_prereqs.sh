@@ -19,20 +19,14 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
 fi
 
 /usr/local/bin/brew update
-# TODO(jamiesnape): Remove line uninstalling ipopt@3.12 and mumps on or after 2019-11-01.
-/usr/local/bin/brew uninstall --force ipopt@3.12 mumps
-/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
-
-if ! command -v /usr/local/bin/pip2 &>/dev/null; then
-  echo 'ERROR: pip2 is NOT installed. The post-install step for the python@2 formula may have failed.' >&2
-  exit 2
-fi
-
-/usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+# TODO(jamiesnape): Remove two lines uninstalling dreal on or after 2020-02-01.
+brew uninstall --force dreal
+brew untap dreal/dreal &>/dev/null || true
+/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v /usr/local/bin/pip3 &>/dev/null; then
   echo 'ERROR: pip3 is NOT installed. The post-install step for the python formula may have failed.' >&2
-  exit 3
+  exit 2
 fi
 
 /usr/local/bin/pip3 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"

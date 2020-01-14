@@ -303,10 +303,19 @@
     </link>
 
     <frame name='top_center'>
-      <pose frame='world'>0 0 0.7645 0 -0 0</pose>
+      <!--
+      TODO(eric.cousineau): @frame='link' is redundant, but not having it
+      causes RBT SDFormat parsing code to segfault. Remove this once RBT is
+      removed.
+      -->
+      <pose frame='link'>0 0 0.7645 0 -0 0</pose>
     </frame>
 
-    <static>1</static>
+    <!--
+    N.B. This model used to have <static>true</static>, but this creates
+    issues in reusability with the current implementation of MBP parsing
+    (#12227).
+    -->
     <allow_auto_disable>1</allow_auto_disable>
   </model>
 </sdf>

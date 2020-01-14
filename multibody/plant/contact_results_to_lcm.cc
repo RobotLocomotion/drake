@@ -89,6 +89,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     const HydroelasticContactInfo<T>& hydroelastic_contact_info =
         contact_results.hydroelastic_contact_info(i);
+    const std::vector<HydroelasticQuadraturePointData<T>>&
+        quadrature_point_data =
+            hydroelastic_contact_info.quadrature_point_data();
 
     // Get the two body names.
     surface_msg.body1_name = geometry_id_to_body_name_map_.at(
@@ -96,10 +99,36 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_msg.body2_name = geometry_id_to_body_name_map_.at(
             hydroelastic_contact_info.contact_surface().id_N());
 
-    const geometry::SurfaceMesh<T>& mesh_W =
-        hydroelastic_contact_info.contact_surface().mesh_W();
+    const geometry::ContactSurface<T>& contact_surface =
+        hydroelastic_contact_info.contact_surface();
+    const geometry::SurfaceMesh<T>& mesh_W = contact_surface.mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
+    surface_msg.num_quadrature_points = quadrature_point_data.size();
+    surface_msg.quadrature_point_data.resize(surface_msg.num_quadrature_points);
+
+    write_double3(contact_surface.mesh_W().centroid(), surface_msg.centroid_W);
+    write_double3(hydroelastic_contact_info.F_Ac_W().translational(),
+                  surface_msg.force_C_W);
+    write_double3(hydroelastic_contact_info.F_Ac_W().rotational(),
+                  surface_msg.moment_C_W);
+
+    // Write all quadrature points on the contact surface.
+    const int num_quadrature_points_per_tri =
+        surface_msg.num_quadrature_points / surface_msg.num_triangles;
+    for (int j = 0; j < surface_msg.num_quadrature_points; ++j) {
+      // Verify the ordering is consistent with that advertised.
+      DRAKE_DEMAND(quadrature_point_data[j].face_index ==
+                   j / num_quadrature_points_per_tri);
+
+      lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_msg =
+          surface_msg.quadrature_point_data[j];
+      write_double3(quadrature_point_data[j].p_WQ, quad_data_msg.p_WQ);
+      write_double3(quadrature_point_data[j].vt_BqAq_W,
+                    quad_data_msg.vt_BqAq_W);
+      write_double3(quadrature_point_data[j].traction_Aq_W,
+                    quad_data_msg.traction_Aq_W);
+    }
 
     // Loop through each contact triangle on the contact surface.
     for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
@@ -115,6 +144,14 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       write_double3(vA.r_MV(), tri_msg.p_WA);
       write_double3(vB.r_MV(), tri_msg.p_WB);
       write_double3(vC.r_MV(), tri_msg.p_WC);
+
+      // Record the pressures.
+      tri_msg.pressure_A =
+          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(0)));
+      tri_msg.pressure_B =
+          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(1)));
+      tri_msg.pressure_C =
+          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(2)));
     }
   }
 }

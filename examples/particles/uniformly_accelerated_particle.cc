@@ -6,8 +6,9 @@
 #include <limits>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/find_resource.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/particles/particle.h"
 #include "drake/examples/particles/utilities.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -120,7 +121,6 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage("A very simple demonstration, "
                           "make sure drake-visualizer is running!");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  logging::HandleSpdlogGflags();
   // Instantiate example system.
   auto system = std::make_unique<UniformlyAcceleratedParticle>(
       FLAGS_acceleration);

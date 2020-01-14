@@ -9,7 +9,6 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -36,7 +35,6 @@ drake_pybind_library(
     name = "planner_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = ["planner_py.cc"],

@@ -6,7 +6,6 @@ performance, for the task of stabilizing an inverted torque-limited pendulum
 with LQR.
 """
 
-from __future__ import print_function
 
 import argparse
 
@@ -55,7 +54,7 @@ def main():
 
     # Assemble the Pendulum plant.
     builder = DiagramBuilder()
-    pendulum = builder.AddSystem(MultibodyPlant())
+    pendulum = builder.AddSystem(MultibodyPlant(0.0))
     file_name = FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf")
     Parser(pendulum).AddModelFromFile(file_name)

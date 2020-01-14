@@ -2,13 +2,14 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/math/spatial_velocity.h"
-#include "drake/multibody/plant/hydroelastic_contact_info.h"
+#include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 
 namespace drake {
 namespace multibody {
@@ -87,39 +88,45 @@ class HydroelasticTractionCalculator {
 
   /**
    Applies the hydroelastic model to two geometries defined in `surface`,
-   resulting in a pair of spatial forces at the origins of two body frames.
+   resulting in a spatial force applied at the centroid of the contact surface.
+   This method also provides the data output by the quadrature routine.
    The body frames, A and B, are those to which `surface.M_id()` and
    `surface.N_id()` are affixed, respectively.
    @param data Relevant kinematic data.
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
           energy along the direction of the surface normals.
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
-   @param[output] F_Ao_W the spatial force on Body A, on return.
-   @param[output] F_Bo_W the spatial force on Body B, on return.
+   @param[out] quadrature_point_data the intermediate data computed by the
+               quadrature process. This vector is cleared on entry.
+   @param[out] F_Ac_W the spatial force computed by the hydroelastic model that
+               acts on the body attached to geometry M (which is affixed to Body
+               A) in `data`'s ContactSurface. This spatial force is applied at
+               the centroid (Point c) of the contact surface.
    */
-  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  void ComputeSpatialForcesAtCentroidFromHydroelasticModel(
       const Data& data, double dissipation, double mu_coulomb,
-      multibody::SpatialForce<T>* F_Ao_W,
-      multibody::SpatialForce<T>* F_Bo_W) const;
+      std::vector<HydroelasticQuadraturePointData<T>>*
+          quadrature_point_data,
+      multibody::SpatialForce<T>* F_Ac_W) const;
 
   /**
-   Computes reporting information from the hydroelastic model.
+   Shifts the spatial force applied at the centroid of the contact surface
+   to equivalent spatial forces applied at the center of the body frames of
+   the two interacting bodies. The body frames, A and B, are those to which
+   `surface.M_id()` and `surface.N_id()` are affixed, respectively.
    @param data Relevant kinematic data.
-   @param dissipation the nonnegative coefficient (in s/m) for dissipating
-          energy along the direction of the surface normals.
-   @param mu_coulomb the nonnegative coefficient for Coulomb friction.
-   @return the reporting information via the HydroelasticContactInfo data
-           structure.
+   @param F_Ac_W the spatial force computed by the hydroelastic model that acts
+          on the body (A) attached to geometry M in `data`'s ContactSurface.
+          This spatial force is applied at the centroid (point c) of the contact
+          surface.
+   @param[output] F_Ao_W the spatial force on Body A, applied at the origin of
+                  A's frame, on return.
+   @param[output] F_Bo_W the spatial force on Body B, applied at the origin of
+                  B's frame, on return.
    */
-  HydroelasticContactInfo<T> ComputeContactInfo(
-       const Data& data, double dissipation, double mu_coulomb) const {
-     ContactReportingFields fields =
-         CreateReportingFields(data, dissipation, mu_coulomb);
-     return HydroelasticContactInfo<T>(
-         &data.surface,
-         std::move(fields.traction_A_W),
-         std::move(fields.vslip_AB_W));
-  }
+  void ShiftSpatialForcesAtCentroidToBodyOrigins(
+      const Data& data, const SpatialForce<T>& F_Ac_W, SpatialForce<T>* F_Ao_W,
+      SpatialForce<T>* F_Bo_W) const;
 
  private:
   // TODO(edrumwri): Consider methods that expose inner structures of
@@ -131,59 +138,15 @@ class HydroelasticTractionCalculator {
   friend class HydroelasticReportingTests_LinearTraction_Test;
   friend class HydroelasticReportingTests_LinearSlipVelocity_Test;
 
-  struct TractionAtPointData {
-    // Q, the point that the traction is computed, as an offset vector expressed
-    // in the world frame.
-    Vector3<T> p_WQ;
-
-    // The slip velocity between Bodies A and B at Point Q, expressed in the
-    // world frame. Note that Point Q is coincident to frames Aq and Bq attached
-    // to Bodies A and B, respectively, and shifted to common point Q.
-    Vector3<T> vt_BqAq_W;
-
-    // The traction vector applied to Frame Aq rigidly attached to Body A at
-    // Point Q (i.e., Frame A is shifted to Aq), expressed in the world frame.
-    Vector3<T> traction_Aq_W;
-  };
-
-  // Various fields used for querying kinematic and dynamic quantities over a
-  // contact surface.
-  struct ContactReportingFields {
-    // The traction acting on Body A (i.e., the body that Geometry M is affixed
-    // to), expressed in the world frame. At each point Q on the contact
-    // surface, `traction_A_W` gives the traction `traction_Aq_W`, where Aq
-    // is a frame attached to Body A and shifted to Q.
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W;
-
-    // The slip velocity of Body B (i.e., the body that Geometry N is affixed
-    // to) relative to Body A, expressed in the world frame. At each point Q on
-    // the contact surface, `vslip_AB_W` gives the slip velocity `vslip_AqBq_W`,
-    // which is the "tangential" velocity of Frame Bq (located at Q and attached
-    // Frame B) relative to the tangential velocity of Frame Aq (also located
-    // at Q and attached to Frame B). The tangential velocity at Q corresponds
-    // to the components of velocity orthogonal to the normal to the contact
-    // surface at Q.
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W;
-  };
-
-  ContactReportingFields CreateReportingFields(
-      const Data& data, double dissipation, double mu_coulomb) const;
-
-  TractionAtPointData CalcTractionAtVertex(
-      const Data& data,
-      geometry::SurfaceVertexIndex vertex_index,
-      double dissipation, double mu_coulomb) const;
-
-  TractionAtPointData CalcTractionAtPoint(
-      const Data& data,
-      geometry::SurfaceFaceIndex face_index,
+  HydroelasticQuadraturePointData<T> CalcTractionAtPoint(
+      const Data& data, geometry::SurfaceFaceIndex face_index,
       const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
-  TractionAtPointData CalcTractionAtQHelper(
-      const Data& data,
-      const T& e, const Vector3<T>& nhat_W,
-      double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const;
+  HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
+      const Data& data, geometry::SurfaceFaceIndex face_index, const T& e,
+      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
+      const Vector3<T>& p_WQ) const;
 
   multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
       const Data& data, const Vector3<T>& p_WQ,

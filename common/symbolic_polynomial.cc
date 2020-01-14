@@ -336,15 +336,38 @@ class DecomposePolynomialVisitor {
   drake::symbolic::VisitExpression<Polynomial::MapType>(
       const DecomposePolynomialVisitor*, const Expression&, const Variables&);
 };
+
+Variables GetIndeterminates(const Polynomial::MapType& m) {
+  Variables vars;
+  for (const pair<const Monomial, Expression>& p : m) {
+    const Monomial& m_i{p.first};
+    vars += m_i.GetVariables();
+  }
+  return vars;
+}
+
+Variables GetDecisionVariables(const Polynomial::MapType& m) {
+  Variables vars;
+  for (const pair<const Monomial, Expression>& p : m) {
+    const Expression& e_i{p.second};
+    vars += e_i.GetVariables();
+  }
+  return vars;
+}
+
 }  // namespace
 
 Polynomial::Polynomial(MapType init)
-    : monomial_to_coefficient_map_{move(init)} {
+    : monomial_to_coefficient_map_{move(init)},
+      indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
+      decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   DRAKE_ASSERT_VOID(CheckInvariant());
 };
 
 Polynomial::Polynomial(const Monomial& m)
-    : monomial_to_coefficient_map_{{m, 1}} {
+    : monomial_to_coefficient_map_{{m, 1}},
+      indeterminates_{m.GetVariables()},
+      decision_variables_{} {
   // No need to call CheckInvariant() because the following should hold.
   DRAKE_ASSERT(decision_variables().empty());
 }
@@ -354,31 +377,19 @@ Polynomial::Polynomial(const Expression& e) : Polynomial{e, e.GetVariables()} {
   DRAKE_ASSERT(decision_variables().empty());
 }
 
-Polynomial::Polynomial(const Expression& e, const Variables& indeterminates)
-    : monomial_to_coefficient_map_{
-          DecomposePolynomialVisitor{}.Decompose(e, indeterminates)} {
+Polynomial::Polynomial(const Expression& e, Variables indeterminates)
+    : monomial_to_coefficient_map_{DecomposePolynomialVisitor{}.Decompose(
+          e, indeterminates)},
+      indeterminates_{std::move(indeterminates)},
+      decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   // No need to call CheckInvariant() because DecomposePolynomialVisitor is
   // supposed to make sure the invariant holds as a post-condition.
 }
 
-Variables Polynomial::indeterminates() const {
-  Variables vars;
-  for (const pair<const Monomial, Expression>& p :
-       monomial_to_coefficient_map_) {
-    const Monomial& m_i{p.first};
-    vars += m_i.GetVariables();
-  }
-  return vars;
-}
+const Variables& Polynomial::indeterminates() const { return indeterminates_; }
 
-Variables Polynomial::decision_variables() const {
-  Variables vars;
-  for (const pair<const Monomial, Expression>& p :
-       monomial_to_coefficient_map_) {
-    const Expression& e_i{p.second};
-    vars += e_i.GetVariables();
-  }
-  return vars;
+const Variables& Polynomial::decision_variables() const {
+  return decision_variables_;
 }
 
 int Polynomial::Degree(const Variable& v) const {
@@ -441,34 +452,36 @@ pair<int, Monomial> DifferentiateMonomial(const Monomial& m,
 }  // namespace
 
 Polynomial Polynomial::Differentiate(const Variable& x) const {
-  Polynomial p;  // p = 0.
   if (indeterminates().include(x)) {
     // Case: x is an indeterminate.
     // d/dx ∑ᵢ (cᵢ * mᵢ) = ∑ᵢ d/dx (cᵢ * mᵢ)
-    //                 = ∑ᵢ (cᵢ * d/dx mᵢ)
+    //                   = ∑ᵢ (cᵢ * d/dx mᵢ)
+    Polynomial::MapType map;
     for (const pair<const Monomial, Expression>& term :
          monomial_to_coefficient_map_) {
       const Monomial& m{term.first};
       const Expression& coeff{term.second};
       const pair<int, Monomial> m_prime{
-          DifferentiateMonomial(m, x)};                     // = d/dx m.
-      p.AddProduct(coeff * m_prime.first, m_prime.second);  // p += cᵢ * d/dx m.
+          DifferentiateMonomial(m, x)};  // = d/dx m.
+      DoAddProduct(coeff * m_prime.first, m_prime.second,
+                   &map);  // Add cᵢ * d/dx m.
     }
-    return p;
+    return Polynomial{map};
   } else if (decision_variables().include(x)) {
     // Case: x is a decision variable.
     // d/dx ∑ᵢ (cᵢ * mᵢ) = ∑ᵢ d/dx (cᵢ * mᵢ)
-    //                 = ∑ᵢ ((d/dx cᵢ) * mᵢ)
+    //                   = ∑ᵢ ((d/dx cᵢ) * mᵢ)
+    Polynomial::MapType map;
     for (const pair<const Monomial, Expression>& term :
          monomial_to_coefficient_map_) {
       const Monomial& m{term.first};
       const Expression& coeff{term.second};
-      p.AddProduct(coeff.Differentiate(x), m);  // p += (d/dx cᵢ) * m.
+      DoAddProduct(coeff.Differentiate(x), m, &map);  // Add (d/dx cᵢ) * m.
     }
-    return p;
+    return Polynomial{map};
   } else {
     // The variable `x` does not appear in this polynomial.
-    return p;
+    return Polynomial{};  // Zero polynomial.
   }
 }
 
@@ -517,6 +530,8 @@ Polynomial& Polynomial::operator+=(const Polynomial& p) {
     const Expression& coeff{item.second};
     DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   }
+  indeterminates_ += p.indeterminates();
+  decision_variables_ += p.decision_variables();
   DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
@@ -559,6 +574,8 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
     }
   }
   monomial_to_coefficient_map_ = std::move(new_map);
+  indeterminates_ += p.indeterminates();
+  decision_variables_ += p.decision_variables();
   DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
@@ -572,6 +589,7 @@ Polynomial& Polynomial::operator*=(const Monomial& m) {
     new_map.emplace(m * m_i, coeff_i);
   }
   monomial_to_coefficient_map_ = std::move(new_map);
+  indeterminates_ += m.GetVariables();
   DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
@@ -647,6 +665,8 @@ Formula Polynomial::operator!=(const Polynomial& p) const {
 
 Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
+  indeterminates_ += m.GetVariables();
+  decision_variables_ += coeff.GetVariables();
   DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }

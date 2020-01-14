@@ -7,13 +7,15 @@ def sdformat_repository(
         mirrors = None):
     # From the following branch:
     # https://bitbucket.org/osrf/sdformat/commits/branch/default
-    commit = "21d2cbe52bbd"  # v6.2.0
+    commit = "1a3f95acdc3c"  # tag/sdformat9_9.0.0
     bitbucket_archive(
         name = name,
         repository = "osrf/sdformat",
         commit = commit,
-        sha256 = "fe70ae9c79ecc043b492bc7170be96bb02bf1707820f243a8671f5be12754da8",  # noqa
+        sha256 = "a0b4d809c5ebbaaf9f5eb344ba779fa0714047ed5676a4ccc63808fc6db94fcc",  # noqa
         strip_prefix = "osrf-sdformat-%s" % (commit),
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
+        # TODO(eric.cousineau): Remove this once libsdformat incorporates it.
+        patches = ["@drake//tools/workspace/sdformat:Converter.cc.diff"],
     )

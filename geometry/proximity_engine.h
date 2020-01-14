@@ -2,14 +2,17 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -39,6 +42,20 @@ class GeometryStateCollisionFilterAttorney;
    - penetration
    - distance
    - ray-intersection
+
+ Not all shape queries are fully supported. To add support for a shape:
+ 1. for fcl versions of the specification, modify CopyShapeOrThrow().
+ 2. add an instance of the new shape to the CopySemantics test in
+    proximity_engine_test.cc.
+ 3. for penetration, test the new shape in the class BoxPenetrationTest of
+    proximity_engine_test.cc and document its configuration.
+
+ <!-- TODO(SeanCurtis-TRI): Fully document the semantics of the proximity
+ properties that will affect the proximity engine -- hydroelastic semantics,
+ required properties, etc.
+
+ <h3>Geometry proximity properties</h3>
+ -->
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
@@ -82,16 +99,20 @@ class ProximityEngine {
   /** Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
    @param id      The id of the geometry in SceneGraph to which this shape
-                  belongs.  */
-  void AddDynamicGeometry(const Shape& shape, GeometryId id);
+                  belongs.
+   @param props   The proximity properties for the shape.  */
+  void AddDynamicGeometry(const Shape& shape, GeometryId id,
+                          const ProximityProperties& props = {});
 
   /** Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.
    @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
-                  belongs.  */
+                  belongs.
+   @param props   The proximity properties for the shape.  */
   void AddAnchoredGeometry(const Shape& shape,
-                           const math::RigidTransformd& X_WG, GeometryId id);
+                           const math::RigidTransformd& X_WG, GeometryId id,
+                           const ProximityProperties& props = {});
 
   // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
   //  is *actually* sufficiently helpful to justify this act.
@@ -141,42 +162,28 @@ class ProximityEngine {
   See @ref signed_distance_query "Signed Distance Query" for more details.  */
 
   //@{
-  // TODO(SeanCurtis-TRI): Remove this documentation in favor of a link to the
-  // public API.
   // NOTE: This maps to Model::ClosestPointsAllToAll().
-  /** Determines the closest points between "all" pairs of bodies/elements. In
-   this case, for a signed distance to be reported for geometry pair (A, B):
-
-     - A and B cannot both be anchored.
-     - The pair (A, B) cannot be marked as filtered.
-     - The distance between A and B must be less than `max_distance`.
-
-   For a geometry pair (A, B), the returned results will always be reported in
-   a fixed order (e.g., always (A, B) and never (B, A)). The _basis_ for the
-   ordering is arbitrary (and therefore undocumented), but guaranteed to be
-   fixed and repeatable.
-
-   @param[in] X_WGs           The pose of all geometries in World, keyed on
-                              each geometry's GeometryId.
-   @param[in] max_distance    The maximum distance between objects such that
-                              they will be included in the results.
-   @returns  A vector populated with per-object-pair signed distance values (and
-             supporting data).
-   */
+  /** Implementation of
+   GeometryState::ComputeSignedDistancePairwiseClosestPoints().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
 
-  /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
-   @param[in] p_WQ            Position of a query point Q in world frame W.
-   @param[in] X_WGs           The pose of all geometries in world, keyed by
-                              each geometry's GeometryId.
-   @param[in] threshold       Ignore any object beyond this distance.
-   @retval signed_distances   A vector populated with per-object signed
-                              distance and gradient vector.
-                              See SignedDistanceToPoint for details.
-   */
+  /** Implementation of
+   GeometryState::ComputeSignedDistancePairClosestPoints().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B,
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const;
+
+  /** Implementation of GeometryState::ComputeSignedDistanceToPoint().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
@@ -187,24 +194,7 @@ class ProximityEngine {
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
-
-   These queries detect _collisions_ between geometry. Two geometries collide
-   if they overlap each other and are not explicitly excluded through
-   @ref collision_filter_concepts "collision filtering". These algorithms find
-   those colliding cases, characterize them, and report the essential
-   characteristics of that collision.
-
-   Computes the penetrations across all pairs of geometries in the world.
-   Only reports results for _penetrating_ geometries; if two geometries are
-   not penetrating, there will be no result for that pair. Geometries whose
-   surfaces are just touching (osculating) are not considered in penetration.
-   Surfaces whose penetration is within an epsilon of osculation, are likewise
-   not considered penetrating.
-
-   These methods are affected by collision filtering; geometry pairs that
-   have been filtered will not produce contacts, even if their collision
-   geometry is penetrating.
-   */
+  See @ref collision_queries "Collision Queries" for more details.  */
 
   //@{
 
@@ -214,44 +204,24 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /**
-   Computes the penetrations across all pairs of geometries in the world with
-   the penetrations characterized by pairs of points (providing some measure
-   of the penetration "depth" of the two objects), but _not_ the overlapping
-   volume.
-
-   For two penetrating geometries g_A and g_B, it is guaranteed that they will
-   map to `id_A` and `id_B` in a fixed, repeatable manner.
-
-   @returns A vector populated with all detected penetrations characterized as
-            point pairs.  */
+  /** Implementation of GeometryState::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
-  /**
-   Computes the intersections across all pairs of geometries in the world with
-   the intersections characterized by contact surfaces (see ContactSurface).
-
-   For two intersecting geometries g_A and g_B, it is guaranteed that they will
-   map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
-   `id_B` are GeometryId's of geometries g_A and g_B respectively.
-
-   @param[in] X_WGs           The pose of all geometries in world, keyed by
-                              each geometry's GeometryId.
-   @returns A vector populated with all detected intersections characterized as
-            contact surfaces.  */
+  /** Implementation of GeometryState::ComputeContactSurfaces().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
-  //@}
-
-  /**
-   Performs a broad-phase pass and returns a vector containing collision pair
-   candidates. A pair in the returned set is not necessarily in contact, and
-   further analysis must be done to confirm contact. A pair of geometries not
-   present in the result is guaranteed not to be in contact.  */
+  /** Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
+
+  /** Implementation of GeometryState::HasCollisions().  */
+  bool HasCollisions() const;
+
+  //@}
 
   /** @name               Collision filters
 
@@ -320,6 +290,10 @@ class ProximityEngine {
   // Reports the pose (X_WG) of the geometry with the given id.
   const math::RigidTransform<double> GetX_WG(GeometryId id,
                                              bool is_dynamic) const;
+
+  // The representation of every geometry that was successfully requested for
+  // use for hydroelastic contact surface computation.
+  const hydroelastic::Geometries& hydroelastic_geometries() const;
 
   ////////////////////////////////////////////////////////////////////////////
 

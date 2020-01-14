@@ -28,7 +28,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
                          double damping_constant_Ns_per_m,
                          double mass_kg)
       : SpringMassDamperSystem<T>(
-            SystemTypeTag<implicit_integrator_test::SpringMassDamperSystem>{},
+            SystemTypeTag<SpringMassDamperSystem>{},
             spring_constant_N_per_m, damping_constant_Ns_per_m, mass_kg) {}
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.

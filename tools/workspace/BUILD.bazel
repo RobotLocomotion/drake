@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_library")
 load("@drake//tools/install:check_licenses.bzl", "check_licenses")
 load("@drake//tools/install:install.bzl", "install")
 load(
@@ -21,8 +22,6 @@ drake_py_binary(
         "metadata.py",
         "mirror_to_s3.py",
     ],
-    python_version = "PY3",
-    srcs_version = "PY3",
     visibility = ["//visibility:private"],
     deps = [":module_py"],
 )
@@ -65,21 +64,20 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "pybind11",
     "sdformat",
     "spdlog",
-    "spruce",
-    "stx",
     "tinydir",
     "tinyobjloader",
-    "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
+    "cds",
+    "dreal",
     "net_sf_jchart2d",
-    "find_protobuf_cmake",
     "optitrack_driver",
+    "picosat",
 ]] + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({
-    "//conditions:default": ["//tools/workspace/dreal:install"],
+    "//conditions:default": ["//tools/workspace/ibex:install"],
     "//tools:no_dreal": [],
 }) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],

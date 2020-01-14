@@ -1,10 +1,9 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
-#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
@@ -108,17 +107,27 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<const AbstractValue&>(), py::arg("value"),
             doc.ConstantValueSource.ctor.doc);
 
-    DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(
-        m, "ConstantVectorSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
+    DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(m,
+        "ConstantVectorSource", GetPyParam<T>(), doc.ConstantVectorSource.doc)
         .def(py::init<VectorX<T>>(), py::arg("source_value"),
-            doc.ConstantValueSource.ctor.doc);
+            doc.ConstantVectorSource.ctor.doc)
+        .def("get_source_value", &ConstantVectorSource<T>::get_source_value,
+            py::arg("context"), py_reference_internal,
+            doc.ConstantVectorSource.get_source_value.doc)
+        .def("get_mutable_source_value",
+            &ConstantVectorSource<T>::get_mutable_source_value,
+            py::arg("context"), py_reference_internal,
+            doc.ConstantVectorSource.get_mutable_source_value.doc);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
         .def(py::init<int, int>(), py::arg("size"),
             py::arg("output_ports_size") = 1, doc.Demultiplexer.ctor.doc_2args)
         .def(py::init<const std::vector<int>&>(), py::arg("output_ports_sizes"),
-            doc.Demultiplexer.ctor.doc_1args);
+            doc.Demultiplexer.ctor.doc_1args)
+        .def("get_output_ports_sizes",
+            &Demultiplexer<T>::get_output_ports_sizes,
+            doc.Demultiplexer.get_output_ports_sizes.doc);
 
     DefineTemplateClassWithDefault<DiscreteTimeDelay<T>, LeafSystem<T>>(
         m, "DiscreteTimeDelay", GetPyParam<T>(), doc.DiscreteTimeDelay.doc)
@@ -225,24 +234,30 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
         "SymbolicVectorSystem", GetPyParam<T>(), doc.SymbolicVectorSystem.doc)
-        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
-                 VectorX<Expression>, VectorX<Expression>, double>(),
-            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+        .def(py::init<std::optional<Variable>, VectorX<Variable>,
+                 VectorX<Variable>, VectorX<Expression>, VectorX<Expression>,
+                 double>(),
+            py::arg("time") = std::nullopt,
+            py::arg("state") = Vector0<Variable>{},
             py::arg("input") = Vector0<Variable>{},
             py::arg("dynamics") = Vector0<Expression>{},
             py::arg("output") = Vector0<Expression>{},
             py::arg("time_period") = 0.0,
             doc.SymbolicVectorSystem.ctor.doc_6args)
-        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
-                 VectorX<Variable>, VectorX<Expression>, VectorX<Expression>,
-                 double>(),
-            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+        .def(py::init<std::optional<Variable>, VectorX<Variable>,
+                 VectorX<Variable>, VectorX<Variable>, VectorX<Expression>,
+                 VectorX<Expression>, double>(),
+            py::arg("time") = std::nullopt,
+            py::arg("state") = Vector0<Variable>{},
             py::arg("input") = Vector0<Variable>{},
             py::arg("parameter") = Vector0<Variable>{},
             py::arg("dynamics") = Vector0<Expression>{},
             py::arg("output") = Vector0<Expression>{},
             py::arg("time_period") = 0.0,
-            doc.SymbolicVectorSystem.ctor.doc_7args);
+            doc.SymbolicVectorSystem.ctor.doc_7args)
+        .def("dynamics_for_variable",
+            &SymbolicVectorSystem<T>::dynamics_for_variable, py::arg("var"),
+            doc.SymbolicVectorSystem.dynamics_for_variable.doc);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
@@ -307,13 +322,13 @@ PYBIND11_MODULE(primitives, m) {
       doc.ControllabilityMatrix.doc);
 
   m.def("IsControllable", &IsControllable, py::arg("sys"),
-      py::arg("threshold") = nullopt, doc.IsControllable.doc);
+      py::arg("threshold") = std::nullopt, doc.IsControllable.doc);
 
   m.def(
       "ObservabilityMatrix", &ObservabilityMatrix, doc.ObservabilityMatrix.doc);
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
-      py::arg("threshold") = nullopt, doc.IsObservable.doc);
+      py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
 
   m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
       // Keep alive, ownership: `return` keeps `builder` alive.
@@ -322,8 +337,6 @@ PYBIND11_MODULE(primitives, m) {
       py_reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

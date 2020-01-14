@@ -29,7 +29,6 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   // Set a PassThrough system with input and output of size 3.
   auto buffer = make_unique<PassThrough<T>>(3 /* size */);
   auto context = buffer->CreateDefaultContext();
-  auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
   Vector3<T> input_vector(1.0, 3.14, 2.18);
@@ -39,9 +38,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   input_vector(1).derivatives() << 0, 1, 0;  // Second independent variable.
   input_vector(2).derivatives() << 0, 0, 1;  // Third independent variable.
 
-  input->get_mutable_value() << input_vector;
-
-  context->FixInputPort(0, std::move(input));
+  buffer->get_input_port().FixValue(context.get(), input_vector);
 
   // The expected output value equals the input.
   Vector3<T> expected;

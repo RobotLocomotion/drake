@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -18,8 +19,8 @@ GTEST_TEST(TestLQR, TestException) {
   Eigen::Matrix<double, 1, 1> R = Eigen::MatrixXd::Identity(1, 1);
   Eigen::Vector2d N = Eigen::Vector2d::Zero();
 
-  EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R, N));
-  EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R));
+  DRAKE_EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R, N));
+  DRAKE_EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R));
 
   // R is not positive definite, should throw exception.
   EXPECT_THROW(LinearQuadraticRegulator(
@@ -88,7 +89,7 @@ void TestLQRAffineSystemAgainstKnownSolution(
   Eigen::VectorXd x0 = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(m);
 
-  context->FixInputPort(0, u0);
+  sys.get_input_port().FixValue(context.get(), u0);
   if (sys.time_period() == 0.0) {
     context->get_mutable_continuous_state().SetFromVector(x0);
   } else {

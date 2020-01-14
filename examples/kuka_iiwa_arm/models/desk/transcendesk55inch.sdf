@@ -608,7 +608,11 @@
         </ode>
       </physics>
     </joint>
-    <static>1</static>
+    <!--
+    N.B. This model used to have <static>true</static>, but this creates
+    issues in reusability with the current implementation of MBP parsing
+    (#12227).
+    -->
     <allow_auto_disable>1</allow_auto_disable>
   </model>
 </sdf>

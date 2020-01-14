@@ -44,46 +44,39 @@ class MultibodyForces {
   /// (Advanced) Tree overload.
   explicit MultibodyForces(const internal::MultibodyTree<T>& model);
 
+  /// Number of bodies and number of generalized velocities overload. This
+  /// constructor is useful for constructing the MultibodyForces structure
+  /// before a MultibodyPlant has been consructed.
+  MultibodyForces(int nb, int nv);
+
   /// Sets `this` to store zero forces (no applied forces).
   MultibodyForces<T>& SetZero();
 
   /// Returns the number of bodies for which `this` force object applies.
   /// Determined at construction from the given model MultibodyTree object.
-  int num_bodies() const {
-    return static_cast<int>(F_B_W_.size());
-  }
+  int num_bodies() const { return static_cast<int>(F_B_W_.size()); }
 
   /// Returns the number of generalized velocities for the model to which these
   /// forces apply. The number of generalized forces in a multibody model always
   /// equals the number of generalized velocities.
   /// Determined at construction from the given model MultibodyTree object.
-  int num_velocities() const {
-    return static_cast<int>(tau_.size());
-  }
+  int num_velocities() const { return static_cast<int>(tau_.size()); }
 
   /// (Advanced) Returns a constant reference to the vector of generalized
   /// forces stored by `this` forces object.
-  const VectorX<T>& generalized_forces() const {
-    return tau_;
-  }
+  const VectorX<T>& generalized_forces() const { return tau_; }
 
   /// (Advanced) Mutable version of generalized_forces().
-  VectorX<T>& mutable_generalized_forces() {
-    return tau_;
-  }
+  VectorX<T>& mutable_generalized_forces() { return tau_; }
 
   /// (Advanced) Returns a constant reference to the vector of spatial body
   /// forces `F_BBo_W` on each body B in the model, at the body's frame
   /// origin `Bo`, expressed in the world frame W.
   /// @note Entries are ordered by BodyNodeIndex.
-  const std::vector<SpatialForce<T>>& body_forces() const {
-    return F_B_W_;
-  }
+  const std::vector<SpatialForce<T>>& body_forces() const { return F_B_W_; }
 
   /// (Advanced) Mutable version of body_forces().
-  std::vector<SpatialForce<T>>& mutable_body_forces() {
-    return F_B_W_;
-  }
+  std::vector<SpatialForce<T>>& mutable_body_forces() { return F_B_W_; }
 
   /// Adds into `this` the force contribution stored in `addend`.
   void AddInForces(const MultibodyForces<T>& addend);

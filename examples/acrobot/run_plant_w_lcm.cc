@@ -10,18 +10,16 @@
  *
  */
 #include <memory>
+#include <thread>
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_lcm.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -47,16 +45,16 @@ int DoMain() {
   drake::systems::DiagramBuilder<double> builder;
   const std::string channel_x = "acrobot_xhat";
   const std::string channel_u = "acrobot_u";
-
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
-      multibody::joints::kFixed, tree.get());
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, lcm);
+
   auto acrobot = builder.AddSystem<AcrobotPlant>();
-  // Connects plant to visualizer.
-  builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
+  acrobot->set_name("acrobot");
+
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  AcrobotGeometry::AddToBuilder(
+      &builder, acrobot->get_output_port(0),
+      AcrobotParams<double>(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph, lcm);
 
   // Creates command receiver and subscriber.
   auto command_sub = builder.AddSystem(

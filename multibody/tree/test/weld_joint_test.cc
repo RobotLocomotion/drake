@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -34,9 +35,9 @@ class WeldJointTest : public ::testing::Test {
     // Add a prismatic joint between the world and the body.
     joint_ = &model->AddJoint<WeldJoint>(
         "Welder",
-        model->world_body(), nullopt,  // X_PF
-        *body_, nullopt,               // X_BM
-        X_FM_);                        // X_FM
+        model->world_body(), std::nullopt,  // X_PF
+        *body_, std::nullopt,               // X_BM
+        X_FM_);                             // X_FM
 
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
@@ -69,8 +70,8 @@ TEST_F(WeldJointTest, NumDOFs) {
   EXPECT_EQ(joint_->num_velocities(), 0);
   // We just verify we can call these methods. However their return value is
   // irrelevant since joints of type WeldJoint have no state.
-  EXPECT_NO_THROW(joint_->position_start());
-  EXPECT_NO_THROW(joint_->velocity_start());
+  DRAKE_EXPECT_NO_THROW(joint_->position_start());
+  DRAKE_EXPECT_NO_THROW(joint_->velocity_start());
 }
 
 // Verify we can retrieve the fixed posed between the welded frames.

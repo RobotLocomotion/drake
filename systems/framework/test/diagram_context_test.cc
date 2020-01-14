@@ -9,6 +9,8 @@
 
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -639,7 +641,7 @@ TEST_F(DiagramContextTest, DiagramState) {
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {
-  EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
+  DRAKE_EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
       {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
       {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
 }
@@ -750,6 +752,14 @@ TEST_F(DiagramContextTest, CloneAccuracy) {
   context_->SetAccuracy(unity);
   std::unique_ptr<Context<double>> clone = context_->Clone();
   EXPECT_EQ(clone->get_accuracy().value(), unity);
+}
+
+TEST_F(DiagramContextTest, SubcontextCloneIsError) {
+  const auto& subcontext = context_->GetSubsystemContext(SubsystemIndex{0});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      subcontext.Clone(), std::logic_error,
+      "Context::Clone..: Cannot clone a non-root Context; "
+      "this Context was created by 'adder0'.");
 }
 
 }  // namespace

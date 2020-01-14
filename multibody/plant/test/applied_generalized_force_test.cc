@@ -146,7 +146,7 @@ TEST_P(MultibodyPlantGeneralizedAppliedForceTest,
   }
 }
 
-INSTANTIATE_TEST_CASE_P(GravityCompensationTest,
+INSTANTIATE_TEST_SUITE_P(GravityCompensationTest,
                         MultibodyPlantGeneralizedAppliedForceTest,
                         ::testing::Values(0.0 /* continuous-time MBP */,
                                           1e-3 /* time stepping MBP */));

@@ -22,6 +22,7 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
+using geometry::Capsule;
 using geometry::Convex;
 using geometry::Cylinder;
 using geometry::FrameId;
@@ -43,7 +44,7 @@ using std::make_unique;
 using std::unique_ptr;
 
 template <typename Shape, typename... ShapeArgs>
-unique_ptr<GeometryInstance> MakeShape(const Isometry3<double>& pose,
+unique_ptr<GeometryInstance> MakeShape(const RigidTransformd& pose,
                                        const std::string& name,
                                        const Vector4d& diffuse,
                                        ShapeArgs&&... args) {
@@ -90,12 +91,14 @@ void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
                    M_PI / 2,        // moon initial position
                     7 * M_PI / 6,   // convexsat initial position
                    11 * M_PI / 6,   // boxsat initial position
+                   M_PI / 6,        // capsulesat initial position
                    M_PI / 2,        // Mars initial position
                    0,               // phobos initial position
                    2 * M_PI / 5,    // Earth revolution lasts 5 seconds.
                    2 * M_PI,        // moon revolution lasts 1 second.
                    2 * M_PI,        // convexsat revolution lasts 1 second.
                    2 * M_PI,        // boxsat revolution lasts 1 second.
+                   2 * M_PI,        // capsulesat revolution lasts 1 second.
                    2 * M_PI / 6,    // Mars revolution lasts 6 seconds.
                    2 * M_PI / 1.1;  // phobos revolution lasts 1.1 seconds.
   // clang-format on
@@ -130,14 +133,12 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
       AngleAxisd(M_PI / 2, Vector3d::UnitY()), Vector3d(length / 2, 0, 0));
   scene_graph->RegisterGeometry(
       source_id, parent_id,
-      MakeShape<Cylinder>(arm_pose.GetAsIsometry3(), "HorzArm", material,
-                          radius, length));
+      MakeShape<Cylinder>(arm_pose, "HorzArm", material, radius, length));
 
   const math::RigidTransform<double> post_pose(Vector3d(length, 0, height / 2));
   scene_graph->RegisterGeometry(
       source_id, parent_id,
-      MakeShape<Cylinder>(post_pose.GetAsIsometry3(), "VertArm", material,
-                          radius, height));
+      MakeShape<Cylinder>(post_pose, "VertArm", material, radius, height));
 }
 
 template <typename T>
@@ -241,6 +242,19 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
       source_id_, boxsat_id,
       MakeShape<Box>(X_OlL, "BoxSatellite", Vector4d(1, 0, 1, 1), 0.15, 0.15,
                      0.15));
+
+  // Capsule satellite orbits Earth in the same revolution as Luna but with
+  // different initial position. See SetDefaultState().
+  FrameId capsulesat_id = scene_graph->RegisterFrame(
+      source_id_, planet_id, GeometryFrame("CapsuleSatelliteOrbit"));
+  body_ids_.push_back(capsulesat_id);
+  body_offset_.push_back(X_OeOl);
+  axes_.push_back(luna_axis_Oe.normalized());
+
+  scene_graph->RegisterGeometry(
+      source_id_, capsulesat_id,
+      MakeShape<Capsule>(X_OlL, "CapsuleSatellite", Vector4d(0, 1, 1, 1), 0.075,
+                         0.2));
 
   // Mars's orbital frame Om lies directly *below* the sun (to account for the
   // orrery arm).

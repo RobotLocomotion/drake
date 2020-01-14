@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -8,7 +9,6 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -544,7 +544,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   multibody::constraint::ConstraintSolver<double> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
-  optional<OutputPortIndex> state_derivative_output_port_index_;
+  std::optional<OutputPortIndex> state_derivative_output_port_index_;
   OutputPortIndex kinematics_output_port_index_{};
   OutputPortIndex contact_output_port_index_{};
 

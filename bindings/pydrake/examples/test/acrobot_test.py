@@ -1,17 +1,12 @@
-from __future__ import print_function
-
-import copy
 import unittest
-import numpy as np
 
-import pydrake.systems.framework as framework
 from pydrake.examples.acrobot import (
-    AcrobotInput, AcrobotParams, AcrobotPlant, AcrobotSpongController,
-    AcrobotState, SpongControllerParams
+    AcrobotGeometry, AcrobotInput, AcrobotParams, AcrobotPlant,
+    AcrobotSpongController, AcrobotState, SpongControllerParams
     )
-from pydrake.systems.analysis import (
-    Simulator
-    )
+from pydrake.geometry import SceneGraph
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestAcrobot(unittest.TestCase):
@@ -49,6 +44,16 @@ class TestAcrobot(unittest.TestCase):
         self.assertEqual(state.theta1dot(), 2.)
         self.assertEqual(state.theta2(), 3.)
         self.assertEqual(state.theta2dot(), 4.)
+
+    def test_geometry(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(AcrobotPlant())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = AcrobotGeometry.AddToBuilder(
+            builder=builder, acrobot_state_port=plant.get_output_port(0),
+            acrobot_params=AcrobotParams(), scene_graph=scene_graph)
+        builder.Build()
+        self.assertIsInstance(geom, AcrobotGeometry)
 
     def test_simulation(self):
         # Basic constant-torque acrobot simulation.

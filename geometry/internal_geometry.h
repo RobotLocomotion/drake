@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -8,7 +9,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
@@ -105,7 +105,7 @@ class InternalGeometry {
   // TODO(SeanCurtis-TRI): Determine if tracking this parent geometry is
   // necessary for now or if that only exists to facilitate removal later on.
   /** Returns the declared parent geometry (if one exists).  */
-  optional<GeometryId> parent_id() const { return parent_geometry_id_; }
+  std::optional<GeometryId> parent_id() const { return parent_geometry_id_; }
 
   /** Sets this geometry to have *another* geometry as parent. In this case,
    the pose set in the constructor is assumed to be X_PG and the X_FG value must
@@ -198,13 +198,15 @@ class InternalGeometry {
   bool has_role(Role role) const;
 
   /** Reports if the geometry has a proximity role.  */
-  bool has_proximity_role() const { return proximity_props_ != nullopt; }
+  bool has_proximity_role() const { return proximity_props_ != std::nullopt; }
 
   /** Reports if the geometry has a illustration role.  */
-  bool has_illustration_role() const { return illustration_props_ != nullopt; }
+  bool has_illustration_role() const {
+    return illustration_props_ != std::nullopt;
+  }
 
   /** Reports if the geometry has a perception role. */
-  bool has_perception_role() const { return perception_props_ != nullopt; }
+  bool has_perception_role() const { return perception_props_ != std::nullopt; }
 
   /** Returns a pointer to the geometry's proximity properties (if they are
    defined. Nullptr otherwise.  */
@@ -230,19 +232,19 @@ class InternalGeometry {
   /** Removes the proximity role assigned to this geometry -- if there was
    no proximity role previously, this has no effect.  */
   void RemoveProximityRole() {
-    proximity_props_ = nullopt;
+    proximity_props_ = std::nullopt;
   }
 
   /** Removes the illustration role assigned to this geometry -- if there was
    no illustration role previously, this has no effect.  */
   void RemoveIllustrationRole() {
-    illustration_props_ = nullopt;
+    illustration_props_ = std::nullopt;
   }
 
   /** Removes the perception role assigned to this geometry -- if there was
    no perception role previously, this has no effect.  */
   void RemovePerceptionRole() {
-    perception_props_ = nullopt;
+    perception_props_ = std::nullopt;
   }
 
   //@}
@@ -273,7 +275,7 @@ class InternalGeometry {
   math::RigidTransform<double> X_FG_;
 
   // The identifier for this frame's parent frame.
-  optional<GeometryId> parent_geometry_id_{};
+  std::optional<GeometryId> parent_geometry_id_{};
 
   // The identifiers for the geometry hung on this frame.
   std::unordered_set<GeometryId> child_geometry_ids_;
@@ -282,9 +284,9 @@ class InternalGeometry {
   // defined at the frame level, and all child geometries inherit.
 
   // The optional property sets tied to the roles that the geometry plays.
-  optional<ProximityProperties> proximity_props_{};
-  optional<IllustrationProperties> illustration_props_{};
-  optional<PerceptionProperties> perception_props_{};
+  std::optional<ProximityProperties> proximity_props_{};
+  std::optional<IllustrationProperties> illustration_props_{};
+  std::optional<PerceptionProperties> perception_props_{};
 };
 
 }  // namespace internal

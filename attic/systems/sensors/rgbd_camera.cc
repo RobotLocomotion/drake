@@ -138,7 +138,7 @@ void RgbdCamera::InitRenderer() {
     const int body_id = body->get_body_index();
     auto& body_visual_indices = body_visual_indices_map_[body_id];
     for (const auto& visual : body->get_visual_elements()) {
-      optional<VisualIndex> visual_index =
+      std::optional<VisualIndex> visual_index =
           renderer_->RegisterVisual(visual, body_id);
       if (visual_index) {
         body_visual_indices.push_back(*visual_index);

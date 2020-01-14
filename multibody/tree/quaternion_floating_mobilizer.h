@@ -93,7 +93,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       systems::Context<T>* context, const Quaternion<T>& q_FM) const;
 
   /// Alternative signature to set_quaternion(context, q_FM) to set `state` to
-  /// store the orientation of M in F given by the equaternion `q_FM`.
+  /// store the orientation of M in F given by the quaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
       const systems::Context<T>& context,
       const Quaternion<T>& q_FM, systems::State<T>* state) const;
@@ -125,15 +125,24 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void set_random_position_distribution(const Vector3<symbolic::Expression>&
       position);
 
-  /// Sets `context` to store the quaternion `q_FM` which represents the same
-  /// orientation of M in F as given by the rotation matrix `R_FM`.
-  /// @param[out] context
-  ///   The context of the MultibodyTree to which this mobilizer belongs to.
+  /// Sets `context` so this mobilizer's generalized coordinates (its quaternion
+  /// q_FM) are consistent with the given `R_FM` rotation matrix.
+  /// @param[in] context
+  ///   The context of the MultibodyTree that this mobilizer belongs to.
   /// @param[in] R_FM
-  ///   The desired orientation of M in F given as a rotation matrix.
+  ///   The rotation matrix relating the orientation of frame F and frame M.
   /// @returns a constant reference to `this` mobilizer.
+  /// @note: To create a RotationMatrix R_FM (which is inherently orthonormal)
+  /// from a non-orthonormal Matrix3<T> m (e.g., m is approximate data), use
+  /// R_FM = math::RotationMatrix<T>::ProjectToRotationMatrix( m ).
+  /// Alternatively, set this mobilizer's orientation with the two statements:
+  /// const Eigen::Quaternion<T> q_FM = RotationMatrix<T>::ToQuaternion( m );
+  /// set_quaternion(context, q_FM);
   const QuaternionFloatingMobilizer<T>& SetFromRotationMatrix(
-      systems::Context<T>* context, const Matrix3<T>& R_FM) const;
+      systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
+    const Eigen::Quaternion<T> q_FM = R_FM.ToQuaternion();
+    return set_quaternion(context, q_FM);
+  }
 
   /// Returns the angular velocity `w_FM` of frame M in F stored in `context`.
   /// @param[in] context

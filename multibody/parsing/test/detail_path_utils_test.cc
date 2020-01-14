@@ -4,8 +4,8 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 
 using std::string;
@@ -28,8 +28,7 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPath_Relative) {
   ASSERT_NO_THROW(full_path = GetFullPath(relative_path));
   ASSERT_TRUE(!full_path.empty());
   EXPECT_EQ(full_path[0], '/');
-  spruce::path spruce_full_path(full_path);
-  EXPECT_TRUE(spruce_full_path.exists());
+  EXPECT_TRUE(filesystem::exists({full_path}));
 
   // Absolute path unchanged.
   string full_path_idempotent;
@@ -48,6 +47,43 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPathToNonexistentFile) {
 // Verifies that GetFullPath() throws when given an empty path.
 GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
   EXPECT_THROW(GetFullPath(""), std::runtime_error);
+}
+
+// Verifies that the path returned is a normalized path. This is not an
+// exhaustive list of all ways a valid path can be unnormalized. Ultimately,
+// we're relying on std::filesystem to get the job done and these are just
+// indicators (representing common cases) that show it's actually happening.
+GTEST_TEST(ResoluveUriUncheckedTest, NormalizedPath) {
+  // Use an empty package map.
+  PackageMap package_map;
+
+  // We need a valid root directory which respects the bazel sandbox; we'll
+  // extract it from a valid resource file.
+  const string target_file = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+      "package_map_test_packages/package_map_test_package_a/"
+      "sdf/test_model.sdf");
+  const string root_dir = filesystem::path(target_file).parent_path().string();
+
+  // Case: Simple concatenation would produce /fake/root/./file.txt.
+  {
+    std::string path = ResolveUri("./test_model.sdf", package_map, root_dir);
+    EXPECT_EQ(path, target_file);
+  }
+
+  // Case: Moving up one directory.
+  {
+    const std::string fake_root = root_dir + "/fake";
+    std::string path = ResolveUri("../test_model.sdf", package_map, fake_root);
+    EXPECT_EQ(path, target_file);
+  }
+
+  // Case: Redundant directory dividers.
+
+  {
+    std::string path = ResolveUri(".//test_model.sdf", package_map, root_dir);
+    EXPECT_EQ(path, target_file);
+  }
 }
 
 // Verifies that ResolveUri() resolves the proper file using the scheme

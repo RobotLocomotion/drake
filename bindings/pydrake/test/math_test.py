@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pydrake.math as mut
 import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
@@ -15,7 +13,6 @@ import math
 import unittest
 
 import numpy as np
-import six
 
 
 class TestBarycentricMesh(unittest.TestCase):
@@ -143,9 +140,6 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(pose=p_I), X_I_np)
         check_equality(RigidTransform(pose=X_I_np), X_I_np)
         check_equality(RigidTransform(pose=X_I_np[:3]), X_I_np)
-        with catch_drake_warnings(expected_count=2):
-            check_equality(RigidTransform(matrix=X_I_np), X_I_np)
-            check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.
@@ -166,10 +160,8 @@ class TestMath(unittest.TestCase):
         check_equality(X.inverse(), X_I_np)
         self.assertIsInstance(
             X.multiply(other=RigidTransform()), RigidTransform)
-        if six.PY3:
-            self.assertIsInstance(
-                eval("X @ RigidTransform()"), RigidTransform)
-            self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
+        self.assertIsInstance(X @ RigidTransform(), RigidTransform)
+        self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
         # - Test vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],
@@ -240,12 +232,16 @@ class TestMath(unittest.TestCase):
         q_R = R.ToQuaternion()
         numpy_compare.assert_float_equal(
             q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
+        # - Conversion to AngleAxis
+        angle_axis = R.ToAngleAxis()
+        self.assertIsInstance(angle_axis, AngleAxis)
+        R_AngleAxis = RotationMatrix(angle_axis)
+        R_I = R.inverse().multiply(R_AngleAxis)
+        numpy_compare.assert_equal(R_I.IsIdentityToInternalTolerance(), True)
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
-        if six.PY3:
-            numpy_compare.assert_float_equal(
-                    eval("R.inverse() @ R").matrix(), np.eye(3))
+        numpy_compare.assert_float_equal((R.inverse() @ R).matrix(), np.eye(3))
         R_T = R.transpose().multiply(R)
         numpy_compare.assert_float_equal(R_T.matrix(), np.eye(3))
         R_P = RotationMatrix.ProjectToRotationMatrix(M=2*np.eye(3))

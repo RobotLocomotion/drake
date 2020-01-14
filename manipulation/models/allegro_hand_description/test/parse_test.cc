@@ -26,7 +26,7 @@ TEST_P(ParseTest, Quantities) {
       "drake/manipulation/models/allegro_hand_description/{}/"
       "allegro_hand_description_left.{}", file_extension, file_extension));
 
-  MultibodyPlant<double> plant;
+  MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   const ModelInstanceIndex right_hand_index =
       parser.AddModelFromFile(path_right);
@@ -54,7 +54,7 @@ TEST_P(ParseTest, Quantities) {
   EXPECT_EQ(plant.num_velocities(left_hand_index), 22);
 }
 
-INSTANTIATE_TEST_CASE_P(Both, ParseTest, testing::Values("sdf", "urdf"));
+INSTANTIATE_TEST_SUITE_P(Both, ParseTest, testing::Values("sdf", "urdf"));
 
 }  // namespace
 }  // namespace manipulation

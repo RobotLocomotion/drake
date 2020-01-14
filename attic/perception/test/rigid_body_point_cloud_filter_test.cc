@@ -60,11 +60,8 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
                                          tree_->get_num_velocities());
 
     context_ = filter_->CreateDefaultContext();
-    context_->FixInputPort(
-        filter_->point_cloud_input_port().get_index(),
-        AbstractValue::Make<PointCloud>(*cloud_input_.get()));
-    context_->FixInputPort(filter_->state_input_port().get_index(),
-                           state_input_);
+    filter_->point_cloud_input_port().FixValue(context_.get(), *cloud_input_);
+    filter_->state_input_port().FixValue(context_.get(), state_input_);
 
     output_ = filter_->point_cloud_output_port().Allocate();
   }

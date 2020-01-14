@@ -11,30 +11,9 @@ exports_files(
 )
 
 exports_files(
-    glob(["com_kitware_gitlab_cmake_cmake/**"]),
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = ["//tools/workspace/find_protobuf_cmake:__pkg__"],
-)
-
-exports_files(
     glob(["josephdavisco_spruce/**"]),
     licenses = ["notice"],  # BSD-3-Clause
     visibility = ["@spruce//:__pkg__"],
-)
-
-exports_files(
-    [
-        "com_github_google_protobuf/LICENSE",
-        "com_github_google_protobuf/protobuf.bzl",
-    ],
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = ["@com_google_protobuf//:__pkg__"],
-)
-
-exports_files(
-    ["com_github_google_protobuf/protobuf-ubsan-fixup.h"],
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = ["//common/proto:__pkg__"],
 )
 
 exports_files(
@@ -54,5 +33,10 @@ exports_files(
 )
 
 add_lint_tests(
-    python_lint_extra_srcs = ["com_github_pybind_pybind11/mkdoc.py"],
+    bazel_lint_extra_srcs = [
+        "com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    ],
+    python_lint_extra_srcs = [
+        "com_github_pybind_pybind11/mkdoc.py",
+    ],
 )

@@ -26,7 +26,7 @@ class MultibodyPlantTester {
   static const std::vector<SpatialForce<double>>& EvalHydroelasticContactForces(
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
-    return plant.EvalHydroelasticContactForces(context);
+    return plant.EvalHydroelasticContactForces(context).F_BBo_W_array;
   }
 };
 
@@ -39,7 +39,7 @@ class HydroelasticModelTests : public ::testing::Test {
  protected:
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
     AddGround(kFrictionCoefficient_, plant_);
     body_ = &AddObject(plant_, kSphereRadius_, kFrictionCoefficient_);
@@ -231,7 +231,7 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
   const Vector3<double> a_WBo_expected =
       fhydro_BBo_W / kMass_ + plant_->gravity_field().gravity_vector();
   EXPECT_TRUE(CompareMatrices(a_WBo_expected, a_WBo,
-                              10 * std::numeric_limits<double>::epsilon()));
+                              40 * std::numeric_limits<double>::epsilon()));
 }
 
 }  // namespace

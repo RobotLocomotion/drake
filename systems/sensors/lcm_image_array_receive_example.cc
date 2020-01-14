@@ -7,7 +7,6 @@
 #include <gflags/gflags.h>
 #include "robotlocomotion/image_array_t.hpp"
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
@@ -79,6 +78,5 @@ int DoMain() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::systems::sensors::DoMain();
 }

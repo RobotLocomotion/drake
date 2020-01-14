@@ -1,5 +1,8 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_library")
+load("@cc//:compiler.bzl", "COMPILER_ID")
+
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
 load(
@@ -23,7 +26,7 @@ def pybind_py_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
-        py_library_rule = native.py_library,
+        py_library_rule = py_library,
         **kwargs):
     """Declares a pybind11 Python library with C++ and Python portions.
 
@@ -53,6 +56,13 @@ def pybind_py_library(
     # output a *.so, so that the target name is similar to what is provided.
     cc_so_target = cc_so_name + ".so"
 
+    # GCC and Clang don't always agree / succeed when inferring storage
+    # duration (#9600). Workaround it for now.
+    if COMPILER_ID.endswith("Clang"):
+        copts = ["-Wno-unused-lambda-capture"] + cc_copts
+    else:
+        copts = cc_copts
+
     # Add C++ shared library.
     cc_binary_rule(
         name = cc_so_target,
@@ -60,11 +70,7 @@ def pybind_py_library(
         # This is how you tell Bazel to create a shared library.
         linkshared = 1,
         linkstatic = 1,
-        copts = [
-            # GCC and Clang don't always agree / succeed when inferring storage
-            # duration (#9600). Workaround it for now.
-            "-Wno-unused-lambda-capture",
-        ] + cc_copts,
+        copts = copts,
         # Always link to pybind11.
         deps = [
             "@pybind11",
@@ -259,6 +265,7 @@ def drake_pybind_cc_googletest(
             "@pybind11",
             "@python//:python_direct_link",
         ],
+        use_default_main = False,
         # Add 'manual', because we only want to run it with Python present.
         tags = ["manual"] + tags,
         visibility = visibility,
@@ -329,8 +336,6 @@ def _generate_pybind_documentation_header_impl(ctx):
     transitive_headers = depset(transitive = transitive_headers_depsets)
     package_headers = depset(transitive = package_headers_depsets)
 
-    mkdoc = ctx.file._mkdoc
-
     args = ctx.actions.args()
     args.add_all(compile_flags, uniquify = True)
     args.add("-output=" + ctx.outputs.out.path)
@@ -342,12 +347,11 @@ def _generate_pybind_documentation_header_impl(ctx):
     args.add("-w")
     args.add_all(package_headers)
 
-    ctx.actions.run_shell(
-        outputs = [ctx.outputs.out],
+    ctx.actions.run(
         inputs = transitive_headers,
-        tools = [mkdoc],
+        outputs = [ctx.outputs.out],
         arguments = [args],
-        command = "{} $@".format(mkdoc.path),
+        executable = ctx.executable._mkdoc,
     )
 
 # Generates a header that defines variables containing a representation of the
@@ -365,7 +369,7 @@ generate_pybind_documentation_header = rule(
         ),
         "_mkdoc": attr.label(
             default = Label("//tools/workspace/pybind11:mkdoc"),
-            allow_single_file = True,
+            allow_files = True,
             cfg = "host",
             executable = True,
         ),

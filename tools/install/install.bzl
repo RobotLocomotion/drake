@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools/skylark:py.bzl", "py_binary")
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")
 load(
@@ -489,7 +490,7 @@ def _install_impl(ctx):
 
     # Generate install script.
     # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
-    # it via Python than `#!/usr/bin/env python2`?
+    # it via Python than `#!/usr/bin/env python3`?
     ctx.actions.expand_template(
         template = ctx.executable.install_script_template,
         output = ctx.outputs.executable,
@@ -518,7 +519,11 @@ def _install_impl(ctx):
                 [i.src for i in installed_tests],
     )
     return [
-        InstallInfo(install_actions = actions, rename = rename),
+        InstallInfo(
+            install_actions = actions,
+            rename = rename,
+            installed_files = installed_files,
+        ),
         InstalledTestInfo(tests = installed_tests),
         DefaultInfo(runfiles = files),
     ]
@@ -689,40 +694,6 @@ Args:
     allowed_externals: List of external packages whose files may be installed.
 """
 
-def install_py2_duplicates_if_py3(
-        name,
-        targets = None,
-        py_dest = "@PYTHON_SITE_PACKAGES@",
-        **kwargs):
-    """
-    Creates a duplicate install, only if Python3 is Bazel's version of Python.
-    Otherwise, creates an empty install target.
-
-    For `py_dest`, `@PYTHON_SITE_PACKAGES@` will be replaced with
-    `lib/python2.7/site-packages`.
-
-    This is presently only used to support Python2-only `drake_visualizer`.
-    """
-    cur_major, _ = PYTHON_VERSION.split(".")
-    if cur_major == "3":
-        py2_targets = targets
-    else:
-        py2_targets = []
-
-    # Assuming that we will only have one supported major-minor version of
-    # Python2.
-    py2_major_minor = "2.7"
-    py2_dest = py_dest.replace(
-        "@PYTHON_SITE_PACKAGES@",
-        "lib/python{}/site-packages".format(py2_major_minor),
-    )
-    install(
-        name = name,
-        targets = py2_targets,
-        py_dest = py2_dest,
-        **kwargs
-    )
-
 #------------------------------------------------------------------------------
 # Generate information to install files to specified destination.
 def _install_files_impl(ctx):
@@ -828,7 +799,7 @@ def cmake_config(
         if cps_file_name:
             fail("cps_file_name should not be set if " +
                  "script and version_file are set.")
-        native.py_binary(
+        py_binary(
             name = "create-cps",
             srcs = [script],
             main = script,

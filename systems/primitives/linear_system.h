@@ -1,10 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/primitives/affine_system.h"
 
@@ -180,7 +180,7 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 /// @note All _vector_ inputs in the system must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
 /// reference to a subsystem in a Diagram), or to a constant value using, e.g.
-/// `context->FixInputPort(0,default_input)`. Any _abstract_ inputs in the
+/// `port.FixValue(context, default_input)`. Any _abstract_ inputs in the
 /// system must be unconnected (the port must be both optional and unused).
 ///
 /// @note The inputs, states, and outputs of the returned system are NOT the
@@ -193,9 +193,9 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 ///
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index =
+    std::variant<InputPortSelection, InputPortIndex> input_port_index =
         InputPortSelection::kUseFirstInputIfItExists,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index =
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index =
         OutputPortSelection::kUseFirstOutputIfItExists,
     double equilibrium_check_tolerance = 1e-6);
 
@@ -246,9 +246,9 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 // me handle the additional options without a lot of boilerplate.
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index =
+    std::variant<InputPortSelection, InputPortIndex> input_port_index =
         InputPortSelection::kUseFirstInputIfItExists,
-    variant<OutputPortSelection, OutputPortIndex> output_port_index =
+    std::variant<OutputPortSelection, OutputPortIndex> output_port_index =
         OutputPortSelection::kUseFirstOutputIfItExists);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
@@ -258,7 +258,7 @@ Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the controllability matrix is full row rank.
 /// @ingroup control_systems
 bool IsControllable(const LinearSystem<double>& sys,
-                    optional<double> threshold = nullopt);
+                    std::optional<double> threshold = std::nullopt);
 
 /// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 /// @ingroup estimator_systems
@@ -267,7 +267,7 @@ Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the observability matrix is full column rank.
 /// @ingroup estimator_systems
 bool IsObservable(const LinearSystem<double>& sys,
-                  optional<double> threshold = nullopt);
+                  std::optional<double> threshold = std::nullopt);
 
 }  // namespace systems
 }  // namespace drake

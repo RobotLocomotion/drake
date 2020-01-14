@@ -47,7 +47,7 @@ class OptimizationProgram {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  virtual const optional<Eigen::VectorXd>& initial_guess() const {
+  virtual const std::optional<Eigen::VectorXd>& initial_guess() const {
     return initial_guess_;
   }
 
@@ -61,7 +61,7 @@ class OptimizationProgram {
   CostForm cost_form_;
   ConstraintForm constraint_form_;
   std::unique_ptr<MathematicalProgram> prog_;
-  optional<Eigen::VectorXd> initial_guess_;
+  std::optional<Eigen::VectorXd> initial_guess_;
 };
 
 /**

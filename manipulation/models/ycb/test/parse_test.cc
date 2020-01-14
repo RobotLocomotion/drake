@@ -55,7 +55,7 @@ TEST_P(ParseTest, Quantities) {
   DiagramBuilder<double> builder;
   MultibodyPlant<double>* plant{};
   SceneGraph<double>* scene_graph{};
-  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(plant).AddModelFromFile(filename);
   ConnectDrakeVisualizer(&builder, *scene_graph);
   plant->Finalize();
@@ -81,7 +81,7 @@ TEST_P(ParseTest, Quantities) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(Both, ParseTest, testing::Values(
+INSTANTIATE_TEST_SUITE_P(Both, ParseTest, testing::Values(
     "003_cracker_box",
     "004_sugar_box",
     "005_tomato_soup_can",

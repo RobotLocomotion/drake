@@ -1,8 +1,7 @@
-boto3; python_version >= "3.3"
-ipywidgets; python_version >= "3.5"  # For Jupyter
-jupyter; python_version >= "3.5"  # Also enables `jupyter notebook`
+boto3
+jupyter
+pandas
 pygame
-# Constrain Sphinx due to hack customizations for templates in
-# `pydrake_sphinx_extension`.
-Sphinx < 2.0.0
+# Excluded due to https://github.com/sphinx-doc/sphinx/issues/6225
+Sphinx != 2.0.0
 sphinx_rtd_theme

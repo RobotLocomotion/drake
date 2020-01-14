@@ -10,7 +10,6 @@ Example:
         load("@drake//tools/workspace/numpy:repo.bzl", "numpy_repository")
         numpy_repository(
             name = "foo",
-            python_version = "2",
         )
 
     BUILD:
@@ -22,27 +21,30 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
-    python_version: The major or major.minor version of Python for which NumPy
-                    headers are to be found.
+    linux_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:linux platform.
+        Defaults to the value of LINUX_INTERPRETER_PATH in
+        //tools/py_toolchain:interpreter_paths.bzl.
+    macos_interpreter_path: Optional interpreter path for the Python runtime in
+        the registered Python toolchain on the @platforms//os:osx (macOS)
+        platform. Defaults to the value of MACOS_INTERPRETER_PATH in
+        //tools/py_toolchain:interpreter_paths.bzl.
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
+load(
+    "@drake//tools/workspace/python:repository.bzl",
+    "interpreter_path_attrs",
+    "repository_python_info",
+)
 
 def _impl(repository_ctx):
-    python = which(repository_ctx, "python{}".format(
-        repository_ctx.attr.python_version,
-    ))
-
-    if not python:
-        fail("Could NOT find python{}".format(
-            repository_ctx.attr.python_version,
-        ))
+    python_info = repository_python_info(repository_ctx)
 
     result = repository_ctx.execute([
-        python,
+        python_info.python,
         "-c",
         "; ".join([
-            "from __future__ import print_function",
             "import numpy",
             "print(numpy.get_include())",
         ]),
@@ -80,6 +82,6 @@ cc_library(
 
 numpy_repository = repository_rule(
     _impl,
-    attrs = {"python_version": attr.string(default = "2")},
+    attrs = interpreter_path_attrs,
     local = True,
 )

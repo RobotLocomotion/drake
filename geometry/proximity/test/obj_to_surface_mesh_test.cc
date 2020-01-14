@@ -14,7 +14,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 namespace {
 
 // Tests TinyObjToSurfaceVertices through ReadObjToSurfaceMesh. We cannot
@@ -222,6 +221,5 @@ f 4 5 6
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

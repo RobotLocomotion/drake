@@ -29,10 +29,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   // Check that we get the initial position and force before receiving a
   // command.
   lcmt_schunk_wsg_command initial_command{};
-  const int message_input_id = dut.GetInputPort("command_message").get_index();
-  context->FixInputPort(
-      message_input_id,
-      AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
+  const systems::InputPort<double>& message_input_port =
+      dut.GetInputPort("command_message");
+  message_input_port.FixValue(context.get(), initial_command);
   EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0],
             initial_position);
   EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0],
@@ -43,9 +42,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   initial_command.utime = 1;
   initial_command.target_position_mm = 100;
   initial_command.force = 40;
-  context->FixInputPort(
-      message_input_id,
-      AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
+  message_input_port.FixValue(context.get(), initial_command);
   EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0],
             0.1);
   EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0],
@@ -58,11 +55,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandSenderTest) {
       dut.CreateDefaultContext();
 
   const double position = 0.0015;
-  context->FixInputPort(dut.get_position_input_port().get_index(),
-                        Vector1d(position));
+  dut.get_position_input_port().FixValue(context.get(), position);
   const double force_limit = 25.0;
-  context->FixInputPort(dut.get_force_limit_input_port().get_index(),
-                        Vector1d(force_limit));
+  dut.get_force_limit_input_port().FixValue(context.get(), force_limit);
 
   const lcmt_schunk_wsg_command& command =
       dut.get_output_port(0).Eval<lcmt_schunk_wsg_command>(*context);
@@ -79,8 +74,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   // Check that we get zeros before receiving any messages (using the POD
   // initialization via {}, as used in LcmSubscriberSystem).
   lcmt_schunk_wsg_status status{};
-  context->FixInputPort(
-      0, AbstractValue::Make<lcmt_schunk_wsg_status>(status));
+  dut.get_input_port(0).FixValue(context.get(), status);
   EXPECT_TRUE(CompareMatrices(dut.get_state_output_port().Eval(*context),
                               Vector2d::Zero()));
   EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0],
@@ -91,8 +85,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   status.actual_position_mm = 100;
   status.actual_speed_mm_per_s = 324;
   status.actual_force = 40;
-  context->FixInputPort(
-      0, AbstractValue::Make<lcmt_schunk_wsg_status>(status));
+  dut.get_input_port(0).FixValue(context.get(), status);
   EXPECT_TRUE(CompareMatrices(dut.get_state_output_port().Eval(*context),
                               Vector2d(.1, .324)));
   EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0],
@@ -106,8 +99,8 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusSenderTest) {
 
   const double position = 0.001;
   const double velocity = 0.04;
-  context->FixInputPort(dut.get_state_input_port().get_index(),
-                        Vector2d(position, velocity));
+  dut.get_state_input_port().FixValue(context.get(),
+                                      Vector2d(position, velocity));
 
   // Check that the force input port is indeed optional.
   {
@@ -121,8 +114,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusSenderTest) {
 
   // Check that we can also set the force.
   const double force = 32.0;
-  context->FixInputPort(dut.get_force_input_port().get_index(),
-                        Vector1d(force));
+  dut.get_force_input_port().FixValue(context.get(), force);
 
   EXPECT_EQ(dut.get_output_port(0)
                 .Eval<lcmt_schunk_wsg_status>(*context)

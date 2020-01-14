@@ -19,11 +19,11 @@ Similarly, it provides:
 If you want to log objects that are expensive to serialize, these macros will
 not be compiled if debugging is turned off (-DNDEBUG is set):
 <pre>
-  SPDLOG_LOGGER_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
-  SPDLOG_LOGGER_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
+  DRAKE_LOGGER_TRACE("message: {}", something_conditionally_compiled);
+  DRAKE_LOGGER_DEBUG("message: {}", something_conditionally_compiled);
 </pre>
 
-The format string syntax is fmtlib; see https://fmt.dev/6.0.0/syntax.html.
+The format string syntax is fmtlib; see https://fmt.dev/6.1.2/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
 printed without any special handling.
 */
@@ -32,38 +32,46 @@ printed without any special handling.
 
 #ifndef DRAKE_DOXYGEN_CXX
 #ifdef HAVE_SPDLOG
-// Before including spdlog, activate the SPDLOG_DEBUG and SPDLOG_TRACE macros
-// if and only if Drake is being compiled in debug mode.  When not in debug
-// mode, they are no-ops and their arguments are not evaluated.
 #ifndef NDEBUG
+
+// When in Debug builds, before including spdlog we set the compile-time
+// minimum log threshold so that spdlog defaults to enabling all log levels.
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
-// TODO(jwnimmer-tri) Deprecate these Drake-specific aliases.
-#define DRAKE_SPDLOG_TRACE(logger, ...)            \
-  do {                                             \
-    SPDLOG_LOGGER_TRACE(logger, __VA_ARGS__);      \
+// Provide operative macros only when spdlog is available and Debug is enabled.
+#define DRAKE_LOGGER_TRACE(...)                                               \
+  do {                                                                        \
+    /* Capture the drake::log() in a temporary, using a relatively unique */  \
+    /* variable name to avoid potential variable name shadowing warnings. */  \
+    ::drake::logging::logger* const drake_spdlog_macro_logger_alias =         \
+        ::drake::log();                                                       \
+    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::trace) {   \
+      SPDLOG_LOGGER_TRACE(drake_spdlog_macro_logger_alias, __VA_ARGS__);      \
+    }                                                                         \
+  } while (0)
+#define DRAKE_LOGGER_DEBUG(...)                                               \
+  do {                                                                        \
+    /* Capture the drake::log() in a temporary, using a relatively unique */  \
+    /* variable name to avoid potential variable name shadowing warnings. */  \
+    ::drake::logging::logger* const drake_spdlog_macro_logger_alias =         \
+        ::drake::log();                                                       \
+    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::debug) {   \
+      SPDLOG_LOGGER_DEBUG(drake_spdlog_macro_logger_alias, __VA_ARGS__);      \
+    }                                                                         \
   } while (0)
 
-#define DRAKE_SPDLOG_DEBUG(logger, ...)            \
-  do {                                             \
-    SPDLOG_LOGGER_DEBUG(logger, __VA_ARGS__);      \
-  } while (0)
 #else
-#define DRAKE_SPDLOG_TRACE(logger, ...)
-#define DRAKE_SPDLOG_DEBUG(logger, ...)
+
+// Spdlog is available, but we are doing a non-Debug build.
+#define DRAKE_LOGGER_TRACE(...)
+#define DRAKE_LOGGER_DEBUG(...)
+
 #endif
 
 /* clang-format off */
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 /* clang-format on */
-
-// Backfill a flag day API change from spdlog.
-// TODO(jwnimmer-tri) Update Drake to use the newer APIs only.
-#undef SPDLOG_DEBUG
-#undef SPDLOG_TRACE
-#define SPDLOG_DEBUG SPDLOG_LOGGER_DEBUG
-#define SPDLOG_TRACE SPDLOG_LOGGER_TRACE
 
 #else  // HAVE_SPDLOG
 
@@ -144,10 +152,8 @@ class sink {
 
 }  // namespace logging
 
-#define SPDLOG_TRACE(logger, ...)
-#define SPDLOG_DEBUG(logger, ...)
-#define DRAKE_SPDLOG_TRACE(logger, ...)
-#define DRAKE_SPDLOG_DEBUG(logger, ...)
+#define DRAKE_LOGGER_TRACE(...)
+#define DRAKE_LOGGER_DEBUG(...)
 
 #endif  // HAVE_SPDLOG
 
@@ -199,5 +205,45 @@ struct Warn {
 /// then this returns an empty string.
 std::string set_log_level(const std::string& level);
 
+/// The "unchanged" string to pass to set_log_level() so as to achieve a no-op.
+extern const char* const kSetLogLevelUnchanged;
+
+/// An end-user help string suitable to describe the effects of set_log_level().
+extern const char* const kSetLogLevelHelpMessage;
+
 }  // namespace logging
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Remove this deprecated function and macros on 2020-03-01.
+#ifndef DRAKE_DOXYGEN_CXX
+#ifdef HAVE_SPDLOG
+namespace drake {
+namespace logging {
+namespace internal {
+[[deprecated(
+"The DRAKE_SPDLOG_TRACE and DRAKE_SPDLOG_DEBUG macros are deprecated.\n"
+"Please use DRAKE_LOGGER_TRACE and DRAKE_LOGGER_DEBUG instead.\n"
+"The deprecated code will be removed from Drake on or after 2020-03-01.")]]
+inline void warn_deprecated_macro() {}
+}  // namespace internal
+}  // namespace logging
+}  // namespace drake
+#define DRAKE_SPDLOG_TRACE(logger, ...)                         \
+  do {                                                          \
+    ::drake::logging::internal::warn_deprecated_macro();        \
+    if (logger->level() <= spdlog::level::trace) {              \
+      SPDLOG_LOGGER_TRACE(logger, __VA_ARGS__);                 \
+    }                                                           \
+  } while (0)
+#define DRAKE_SPDLOG_DEBUG(logger, ...)                         \
+  do {                                                          \
+    ::drake::logging::internal::warn_deprecated_macro();        \
+    if (logger->level() <= spdlog::level::debug) {              \
+      SPDLOG_LOGGER_DEBUG(logger, __VA_ARGS__);                 \
+    }                                                           \
+  } while (0)
+#else  // HAVE_SPDLOG
+#define DRAKE_SPDLOG_TRACE(...)
+#define DRAKE_SPDLOG_DEBUG(...)
+#endif  // HAVE_SPDLOG
+#endif  // DRAKE_DOXYGEN_CXX

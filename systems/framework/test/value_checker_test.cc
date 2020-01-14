@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/basic_vector.h"
 
 using std::make_unique;
@@ -19,7 +20,7 @@ class GoodVector : public BasicVector<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GoodVector)
   GoodVector() : BasicVector<double>(2) {}
-  DRAKE_NODISCARD GoodVector* DoClone() const override {
+  [[nodiscard]] GoodVector* DoClone() const override {
     return new GoodVector;
   }
 };
@@ -44,7 +45,7 @@ class NotQuiteGoodVector : public GoodVector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector)
   NotQuiteGoodVector() {}
-  DRAKE_NODISCARD GoodVector* DoClone() const override {
+  [[nodiscard]] GoodVector* DoClone() const override {
     return new GoodVector;
   }
 };
@@ -61,8 +62,8 @@ GTEST_TEST(ValueCheckerTest, CheckBasicVectorInvariantsTest) {
   const NotSoGoodVector not_so_good;
   const NotQuiteGoodVector not_quite_good;
 
-  EXPECT_NO_THROW(CheckVector(&basic));
-  EXPECT_NO_THROW(CheckVector(&good));
+  DRAKE_EXPECT_NO_THROW(CheckVector(&basic));
+  DRAKE_EXPECT_NO_THROW(CheckVector(&good));
   EXPECT_THROW(CheckVector(nullptr), std::exception);
   EXPECT_THROW(CheckVector(&missing_clone), std::exception);
   EXPECT_THROW(CheckVector(&not_so_good), std::exception);
@@ -82,8 +83,8 @@ GTEST_TEST(ValueCheckerTest, CheckVectorValueInvariantsTest) {
   const VectorValue not_so_good(make_unique<NotSoGoodVector>());
   const VectorValue not_quite_good(make_unique<NotQuiteGoodVector>());
 
-  EXPECT_NO_THROW(CheckValue(&basic));
-  EXPECT_NO_THROW(CheckValue(&good));
+  DRAKE_EXPECT_NO_THROW(CheckValue(&basic));
+  DRAKE_EXPECT_NO_THROW(CheckValue(&good));
   EXPECT_THROW(CheckValue(nullptr), std::exception);
   EXPECT_THROW(CheckValue(&missing_clone), std::exception);
   EXPECT_THROW(CheckValue(&not_so_good), std::exception);
@@ -91,7 +92,7 @@ GTEST_TEST(ValueCheckerTest, CheckVectorValueInvariantsTest) {
 
   // Other unrelated Values are ignored.
   const Value<int> int_value(2);
-  EXPECT_NO_THROW(CheckValue(&int_value));
+  DRAKE_EXPECT_NO_THROW(CheckValue(&int_value));
 }
 
 }  // namespace

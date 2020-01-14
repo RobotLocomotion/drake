@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -345,20 +344,17 @@ int do_main() {
 
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
-        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
-            *diagram, &simulator.get_mutable_context());
+        &simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
   } else if (FLAGS_integration_scheme == "runge_kutta2") {
-    integrator =
-        simulator.reset_integrator<RungeKutta2Integrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
+    integrator = &simulator.reset_integrator<RungeKutta2Integrator<double>>(
+        max_time_step);
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
-        simulator.reset_integrator<RungeKutta3Integrator<double>>(
-            *diagram, &simulator.get_mutable_context());
+        &simulator.reset_integrator<RungeKutta3Integrator<double>>();
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
-        simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
+        &simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+            max_time_step);
   } else {
     throw std::runtime_error(
         "Integration scheme '" + FLAGS_integration_scheme +
@@ -411,6 +407,5 @@ int main(int argc, char* argv[]) {
       "handling. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  drake::logging::HandleSpdlogGflags();
   return drake::examples::simple_gripper::do_main();
 }

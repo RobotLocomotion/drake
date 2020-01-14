@@ -1,0 +1,81 @@
+# -*- python -*-
+# vi: set ft=python :
+
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+load(
+    ":generate_installed_files_manifest.bzl",
+    "generate_installed_files_manifest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+# Create manifest.bzl with the list of installed files.
+generate_installed_files_manifest(
+    name = "manifest_genrule",
+    out = "manifest.bzl",
+    target = "//:all_install_targets_except_bazel",
+)
+
+# The BUILD files that provide rules for the installed @drake.
+_BUILD_FILES_DATA = [
+    ":drake.BUILD.bazel",
+    ":drake__bindings__pydrake.BUILD.bazel",
+    ":drake__common.BUILD.bazel",
+    ":drake__examples.BUILD.bazel",
+    ":drake__manipulation.BUILD.bazel",
+]
+
+# Create repo.bzl by combining repo_template.bzl and its data dependencies.
+drake_py_binary(
+    name = "repo_gen",
+    srcs = ["repo_gen.py"],
+    data = [
+        "repo_template.bzl",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+genrule(
+    name = "repo_bzl_genrule",
+    srcs = [
+        ":manifest.bzl",
+        ":repo_template.bzl",
+    ] + _BUILD_FILES_DATA,
+    outs = ["repo.bzl"],
+    cmd = " ".join([
+        "$(execpath :repo_gen)",
+        "--output=$@",
+        "--repo_template=$(execpath :repo_template.bzl)",
+        "--manifest=$(execpath :manifest.bzl)",
+    ] + [
+        "--build_file=$(execpath {})".format(x)
+        for x in _BUILD_FILES_DATA
+    ]),
+    tools = [":repo_gen"],
+)
+
+# Install repo.bzl and add an acceptance test.
+install(
+    name = "install",
+    install_tests = [
+        "test/drake_bazel_installed_test.py",
+    ],
+    data = [
+        ":repo.bzl",
+    ],
+    data_dest = "share/drake",
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "test/drake_bazel_installed_test.py",
+    ],
+)

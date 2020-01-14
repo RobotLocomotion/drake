@@ -9,8 +9,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
-#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -31,57 +29,6 @@ namespace drake {
 namespace pydrake {
 
 namespace {
-
-// TODO(eric.cousineau): Remove `*DeprecatedProtectedAlias*` cruft and
-// replace `PYDRAKE_TRY_PROTECTED_OVERLOAD` with `PYBIND11_OVERLOAD` once
-// deprecated methods are removed (on or around 2019-08-01).
-
-// Generates deprecation message pursuant to #9651.
-std::string DeprecatedProtectedAliasMessage(
-    std::string name, std::string verb) {
-  return fmt::format(
-      "'_{0}' is deprecated and will be removed on or around 2019-08-01. "
-      "Please {1} '{0}' instead.",
-      name, verb);
-}
-
-// Deprecates alias pursuant to #9651.
-template <typename PyClass>
-void AddDeprecatedProtectedAliases(
-    PyClass* cls, std::vector<std::string> names) {
-  // Use function-wrapping approach so that we can override documentation.
-  // Ensure that the deprecated overload is a `py::cpp_function` so that
-  // `py::get_overload<>` proprely ignores things (as its logic is relatively
-  // complex).
-  for (const std::string& name : names) {
-    const std::string alias = "_" + name;
-    const std::string deprecation =
-        DeprecatedProtectedAliasMessage(name, "call");
-    py::handle cls_handle = *cls;
-    cls->def(alias.c_str(),
-        [cls_handle, name, deprecation](
-            py::object self, py::args args, py::kwargs kwargs) {
-          // N.B. Trying to capture a `py::handle` for `original` does not work
-          // and causes segfaults.
-          py::object original = cls_handle.attr(name.c_str());
-          WarnDeprecated(deprecation);
-          return original(self, *args, **kwargs);
-        },
-        deprecation.c_str());
-  }
-}
-
-// Deprecates overloads pursuant to #9651. This first attempts to resolve to
-// `{NAME}` overload. If that does not return (via the `PYBIND11_OVERLOAD_INT`
-// macro), then it tries the `_{NAME}` overload.
-// N.B. No control flow will ever make `__VA_ARGS__` be evaluated more than
-// once.
-#define PYDRAKE_TRY_PROTECTED_OVERLOAD(RETURN, CLASS, NAME, ...)       \
-  PYBIND11_OVERLOAD_INT(RETURN, CLASS, NAME, __VA_ARGS__);             \
-  if (py::get_overload<CLASS>(this, "_" NAME)) {                       \
-    WarnDeprecated(DeprecatedProtectedAliasMessage(NAME, "override")); \
-    PYBIND11_OVERLOAD_INT(RETURN, CLASS, "_" NAME, __VA_ARGS__);       \
-  }
 
 using symbolic::Expression;
 using systems::Context;
@@ -169,8 +116,7 @@ struct Impl {
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
       // possibly using function wrapping.
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(
-          void, LeafSystem<T>, "DoPublish", &context, events);
+      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
       Base::DoPublish(context, events);
     }
@@ -178,7 +124,7 @@ struct Impl {
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
       // See `DoPublish` for explanation.
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(
+      PYBIND11_OVERLOAD_INT(
           void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
@@ -188,7 +134,7 @@ struct Impl {
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
       // See `DoPublish` for explanation.
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, LeafSystem<T>,
+      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
@@ -239,7 +185,7 @@ struct Impl {
     using Base = VectorSystem<T>;
 
     VectorSystemPublic(
-        int input_size, int output_size, optional<bool> direct_feedthrough)
+        int input_size, int output_size, std::optional<bool> direct_feedthrough)
         : Base(input_size, output_size, direct_feedthrough) {}
 
     using Base::EvalVectorInput;
@@ -262,7 +208,7 @@ struct Impl {
       // Copied from above, since we cannot use `PyLeafSystemBase` due to final
       // overrides of some methods.
       // TODO(eric.cousineau): Make this more granular?
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(
+      PYBIND11_OVERLOAD_INT(
           void, VectorSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
       Base::DoPublish(context, events);
@@ -277,8 +223,7 @@ struct Impl {
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, VectorSystem<T>,
-          "DoCalcVectorOutput",
+      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "DoCalcVectorOutput",
           // N.B. Passing `Eigen::Map<>` derived classes by reference rather
           // than pointer to ensure conceptual clarity. pybind11 `type_caster`
           // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
@@ -293,7 +238,7 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, VectorSystem<T>,
+      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
           "DoCalcVectorTimeDerivatives", &context, input, state,
           ToEigenRef(derivatives));
       // If the macro did not return, use default functionality.
@@ -306,7 +251,7 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, VectorSystem<T>,
+      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
           "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
           ToEigenRef(next_state));
       // If the macro did not return, use default functionality.
@@ -349,17 +294,17 @@ struct Impl {
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("DeclareInputPort",
             overload_cast_explicit<const InputPort<T>&,
-                variant<std::string, UseDefaultName>, PortDataType, int,
-                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+                std::variant<std::string, UseDefaultName>, PortDataType, int,
+                std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
-            py::arg("size"), py::arg("random_type") = nullopt,
+            py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.System.DeclareInputPort.doc_4args)
         .def("DeclareInputPort",
             overload_cast_explicit<  // BR
                 const InputPort<T>&, PortDataType, int,
-                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+                std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("type"), py::arg("size"),
-            py::arg("random_type") = nullopt)
+            py::arg("random_type") = std::nullopt)
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
             doc.System.HasAnyDirectFeedthrough.doc)
@@ -383,6 +328,8 @@ struct Impl {
             doc.System.AllocateContext.doc)
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
             doc.System.CreateDefaultContext.doc)
+        .def("SetDefaultContext", &System<T>::SetDefaultContext,
+            doc.System.SetDefaultContext.doc)
         .def("AllocateOutput",
             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                 &System<T>::AllocateOutput),
@@ -420,6 +367,30 @@ struct Impl {
                 &System<T>::CalcDiscreteVariableUpdates),
             py::arg("context"), py::arg("discrete_state"),
             doc.System.CalcDiscreteVariableUpdates.doc_2args)
+        .def("GetSubsystemContext",
+            overload_cast_explicit<const Context<T>&, const System<T>&,
+                const Context<T>&>(&System<T>::GetSubsystemContext),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
+        .def("GetMutableSubsystemContext",
+            overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
+                &System<T>::GetMutableSubsystemContext),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
+        .def("GetMyContextFromRoot",
+            overload_cast_explicit<const Context<T>&, const Context<T>&>(
+                &System<T>::GetMyContextFromRoot),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
+        .def("GetMyMutableContextFromRoot",
+            overload_cast_explicit<Context<T>&, Context<T>*>(
+                &System<T>::GetMyMutableContextFromRoot),
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Sugar.
         .def("GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {
@@ -466,7 +437,6 @@ struct Impl {
 Note: The above is for the C++ documentation. For Python, use
 `witnesses = GetWitnessFunctions(context)`)"")
                 .c_str());
-    AddDeprecatedProtectedAliases(&system_cls, {"DeclareInputPort"});
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
     using CalcCallback = typename LeafOutputPort<T>::CalcCallback;
@@ -532,13 +502,13 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
-                optional<RandomDistribution> random_type)
+                std::optional<RandomDistribution> random_type)
                 -> const InputPort<T>& {
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
             py_reference_internal, py::arg("name"), py::arg("model_vector"),
-            py::arg("random_type") = nullopt,
+            py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
@@ -720,15 +690,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("index"), doc.SystemBase.input_port_ticket.doc)
         .def("numeric_parameter_ticket", &SystemBase::numeric_parameter_ticket,
             py::arg("index"), doc.SystemBase.numeric_parameter_ticket.doc);
-    AddDeprecatedProtectedAliases(&leaf_system_cls,
-        {"DeclareAbstractInputPort", "DeclareAbstractParameter",
-            "DeclareNumericParameter", "DeclareAbstractOutputPort",
-            "DeclareVectorInputPort", "DeclareVectorOutputPort",
-            "DeclareInitializationEvent", "DeclarePeriodicPublish",
-            "DeclarePeriodicDiscreteUpdate", "DeclarePeriodicEvent",
-            "DeclarePerStepEvent", "DoPublish", "DeclareContinuousState",
-            "DeclareDiscreteState", "DoCalcTimeDerivatives",
-            "DoCalcDiscreteVariableUpdates", "DeclareAbstractState"});
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
@@ -740,18 +701,6 @@ Note: The above is for the C++ documentation. For Python, use
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 3>(),
             doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
-        .def("GetSubsystemContext",
-            overload_cast_explicit<const Context<T>&, const System<T>&,
-                const Context<T>&>(&Diagram<T>::GetSubsystemContext),
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
-        .def("GetMutableSubsystemContext",
-            overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
-                &Diagram<T>::GetMutableSubsystemContext),
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_reference_internal,
             doc.Diagram.GetSubsystemByName.doc);
@@ -763,12 +712,12 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
         LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
         .def(py::init([](int input_size, int output_size,
-                          optional<bool> direct_feedthrough) {
+                          std::optional<bool> direct_feedthrough) {
           return new PyVectorSystem(
               input_size, output_size, direct_feedthrough);
         }),
             py::arg("input_size"), py::arg("output_size"),
-            py::arg("direct_feedthrough") = nullopt,
+            py::arg("direct_feedthrough") = std::nullopt,
             doc.VectorSystem.ctor.doc_3args);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.

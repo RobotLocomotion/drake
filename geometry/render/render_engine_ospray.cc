@@ -16,10 +16,12 @@
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkProperty.h>
-#include <vtkSphereSource.h>
+#include <vtkTexturedSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
+#include "drake/common/text_logging.h"
+#include "drake/geometry/render/render_engine_vtk_base.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/vtk_util.h"
 
@@ -70,7 +72,7 @@ struct RegistrationData {
   const RigidTransformd& X_FG;
   const GeometryId id;
   // The file name if the shape being registered is a mesh.
-  optional<std::string> mesh_filename;
+  std::optional<std::string> mesh_filename;
 };
 
 std::string RemoveFileExtension(const std::string& filepath) {
@@ -169,33 +171,24 @@ void RenderEngineOspray::RenderLabelImage(const CameraProperties&, bool,
 void RenderEngineOspray::ImplementGeometry(const Sphere& sphere,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive sphere; find some way to
-  //  exercise *that* instead of needlessly tesselating.
-  vtkNew<vtkSphereSource> vtk_sphere;
-  vtk_sphere->SetRadius(sphere.get_radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_sphere->SetThetaResolution(50);
-  vtk_sphere->SetPhiResolution(50);
+  //  exercise *that* instead of needlessly tessellating.
+  vtkNew<vtkTexturedSphereSource> vtk_sphere;
+  SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
   ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Cylinder& cylinder,
                                            void* user_data) {
   // TODO(SeanCurtis-TRI): OSPRay supports a primitive cylinder; find some way
-  //  to exercise *that* instead of needlessly tesselating.
+  //  to exercise *that* instead of needlessly tessellating.
   vtkNew<vtkCylinderSource> vtk_cylinder;
-  vtk_cylinder->SetHeight(cylinder.get_length());
-  vtk_cylinder->SetRadius(cylinder.get_radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_cylinder->SetResolution(50);
+  SetCylinderOptions(vtk_cylinder, cylinder.length(), cylinder.radius());
 
   // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
   // to rotate it to be z-axis aligned because that is what Drake uses.
   vtkNew<vtkTransform> transform;
-  transform->RotateX(90);
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
-  transform_filter->SetTransform(transform.GetPointer());
-  transform_filter->Update();
+  TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
 
   ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
@@ -214,6 +207,16 @@ void RenderEngineOspray::ImplementGeometry(const Box& box, void* user_data) {
   cube->SetYLength(box.depth());
   cube->SetZLength(box.height());
   ImplementGeometry(cube.GetPointer(), user_data);
+}
+
+void RenderEngineOspray::ImplementGeometry(const Capsule& capsule,
+                                           void* user_data) {
+  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(), user_data);
+}
+
+void RenderEngineOspray::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                           void* user_data) {
+  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(), user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Mesh& mesh, void* user_data) {
@@ -473,13 +476,18 @@ void RenderEngineOspray::ImplementGeometry(vtkPolyDataAlgorithm* source,
   std::ifstream file_exist(diffuse_map_name);
   if (file_exist) {
     texture_name = diffuse_map_name;
-  } else if (diffuse_map_name.empty() && data.mesh_filename) {
-    // This is the hack to search for mesh.png as a possible texture.
-    const std::string
-    alt_texture_name(RemoveFileExtension(*data.mesh_filename) +
-        ".png");
-    std::ifstream alt_file_exist(alt_texture_name);
-    if (alt_file_exist) texture_name = alt_texture_name;
+  } else {
+    if (!diffuse_map_name.empty()) {
+      log()->warn("Requested diffuse map could not be found: {}",
+                  diffuse_map_name);
+    }
+    if (diffuse_map_name.empty() && data.mesh_filename) {
+      // This is the hack to search for mesh.png as a possible texture.
+      const std::string alt_texture_name(
+          RemoveFileExtension(*data.mesh_filename) + ".png");
+      std::ifstream alt_file_exist(alt_texture_name);
+      if (alt_file_exist) texture_name = alt_texture_name;
+    }
   }
   if (!texture_name.empty()) {
     vtkNew<vtkPNGReader> texture_reader;

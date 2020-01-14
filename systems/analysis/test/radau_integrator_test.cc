@@ -4,20 +4,17 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
+#include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/robertson_system.h"
 #include "drake/systems/analysis/test_utilities/stationary_system.h"
 
-using drake::systems::analysis_test::CubicScalarSystem;
-using drake::systems::analysis_test::LinearScalarSystem;
-using drake::systems::analysis_test::QuadraticScalarSystem;
-using drake::systems::analysis_test::StationarySystem;
-
 namespace drake {
 namespace systems {
-namespace {
+namespace analysis_test {
 
 // Tests the Jacobian and iteration matrix reuse strategies using a test
 // problem and integrator for which we have knowledge of the convergence
@@ -64,6 +61,51 @@ GTEST_TEST(RadauIntegratorTest, Reuse) {
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 1);
 }
 
+// Tests that the full-Newton approach computes a Jacobian matrix and factorizes
+// the iteration matrix on every Newton-Raphson iteration.
+GTEST_TEST(RadauIntegratorTest, FullNewton) {
+  std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
+    std::make_unique<analysis::test::RobertsonSystem<double>>();
+  std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
+
+  // Create the Euler integrator.
+  RadauIntegrator<double, 1> euler(*robertson, context.get());
+
+  euler.request_initial_step_size_target(1e0);
+  euler.set_throw_on_minimum_step_size_violation(false);
+  euler.set_fixed_step_mode(true);
+  euler.set_use_full_newton(true);    // The whole point of this test.
+
+  // Attempt to integrate the system. Our past experience indicates that this
+  // system fails to converge from the initial state for this large step size.
+  // This tests the case where the Jacobian matrix has yet to be formed.
+  euler.Initialize();
+  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
+  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
+            euler.get_num_newton_raphson_iterations());
+  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
+            euler.get_num_newton_raphson_iterations());
+
+  // Now integrate again but with a smaller size. Again, past experience tells
+  // us that this step size should be sufficiently small for the integrator to
+  // converge.
+  euler.ResetStatistics();
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(1e-6));
+  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
+            euler.get_num_newton_raphson_iterations());
+  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
+            euler.get_num_newton_raphson_iterations());
+
+  // Again try taking a large step, which we expect will be too large to
+  // converge.
+  euler.ResetStatistics();
+  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e0));
+  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(),
+            euler.get_num_newton_raphson_iterations());
+  EXPECT_EQ(euler.get_num_jacobian_evaluations(),
+            euler.get_num_newton_raphson_iterations());
+}
+
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
 GTEST_TEST(RadauIntegratorTest, Stationary) {
@@ -105,18 +147,18 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   // Create the integrator using two stages.
   RadauIntegrator<double, 2> radau3(cubic, context.get());
 
-  const double dt = 1.0;
-  radau3.set_maximum_step_size(dt);
+  const double h = 1.0;
+  radau3.set_maximum_step_size(h);
   radau3.set_fixed_step_mode(true);
 
   // Integrate the system
   radau3.Initialize();
-  ASSERT_TRUE(radau3.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(radau3.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the solution.
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], cubic.Evaluate(dt),
+  EXPECT_NEAR(state[0], cubic.Evaluate(h),
       std::numeric_limits<double>::epsilon());
 
   // Reset the state.
@@ -127,15 +169,15 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(cubic, context.get());
   euler.set_fixed_step_mode(true);
-  euler.set_maximum_step_size(dt);
+  euler.set_maximum_step_size(h);
 
   // Integrate the system
   euler.Initialize();
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the integrator failed to produce the solution.
   state = context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_GT(std::abs(state[0] - cubic.Evaluate(dt)),
+  EXPECT_GT(std::abs(state[0] - cubic.Evaluate(h)),
       1e9 * std::numeric_limits<double>::epsilon());
 }
 
@@ -154,18 +196,18 @@ GTEST_TEST(RadauIntegratorTest, LinearSystem) {
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(linear, context.get());
 
-  const double dt = 1.0;
-  euler.set_maximum_step_size(dt);
+  const double h = 1.0;
+  euler.set_maximum_step_size(h);
 
   // Integrate the system
   euler.Initialize();
   euler.set_fixed_step_mode(true);
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(h));
 
   // Verify the solution.
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
-  EXPECT_NEAR(state[0], linear.Evaluate(dt),
+  EXPECT_NEAR(state[0], linear.Evaluate(h),
       std::numeric_limits<double>::epsilon());
 }
 
@@ -331,7 +373,131 @@ GTEST_TEST(RadauIntegratorTest, LinearTest) {
       10 * std::numeric_limits<double>::epsilon());
 }
 
-}  // namespace
+// Integrate the modified mass-spring-damping system, which exhibits a
+// discontinuity in the velocity derivative at spring position x = 0, and
+// compares the results at the final state between implicit Euler and Radau-1.
+GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
+  std::unique_ptr<Context<double>> context_;
+
+  // The mass of the particle connected by the spring and damper to the world.
+  const double mass = 2.0;
+
+  // The magnitude of the constant force pushing the particle toward -inf.
+  const double constant_force_mag = 10;
+
+  // Spring constant for a semi-stiff spring. Corresponds to a frequency of
+  // 35.588 cycles per second without damping, assuming that mass = 2 (using
+  // formula f = sqrt(k/mass)/(2*pi), where k is the spring constant, and f is
+  // the frequency in cycles per second).
+  const double semistiff_spring_k = 1e5;
+
+  // Construct the discontinuous mass-spring-damper system, using critical
+  // damping.
+  implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>
+      spring_damper(semistiff_spring_k, std::sqrt(semistiff_spring_k / mass),
+                    mass, constant_force_mag);
+
+  // Create two contexts, one for each integrator.
+  auto context_radau1 = spring_damper.CreateDefaultContext();
+  auto context_ie = spring_damper.CreateDefaultContext();
+
+  // Construct the two integrators.
+  const int num_stages = 1;    // Yields implicit Euler.
+  RadauIntegrator<double, num_stages> radau1(spring_damper,
+                                             context_radau1.get());
+  ImplicitEulerIntegrator<double> ie(spring_damper, context_ie.get());
+
+  // Set maximum step sizes that are reasonable for this system.
+  radau1.set_maximum_step_size(1e-2);
+  ie.set_maximum_step_size(1e-2);
+
+  // Set the same target accuracy for both integrators.
+  radau1.set_target_accuracy(1e-5);
+  ie.set_target_accuracy(1e-5);
+
+  // Make both integrators re-use Jacobians and iteration matrices, when
+  // possible.
+  radau1.set_reuse(true);
+  ie.set_reuse(true);
+
+  // Setting the minimum step size speeds the unit test without (in this case)
+  // affecting solution accuracy.
+  radau1.set_requested_minimum_step_size(1e-8);
+  ie.set_requested_minimum_step_size(1e-8);
+
+  // Set initial position.
+  const double initial_position = 1e-8;
+  spring_damper.set_position(context_radau1.get(), initial_position);
+  spring_damper.set_position(context_ie.get(), initial_position);
+
+  // Set the initial velocity.
+  const double initial_velocity = 0;
+  spring_damper.set_velocity(context_radau1.get(), initial_velocity);
+  spring_damper.set_velocity(context_ie.get(), initial_velocity);
+
+  // Initialize both integrators.
+  radau1.Initialize();
+  ie.Initialize();
+
+  // Integrate for 1 second.
+  const double t_final = 1.0;
+  radau1.IntegrateWithMultipleStepsToTime(t_final);
+  ie.IntegrateWithMultipleStepsToTime(t_final);
+
+  // NOTE: A preliminary investigation indicates that these are not bitwise
+  // identical due to different ordering of arithmetic operations.
+
+  // Verify the final position and accuracy are identical to machine precision.
+  const double tol = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(context_radau1->get_continuous_state().get_vector().GetAtIndex(0),
+              context_ie->get_continuous_state().get_vector().GetAtIndex(0),
+              tol);
+  EXPECT_NEAR(context_radau1->get_continuous_state().get_vector().GetAtIndex(1),
+              context_ie->get_continuous_state().get_vector().GetAtIndex(1),
+              tol);
+
+  // NOTE: The preliminary investigation cited above indicates that the
+  // different order of arithmetic operations is responsible for a slight
+  // discrepancy in number of derivative evaluations and Newton-Raphson
+  // iterations, so we don't verify that these stats are identical.
+
+  // Verify that the remaining statistics are identical.
+  EXPECT_EQ(radau1.get_largest_step_size_taken(),
+            ie.get_largest_step_size_taken());
+  EXPECT_EQ(radau1.get_num_derivative_evaluations_for_jacobian(),
+            ie.get_num_derivative_evaluations_for_jacobian());
+  EXPECT_EQ(radau1.get_num_error_estimator_derivative_evaluations(),
+            ie.get_num_error_estimator_derivative_evaluations());
+  EXPECT_EQ(
+      radau1.get_num_error_estimator_derivative_evaluations_for_jacobian(),
+      ie.get_num_error_estimator_derivative_evaluations_for_jacobian());
+  EXPECT_EQ(radau1.get_num_error_estimator_iteration_matrix_factorizations(),
+            ie.get_num_error_estimator_iteration_matrix_factorizations());
+  EXPECT_EQ(radau1.get_num_error_estimator_jacobian_evaluations(),
+            ie.get_num_error_estimator_jacobian_evaluations());
+  EXPECT_EQ(radau1.get_num_error_estimator_newton_raphson_iterations(),
+            ie.get_num_error_estimator_newton_raphson_iterations());
+  EXPECT_EQ(radau1.get_num_iteration_matrix_factorizations(),
+            ie.get_num_iteration_matrix_factorizations());
+  EXPECT_EQ(radau1.get_num_jacobian_evaluations(),
+            ie.get_num_jacobian_evaluations());
+  EXPECT_EQ(radau1.get_num_step_shrinkages_from_error_control(),
+            ie.get_num_step_shrinkages_from_error_control());
+  EXPECT_EQ(radau1.get_num_step_shrinkages_from_substep_failures(),
+            ie.get_num_step_shrinkages_from_substep_failures());
+  EXPECT_EQ(radau1.get_num_steps_taken(), ie.get_num_steps_taken());
+  EXPECT_EQ(radau1.get_num_substep_failures(), ie.get_num_substep_failures());
+
+  // Verify that we've had at least one step shrinkage.
+  EXPECT_GT(radau1.get_num_step_shrinkages_from_substep_failures(), 0);
+}
+
+// Test both 1-stage (1st order) and 2-stage (3rd order) Radau integrators.
+typedef ::testing::Types<RadauIntegrator<double, 1>, RadauIntegrator<double, 2>>
+    MyTypes;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ImplicitIntegratorTest, MyTypes);
+
+}  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
 

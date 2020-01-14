@@ -163,6 +163,8 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
   //      = 0 when a != b.
 }
 
+// TODO(SeanCurtis-TRI): This function duplicates functionality implemented in
+//  mesh_half_space_intersection.h. Reconcile the two implementations.
 // TODO(DamrongGuoy): Avoid duplicate vertices mentioned in the note below and
 //  check whether we can have other as yet undocumented degenerate cases.
 /** Intersects a polygon with the half space H. It keeps the part of
@@ -171,14 +173,19 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
  in a common frame F.
  @param[in] polygon_vertices_F
      Input polygon is represented as a sequence of positions of its vertices.
+     The input polygon is allowed to have zero area.
  @param[in] H_F
      The clipping half space H in frame F.
  @return
      Output polygon is represented as a sequence of positions of its vertices.
      It could be an empty sequence if the input polygon is entirely outside
      the half space. It could be the same as the input polygon if the input
-     polygon is entirely inside the half space.
+     polygon is entirely inside the half space. The output polygon is guaranteed
+     to be planar (within floating point tolerance) and, if the polygon has
+     area, the normal implied by the winding will be the same as the input
+     polygon.
  @pre `polygon_vertices_F` has at least three vertices.
+ @pre the vertices in `polygon_vertices_F` are all planar.
  @note
      1. For an input polygon P that is parallel to the plane of the half space,
         there are three cases:
@@ -434,7 +441,7 @@ void AddPolygonToMeshData(
   const int num_original_vertices = static_cast<int>(vertices_F->size());
 
   // Triangulate the polygon by creating a fan around the polygon's centroid.
-  // This is important because it gives us a smoothly changing tesselation as
+  // This is important because it gives us a smoothly changing tessellation as
   // the polygon itself smoothly changes. Even if the polygon is already a
   // triangle, we still add its centroid because the triangular polygon can
   // smoothly change to a quadrilateral polygon. Therefore, an intersection
@@ -457,41 +464,6 @@ void AddPolygonToMeshData(
     SurfaceVertexIndex next((i + 1) % polygon_size + num_original_vertices);
     faces->emplace_back(current, next, centroid_index);
   }
-}
-
-// TODO(SeanCurtis-TRI): Make this a property of the surface mesh.
-/** Computes the field of unit normal vectors for the input `surface` mesh. This
- field defines the outward normal value over the domain of the mesh. In order
- for the field to be continuous, the underlying mesh must be a closed manifold
- with no duplicate vertices.
- */
-template <typename T>
-std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
-    const SurfaceMesh<T>& surface) {
-  // We define the normal field as a *linear* mesh field. So, we define a
-  // per-vertex normal based on the area-weighted combination of the incident
-  // face normals (computed as a right-handed normal of the triangle).
-
-  std::vector<Vector3<T>> normal_values(surface.num_vertices(),
-                                        Vector3<T>::Zero());
-  for (SurfaceFaceIndex face_index(0); face_index < surface.num_faces();
-       ++face_index) {
-    const SurfaceFace& face = surface.element(face_index);
-    const Vector3<T>& A = surface.vertex(face.vertex(0)).r_MV();
-    const Vector3<T>& B = surface.vertex(face.vertex(1)).r_MV();
-    const Vector3<T>& C = surface.vertex(face.vertex(2)).r_MV();
-    Vector3<T> unit_normal = (B - A).cross(C - A).normalized();
-    for (int v = 0; v < 3; ++v) {
-      DRAKE_ASSERT(surface.area(face_index) > T(0.0));
-      normal_values[face.vertex(v)] += surface.area(face_index) * unit_normal;
-    }
-  }
-  for (SurfaceVertexIndex vertex_index(0);
-       vertex_index < surface.num_vertices(); ++vertex_index) {
-    normal_values[vertex_index].normalize();
-  }
-  return std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "normal", std::move(normal_values), &surface);
 }
 
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
@@ -520,10 +492,6 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
  @param[out] e_MN
      The sampled field values on the intersecting surface (samples to support
      a linear mesh field -- i.e., one per vertex).
- @param[out] grad_h_MN_M
-     The unit vector field on the intersecting surface (surface normals). Each
-     vector is expressed in M's frame but is parallel with the surface normals
-     at the same point.
  @note
      The output surface mesh may have duplicate vertices.
  */
@@ -533,9 +501,8 @@ void SampleVolumeFieldOnSurface(
     const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
-    std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>>* grad_h_MN_M) {
-  auto normal_field_N = ComputeNormalField(surface_N);
+    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN) {
+
   // TODO(DamrongGuoy): Store normal_field_N in SurfaceMesh to avoid
   //  recomputing every time. Right now it is not straightforward to store
   //  SurfaceMeshField inside SurfaceMesh due to imperfect library packaging.
@@ -552,7 +519,6 @@ void SampleVolumeFieldOnSurface(
 
   // TODO(DamrongGuoy): Use the broadphase to avoid O(n^2) check of all
   //  tetrahedrons against all triangles.
-  const math::RigidTransform<T> X_NM = X_MN.inverse();
   for (VolumeElementIndex tet_index(0); tet_index < mesh_M.num_elements();
        ++tet_index) {
     for (SurfaceFaceIndex tri_index(0); tri_index < surface_N.num_faces();
@@ -579,22 +545,14 @@ void SampleVolumeFieldOnSurface(
         const Vector3<T>& r_MV = surface_vertices_M[v].r_MV();
         const T pressure = volume_field_M.EvaluateCartesian(tet_index, r_MV);
         surface_e.push_back(pressure);
-        const Vector3<T> r_NV = X_NM * r_MV;
-        const Vector3<T> normal_N =
-            normal_field_N->EvaluateCartesian(tri_index, r_NV);
-        Vector3<T> normal_M = X_MN.rotation() * normal_N;
-        surface_normals_M.push_back(normal_M);
       }
     }
   }
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
-  DRAKE_DEMAND(surface_vertices_M.size() == surface_normals_M.size());
   *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
       "e", std::move(surface_e), surface_MN_M->get());
-  *grad_h_MN_M = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "grad_h_MN_M", std::move(surface_normals_M), surface_MN_M->get());
 }
 
 /** Computes the contact surface between a soft geometry S and a rigid
@@ -661,22 +619,13 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
-  // The gradient field will be computed as expressed in Frame S and then
-  // re-expressed in the world frame.
-  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_SR;
-  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR, &e_SR,
-                             &grad_h_SR);
+  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR, &e_SR);
 
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
 
-  // Re-express the gradient from the S frame to the world frame.
-  for (Vector3<T>& gradient_value : grad_h_SR->mutable_values())
-    gradient_value = X_WS.rotation() * gradient_value;
-
   return std::make_unique<ContactSurface<T>>(
-      id_S, id_R, std::move(surface_SR), std::move(e_SR),
-      std::move(grad_h_SR));
+      id_S, id_R, std::move(surface_SR), std::move(e_SR));
 }
 
 // NOTE: This is a short-term hack to allow ProximityEngine to compile when

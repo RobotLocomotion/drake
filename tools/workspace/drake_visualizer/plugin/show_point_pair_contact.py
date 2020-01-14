@@ -1,5 +1,6 @@
 # Note that this script runs in the main context of drake-visualizer,
 # where many modules and variables already exist in the global scope.
+
 from director import lcmUtils
 from director import applogic
 from director import objectmodel as om
@@ -7,13 +8,14 @@ from director import visualization as vis
 from director.debugVis import DebugData
 import numpy as np
 from PythonQt import QtCore, QtGui
-from six import iteritems
 
 import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
 
+# TODO(seancurtis-tri) Refactor this out of show_hydroelastic_contact.py and
+#                      show_point_pair_contact.py.
 class ContactVisModes:
     '''Common specification of contact visualization modes'''
     @staticmethod
@@ -112,6 +114,14 @@ class _ContactConfigDialog(QtGui.QDialog):
         self.setLayout(layout)
 
 
+# TODO(SeanCurtis): This would be better extracted out of *this* plugin
+def get_sub_menu_or_make(menu, menu_name):
+    for a in menu.actions():
+        if a.text == menu_name:
+            return a.menu()
+    return menu.addMenu(menu_name)
+
+
 class ContactVisualizer(object):
     def __init__(self):
         self._folder_name = 'Point Pair Contact Results'
@@ -128,22 +138,8 @@ class ContactVisualizer(object):
         self.min_magnitude = 1e-4
 
         menu_bar = applogic.getMainWindow().menuBar()
-        # TODO(SeanCurtis): This would be better extracted out of *this* plugin
-        #  and into some common plugin repository so that all plugins can place
-        #  their menu functionality into a common menu.
-        plugin_name = '&Plugins'
-        plugin_menu = None
-        for a in menu_bar.actions():
-            if a.text == plugin_name:
-                plugin_menu = a
-                break
-        if plugin_menu is None:
-            plugin_menu = menu_bar.addMenu(plugin_name)
-        # TODO: I should probably test for the existence of this sub-menu and
-        #  the action -- otherwise they'll stomp on each other (the new submenu
-        #  implicitly replacing the old). More generally, we need a safe way
-        #  to dynamically modify the menu based on arbitrary plugins.
-        contact_menu = plugin_menu.addMenu('&Contacts')
+        plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
+        contact_menu = get_sub_menu_or_make(plugin_menu, '&Contacts')
         self.configure_action = contact_menu.addAction(
             "&Configure Force Vector for Point Contacts")
         self.configure_action.connect('triggered()', self.configure_via_dialog)
@@ -181,7 +177,7 @@ class ContactVisualizer(object):
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
-        print self._name + " subscriber added."
+        print(self._name + " subscriber added.")
 
     def remove_subscriber(self):
         if self._sub is None:
@@ -190,7 +186,7 @@ class ContactVisualizer(object):
         lcmUtils.removeSubscriber(self._sub)
         self._sub = None
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
-        print self._name + " subscriber removed."
+        print(self._name + " subscriber removed.")
 
     def is_enabled(self):
         return self._enabled
@@ -259,7 +255,7 @@ class ContactVisualizer(object):
         if self.magnitude_mode == ContactVisModes.kAutoScale:
             auto_scale = 1.0 / max_force
 
-        for key, list_of_forces in iteritems(collision_pair_to_forces):
+        for key, list_of_forces in collision_pair_to_forces.items():
             d = DebugData()
             for p, v in list_of_forces:
                 d.addArrow(start=p,

@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/skylark:py.bzl", "py_binary", "py_library")
 
 licenses(["notice"])  # MIT
 
@@ -16,7 +17,6 @@ py_library(
     ]),
     imports = ["src"],
     visibility = ["//visibility:public"],
-    deps = ["@u_msgpack_python//:umsgpack"],
 )
 
 py_binary(

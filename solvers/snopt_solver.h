@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/solver_base.h"
 
 namespace drake {
@@ -44,9 +45,11 @@ class SnoptSolver final : public SolverBase  {
   SnoptSolver();
   ~SnoptSolver() final;
 
-  /// @return if the solver is thread safe. SNOPT f2c interface uses global
+  /// @return true.
   /// variables, hence it is not thread safe. SNOPT fortran interface is thread
   /// safe.
+  DRAKE_DEPRECATED("2020-02-01",
+      "The SnoptSolver::is_thread_safe always returns true.")
   static bool is_thread_safe();
 
   /// For some reason, SNOPT 7.4 fails to detect a simple LP being unbounded.

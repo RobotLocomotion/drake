@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -38,10 +39,7 @@ class OptitrackPoseTest : public ::testing::Test {
 
   math::RigidTransform<double> UpdateStateCalcOutput(
       const optitrack::optitrack_frame_t& input_frame) {
-    std::unique_ptr<AbstractValue> input(
-        new Value<optitrack::optitrack_frame_t>());
-    input->set_value(input_frame);
-    context_->FixInputPort(0 /* input port ID*/, std::move(input));
+    dut_->get_input_port(0).FixValue(context_.get(), input_frame);
 
     dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());
@@ -85,7 +83,7 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   // in an update with no errors thrown.
   default_body.id = 2;
   test_frame.rigid_bodies.push_back(default_body);
-  EXPECT_NO_THROW(UpdateStateCalcOutput(test_frame));
+  DRAKE_EXPECT_NO_THROW(UpdateStateCalcOutput(test_frame));
 }
 
 TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
@@ -159,7 +157,7 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
   // Systems test.
   const math::RigidTransform<double> X_WB_expected = X_WO * X_OB_expected;
   math::RigidTransform<double> X_WB;
-  EXPECT_NO_THROW(X_WB = UpdateStateCalcOutput(test_frame));
+  DRAKE_EXPECT_NO_THROW(X_WB = UpdateStateCalcOutput(test_frame));
 
   // Compare.
   EXPECT_TRUE(X_WB.IsNearlyEqualTo(X_WB_expected, kTolerance));

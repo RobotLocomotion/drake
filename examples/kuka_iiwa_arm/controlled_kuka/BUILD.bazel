@@ -50,6 +50,9 @@ drake_cc_binary(
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
     ],
+    # TODO(eric.cousineau): Re-enable this test under kcov when it no longer
+    # causes timeouts.
+    tags = ["no_kcov"],
     deps = [
         ":controlled_kuka_trajectory",
         "//common:find_resource",

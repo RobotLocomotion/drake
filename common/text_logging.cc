@@ -95,6 +95,17 @@ std::string logging::set_log_level(const std::string& level) {
   }
 }
 
+const char* const logging::kSetLogLevelHelpMessage =
+    "sets the spdlog output threshold; possible values are "
+    "'unchanged', "
+    "'trace', "
+    "'debug', "
+    "'info', "
+    "'warn', "
+    "'err', "
+    "'critical', "
+    "'off'";
+
 #else  // HAVE_SPDLOG
 
 logging::logger::logger() {}
@@ -117,6 +128,11 @@ std::string logging::set_log_level(const std::string&) {
   return "";
 }
 
+const char* const logging::kSetLogLevelHelpMessage =
+    "(Text logging is unavailable.)";
+
 #endif  // HAVE_SPDLOG
+
+const char* const logging::kSetLogLevelUnchanged = "unchanged";
 
 }  // namespace drake

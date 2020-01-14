@@ -21,6 +21,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -393,6 +394,23 @@ GTEST_TEST(TestAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
+
+  const auto decision_variable_index = prog.decision_variable_index();
+  {
+    const auto it = decision_variable_index.find(x0.get_id());
+    ASSERT_TRUE(it != decision_variable_index.end());
+    EXPECT_EQ(it->second, prog.FindDecisionVariableIndex(x0));
+  }
+  {
+    const auto it = decision_variable_index.find(x1.get_id());
+    ASSERT_TRUE(it != decision_variable_index.end());
+    EXPECT_EQ(it->second, prog.FindDecisionVariableIndex(x1));
+  }
+  {
+    const auto it = decision_variable_index.find(x2.get_id());
+    ASSERT_TRUE(it != decision_variable_index.end());
+    EXPECT_EQ(it->second, prog.FindDecisionVariableIndex(x2));
+  }
 }
 
 GTEST_TEST(TestAddDecisionVariables, AddVariable2) {
@@ -489,9 +507,17 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {
   prog.AddIndeterminates(VectorIndeterminate<3>(x0, x1, x2));
   const VectorIndeterminate<3> indeterminates_expected(x0, x1, x2);
   EXPECT_EQ(prog.indeterminates().rows(), 3);
+
+  const auto indeterminates_index = prog.indeterminates_index();
   for (int i = 0; i < 3; ++i) {
     EXPECT_TRUE(prog.indeterminates()(i).equal_to(indeterminates_expected(i)));
     EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates_expected(i)), i);
+
+    const auto it =
+        indeterminates_index.find(indeterminates_expected(i).get_id());
+    ASSERT_TRUE(it != indeterminates_index.end());
+    EXPECT_EQ(it->second,
+              prog.FindIndeterminateIndex(indeterminates_expected(i)));
   }
 }
 
@@ -2675,6 +2701,20 @@ GTEST_TEST(TestMathematicalProgram, TestEvalBinding) {
   EXPECT_THROW(prog.EvalBinding(quadratic_cost_y, x_val), std::runtime_error);
 }
 
+GTEST_TEST(TestMathematicalProgram, TestGetBindingVariableValues) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  auto binding1 = prog.AddBoundingBoxConstraint(-1, 1, x(0));
+
+  auto binding2 = prog.AddLinearEqualityConstraint(x(0) + 2 * x(2), 2);
+
+  const Eigen::Vector3d x_val(-2, 1, 2);
+  EXPECT_TRUE(CompareMatrices(prog.GetBindingVariableValues(binding1, x_val),
+                              Vector1d(-2)));
+  EXPECT_TRUE(CompareMatrices(prog.GetBindingVariableValues(binding2, x_val),
+                              Vector2d(-2, 2)));
+}
+
 GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();
@@ -2886,7 +2926,7 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   // If we add `b` to prog as decision variable, then the code throws no
   // exceptions.
   prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
-  EXPECT_NO_THROW(prog.AddEqualityConstraintBetweenPolynomials(
+  DRAKE_EXPECT_NO_THROW(prog.AddEqualityConstraintBetweenPolynomials(
       p1, symbolic::Polynomial(b * x, {x})));
 }
 }  // namespace test

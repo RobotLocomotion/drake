@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -26,18 +27,14 @@ void TestGainSystem(const Gain<T>& gain_system,
 
   // Verifies that Gain allocates no state variables in the context.
   EXPECT_EQ(0, context->num_continuous_states());
-  auto input =
-      make_unique<BasicVector<double>>(gain_system.get_gain_vector().size());
 
   // Checks that the number of input ports in the Gain system and the Context
   // are consistent.
   ASSERT_EQ(1, gain_system.num_input_ports());
   ASSERT_EQ(1, context->num_input_ports());
 
-  input->get_mutable_value() << input_vector;
-
   // Hook input of the expected size.
-  context->FixInputPort(0, std::move(input));
+  gain_system.get_input_port().FixValue(context.get(), input_vector);
 
   // Checks the output.
   ASSERT_EQ(1, gain_system.num_output_ports());
@@ -54,9 +51,9 @@ GTEST_TEST(GainTest, GainScalarTest) {
   const Eigen::Vector3d expected_output(kGain * input_vector);
 
   // Verifies the gain accessors are OK.
-  EXPECT_NO_THROW(gain_system->get_gain());
+  DRAKE_EXPECT_NO_THROW(gain_system->get_gain());
   EXPECT_EQ(gain_system->get_gain(), kGain);
-  EXPECT_NO_THROW(gain_system->get_gain_vector());
+  DRAKE_EXPECT_NO_THROW(gain_system->get_gain_vector());
   EXPECT_EQ(gain_system->get_gain_vector(),
             VectorX<double>::Ones(kSize) * kGain);
 
@@ -72,7 +69,7 @@ GTEST_TEST(GainTest, GainVectorTest) {
   const Eigen::Vector4d expected_output(gain_values.array() *
                                         input_vector.array());
 
-  EXPECT_NO_THROW(gain_system->get_gain_vector());
+  DRAKE_EXPECT_NO_THROW(gain_system->get_gain_vector());
   EXPECT_EQ(gain_system->get_gain_vector(), gain_values);
 
   // Tests ability to compute the gain of a vector.

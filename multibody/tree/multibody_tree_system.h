@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
@@ -92,6 +93,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
+  /** Returns a reference to the up to date ArticulatedBodyInertiaCache stored
+  in the given context, recalculating it first if necessary. 
+  See @ref internal_forward_dynamics
+  "Articulated Body Algorithm Forward Dynamics" for further details. */
+  const ArticulatedBodyInertiaCache<T>& EvalArticulatedBodyInertiaCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.abi_cache_index)
+        .template Eval<ArticulatedBodyInertiaCache<T>>(context);
+  }
+
   /** Returns a reference to the up to date cache of per-body spatial inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalSpatialInertiaInWorldCache(
@@ -102,8 +113,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   /** Returns a reference to the up to date cache of per-body bias terms in
   the given Context, recalculating it first if necessary.
-  For a body B, this is the bias term `b_Bo_W(q, v)` in the equation
-  `F_Bo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
+  For a body B, this is the bias term `Fb_Bo_W(q, v)` in the equation
+  `F_Bo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   `F_Bo_W` is the spatial force on B about Bo, expressed in W. */
   const std::vector<SpatialForce<T>>& EvalDynamicBiasCache(
@@ -112,21 +123,19 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /** Returns a reference to the up to date cached value for the
-  across-mobilizer geometric Jacobian H_PB_W in the given Context, recalculating
-  it first if necessary. Also if necessary, the PositionKinematicsCache will be
-  recalculated as well (since it stores H_FM(q) for each mobilizer and X_WB(q)
-  for each body).
-  The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
-  by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
-  velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
-  number of mobilities associated with body B.
-  The returned `std::vector` stores the Jacobian matrices for all nodes in the
-  tree  as a vector of the columns of these matrices. Therefore
-  the returned `std::vector` of columns  has as many entries as number of
-  generalized velocities in the tree. */
+  /** For a body B connected to its parent P, returns a reference to the up to
+  date cached value for H_PB_W, where H_PB_W is the `6 x nm` body-node hinge
+  matrix that relates `V_PB_W` (body B's spatial velocity in its parent body P,
+  expressed in world W) to this node's `nm` generalized velocities
+  (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  As needed, H_PB_W is recalculated from the context and the
+  PositionKinematicsCache may also be recalculated (since it stores H_FM(q) for
+  each mobilizer and X_WB(q) for each body). The returned `std::vector` stores
+  all the body-node hinge matrices in the tree as a vector of the columns of
+  these matrices. Therefore the returned `std::vector` of columns has as many
+  entries as number of generalized velocities in the tree. */
   const std::vector<Vector6<T>>&
-  EvalAcrossNodeGeometricJacobianExpressedInWorld(
+  EvalAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.across_node_jacobians)
         .template Eval<std::vector<Vector6<T>>>(context);
@@ -191,8 +200,9 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // This struct stores in one single place all indexes related to
   // MultibodyTreeSystem specific cache entries.
   struct CacheIndexes {
-    systems::CacheIndex dynamic_bias;
+    systems::CacheIndex abi_cache_index;
     systems::CacheIndex across_node_jacobians;
+    systems::CacheIndex dynamic_bias;
     systems::CacheIndex position_kinematics;
     systems::CacheIndex spatial_inertia_in_world;
     systems::CacheIndex velocity_kinematics;

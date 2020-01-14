@@ -42,19 +42,6 @@ bool operator<(ExpressionKind k1, ExpressionKind k2) {
 }
 
 namespace {
-// This function is used in Expression(const double d) constructor. It turns out
-// a ternary expression "std::isnan(d) ? make_shared<ExpressionNaN>() :
-// make_shared<ExpressionConstant>()" does not work due to C++'s
-// type-system. It throws "Incompatible operand types when using ternary
-// conditional operator" error. Related S&O entry:
-// http://stackoverflow.com/questions/29842095/incompatible-operand-types-when-using-ternary-conditional-operator.
-shared_ptr<ExpressionCell> make_cell(const double d) {
-  if (std::isnan(d)) {
-    return make_shared<ExpressionNaN>();
-  }
-  return make_shared<ExpressionConstant>(d);
-}
-
 // Negates an addition expression.
 // - (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
 Expression NegateAddition(const Expression& e) {
@@ -69,6 +56,20 @@ Expression NegateMultiplication(const Expression& e) {
   return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
 }
 }  // namespace
+
+shared_ptr<ExpressionCell> Expression::make_cell(const double d) {
+  if (d == 0.0) {
+    // The objects created by `Expression(0.0)` share the unique
+    // `ExpressionConstant` object created in `Expression::Zero()`.
+    //
+    // See https://github.com/RobotLocomotion/drake/issues/12453 for details.
+    return Expression::Zero().ptr_;
+  }
+  if (std::isnan(d)) {
+    return make_shared<ExpressionNaN>();
+  }
+  return make_shared<ExpressionConstant>(d);
+}
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
@@ -88,22 +89,26 @@ void Expression::HashAppend(DelegatingHasher* hasher) const {
 }
 
 Expression Expression::Zero() {
-  static const never_destroyed<Expression> zero{0.0};
+  static const never_destroyed<Expression> zero{
+      Expression{make_shared<ExpressionConstant>(0.0)}};
   return zero.access();
 }
 
 Expression Expression::One() {
-  static const never_destroyed<Expression> one{1.0};
+  static const never_destroyed<Expression> one{
+      Expression{make_shared<ExpressionConstant>(1.0)}};
   return one.access();
 }
 
 Expression Expression::Pi() {
-  static const never_destroyed<Expression> pi{M_PI};
+  static const never_destroyed<Expression> pi{
+      Expression{make_shared<ExpressionConstant>(M_PI)}};
   return pi.access();
 }
 
 Expression Expression::E() {
-  static const never_destroyed<Expression> e{M_E};
+  static const never_destroyed<Expression> e{
+      Expression{make_shared<ExpressionConstant>(M_E)}};
   return e.access();
 }
 
@@ -185,6 +190,12 @@ double Expression::Evaluate(const Environment& env,
 double Expression::Evaluate(RandomGenerator* const random_generator) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return Evaluate(Environment{}, random_generator);
+}
+
+Eigen::SparseMatrix<double> Evaluate(
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
+    const Environment& env) {
+  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
 }
 
 Expression Expression::EvaluatePartial(const Environment& env) const {
@@ -1037,15 +1048,26 @@ Expression TaylorExpand(const Expression& f, const Environment& a,
   return factory.GetExpression();
 }
 
-Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
-  Variables vars{};
-  // Note: Default storage order for Eigen is column-major.
-  for (int j = 0; j < v.cols(); j++) {
-    for (int i = 0; i < v.rows(); i++) {
-      vars.insert(v(i, j).GetVariables());
-    }
+namespace {
+// Visitor used in the implementation of the GetDistinctVariables function
+// defined below.
+struct GetDistinctVariablesVisitor {
+  // called for the first coefficient
+  void init(const Expression& value, Eigen::Index, Eigen::Index) {
+    variables += value.GetVariables();
   }
-  return vars;
+  // called for all other coefficients
+  void operator()(const Expression& value, Eigen::Index, Eigen::Index) {
+    variables += value.GetVariables();
+  }
+  Variables variables;
+};
+}  // namespace
+
+Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
+  GetDistinctVariablesVisitor visitor;
+  v.visit(visitor);
+  return visitor.variables;
 }
 
 }  // namespace symbolic

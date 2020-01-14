@@ -17,6 +17,7 @@ filegroup(
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
+        "test/**/*.png",
     ]),
     visibility = [
         "//visibility:public",
@@ -51,7 +52,6 @@ drake_cc_library(
     ],
     deps = [
         "//common",
-        "@spruce",
         "@tinydir",
         "@tinyxml2",
     ],
@@ -77,10 +77,10 @@ drake_cc_library(
     deps = [
         ":package_map",
         "//common:essential",
+        "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant:coulomb_friction",
         "@sdformat",
-        "@spruce",
         "@tinyxml2",
     ],
 )
@@ -147,6 +147,7 @@ drake_cc_library(
         ":detail_misc",
         ":package_map",
         "//multibody/plant",
+        "@fmt",
         "@tinyxml2",
     ],
 )
@@ -165,6 +166,7 @@ drake_cc_library(
     deps = [
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        "//common:filesystem",
     ],
 )
 
@@ -220,8 +222,16 @@ drake_cc_googletest(
     ],
     deps = [
         ":parser",
+        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_common_test",
+    deps = [
+        ":detail_misc",
     ],
 )
 
@@ -234,9 +244,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_parser",
+        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
-        "@spruce",
     ],
 )
 
@@ -250,16 +260,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
+        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
-        "@spruce",
     ],
 )
 
 drake_cc_googletest(
     name = "detail_scene_graph_test",
+    data = [
+        ":test_models",
+    ],
     deps = [
         ":detail_scene_graph",
         "//common/test_utilities:eigen_matrix_compare",
@@ -287,6 +300,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":package_map",
+        "//common:filesystem",
         "//common:find_resource",
     ],
 )
@@ -298,6 +312,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_misc",
+        "//common:filesystem",
         "//common/test_utilities",
     ],
 )

@@ -1,4 +1,4 @@
-finger1_BaseJoint   finger2_BaseJoint   finger3_BaseJoint   brick_translate_y_joint finger1_MidJoint    finger2_MidJoint    finger3_MidJoint    brick_translate_z_joint brick_revolute_x_joint
+finger1_BaseJoint   finger3_BaseJoint   finger2_BaseJoint   brick_translate_y_joint finger1_MidJoint    finger3_MidJoint    finger2_MidJoint    brick_translate_z_joint brick_revolute_x_joint
 -0.277611	0.947974	0.281503	0.00731802	-0.0613293	-1.21373	0.201025	-0.0197339	-0.454859
 -0.269673	0.910182	0.405141	0.0309428	-0.0593174	-1.40873	0.287732	-0.0284596	-0.533185
 -0.133853	0.941109	0.4007	0.030101	0.0186572	-1.46184	0.289061	-0.0298918	-0.505579

@@ -15,6 +15,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 using std::string;
 
@@ -41,7 +42,7 @@ GTEST_TEST(FindResourceTest, NonRelativeRequest) {
   EXPECT_THROW(result.get_absolute_path_or_throw(), std::runtime_error);
 
   // We get an error back.
-  const optional<string> error_message = result.get_error_message();
+  const std::optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
   EXPECT_EQ(*error_message,
             "Drake resource_path '/dev/null' is not a relative path.");
@@ -57,7 +58,7 @@ GTEST_TEST(FindResourceTest, NotFound) {
   EXPECT_THROW(result.get_absolute_path_or_throw(), std::runtime_error);
 
   // We get an error back.
-  const optional<string> error_message = result.get_error_message();
+  const std::optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
   EXPECT_THAT(*error_message, testing::ContainsRegex(
       "Sought '" + relpath + "' in runfiles.*not exist.*on the manifest"));
@@ -76,7 +77,7 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
 
   // We get a path back.
   string absolute_path;
-  EXPECT_NO_THROW(absolute_path = result.get_absolute_path_or_throw());
+  DRAKE_EXPECT_NO_THROW(absolute_path = result.get_absolute_path_or_throw());
   ASSERT_TRUE(result.get_absolute_path());
   EXPECT_EQ(*result.get_absolute_path(), absolute_path);
 

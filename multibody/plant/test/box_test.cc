@@ -59,16 +59,14 @@ class SlidingBoxTest : public ::testing::Test {
     diagram->SetDefaultContext(diagram_context.get());
     Context<double>& plant_context =
         diagram->GetMutableSubsystemContext(plant, diagram_context.get());
-    plant_context.FixInputPort(plant.get_actuation_input_port().get_index(),
-                               Vector1<double>::Constant(applied_force_));
+    plant.get_actuation_input_port().FixValue(&plant_context, applied_force_);
 
     Simulator<double> simulator(*diagram, std::move(diagram_context));
     simulator.set_publish_every_time_step(true);
     // Implicit integration does much better than the default RK3 for this
     // system with regularized friction. Otherwise RK3 requires a very small
     // accuracy setting and it is very costly.
-    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
-        *diagram, &simulator.get_mutable_context());
+    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>();
     simulator.get_mutable_integrator().set_maximum_step_size(1e-3);
     simulator.Initialize();
     simulator.AdvanceTo(simulation_time_);
@@ -85,14 +83,6 @@ class SlidingBoxTest : public ::testing::Test {
       ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
       const PointPairContactInfo<double>& point_pair_contact_info =
           contact_results.point_pair_contact_info(0);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // Verify the deprecated methods still work.
-      ASSERT_EQ(contact_results.num_contacts(), 1);
-      ASSERT_EQ(&contact_results.contact_info(0),
-                &contact_results.point_pair_contact_info(0));
-#pragma GCC diagnostic pop
 
       // Verify the bodies referenced by the contact info.
       const Body<double>& ground = the_plant.GetBodyByName("ground");
@@ -162,8 +152,7 @@ class SlidingBoxTest : public ::testing::Test {
     diagram_context2->EnableCaching();
     Context<double>& plant_context2 =
         diagram2->GetMutableSubsystemContext(plant2, diagram_context2.get());
-    plant_context2.FixInputPort(plant2.get_actuation_input_port().get_index(),
-                                Vector1<double>::Constant(applied_force_));
+    plant2.get_actuation_input_port().FixValue(&plant_context2, applied_force_);
     // Set the state from the computed solution.
     plant2.SetPositionsAndVelocities(
         &plant_context2, plant.GetPositionsAndVelocities(plant_context));

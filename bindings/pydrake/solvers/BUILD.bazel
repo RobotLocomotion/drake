@@ -19,7 +19,6 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
-    "drake_py_test",
     "drake_py_unittest",
 )
 load(
@@ -54,7 +53,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
@@ -173,17 +171,6 @@ drake_pybind_library(
     ],
 )
 
-PY_LIBRARIES_ATTIC_ALIASES = [
-    ":ik_py",
-]
-
-drake_py_library_aliases(
-    actual_subdir = "bindings/pydrake/attic/solvers",
-    add_deprecation_warning = 1,
-    deprecation_removal_date = "2019-10-01",
-    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ipopt_py",
@@ -195,7 +182,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":snopt_py",
 ]
 
-PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
+PY_LIBRARIES = [
     ":module_py",
 ]
 

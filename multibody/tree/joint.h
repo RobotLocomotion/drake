@@ -23,11 +23,13 @@ namespace multibody {
 /// The two bodies connected by a %Joint object are referred to as the
 /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
 /// sometimes used synonymously to describe the relationship between inboard and
-/// outboard bodies in multibody models, this usage is wholly unrelated and
-/// implies nothing about the inboard-outboard relationship between the bodies.
+/// outboard bodies in multibody _trees_, the parent/child relationship is
+/// more general and remains meaningful for multibody systems with loops, such
+/// as a four-bar linkage. However, whenever possible the parent body will be
+/// made to be inboard and the child outboard in the tree.
 /// A %Joint is a model of a physical kinematic constraint between two bodies,
-/// a constraint that in the real physical system does not even allude to the
-/// ordering of the bodies.
+/// a constraint that in the real physical system does not specify a tree
+/// ordering.
 ///
 /// In Drake we define a frame F rigidly attached to the parent body P with pose
 /// `X_PF` and a frame M rigidly attached to the child body B with pose `X_BM`.
@@ -41,10 +43,10 @@ namespace multibody {
 /// Consider the following example to build a simple pendulum system:
 ///
 /// @code
-/// MultibodyTree<double> model;
+/// MultibodyPlant<double> plant(0.0);
 /// // ... Code here to setup quantities below as mass, com, etc. ...
 /// const Body<double>& pendulum =
-///   model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
+///   plant.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
 /// // We will connect the pendulum body to the world using a RevoluteJoint.
 /// // In this simple case the parent body P is the model's world body and frame
 /// // F IS the world frame.
@@ -52,9 +54,9 @@ namespace multibody {
 /// // body frame B.
 /// // Say we declared and initialized X_BM...
 /// const RevoluteJoint<double>& elbow =
-///   model.AddJoint<RevoluteJoint>(
+///   plant.AddJoint<RevoluteJoint>(
 ///     "Elbow",                /* joint name */
-///     model.world_body(),     /* parent body */
+///     plant.world_body(),     /* parent body */
 ///     {},                     /* frame F IS the world frame W */
 ///     pendulum,               /* child body, the pendulum */
 ///     X_BM,                   /* pose of frame M in the body frame B */
@@ -62,12 +64,12 @@ namespace multibody {
 /// @endcode
 ///
 /// @warning Do not ever attempt to instantiate and manipulate %Joint objects
-/// on the stack; it will fail. Add joints to your model using the provided API
-/// MultibodyTree::AddJoint() as in the example above.
+/// on the stack; it will fail. Add joints to your plant using the provided API
+/// MultibodyPlant::AddJoint() as in the example above.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
+class Joint : public MultibodyElement<Joint, T, JointIndex>  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
@@ -115,7 +117,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
         const VectorX<double>& vel_upper_limits,
         const VectorX<double>& acc_lower_limits,
         const VectorX<double>& acc_upper_limits)
-      : MultibodyTreeElement<Joint<T>, JointIndex>(
+      : MultibodyElement<Joint, T, JointIndex>(
             frame_on_child.model_instance()),
         name_(name),
         frame_on_parent_(frame_on_parent),
@@ -478,7 +480,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   virtual void DoAddInDamping(
       const systems::Context<T>&, MultibodyForces<T>*) const {}
 
-  // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
+  // Implements MultibodyElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
   void DoSetTopology(const internal::MultibodyTreeTopology&) {}
 

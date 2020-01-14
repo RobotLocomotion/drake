@@ -16,6 +16,7 @@
 // NOLINTNEXTLINE(build/include)
 #include "snopt.h"
 
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
@@ -211,14 +212,6 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// TODO(jwnimmer-tri) Add a reusable scope_guard to //common.
-// Make a scope exit guard -- an object that when destroyed runs `func`.
-auto MakeGuard(std::function<void()> func) {
-  // The shared_ptr deleter func is always invoked, even for nullptrs.
-  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
-  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
-}
-
 // This class is used for passing additional info to the snopt_userfun, which
 // evaluates the value and gradient of the cost and constraints. Apart from the
 // standard information such as decision variable values, snopt_userfun could
@@ -413,7 +406,7 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = ty(i).value();
     }
 
-    const optional<std::vector<std::pair<int, int>>>&
+    const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
@@ -643,7 +636,7 @@ void UpdateConstraintBoundsAndGradients(
     const std::vector<int> bound_var_indices_in_prog =
         prog.FindDecisionVariableIndices(binding.variables());
 
-    const optional<std::vector<std::pair<int, int>>>&
+    const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
@@ -822,10 +815,10 @@ void SolveWithGivenOptions(
       print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
-  auto guard = MakeGuard([&storage]() {
-      Snopt::snend(
-          storage.iw(), storage.leniw(),
-          storage.rw(), storage.lenrw());
+  ScopeExit guard([&storage]() {
+    Snopt::snend(
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
   });
 
   int nx = prog.num_vars();

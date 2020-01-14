@@ -18,8 +18,8 @@ drake_cc_binary(
         "//manipulation/models/allegro_hand_description:models",
     ],
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//common:text_logging_gflags",
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
         "//geometry:geometry_visualization",

@@ -26,10 +26,13 @@ namespace internal {
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
-    ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+    ComputeSpatialForcesAtCentroidFromHydroelasticModel(
         const Data& data, double dissipation, double mu_coulomb,
-        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
-  DRAKE_DEMAND(F_Ao_W && F_Bo_W);
+        std::vector<HydroelasticQuadraturePointData<T>>*
+            traction_at_quadrature_points,
+        SpatialForce<T>* F_Ac_W) const {
+  DRAKE_DEMAND(traction_at_quadrature_points);
+  DRAKE_DEMAND(F_Ac_W);
 
   // Use a second-order Gaussian quadrature rule. For linear pressure fields,
   // the second-order rule allows exact computation (to floating point error)
@@ -43,8 +46,12 @@ void HydroelasticTractionCalculator<T>::
 
   // We'll be accumulating force on body A at the surface centroid C,
   // triangle-by-triangle.
-  SpatialForce<T> F_Ac_W;
-  F_Ac_W.SetZero();
+  F_Ac_W->SetZero();
+
+  // Reserve enough memory to keep from doing repeated heap allocations in the
+  // quadrature process.
+  traction_at_quadrature_points->clear();
+  traction_at_quadrature_points->reserve(data.surface.mesh_W().num_faces());
 
   // Integrate the tractions over all triangles in the contact surface.
   for (SurfaceFaceIndex i(0); i < data.surface.mesh_W().num_faces(); ++i) {
@@ -52,10 +59,12 @@ void HydroelasticTractionCalculator<T>::
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
     std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
-        [this, &data, i, dissipation,
-         mu_coulomb](const Vector3<T>& Q_barycentric) {
-          TractionAtPointData traction_output = CalcTractionAtPoint(
-              data, i, Q_barycentric, dissipation, mu_coulomb);
+        [this, &data, i, dissipation, mu_coulomb,
+         traction_at_quadrature_points](const Vector3<T>& Q_barycentric) {
+          traction_at_quadrature_points->emplace_back(CalcTractionAtPoint(
+              data, i, Q_barycentric, dissipation, mu_coulomb));
+          const HydroelasticQuadraturePointData<T>& traction_output =
+              traction_at_quadrature_points->back();
           return ComputeSpatialTractionAtAcFromTractionAtAq(
               data, traction_output.p_WQ, traction_output.traction_Aq_W);
         };
@@ -66,9 +75,17 @@ void HydroelasticTractionCalculator<T>::
         TriangleQuadrature<SpatialForce<T>, T>::Integrate(
             traction_Ac_W, gaussian, data.surface.mesh_W().area(i));
 
-    // Update the spatial force at body A's origin.
-    F_Ac_W += Fi_Ac_W;
+    // Update the spatial force at the centroid.
+    (*F_Ac_W) += Fi_Ac_W;
   }
+}
+
+template <class T>
+void HydroelasticTractionCalculator<T>::
+    ShiftSpatialForcesAtCentroidToBodyOrigins(
+        const Data& data, const SpatialForce<T>& F_Ac_W,
+        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
+  DRAKE_DEMAND(F_Ao_W && F_Bo_W);
 
   // The spatial force on body A was accumulated at the surface centroid C. We
   // need to shift it to A's origin Ao. The force on body B is equal and
@@ -111,33 +128,9 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
   return Ft_Ac_W;  // Still a traction (force/area).
 }
 
-// Method for computing traction at a vertex of the contact surface.
-template <typename T>
-typename HydroelasticTractionCalculator<T>::TractionAtPointData
-HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
-    const Data& data,
-    SurfaceVertexIndex vertex_index,
-    double dissipation, double mu_coulomb) const {
-  // Compute the point of contact in the world frame.
-  const Vector3<T> p_WQ = data.surface.mesh_W().vertex(vertex_index).r_MV();
-
-  const T e = data.surface.EvaluateE_MN(vertex_index);
-
-  const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(vertex_index);
-  // TODO(edrumwri): Remove this TODO or update this code when we know whether
-  // h_W can ever be zero in expected cases.
-  const T norm_grad_h_W = grad_h_W.norm();
-  DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
-  const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
-
-  return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
-}
-
 // Method for computing traction at a point on a face of the contact surface.
-// If the point is coincident with a vertex, CalcTractionAtVertex()
-// is more efficient.
 template <typename T>
-typename HydroelasticTractionCalculator<T>::TractionAtPointData
+HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data,
     SurfaceFaceIndex face_index,
@@ -149,21 +142,21 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
-  const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(
-      face_index, Q_barycentric);
-  // TODO(edrumwri): Remove this TODO or update this code when we know whether
-  // h_W can ever be zero in expected cases.
-  const T norm_grad_h_W = grad_h_W.norm();
-  DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
-  const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
+  // Contact surfaces are documented to have face normals that point *out of* N
+  // and *into* M -- which is the face normal of the contact surface (as
+  // documented).
+  const Vector3<T> nhat_W = data.surface.mesh_W().face_normal(face_index);
 
-  return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
+  return CalcTractionAtQHelper(data, face_index, e, nhat_W, dissipation,
+                               mu_coulomb, p_WQ);
 }
 
 /*
  Helper function for computing the traction at a point, irrespective of whether
  that point is coincident with a vertex or is located at an arbitrary
  point on the contact surface.
+ @param face_index the face index for the triangle over which quadrature is
+        being performed.
  @param e the "potential pressure" (in N/m²) at the point as defined in
         [Elandt 2019]. Note that we drop the _MN suffix here, as this
         suffix can get confused with the identical suffix (used for a different
@@ -177,14 +170,15 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
         expressed in the world frame.
  */
 template <typename T>
-typename HydroelasticTractionCalculator<T>::TractionAtPointData
+HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
-    const Data& data,
-    const T& e, const Vector3<T>& nhat_W,
-    double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const {
-  TractionAtPointData traction_data;
+    const Data& data, SurfaceFaceIndex face_index, const T& e,
+    const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
+    const Vector3<T>& p_WQ) const {
+  HydroelasticQuadraturePointData<T> traction_data;
 
-  // Set p_WQ first.
+  // Set entries that do not require computation first.
+  traction_data.face_index = face_index;
   traction_data.p_WQ = p_WQ;
 
   // Get the relative spatial velocity at the point Q between the
@@ -242,40 +236,6 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
       vt_hat_BqAq_W * frictional_scalar;
 
   return traction_data;
-}
-
-// Creates linearly interpolated fields over the contact surface for use in
-// contact reporting.
-// @warning The newly created mesh fields retain a pointer to the surface mesh
-//         (i.e., `data.surface.mesh_W()`), so that pointer must remain valid
-//        while this object is alive.
-template <typename T>
-typename HydroelasticTractionCalculator<T>::ContactReportingFields
-HydroelasticTractionCalculator<T>::CreateReportingFields(
-    const HydroelasticTractionCalculator<T>::Data& data,
-    double dissipation, double mu_coulomb) const {
-  // Alias the contact surface.
-  const ContactSurface<T>& surface = data.surface;
-
-  // Compute a value for each vertex.
-  std::vector<Vector3<T>> vt_BqAq_W(surface.mesh_W().num_vertices());
-  std::vector<Vector3<T>> traction_Aq_W(surface.mesh_W().num_vertices());
-
-  for (SurfaceVertexIndex i(0); i < surface.mesh_W().num_vertices(); ++i) {
-    // Compute the traction and the slip velocity at the vertex.
-    HydroelasticTractionCalculator<T>::TractionAtPointData output =
-        CalcTractionAtVertex(data, i, dissipation, mu_coulomb);
-    traction_Aq_W[i] = output.traction_Aq_W;
-    vt_BqAq_W[i] = output.vt_BqAq_W;
-  }
-
-  // Create the field structure.
-  ContactReportingFields fields;
-  fields.traction_A_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "traction", std::move(traction_Aq_W), &surface.mesh_W());
-  fields.vslip_AB_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "slip_velocity", std::move(vt_BqAq_W), &surface.mesh_W());
-  return fields;
 }
 
 }  // namespace internal

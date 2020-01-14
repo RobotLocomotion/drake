@@ -5,11 +5,6 @@
 namespace drake {
 namespace geometry {
 
-GeometryInstance::GeometryInstance(const Isometry3<double>& X_PG,
-                                   std::unique_ptr<Shape> shape,
-                                   const std::string& name)
-    : GeometryInstance(math::RigidTransformd(X_PG), std::move(shape), name) {}
-
 GeometryInstance::GeometryInstance(const math::RigidTransform<double>& X_PG,
                                    std::unique_ptr<Shape> shape,
                                    const std::string& name)

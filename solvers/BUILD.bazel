@@ -42,7 +42,6 @@ drake_cc_package_library(
         ":ipopt_solver",
         ":linear_system_solver",
         ":mathematical_program",
-        ":mathematical_program_lite",
         ":mathematical_program_result",
         ":minimum_value_constraint",
         ":mixed_integer_optimization_util",
@@ -322,18 +321,6 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
-    ],
-)
-
-# The target "@drake//solvers:mathematical_program_lite" is a legacy way to
-# access the `mathematical_program.h` header and its methods.  In the future,
-# this target will become deprecated in lieu of `:mathematical_program`.
-# TODO(jwnimmer-tri) On 2019-10-01 add a deprecation attribute here.
-drake_cc_library(
-    name = "mathematical_program_lite",
-    deps = [
-        ":mathematical_program",
-        ":solver_interface",
     ],
 )
 
@@ -700,7 +687,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//common:essential",
-            "@dreal",
+            "@dreal//dreal/api",
         ],
         "//tools:no_dreal": [
             ":mathematical_program",
@@ -732,6 +719,7 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
             "//math:eigen_sparse_triplet",
+            "//common:scope_exit",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
             "@fmt",
@@ -775,58 +763,36 @@ drake_cc_library(
     }),
 )
 
-# If --config snopt (or one of --config snopt_{fortran,f2c}) is used, this
-# target builds object code that satisfies SolverInterface by calling
-# SNOPT. Otherwise, this target builds dummy object code that fails at runtime.
+# If --config snopt is used, this target builds object code that satisfies
+# SolverInterface by calling SNOPT. Otherwise, this target builds dummy object
+# code that fails at runtime.
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
-        # The `--config snopt` ("Use the default SNOPT flavor") is a synonym
-        # for `--config snopt_fortran` ("Use the Fortran SNOPT flavor").
         "//tools:with_snopt": [
             "snopt_solver.cc",
             "snopt_solver_common.cc",
         ],
-        # This is always the Fortran flavor.
-        "//tools:with_snopt_fortran": [
-            "snopt_solver.cc",
-            "snopt_solver_common.cc",
-        ],
-        # This is always the f2c flavor.
-        "//tools:with_snopt_f2c": [
-            "snopt_solver_f2c.cc",
-            "snopt_solver_common.cc",
-        ],
-        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             "no_snopt.cc",
             "snopt_solver_common.cc",
         ],
     }),
     hdrs = ["snopt_solver.h"],
+    copts = select({
+        "//tools:with_snopt_fortran": [
+            "-DWITH_SNOPT_FORTRAN=1",
+        ],
+        "//conditions:default": [],
+    }),
     deps = select({
-        # This is Drake's default flavor (Fortran).
         "//tools:with_snopt": [
             ":mathematical_program",
             ":solver_base",
+            "//common:scope_exit",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
         ],
-        # This is always the Fortran flavor.
-        "//tools:with_snopt_fortran": [
-            ":mathematical_program",
-            ":solver_base",
-            "//math:autodiff",
-            "@snopt//:snopt_cwrap",
-        ],
-        # This is always the f2c flavor.
-        "//tools:with_snopt_f2c": [
-            ":mathematical_program",
-            ":solver_base",
-            "//math:autodiff",
-            "@snopt//:snopt_c",
-        ],
-        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             ":mathematical_program",
             ":solver_base",
@@ -1148,9 +1114,9 @@ drake_cc_googletest(
     deps = [
         ":csdp_test_examples",
         ":sdpa_free_format",
+        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
-        "@spruce",
     ],
 )
 
@@ -1236,6 +1202,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -1266,6 +1233,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -1289,10 +1257,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":solve",
         "//common:symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:is_dynamic_castable",
-        "//common/test_utilities:symbolic_test_util",
+        "//common/test_utilities",
     ],
 )
 
@@ -1342,8 +1307,8 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        "//common:filesystem",
         "//common:temp_directory",
-        "@spruce",
     ],
 )
 
@@ -1353,6 +1318,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":mosek_solver",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -1388,8 +1354,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":optimization_examples",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:is_dynamic_castable",
+        "//common/test_utilities",
     ],
 )
 
@@ -1539,10 +1504,10 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
+        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-        "@spruce",
     ],
 )
 
@@ -1577,7 +1542,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":solve",
         ":sos_basis_generator",
-        "//common/test_utilities:symbolic_test_util",
+        "//common/test_utilities",
     ],
 )
 
@@ -1689,6 +1654,7 @@ drake_cc_googletest(
     name = "solver_options_test",
     deps = [
         ":solver_options",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1735,5 +1701,4 @@ add_lint_tests(cpplint_extra_srcs = [
     "snopt_solver.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",
-    "snopt_solver_f2c.cc",
 ])

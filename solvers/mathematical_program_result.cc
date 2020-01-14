@@ -44,7 +44,7 @@ void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
 
 double GetVariableValue(
     const symbolic::Variable& var,
-    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+    const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
   DRAKE_ASSERT(variable_index.has_value());

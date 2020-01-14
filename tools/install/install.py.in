@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 """
 Installation script generated from a Bazel `install` target.
 """
@@ -10,7 +10,6 @@ Installation script generated from a Bazel `install` target.
 # N.B. This is designed to emulate CMake's install mechanism. Do not add
 # unnecessary print statements.
 
-from __future__ import print_function
 
 import argparse
 import collections
@@ -84,7 +83,8 @@ def find_binary_executables():
     # Checking file type with command `file` is the safest way to find
     # executables. Files without an extension are likely to be executables, but
     # it is not always the case.
-    file_output = check_output(["file"] + potential_binaries_to_fix_rpath)
+    file_output = check_output(
+        ["file"] + potential_binaries_to_fix_rpath).decode("utf-8")
     # On Linux, executables can be ELF shared objects.
     executable_match = re.compile(
         r"(.*):.*(ELF.*executable|shared object.*|Mach-O.*executable.*)")
@@ -97,7 +97,8 @@ def find_binary_executables():
 
 
 def may_be_binary(dst_full):
-    # Try to minimize the amount of work that `find_binary_executables` must do.
+    # Try to minimize the amount of work that `find_binary_executables`
+    # must do.
     extensions = [".h", ".py", ".obj", ".cmake", ".1", ".hpp", ".txt"]
     for extension in extensions:
         if dst_full.endswith(extension):
@@ -133,7 +134,7 @@ def copy_or_link(src, dst):
     if relative_link:
         os.symlink(relative_link, dst)
     else:
-        shutil.copy2(src,dst)
+        shutil.copy2(src, dst)
 
 
 def install(src, dst):
@@ -189,7 +190,7 @@ def fix_rpaths_and_strip():
     find_binary_executables()
     # Only fix files that are installed now.
     fix_items = itertools.chain(
-        libraries_to_fix_rpath.iteritems(), binaries_to_fix_rpath)
+        libraries_to_fix_rpath.items(), binaries_to_fix_rpath)
     for basename, dst_full in fix_items:
         if os.path.islink(dst_full):
             # Skip files that are links. However, they need to be in the
@@ -220,7 +221,7 @@ def macos_fix_rpaths(basename, dst_full):
         [install_name_tool, "-id", "@rpath/" + basename, dst_full]
         )
     # Check if file dependencies are specified with relative paths.
-    file_output = check_output(["otool", "-L", dst_full])
+    file_output = check_output(["otool", "-L", dst_full]).decode("utf-8")
     for line in file_output.splitlines():
         # keep only file path, remove version information.
         relative_path = line.split(' (')[0].strip()
@@ -244,7 +245,7 @@ def macos_fix_rpaths(basename, dst_full):
     # Remove RPATH values that contain @loader_path. These are from the build
     # tree and are irrelevant in the install tree. RPATH is not necessary as
     # relative or absolute path to each library is already known.
-    file_output = check_output(["otool", "-l", dst_full])
+    file_output = check_output(["otool", "-l", dst_full]).decode("utf-8")
     for line in file_output.splitlines():
         split_line = line.strip().split(' ')
         if len(split_line) >= 2 \
@@ -276,7 +277,7 @@ def linux_fix_rpaths(dst_full):
         '/usr/libx32',
         '/usr/local/lib',
     ]
-    file_output = check_output(["ldd", dst_full])
+    file_output = check_output(["ldd", dst_full]).decode("utf-8")
     rpath = []
     for line in file_output.splitlines():
         ldd_result = line.strip().split(' => ')
@@ -336,7 +337,7 @@ def create_java_launcher(filename, classpath, jvm_flags, main_class):
     filename = os.path.join(prefix, filename)
     print("-- Generating: {}".format(filename))
 
-     # Make sure install directory exists.
+    # Make sure install directory exists.
     filepath = os.path.dirname(filename)
     if not os.path.exists(filepath):
         os.makedirs(filepath)
@@ -351,7 +352,7 @@ def create_java_launcher(filename, classpath, jvm_flags, main_class):
 set -euo pipefail
 
 # This file is installed to <prefix>/bin.
-readonly prefix=$(python -c 'import os;\
+readonly prefix=$(python3 -c 'import os;\
     print(os.path.realpath(os.path.join(\"'\"$0\"'\", os.pardir, os.pardir)))')
 
 for jar_file in {}; do
@@ -419,11 +420,11 @@ def main(args):
                 prefix))
 
     if color:
-       ansi_color_escape = "\x1b[36m"
-       ansi_reset_escape = "\x1b[0m"
+        ansi_color_escape = "\x1b[36m"
+        ansi_reset_escape = "\x1b[0m"
     else:
-       ansi_color_escape = ""
-       ansi_reset_escape = ""
+        ansi_color_escape = ""
+        ansi_reset_escape = ""
 
     if strip:
         # Match the output of the CMake install/strip target

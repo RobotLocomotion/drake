@@ -51,12 +51,18 @@ GTEST_TEST(TextLoggingTest, SmokeTest) {
   drake::log()->warn("drake::log()->warn test: {} {}", "OK", obj);
   drake::log()->error("drake::log()->error test: {} {}", "OK", obj);
   drake::log()->critical("drake::log()->critical test: {} {}", "OK", obj);
-  SPDLOG_TRACE(drake::log(), "SPDLOG_TRACE macro test: {}, {}", "OK", obj);
-  SPDLOG_DEBUG(drake::log(), "SPDLOG_DEBUG macro test: {}, {}", "OK", obj);
-  DRAKE_SPDLOG_TRACE(drake::log(), "DRAKE_SPDLOG_TRACE macro test: {}, {}",
+  DRAKE_LOGGER_TRACE("DRAKE_LOGGER_TRACE macro test: {}, {}",
                      "OK", obj);
-  DRAKE_SPDLOG_DEBUG(drake::log(), "DRAKE_SPDLOG_DEBUG macro test: {}, {}",
+  DRAKE_LOGGER_DEBUG("DRAKE_LOGGER_DEBUG macro test: {}, {}",
                      "OK", obj);
+}
+
+// Check that floating point values format sensibly.  We'll just test fmt
+// directly, since we know that spdlog uses it internally.
+GTEST_TEST(TextLoggingTest, FloatingPoint) {
+  EXPECT_EQ(fmt::format("{}", 1.0), "1.0");
+  // This number is particularly challenging.
+  EXPECT_EQ(fmt::format("{}", 0.009), "0.009");
 }
 
 // Check that the constexpr bool is set correctly.
@@ -84,10 +90,11 @@ GTEST_TEST(TextLoggingTest, CaptureOutputTest) {
   #endif
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Verify that DRAKE_SPDLOG macros succeed in avoiding evaluation of their
-// arguments. (The plain SPDLOG ones currently evaluate unconditionally when
-// expanded but we won't check that here since it could change.)
-GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
+// arguments.
+GTEST_TEST(TextLoggingTest, DeprecatedDrakeMacrosDontEvaluateArguments) {
   int tracearg = 0, debugarg = 0;
 
   // Shouldn't increment argument whether the macro expanded or not, since
@@ -124,6 +131,57 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   #endif
   DRAKE_SPDLOG_TRACE(drake::log(), "tracearg={}", ++tracearg);
   DRAKE_SPDLOG_DEBUG(drake::log(), "debugarg={}", ++debugarg);
+  #ifndef NDEBUG
+    EXPECT_EQ(tracearg, 0);
+    EXPECT_EQ(debugarg, kHaveSpdlog ? 1 : 0);
+  #else
+    EXPECT_EQ(tracearg, 0);
+    EXPECT_EQ(debugarg, 0);
+  #endif
+  tracearg = 0;
+  debugarg = 0;
+}
+#pragma GCC diagnostic pop
+
+// Verify that DRAKE_LOGGER macros succeed in avoiding evaluation of their
+// arguments.
+GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
+  int tracearg = 0, debugarg = 0;
+
+  // Shouldn't increment argument whether the macro expanded or not, since
+  // logging is off.
+  #if TEXT_LOGGING_TEST_SPDLOG
+    drake::log()->set_level(spdlog::level::off);
+  #endif
+  DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
+  DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
+  EXPECT_EQ(tracearg, 0);
+  EXPECT_EQ(debugarg, 0);
+  tracearg = 0;
+  debugarg = 0;
+
+  // Should increment arg only if the macro expanded.
+  #if TEXT_LOGGING_TEST_SPDLOG
+    drake::log()->set_level(spdlog::level::trace);
+  #endif
+  DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
+  DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
+  #ifndef NDEBUG
+    EXPECT_EQ(tracearg, kHaveSpdlog ? 1 : 0);
+    EXPECT_EQ(debugarg, kHaveSpdlog ? 1 : 0);
+  #else
+    EXPECT_EQ(tracearg, 0);
+    EXPECT_EQ(debugarg, 0);
+  #endif
+  tracearg = 0;
+  debugarg = 0;
+
+  // Only DEBUG should increment arg since trace is not enabled.
+  #if TEXT_LOGGING_TEST_SPDLOG
+    drake::log()->set_level(spdlog::level::debug);
+  #endif
+  DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
+  DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
   #ifndef NDEBUG
     EXPECT_EQ(tracearg, 0);
     EXPECT_EQ(debugarg, kHaveSpdlog ? 1 : 0);

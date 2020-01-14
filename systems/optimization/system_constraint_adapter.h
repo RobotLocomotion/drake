@@ -1,9 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <vector>
 
-#include "drake/common/drake_optional.h"
 #include "drake/solvers/binding.h"
 #include "drake/systems/optimization/system_constraint_wrapper.h"
 
@@ -75,7 +75,7 @@ class SystemConstraintAdapter {
    * with symbolic::Expression, or the constraint is not linear), then
    * constraints.has_value() = false.
    */
-  optional<std::vector<solvers::Binding<solvers::Constraint>>>
+  std::optional<std::vector<solvers::Binding<solvers::Constraint>>>
   MaybeCreateConstraintSymbolically(
       SystemConstraintIndex index,
       const Context<symbolic::Expression>& context) const;
@@ -101,7 +101,7 @@ class SystemConstraintAdapter {
    * @throw invalid_argument if the system contains abstract state or abstract
    * parameters.
    */
-  optional<solvers::Binding<solvers::Constraint>>
+  std::optional<solvers::Binding<solvers::Constraint>>
   MaybeCreateGenericConstraintSymbolically(
       SystemConstraintIndex index,
       const Context<symbolic::Expression>& context) const;
