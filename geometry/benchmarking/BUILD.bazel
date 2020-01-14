@@ -4,6 +4,20 @@ load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_binary(
+    name = "mesh_intersection_benchmark",
+    srcs = ["mesh_intersection_benchmark.cc"],
+    deps = [
+        "//common:essential",
+        "//geometry/proximity:make_ellipsoid_field",
+        "//geometry/proximity:make_ellipsoid_mesh",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:mesh_intersection",
+        "//math",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
+drake_cc_binary(
     name = "render_benchmark",
     srcs = ["render_benchmark.cc"],
     deps = [
