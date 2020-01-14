@@ -104,7 +104,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   const int num_states = context.num_total_states();
   DRAKE_DEMAND(num_states > 0);
   // The Linearize method call below will verify that the system has either
-  // continuous-time OR (only simple) discrete-time dyanmics.
+  // continuous-time OR (only simple) discrete-time dynamics.
 
   // TODO(russt): Confirm behavior if Q is not PSD.
 
