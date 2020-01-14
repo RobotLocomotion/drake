@@ -187,29 +187,40 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// @param m the output from the inverse parametric wire function.
   static double get_inv_pfunction_second_derivative(const ArcLength& m);
 
+  /// Gets the number of constraint equations used for dynamics.
+  int get_num_constraint_equations(const systems::Context<T>& context) const;
+
+  /// Evaluates the constraint equations for a bead represented in absolute
+  /// coordinates (no constraint equations are used for a bead represented in
+  /// minimal coordinates).
+  Eigen::VectorXd EvalConstraintEquations(
+      const systems::Context<T>& context) const;
+
+  /// Computes the time derivative of the constraint equations, evaluated at
+  /// the current generalized coordinates and generalized velocity.
+  Eigen::VectorXd EvalConstraintEquationsDot(
+      const systems::Context<T>& context) const;
+
+  /// Computes the change in generalized velocity from applying constraint
+  /// impulses @p lambda.
+  /// @param context The current state of the system.
+  /// @param lambda The vector of constraint forces.
+  /// @returns a `n` dimensional vector, where `n` is the dimension of the
+  ///          quasi-coordinates.
+  Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
+      const systems::Context<T>& context, const Eigen::MatrixXd& J,
+      const Eigen::VectorXd& lambda) const;
+
  protected:
-  void CopyStateOut(const systems::Context<T> &context,
+  void CopyStateOut(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const;
 
   void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 
-  void SetDefaultState(const systems::Context<T> &context,
-                       systems::State<T> *state) const override;
-
-  int do_get_num_constraint_equations(const systems::Context<T> &context) const
-                                     override;
-
-  Eigen::VectorXd DoEvalConstraintEquations(
-      const systems::Context<T> &context) const override;
-
-  Eigen::VectorXd DoEvalConstraintEquationsDot(
-      const systems::Context<T> &context) const override;
-
-  Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
-      const systems::Context<T> &context, const Eigen::MatrixXd &J,
-      const Eigen::VectorXd &lambda) const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
  private:
   // The coordinate representation used for kinematics and dynamics.
@@ -217,7 +228,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   // The wire parameter function. See set_wire_parameter_function() for more
   // information. This pointer is expected to never be null.
-  std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength &)> f_{
+  std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f_{
       &helix_function};
 
   // The inverse of the wire parameter function.
@@ -228,7 +239,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   // function is null, EvaluateConstraintEquations() will use generic,
   // presumably less efficient methods instead. This pointer is expected to
   // never be null.
-  std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1> &)> inv_f_{
+  std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&)> inv_f_{
       &inverse_helix_function};
 
   // Signed acceleration due to gravity.
