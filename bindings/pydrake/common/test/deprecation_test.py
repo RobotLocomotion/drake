@@ -136,7 +136,6 @@ class TestDeprecation(unittest.TestCase):
     def _check_warning(self, item, message_expected, check_full=True):
         self.assertEqual(item.category, DrakeDeprecationWarning)
         if check_full:
-            message_expected += DrakeDeprecationWarning.addendum
             self.assertEqual(message_expected, str(item.message))
         else:
             self.assertIn(message_expected, str(item.message))
