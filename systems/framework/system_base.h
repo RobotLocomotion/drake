@@ -775,7 +775,7 @@ class SystemBase : public internal::SystemMessageInterface {
   //@}
 
   /** Checks whether the given context was created for this system.
-   @note This method is sufficiently fast for performance sensitive code.
+  @note This method is sufficiently fast for performance sensitive code.
   */
   void ValidateContext(const ContextBase& context) const {
     if (context.get_system_id() != system_id_) {
@@ -788,7 +788,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Checks whether the given context was created for this system.
-   @note This method is sufficiently fast for performance sensitive code.
+  @note This method is sufficiently fast for performance sensitive code.
    */
   void ValidateContext(ContextBase* context) const {
     DRAKE_THROW_UNLESS(context != nullptr);
@@ -1064,8 +1064,8 @@ class SystemBase : public internal::SystemMessageInterface {
   parameters and state should be allocated. */
   virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
-  // TODO(jwnimmer-tri) Remove this function with CheckValidContext() has been
-  // removed.
+  // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
+  // removed, also remove this function.
   virtual void DoCheckValidContext(const ContextBase&) const {}
 
  private:
