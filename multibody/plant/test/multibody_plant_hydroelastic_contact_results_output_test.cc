@@ -18,19 +18,8 @@ using geometry::SurfaceVertexIndex;
 using geometry::SurfaceMesh;
 
 namespace multibody {
-
-class MultibodyPlantTester {
- public:
-  MultibodyPlantTester() = delete;
-
-  static std::vector<geometry::ContactSurface<double>> ComputeContactSurfaces(
-      const MultibodyPlant<double>& plant,
-      const geometry::QueryObject<double>& query_object) {
-    return plant.hydroelastics_engine_.ComputeContactSurfaces(query_object);
-  }
-};
-
 namespace {
+
 class HydroelasticContactResultsOutputTester : public ::testing::Test {
  protected:
   void SetUp() {
@@ -111,7 +100,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
 };
 
 // Checks that the ContactSurface from the output port is equivalent to that
-// returned from the HydroelasticEngine.
+// computed by SceneGraph.
 TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Get the query object so that we can compute the contact surfaces.
   const auto& query_object =
@@ -120,7 +109,7 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
 
   // Compute the contact surface using the hydroelastic engine.
   std::vector<geometry::ContactSurface<double>> contact_surfaces =
-      MultibodyPlantTester::ComputeContactSurfaces(*plant_, query_object);
+      query_object.ComputeContactSurfaces();
 
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);

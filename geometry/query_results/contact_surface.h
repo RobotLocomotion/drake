@@ -158,7 +158,7 @@ class ContactSurface {
    @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
                        and N. The mesh vertices are defined in the world frame.
    @param e_MN         Represents the scalar field eₘₙ on the surface mesh.
-   @pre The face normals in `mesh_W` point *out of* geometry M and *into* N.
+   @pre The face normals in `mesh_W` point *out of* geometry N and *into* M.
    @note If the id_M is greater than the id_N, we will swap M and N (making any
          necessary changes to keep the surface consistent with that labeling).
    */
