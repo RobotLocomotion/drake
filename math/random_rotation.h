@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/constants.h"
+#include "drake/common/double_overloads.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
 #include "drake/math/quaternion.h"
@@ -46,7 +47,19 @@ Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
   const Eigen::Quaternion<T> quaternion =
       UniformlyRandomQuaternion<T>(generator);
-  return Eigen::AngleAxis<T>(quaternion);
+  Eigen::AngleAxis<T> result;
+  using std::atan2;
+  result.angle() = T(2.) * atan2(quaternion.vec().norm(), abs(quaternion.w()));
+  using std::sin;
+  using symbolic::if_then_else;
+  const T sin_half_angle = sin(result.angle() / 2);
+  for (int i = 0; i < 3; ++i) {
+    result.axis()(i) = if_then_else(quaternion.w() < T(0.),
+                                    -quaternion.vec()(i) / sin_half_angle,
+                                    quaternion.vec()(i) / sin_half_angle);
+  }
+
+  return result;
 }
 
 /// Generates a rotation (in the rotation matrix representation) that rotates a
