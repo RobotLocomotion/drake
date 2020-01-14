@@ -399,7 +399,7 @@ void EvaluateNonlinearConstraints(
 
     // Scale this_x
     auto this_x_scaled = math::initializeAutoDiff(this_x);
-    for (size_t i = 0; i < binding_var_indices.size(); i++) {
+    for (int i = 0; i < num_variables; i++) {
       auto it = scale_map.find(binding_var_indices[i]);
       if (it != scale_map.end()) {
         this_x_scaled(i) *= it->second;
@@ -501,7 +501,7 @@ void EvaluateAndAddNonlinearCosts(
     AutoDiffVecXd ty(1);
     // Scale this_x
     auto this_x_scaled = math::initializeAutoDiff(this_x);
-    for (size_t i = 0; i < binding_var_indices.size(); i++) {
+    for (int i = 0; i < num_variables; i++) {
       auto it = scale_map.find(binding_var_indices[i]);
       if (it != scale_map.end()) {
         this_x_scaled(i) *= it->second;
