@@ -90,7 +90,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /**
    * Single segment, constant value constructor over the interval [-∞, ∞].
    * The constructed %PiecewisePolynomial will return `constant_value` at
-   * every evaluated point (i.e., `value(t) = constant_value` ∀t ∈ [-∞, ∞]).
+   * every evaluated point (i.e., `value(t) = constant_value` g).
    */
   template <typename Derived>
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& constant_value)
