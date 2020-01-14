@@ -2742,13 +2742,14 @@ class MathematicalProgram {
   }
 
   /**
-   * Setter for scaling factors.
+   * Setter for the scaling of decision variables.
    * @param scale scaling factor.
    * @param idx index of the decision variable.
    */
   void SetVariableScaling(double scale, int idx);
   /**
-   * Setter for scaling factors starting from index @p idx_start to @p idx_end.
+   * Setter for the scaling of decision variables starting from index @p
+   * idx_start to @p idx_end.
    * @param scale scaling factor.
    * @param idx_start index of the start of the decision variables.
    * @param idx_end index of the end of the decision variables.
