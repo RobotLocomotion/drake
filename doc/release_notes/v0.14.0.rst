@@ -90,7 +90,12 @@ Fixes
 * Fix scalar conversion bug in RevoluteSpring (`#12522`_)
 
 New hydroelastic contact model in progress (`#12538`_, `#12541`_, `#12418`_,
-`#12471`_, `#12493`_, `#12529`_). Still only experimental.
+`#12471`_, `#12493`_, `#12529`_):
+
+* Still only experimental
+* Improve performance
+* Improve visualization
+* Improve specification
 
 Miscellaneous features and fixes
 --------------------------------
