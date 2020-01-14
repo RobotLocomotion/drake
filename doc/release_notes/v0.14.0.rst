@@ -10,30 +10,32 @@ Announcements
 Breaking Changes
 ----------------
 
+These are breaking changes that did not undergo a deprecation period.
+
 * SDFormat 1.7 backwards-incompatible changes (`#12505`_)
 
   - Models must have at least one link
   - The model frame is now attached to a link
   - Model frames can no longer reference "world"
 
+* Drake no longer accidentally supports regexes in the channel name passed to
+  DrakeLcm::Subscribe (`#12534`_)
+
 Dynamical Systems
 -----------------
 
 New features
 
-* Add ability to do full-Newton to implicit integrators (`#12524`_)
+* Add ability to implicit integrators to do full Newton (`#12524`_)
 
 Fixes
 
 * Update Simulator's interface for changing integrators (`#12520`_)
-* Correct SymbolicVectorSystem "container" population (`#12500`_)
-* Change context.FixInputPort() to port.FixValue() (`#12504`_, `#12535`_,
-  `#12555`_)
+* Eliminate spurious algebraic loop from SymbolicVectorSystem (`#12500`_)
 
 Documentation
 
 * Add high level event documentation (`#12501`_)
-* Remove duplicated @name from integrator docs (`#12550`_)
 
 Mathematical Program
 --------------------
@@ -41,7 +43,6 @@ Mathematical Program
 Fixes
 
 * Check output size in EvaluatorBase (`#10987`_)
-* Fix scope_exit deps for snopt_fortran (`#12545`_)
 
 Multibody Dynamics
 ------------------
@@ -57,29 +58,19 @@ New features
   (`#12556`_)
 * Support ellipsoid rendering (`#12547`_)
 * Add graphviz visualization of multibodyplant topology (`#12485`_)
-* Support parsing SDFormat 1.7 (`#12505`_). Incorporates the `pose frame
-  semantics <https://bit.ly/2ZSl1kH>`_ proposal.
+* Support parsing SDFormat 1.7 (`#12505`_, `#12533`_). Incorporates the `pose
+  frame semantics <https://bit.ly/2ZSl1kH>`_ proposal.
 * Support textures for primitive objects, not just meshes (`#12423`_). This
   only applies to rendering (RenderEngine*).
 
 Fixes
 
-* Bug fix warning on unsupported joint limits for continuous models (`#12531`_)
+* Bug fix warning on unsupported joint limits for continuous models (`#12531`_,
+  `#12499`_)
 * Fix scalar conversion bug in RevoluteSpring (`#12522`_)
-* Pad bounding box volumes to avoid roundoff issues (`#12538`_)
-* Confirm that all supported geometries are nominally parsed (`#12541`_)
-* Provide more helpful message on joint limit support in MBP (`#12499`_)
-* Test parsing of all models reachable via pydrake (URDF / SDFormat) (`#12508`_)
-* Hotfix for memory leak in libsdformat's Converter.cc (`#12533`_)
 
-New hydroelastic contact model in progress (still only experimental):
-
-* Collide BVHs using OBB intersection test with callback on the resulting pairs
-  (`#12418`_)
-* Add LCM messages for traction and slip velocity vectors (`#12471`_)
-* Add traction and slip vector visualization for hydroelastic contact
-  (`#12493`_)
-* Modify parsing semantics for hydroelastics (`#12529`_)
+New hydroelastic contact model in progress (`#12538`_, `#12541`_, `#12418`_,
+`#12471`_, `#12493`_, `#12529`_). Still only experimental.
 
 Miscellaneous features and fixes
 --------------------------------
@@ -87,7 +78,6 @@ Miscellaneous features and fixes
 Common:
 
 * Add scope_exit class (`#12537`_)
-* Remove stale TODOs in common (`#12540`_)
 
 LCM fixes:
 
@@ -121,7 +111,7 @@ Build system and dependencies
 
 * Add Dockerfile for Binder (`#12472`_)
 * Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)
-* Error out on now-unsupported --config=snopt_fortran (`#12549`_)
+* Error out on now-unsupported --config=snopt_fortran (`#12549`_, `#12545`_)
 * Update recommended Bazel version to 2.0 (`#12526`_)
 * Fix mkdoc comment handling edge cases (`#12519`_)
 * Upgrade bullet to latest release 2.89 (`#12516`_)
@@ -130,8 +120,6 @@ Build system and dependencies
 * Upgrade semantic_version to latest release 2.8.4 (`#12516`_)
 * Upgrade uritemplate_py to latest release 3.0.1 (`#12516`_)
 * Remove uninstall of ipopt and mumps on macOS (`#12517`_)
-* Move GitHub token filename for relnotes to command line, not environ
-  (`#12518`_)
 
 Newly-deprecated APIs
 ---------------------
@@ -153,7 +141,7 @@ Newly-deprecated APIs
   - Use pydrake.multibody.rigid_body_tree.RigidBodyTree.get_num_velocities
     instead.
 
-* DRAKE_DEPRECATED in common/drake_nodiscard.h (`#12539`_)
+* DRAKE_NODISCARD in common/drake_nodiscard.h (`#12539`_)
 
   - Use ``[[nodiscard]]`` directly.
 
@@ -262,7 +250,7 @@ Removal of deprecated APIs
 
     - Use InverseDynamicsController::get_rigid_body_tree_for_control instead.
 
-This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.14.0>`__ named ``drake-20120113-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
+This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.14.0>`__ named ``drake-20200113-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
