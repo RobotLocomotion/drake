@@ -45,12 +45,8 @@ drake_cc_library(
         "hydroelastic_engine.h",
     ],
     deps = [
-        ":contact_surface_from_level_set",
-        ":hydroelastic_field",
-        ":hydroelastic_field_sphere",
-        ":level_set_field",
-        "//common:essential",
         "//geometry:scene_graph",
+        "//geometry:scene_graph_inspector",
     ],
 )
 
@@ -96,17 +92,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "hydroelastic_engine_test",
-    data = [
-        "test/sphere_vs_plane.sdf",
-    ],
     deps = [
         ":hydroelastic_engine",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//math:geometric_transform",
-        "//multibody/parsing",
-        "//multibody/plant",
+        "//geometry:scene_graph",
     ],
 )
 
