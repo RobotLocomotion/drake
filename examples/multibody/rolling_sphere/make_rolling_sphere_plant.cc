@@ -1,5 +1,6 @@
 #include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
 
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
@@ -7,6 +8,11 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
+using drake::geometry::internal::kElastic;
+using drake::geometry::internal::kFriction;
+using drake::geometry::internal::kHcDissipation;
+using drake::geometry::internal::kMaterialGroup;
+using drake::geometry::ProximityProperties;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
@@ -31,27 +37,46 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
   if (scene_graph != nullptr) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
 
-    Vector3<double> normal_W(0, 0, 1);
-    Vector3<double> point_W(0, 0, 0);
-
-    const RigidTransformd X_WG(HalfSpace::MakePose(normal_W, point_W));
-    // A half-space for the ground geometry.
-    plant->RegisterCollisionGeometry(plant->world_body(), X_WG, HalfSpace(),
-                                     "collision", surface_friction);
+    // TODO(SeanCurtis-TRI): Once SceneGraph supports hydroelastic contact
+    //  between rigid half space and soft sphere, replace this box with the
+    //  equivalent half space.
+    const double size = 5;
+    // Each of the box's faces are divided into triangles by a dividing line.
+    // If the box's center is on the z axis and the +z face lies on the ground
+    // plane, that face's diagonal line passes through the origin. If the sphere
+    // starts at the origin, the contact patch will have artifacts due to that
+    // dividing line. We want to simulate a simple plane so that all of the
+    // contact surface geometry is attributable to the sphere's tessellation.
+    // To do that, we shift the box so that box is no longer centered on the
+    // z-axis and the origin is placed well inside one of the two resulting
+    // triangles. The signs of the constants below assumes a particular
+    // dividing line (of the two possible).
+    RigidTransformd X_WG{Vector3<double>(size / 10, -size / 10, -size / 2)};
+    ProximityProperties box_props;
+    geometry::AddRigidHydroelasticProperties(size, &box_props);
+    box_props.AddProperty(kMaterialGroup, kFriction, surface_friction);
+    plant->RegisterCollisionGeometry(plant->world_body(), X_WG,
+                                     geometry::Box(size, size, size),
+                                     "collision", box_props);
 
     // Add visual for the ground.
-    plant->RegisterVisualGeometry(plant->world_body(), X_WG, HalfSpace(),
-                                  "visual");
+    plant->RegisterVisualGeometry(plant->world_body(), X_WG,
+                                  geometry::Box(size, size, size), "visual");
 
     // Add sphere geometry for the ball.
     // Pose of sphere geometry S in body frame B.
     const RigidTransformd X_BS = RigidTransformd::Identity();
-    geometry::GeometryId sphere_geometry = plant->RegisterCollisionGeometry(
-        ball, X_BS, Sphere(radius), "collision", surface_friction);
-
     // Set material properties for hydroelastics.
-    plant->set_elastic_modulus(sphere_geometry, elastic_modulus);
-    plant->set_hunt_crossley_dissipation(sphere_geometry, dissipation);
+    ProximityProperties ball_props;
+    // TODO(SeanCurtis-TRI): Simplify this with addition of
+    //  geometry::AddContactMaterial().
+    ball_props.AddProperty(kMaterialGroup, kElastic, elastic_modulus);
+    ball_props.AddProperty(kMaterialGroup,
+                           kHcDissipation, dissipation);
+    ball_props.AddProperty(kMaterialGroup, kFriction, surface_friction);
+    geometry::AddSoftHydroelasticProperties(radius, &ball_props);
+    plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
+                                     ball_props);
 
     // Add visual for the ball.
     const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
