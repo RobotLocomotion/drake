@@ -26,10 +26,13 @@ info see: https://github.com/google/benchmark#fixtures.
 
 # Available Benchmarks
 
-These benchmarks have been prepared so that users can repeat them on their own
-desired machine.
-
 * [render_benchmark.cc](https://drake.mit.edu/doxygen_cxx/html/group__render__engine__benchmarks.html):
 Benchmark program to help characterize the relative costs of different
-RenderEngine implementations with varying scene complexity and rendering
-settings.
+RenderEngine implementations with varying scene complexity and rendering. It is
+designed so users can repeat these benchmarks on their own desired machine for
+personalized results.
+* [mesh_intersection_benchmark.cc](https://drake.mit.edu/doxygen_cxx/html/group__mesh__intersection__benchmarks.html):
+Benchmark program to compare different mesh intersection optimizations with
+varying mesh attributes and overlaps. Developers can repeat these benchmarks
+as an informal basis for regression tests while development continues on
+hydroelastics.
