@@ -406,10 +406,6 @@ void EvaluateNonlinearConstraints(
       }
     }
 
-    // Testing
-    // std::cout << c->get_description() << std::endl;
-    // std::cout << "this_x= " << this_x <<std::endl;
-
     AutoDiffVecXd ty;
     ty.resize(num_constraints);
     EvaluateSingleNonlinearConstraint(*c, this_x_scaled, &ty);

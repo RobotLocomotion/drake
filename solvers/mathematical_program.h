@@ -2711,25 +2711,26 @@ class MathematicalProgram {
     return decision_variable_index_;
   }
 
+  /**
+   * Returns the mapping from a decision variable index to its scaling factor.
+   */
   const std::unordered_map<int, double>& GetVariableScaling() const {
     return var_scaling_map_;
   }
-  void SetVariableScaling(double scale, int idx_start) {
-    SetVariableScaling(scale, idx_start, idx_start);
-  }
-  void SetVariableScaling(double scale, int idx_start, int idx_end) {
-    DRAKE_DEMAND(0 < scale);
-    DRAKE_DEMAND(0 <= idx_start);
-    DRAKE_DEMAND(idx_start <= idx_end);
-    DRAKE_DEMAND(idx_end < num_vars());
 
-    for (int i = idx_start; i <= idx_end; i++) {
-      // Check if the scaling has been set already
-      DRAKE_DEMAND(var_scaling_map_.find(i) == var_scaling_map_.end());
-      // Add scaling
-      var_scaling_map_.insert(std::pair<int, double>(i, scale));
-    }
-  }
+  /**
+   * Setter for scaling factors.
+   * @param scale scaling factor.
+   * @param idx index of the decision variable.
+   */
+  void SetVariableScaling(double scale, int idx);
+  /**
+   * Setter for scaling factors starting from index @p idx_start to @p idx_end.
+   * @param scale scaling factor.
+   * @param idx_start index of the start of the decision variables.
+   * @param idx_end index of the end of the decision variables.
+   */
+  void SetVariableScaling(double scale, int idx_start, int idx_end);
 
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
