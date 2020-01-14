@@ -21,6 +21,23 @@ These are breaking changes that did not undergo a deprecation period.
 * Drake no longer accidentally supports regexes in the channel name passed to
   DrakeLcm::Subscribe (`#12534`_)
 
+* Remove unused constraint equation API form Systems framework (`#12553`_).
+
+  - Removed the following public API:
+
+    - drake::systems::System::CalcConstraintErrorNorm
+    - drake::systems::System::CalcVelocityChangeFromConstraintImpulses
+    - drake::systems::System::EvalConstraintEquationsDot
+    - drake::systems::System::num_constraint_equations
+
+  - Removed the following protected API:
+
+    - drake::systems::System::DoCalcConstraintErrorNorm
+    - drake::systems::System::DoCalcVelocityChangeFromConstraintImpulses
+    - drake::systems::System::DoEvalConstraintEquations
+    - drake::systems::System::DoEvalConstraintEquationsDot
+    - drake::systems::System::do_get_num_constraint_equations
+
 Dynamical Systems
 -----------------
 
@@ -32,6 +49,7 @@ Fixes
 
 * Update Simulator's interface for changing integrators (`#12520`_)
 * Eliminate spurious algebraic loop from SymbolicVectorSystem (`#12500`_)
+* Systems reject Contexts that they did not create (`#12551`_)
 
 Documentation
 
@@ -62,6 +80,8 @@ New features
   frame semantics <https://bit.ly/2ZSl1kH>`_ proposal.
 * Support textures for primitive objects, not just meshes (`#12423`_). This
   only applies to rendering (RenderEngine*).
+* Adds C++17 structured binding support to AddMultibodyPlantSceneGraphResult
+  (`#12559`_)
 
 Fixes
 
@@ -78,6 +98,7 @@ Miscellaneous features and fixes
 Common:
 
 * Add scope_exit class (`#12537`_)
+* Copy yaml_write_archive from Anzu and adapt to Drake (`#12568`_)
 
 LCM fixes:
 
@@ -89,6 +110,7 @@ Examples:
 * Add planar IIWA URDF and use it in ManipulationStation (`#12502`_)
 * Add planar IIWA joint teleop example (`#12503`_)
 * Add LCM messaging to the planar-gripper simulation (`#12469`_)
+* Add AcrobotGeometry and purge RigidBody from examples/Acrobot (`#12567`_)
 
 pydrake bindings
 ----------------
@@ -101,6 +123,7 @@ Fixes
 
 Newly bound
 
+* pydrake.examples.acrobot.AcrobotGeometry (`#12574`_)
 * pydrake.examples.pendulum.PendulumGeometry (`#12569`_)
 * pydrake.examples.manipulation_station.ManipulationStation.SetupPlanarIiwaStation (`#12503`_)
 * pydrake.examples.manipulation_station.ManipulationStation.num_iiwa_joints (`#12503`_)
@@ -113,6 +136,8 @@ Build system and dependencies
 * Fix Binder Dockerfile for Docker versions before 19.03 (`#12510`_)
 * Error out on now-unsupported --config=snopt_fortran (`#12549`_, `#12545`_)
 * Update recommended Bazel version to 2.0 (`#12526`_)
+* Ensure drake lcmtypes are exposed in installed bazel external repository
+  (`#12573`_)
 * Fix mkdoc comment handling edge cases (`#12519`_)
 * Upgrade bullet to latest release 2.89 (`#12516`_)
 * Upgrade libsdformat to latest release 9.0 (`#12505`_)
@@ -128,6 +153,11 @@ Newly-deprecated APIs
   (`#12525`_)
 
   - Use constructor with time_step argument explicit specified instead.
+
+* drake::multibody::AddMultibodyPlantSceneGraph overload without time_step or
+  plant specified (`#12558`_)
+
+  - Use overload with time_step or plant explicitly specified
 
 * pydrake.multibody.rigid_body_tree.RigidBodyTree.number_of_positions
   (`#12514`_)
@@ -151,6 +181,16 @@ Removal of deprecated APIs
 * drake::systems::Simulator::StepTo (`#12515`_)
 
   - Use drake::systems::Simulator::AdvanceTo instead.
+
+* ``drake::systems::Simulator::reset_integrator(std::unique_ptr<U>)``
+  (`#12520`_)
+
+  - Use void or max-step-size version of reset_integrator() instead.
+
+* ``drake::systems::Simulator::reset_integrator(Args&&...)``
+  (`#12520`_)
+
+  - Use void or max-step-size version of reset_integrator() instead.
 
 * Bazel label @drake//solvers:mathematical_program_lite (`#12515`_)
 
@@ -275,9 +315,7 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12501: https://github.com/RobotLocomotion/drake/pull/12501
 .. _#12502: https://github.com/RobotLocomotion/drake/pull/12502
 .. _#12503: https://github.com/RobotLocomotion/drake/pull/12503
-.. _#12504: https://github.com/RobotLocomotion/drake/pull/12504
 .. _#12505: https://github.com/RobotLocomotion/drake/pull/12505
-.. _#12508: https://github.com/RobotLocomotion/drake/pull/12508
 .. _#12510: https://github.com/RobotLocomotion/drake/pull/12510
 .. _#12511: https://github.com/RobotLocomotion/drake/pull/12511
 .. _#12513: https://github.com/RobotLocomotion/drake/pull/12513
@@ -285,7 +323,6 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12515: https://github.com/RobotLocomotion/drake/pull/12515
 .. _#12516: https://github.com/RobotLocomotion/drake/pull/12516
 .. _#12517: https://github.com/RobotLocomotion/drake/pull/12517
-.. _#12518: https://github.com/RobotLocomotion/drake/pull/12518
 .. _#12519: https://github.com/RobotLocomotion/drake/pull/12519
 .. _#12520: https://github.com/RobotLocomotion/drake/pull/12520
 .. _#12521: https://github.com/RobotLocomotion/drake/pull/12521
@@ -297,19 +334,23 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12531: https://github.com/RobotLocomotion/drake/pull/12531
 .. _#12533: https://github.com/RobotLocomotion/drake/pull/12533
 .. _#12534: https://github.com/RobotLocomotion/drake/pull/12534
-.. _#12535: https://github.com/RobotLocomotion/drake/pull/12535
 .. _#12537: https://github.com/RobotLocomotion/drake/pull/12537
 .. _#12538: https://github.com/RobotLocomotion/drake/pull/12538
 .. _#12539: https://github.com/RobotLocomotion/drake/pull/12539
-.. _#12540: https://github.com/RobotLocomotion/drake/pull/12540
 .. _#12541: https://github.com/RobotLocomotion/drake/pull/12541
 .. _#12545: https://github.com/RobotLocomotion/drake/pull/12545
 .. _#12547: https://github.com/RobotLocomotion/drake/pull/12547
 .. _#12549: https://github.com/RobotLocomotion/drake/pull/12549
-.. _#12550: https://github.com/RobotLocomotion/drake/pull/12550
-.. _#12555: https://github.com/RobotLocomotion/drake/pull/12555
+.. _#12551: https://github.com/RobotLocomotion/drake/pull/12551
+.. _#12553: https://github.com/RobotLocomotion/drake/pull/12553
 .. _#12556: https://github.com/RobotLocomotion/drake/pull/12556
+.. _#12558: https://github.com/RobotLocomotion/drake/pull/12558
+.. _#12559: https://github.com/RobotLocomotion/drake/pull/12559
+.. _#12567: https://github.com/RobotLocomotion/drake/pull/12567
+.. _#12568: https://github.com/RobotLocomotion/drake/pull/12568
 .. _#12569: https://github.com/RobotLocomotion/drake/pull/12569
+.. _#12573: https://github.com/RobotLocomotion/drake/pull/12573
+.. _#12574: https://github.com/RobotLocomotion/drake/pull/12574
 
 ..
   Changelog oldest_commit f09a56e68b31b2bd35db66362b0ac3bde638ec67 (inclusive).
@@ -320,13 +361,3 @@ Raw Output from relnotes
 
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
-* Add python bindings for PendulumGeometry (`#12569`_)
-* yaml: Copy yaml_write_archive from Anzu (`#12568`_)  # Co-authored-by: Sam Creasey <sam.creasey@tri.global> Co-authored-by: Calder Phillips-Grafflin <calder.phillips-grafflin@tri.global>
-* yaml: Adapt yaml_write_archive to Drake and add to BUILD (`#12568`_)
-* AddMultibodyPlantSceneGraph() requires time_step argument (`#12558`_)
-* Systems reject Contexts that they did not create (`#12551`_)
-* Purge RigidBody from examples/Acrobot (`#12567`_)  # Adds AcrobotGeometry (mostly because I couldn't wait for #10775) and uses it throughout the acrobot examples. Progress towards  https://github.com/RussTedrake/underactuated/issues/203
-* Add python bindings for AcrobotGeometry (`#12574`_)  # Re-run build_components_refresh.py.
-* install: Ensure drake lcmtypes are exposed in repository (`#12573`_)
-* Unused constraint equations removal from system framework (`#12553`_)
-* Adds C++17 structured binding support to AddMultibodyPlantSceneGraphResult (`#12559`_)
