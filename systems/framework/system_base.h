@@ -775,8 +775,7 @@ class SystemBase : public internal::SystemMessageInterface {
   //@}
 
   /** Checks whether the given context was created for this system.
-  @note This method is sufficiently fast for performance sensitive code.
-  */
+  @note This method is sufficiently fast for performance sensitive code. */
   void ValidateContext(const ContextBase& context) const {
     if (context.get_system_id() != system_id_) {
       throw std::logic_error(
@@ -788,8 +787,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Checks whether the given context was created for this system.
-  @note This method is sufficiently fast for performance sensitive code.
-   */
+  @note This method is sufficiently fast for performance sensitive code. */
   void ValidateContext(ContextBase* context) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     ValidateContext(*context);
