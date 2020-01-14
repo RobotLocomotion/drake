@@ -1295,12 +1295,26 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", sphere1_friction);
+  geometry::ProximityProperties properties;
+  properties.AddProperty("test", "dummy", 7);
+  CoulombFriction<double> sphere2_friction(0.7, 0.6);
+  properties.AddProperty(geometry::internal::kMaterialGroup,
+                         geometry::internal::kFriction, sphere2_friction);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
-  CoulombFriction<double> sphere2_friction(0.7, 0.6);
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "collision", sphere2_friction);
+      "collision", std::move(properties));
+
+  // Confirm externally-defined proximity properties propagate through.
+  {
+    EXPECT_NE(scene_graph.model_inspector().GetProximityProperties(sphere2_id),
+              nullptr);
+    const geometry::ProximityProperties& props =
+        *scene_graph.model_inspector().GetProximityProperties(sphere2_id);
+    EXPECT_TRUE(props.HasProperty("test", "dummy"));
+    EXPECT_EQ(props.GetProperty<int>("test", "dummy"), 7);
+  }
 
   // We are done defining the model.
   plant.Finalize();

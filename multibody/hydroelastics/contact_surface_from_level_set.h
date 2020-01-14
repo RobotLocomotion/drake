@@ -22,6 +22,10 @@ namespace multibody {
 namespace hydroelastics {
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
+
+// TODO(SeanCurtis-TRI): The contents of this file are no longer used. Refactor
+//  this into geometry as appropriate.
+
 // This table essentially assigns an index to each edge in the tetrahedron. Each
 // edge is represented by its pair of vertex indexes.
 using Edge = std::pair<int, int>;
