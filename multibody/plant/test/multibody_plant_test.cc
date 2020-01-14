@@ -12,6 +12,7 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -331,6 +332,15 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // Check referencing.
   MultibodyPlant<double>& plant_ref = pair;
   EXPECT_EQ(&plant_ref, plant);
+
+  // Check support for C++17's structured binding.
+  auto[first_element, second_element] =
+      AddMultibodyPlantSceneGraph(&builder, 0.0);
+  // Verify the expected types.
+  EXPECT_EQ(drake::NiceTypeName::Get(first_element),
+            drake::NiceTypeName::Get<MultibodyPlant<double>>());
+  EXPECT_EQ(drake::NiceTypeName::Get(second_element),
+            drake::NiceTypeName::Get<SceneGraph<double>>());
 
   // These should fail:
   // AddMultibodyPlantSceneGraphResult<double> extra(plant, scene_graph);
