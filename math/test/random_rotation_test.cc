@@ -74,8 +74,10 @@ GTEST_TEST(RandomRotationTest, Symbolic) {
 
   const Eigen::AngleAxis<symbolic::Expression> axis_angle =
       UniformlyRandomAngleAxis<symbolic::Expression>(&generator);
-  EXPECT_EQ(axis_angle.angle().GetVariables().size(), 1);
-  EXPECT_EQ(axis_angle.axis()[0].GetVariables().size(), 3);
+  EXPECT_EQ(axis_angle.angle().GetVariables().size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(axis_angle.axis()[i].GetVariables().size(), 3);
+  }
 
   const Eigen::Quaternion<symbolic::Expression> quaternion =
       UniformlyRandomQuaternion<symbolic::Expression>(&generator);

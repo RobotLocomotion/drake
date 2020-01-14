@@ -51,12 +51,14 @@ Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   using std::atan2;
   result.angle() = T(2.) * atan2(quaternion.vec().norm(), abs(quaternion.w()));
   using std::sin;
-  using symbolic::if_then_else;
   const T sin_half_angle = sin(result.angle() / 2);
+  const Vector3<T> unit_axis(T(1.), T(0.), T(0.));
   for (int i = 0; i < 3; ++i) {
-    result.axis()(i) = if_then_else(quaternion.w() < T(0.),
-                                    -quaternion.vec()(i) / sin_half_angle,
-                                    quaternion.vec()(i) / sin_half_angle);
+    result.axis()(i) =
+        if_then_else(quaternion.w() == T(0.), unit_axis(i),
+                     if_then_else(quaternion.w() < T(0.),
+                                  -quaternion.vec()(i) / sin_half_angle,
+                                  quaternion.vec()(i) / sin_half_angle));
   }
 
   return result;
