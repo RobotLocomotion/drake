@@ -149,11 +149,11 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// f(s) = | sin(s) |
   ///        | s      |
   /// </pre>
-  static Eigen::Matrix<ArcLength, 3, 1> helix_function(const ArcLength &s);
+  static Eigen::Matrix<ArcLength, 3, 1> helix_function(const ArcLength& s);
 
   /// Inverse parametric function for the bead on a wire system that uses the
   /// helix parametric example function.
-  static ArcLength inverse_helix_function(const Vector3<ArcLength> &v);
+  static ArcLength inverse_helix_function(const Vector3<ArcLength>& v);
 
   /// Gets the output from the parametric function in Vector3d form.
   /// @param m the output from the parametric wire function.
@@ -192,24 +192,24 @@ class BeadOnAWire : public systems::LeafSystem<T> {
                     systems::BasicVector<T>* output) const;
 
   void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 
-  void SetDefaultState(const systems::Context<T> &context,
-                       systems::State<T> *state) const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
   int do_get_num_constraint_equations(const systems::Context<T> &context) const
                                      override;
 
   Eigen::VectorXd DoEvalConstraintEquations(
-      const systems::Context<T> &context) const override;
+      const systems::Context<T>& context) const override;
 
   Eigen::VectorXd DoEvalConstraintEquationsDot(
-      const systems::Context<T> &context) const override;
+      const systems::Context<T>& context) const override;
 
   Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
-      const systems::Context<T> &context, const Eigen::MatrixXd &J,
-      const Eigen::VectorXd &lambda) const override;
+      const systems::Context<T>& context, const Eigen::MatrixXd& J,
+      const Eigen::VectorXd& lambda) const override;
 
  private:
   // The coordinate representation used for kinematics and dynamics.
@@ -217,7 +217,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   // The wire parameter function. See set_wire_parameter_function() for more
   // information. This pointer is expected to never be null.
-  std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength &)> f_{
+  std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f_{
       &helix_function};
 
   // The inverse of the wire parameter function.
@@ -228,7 +228,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   // function is null, EvaluateConstraintEquations() will use generic,
   // presumably less efficient methods instead. This pointer is expected to
   // never be null.
-  std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1> &)> inv_f_{
+  std::function<ArcLength(const Eigen::Matrix<ArcLength, 3, 1>&)> inv_f_{
       &inverse_helix_function};
 
   // Signed acceleration due to gravity.
