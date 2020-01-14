@@ -31,16 +31,10 @@ class BeadOnAWireTest : public ::testing::Test {
     derivatives_min_ = dut_min_->AllocateTimeDerivatives();
 
     // Fix unused input ports.
-    std::unique_ptr<systems::BasicVector<double>> input_abs =
-        std::make_unique<systems::BasicVector<double>>(3);
-    std::unique_ptr<systems::BasicVector<double>> input_min =
-        std::make_unique<systems::BasicVector<double>>(1);
-    input_abs->SetAtIndex(0, 0.0);
-    input_abs->SetAtIndex(1, 0.0);
-    input_abs->SetAtIndex(2, 0.0);
-    input_min->SetAtIndex(0, 0.0);
-    context_abs_->FixInputPort(0, std::move(input_abs));
-    context_min_->FixInputPort(0, std::move(input_min));
+    const Vector3<double> input_abs(0.0, 0.0, 0.0);
+    const double input_min = 0.0;
+    dut_abs_->get_input_port(0).FixValue(context_abs_.get(), input_abs);
+    dut_min_->get_input_port(0).FixValue(context_min_.get(), input_min);
   }
 
   std::unique_ptr<BeadOnAWire<double>> dut_abs_;  //< A device under test.
