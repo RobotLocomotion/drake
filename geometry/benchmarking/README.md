@@ -32,4 +32,5 @@ desired machine.
 * [render_benchmark.cc](https://drake.mit.edu/doxygen_cxx/html/group__render__engine__benchmarks.html):
 Benchmark program to help characterize the relative costs of different
 RenderEngine implementations with varying scene complexity and rendering
-settings.
+* [mesh_intersection_benchmark.cc](https://drake.mit.edu/doxygen_cxx/html/group__mesh__intersection__benchmarks.html): Benchmark program to compare different mesh intersection optimizations with
+varying mesh attributes and overlaps.
