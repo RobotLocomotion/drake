@@ -83,6 +83,8 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   EXPECT_EQ(system.GetSystemType(),
             "drake::systems::system_base_test_internal::MySystemBase");
 
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   auto context = system.AllocateContext();
   DRAKE_EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
 
@@ -90,6 +92,7 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   DRAKE_EXPECT_THROWS_MESSAGE(system.ThrowIfContextNotCompatible(bad_context),
                               std::logic_error,
                               ".*Context.*unacceptable.*");
+  #pragma GCC diagnostic pop
 }
 
 }  // namespace system_base_test_internal

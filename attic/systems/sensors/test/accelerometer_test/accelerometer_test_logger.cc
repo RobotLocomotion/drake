@@ -59,20 +59,20 @@ AccelerometerTestLogger::get_acceleration_input_port() const {
 
 Eigen::VectorXd AccelerometerTestLogger::get_plant_state(
     const Context<double>& context) const {
-  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
+  this->ValidateContext(context);
   return this->EvalVectorInput(context, plant_state_port_index_)->get_value();
 }
 
 Eigen::VectorXd AccelerometerTestLogger::get_plant_state_derivative(
     const Context<double>& context) const {
-  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
-  return this->EvalVectorInput(context,
-          plant_state_derivative_port_index_)->get_value();
+  this->ValidateContext(context);
+  return this->EvalVectorInput(context, plant_state_derivative_port_index_)
+      ->get_value();
 }
 
 Eigen::VectorXd AccelerometerTestLogger::get_acceleration(
     const Context<double>& context) const {
-  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
+  this->ValidateContext(context);
   return this->EvalVectorInput(context, acceleration_port_index_)->get_value();
 }
 

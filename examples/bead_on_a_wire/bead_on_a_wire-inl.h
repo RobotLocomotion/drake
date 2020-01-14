@@ -228,7 +228,6 @@ template <typename T>
 void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   using std::sin;
   using std::cos;
   using std::abs;

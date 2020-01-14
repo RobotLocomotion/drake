@@ -91,7 +91,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     std::variant<OutputPortSelection, OutputPortIndex> output_port_index,
     std::optional<double> equilibrium_check_tolerance = std::nullopt) {
-  DRAKE_ASSERT_VOID(system.CheckValidContext(context));
+  system.ValidateContext(context);
 
   const bool has_only_discrete_states_contained_in_one_group =
       context.has_only_discrete_state() &&
