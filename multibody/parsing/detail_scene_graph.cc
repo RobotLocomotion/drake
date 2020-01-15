@@ -392,6 +392,8 @@ ProximityProperties MakeProximityPropertiesForCollision(
     properties = ParseProximityProperties(read_double, is_rigid, is_soft);
   }
 
+  // Note: this explicit use of kMaterialGroup, kFriction will go away when
+  // we retire this legacy behavior.
   if (!properties.HasProperty(geometry::internal::kMaterialGroup,
                               geometry::internal::kFriction)) {
     properties.AddProperty(

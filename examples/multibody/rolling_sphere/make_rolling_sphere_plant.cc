@@ -10,12 +10,9 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
+using drake::geometry::AddContactMaterial;
 using drake::geometry::AddRigidHydroelasticProperties;
 using drake::geometry::AddSoftHydroelasticProperties;
-using drake::geometry::internal::kElastic;
-using drake::geometry::internal::kFriction;
-using drake::geometry::internal::kHcDissipation;
-using drake::geometry::internal::kMaterialGroup;
 using drake::geometry::ProximityProperties;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
@@ -47,7 +44,7 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     RigidTransformd X_WG{Vector3<double>(0, 0, -size / 2)};
     ProximityProperties box_props;
     AddRigidHydroelasticProperties(size, &box_props);
-    box_props.AddProperty(kMaterialGroup, kFriction, surface_friction);
+    AddContactMaterial({}, {}, surface_friction, &box_props);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG,
                                      geometry::Box(size, size, size),
                                      "collision", std::move(box_props));
@@ -61,12 +58,8 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     const RigidTransformd X_BS = RigidTransformd::Identity();
     // Set material properties for hydroelastics.
     ProximityProperties ball_props;
-    // TODO(SeanCurtis-TRI): Simplify this with addition of
-    //  geometry::AddContactMaterial().
-    ball_props.AddProperty(kMaterialGroup, kElastic, elastic_modulus);
-    ball_props.AddProperty(kMaterialGroup,
-                           kHcDissipation, dissipation);
-    ball_props.AddProperty(kMaterialGroup, kFriction, surface_friction);
+    AddContactMaterial(elastic_modulus, dissipation, surface_friction,
+                       &ball_props);
     AddSoftHydroelasticProperties(radius, &ball_props);
     plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
                                      std::move(ball_props));

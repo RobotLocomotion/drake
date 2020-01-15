@@ -528,6 +528,8 @@ geometry::GeometryInstance ParseCollision(
         soft_element != nullptr);
   }
 
+  // Note: this explicit use of kMaterialGroup, kFriction will go away when
+  // we retire this legacy behavior.
   // Now test to see how we should handle a potential <drake_compliance> tag.
   if (!props.HasProperty(geometry::internal::kMaterialGroup,
                          geometry::internal::kFriction)) {
