@@ -48,6 +48,7 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::AddContactMaterial;
 using geometry::AddRigidHydroelasticProperties;
 using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
@@ -99,8 +100,7 @@ class MovingBall final : public LeafSystem<double> {
                                       make_unique<Sphere>(1.0), "ball"));
 
     ProximityProperties prox_props;
-    prox_props.AddProperty(geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic, 1e8);
+    AddContactMaterial(1e8, {}, {}, &prox_props);
     AddSoftHydroelasticProperties(FLAGS_length, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
@@ -250,10 +250,6 @@ int do_main() {
       make_unique<GeometryInstance>(
           X_WB, make_unique<Box>(edge_len, edge_len, edge_len), "box"));
   ProximityProperties rigid_props;
-  // A rigid hydroelastic geometry must have an infinite elastic modulus.
-  rigid_props.AddProperty(geometry::internal::kMaterialGroup,
-                          geometry::internal::kElastic,
-                          std::numeric_limits<double>::infinity());
   AddRigidHydroelasticProperties(edge_len, &rigid_props);
   scene_graph.AssignRole(source_id, ground_id, rigid_props);
   IllustrationProperties illus_props;
