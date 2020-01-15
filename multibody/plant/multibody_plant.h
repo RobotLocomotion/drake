@@ -1168,14 +1168,32 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The effective modulus of elasticity is computed in accordance with the
   /// Hertz theory of contact. Dissipation is weighted in accordance with the
   /// fact that the softer material will deform more and faster and thus the
-  /// softer material dissipation is given more importance.
-  /// The elastic modulus and dissipation can be specified with
-  /// set_elastic_modulus() and set_hunt_crossley_dissipation()
-  /// respectively. Elastic modulus has units of pressure, i.e. `Pa (N/m²)`. We
-  /// use a dissipation model inspired by the model in [Hunt and Crossley,
-  /// 1975], parameterized by a dissipation constant with units of inverse of
-  /// velocity, i.e. `s/m`. With the effective properties of the pair defined as
-  /// above, the hydroelastic model pressure field is computed according to:
+  /// softer material dissipation is given more importance. Elastic modulus has
+  /// units of pressure, i.e. `Pa (N/m²)`. The elastic modulus is often
+  /// estimated based on the Young's modulus of the material though in the
+  /// hydroelastic model it represents an effective elastic property. For
+  /// instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the P-wave
+  /// elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
+  /// ratio, consistent with the theory of layered solids in which plane
+  /// sections remain planar after compression. Another possibility is to
+  /// specify `E = E*`, with `E*` the effective elastic modulus given by the
+  /// Hertz theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
+  /// estimation of `elastic_modulus` starts with the Young's modulus of the
+  /// material.
+  ///
+  /// We use a dissipation model inspired by the model in
+  /// [Hunt and Crossley, 1975], parameterized by a dissipation constant with
+  /// units of inverse of velocity, i.e. `s/m`.
+  ///
+  /// The elastic modulus and dissipation can be specified in one of two ways:
+  ///
+  /// - define them in an instance of geometry::ProximityProperties using
+  ///   the function geometry::AddContactMaterial(), or
+  /// - define them in an input URDF/SDF as detailed @ref sdf_contact_material
+  ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
+  ///
+  /// With the effective properties of the pair defined as above, the
+  /// hydroelastic model pressure field is computed according to:
   /// <pre>
   ///   p(x) = E⋅ε(x)⋅(1 - d⋅vₙ(x))₊
   /// </pre>
@@ -1289,65 +1307,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The default contact model is ContactModel::kPointContactOnly.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
-
-  /// Specifies the `elastic_modulus` E for a geometry identified by its `id`.
-  /// `elastic_modulus` must be specified with units of Pa (N/m²). The elastic
-  /// modulus is often estimated based on the Young's modulus of the material
-  /// though in the hydroelastic model it represents an effective elastic
-  /// property. For instance, [R. Elandt 2019] chooses to use `E = G`, with `G`
-  /// the P-wave elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
-  /// ratio, consistent with the theory of layered solids in which plane
-  /// sections remain planar after compression. Another possibly is to specify
-  /// `E = E*`, with `E*` the effective elastic modulus given by the Hertz
-  /// theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
-  /// estimation of `elastic_modulus` starts with the Young's modulus of the
-  /// material. See
-  /// @ref mbp_hydroelastic_materials_properties "Hydroelastic model material
-  /// properties" for further details. By default geometries are assumed to be
-  /// rigid, i.e. with an infinite `elastic_modulus`.
-  ///
-  /// @throws std::exception if `elastic_modulus` is negative or zero.
-  /// @throws std::exception if `id` does not correspond to a collision
-  /// geometry previously registered with this model.
-  /// @throws std::exception if called post-finalize.
-  void set_elastic_modulus(geometry::GeometryId id, double elastic_modulus) {
-    // It must not be finalized so that member_scene_graph() is valid.
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_THROW_UNLESS(is_collision_geometry(id));
-    DRAKE_THROW_UNLESS(elastic_modulus > 0);
-    const geometry::ProximityProperties* old_props =
-        member_scene_graph().model_inspector().GetProximityProperties(id);
-    DRAKE_DEMAND(old_props);
-    geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("material", "elastic_modulus", elastic_modulus);
-    member_scene_graph().AssignRole(*get_source_id(), id, new_props,
-                                    geometry::RoleAssign::kReplace);
-  }
-
-  /// Specifies the Hunt & Crossley dissipation coefficient for the
-  /// hydroelastic model. It has units of `s/m`, inverse of velocity.
-  /// See @ref mbp_hydroelastic_materials_properties "Hydroelastic model
-  /// material properties" for further details.
-  /// By default dissipation is zero.
-  ///
-  /// @throws std::exception if `dissipation` is negative (it can be zero).
-  /// @throws std::exception if `id` does not correspond to a collision
-  /// geometry previously registered with this model.
-  /// @throws std::exception if called post-finalize.
-  void set_hunt_crossley_dissipation(geometry::GeometryId id,
-                                     double dissipation) {
-    // It must not be finalized so that member_scene_graph() is valid.
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_DEMAND(is_collision_geometry(id));
-    DRAKE_THROW_UNLESS(dissipation >= 0);
-    const geometry::ProximityProperties* old_props =
-        member_scene_graph().model_inspector().GetProximityProperties(id);
-    DRAKE_DEMAND(old_props);
-    geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("material", "hunt_crossley_dissipation", dissipation);
-    member_scene_graph().AssignRole(*get_source_id(), id, new_props,
-                                    geometry::RoleAssign::kReplace);
-  }
 
   /// Sets the penetration allowance used to estimate the coefficients in the
   /// penalty method used to impose non-penetration among bodies. Refer to the
