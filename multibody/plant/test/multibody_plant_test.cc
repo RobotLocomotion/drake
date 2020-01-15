@@ -1298,8 +1298,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   geometry::ProximityProperties properties;
   properties.AddProperty("test", "dummy", 7);
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
-  properties.AddProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kFriction, sphere2_friction);
+  geometry::AddContactMaterial({}, {}, sphere2_friction, &properties);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
