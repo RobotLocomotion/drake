@@ -44,6 +44,9 @@ class PyPlotVisualizer(LeafSystem):
         self.ax.axis('equal')
         self.ax.axis('off')
 
+        self._is_recording = False
+        self._recorded_contexts = []
+
         self._show = (matplotlib.get_backend().lower() != 'template')
 
         def on_initialize(context, event):
@@ -61,6 +64,11 @@ class PyPlotVisualizer(LeafSystem):
             self.draw(context)
             self.fig.canvas.draw()
             plt.pause(1e-10)
+        if self._is_recording:
+            snapshot = self.AllocateContext()
+            snapshot.SetTimeStateAndParametersFrom(context)
+            self.FixInputPortsFrom(self, context, snapshot)
+            self._recorded_contexts.append(snapshot)
 
     def draw(self, context):
         """Draws a single frame.
@@ -68,6 +76,28 @@ class PyPlotVisualizer(LeafSystem):
         interpolation).
         """
         raise NotImplementedError
+
+    def start_recording(self, show=True):
+        self.show = show
+        self._is_recording = True
+
+    def stop_recording(self):
+        self._is_recording = False
+        self.show = (matplotlib.get_backend().lower() != 'template')
+
+    def reset_recording(self):
+        self._recorded_contexts = []  # Reset recorded data.
+
+    def _draw_recorded_frame(self, i):
+        return self.draw(self._recorded_contexts[i])
+
+    def get_recording_as_animation(self, **kwargs):
+        ani = animation.FuncAnimation(fig=self.fig,
+                                      func=self._draw_recorded_frame,
+                                      frames=len(self._recorded_contexts),
+                                      interval=1000*self.timestep,
+                                      **kwargs)
+        return ani
 
     def animate(self, log, resample=True, repeat=False):
         """

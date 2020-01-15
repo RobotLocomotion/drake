@@ -95,3 +95,30 @@ class TestPyplotVisualizer(unittest.TestCase):
             [0., 1.], [[2., 3.], [2., 1.]])
         ani = visualizer.animate(ppt)
         self.assertIsInstance(ani, animation.FuncAnimation)
+
+    def test_recording(self):
+        visualizer = PyPlotVisualizer()
+
+        # Assert that we start with no recordings. This uses private API for
+        # testing _recorded_contexts and should not be used publicly.
+        self.assertEqual(len(visualizer._recorded_contexts), 0)
+        visualizer.start_recording()
+
+        # Artificially produce some specific contexts.
+        times = [0.003, 0.2, 1.1, 1.12]
+        context = visualizer.AllocateContext()
+        for time in times:
+            context.SetTime(time)
+            visualizer.Publish(context)
+
+        # Check that there are now recorded contexts with matching times.
+        visualizer.stop_recording()
+        self.assertEqual(len(visualizer._recorded_contexts), len(times))
+        for i, time in enumerate(times):
+            self.assertEqual(time, visualizer._recorded_contexts[i].get_time())
+
+        ani = visualizer.get_recording_as_animation()
+        self.assertIsInstance(ani, animation.FuncAnimation)
+
+        visualizer.reset_recording()
+        self.assertEqual(len(visualizer._recorded_contexts), 0)
