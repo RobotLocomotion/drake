@@ -4,6 +4,7 @@
 
 #include <osqp.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/mathematical_program.h"
 

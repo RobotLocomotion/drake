@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
