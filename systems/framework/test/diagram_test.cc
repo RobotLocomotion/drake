@@ -155,6 +155,7 @@ class EmptySystemDiagram : public Diagram<double> {
         unique_updates);
     }
     builder.BuildInto(this);
+    EXPECT_FALSE(IsDifferenceEquationSystem());
   }
 };
 
@@ -355,7 +356,7 @@ adder1_: (A + input2_)       -> B, output 0
 adder2_: (A + B)             -> output 1
 integrator1_: A              -> C
 integrator2_: C              -> output 2
-It also uses an StatelessSystem to verify Diagram's ability to retrieve
+It also uses a StatelessSystem to verify Diagram's ability to retrieve
 witness functions from its subsystems.
 
              +----------------------------------------------------------+
@@ -1666,6 +1667,7 @@ class DiscreteStateDiagram : public Diagram<double> {
     builder.ExportInput(hold1_->get_input_port());
     builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
+    EXPECT_FALSE(IsDifferenceEquationSystem());
   }
 
   ZeroOrderHold<double>* hold1() { return hold1_; }
@@ -1945,6 +1947,31 @@ class TwoDiscreteSystemDiagram : public Diagram<double> {
   SystemWithDiscreteState* sys1_{nullptr};
   SystemWithDiscreteState* sys2_{nullptr};
 };
+
+GTEST_TEST(DiscreteStateDiagramTest, IsDifferenceEquationSystem) {
+  // Two unique periods, two state groups.
+  DiagramBuilder<double> builder;
+  builder.template AddSystem<SystemWithDiscreteState>(1, 2.);
+  builder.template AddSystem<SystemWithDiscreteState>(2, 3.);
+  const auto two_period_diagram = builder.Build();
+  EXPECT_FALSE(two_period_diagram->IsDifferenceEquationSystem());
+
+  // One period, one discrete state group.
+  const double period = 0.1;
+  DiagramBuilder<double> builder2;
+  builder2.template AddSystem<SystemWithDiscreteState>(1, period);
+  const auto one_period_diagram = builder2.Build();
+  double test_period = -3.94;
+  EXPECT_TRUE(one_period_diagram->IsDifferenceEquationSystem(&test_period));
+  EXPECT_EQ(test_period, period);
+
+  // One unique period, but two discrete state groups.
+  DiagramBuilder<double> builder3;
+  builder3.template AddSystem<SystemWithDiscreteState>(1, period);
+  builder3.template AddSystem<SystemWithDiscreteState>(2, period);
+  const auto one_period_two_state_diagram = builder3.Build();
+  EXPECT_FALSE(one_period_two_state_diagram->IsDifferenceEquationSystem());
+}
 
 // Tests CalcDiscreteVariableUpdates() when there are multiple subsystems and
 // only one has an event to handle (call that the "participating subsystem"). We

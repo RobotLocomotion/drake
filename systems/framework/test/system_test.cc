@@ -129,8 +129,7 @@ class TestSystem : public System<double> {
 
  protected:
   int do_get_num_continuous_states() const final {
-    ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
+    return 0;
   }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -333,8 +332,7 @@ TEST_F(SystemTest, DiscretePublish) {
 }
 
 // Tests that the default DoEvalDiscreteVariableUpdates is invoked when no other
-// handler is
-// registered in DoCalcNextUpdateTime.
+// handler is registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
   context_->SetTime(15.0);
 
@@ -500,6 +498,15 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
   // Spot check the specific converter object.
   EXPECT_FALSE((
       system_.get_system_scalar_converter().IsConvertible<double, double>()));
+}
+
+// Tests IsDifferenceEquationSystem works for this one System.  Additional
+// test coverage is provided in linear_system_test.cc and diagram_test.cc.
+TEST_F(SystemTest, IsDifferenceEquationSystem) {
+  double period = 1.23;
+  EXPECT_FALSE(system_.IsDifferenceEquationSystem(&period));
+  // Confirm that the return parameter was not changed.
+  EXPECT_EQ(period, 1.23);
 }
 
 template <typename T>
