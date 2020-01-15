@@ -2934,7 +2934,7 @@ GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.GetVariableScaling().size(), 0);
 
-  prog.NewContinuousVariables(4, "x");
+  prog.NewContinuousVariables<4>("x");
 
   prog.SetVariableScaling(1.3, 3, false);
   prog.SetVariableScaling(1.15, 1, 2, false);
@@ -2943,12 +2943,14 @@ GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
   EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(3), 1.3);
+  EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 
   prog.SetVariableScaling(3.0, 3, true);
   EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
   EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(3), 3.0);
+  EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 }
 }  // namespace test
 }  // namespace solvers
