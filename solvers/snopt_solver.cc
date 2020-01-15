@@ -842,7 +842,6 @@ void SolveWithGivenOptions(
     x[member.first] /= member.second;
   }
 
-
   // Set up the lower and upper bounds.
   for (auto const& binding : prog.bounding_box_constraints()) {
     const auto& c = binding.evaluator();
@@ -861,7 +860,6 @@ void SolveWithGivenOptions(
     xlow[member.first] /= member.second;
     xupp[member.first] /= member.second;
   }
-
 
   // For linear complementary condition
   // 0 <= x ⊥ Mx + q >= 0
