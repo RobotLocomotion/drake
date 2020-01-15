@@ -9,7 +9,6 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    # TODO(hongkai.dai): move this package to manipulation folder.
     name = "iiwa_wsg_diagram_factory",
     srcs = [
         "iiwa_wsg_diagram_factory.cc",
@@ -17,6 +16,7 @@ drake_cc_library(
     hdrs = [
         "iiwa_wsg_diagram_factory.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     visibility = ["//visibility:public"],
     deps = [
         "//attic/manipulation/util:sim_diagram_builder",
@@ -69,6 +69,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "iiwa_wsg_diagram_factory_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
