@@ -33,6 +33,7 @@ void CheckUniformAngleAxes(const std::vector<Orientation>& orientations,
     const int interval_index =
         floor(Eigen::AngleAxisd(orientation).angle() / h);
     DRAKE_DEMAND(interval_index < num_intervals);
+    DRAKE_DEMAND(interval_index >= 0);
     count[interval_index]++;
   }
   // cdf[i] is the cdf of theta up to h * i

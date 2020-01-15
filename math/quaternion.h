@@ -400,5 +400,38 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
   return is_approx_equal_abstol(w_from_quatDt, w_B, tolerance);
 }
 
+namespace internal {
+/**
+ * Given a unit-length quaternion, convert this quaternion to angle-axis
+ * representation. Note that we always choose the angle to be within [0, pi].
+ * This function is the same as Eigen::AngleAxis<T>(Eigen::Quaternion<T> z),
+ * but it works for T=symbolic::Expression.
+ * @note If you just want to use T=double, then call
+ * Eigen::AngleAxisd(Eigen::Quaterniond z). We add this function only to support
+ * templated function that allows T=symbolic::Expression.
+ * @param quaternion Must be a unit quaternion.
+ * @return angle_axis The angle-axis representation of the quaternion. Note
+ * that the angle is within [0, pi].
+ */
+template <typename T>
+Eigen::AngleAxis<T> QuaternionToAngleAxis(
+    const Eigen::Quaternion<T>& quaternion) {
+  Eigen::AngleAxis<T> result;
+  using std::atan2;
+  const T sin_half_angle_abs = quaternion.vec().norm();
+  result.angle() = T(2.) * atan2(sin_half_angle_abs, abs(quaternion.w()));
+  const Vector3<T> unit_axis(T(1.), T(0.), T(0.));
+  for (int i = 0; i < 3; ++i) {
+    result.axis()(i) =
+        if_then_else(sin_half_angle_abs == T(0.), unit_axis(i),
+                     if_then_else(quaternion.w() < T(0.),
+                                  -quaternion.vec()(i) / sin_half_angle_abs,
+                                  quaternion.vec()(i) / sin_half_angle_abs));
+  }
+
+  return result;
+}
+}  // namespace internal
+
 }  // namespace math
 }  // namespace drake

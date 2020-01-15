@@ -47,20 +47,7 @@ Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
   const Eigen::Quaternion<T> quaternion =
       UniformlyRandomQuaternion<T>(generator);
-  Eigen::AngleAxis<T> result;
-  using std::atan2;
-  const T sin_half_angle_abs = quaternion.vec().norm();
-  result.angle() = T(2.) * atan2(sin_half_angle_abs, abs(quaternion.w()));
-  const Vector3<T> unit_axis(T(1.), T(0.), T(0.));
-  for (int i = 0; i < 3; ++i) {
-    result.axis()(i) =
-        if_then_else(quaternion.w() == T(0.), unit_axis(i),
-                     if_then_else(quaternion.w() < T(0.),
-                                  -quaternion.vec()(i) / sin_half_angle_abs,
-                                  quaternion.vec()(i) / sin_half_angle_abs));
-  }
-
-  return result;
+  return internal::QuaternionToAngleAxis(quaternion);
 }
 
 /// Generates a rotation (in the rotation matrix representation) that rotates a
