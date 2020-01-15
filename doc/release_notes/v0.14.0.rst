@@ -21,7 +21,7 @@ These are breaking changes that did not undergo a deprecation period.
 * Drake no longer accidentally supports regexes in the channel name passed to
   DrakeLcm::Subscribe (`#12534`_)
 
-* Remove unused constraint equation API form Systems framework (`#12553`_).
+* Remove unused constraint equation API form Systems framework (`#12553`_)
 
   - Removed the following public API:
 
@@ -76,16 +76,16 @@ New features
   (`#12556`_)
 * Support ellipsoid rendering (`#12547`_)
 * Add graphviz visualization of multibodyplant topology (`#12485`_)
-* Support parsing SDFormat 1.7 (`#12505`_, `#12533`_). Incorporates the `pose
-  frame semantics <https://bit.ly/2ZSl1kH>`_ proposal.
-* Support textures for primitive objects, not just meshes (`#12423`_). This
-  only applies to rendering (RenderEngine*).
-* Adds C++17 structured binding support to AddMultibodyPlantSceneGraphResult
+* Support parsing SDFormat 1.7 (`#12505`_, `#12533`_), incorporating the `pose
+  frame semantics <https://bit.ly/2ZSl1kH>`_ proposal
+* Support textures for primitive objects, not just meshes (`#12423`_); this
+  only applies to rendering (RenderEngine*)
+* Add C++17 structured binding support to AddMultibodyPlantSceneGraphResult
   (`#12559`_)
 
 Fixes
 
-* Bug fix warning on unsupported joint limits for continuous models (`#12531`_,
+* Fix warning on unsupported joint limits for continuous models (`#12531`_,
   `#12499`_)
 * Fix scalar conversion bug in RevoluteSpring (`#12522`_)
 
@@ -163,7 +163,7 @@ Newly-deprecated APIs
 * drake::multibody::AddMultibodyPlantSceneGraph overload without time_step or
   plant specified (`#12558`_)
 
-  - Use overload with time_step or plant explicitly specified
+  - Use overload with time_step or plant explicitly specified.
 
 * pydrake.multibody.rigid_body_tree.RigidBodyTree.number_of_positions
   (`#12514`_)
