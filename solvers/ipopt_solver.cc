@@ -653,6 +653,10 @@ void IpoptSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);

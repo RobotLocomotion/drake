@@ -532,6 +532,11 @@ void DrealSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   unused(initial_guess);
 
   // 1. Extracts the constraints from @p prog and constructs an equivalent

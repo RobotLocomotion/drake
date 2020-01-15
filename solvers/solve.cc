@@ -5,7 +5,6 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/solver_interface.h"
-#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -14,10 +13,6 @@ MathematicalProgramResult Solve(
     const std::optional<Eigen::VectorXd>& initial_guess,
     const std::optional<SolverOptions>& solver_options) {
   const SolverId solver_id = ChooseBestSolver(prog);
-  if ((solver_id != SnoptSolver::id()) && !prog.GetVariableScaling().empty()) {
-    std::cerr << "WARNING: the feature of scaling decision variables is only "
-        "supported with snopt" << std::endl;
-  }
   std::unique_ptr<SolverInterface> solver = MakeSolver(solver_id);
   MathematicalProgramResult result{};
   solver->Solve(prog, initial_guess, solver_options, &result);

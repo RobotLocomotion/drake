@@ -24,6 +24,11 @@ void LinearSystemSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   // The initial guess doesn't help us, and we don't offer any tuning options.
   unused(initial_guess, merged_options);
   size_t num_constraints = 0;

@@ -92,6 +92,11 @@ void UnrevisedLemkeSolver<T>::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   unused(initial_guess);
   unused(merged_options);
 

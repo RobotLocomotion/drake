@@ -613,6 +613,11 @@ void ScsSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   // TODO(hongkai.dai): allow warm starting SCS with initial guess on
   // primal/dual variables and primal residues.
   unused(initial_guess);

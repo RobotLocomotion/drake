@@ -348,6 +348,11 @@ void SolveProgramThroughTwoSlackVariablesApproach(
 void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          const Eigen::VectorXd&, const SolverOptions&,
                          MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   result->set_solver_id(CsdpSolver::id());
   const SdpaFreeFormat sdpa_free_format(prog);
   if (sdpa_free_format.num_free_variables() == 0) {

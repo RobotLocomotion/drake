@@ -1256,6 +1256,11 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
                           const Eigen::VectorXd& initial_guess,
                           const SolverOptions& merged_options,
                           MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   // num_decision_vars is the total number of decision variables in @p prog. It
   // includes both the matrix variables (for psd matrix variables) and
   // non-matrix variables.

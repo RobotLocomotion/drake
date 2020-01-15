@@ -99,6 +99,11 @@ void EqualityConstrainedQPSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    drake::log()->warn("The feature of decision variable scaling is only "
+      "supported in SNOPT solve currently");
+  }
+
   // An equality constrained QP problem has analytical solution. It doesn't
   // depend on the initial guess.
   unused(initial_guess);
