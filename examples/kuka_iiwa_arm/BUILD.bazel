@@ -61,6 +61,7 @@ drake_cc_library(
     name = "oracular_state_estimator",
     srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
+    copts = ["-Wno-deprecated-declarations"],
     visibility = ["//visibility:public"],
     deps = [
         "//attic/manipulation/util:robot_state_msg_translator",
@@ -123,6 +124,7 @@ drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
     add_test_rule = 1,
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         ":models",
         "//manipulation/models/iiwa_description:models",

@@ -28,7 +28,9 @@ namespace kuka_iiwa_arm {
  * See manipulation::RobotStateLcmMessageTranslator for more details.
  */
 template <typename T>
-class OracularStateEstimation : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED("2020-04-01",
+                       "OracularStateEstimation is being removed.")
+OracularStateEstimation : public systems::LeafSystem<T> {
  public:
   /**
    * Constructor for OracularStateEstimation.

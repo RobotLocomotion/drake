@@ -34,7 +34,9 @@ namespace kuka_iiwa_arm {
 ///
 /// - double
 template <typename T>
-class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
+class DRAKE_DEPRECATED("2020-04-01",
+                       "IiwaAndWsgPlantWithStateEstimator is being removed.")
+IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
  public:
   /// Constructs the IiwaAndWsgPlantWithStateEstimator.
   /// @param combined_plant a systems::RigidBodyPlant containing some number of
