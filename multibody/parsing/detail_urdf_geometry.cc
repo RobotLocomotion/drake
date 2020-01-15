@@ -387,6 +387,9 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
   return instance;
 }
 
+// TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
+//  issue #12598.
+
 // This is the backwards-compatible fallback for defining friction; it reads
 // the soon-to-be-deprecated <drake_compliance> tag for data. It throws errors
 // for malformed values or returns a friction (either the valid friction
@@ -528,6 +531,8 @@ geometry::GeometryInstance ParseCollision(
         soft_element != nullptr);
   }
 
+  // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
+  //  issue #12598.
   // Now test to see how we should handle a potential <drake_compliance> tag.
   if (!props.HasProperty(geometry::internal::kMaterialGroup,
                          geometry::internal::kFriction)) {

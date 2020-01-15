@@ -7,9 +7,11 @@
  no way limit the inclusion of any other additional, arbitrary properties.
  */
 
+#include <optional>
 #include <ostream>
 
 #include "drake/geometry/geometry_roles.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace geometry {
@@ -25,10 +27,7 @@ namespace internal {
  can implicitly coordinate the values they use to define proximity properties.
  These strings don't suggest what constitutes a valid property *value*. For
  those definitions, one should refer to the consumer of the properties (as
- called out in the documentation of the ProximityProperties class).
-
- <!-- TODO(SeanCurtis-TRI): Extend this to include other contact material
- properties and an API for setting them more conveniently.  */
+ called out in the documentation of the ProximityProperties class).  */
 //@{
 
 extern const char* const kMaterialGroup;  ///< The contact material group name.
@@ -83,6 +82,18 @@ enum class HydroelasticType {
 std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal
+
+
+/** Adds contact material properties to the given set of proximity `properties`.
+
+ @throws std::logic_error if `elastic_modulus` is not positive, `dissipation` is
+                          negative, or any of the contact material properties
+                          have already been defined in `properties`.  */
+void AddContactMaterial(
+    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& dissipation,
+    const std::optional<multibody::CoulombFriction<double>>& friction,
+    ProximityProperties* properties);
 
 /** Adds properties to the given set of proximity properties sufficient to cause
  the associated geometry to generate a rigid hydroelastic representation.

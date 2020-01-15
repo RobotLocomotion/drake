@@ -28,13 +28,11 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
   // Ids that haven't been added report as undefined.
   GeometryId rigid_id = GeometryId::get_new_id();
   ProximityProperties rigid_properties;
-  rigid_properties.AddProperty(kMaterialGroup, kElastic,
-                               std::numeric_limits<double>::infinity());
   AddRigidHydroelasticProperties(1.0, &rigid_properties);
 
   GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  soft_properties.AddProperty(kMaterialGroup, kElastic, 1e8);
+  AddContactMaterial(1e8, {}, {}, &soft_properties);
   AddSoftHydroelasticProperties(1.0, &soft_properties);
 
   GeometryId bad_id = GeometryId::get_new_id();
@@ -63,8 +61,6 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   // Add a rigid geometry.
   const GeometryId rigid_id = GeometryId::get_new_id();
   ProximityProperties rigid_properties;
-  rigid_properties.AddProperty(kMaterialGroup, kElastic,
-                               std::numeric_limits<double>::infinity());
   AddRigidHydroelasticProperties(1.0, &rigid_properties);
   geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
   ASSERT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
@@ -72,7 +68,7 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   // Add a soft geometry.
   const GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  soft_properties.AddProperty(kMaterialGroup, kElastic, 1e8);
+  AddContactMaterial(1e8, {}, {}, &soft_properties);
   AddSoftHydroelasticProperties(1.0, &soft_properties);
   geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
   ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
@@ -400,7 +396,7 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
   /** Creates a simple set of properties for generating soft geometry. */
   ProximityProperties soft_properties(double edge_length = 0.1) const {
     ProximityProperties soft_properties;
-    soft_properties.AddProperty(kMaterialGroup, kElastic, 1e8);
+    AddContactMaterial(1e8, {}, {}, &soft_properties);
     AddSoftHydroelasticProperties(edge_length, &soft_properties);
     return soft_properties;
   }
