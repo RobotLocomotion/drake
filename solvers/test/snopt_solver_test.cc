@@ -383,20 +383,21 @@ GTEST_TEST(SnoptTest, AutoDiffOnlyCost) {
 GTEST_TEST(SnoptTest, VariableScaling) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearConstraint(x(0) >= -1000);
-  prog.AddLinearConstraint(x(1) >= -1);
+  prog.AddLinearConstraint(x(0) >= -1000000000000);
+  prog.AddLinearConstraint(x(1) >= -0.0001);
   prog.AddLinearCost(Eigen::Vector2d(1, 1), x);
 
-  prog.SetVariableScaling(1000, 1, false);
+  prog.SetVariableScaling(1000000000000, 0, false);
+  prog.SetVariableScaling(0.0001, 1, false);
 
   SnoptSolver solver;
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1E-6;
-    EXPECT_NEAR(result.get_optimal_cost(), -1001, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), -1000000000000.0001, tol);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
-                                Eigen::Vector2d(-1000, -1), tol));
+                                Eigen::Vector2d(-1000000000000, -0.0001), tol));
   }
 }
 
