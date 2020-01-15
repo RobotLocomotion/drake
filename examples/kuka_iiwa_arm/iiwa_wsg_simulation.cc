@@ -12,6 +12,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -140,6 +141,9 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
 }
 
 int DoMain() {
+  drake::log()->warn("DRAKE_DEPRECATED: iiwa_wsg_simulation is deprecated "
+                     "and will be removed from Drake on 2020-05-01.");
+
   systems::DiagramBuilder<double> builder;
 
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;

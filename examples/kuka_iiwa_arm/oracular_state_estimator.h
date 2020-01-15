@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -28,7 +29,9 @@ namespace kuka_iiwa_arm {
  * See manipulation::RobotStateLcmMessageTranslator for more details.
  */
 template <typename T>
-class OracularStateEstimation : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED("2020-05-01",
+                       "OracularStateEstimation is being removed.")
+OracularStateEstimation : public systems::LeafSystem<T> {
  public:
   /**
    * Constructor for OracularStateEstimation.

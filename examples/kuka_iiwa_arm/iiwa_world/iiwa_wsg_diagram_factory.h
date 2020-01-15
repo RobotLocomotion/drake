@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -34,7 +35,9 @@ namespace kuka_iiwa_arm {
 ///
 /// - double
 template <typename T>
-class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
+class DRAKE_DEPRECATED("2020-05-01",
+                       "IiwaAndWsgPlantWithStateEstimator is being removed.")
+IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
  public:
   /// Constructs the IiwaAndWsgPlantWithStateEstimator.
   /// @param combined_plant a systems::RigidBodyPlant containing some number of
