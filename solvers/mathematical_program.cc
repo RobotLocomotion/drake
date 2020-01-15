@@ -1179,41 +1179,28 @@ void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
 }
 
-void MathematicalProgram::SetVariableScaling(double s, int idx) {
-  SetVariableScaling(s, idx, idx);
+void MathematicalProgram::SetVariableScaling(double s, int idx,
+                                             bool is_update) {
+  SetVariableScaling(s, idx, idx, is_update);
 }
 
 void MathematicalProgram::SetVariableScaling(double s, int idx_start,
-                                             int idx_end) {
+                                             int idx_end, bool is_update) {
   DRAKE_DEMAND(0 < s);
   DRAKE_DEMAND(0 <= idx_start);
   DRAKE_DEMAND(idx_start <= idx_end);
   DRAKE_DEMAND(idx_end < num_vars());
 
   for (int i = idx_start; i <= idx_end; i++) {
-    // Check if the scaling has been set already
-    DRAKE_DEMAND(var_scaling_map_.find(i) == var_scaling_map_.end());
-    // Add scaling
-    var_scaling_map_.insert(std::pair<int, double>(i, s));
-  }
-}
-
-void MathematicalProgram::ResetVariableScaling(double s, int idx) {
-  SetVariableScaling(s, idx, idx);
-}
-
-void MathematicalProgram::ResetVariableScaling(double s, int idx_start,
-                                               int idx_end) {
-  DRAKE_DEMAND(0 < s);
-  DRAKE_DEMAND(0 <= idx_start);
-  DRAKE_DEMAND(idx_start <= idx_end);
-  DRAKE_DEMAND(idx_end < num_vars());
-
-  for (int i = idx_start; i <= idx_end; i++) {
-    // Check if the scaling has been set already
-    DRAKE_DEMAND(var_scaling_map_.find(i) != var_scaling_map_.end());
-    // Update scaling
-    var_scaling_map_[i] = s;
+    if (is_update) {
+      DRAKE_DEMAND(var_scaling_map_.find(i) != var_scaling_map_.end());
+      // Update the scaling factor
+      var_scaling_map_[i] = s;
+    } else {
+      DRAKE_DEMAND(var_scaling_map_.find(i) == var_scaling_map_.end());
+      // Add a new scaling factor
+      var_scaling_map_.insert(std::pair<int, double>(i, s));
+    }
   }
 }
 

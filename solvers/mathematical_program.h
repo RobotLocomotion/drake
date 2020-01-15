@@ -2772,10 +2772,12 @@ class MathematicalProgram {
    * Setter for the scaling of decision variables.
    * @param s scaling factor (must be positive).
    * @param idx index of the decision variable.
+   * @param is_update a boolean whose value is true if users want to reset the
+   * existing scaling factor; false if users want to add a new scaling factor.
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
-  void SetVariableScaling(double s, int idx);
+  void SetVariableScaling(double s, int idx, bool is_update);
 
   /**
    * Setter for the scaling of decision variables starting from index @p
@@ -2783,30 +2785,12 @@ class MathematicalProgram {
    * @param s scaling factor (must be positive).
    * @param idx_start index of the start of the decision variables.
    * @param idx_end index of the end of the decision variables.
+   * @param is_update a boolean whose value is true if users want to reset the
+   * existing scaling factors; false if users want to add new scaling factors.
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
-  void SetVariableScaling(double s, int idx_start, int idx_end);
-
-  /**
-   * Setter for resetting the scaling of decision variables.
-   * @param s scaling factor (must be positive).
-   * @param idx index of the decision variable.
-   *
-   * See @ref variable_scaling "Variable scaling" for more information.
-   */
-  void ResetVariableScaling(double s, int idx);
-
-  /**
-   * Setter for resetting the scaling of decision variables starting from index
-   * @p idx_start to @p idx_end (including @p idx_end).
-   * @param s scaling factor (must be positive).
-   * @param idx_start index of the start of the decision variables.
-   * @param idx_end index of the end of the decision variables.
-   *
-   * See @ref variable_scaling "Variable scaling" for more information.
-   */
-  void ResetVariableScaling(double s, int idx_start, int idx_end);
+  void SetVariableScaling(double s, int idx_start, int idx_end, bool is_update);
   //@}
 
  private:
