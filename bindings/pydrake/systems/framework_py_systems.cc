@@ -409,6 +409,16 @@ struct Impl {
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
+        .def("IsDifferenceEquationSystem",
+            [](const System<T>& self) {
+              double period = 0.0;
+              bool retval = self.IsDifferenceEquationSystem(&period);
+              return std::pair<bool, double>(retval, period);
+            },
+            (string(doc.System.IsDifferenceEquationSystem.doc) + R""(
+Note: The above is for the C++ documentation. For Python, use
+`is_diff_eq, period = IsDifferenceEquationSystem()`)"")
+                .c_str())
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
             py_reference_internal, doc.System.EvalTimeDerivatives.doc)

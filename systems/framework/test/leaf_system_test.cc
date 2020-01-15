@@ -517,6 +517,7 @@ TEST_F(LeafSystemTest, MultipleUniquePeriods) {
   auto mapping = system_.GetPeriodicEvents();
   ASSERT_EQ(mapping.size(), 1);
   EXPECT_EQ(mapping.begin()->second.size(), 2);
+  EXPECT_TRUE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
 }
 
 // Tests that periodic updates with different periodic attributes are
@@ -529,6 +530,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   auto mapping = system_.GetPeriodicEvents();
   ASSERT_EQ(mapping.size(), 2);
   EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
+  EXPECT_FALSE(system_.IsDifferenceEquationSystem());
 }
 
 // Tests that if the current time is smaller than the offset, the next
