@@ -333,8 +333,7 @@ TEST_F(SystemTest, DiscretePublish) {
 }
 
 // Tests that the default DoEvalDiscreteVariableUpdates is invoked when no other
-// handler is
-// registered in DoCalcNextUpdateTime.
+// handler is registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
   context_->SetTime(15.0);
 

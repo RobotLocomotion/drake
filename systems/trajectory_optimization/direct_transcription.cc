@@ -359,8 +359,7 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
 void DirectTranscription::ValidateSystem(
     const System<double>& system, const Context<double>& context,
     std::variant<InputPortSelection, InputPortIndex> input_port_index) {
-  DRAKE_DEMAND(context.has_only_discrete_state());
-  DRAKE_DEMAND(context.num_discrete_state_groups() == 1);
+  DRAKE_DEMAND(system.IsDifferenceEquationSystem());
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
   if (context.num_input_ports() > 0) {
     DRAKE_DEMAND(num_inputs() ==
