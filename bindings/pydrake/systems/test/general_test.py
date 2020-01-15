@@ -227,11 +227,16 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(periodic_data.Clone(), PeriodicEventData)
         periodic_data.period_sec()
         periodic_data.offset_sec()
+        is_diff_eq, period = system1.IsDifferenceEquationSystem()
+        self.assertTrue(is_diff_eq)
+        self.assertEqual(period, periodic_data.period_sec())
 
         # Simple continuous-time system.
         system2 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.0)
         periodic_data = system2.GetUniquePeriodicDiscreteUpdateAttribute()
         self.assertIsNone(periodic_data)
+        is_diff_eq, period = system2.IsDifferenceEquationSystem()
+        self.assertFalse(is_diff_eq)
 
     def test_instantiations(self):
         # Quick check of instantiations for given types.

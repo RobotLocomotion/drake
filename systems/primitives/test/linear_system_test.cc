@@ -402,6 +402,41 @@ class EmptyStateSystemWithMixedInputs final : public LeafSystem<T> {
       : EmptyStateSystemWithMixedInputs<T>() {}
 };
 
+// Confirm that IsDifferenceEquationSystem works as expected for the family
+// of test systems we have here.
+GTEST_TEST(TestSystem, IsDifferentEquationSystem) {
+  double returned_time_period = 0.42;
+
+  const Vector1d a(1);
+  const Vector1d b(1);
+  const Vector1d c(1);
+  const Vector1d d(1);
+  const LinearSystem<double> continuous_time_system(a, b, c, d);
+  EXPECT_FALSE(
+      continuous_time_system.IsDifferenceEquationSystem(&returned_time_period));
+  // The argument value should not have changed.
+  EXPECT_EQ(returned_time_period, 0.42);
+
+  const double time_period = 0.1;
+  const LinearSystem<double> discrete_time_system(a, b, c, d, time_period);
+  EXPECT_TRUE(discrete_time_system.IsDifferenceEquationSystem());
+  EXPECT_TRUE(
+      discrete_time_system.IsDifferenceEquationSystem(&returned_time_period));
+  EXPECT_EQ(returned_time_period, time_period);
+
+  returned_time_period = 3.71;
+  const TestNonPeriodicSystem non_periodic_system;
+  EXPECT_FALSE(
+      non_periodic_system.IsDifferenceEquationSystem(&returned_time_period));
+  EXPECT_EQ(returned_time_period, 3.71);
+
+  const EmptyStateSystemWithAbstractInput<double> empty_system1;
+  EXPECT_FALSE(empty_system1.IsDifferenceEquationSystem());
+
+  const EmptyStateSystemWithMixedInputs<double> empty_system2;
+  EXPECT_FALSE(empty_system2.IsDifferenceEquationSystem());
+}
+
 // Test that linearizing a system with abstract input port throws an
 // exception when trying to linearize that port.
 GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
