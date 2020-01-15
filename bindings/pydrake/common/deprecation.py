@@ -98,12 +98,7 @@ class ModuleShim(object):
 class DrakeDeprecationWarning(DeprecationWarning):
     """Extends `DeprecationWarning` to permit Drake-specific warnings to
     be filtered by default, without having side effects on other libraries."""
-    addendum = ("\n    Please see `help(pydrake.common.deprecation)` " +
-                "for more information.")
-
-    def __init__(self, message, *args):
-        extra_message = message + DrakeDeprecationWarning.addendum
-        DeprecationWarning.__init__(self, extra_message, *args)
+    pass
 
 
 def _warn_deprecated(message, stacklevel=2):
