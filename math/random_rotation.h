@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/constants.h"
-#include "drake/common/double_overloads.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
 #include "drake/math/quaternion.h"

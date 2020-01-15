@@ -16,6 +16,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/rotation_matrix.h"
@@ -418,7 +419,13 @@ Eigen::AngleAxis<T> QuaternionToAngleAxis(
     const Eigen::Quaternion<T>& quaternion) {
   Eigen::AngleAxis<T> result;
   using std::atan2;
-  const T sin_half_angle_abs = quaternion.vec().norm();
+  T sin_half_angle_abs = quaternion.vec().norm();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (sin_half_angle_abs < Eigen::NumTraits<T>::epsilon()) {
+      sin_half_angle_abs = quaternion.vec().stableNorm();
+    }
+  }
+  using std::abs;
   result.angle() = T(2.) * atan2(sin_half_angle_abs, abs(quaternion.w()));
   const Vector3<T> unit_axis(T(1.), T(0.), T(0.));
   for (int i = 0; i < 3; ++i) {

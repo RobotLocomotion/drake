@@ -258,7 +258,8 @@ GTEST_TEST(IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB, testA) {
   EXPECT_FALSE(b);
 }
 
-void CheckQuaternionToAngleAxis(const Eigen::Quaternion<double>& quaternion) {
+void CheckQuaternionToAngleAxis(double w, double x, double y, double z) {
+  const Eigen::Quaternion quaternion(w, x, y, z);
   const Eigen::AngleAxisd angle_axis =
       internal::QuaternionToAngleAxis(quaternion);
   const Eigen::AngleAxisd angle_axis_expected(quaternion);
@@ -269,31 +270,24 @@ void CheckQuaternionToAngleAxis(const Eigen::Quaternion<double>& quaternion) {
 }
 
 GTEST_TEST(TestQuaternionToAngleAxis, TestDouble) {
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(1., 0., 0., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(-1., 0., 0., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., 1., 0., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., -1., 0., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., 0., 1., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., 0., -1., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., 0., 0., 1.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., 0., 0., -1.));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(1. / 2., 1. / 2., 1. / 2., 1. / 2));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(-1. / 2., 1. / 2., 1. / 2., 1. / 2));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(1. / 2., -1. / 2., 1. / 2., 1. / 2));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(1. / 2., -1. / 2., -1. / 2., 1. / 2));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(1. / 3., -2. / 3., -2. / 3., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(1. / 3., 2. / 3., 2. / 3., 0.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(0., 1. / 3., 2. / 3., 2. / 3.));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(0., 1. / 3., -2. / 3., 2. / 3.));
-  CheckQuaternionToAngleAxis(
-      Eigen::Quaterniond(0., 2. / 3., -1. / 3., 2. / 3.));
-  CheckQuaternionToAngleAxis(Eigen::Quaterniond(1. / 3, 2. / 3., 0., 2. / 3.));
+  CheckQuaternionToAngleAxis(1., 0., 0., 0.);
+  CheckQuaternionToAngleAxis(-1., 0., 0., 0.);
+  CheckQuaternionToAngleAxis(0., 1., 0., 0.);
+  CheckQuaternionToAngleAxis(0., -1., 0., 0.);
+  CheckQuaternionToAngleAxis(0., 0., 1., 0.);
+  CheckQuaternionToAngleAxis(0., 0., -1., 0.);
+  CheckQuaternionToAngleAxis(0., 0., 0., 1.);
+  CheckQuaternionToAngleAxis(0., 0., 0., -1.);
+  CheckQuaternionToAngleAxis(1. / 2., 1. / 2., 1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(-1. / 2., 1. / 2., 1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(1. / 2., -1. / 2., 1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(1. / 2., -1. / 2., -1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(1. / 3., -2. / 3., -2. / 3., 0.);
+  CheckQuaternionToAngleAxis(1. / 3., 2. / 3., 2. / 3., 0.);
+  CheckQuaternionToAngleAxis(0., 1. / 3., 2. / 3., 2. / 3.);
+  CheckQuaternionToAngleAxis(0., 1. / 3., -2. / 3., 2. / 3.);
+  CheckQuaternionToAngleAxis(0., 2. / 3., -1. / 3., 2. / 3.);
+  CheckQuaternionToAngleAxis(1. / 3, 2. / 3., 0., 2. / 3.);
 }
 
 GTEST_TEST(TestQuaternionToAngleAxis, TestSymbolic) {
