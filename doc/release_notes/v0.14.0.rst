@@ -125,6 +125,7 @@ New features
 Fixes
 
 * Use np.asarray in gradient and jacobian (`#12511`_)
+* Remove "Please see ..." addendum from deprecation messages (`#12578`_)
 
 Newly bound
 
@@ -179,6 +180,11 @@ Newly-deprecated APIs
 * DRAKE_NODISCARD in common/drake_nodiscard.h (`#12539`_)
 
   - Use ``[[nodiscard]]`` directly.
+
+* drake/examples/kuka_iiwa/iiwa_wsg_simulation will be removed from Drake
+  (`#12581`_)
+
+  - Copy the code into your own project if still needed.
 
 Removal of deprecated APIs
 --------------------------
@@ -356,6 +362,8 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12569: https://github.com/RobotLocomotion/drake/pull/12569
 .. _#12573: https://github.com/RobotLocomotion/drake/pull/12573
 .. _#12574: https://github.com/RobotLocomotion/drake/pull/12574
+.. _#12578: https://github.com/RobotLocomotion/drake/pull/12578
+.. _#12581: https://github.com/RobotLocomotion/drake/pull/12581
 
 ..
   Changelog oldest_commit f09a56e68b31b2bd35db66362b0ac3bde638ec67 (inclusive).
@@ -366,5 +374,3 @@ Raw Output from relnotes
 
 * doc: Add release notes v0.13.0 (`#12474`_)
 * Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
-* Deprecate iiwa_wsg_simulation (`#12581`_)  # It was built on a lot of RBT infrastructure.  manipulation_station is a more modern example of the same idea.
-* py deprecation: Remove "Please see ..." addendum (`#12578`_)
