@@ -1203,7 +1203,7 @@ void MathematicalProgram::ResetVariableScaling(double s, int idx) {
 }
 
 void MathematicalProgram::ResetVariableScaling(double s, int idx_start,
-                                             int idx_end) {
+                                               int idx_end) {
   DRAKE_DEMAND(0 < s);
   DRAKE_DEMAND(0 <= idx_start);
   DRAKE_DEMAND(idx_start <= idx_end);

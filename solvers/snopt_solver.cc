@@ -338,9 +338,9 @@ int SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
 // LinearComplementaryConstraint, we will evaluate its nonlinear constraint
 // differently, than its Eval function.
 template <typename C>
-void EvaluateSingleNonlinearConstraint(const C& constraint,
-                                       const Eigen::Ref<const AutoDiffVecXd>& tx,
-                                       AutoDiffVecXd* ty) {
+void EvaluateSingleNonlinearConstraint(
+    const C& constraint, const Eigen::Ref<const AutoDiffVecXd>& tx,
+    AutoDiffVecXd* ty) {
   ty->resize(SingleNonlinearConstraintSize(constraint));
   constraint.Eval(tx, ty);
 }
