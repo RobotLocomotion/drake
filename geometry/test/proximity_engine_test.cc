@@ -292,6 +292,86 @@ GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
   EXPECT_EQ(engine.num_dynamic(), 1);
 }
 
+// Tests replacing the proximity properties for a given geometry.
+GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
+  ProximityEngine<double> engine;
+  const double radius = 0.5;
+  InternalGeometry sphere(SourceId::get_new_id(), make_unique<Sphere>(radius),
+                          FrameId::get_new_id(), GeometryId::get_new_id(),
+                          "sphere", RigidTransformd());
+
+  // Note: The order of these tests matter; one builds on the next. Re-ordering
+  // *may* break the test.
+
+  // Case: throws when the id doesn't refer to a valid geometry.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateForNewPropertiesMaybe(sphere, {}), std::logic_error,
+      "The proximity engine does not contain a geometry with the id \\d+; its "
+      "properties cannot be updated");
+
+  // Case: The new and old properties have no hydroelastic declarations, however
+  // it mindlessly attempts to update the hydroelastic representation.
+  {
+    ProximityProperties props;
+    props.AddProperty("foo", "bar", 1.0);
+    engine.AddDynamicGeometry(sphere.shape(), sphere.id(), props);
+    EXPECT_TRUE(engine.UpdateForNewPropertiesMaybe(sphere, {}));
+  }
+
+  // Case: The new set has hydroelastic properties, the old does not; change
+  // required.
+  {
+    ProximityProperties props;
+    // Pick a characteristic length sufficiently large that we create the
+    // coarsest, cheapest mesh possible.
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere.id(), engine),
+              HydroelasticType::kUndefined);
+    props.AddProperty(kMaterialGroup, kElastic,
+                      std::numeric_limits<double>::infinity());
+    AddRigidHydroelasticProperties(3 * radius, &props);
+    ASSERT_TRUE(engine.UpdateForNewPropertiesMaybe(sphere, props));
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere.id(), engine),
+              HydroelasticType::kRigid);
+  }
+
+  // Case: The new set does *not* have hydroelastic properties, the old does;
+  // this should remove the hydroelastic representation.
+  {
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere.id(), engine),
+              HydroelasticType::kRigid);
+    ASSERT_TRUE(
+        engine.UpdateForNewPropertiesMaybe(sphere, ProximityProperties()));
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere.id(), engine),
+              HydroelasticType::kUndefined);
+  }
+
+  // Create a baseline property set that contains the hydroelastic group (via
+  // introduction of a meaningless, dummy property).
+  ProximityProperties hydro_trigger;
+  hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
+                            HydroelasticType::kSoft);
+
+  // Case: New properties have hydroelastic, but they are incomplete and throw.
+  {
+    ProximityProperties bad_props_no_elasticity(hydro_trigger);
+    bad_props_no_elasticity.AddProperty(kHydroGroup, kRezHint, 1.25);
+    EXPECT_THROW(
+        engine.UpdateForNewPropertiesMaybe(sphere, bad_props_no_elasticity),
+        std::logic_error);
+
+    ProximityProperties bad_props_no_length(hydro_trigger);
+    bad_props_no_length.AddProperty(kMaterialGroup, kElastic, 5e8);
+    EXPECT_THROW(
+        engine.UpdateForNewPropertiesMaybe(sphere, bad_props_no_length),
+        std::logic_error);
+
+    // The end result is that the old hydroelastic representation got stripped
+    // away and nothing replaced.
+    ASSERT_EQ(ProximityEngineTester::hydroelastic_type(sphere.id(), engine),
+              HydroelasticType::kUndefined);
+  }
+}
+
 // Removes geometry (dynamic and anchored) from the engine. The test creates
 // a _unique_ engine instance with all dynamic or all anchored geometries.
 // It is not necessary to create a mixed engine because the two geometry
