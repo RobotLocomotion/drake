@@ -1,5 +1,6 @@
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -12,12 +13,45 @@ namespace rendering {
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
     const multibody::MultibodyPlant<T>& plant)
-    : plant_(plant),
-      plant_context_(plant.CreateDefaultContext()) {
-  DRAKE_DEMAND(plant.is_finalized());
-  DRAKE_DEMAND(plant.geometry_source_is_registered());
+    : plant_(plant) {
+  Configure();
+}
 
-  this->DeclareInputPort("position", kVectorValued, plant.num_positions());
+// Note: This constructor is not *obviously* correct. Compare it with this code:
+//   unique_ptr<Foo> f;
+//   bar(*f, move(f));
+// The invocation to bar may not be valid because the compiler can chose to
+// perform the move of f before the dereference (which would make the first
+// parameter a reference to null). However, this constructor works because:
+// "... non-static data members are initialized in order of declaration in the
+// class definition."
+// https://en.cppreference.com/w/cpp/language/initializer_list#Initialization_order
+template <typename T>
+MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant)
+    : plant_(*owned_plant), owned_plant_(std::move(owned_plant)) {
+  DRAKE_DEMAND(owned_plant_ != nullptr);
+  Configure();
+}
+
+template <typename T>
+void MultibodyPositionToGeometryPose<T>::Configure() {
+  // Either we don't own the plant, or we own the plant we're storing the
+  // reference for.
+  DRAKE_DEMAND(owned_plant_ == nullptr || owned_plant_.get() == &plant_);
+  if (!plant_.is_finalized()) {
+    throw std::logic_error(
+        "MultibodyPositionToGeometryPose requires a MultibodyPlant that has "
+        "been finalized");
+  }
+  if (!plant_.geometry_source_is_registered()) {
+    throw std::logic_error(
+        "MultibodyPositionToGeometryPose requires a MultibodyPlant that has "
+        "been registered with a SceneGraph");
+  }
+  plant_context_ = plant_.CreateDefaultContext();
+
+  this->DeclareInputPort("position", kVectorValued, plant_.num_positions());
   this->DeclareAbstractOutputPort(
       "geometry_pose",
       [this]() {
