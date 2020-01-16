@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":geometric_transform",
         ":gradient",
         ":gray_code",
+        ":hopf_coordinate",
         ":jacobian",
         ":matrix_util",
         ":orthonormal_basis",
@@ -126,6 +127,16 @@ drake_cc_library(
         "//common:drake_bool",
         "//common:essential",
         "//common:is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_library(
+    name="hopf_coordinate",
+    hdrs = ["hopf_coordinate.h"],
+    srcs = ["hopf_coordinate.cc"],
+    deps = [
+        "//common:essential",
+        "@eigen",
     ],
 )
 
@@ -386,6 +397,13 @@ drake_cc_googletest(
     deps = [
         ":gray_code",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hopf_coordinate_test",
+    deps = [
+        ":hopf_coordinate",
     ],
 )
 
