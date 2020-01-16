@@ -415,7 +415,7 @@ namespace internal {
  * that the angle is within [0, pi].
  */
 template <typename T>
-Eigen::AngleAxis<T> QuaternionToAngleAxis(
+Eigen::AngleAxis<T> QuaternionToAngleAxisLikeEigen(
     const Eigen::Quaternion<T>& quaternion) {
   Eigen::AngleAxis<T> result;
   using std::atan2;
@@ -428,12 +428,16 @@ Eigen::AngleAxis<T> QuaternionToAngleAxis(
   using std::abs;
   result.angle() = T(2.) * atan2(sin_half_angle_abs, abs(quaternion.w()));
   const Vector3<T> unit_axis(T(1.), T(0.), T(0.));
+  // We use if_then_else here (instead of if statement) because using "if"
+  // with symbolic expression causes runtime error in this case (The symbolic
+  // formula needs to evaluate with an empty symbolic Environment).
+  const boolean<T> is_sin_angle_zero = sin_half_angle_abs == T(0.);
+  const boolean<T> is_w_negative = quaternion.w() < T(0.);
+  const T axis_sign = if_then_else(is_w_negative, T(-1), T(1));
   for (int i = 0; i < 3; ++i) {
     result.axis()(i) =
-        if_then_else(sin_half_angle_abs == T(0.), unit_axis(i),
-                     if_then_else(quaternion.w() < T(0.),
-                                  -quaternion.vec()(i) / sin_half_angle_abs,
-                                  quaternion.vec()(i) / sin_half_angle_abs));
+        if_then_else(is_sin_angle_zero, unit_axis(i),
+                     axis_sign * quaternion.vec()(i) / sin_half_angle_abs);
   }
 
   return result;

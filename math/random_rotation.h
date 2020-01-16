@@ -46,7 +46,7 @@ Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
   const Eigen::Quaternion<T> quaternion =
       UniformlyRandomQuaternion<T>(generator);
-  return internal::QuaternionToAngleAxis(quaternion);
+  return internal::QuaternionToAngleAxisLikeEigen(quaternion);
 }
 
 /// Generates a rotation (in the rotation matrix representation) that rotates a
