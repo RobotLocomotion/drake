@@ -10,6 +10,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/proximity_properties.h"
@@ -290,6 +291,89 @@ GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
   EXPECT_EQ(engine.num_geometries(), 2);
   EXPECT_EQ(engine.num_anchored(), 1);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// Tests replacing the proximity properties for a given geometry.
+GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
+  // Some quick aliases to make the tests more compact.
+  using PET = ProximityEngineTester;
+  const HydroelasticType kUndefined = HydroelasticType::kUndefined;
+  const HydroelasticType kRigid = HydroelasticType::kRigid;
+
+  ProximityEngine<double> engine;
+  const double radius = 0.5;
+  InternalGeometry sphere(SourceId::get_new_id(), make_unique<Sphere>(radius),
+                          FrameId::get_new_id(), GeometryId::get_new_id(),
+                          "sphere", RigidTransformd());
+
+  // Note: The order of these tests matter; one builds on the next. Re-ordering
+  // *may* break the test.
+
+  // Case: throws when the id doesn't refer to a valid geometry.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.UpdateRepresentationForNewProperties(sphere, {}), std::logic_error,
+      "The proximity engine does not contain a geometry with the id \\d+; its "
+      "properties cannot be updated");
+
+  // Case: The new and old properties have no hydroelastic declarations, however
+  // it mindlessly attempts to update the hydroelastic representation.
+  {
+    ProximityProperties props;
+    props.AddProperty("foo", "bar", 1.0);
+    engine.AddDynamicGeometry(sphere.shape(), sphere.id(), props);
+    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+    DRAKE_EXPECT_NO_THROW(
+        engine.UpdateRepresentationForNewProperties(sphere, {}));
+    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+  }
+
+  // Case: The new set has hydroelastic properties, the old does not; change
+  // required.
+  {
+    ProximityProperties props;
+    // Pick a characteristic length sufficiently large that we create the
+    // coarsest, cheapest mesh possible.
+    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+    props.AddProperty(kMaterialGroup, kElastic,
+                      std::numeric_limits<double>::infinity());
+    AddRigidHydroelasticProperties(3 * radius, &props);
+    DRAKE_EXPECT_NO_THROW(
+        engine.UpdateRepresentationForNewProperties(sphere, props));
+    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kRigid);
+  }
+
+  // Case: The new set does *not* have hydroelastic properties, the old does;
+  // this should remove the hydroelastic representation.
+  {
+    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kRigid);
+    DRAKE_EXPECT_NO_THROW(engine.UpdateRepresentationForNewProperties(
+        sphere, ProximityProperties()));
+    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+  }
+
+  // Create a baseline property set that requests a soft hydroelastic
+  // representation, but is not necessarily sufficient to define one.
+  ProximityProperties hydro_trigger;
+  hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
+                            HydroelasticType::kSoft);
+
+  // Case: New properties request hydroelastic, but they are incomplete and
+  // efforts to assign those properties throw.
+  {
+    ProximityProperties bad_props_no_elasticity(hydro_trigger);
+    bad_props_no_elasticity.AddProperty(kHydroGroup, kRezHint, 1.25);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.UpdateRepresentationForNewProperties(sphere,
+                                                    bad_props_no_elasticity),
+        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+
+    ProximityProperties bad_props_no_length(hydro_trigger);
+    bad_props_no_length.AddProperty(kMaterialGroup, kElastic, 5e8);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.UpdateRepresentationForNewProperties(sphere,
+                                                    bad_props_no_length),
+        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+  }
 }
 
 // Removes geometry (dynamic and anchored) from the engine. The test creates
