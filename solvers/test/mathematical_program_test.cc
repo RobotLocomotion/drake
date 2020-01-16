@@ -2936,22 +2936,25 @@ GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
 
   prog.NewContinuousVariables<4>("x");
 
-  prog.SetVariableScaling(1.3, 3, false);
-  prog.SetVariableScaling(1.15, 1, 2, false);
-  prog.SetVariableScaling(1.0, 0, false);
+  EXPECT_TRUE(prog.IsVariableScalingUnset(0, 3));
+  prog.SetVariableScaling(1.3, 3, 3);
+  prog.SetVariableScaling(1.15, 1, 2);
+  prog.SetVariableScaling(1.0, 0, 0);
   EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
   EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(3), 1.3);
   EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 
-  prog.SetVariableScaling(3.0, 3, true);
+  EXPECT_FALSE(prog.IsVariableScalingUnset(3, 3));
+  prog.SetVariableScaling(3.0, 3, 3);
   EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
   EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(3), 3.0);
   EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 }
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
