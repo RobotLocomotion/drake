@@ -109,6 +109,7 @@ drake_cc_library(
 drake_cc_library(
     name = "geometric_transform",
     srcs = [
+        "hopf_coordinate.cc",
         "quaternion.cc",
         "random_rotation.cc",
         "rigid_transform.cc",
@@ -116,6 +117,7 @@ drake_cc_library(
         "rotation_matrix.cc",
     ],
     hdrs = [
+        "hopf_coordinate.h",
         "quaternion.h",
         "random_rotation.h",
         "rigid_transform.h",
@@ -131,9 +133,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name="hopf_coordinate",
-    hdrs = ["hopf_coordinate.h"],
+    name = "hopf_coordinate",
     srcs = ["hopf_coordinate.cc"],
+    hdrs = ["hopf_coordinate.h"],
     deps = [
         "//common:essential",
         "@eigen",
