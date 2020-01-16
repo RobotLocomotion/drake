@@ -148,6 +148,7 @@ Build system and dependencies
 * Upgrade bullet to latest release 2.89 (`#12516`_)
 * Upgrade libsdformat to latest release 9.0 (`#12505`_)
 * Upgrade meshcat to latest commit (`#12516`_)
+* Upgrade pybind fork to use merge with latest upstream (`#12572`_)
 * Upgrade semantic_version to latest release 2.8.4 (`#12516`_)
 * Upgrade uritemplate_py to latest release 3.0.1 (`#12516`_)
 * Remove uninstall of ipopt and mumps on macOS (`#12517`_)
@@ -360,6 +361,7 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12567: https://github.com/RobotLocomotion/drake/pull/12567
 .. _#12568: https://github.com/RobotLocomotion/drake/pull/12568
 .. _#12569: https://github.com/RobotLocomotion/drake/pull/12569
+.. _#12572: https://github.com/RobotLocomotion/drake/pull/12572
 .. _#12573: https://github.com/RobotLocomotion/drake/pull/12573
 .. _#12574: https://github.com/RobotLocomotion/drake/pull/12574
 .. _#12578: https://github.com/RobotLocomotion/drake/pull/12578
@@ -371,7 +373,3 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 
 Raw Output from relnotes
 ------------------------
-
-* doc: Add release notes v0.13.0 (`#12474`_)
-* Fixing Mac CI failure (`#12494`_)  # Fix forward on PR #12469 .
-* workspace: Upgrade pybind fork to use merge with latest upstream (`#12572`_)
