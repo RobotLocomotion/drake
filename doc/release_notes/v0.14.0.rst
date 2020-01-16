@@ -187,6 +187,14 @@ Newly-deprecated APIs
 
   - Copy the code into your own project if still needed.
 
+* drake::examples::kuka_iiwa_arm::OracularStateEstimation (`#12581`_)
+
+  -  Copy the code into your own project if still needed.
+
+* drake::examples::kuka_iiwa_arm::IiwaAndWsgPlantWithStateEstimator (`#12581`_)
+
+  -  Copy the code into your own project if still needed.
+
 Removal of deprecated APIs
 --------------------------
 
@@ -315,12 +323,10 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom
 .. _#12470: https://github.com/RobotLocomotion/drake/pull/12470
 .. _#12471: https://github.com/RobotLocomotion/drake/pull/12471
 .. _#12472: https://github.com/RobotLocomotion/drake/pull/12472
-.. _#12474: https://github.com/RobotLocomotion/drake/pull/12474
 .. _#12485: https://github.com/RobotLocomotion/drake/pull/12485
 .. _#12489: https://github.com/RobotLocomotion/drake/pull/12489
 .. _#12491: https://github.com/RobotLocomotion/drake/pull/12491
 .. _#12493: https://github.com/RobotLocomotion/drake/pull/12493
-.. _#12494: https://github.com/RobotLocomotion/drake/pull/12494
 .. _#12495: https://github.com/RobotLocomotion/drake/pull/12495
 .. _#12499: https://github.com/RobotLocomotion/drake/pull/12499
 .. _#12500: https://github.com/RobotLocomotion/drake/pull/12500
