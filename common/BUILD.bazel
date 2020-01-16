@@ -131,6 +131,7 @@ drake_cc_library(
         "autodiffxd.h",
         "eigen_autodiff_limits.h",
         "eigen_autodiff_types.h",
+        "eigen_dense_storage_sbo.h",
     ],
     deps = [
         ":cond",

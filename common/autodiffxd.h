@@ -12,8 +12,7 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef DRAKE_COMMON_AUTODIFF_HEADER
-// TODO(soonho-tri): Change to #error.
-#warning Do not directly include this file. Include "drake/common/autodiff.h".
+#error Do not directly include this file. Include "drake/common/autodiff.h".
 #endif
 
 #include <cmath>
@@ -47,11 +46,11 @@ namespace Eigen {
 // TODO(soonho-tri): Next time when we upgrade Eigen, please check if we still
 // need these specializations.
 template <>
-class AutoDiffScalar<VectorXd>
-    : public internal::auto_diff_special_op<VectorXd, false> {
+class AutoDiffScalar<drake::AutoDerXd>
+    : public internal::auto_diff_special_op<drake::AutoDerXd, false> {
  public:
-  typedef internal::auto_diff_special_op<VectorXd, false> Base;
-  typedef typename internal::remove_all<VectorXd>::type DerType;
+  typedef internal::auto_diff_special_op<drake::AutoDerXd, false> Base;
+  typedef typename internal::remove_all<drake::AutoDerXd>::type DerType;
   typedef typename internal::traits<DerType>::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real Real;
 
@@ -193,8 +192,9 @@ class AutoDiffScalar<VectorXd>
     return MakeAutoDiffScalar(
         m_value + other.value(),
         has_both_der
-            ? VectorXd(m_derivatives + other.derivatives())
-            : has_this_der ? m_derivatives : VectorXd(other.derivatives()));
+            ? DerType(m_derivatives + other.derivatives())
+            : has_this_der ? m_derivatives
+            : DerType(other.derivatives()));
   }
 
   template <typename OtherDerType>
@@ -225,8 +225,9 @@ class AutoDiffScalar<VectorXd>
     return MakeAutoDiffScalar(
         m_value - other.value(),
         has_both_der
-            ? VectorXd(m_derivatives - other.derivatives())
-            : has_this_der ? m_derivatives : VectorXd(-other.derivatives()));
+            ? DerType(m_derivatives - other.derivatives())
+            : has_this_der ? m_derivatives
+            : DerType(-other.derivatives()));
   }
 
   template <typename OtherDerType>
@@ -271,11 +272,11 @@ class AutoDiffScalar<VectorXd>
     return MakeAutoDiffScalar(
         m_value / other.value(),
         has_both_der ?
-            VectorXd(this_der * other.value() - other_der * m_value) * scale :
+            DerType(this_der * other.value() - other_der * m_value) * scale :
         has_this_der ?
-            VectorXd(this_der * other.value()) * scale :
+            DerType(this_der * other.value()) * scale :
         // has_other_der || has_neither
-            VectorXd(other_der * -m_value) * scale);
+            DerType(other_der * -m_value) * scale);
   }
 
   template <typename OtherDerType>
@@ -285,10 +286,10 @@ class AutoDiffScalar<VectorXd>
     const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
     return MakeAutoDiffScalar(
         m_value * other.value(),
-        has_both_der ? VectorXd(m_derivatives * other.value() +
+        has_both_der ? DerType(m_derivatives * other.value() +
                                 other.derivatives() * m_value)
-                     : has_this_der ? VectorXd(m_derivatives * other.value())
-                                    : VectorXd(other.derivatives() * m_value));
+                     : has_this_der ? DerType(m_derivatives * other.value())
+                                    : DerType(other.derivatives() * m_value));
   }
 
   inline AutoDiffScalar& operator*=(const Scalar& other) {
@@ -319,8 +320,8 @@ class AutoDiffScalar<VectorXd>
 };
 
 #define DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(FUNC, CODE) \
-  inline const AutoDiffScalar<VectorXd> FUNC(                   \
-      const AutoDiffScalar<VectorXd>& x) {                      \
+  inline const AutoDiffScalar<drake::AutoDerXd> FUNC(           \
+      const AutoDiffScalar<drake::AutoDerXd>& x) {              \
     EIGEN_UNUSED typedef double Scalar;                         \
     CODE;                                                       \
   }
@@ -396,23 +397,26 @@ DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
 // We have this specialization here because the Eigen-3.3.3's atan2
 // implementation for AutoDiffScalar does not make a return with properly sized
 // derivatives.
-inline const AutoDiffScalar<VectorXd> atan2(const AutoDiffScalar<VectorXd>& a,
-                                            const AutoDiffScalar<VectorXd>& b) {
+inline const AutoDiffScalar<drake::AutoDerXd> atan2(
+    const AutoDiffScalar<drake::AutoDerXd>& a,
+    const AutoDiffScalar<drake::AutoDerXd>& b) {
   const bool has_a_der = a.derivatives().size() > 0;
   const bool has_both_der = has_a_der && (b.derivatives().size() > 0);
   const double squared_hypot = a.value() * a.value() + b.value() * b.value();
   return MakeAutoDiffScalar(
       std::atan2(a.value(), b.value()),
-      VectorXd((has_both_der
-                    ? VectorXd(a.derivatives() * b.value() -
-                               a.value() * b.derivatives())
-                    : has_a_der ? VectorXd(a.derivatives() * b.value())
-                                : VectorXd(-a.value() * b.derivatives())) /
-               squared_hypot));
+      drake::AutoDerXd(
+          (has_both_der ? drake::AutoDerXd(
+               a.derivatives() * b.value() - a.value() * b.derivatives()) :
+           has_a_der ? drake::AutoDerXd(
+               a.derivatives() * b.value()) :
+           drake::AutoDerXd(
+               -a.value() * b.derivatives()))
+          / squared_hypot));
 }
 
-inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
-                                          double b) {
+inline const AutoDiffScalar<drake::AutoDerXd> pow(
+    const AutoDiffScalar<drake::AutoDerXd>& a, double b) {
   using std::pow;
   return MakeAutoDiffScalar(pow(a.value(), b),
                             a.derivatives() * (b * pow(a.value(), b - 1)));

@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_COMMON_AUTODIFF_HEADER
-// TODO(soonho-tri): Change to #error.
-#warning Do not directly include this file. Include "drake/common/autodiff.h".
+#error Do not directly include this file. Include "drake/common/autodiff.h".
 #endif
 
 #include <limits>

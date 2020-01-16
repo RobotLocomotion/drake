@@ -6,8 +6,7 @@
 /// @see also eigen_types.h
 
 #ifndef DRAKE_COMMON_AUTODIFF_HEADER
-// TODO(soonho-tri): Change to #error.
-#warning Do not directly include this file. Include "drake/common/autodiff.h".
+#error Do not directly include this file. Include "drake/common/autodiff.h".
 #endif
 
 #include <type_traits>
@@ -18,8 +17,17 @@
 
 namespace drake {
 
+/// The Eigen vector type used by drake::AutoDiffXd for its partials.
+using AutoDerXd = Eigen::Matrix<
+  /* _Scalar = */ double,
+  /* _Rows = */ Eigen::Dynamic,
+  /* _Cols = */ 1,
+  /* _Options = */ 0,
+  /* _MaxRows = */ internal::kMaxRowsAtCompileTimeThatTriggersInlineStorage,
+  /* _MaxCols = */ 1>;
+
 /// An autodiff variable with a dynamic number of partials.
-using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
+using AutoDiffXd = Eigen::AutoDiffScalar<AutoDerXd>;
 
 // TODO(hongkai-dai): Recursive template to get arbitrary gradient order.
 

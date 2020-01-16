@@ -27,6 +27,7 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 3),
 //
 // clang-format off
 #include "drake/common/eigen_autodiff_limits.h"
+#include "drake/common/eigen_dense_storage_sbo.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/autodiffxd.h"
 #include "drake/common/autodiff_overloads.h"

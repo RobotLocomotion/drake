@@ -86,7 +86,8 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
                      "<((d)ouble|(f)loat|(i)nt)>"),
           "Eigen::$1$2$4$5$6"),
     // ... AutoDiff.
-    SPair(std::regex("Eigen::AutoDiffScalar<Eigen::VectorXd>"),
+    SPair(std::regex(
+              "Eigen::AutoDiffScalar<Eigen::Matrix<double,-1,1,0,1234567,1>>"),
           "drake::AutoDiffXd"),
   }};
 
