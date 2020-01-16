@@ -2788,7 +2788,7 @@ class MathematicalProgram {
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
-  void IsVariableScalingUnset(int idx_start, int idx_end);
+  bool IsVariableScalingUnset(int idx_start, int idx_end);
   //@}
 
  private:
