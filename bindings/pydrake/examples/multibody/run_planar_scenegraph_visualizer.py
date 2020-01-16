@@ -27,12 +27,11 @@ def run_pendulum_example(args):
     plant.Finalize()
 
     pose_bundle_output_port = scene_graph.get_pose_bundle_output_port()
-    Tview = np.array([[1., 0., 0., 0.],
-                      [0., 0., 1., 0.],
-                      [0., 0., 0., 1.]],
-                     dtype=np.float64)
+    T_VW = np.array([[1., 0., 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., 0., 0., 1.]])
     visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-        scene_graph, T_VW=Tview, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2]))
+        scene_graph, T_VW=T_VW, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2]))
     builder.Connect(pose_bundle_output_port, visualizer.get_input_port(0))
 
     diagram = builder.Build()
@@ -61,12 +60,11 @@ def run_manipulation_example(args):
     pose_bundle_output_port = station.GetOutputPort("pose_bundle")
 
     # Side-on view of the station.
-    Tview = np.array([[1., 0., 0., 0.],
-                      [0., 0., 1., 0.],
-                      [0., 0., 0., 1.]],
-                     dtype=np.float64)
+    T_VW = np.array([[1., 0., 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., 0., 0., 1.]])
     visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-        scene_graph, T_VW=Tview, xlim=[-0.5, 1.0], ylim=[-1.2, 1.2],
+        scene_graph, T_VW=T_VW, xlim=[-0.5, 1.0], ylim=[-1.2, 1.2],
         draw_period=0.1))
     builder.Connect(pose_bundle_output_port, visualizer.get_input_port(0))
 
@@ -99,12 +97,11 @@ def run_pendulum_example_with_playback(args):
     plant.Finalize()
 
     pose_bundle_output_port = scene_graph.get_pose_bundle_output_port()
-    Tview = np.array([[1., 0., 0., 0.],
-                      [0., 0., 1., 0.],
-                      [0., 0., 0., 1.]],
-                     dtype=np.float64)
+    T_VW = np.array([[1., 0., 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., 0., 0., 1.]])
     visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-        scene_graph, T_VW=Tview, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2]))
+        scene_graph, T_VW=T_VW, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2]))
     builder.Connect(pose_bundle_output_port, visualizer.get_input_port(0))
     visualizer.start_recording()
 
