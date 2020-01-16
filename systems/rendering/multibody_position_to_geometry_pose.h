@@ -47,7 +47,18 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
   explicit MultibodyPositionToGeometryPose(
       const multibody::MultibodyPlant<T>& plant);
 
+  /**
+   * The %MultibodyPositionToGeometryPose owns its internal plant.
+   *
+   * @pre @p owned_plant must be registered with a SceneGraph.
+   * @pre @p owned_plant must be finalized.
+   */
+  explicit MultibodyPositionToGeometryPose(
+      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant);
+
   ~MultibodyPositionToGeometryPose() override = default;
+
+  const multibody::MultibodyPlant<T>& multibody_plant() const { return plant_; }
 
   /** Returns the multibody position input port. */
   const InputPort<T>& get_input_port() const {
@@ -60,8 +71,14 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
   }
 
  private:
+  MultibodyPositionToGeometryPose(
+      const multibody::MultibodyPlant<T>& plant,
+      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant);
+
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 
+  // The optionally owned plant.
+  const std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
   const multibody::MultibodyPlant<T>& plant_;
 
   // This is a context of the plant_ system, which is only owned here to avoid

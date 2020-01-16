@@ -1,5 +1,6 @@
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -12,8 +13,24 @@ namespace rendering {
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
     const multibody::MultibodyPlant<T>& plant)
-    : plant_(plant),
+    : MultibodyPositionToGeometryPose(plant, {}) {}
+
+template <typename T>
+MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant)
+    : MultibodyPositionToGeometryPose<T>(*owned_plant, std::move(owned_plant)) {
+}
+
+template <typename T>
+MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
+    const multibody::MultibodyPlant<T>& plant,
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant)
+    : owned_plant_(std::move(owned_plant)),
+      plant_(plant),
       plant_context_(plant.CreateDefaultContext()) {
+  // Either we don't own the plant, or we own the plant we're storing the
+  // reference for.
+  DRAKE_DEMAND(owned_plant_ == nullptr || owned_plant_.get() == &plant_);
   DRAKE_DEMAND(plant.is_finalized());
   DRAKE_DEMAND(plant.geometry_source_is_registered());
 

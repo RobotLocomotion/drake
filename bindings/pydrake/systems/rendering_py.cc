@@ -110,7 +110,7 @@ PYBIND11_MODULE(rendering, m) {
       "MultibodyPositionToGeometryPose",
       doc.MultibodyPositionToGeometryPose.doc)
       .def(py::init<const multibody::MultibodyPlant<T>&>(),
-          doc.MultibodyPositionToGeometryPose.ctor.doc)
+          doc.MultibodyPositionToGeometryPose.ctor.doc_1args_plant)
       .def("get_input_port",
           &MultibodyPositionToGeometryPose<T>::get_input_port,
           py_reference_internal,
