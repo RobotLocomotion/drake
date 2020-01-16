@@ -40,6 +40,9 @@ Drake binary releases incorporate a pre-compiled version of
 `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`_.
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+Drake maintainers may build "experimental" packages on demand using Jenkins by
+following :ref:`these instructions <building-binary-packages-on-demand>`.
+
 Using older (2015) releases
 ===========================
 
