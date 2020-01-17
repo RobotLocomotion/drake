@@ -404,7 +404,7 @@ GTEST_TEST(SnoptTest, VariableScaling1) {
 
 GTEST_TEST(SnoptTest, VariableScaling2) {
   // Quadractic cost, linear and quadratic constraints
-  double s = 1000;
+  double s = 100;
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(4 * x(0) / s - 3 * x(1) >= 0);
@@ -420,7 +420,7 @@ GTEST_TEST(SnoptTest, VariableScaling2) {
 
   SnoptSolver solver;
   if (solver.available()) {
-    auto result = solver.Solve(prog, {}, {});
+    auto result = solver.Solve(prog, Eigen::Vector2d(1 * s, -1), {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1E-6;
     EXPECT_NEAR(result.get_optimal_cost(), 5, tol);
