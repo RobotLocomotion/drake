@@ -204,7 +204,7 @@ class TestRendering(unittest.TestCase):
         plant.RegisterAsSourceForSceneGraph(scene_graph)
         plant.Finalize()
 
-        to_pose = MultibodyPositionToGeometryPose(plant)
+        to_pose = MultibodyPositionToGeometryPose(plant=plant)
 
         # Check the size of the input.
         self.assertEqual(to_pose.get_input_port().size(), 2)
