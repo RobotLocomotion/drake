@@ -7,6 +7,7 @@ tap 'robotlocomotion/director'
 brew 'boost'
 brew 'cmake'
 brew 'dreal-deps/ibex/ibex@2.7.4'  # N.B. Matches drake/tools/workspace/ibex/version.bzl.
+brew 'ffmpeg'
 brew 'gcc'
 brew 'gflags'
 brew 'glew'

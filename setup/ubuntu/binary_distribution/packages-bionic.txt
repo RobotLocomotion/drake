@@ -2,6 +2,7 @@ coinor-libclp1
 coinor-libcoinutils3v5
 coinor-libipopt1v5
 default-jre
+ffmpeg
 graphviz
 jupyter-notebook
 libamd2

@@ -6,6 +6,7 @@ coinor-libipopt-dev
 default-jdk
 diffstat
 doxygen
+ffmpeg
 file
 fonts-dejavu-core
 fonts-dejavu-extra
