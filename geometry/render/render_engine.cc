@@ -56,6 +56,8 @@ RenderLabel RenderEngine::GetRenderLabelOrThrow(
   return label;
 }
 
+void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}
+
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

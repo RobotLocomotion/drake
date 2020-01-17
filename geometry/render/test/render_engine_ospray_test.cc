@@ -218,7 +218,8 @@ class RenderEngineOsprayTest : public ::testing::Test {
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
     const Vector3d bg_rgb{
         kBgColor.r / 255., kBgColor.g / 255., kBgColor.b / 255.};
-    RenderEngineOsprayParams params{OsprayMode::kRayTracer, {}, bg_rgb, 1};
+    RenderEngineOsprayParams params{
+        OsprayMode::kRayTracer, {}, bg_rgb, 1, true};
     renderer_ = make_unique<RenderEngineOspray>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
@@ -334,7 +335,8 @@ TEST_F(RenderEngineOsprayTest, ControlBackgroundColor) {
         OsprayMode::kRayTracer,
         {},
         Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.},
-        1};
+        1,
+        true};
     RenderEngineOspray engine(params);
     Render(&engine);
     VerifyUniformColor(bg, 0u);
