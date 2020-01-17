@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace math {
@@ -87,16 +88,18 @@ class NumericalGradientOption {
  * @endcode
  */
 template <typename DerivedX, typename DerivedY, typename DerivedCalcX>
-typename std::enable_if<is_eigen_vector_of<DerivedX, double>::value &&
-                            is_eigen_vector_of<DerivedY, double>::value &&
-                            is_eigen_vector_of<DerivedCalcX, double>::value,
-                        Eigen::Matrix<double, DerivedY::RowsAtCompileTime,
-                                      DerivedX::RowsAtCompileTime>>::type
+Eigen::Matrix<typename DerivedX::Scalar, DerivedY::RowsAtCompileTime,
+              DerivedX::RowsAtCompileTime>
 ComputeNumericalGradient(
     std::function<void(const DerivedCalcX&, DerivedY* y)> calc_fun,
     const DerivedX& x,
     const NumericalGradientOption& option = NumericalGradientOption{
         NumericalGradientMethod::kForward}) {
+  if constexpr (!is_eigen_scalar_same<DerivedX, double>::value) {
+    unused(calc_fun, x, option);
+    throw std::runtime_error("Only T = double is supported.");
+  } else {
+
   // First evaluate f(x).
   Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y;
   calc_fun(x, &y);
@@ -139,6 +142,7 @@ ComputeNumericalGradient(
     x_plus(i) = x_minus(i) = x(i);
   }
   return J;
+  } 
 }
 }  // namespace math
 }  // namespace drake
