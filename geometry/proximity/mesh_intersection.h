@@ -475,7 +475,9 @@ void AddPolygonToMeshData(
 /** Samples a field on a two-dimensional manifold. The field is defined over
  a volume mesh and the manifold is the intersection of the volume mesh and a
  surface mesh. The resulting manifold's topology is a function of both the
- volume and surface mesh topologies and has normals drawn from the surface mesh.
+ volume and surface mesh topologies. The winding of the resulting manifold's
+ faces will be such that its face normals will point in the same direction as
+ the input surface mesh's corresponding faces.
  Computes the intersecting surface `surface_MN` between a soft geometry M
  and a rigid geometry N, and sets the pressure field and the normal vector
  field on `surface_MN`. This does not use any broadphase culling but compares
@@ -492,10 +494,12 @@ void AddPolygonToMeshData(
      The pose of frame N in frame M.
  @param[out] surface_MN_M
      The intersecting surface between the volume mesh M and the surface N.
-     Vertex positions are measured and expressed in M's frame.
+     Vertex positions are measured and expressed in M's frame. If no
+     intersection exists, this will not change.
  @param[out] e_MN
      The sampled field values on the intersecting surface (samples to support
-     a linear mesh field -- i.e., one per vertex).
+     a linear mesh field -- i.e., one per vertex). If no intersection exists,
+     this will not change.
  @note
      The output surface mesh may have duplicate vertices.
  */
@@ -542,12 +546,12 @@ void SampleVolumeFieldOnSurface(
   }
 
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
-  if (surface_vertices_M.size() > 0) {
-    *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
-        std::move(surface_faces), std::move(surface_vertices_M));
-    *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-        "e", std::move(surface_e), surface_MN_M->get());
-  }
+  if (surface_faces.empty()) return;
+
+  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
+      std::move(surface_faces), std::move(surface_vertices_M));
+  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(surface_e), surface_MN_M->get());
 }
 
 /** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
@@ -598,12 +602,12 @@ void SampleVolumeFieldOnSurface(
   bvh_M.Collide(bvh_N, X_MN, callback);
 
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
-  if (surface_vertices_M.size() > 0) {
-    *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
-        std::move(surface_faces), std::move(surface_vertices_M));
-    *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-        "e", std::move(surface_e), surface_MN_M->get());
-  }
+  if (surface_faces.empty()) return;
+
+  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
+      std::move(surface_faces), std::move(surface_vertices_M));
+  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(surface_e), surface_MN_M->get());
 }
 
 /** Computes the contact surface between a soft geometry S and a rigid
@@ -643,6 +647,7 @@ void SampleVolumeFieldOnSurface(
    rigid R |         ooo          |
            |                      |
            +----------------------+
+    If there is no contact, nullptr is returned.
  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
@@ -720,6 +725,10 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
 
+  // The contact surface is documented as having the normals pointing *out* of
+  // the second surface and into the first. This mesh intersection creates a
+  // surface mesh with normals pointing out of the rigid surface, so we make
+  // sure the ids are ordered so that the rigid is the second id.
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
                                              std::move(e_SR));
 }

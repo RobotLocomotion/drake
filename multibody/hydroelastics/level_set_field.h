@@ -9,6 +9,9 @@ namespace multibody {
 namespace hydroelastics {
 namespace internal {
 
+// TODO(SeanCurtis-TRI): The contents of this file are no longer used. Refactor
+//  this into geometry as appropriate.
+
 // TODO(amcastro-tri): consider making this an abstract class so that we can
 // inherit multiple implementations (analytical, structured grids, etc.)
 /// This class represents a level set function as the mapping

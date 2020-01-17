@@ -3787,10 +3787,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
-  // Helper to create the underlying hydroelastic fields used in the
-  // hydroelastic model.
-  void MakeHydroelasticModels();
-
   // Helper method to compute contact forces using the hydroelastic model.
   // F_BBo_W_array is indexed by BodyNodeIndex and it gets overwritten on
   // output. F_BBo_W_array must be of size num_bodies() or an exception is
@@ -4265,8 +4261,6 @@ std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>&) const;
 template <>
-void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
-template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
     HydroelasticContactInfoAndBodySpatialForces*) const;
@@ -4275,6 +4269,10 @@ void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(
         const systems::Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
+    const systems::Context<symbolic::Expression>&,
+    std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
 #endif
 
 }  // namespace multibody

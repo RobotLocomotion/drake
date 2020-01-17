@@ -710,6 +710,16 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   const double e = e_field->Evaluate(face0, centroid);
   const double expect_e = 0.5;
   EXPECT_NEAR(expect_e, e, kEps);
+
+  // Test the face normals of resulting mesh. Because the 'trivial' surface mesh
+  // is a single triangle, all triangles in the resulting mesh should have the
+  // same normal.
+  using FIndex = SurfaceMesh<double>::ElementIndex;
+  ASSERT_TRUE(
+      CompareMatrices(rigid_N->face_normal(FIndex{0}), Vector3d::UnitZ()));
+  for (FIndex f(0); f < surface->num_faces(); ++f) {
+    EXPECT_TRUE(CompareMatrices(surface->face_normal(f), Vector3d::UnitZ()));
+  }
 }
 
 // Generates a volume mesh of an octahedron comprising of eight tetrahedral

@@ -21,7 +21,7 @@ namespace bouncing_ball {
 ///   The mass of the ball.
 /// @param[in] elastic_modulus
 ///   The modulus of elasticity for the ball. Only used when modeled with the
-///   hydroelastic model. See MultibodyPlant::set_elastic_modulus().
+///   hydroelastic model.
 /// @param[in] dissipation
 ///   The Hunt & Crossley dissipation constant for the ball. Only used with the
 ///   hydroelastic model. See MultibodyPlant::set_hunt_crossley_dissipation().
