@@ -392,6 +392,16 @@ class GeometryState {
     return geometry_engine_->ComputeContactSurfaces(X_WGs_);
   }
 
+  /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
+  void ComputeContactSurfacesWithFallback(
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+    return geometry_engine_->ComputeContactSurfacesWithFallback(
+        X_WGs_, surfaces, point_pairs);
+  }
+
   /** Implementation of QueryObject::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
     return geometry_engine_->FindCollisionCandidates();

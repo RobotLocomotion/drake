@@ -230,6 +230,33 @@ class QueryObject {
             contact surfaces.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
+  /** Reports pair-wise intersections and characterizes each non-empty
+   intersection as a ContactSurface _where possible_ and as a
+   PenetrationAsPointPair where not.
+
+   This is a hybrid contact algorithm. It allows for the contact surface
+   penetration result where possible, but automatically provides a fallback for
+   where a ContactSurface cannot be defined.
+
+   The fallback cannot guarantee success in all cases. Meshes have limited
+   support in the proximity role; they are supported in the contact surface
+   computation but _ignored_ in the point pair collision query. If a mesh is
+   in contact with another shape that _cannot_ be resolved as a contact surface
+   (e.g., rigid mesh vs another rigid shape), this computation will throw as
+   there is no fallback functionality for mesh-shape.
+
+   Because point pairs can only be computed for double-valued systems, this can
+   also only support double-valued ContactSurface instances.
+
+   @param[out] surfaces     The vector that contact surfaces will be added to.
+                            The vector will _not_ be cleared.
+   @param[out] point_pairs  The vector that fall back point pair data will be
+                            added to. The vector will _not_ be cleared.
+   @pre Neither `surfaces` nor `point_pairs` is nullptr.  */
+  void ComputeContactSurfacesWithFallback(
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair
    that is *absent* from the results is either a) culled by collision filters or
