@@ -43,6 +43,7 @@ using Eigen::Vector4d;
 using geometry::Box;
 using geometry::ConnectDrakeVisualizer;
 using geometry::ContactSurface;
+using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -52,6 +53,7 @@ using geometry::AddContactMaterial;
 using geometry::AddRigidHydroelasticProperties;
 using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
+using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::QueryObject;
 using geometry::SceneGraph;
@@ -77,6 +79,9 @@ DEFINE_bool(real_time, true, "Set to false to run as fast as possible");
 DEFINE_double(length, 1.0,
               "Measure of sphere edge length -- smaller numbers produce a "
               "denser, more expensive mesh");
+DEFINE_bool(rigid_cylinder, false, "Set to true, the cylinder is given a rigid "
+                                   "hydroelastic representation");
+DEFINE_bool(hybrid, false, "Set to true to run hybrid hydroelastic");
 
 /** Places a ball at the world's origin and defines its velocity as being
  sinusoidal in time in the z direction.
@@ -156,7 +161,8 @@ class ContactResultMaker final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultMaker)
 
-  ContactResultMaker() {
+  explicit ContactResultMaker(bool use_strict_hydro = true)
+      : use_strict_hydro_{use_strict_hydro} {
     geometry_query_input_port_ =
         this->DeclareAbstractInputPort("query_object",
                                        Value<QueryObject<double>>())
@@ -176,16 +182,22 @@ class ContactResultMaker final : public LeafSystem<double> {
                           lcmt_contact_results_for_viz* results) const {
     const auto& query_object =
         get_geometry_query_port().Eval<QueryObject<double>>(context);
-    std::vector<ContactSurface<double>> contacts =
-        query_object.ComputeContactSurfaces();
-    const int num_contacts = static_cast<int>(contacts.size());
+    std::vector<ContactSurface<double>> surfaces;
+    std::vector<PenetrationAsPointPair<double>> points;
+    if (use_strict_hydro_) {
+      surfaces = query_object.ComputeContactSurfaces();
+    } else {
+      query_object.ComputeContactSurfacesWithFallback(&surfaces, &points);
+    }
+    const int num_surfaces = static_cast<int>(surfaces.size());
+    const int num_pairs = static_cast<int>(points.size());
 
     auto& msg = *results;
     msg.timestamp = context.get_time() * 1e6;  // express in microseconds.
-    msg.num_point_pair_contacts = 0;
-    msg.point_pair_contact_info.resize(msg.num_point_pair_contacts);
-    msg.num_hydroelastic_contacts = num_contacts;
-    msg.hydroelastic_contacts.resize(num_contacts);
+    msg.num_point_pair_contacts = num_pairs;
+    msg.point_pair_contact_info.resize(num_pairs);
+    msg.num_hydroelastic_contacts = num_surfaces;
+    msg.hydroelastic_contacts.resize(num_surfaces);
 
     auto write_double3 = [](const Vector3d& src, double* dest) {
       dest[0] = src(0);
@@ -193,14 +205,15 @@ class ContactResultMaker final : public LeafSystem<double> {
       dest[2] = src(2);
     };
 
-    for (int i = 0; i < num_contacts; ++i) {
+    // Contact surfaces.
+    for (int i = 0; i < num_surfaces; ++i) {
       lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
           msg.hydroelastic_contacts[i];
 
-      surface_msg.body1_name = "Id_" + to_string(contacts[i].id_M());
-      surface_msg.body2_name = "Id_" + to_string(contacts[i].id_N());
+      surface_msg.body1_name = "Id_" + to_string(surfaces[i].id_M());
+      surface_msg.body2_name = "Id_" + to_string(surfaces[i].id_N());
 
-      const SurfaceMesh<double>& mesh_W = contacts[i].mesh_W();
+      const SurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
       surface_msg.num_triangles = mesh_W.num_faces();
       surface_msg.triangles.resize(surface_msg.num_triangles);
 
@@ -219,15 +232,34 @@ class ContactResultMaker final : public LeafSystem<double> {
         write_double3(vB.r_MV(), tri_msg.p_WB);
         write_double3(vC.r_MV(), tri_msg.p_WC);
 
-        tri_msg.pressure_A = contacts[i].EvaluateE_MN(face.vertex(0));
-        tri_msg.pressure_B = contacts[i].EvaluateE_MN(face.vertex(1));
-        tri_msg.pressure_C = contacts[i].EvaluateE_MN(face.vertex(2));
+        tri_msg.pressure_A = surfaces[i].EvaluateE_MN(face.vertex(0));
+        tri_msg.pressure_B = surfaces[i].EvaluateE_MN(face.vertex(1));
+        tri_msg.pressure_C = surfaces[i].EvaluateE_MN(face.vertex(2));
       }
+    }
+
+    // Point pairs.
+    for (int i = 0; i < num_pairs; ++i) {
+      lcmt_point_pair_contact_info_for_viz& info_msg =
+          msg.point_pair_contact_info[i];
+      info_msg.timestamp = msg.timestamp;
+      const PenetrationAsPointPair<double>& pair = points[i];
+
+      info_msg.body1_name = query_object.inspector().GetName(pair.id_A);
+      info_msg.body1_name = query_object.inspector().GetName(pair.id_B);
+
+      // Fake contact *force* data from strictly contact data. Contact point
+      // is midway between the two contact points and force = normal.
+      const Vector3d contact_point = (pair.p_WCa + pair.p_WCb) / 2.0;
+      write_double3(contact_point, info_msg.contact_point);
+      write_double3(pair.nhat_BA_W, info_msg.contact_force);
+      write_double3(pair.nhat_BA_W, info_msg.normal);
     }
   }
 
-  int geometry_query_input_port_;
-  int contact_result_output_port_;
+  int geometry_query_input_port_{-1};
+  int contact_result_output_port_{-1};
+  const bool use_strict_hydro_{true};
 };
 
 int do_main() {
@@ -252,12 +284,29 @@ int do_main() {
   ProximityProperties rigid_props;
   AddRigidHydroelasticProperties(edge_len, &rigid_props);
   scene_graph.AssignRole(source_id, ground_id, rigid_props);
-  IllustrationProperties illus_props;
-  illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 1.0});
-  scene_graph.AssignRole(source_id, ground_id, illus_props);
+  IllustrationProperties illustration_box;
+  illustration_box.AddProperty("phong", "diffuse",
+                               Vector4d{0.5, 0.5, 0.45, 1.0});
+  scene_graph.AssignRole(source_id, ground_id, illustration_box);
+
+  // Add arbitrary cylinder to bang into -- this should crash in strict
+  // hydroelastic mode, but report point contact in non-strict mode.
+  const RigidTransformd X_WC(Vector3d{0, 0, 3});
+  GeometryId can_id = scene_graph.RegisterAnchoredGeometry(
+      source_id, make_unique<GeometryInstance>(
+                     X_WC, make_unique<Cylinder>(0.5, 1.0), "can"));
+  ProximityProperties proximity_cylinder;
+  if (FLAGS_rigid_cylinder) {
+    AddRigidHydroelasticProperties(0.5, &proximity_cylinder);
+  }
+  scene_graph.AssignRole(source_id, can_id, std::move(proximity_cylinder));
+  IllustrationProperties illustration_cylinder;
+  illustration_cylinder.AddProperty("phong", "diffuse",
+                                    Vector4d{0.5, 0.5, 0.45, 0.5});
+  scene_graph.AssignRole(source_id, can_id, illustration_cylinder);
 
   // Make and visualize contacts.
-  auto& contact_results = *builder.AddSystem<ContactResultMaker>();
+  auto& contact_results = *builder.AddSystem<ContactResultMaker>(!FLAGS_hybrid);
   builder.Connect(scene_graph.get_query_output_port(),
                   contact_results.get_geometry_query_port());
 

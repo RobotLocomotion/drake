@@ -197,54 +197,88 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   }
 }
 
+// Meshes are treated specially in proximity engine. Historically, they haven't
+// been supported at all. There is one special case in which they are supported:
+// as rigid objects in hydroelastic contact. This test framework facilitates
+// confirmation of the support for Mesh shapes.
+class ProximityEngineMeshes : public ::testing::Test {
+ protected:
+  // Adds a single shape to the given engine with the indicated anchored/dynamic
+  // configuration and compliant type.
+  std::pair<GeometryId, RigidTransformd> AddShape(
+      ProximityEngine<double>* engine, const Shape& shape, bool is_anchored,
+      bool is_soft) {
+    RigidTransformd X_WS = RigidTransformd::Identity();
+    const GeometryId id_S = GeometryId::get_new_id();
+    // We'll mindlessly provide edge_length; even if the shape doesn't require
+    // it.
+    const double edge_length = 0.5;
+    ProximityProperties properties;
+    if (is_soft) {
+      // If soft, we need an elastic modulus.
+      AddContactMaterial(1e8, {}, {}, &properties);
+      AddSoftHydroelasticProperties(edge_length, &properties);
+    } else {
+      AddRigidHydroelasticProperties(edge_length, &properties);
+    }
+    if (is_anchored) {
+      engine->AddAnchoredGeometry(shape, X_WS, id_S, properties);
+    } else {
+      engine->AddDynamicGeometry(shape, id_S, properties);
+    }
+    return std::make_pair(id_S, X_WS);
+  }
+
+  // Populates the world with two shapes with identity pose (assuming that that
+  // is a colliding configuration). Each shape can be anchored or dynamic and
+  // rigid or soft. Stores the geometry ids of the first and second shapes.
+  unordered_map<GeometryId, RigidTransformd> PopulateEngine(
+      ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
+      bool soft1, const Shape& shape2, bool anchored2, bool soft2) {
+    unordered_map<GeometryId, RigidTransformd> X_WGs;
+    RigidTransformd X_WG;
+    std::tie(id1_, X_WG) = AddShape(engine, shape1, anchored1, soft1);
+    X_WGs.insert({id1_, X_WG});
+    std::tie(id2_, X_WG) = AddShape(engine, shape2, anchored2, soft2);
+    X_WGs.insert({id2_, X_WG});
+    engine->UpdateWorldPoses(X_WGs);
+    return X_WGs;
+  }
+
+  GeometryId id1_;
+  GeometryId id2_;
+};
+
 // Confirms that Mesh is supported in ComputeContactSurfaces() but not other
 // queries. We set up an anchored soft sphere S and a dynamic rigid mesh M, so
 // that they contact. Then, we verify that ComputeContactSurfaces() gives one
 // contact surface between S and M, but other queries give no result from M.
-GTEST_TEST(ProximityEngineTests, MeshComputeContactSurfacesOnly) {
-  ProximityEngine<double> engine;
-
-  Sphere sphere_S{0.2};
-  RigidTransformd X_WS = RigidTransformd::Identity();
-  const GeometryId id_S = GeometryId::get_new_id();
-  const double edge_length = 0.5;
-  const double E = 1e8;  // Elastic modulus.
-  ProximityProperties soft_properties;
-  AddContactMaterial(E, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(edge_length, &soft_properties);
-  engine.AddAnchoredGeometry(sphere_S, X_WS, id_S, soft_properties);
-
-  Mesh mesh_M{
+TEST_F(ProximityEngineMeshes, MeshComputeContactSurfacesOnly) {
+  const bool anchored{true};
+  const bool soft{true};
+  const Sphere sphere{0.2};
+  const Mesh mesh{
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
-  const GeometryId id_M = GeometryId::get_new_id();
-  ProximityProperties rigid_properties;
-  AddRigidHydroelasticProperties(edge_length, &rigid_properties);
-  engine.AddDynamicGeometry(mesh_M, id_M, rigid_properties);
-  RigidTransformd X_WM = RigidTransformd::Identity();
 
-  const unordered_map<GeometryId, RigidTransformd> dynamic_poses = {
-      {id_M, X_WM}};
+  ProximityEngine<double> engine;
+  const auto X_WGs = PopulateEngine(&engine, sphere, anchored, soft,
+                                    mesh, !anchored, !soft);
 
-  engine.UpdateWorldPoses(dynamic_poses);
-
-  const unordered_map<GeometryId, RigidTransformd> all_poses = {{id_S, X_WS},
-                                                                {id_M, X_WM}};
-
-  const auto contact_surfaces = engine.ComputeContactSurfaces(all_poses);
+  const auto contact_surfaces = engine.ComputeContactSurfaces(X_WGs);
   EXPECT_EQ(1, contact_surfaces.size());
 
   const double max_distance = std::numeric_limits<double>::infinity();
   const auto signed_distance_pairs =
-      engine.ComputeSignedDistancePairwiseClosestPoints(all_poses,
+      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
                                                         max_distance);
   EXPECT_EQ(0, signed_distance_pairs.size());
 
   const auto signed_distances_to_point =
       engine.ComputeSignedDistanceToPoint(Vector3d::Zero(),  // p_WQ
-                                          all_poses, max_distance);
+                                          X_WGs, max_distance);
   ASSERT_EQ(1, signed_distances_to_point.size());
-  EXPECT_EQ(id_S, signed_distances_to_point[0].id_G);
+  EXPECT_EQ(id1_, signed_distances_to_point[0].id_G);
 
   const auto point_pairs = engine.ComputePointPairPenetration();
   EXPECT_EQ(0, point_pairs.size());
@@ -253,6 +287,106 @@ GTEST_TEST(ProximityEngineTests, MeshComputeContactSurfacesOnly) {
   EXPECT_EQ(0, collision_candidates.size());
 
   EXPECT_FALSE(engine.HasCollisions());
+}
+
+// Tests the ComputeContactSurfacesWithFallback. The ProximityEngine largely
+// relies on the hydroelastic::Callback* functionality to do its work and those
+// are tested elsewhere. This function has several unique responsibilities:
+//   - Confirm that the collision results are placed into the provided in/out
+//     parameters.
+//   - Confirm that meshes can participate. Specifically:
+//     - anchored - anchored: should be a no-op; no throw, no collision
+//       regardless of compatible or incompatible compliance type, or if only
+//       one is a mesh, or both (or, in fact, neither).
+//     - For all permuations involving a dynamic geometry:
+//       (dynamic shape - dynamic mesh), (dynamic shape - anchored mesh), and
+//       (anchored shape - dynamic mesh):
+//       - If it satisfies the strict hydroelastic functions's conditions
+//         (e.g., rigid-soft), it produces a single contact surface.
+//       - If it _doesn't_ satisfy the strict hydroelastic functions'
+//         conditions (e.g., same compliance types), it throw.
+// TODO(SeanCurtis-TRI): Update this test when soft meshes are supported.
+TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
+  const bool anchored{true};
+  const bool soft{true};
+  const Sphere sphere{0.2};
+  const Mesh mesh{
+      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
+      1.0 /* scale */};
+  // All anchored-dynamic configurations with at least one dynamic geometry.
+  // (Anchored-anchored is tested below.)
+  const std::vector<std::pair<bool, bool>> anchor_configurations{
+      {false, false}, {false, true}, {true, false}};
+
+  // Case: all dynamic-anchored permutations that would pass strict hydroelastic
+  // conditions (i.e., different compliance) should lead to a single contact
+  // surface.
+  {
+    for (const auto [mesh_anchored, shape_anchored] : anchor_configurations) {
+      ProximityEngine<double> engine;
+      const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, soft,
+                                        mesh, mesh_anchored, !soft);
+
+      std::vector<ContactSurface<double>> surfaces;
+      std::vector<PenetrationAsPointPair<double>> point_pairs;
+      engine.ComputeContactSurfacesWithFallback(X_WGs, &surfaces, &point_pairs);
+      EXPECT_EQ(surfaces.size(), 1);
+      EXPECT_EQ(point_pairs.size(), 0);
+    }
+  }
+
+  // Case: all dynamic-anchored permutations which don't satisfy hydroelastic
+  // conditions should throw: this includes (rigid, rigid), (soft, soft),
+  // (rigid, undefined), (soft, undefined) with at least one geometry in each
+  // pair a mesh). It should terminate on the strict hydroelastic criteria and
+  // report that function's exception. We test only (rigid, rigid) for
+  // (shape, mesh) and (mesh, mesh) geometries as a representative of those
+  // other failure conditions with the following justifications:
+  //    1. ProximityEngine (PE) doesn't generate those errors. Those errors
+  //       arise because PE explicitly calls strict hydroelastics on meshes. So,
+  //       if one of those conditions fails, all must fail. Thus, this one
+  //       case is evidence that the right function is being invoked and not
+  //       a test of what that function _does_.
+  //    2. It is impossible to create a soft mesh, so that's a theoretical
+  //       combination that isn't possible in practice. We could only get a
+  //       rigid mesh and an undefined mesh.
+  {
+    for (const auto [mesh_anchored, shape_anchored] : anchor_configurations) {
+      ProximityEngine<double> engine;
+      const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, !soft,
+                                        mesh, mesh_anchored, !soft);
+
+      std::vector<ContactSurface<double>> surfaces;
+      std::vector<PenetrationAsPointPair<double>> point_pairs;
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          engine.ComputeContactSurfacesWithFallback(X_WGs, &surfaces,
+                                                    &point_pairs),
+          std::logic_error, "Requested contact between two rigid objects .+");
+    }
+  }
+
+  // Case: If both are anchored (whether it's mesh-mesh or shape-mesh or
+  // whether their compliance types match or differ), no throw and no results.
+  {
+    for (const auto* first_shape : std::vector<const Shape*>{&sphere, &mesh}) {
+      for (const bool different : {true, false}) {
+        ProximityEngine<double> engine;
+        // Note: attempting to register a _soft_ mesh will not succeed. It will
+        // be left without a hydroelastic representation. But that's ok if
+        // they are both anchored; because in this context, the two anchored
+        // objects will never be considered.
+        const auto X_WGs = PopulateEngine(&engine, *first_shape, anchored, soft,
+                                          mesh, anchored, soft ^ different);
+
+        std::vector<ContactSurface<double>> surfaces;
+        std::vector<PenetrationAsPointPair<double>> point_pairs;
+        engine.ComputeContactSurfacesWithFallback(X_WGs, &surfaces,
+                                                  &point_pairs);
+        EXPECT_EQ(surfaces.size(), 0);
+        EXPECT_EQ(point_pairs.size(), 0);
+      }
+    }
+  }
 }
 
 // Tests simple addition of anchored geometry.
