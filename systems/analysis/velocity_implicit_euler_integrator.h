@@ -32,40 +32,46 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  * The velocity-implicit Euler integrator implements first-order implicit Euler
  * by alternating between steps from Newton's method for solving the
  * generalized velocity and miscellaneous states with fixed-point iterations
- * for solving the position states.
+ * for solving the position states. This integrator is designed to perform
+ * better than ImplicitEulerIntegrator for second-order systems that can be 
+ * expressed as (1-2).
  *
  * This integrator requires a system of ordinary differential equations in
- * state x = (q,v,z) to be expressible in the following form:
- *     q̇ = N(q) v;                          (1)
- *     ẏ = fᵥ(t,q,y),                       (2)
- * where q̇ and v are linearly related via the matrix N that is dependent only
- * on the position q, y = (v,z), and fᵥ is a function that can depend on time
- * and state.
+ * state `x = (q,v,z)` to be expressible in the following form:
+ * 
+ *     q̇ = N(q) v;                           (1)
+ *     ẏ = fᵥ(t,q,y),                        (2)
+ * where `q̇` and `v` are linearly related via the matrix `N(q)`, `y = (v,z)`,
+ * and `fᵥ` is a function that can depend on the time and state.
  *
  * Implicit Euler uses the following update rule at time step n:
- *     qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;          (3)
- *     yⁿ⁺¹ = yⁿ + h f(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).     (4)
+ * 
+ *     qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;           (3)
+ *     yⁿ⁺¹ = yⁿ + h f(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).      (4)
  *
  * To solve the nonlinear system, the velocity-implicit Euler integrator
- * iteratively solves for (qⁿ⁺¹,yⁿ⁺¹) with Newton's method: At iteration k,
- * find (qₖ₊₁,yₖ₊₁) that satisfies
- *     yₖ₊₁ = yⁿ + h f(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);       (5)
- *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.              (6)
+ * iteratively solves for `(qⁿ⁺¹,yⁿ⁺¹)` with Newton's method: At iteration `k`,
+ * it finds `(qₖ₊₁,yₖ₊₁)` that satisfies
+ * 
+ *     yₖ₊₁ = yⁿ + h f(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);      (5)
+ *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.             (6)
  *
- * In this notation, the n's index timesteps, while the k's index the specific
- * Newton-Raphson iterations within each time step.
+ * In this notation, the `n`'s index timesteps, while the `k`'s index the
+ * specific Newton-Raphson iterations within each time step.
  *
  * To solve (5-6), first define
+ * 
  *     l(y) = f(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),      (7)
  *     Jₗ(y) = ∂l(y) / ∂y.                   (8)
  *
- * Next, solve the following linear equation for Δy:
- *     (I - h Jₗ) Δy = - R(yₖ),               (9)
- * where R(y) = y - yⁿ - h l(y) and Δy = yₖ₊₁ - yₖ. We then directly use yₖ₊₁
- * in (6) to get qₖ₊₁.
+ * Next, it solves the following linear equation for `Δy`:
+ * 
+ *     (I - h Jₗ) Δy = - R(yₖ),              (9)
+ * where `R(y) = y - yⁿ - h l(y)` and `Δy = yₖ₊₁ - yₖ`. It then directly uses
+ * `yₖ₊₁` in (6) to get `qₖ₊₁`.
  *
  * This implementation uses Newton-Raphson (NR) and relies upon the obvious
- * convergence to a solution for y in `R(y) = 0` where
+ * convergence to a solution for `y` in `R(y) = 0` where
  * `R(y) = y - yⁿ - h l(y)` as `h` becomes sufficiently small.
  * General implementational details were gleaned from [Hairer, 1996].
  *
@@ -94,8 +100,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                                            Context<T>* context = nullptr)
       : ImplicitIntegrator<T>(system, context) {}
 
-  // The integrator does not support error estimation.
+  /// The integrator does not support error estimation.
   bool supports_error_estimation() const final { return false; }
+
+  /// Returns 0 for the error estimation order because this integrator does not
+  /// support error estimation.
   int get_error_estimate_order() const final { return 0; }
 
  private:
@@ -331,6 +340,12 @@ void VelocityImplicitEulerIntegrator<T>::DoInitialize() {
 
   // Reset the Jacobian matrix (so that recomputation is forced).
   this->get_mutable_velocity_jacobian_implicit_euler().resize(0, 0);
+
+  // TODO(antequ): Change this to the recommended default accuracy after error
+  // control is implemented.
+  // Set an initial working accuracy so that the integrator doesn't take too
+  // long.
+  this->set_accuracy_in_use(1e-6);
 }
 
 template <class T>
@@ -676,9 +691,8 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     return false;
   }
 
-  // Evaluate the residual error, which is the negation of the RHS of the update
-  // equation:
-  //     (I - h Jₗ) Δy = yⁿ - yₖ + h l(yₖ), Δy = yₖ₊₁ - yₖ
+  // Evaluate the residual error, which is defined above as R(yₖ):
+  //     R(yₖ) = yₖ - yⁿ - h l(yₖ).
   VectorX<T> residual = ComputeResidualR(qt0, yt0, h);
 
   // Do the Newton-Raphson iterations.
