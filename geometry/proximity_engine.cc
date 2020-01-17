@@ -822,6 +822,62 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return surfaces;
   }
 
+  void ComputeContactSurfacesWithFallback(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackWithFallbackData<T> data{
+        hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
+                                      &hydroelastic_geometries_, surfaces},
+        point_pairs};
+
+    // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
+    // that we can support with the point-pair fallback. Do those first.
+    dynamic_tree_.collide(&data, hydroelastic::CallbackWithFallback<T>);
+
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, hydroelastic::CallbackWithFallback<T>);
+
+    // TODO(SeanCurtis-TRI): There is a special case where the error message is
+    //  incomprehensible. If someone _attempts_ to register a soft mesh, the
+    //  registration will broadcast a single warning, but no hydroleastic
+    //  representation will be created. If that mesh is ever in contact, the
+    //  error message will be that a _Box_ is missing a hydroelastic
+    //  representation. It really should say *mesh*. Somehow, we have to know
+    //  that the box is really the broadphase place-holder of a mesh. Update
+    //  proximity_engine_test.cc, ComputeContactSurfaceWithFallback when this
+    //  issue is resolved.
+
+    // dynamic_mesh_tree_ and anchored_mesh_tree_ contain meshes that *can't*
+    // fall back to point-pair (we don't support meshes in point-pair contact).
+    // So, we default to the strict hydroleastic. Each pair generated in the
+    // following broadphase calculations *must* include a mesh. If we can't
+    // compute a contact surface, we must fail.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_mesh_tree_),
+        &data.data, hydroelastic::Callback<T>);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &dynamic_mesh_tree_),
+        &data.data, hydroelastic::Callback<T>);
+
+    dynamic_mesh_tree_.collide(&data.data, hydroelastic::Callback<T>);
+    dynamic_mesh_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data.data, hydroelastic::Callback<T>);
+    dynamic_mesh_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_mesh_tree_),
+        &data.data, hydroelastic::Callback<T>);
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryId>& dynamic,
@@ -1241,6 +1297,15 @@ template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
   return impl_->ComputeContactSurfaces(X_WGs);
+}
+
+template <typename T>
+void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    std::vector<ContactSurface<T>>* surfaces,
+    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+  return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
+                                                   point_pairs);
 }
 
 template <typename T>

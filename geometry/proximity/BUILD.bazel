@@ -138,6 +138,7 @@ drake_cc_library(
         ":collision_filter_legacy",
         ":hydroelastic_internal",
         ":mesh_intersection",
+        ":penetration_as_point_pair_callback",
         ":proximity_utilities",
         ":surface_mesh",
         ":volume_mesh",
