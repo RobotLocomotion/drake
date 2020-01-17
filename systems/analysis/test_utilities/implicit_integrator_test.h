@@ -59,19 +59,15 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // TODO(antequ): remove this check once the Velocity-Implicit Euler supports
     // automatic differentiation and central differencing.
-    if constexpr(std::is_same_v<IntegratorType,
-        VelocityImplicitEulerIntegrator<double>>) {
+    if constexpr (std::is_same_v<IntegratorType,
+                                 VelocityImplicitEulerIntegrator<double>>) {
       integrator_supports_central_and_auto_diff_ = false;
     }
   }
 
   void MiscAPITest(ReuseType type) {
     // Create the integrator for a System<double>.
-<<<<<<< HEAD
-    T integrator(*spring_mass_, spring_mass_context_.get());
-=======
-    IntegratorType integrator(*spring_, context_.get());
->>>>>>> Refactor implicit integration tests
+    IntegratorType integrator(*spring_mass_, spring_mass_context_.get());
 
     // Verifies set_reuse(flag) == get_reuse() == flag
     integrator.set_reuse(reuse_type_to_bool(type));
@@ -170,8 +166,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
                                       .get_generalized_velocity()
                                       .CopyToVector();
     const VectorX<double> solv = state_copy->get_continuous_state()
-                                    .get_generalized_velocity()
-                                    .CopyToVector();
+                                     .get_generalized_velocity()
+                                     .CopyToVector();
     for (int i = 0; i < nsolv.size(); ++i)
       EXPECT_NEAR(solv(i), nsolv(i), sol_tol_vel);
 
@@ -183,11 +179,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // This equation should be stiff.
   void SpringMassDamperStiffTest(ReuseType type) {
     // Create the integrator.
-<<<<<<< HEAD
-    T integrator(*spring_mass_damper_, spring_mass_damper_context_.get());
-=======
-    IntegratorType integrator(*spring_damper_, context_.get());
->>>>>>> Refactor implicit integration tests
+    IntegratorType integrator(*spring_mass_damper_,
+                              spring_mass_damper_context_.get());
     integrator.set_maximum_step_size(large_h_);
     integrator.set_requested_minimum_step_size(small_h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
@@ -250,9 +243,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
           IntegratorType::JacobianComputationScheme::kCentralDifference);
 
       // Reset the time, position, and velocity.
-      context_->SetTime(0.0);
-      spring_damper_->set_position(context_.get(), initial_position);
-      spring_damper_->set_velocity(context_.get(), initial_velocity);
+      spring_mass_damper_context_->SetTime(0.0);
+      spring_mass_damper_->set_position(spring_mass_damper_context_.get(),
+                                        initial_position);
+      spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
+                                        initial_velocity);
 
       // Integrate for t_final seconds again.
       integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -270,9 +265,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
           IntegratorType::JacobianComputationScheme::kAutomatic);
 
       // Reset the time, position, and velocity.
-      context_->SetTime(0.0);
-      spring_damper_->set_position(context_.get(), initial_position);
-      spring_damper_->set_velocity(context_.get(), initial_velocity);
+      spring_mass_damper_context_->SetTime(0.0);
+      spring_mass_damper_->set_position(spring_mass_damper_context_.get(),
+                                        initial_position);
+      spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
+                                        initial_velocity);
 
       // Integrate for t_final seconds again.
       integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -294,7 +291,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // discontinuity in the velocity derivative at spring position x = 0.
   void DiscontinuousSpringMassDamperTest(ReuseType type) {
     // Create the integrator.
-    IntegratorType integrator(*mod_spring_damper_, context_.get());
+    IntegratorType integrator(*mod_spring_mass_damper_,
+                              mod_spring_mass_damper_context_.get());
     integrator.set_maximum_step_size(h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
     // TODO(antequ): remove this check once the Velocity-Implicit Euler
@@ -362,17 +360,23 @@ class ImplicitIntegratorTest : public ::testing::Test {
           IntegratorType::JacobianComputationScheme::kCentralDifference);
 
       // Reset the time, position, and velocity.
-      context_->SetTime(0.0);
-      mod_spring_damper_->set_position(context_.get(), initial_position);
-      mod_spring_damper_->set_velocity(context_.get(), initial_velocity);
+      mod_spring_mass_damper_context_->SetTime(0.0);
+      mod_spring_mass_damper_->set_position(
+          mod_spring_mass_damper_context_.get(), initial_position);
+      mod_spring_mass_damper_->set_velocity(
+          mod_spring_mass_damper_context_.get(), initial_velocity);
 
       // Integrate again.
       integrator.IntegrateWithMultipleStepsToTime(t_final);
 
       // Check the solution and the time again, and reset the statistics again.
-      x_final = context_->get_continuous_state().get_vector().GetAtIndex(0);
-      xdot_final = context_->get_continuous_state().get_vector().GetAtIndex(1);
-      EXPECT_NEAR(context_->get_time(), t_final, ttol);
+      x_final = mod_spring_mass_damper_context_->get_continuous_state()
+                    .get_vector()
+                    .GetAtIndex(0);
+      xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
+                       .get_vector()
+                       .GetAtIndex(1);
+      EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
       EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
       EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
       CheckGeneralStatsValidity(&integrator);
@@ -382,17 +386,23 @@ class ImplicitIntegratorTest : public ::testing::Test {
           IntegratorType::JacobianComputationScheme::kAutomatic);
 
       // Reset the time, position, and velocity.
-      context_->SetTime(0.0);
-      mod_spring_damper_->set_position(context_.get(), initial_position);
-      mod_spring_damper_->set_velocity(context_.get(), initial_velocity);
+      mod_spring_mass_damper_context_->SetTime(0.0);
+      mod_spring_mass_damper_->set_position(
+          mod_spring_mass_damper_context_.get(), initial_position);
+      mod_spring_mass_damper_->set_velocity(
+          mod_spring_mass_damper_context_.get(), initial_velocity);
 
       // Integrate again.
       integrator.IntegrateWithMultipleStepsToTime(t_final);
 
       // Check the solution and the time again.
-      x_final = context_->get_continuous_state().get_vector().GetAtIndex(0);
-      xdot_final = context_->get_continuous_state().get_vector().GetAtIndex(1);
-      EXPECT_NEAR(context_->get_time(), t_final, ttol);
+      x_final = mod_spring_mass_damper_context_->get_continuous_state()
+                    .get_vector()
+                    .GetAtIndex(0);
+      xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
+                       .get_vector()
+                       .GetAtIndex(1);
+      EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
       EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
       EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
       CheckGeneralStatsValidity(&integrator);
@@ -410,7 +420,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Set integrator parameters; we want error control to initially "fail",
     // necessitating step size adjustment.
-    IntegratorType integrator(spring_mass, context_.get());
+    IntegratorType integrator(spring_mass, context.get());
     // For fixed step integrators, we need to use a smaller step size to get
     // the desired accuracy.
     // TODO(antequ): remove these checks once the Velocity-Implicit Euler
@@ -444,8 +454,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_NEAR(context->get_time(), t_final, ttol);
 
     // Get the final position.
-    double x_final =
-        context->get_continuous_state().get_vector().GetAtIndex(0);
+    double x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
 
     // Compute the true solution at t_final.
     double x_final_true, v_final_true;
@@ -466,17 +475,17 @@ class ImplicitIntegratorTest : public ::testing::Test {
           IntegratorType::JacobianComputationScheme::kCentralDifference);
 
       // Reset the time, position, and velocity.
-      context_->SetTime(0.0);
-      spring_mass.set_position(context_.get(), initial_position);
-      spring_mass.set_velocity(context_.get(), initial_velocity);
+      context->SetTime(0.0);
+      spring_mass.set_position(context.get(), initial_position);
+      spring_mass.set_velocity(context.get(), initial_velocity);
 
       // Integrate for t_final seconds again.
       integrator.IntegrateWithMultipleStepsToTime(t_final);
 
       // Check results again.
-      x_final = context_->get_continuous_state().get_vector().GetAtIndex(0);
+      x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
       EXPECT_NEAR(x_final_true, x_final, 5e-3);
-      EXPECT_NEAR(context_->get_time(), t_final, ttol);
+      EXPECT_NEAR(context->get_time(), t_final, ttol);
 
       // Verify that integrator statistics are valid and reset the statistics.
       CheckGeneralStatsValidity(&integrator);
@@ -486,17 +495,17 @@ class ImplicitIntegratorTest : public ::testing::Test {
           IntegratorType::JacobianComputationScheme::kAutomatic);
 
       // Reset the time, position, and velocity.
-      context_->SetTime(0.0);
-      spring_mass.set_position(context_.get(), initial_position);
-      spring_mass.set_velocity(context_.get(), initial_velocity);
+      context->SetTime(0.0);
+      spring_mass.set_position(context.get(), initial_position);
+      spring_mass.set_velocity(context.get(), initial_velocity);
 
       // Integrate for t_final seconds again.
       integrator.IntegrateWithMultipleStepsToTime(t_final);
 
       // Check results again.
-      x_final = context_->get_continuous_state().get_vector().GetAtIndex(0);
+      x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
       EXPECT_NEAR(x_final_true, x_final, 5e-3);
-      EXPECT_NEAR(context_->get_time(), t_final, ttol);
+      EXPECT_NEAR(context->get_time(), t_final, ttol);
 
       // Verify that integrator statistics are valid
       CheckGeneralStatsValidity(&integrator);
@@ -519,7 +528,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
         spring_mass.CreateDefaultContext();
 
     // Set the integrator to operate in fixed step mode.
-    IntegratorType integrator(spring_mass, context_.get());
+    IntegratorType integrator(spring_mass, context.get());
 
     // Skip this test if the integrator doesn't have error estimate.
     // TODO(antequ): remove this check once the Velocity-Implicit Euler
@@ -585,9 +594,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
             std::abs(integrator.get_error_estimate()->CopyToVector()[0]);
 
         // Get the final position of the spring.
-        const double x_final = context->get_continuous_state()
-                                   .get_vector()
-                                   .GetAtIndex(0);
+        const double x_final =
+            context->get_continuous_state().get_vector().GetAtIndex(0);
 
         // Get the true position.
         double x_final_true, v_final_true;
@@ -609,14 +617,13 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void SpringMassStepAccuracyEffectsTest(ReuseType type) {
     const double spring_k = 300.0;  // N/m
 
-
     // Create a new spring-mass system.
     SpringMassSystem<double> spring_mass(spring_k, mass_, false);
     std::unique_ptr<Context<double>> context =
         spring_mass.CreateDefaultContext();
 
     // Spring-mass system is necessary only to setup the problem.
-    IntegratorType integrator(spring_mass, context_.get());
+    IntegratorType integrator(spring_mass, context.get());
     // TODO(antequ): remove this check once the Velocity-Implicit Euler
     // supports error estimation
     if (!integrator.supports_error_estimation()) GTEST_SKIP();
@@ -645,13 +652,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
                                       large_h_, &x_final_true, &v_final_true);
 
     // Integrate exactly one step.
-    integrator.IntegrateWithMultipleStepsToTime(
-        context->get_time() + large_h_);
+    integrator.IntegrateWithMultipleStepsToTime(context->get_time() + large_h_);
 
     // Get the positional error.
     const double pos_err = std::abs(
-        x_final_true -
-        context->get_continuous_state_vector().GetAtIndex(0));
+        x_final_true - context->get_continuous_state_vector().GetAtIndex(0));
 
     // Make the accuracy setting looser, integrate again, and verify that
     // positional error increases.
@@ -662,13 +667,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
     context->SetTime(0);
     spring_mass.set_position(context.get(), initial_position);
     spring_mass.set_velocity(context.get(), initial_velocity);
-    integrator.IntegrateWithMultipleStepsToTime(
-        context->get_time() + large_h_);
-    EXPECT_GT(
-        std::abs(
-            x_final_true -
-            context->get_continuous_state_vector().GetAtIndex(0)),
-        pos_err);
+    integrator.IntegrateWithMultipleStepsToTime(context->get_time() + large_h_);
+    EXPECT_GT(std::abs(x_final_true -
+                       context->get_continuous_state_vector().GetAtIndex(0)),
+              pos_err);
   }
 
   double h() const { return h_; }
@@ -704,23 +706,23 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // TODO(antequ): remove these checks once the Velocity-Implicit Euler
     // supports error estimation
     if (integrator->supports_error_estimation()) {
-      EXPECT_GT(
-          integrator->get_num_error_estimator_newton_raphson_iterations(), 0);
+      EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_iterations(),
+                0);
     }
     EXPECT_GT(integrator->get_previous_integration_step_size(), 0.0);
     EXPECT_GT(integrator->get_largest_step_size_taken(), 0.0);
     EXPECT_GE(integrator->get_num_steps_taken(), 0);
     EXPECT_GT(integrator->get_num_derivative_evaluations(), 0);
     if (integrator->supports_error_estimation()) {
-      EXPECT_GE(
-          integrator->get_num_error_estimator_derivative_evaluations(), 0);
+      EXPECT_GE(integrator->get_num_error_estimator_derivative_evaluations(),
+                0);
     }
     EXPECT_GT(integrator->get_num_derivative_evaluations_for_jacobian(), 0);
     if (integrator->supports_error_estimation()) {
       EXPECT_GE(
           integrator
               ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
-              0);
+          0);
     }
     EXPECT_GE(integrator->get_num_jacobian_evaluations(), 0);
     if (integrator->supports_error_estimation()) {
@@ -729,9 +731,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_GE(integrator->get_num_iteration_matrix_factorizations(), 0);
     if (integrator->supports_error_estimation()) {
       EXPECT_GE(
-          integrator
-              ->get_num_error_estimator_iteration_matrix_factorizations(),
-              0);
+          integrator->get_num_error_estimator_iteration_matrix_factorizations(),
+          0);
     }
     EXPECT_GE(integrator->get_num_substep_failures(), 0);
     EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
@@ -794,7 +795,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, MiscAPIReuse) {
 // behavior from the initial state.
 TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
-    std::make_unique<analysis::test::RobertsonSystem<double>>();
+      std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
   // Create the integrator.
@@ -804,7 +805,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   integrator.set_maximum_step_size(1e-2);  // Maximum step to be attempted.
   integrator.set_throw_on_minimum_step_size_violation(false);
   integrator.set_fixed_step_mode(true);
-  integrator.set_reuse(true);    // The whole point of this.
+  integrator.set_reuse(true);  // The whole point of this.
 
   // Attempt to integrate the system. Our past experience indicates that this
   // system fails to converge from the initial state for this large step size.
@@ -839,7 +840,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
 // the iteration matrix on every Newton-Raphson iteration.
 TYPED_TEST_P(ImplicitIntegratorTest, FullNewton) {
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
-    std::make_unique<analysis::test::RobertsonSystem<double>>();
+      std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
   // Create the integrator.
@@ -855,7 +856,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, FullNewton) {
   }
   integrator.set_throw_on_minimum_step_size_violation(false);
   integrator.set_fixed_step_mode(true);
-  integrator.set_use_full_newton(true);    // The whole point of this test.
+  integrator.set_use_full_newton(true);  // The whole point of this test.
 
   // Attempt to integrate the system. Our past experience indicates that this
   // system fails to converge from the initial state for this large step size.
@@ -886,7 +887,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, FullNewton) {
   EXPECT_EQ(integrator.get_num_jacobian_evaluations(),
             integrator.get_num_newton_raphson_iterations());
 }
-
 
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
@@ -1064,7 +1064,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, LinearTest) {
     VectorX<double> state =
         linear_context->get_continuous_state().get_vector().CopyToVector();
     EXPECT_NEAR(state[0], linear.Evaluate(t_final),
-        std::numeric_limits<double>::epsilon());
+                std::numeric_limits<double>::epsilon());
 
     // Repeat this test, but using a final time that is below the working
     // minimum step size (thereby triggering the implicit integrator's
@@ -1079,8 +1079,8 @@ TYPED_TEST_P(ImplicitIntegratorTest, LinearTest) {
     integrator2.set_maximum_step_size(updated_t_final);
     integrator2.set_fixed_step_mode(true);
     integrator2.Initialize();
-    ASSERT_TRUE(integrator2.
-        IntegrateWithSingleFixedStepToTime(updated_t_final));
+    ASSERT_TRUE(
+        integrator2.IntegrateWithSingleFixedStepToTime(updated_t_final));
 
     const double updated_err_est =
         integrator2.get_error_estimate()->get_vector()[0];
@@ -1088,14 +1088,14 @@ TYPED_TEST_P(ImplicitIntegratorTest, LinearTest) {
     // Note the very tight tolerance used, which will likely not hold for
     // arbitrary values of C, t_final, or polynomial coefficients.
     EXPECT_NEAR(updated_err_est, 0.0,
-        2 * std::numeric_limits<double>::epsilon());
+                2 * std::numeric_limits<double>::epsilon());
 
     // Verify the solution too.
-    EXPECT_NEAR(
-        scaled_linear_context->get_continuous_state().get_vector().
-            CopyToVector()[0],
-        scaled_linear.Evaluate(updated_t_final),
-        10 * std::numeric_limits<double>::epsilon());
+    EXPECT_NEAR(scaled_linear_context->get_continuous_state()
+                    .get_vector()
+                    .CopyToVector()[0],
+                scaled_linear.Evaluate(updated_t_final),
+                10 * std::numeric_limits<double>::epsilon());
   }
 }
 
