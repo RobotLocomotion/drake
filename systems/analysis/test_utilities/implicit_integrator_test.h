@@ -100,7 +100,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
       EXPECT_NE(integrator.get_accuracy_in_use(),
                 integrator.get_target_accuracy());
     } else {
-      EXPECT_TRUE(std::isnan(integrator.get_accuracy_in_use()));
       EXPECT_TRUE(std::isnan(integrator.get_target_accuracy()));
     }
   }
