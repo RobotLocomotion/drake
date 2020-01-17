@@ -123,11 +123,11 @@ class ImplicitIntegratorTest : public ::testing::Test {
     double h = integrator.supports_error_estimation() ? large_h_ : h_;
 
     // Designate the solution tolerance. For reference, the true positions are
-    // about 0.4351 and 1.4351
+    // about 0.4351 and 1.4351.
     const double sol_tol_pos =
         integrator.supports_error_estimation() ? 2e-2 : 1e-1;
     // The velocity solution needs a looser tolerance in Radau1 and Implicit
-    // Euler. For reference, the true velocity is about -4.772
+    // Euler. For reference, the true velocity is about -4.772.
     const double sol_tol_vel =
         integrator.supports_error_estimation() ? 1e-1 : 9e-1;
 
