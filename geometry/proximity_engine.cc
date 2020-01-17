@@ -822,6 +822,31 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return surfaces;
   }
 
+  void ComputeContactSurfacesWithFallback(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackWithFallbackData<T> data{
+        hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
+                                      &hydroelastic_geometries_, surfaces},
+        point_pairs};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, hydroelastic::CallbackWithFallback<T>);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    // The FCL API requires the const cast even though it *appears* that no
+    // mutation takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, hydroelastic::CallbackWithFallback<T>);
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryId>& dynamic,
@@ -1241,6 +1266,15 @@ template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
   return impl_->ComputeContactSurfaces(X_WGs);
+}
+
+template <typename T>
+void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    std::vector<ContactSurface<T>>* surfaces,
+    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+  return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
+                                                   point_pairs);
 }
 
 template <typename T>
