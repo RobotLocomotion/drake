@@ -1,5 +1,5 @@
 /// @file
-/// Hopf coodinates parameters SO(3) locally as the Cartesian product of
+/// Hopf coodinates parameterizes SO(3) locally as the Cartesian product of a
 /// one-sphere and a two-sphere S¹ x S². Computationally, each rotation in the
 /// Hopf coordinates can be written as (θ, φ, ψ), in which ψ parameterizes the
 /// circle S¹ and has a range of 2π, and θ, φ represent the spherical
@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"

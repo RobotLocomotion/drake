@@ -87,11 +87,11 @@ void CheckUniformHopfCoordinate(
     }
   }
   for (const auto& hopf : hopf_coordinates) {
-    const int theta_idx = std::floor(hopf[0] / (M_PI / num_intervals));
-    const int phi_idx = std::floor(hopf[1] / (2 * M_PI / num_intervals));
-    const int psi_idx =
+    const int theta_index = std::floor(hopf[0] / (M_PI / num_intervals));
+    const int phi_index = std::floor(hopf[1] / (2 * M_PI / num_intervals));
+    const int psi_index =
         std::floor((hopf[2] + M_PI) / (2 * M_PI / num_intervals));
-    counts[theta_idx][phi_idx][psi_idx]++;
+    counts.at(theta_index).at(phi_index).at(psi_index)++;
   }
   const int N = static_cast<int>(hopf_coordinates.size());
 
