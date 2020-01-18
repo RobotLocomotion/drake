@@ -335,7 +335,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     kNotConverged,
   };
 
-  /// Checks a Newton-Raphson iteration process for convergence.
+  /// Checks a Newton-Raphson iteration process for convergence. The logic
+  /// is based on the description on p. 121 from
+  /// [Hairer, 1996] E. Hairer and G. Wanner. Solving Ordinary Differential
+  ///                Equations II (Stiff and Differential-Algebraic Problems).
+  ///                Springer, 1996.
   /// @param iteration the iteration index.
   /// @param xtplus the state x at the current iteration.
   /// @param dx the state change dx the difference between xtplus at the
