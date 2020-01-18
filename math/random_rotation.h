@@ -13,41 +13,40 @@
 namespace drake {
 namespace math {
 
-/// Generates a rotation (in the axis-angle representation) that rotates a
-/// point on the unit sphere to another point on the unit sphere with a uniform
-/// distribution over the sphere.
-///
-/// Justification for the algorithm can be found in, e.g.:
-/// Mervin E. Muller. 1959. A note on a method for generating points
-/// uniformly on n-dimensional spheres. Commun. ACM 2, 4 (April 1959), 19-20.
-/// DOI=http://dx.doi.org/10.1145/377939.377946
-template <typename T = double, class Generator = RandomGenerator>
-Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
-  DRAKE_DEMAND(generator != nullptr);
-  std::normal_distribution<T> normal;
-  std::uniform_real_distribution<T> uniform(-M_PI, M_PI);
-  const T angle = uniform(*generator);
-  const T x = normal(*generator);
-  const T y = normal(*generator);
-  const T z = normal(*generator);
-  Vector3<T> axis = Vector3<T>(x, y, z);
-  if (std::is_same<T, symbolic::Expression>::value) {
-    // Eigen's implementation of normalize has a conditional we skip here.
-    axis /= axis.norm();
-  } else {
-    axis.normalize();
-  }
-  return Eigen::AngleAxis<T>(angle, axis);
-}
-
 /// Generates a rotation (in the quaternion representation) that rotates a
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
+/// This method is briefly explained in
+/// http://planning.cs.uiuc.edu/node198.html, a full explanation can be found in
+/// K. Shoemake. Uniform Random Rotations in D. Kirk, editor, Graphics Gems III,
+/// pages 124-132. Academic, New York, 1992.
 template <typename T = double, class Generator = RandomGenerator>
 Eigen::Quaternion<T> UniformlyRandomQuaternion(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
-  const Eigen::AngleAxis<T> angle_axis = UniformlyRandomAngleAxis<T>(generator);
-  return Eigen::Quaternion<T>(angle_axis);
+  std::uniform_real_distribution<T> uniform(0., 1.);
+  const T u1 = uniform(*generator);
+  const T u2 = uniform(*generator);
+  const T u3 = uniform(*generator);
+  using std::sqrt;
+  const T sqrt_one_minus_u1 = sqrt(1. - u1);
+  const T sqrt_u1 = sqrt(u1);
+  using std::cos;
+  using std::sin;
+  return Eigen::Quaternion<T>(sqrt_one_minus_u1 * sin(2 * M_PI * u2),
+                              sqrt_one_minus_u1 * cos(2 * M_PI * u2),
+                              sqrt_u1 * sin(2 * M_PI * u3),
+                              sqrt_u1 * cos(2 * M_PI * u3));
+}
+
+/// Generates a rotation (in the axis-angle representation) that rotates a
+/// point on the unit sphere to another point on the unit sphere with a uniform
+/// distribution over the sphere.
+template <typename T = double, class Generator = RandomGenerator>
+Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
+  DRAKE_DEMAND(generator != nullptr);
+  const Eigen::Quaternion<T> quaternion =
+      UniformlyRandomQuaternion<T>(generator);
+  return internal::QuaternionToAngleAxisLikeEigen(quaternion);
 }
 
 /// Generates a rotation (in the rotation matrix representation) that rotates a
@@ -56,8 +55,9 @@ Eigen::Quaternion<T> UniformlyRandomQuaternion(Generator* generator) {
 template <typename T = double, class Generator = RandomGenerator>
 RotationMatrix<T> UniformlyRandomRotationMatrix(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
-  const Eigen::AngleAxis<T> angle_axis = UniformlyRandomAngleAxis<T>(generator);
-  return RotationMatrix<T>(angle_axis);
+  const Eigen::Quaternion<T> quaternion =
+      UniformlyRandomQuaternion<T>(generator);
+  return RotationMatrix<T>(quaternion);
 }
 
 /// Generates a rotation (in the roll-pitch-yaw representation) that rotates a

@@ -16,6 +16,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/rotation_matrix.h"
@@ -399,6 +400,49 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
        math::CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
   return is_approx_equal_abstol(w_from_quatDt, w_B, tolerance);
 }
+
+namespace internal {
+/**
+ * Given a unit-length quaternion, convert this quaternion to angle-axis
+ * representation. Note that we always choose the angle to be within [0, pi].
+ * This function is the same as Eigen::AngleAxis<T>(Eigen::Quaternion<T> z),
+ * but it works for T=symbolic::Expression.
+ * @note If you just want to use T=double, then call
+ * Eigen::AngleAxisd(Eigen::Quaterniond z). We add this function only to support
+ * templated function that allows T=symbolic::Expression.
+ * @param quaternion Must be a unit quaternion.
+ * @return angle_axis The angle-axis representation of the quaternion. Note
+ * that the angle is within [0, pi].
+ */
+template <typename T>
+Eigen::AngleAxis<T> QuaternionToAngleAxisLikeEigen(
+    const Eigen::Quaternion<T>& quaternion) {
+  Eigen::AngleAxis<T> result;
+  using std::atan2;
+  T sin_half_angle_abs = quaternion.vec().norm();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (sin_half_angle_abs < Eigen::NumTraits<T>::epsilon()) {
+      sin_half_angle_abs = quaternion.vec().stableNorm();
+    }
+  }
+  using std::abs;
+  result.angle() = T(2.) * atan2(sin_half_angle_abs, abs(quaternion.w()));
+  const Vector3<T> unit_axis(T(1.), T(0.), T(0.));
+  // We use if_then_else here (instead of if statement) because using "if"
+  // with symbolic expression causes runtime error in this case (The symbolic
+  // formula needs to evaluate with an empty symbolic Environment).
+  const boolean<T> is_sin_angle_zero = sin_half_angle_abs == T(0.);
+  const boolean<T> is_w_negative = quaternion.w() < T(0.);
+  const T axis_sign = if_then_else(is_w_negative, T(-1), T(1));
+  for (int i = 0; i < 3; ++i) {
+    result.axis()(i) =
+        if_then_else(is_sin_angle_zero, unit_axis(i),
+                     axis_sign * quaternion.vec()(i) / sin_half_angle_abs);
+  }
+
+  return result;
+}
+}  // namespace internal
 
 }  // namespace math
 }  // namespace drake
