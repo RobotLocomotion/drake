@@ -494,13 +494,16 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Compute the update.
     ComputeSolutionFromIterate(xt0, Z_, &(*xtplus));
 
-    // Check for convergence.
+    // Check for Newton-Raphson convergence.
     typename ImplicitIntegrator<T>::ConvergenceStatus status =
         this->CheckNewtonConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
+    // If it converged, we're done.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
-      return true;  // We win.
+      return true;
+    // If it diverged, we have to abort and try again.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
-      break;  // Try something else.
+      break;
+    // Otherwise, continue to the next Newton-Raphson iteration.
     DRAKE_DEMAND(status ==
                  ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
 
@@ -661,13 +664,16 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
 
-    // Check for convergence.
+    // Check for Newton-Raphson convergence.
     typename ImplicitIntegrator<T>::ConvergenceStatus status =
         this->CheckNewtonConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
+    // If it converged, we're done.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
-      return true;  // We win.
+      return true;
+    // If it diverged, we have to abort and try again.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
-      break;  // Try something else.
+      break;
+    // Otherwise, continue to the next Newton-Raphson iteration.
     DRAKE_DEMAND(status ==
                  ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
 

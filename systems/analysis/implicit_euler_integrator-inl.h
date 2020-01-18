@@ -204,13 +204,16 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
 
-    // Check for convergence.
+    // Check for Newton-Raphson convergence.
     typename ImplicitIntegrator<T>::ConvergenceStatus status =
         this->CheckNewtonConvergence(i, *xtplus, dx, dx_norm, last_dx_norm);
+    // If it converged, we're done.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
-      return true;  // We win.
+      return true;
+    // If it diverged, we have to abort and try again.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
-      break;  // Try something else.
+      break;
+    // Otherwise, continue to the next Newton-Raphson iteration.
     DRAKE_DEMAND(status ==
                  ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
 
