@@ -705,9 +705,11 @@ ImplicitIntegrator<T>::CheckNewtonConvergence(
   }
 
   // Compute the convergence rate and check convergence.
-  // [Hairer, 1996] notes that this convergence strategy should only be
-  // applied after *at least* two iterations (p. 121).
-  if (iteration >= 1) {
+  // [Hairer, 1996] notes that this convergence strategy should only be applied
+  // after *at least* two iterations (p. 121). In practice, we find that it
+  // needs to run at least three iterations otherwise some error-controlled runs
+  // may choke, hence we check if iteration > 1.
+  if (iteration > 1) {
     // TODO(edrumwri) Hairer's RADAU5 implementation (allegedly) uses
     // theta = sqrt(dx[k] / dx[k-2]) while DASSL uses
     // theta = pow(dx[k] / dx[0], 1/k), so investigate setting
