@@ -52,8 +52,7 @@ int DoMain() {
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
-      &builder, acrobot->get_output_port(0),
-      AcrobotParams<double>(), scene_graph);
+      &builder, acrobot->get_output_port(0), scene_graph);
   ConnectDrakeVisualizer(&builder, *scene_graph, lcm);
 
   // Creates command receiver and subscriber.

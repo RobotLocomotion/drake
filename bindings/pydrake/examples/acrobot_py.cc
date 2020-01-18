@@ -136,13 +136,26 @@ PYBIND11_MODULE(acrobot, m) {
 
   py::class_<AcrobotGeometry, LeafSystem<double>>(
       m, "AcrobotGeometry", doc.AcrobotGeometry.doc)
-      .def_static("AddToBuilder", &AcrobotGeometry::AddToBuilder,
+      .def_static("AddToBuilder",
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const systems::OutputPort<double>&, const AcrobotParams<double>&,
+              geometry::SceneGraph<double>*>(&AcrobotGeometry::AddToBuilder),
           py::arg("builder"), py::arg("acrobot_state_port"),
           py::arg("acrobot_params"), py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(),
           // See #11531 for why `py_reference` is needed.
-          py_reference, doc.AcrobotGeometry.AddToBuilder.doc);
+          py_reference, doc.AcrobotGeometry.AddToBuilder.doc_4args)
+      .def_static("AddToBuilder",
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const systems::OutputPort<double>&,
+              geometry::SceneGraph<double>*>(&AcrobotGeometry::AddToBuilder),
+          py::arg("builder"), py::arg("acrobot_state_port"),
+          py::arg("scene_graph"),
+          // Keep alive, ownership: `return` keeps `builder` alive.
+          py::keep_alive<0, 1>(),
+          // See #11531 for why `py_reference` is needed.
+          py_reference, doc.AcrobotGeometry.AddToBuilder.doc_3args);
 }
 
 }  // namespace pydrake

@@ -82,8 +82,7 @@ int do_main() {
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
-      &builder, state_source->get_output_port(),
-      AcrobotParams<double>(), scene_graph);
+      &builder, state_source->get_output_port(), scene_graph);
   ConnectDrakeVisualizer(&builder, *scene_graph);
 
   auto diagram = builder.Build();
