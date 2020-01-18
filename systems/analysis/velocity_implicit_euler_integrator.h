@@ -38,21 +38,21 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *
  * This integrator requires a system of ordinary differential equations in
  * state `x = (q,v,z)` to be expressible in the following form:
- * 
+ *
  *     q̇ = N(q) v;                           (1)
  *     ẏ = fᵥ(t,q,y),                        (2)
  * where `q̇` and `v` are linearly related via the matrix `N(q)`, `y = (v,z)`,
  * and `fᵥ` is a function that can depend on the time and state.
  *
  * Implicit Euler uses the following update rule at time step n:
- * 
+ *
  *     qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;           (3)
  *     yⁿ⁺¹ = yⁿ + h f(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).      (4)
  *
  * To solve the nonlinear system, the velocity-implicit Euler integrator
  * iteratively solves for `(qⁿ⁺¹,yⁿ⁺¹)` with Newton's method: At iteration `k`,
  * it finds `(qₖ₊₁,yₖ₊₁)` that satisfies
- * 
+ *
  *     yₖ₊₁ = yⁿ + h f(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);      (5)
  *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.             (6)
  *
@@ -60,12 +60,12 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  * specific Newton-Raphson iterations within each time step.
  *
  * To solve (5-6), first define
- * 
+ *
  *     l(y) = f(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),      (7)
  *     Jₗ(y) = ∂l(y) / ∂y.                   (8)
  *
  * Next, it solves the following linear equation for `Δy`:
- * 
+ *
  *     (I - h Jₗ) Δy = - R(yₖ),              (9)
  * where `R(y) = y - yⁿ - h l(y)` and `Δy = yₖ₊₁ - yₖ`. It then directly uses
  * `yₖ₊₁` in (6) to get `qₖ₊₁`.
