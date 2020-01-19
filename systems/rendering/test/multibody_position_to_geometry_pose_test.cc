@@ -56,6 +56,8 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, Ownership) {
   mbp->Finalize();
 
   const MultibodyPositionToGeometryPose<double> dut(move(mbp));
+  EXPECT_EQ(dut.get_input_port().size(),
+            dut.multibody_plant().num_positions());
 
   EXPECT_EQ(&dut.multibody_plant(), raw_ptr);
   EXPECT_TRUE(dut.owns_plant());
@@ -92,6 +94,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
 
   const MultibodyPositionToGeometryPose<double> dut(mbp);
   EXPECT_FALSE(dut.owns_plant());
+  EXPECT_EQ(dut.get_input_port().size(), mbp.num_positions());
 
   EXPECT_EQ(dut.get_input_port().get_index(), 0);
   EXPECT_EQ(dut.get_output_port().get_index(), 0);
@@ -115,6 +118,49 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
     EXPECT_TRUE(output.has_id(id.value()));
   }
   EXPECT_EQ(output.size(), mbp.num_bodies() - 1);
+}
+
+// Confirm that we can pass in the larger state vector and it does not
+// affect our results.
+GTEST_TEST(MultibodyPositionToGeometryPoseTest, FullStateInput) {
+  auto mbp = make_unique<MultibodyPlant<double>>(0.0);
+  SceneGraph<double> scene_graph;
+  mbp->RegisterAsSourceForSceneGraph(&scene_graph);
+  Parser(mbp.get()).AddModelFromFile(
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
+                          "/iiwa7_no_collision.sdf"));
+  mbp->Finalize();
+
+  const Eigen::VectorXd state =
+      Eigen::VectorXd::LinSpaced(mbp->num_multibody_states(), 0.123, 0.456);
+
+  const MultibodyPositionToGeometryPose<double> position_sys(*mbp, false);
+  EXPECT_EQ(position_sys.get_input_port().size(), mbp->num_positions());
+  auto position_context = position_sys.CreateDefaultContext();
+  position_sys.get_input_port().FixValue(position_context.get(),
+                                         state.head(mbp->num_positions()));
+  const auto& position_output =
+      position_sys.get_output_port().Eval<geometry::FramePoseVector<double>>(
+          *position_context);
+
+  const MultibodyPositionToGeometryPose<double> state_sys(*mbp, true);
+  EXPECT_EQ(state_sys.get_input_port().size(), mbp->num_multibody_states());
+  auto state_context = state_sys.CreateDefaultContext();
+  state_sys.get_input_port().FixValue(state_context.get(), state);
+  const auto& state_output =
+      state_sys.get_output_port().Eval<geometry::FramePoseVector<double>>(
+          *state_context);
+
+  EXPECT_EQ(position_output.size(), state_output.size());
+  for (const auto& id : position_output.frame_ids()) {
+    EXPECT_TRUE(
+        position_output.value(id).IsExactlyEqualTo(state_output.value(id)));
+  }
+
+  // Test the ownership constructor also has the right size.
+  const MultibodyPositionToGeometryPose<double> owned_sys(move(mbp), true);
+  EXPECT_EQ(owned_sys.get_input_port().size(),
+            owned_sys.multibody_plant().num_multibody_states());
 }
 
 }  // namespace
