@@ -41,18 +41,27 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
    * reference to the MultibodyPlant object so you must ensure that @p plant
    * has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
    *
+   * @param input_includes_velocity If true, the vector input port will be the
+   * size of the `plant` *state* vector.  If false, it will be the size
+   * of the `plant` *position* vector.  @default: false.
+   *
    * @throws if `plant` is not finalized and registered with a SceneGraph.
    */
-  explicit MultibodyPositionToGeometryPose(
-      const multibody::MultibodyPlant<T>& plant);
+  MultibodyPositionToGeometryPose(const multibody::MultibodyPlant<T>& plant,
+                                  bool input_includes_velocity = false);
 
   /**
    * The %MultibodyPositionToGeometryPose owns its internal plant.
    *
+   * @param input_includes_velocity If true, the vector input port will be the
+   * size of the `plant` *state* vector.  If false, it will be the size
+   * of the `plant` *position* vector.  @default: false.
+   *
    * @throws if `owned_plant` is not finalized and registered with a SceneGraph.
    */
-  explicit MultibodyPositionToGeometryPose(
-      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant);
+  MultibodyPositionToGeometryPose(
+      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+      bool input_includes_velocity = false);
 
   ~MultibodyPositionToGeometryPose() override = default;
 
@@ -74,7 +83,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
  private:
   // Configure the input/output ports and prepare for calculation.
   // @pre plant_ must reference a valid MBP.
-  void Configure();
+  void Configure(bool input_includes_velocity);
 
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 

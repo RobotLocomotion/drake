@@ -12,9 +12,9 @@ namespace rendering {
 
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
-    const multibody::MultibodyPlant<T>& plant)
+    const multibody::MultibodyPlant<T>& plant, bool input_includes_velocity)
     : plant_(plant) {
-  Configure();
+  Configure(input_includes_velocity);
 }
 
 // Note: This constructor is not *obviously* correct. Compare it with this code:
@@ -28,14 +28,16 @@ MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
 // https://en.cppreference.com/w/cpp/language/initializer_list#Initialization_order
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
-    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant)
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+    bool input_includes_velocity)
     : plant_(*owned_plant), owned_plant_(std::move(owned_plant)) {
   DRAKE_DEMAND(owned_plant_ != nullptr);
-  Configure();
+  Configure(input_includes_velocity);
 }
 
 template <typename T>
-void MultibodyPositionToGeometryPose<T>::Configure() {
+void MultibodyPositionToGeometryPose<T>::Configure(
+    bool input_includes_velocity) {
   // Either we don't own the plant, or we own the plant we're storing the
   // reference for.
   DRAKE_DEMAND(owned_plant_ == nullptr || owned_plant_.get() == &plant_);
@@ -51,7 +53,9 @@ void MultibodyPositionToGeometryPose<T>::Configure() {
   }
   plant_context_ = plant_.CreateDefaultContext();
 
-  this->DeclareInputPort("position", kVectorValued, plant_.num_positions());
+  this->DeclareInputPort("position", kVectorValued,
+                         input_includes_velocity ? plant_.num_multibody_states()
+                                                 : plant_.num_positions());
   this->DeclareAbstractOutputPort(
       "geometry_pose",
       [this]() {
