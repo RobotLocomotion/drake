@@ -12,9 +12,9 @@ namespace rendering {
 
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
-    const multibody::MultibodyPlant<T>& plant)
+    const multibody::MultibodyPlant<T>& plant, bool input_multibody_state)
     : plant_(plant) {
-  Configure();
+  Configure(input_multibody_state);
 }
 
 // Note: This constructor is not *obviously* correct. Compare it with this code:
@@ -28,14 +28,16 @@ MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
 // https://en.cppreference.com/w/cpp/language/initializer_list#Initialization_order
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
-    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant)
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+    bool input_multibody_state)
     : plant_(*owned_plant), owned_plant_(std::move(owned_plant)) {
   DRAKE_DEMAND(owned_plant_ != nullptr);
-  Configure();
+  Configure(input_multibody_state);
 }
 
 template <typename T>
-void MultibodyPositionToGeometryPose<T>::Configure() {
+void MultibodyPositionToGeometryPose<T>::Configure(
+    bool input_multibody_state) {
   // Either we don't own the plant, or we own the plant we're storing the
   // reference for.
   DRAKE_DEMAND(owned_plant_ == nullptr || owned_plant_.get() == &plant_);
@@ -51,7 +53,9 @@ void MultibodyPositionToGeometryPose<T>::Configure() {
   }
   plant_context_ = plant_.CreateDefaultContext();
 
-  this->DeclareInputPort("position", kVectorValued, plant_.num_positions());
+  this->DeclareInputPort("position", kVectorValued,
+                         input_multibody_state ? plant_.num_multibody_states()
+                                          : plant_.num_positions());
   this->DeclareAbstractOutputPort(
       "geometry_pose",
       [this]() {
@@ -74,7 +78,7 @@ void MultibodyPositionToGeometryPose<T>::CalcGeometryPose(
   // TODO(eric.cousineau): Place `plant_context_` in the cache of `context`,
   // and remove mutable member.
   plant_.GetMutablePositions(plant_context_.get()) =
-      get_input_port().Eval(context);
+      get_input_port().Eval(context).head(plant_.num_positions());
 
   // Evaluate the plant's output port.
   plant_.get_geometry_poses_output_port().Calc(*plant_context_, output);

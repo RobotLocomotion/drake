@@ -19,8 +19,11 @@ namespace rendering {
  *          @output_port{geometry_pose}
  * }
  *
- * The position input must be a vector whose length matches the number of
- * positions in the MultibodyPlant.
+ * The position input must be a vector whose length matches either the
+ * number of positions in the MultibodyPlant or the number of states (based
+ * on the optional argument in the constructor).  This option to pass the full
+ * state vector is provided only for convenience -- only the position values
+ * will affect the outputs.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
@@ -29,7 +32,6 @@ namespace rendering {
  * - double
  *
  * @ingroup visualization
- * }
  */
 template <typename T>
 class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
@@ -41,18 +43,30 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
    * reference to the MultibodyPlant object so you must ensure that @p plant
    * has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
    *
+   * @param input_multibody_state If true, the vector input port will be the
+   * size of the `plant` *state* vector.  If false, it will be the size
+   * of the `plant` *position* vector.  In both cases, only the
+   * positions will affect the output.  @default false.
+   *
    * @throws if `plant` is not finalized and registered with a SceneGraph.
    */
   explicit MultibodyPositionToGeometryPose(
-      const multibody::MultibodyPlant<T>& plant);
+      const multibody::MultibodyPlant<T>& plant,
+      bool input_multibody_state = false);
 
   /**
    * The %MultibodyPositionToGeometryPose owns its internal plant.
    *
+   * @param input_multibody_state If true, the vector input port will be the
+   * size of the `plant` *state* vector.  If false, it will be the size
+   * of the `plant` *position* vector.  In both cases, only the
+   * positions will affect the output.  @default: false.
+   *
    * @throws if `owned_plant` is not finalized and registered with a SceneGraph.
    */
   explicit MultibodyPositionToGeometryPose(
-      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant);
+      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+      bool input_multibody_state = false);
 
   ~MultibodyPositionToGeometryPose() override = default;
 
@@ -74,7 +88,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
  private:
   // Configure the input/output ports and prepare for calculation.
   // @pre plant_ must reference a valid MBP.
-  void Configure();
+  void Configure(bool input_multibody_state);
 
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 
