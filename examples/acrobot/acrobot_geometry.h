@@ -27,6 +27,9 @@ class AcrobotGeometry final : public systems::LeafSystem<double> {
   /// `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
   /// systems must have been added to the given `builder` already.
   ///
+  /// @param acrobot_params sets the parameters of the geometry registered
+  /// with `scene_graph`.
+  ///
   /// The `scene_graph` pointer is not retained by the %AcrobotGeometry
   /// system.  The return value pointer is an alias of the new
   /// %AcrobotGeometry system that is owned by the `builder`.
@@ -35,6 +38,23 @@ class AcrobotGeometry final : public systems::LeafSystem<double> {
       const systems::OutputPort<double>& acrobot_state_port,
       const AcrobotParams<double>& acrobot_params,
       geometry::SceneGraph<double>* scene_graph);
+
+  /// Creates, adds, and connects an AcrobotGeometry system into the given
+  /// `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
+  /// systems must have been added to the given `builder` already.
+  ///
+  /// Acrobot parameters are set to their default values.
+  ///
+  /// The `scene_graph` pointer is not retained by the %AcrobotGeometry
+  /// system.  The return value pointer is an alias of the new
+  /// %AcrobotGeometry system that is owned by the `builder`.
+  static const AcrobotGeometry* AddToBuilder(
+      systems::DiagramBuilder<double>* builder,
+      const systems::OutputPort<double>& acrobot_state_port,
+      geometry::SceneGraph<double>* scene_graph) {
+    return AddToBuilder(builder, acrobot_state_port, AcrobotParams<double>(),
+                        scene_graph);
+  }
 
  private:
   AcrobotGeometry(const AcrobotParams<double>& acrobot_params,
