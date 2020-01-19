@@ -1179,39 +1179,18 @@ void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
 }
 
-void MathematicalProgram::SetVariableScaling(double s, int idx_start,
-                                             int idx_end) {
+void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
+                                             double s) {
   DRAKE_DEMAND(0 < s);
-  DRAKE_DEMAND(0 <= idx_start);
-  DRAKE_DEMAND(idx_start <= idx_end);
-  DRAKE_DEMAND(idx_end < num_vars());
-
-  for (int i = idx_start; i <= idx_end; i++) {
-    if (var_scaling_map_.find(i) != var_scaling_map_.end()) {
-      // Update the scaling factor
-      var_scaling_map_[i] = s;
-    } else {
-      // Add a new scaling factor
-      var_scaling_map_.insert(std::pair<int, double>(i, s));
-    }
+  int idx = FindDecisionVariableIndex(var);
+  if (var_scaling_map_.find(idx) != var_scaling_map_.end()) {
+    // Update the scaling factor
+    var_scaling_map_[idx] = s;
+  } else {
+    // Add a new scaling factor
+    var_scaling_map_.insert(std::pair<int, double>(idx, s));
   }
 }
-
-bool MathematicalProgram::IsVariableScalingUnset(int idx_start, int idx_end) {
-  DRAKE_DEMAND(0 <= idx_start);
-  DRAKE_DEMAND(idx_start <= idx_end);
-  DRAKE_DEMAND(idx_end < num_vars());
-
-  bool is_unset = true;
-  for (int i = idx_start; i <= idx_end; i++) {
-    if (var_scaling_map_.find(i) != var_scaling_map_.end()) {
-      is_unset = false;
-      break;
-    }
-  }
-  return is_unset;
-}
-
 
 }  // namespace solvers
 }  // namespace drake

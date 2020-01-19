@@ -2771,24 +2771,12 @@ class MathematicalProgram {
   /**
    * Setter for the scaling of decision variables starting from index @p
    * idx_start to @p idx_end (including @p idx_end).
+   * @param var the decision variable to be scaled.
    * @param s scaling factor (must be positive).
-   * @param idx_start index of the start of the decision variables.
-   * @param idx_end index of the end of the decision variables.
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
-  void SetVariableScaling(double s, int idx_start, int idx_end);
-
-  /**
-   * Check whether the scaling of decision variables starting from index @p
-   * idx_start to @p idx_end (including @p idx_end) is set or not .
-   * @param idx_start index of the start of the decision variables.
-   * @param idx_end index of the end of the decision variables.
-   * @return true if all corresponding scaling factors are not set yet.
-   *
-   * See @ref variable_scaling "Variable scaling" for more information.
-   */
-  bool IsVariableScalingUnset(int idx_start, int idx_end);
+  void SetVariableScaling(const symbolic::Variable& var, double s);
   //@}
 
  private:
