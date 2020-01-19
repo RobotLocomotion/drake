@@ -2934,20 +2934,19 @@ GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.GetVariableScaling().size(), 0);
 
-  prog.NewContinuousVariables<4>("x");
+  auto x = prog.NewContinuousVariables<4>();
 
-  EXPECT_TRUE(prog.IsVariableScalingUnset(0, 3));
-  prog.SetVariableScaling(1.3, 3, 3);
-  prog.SetVariableScaling(1.15, 1, 2);
-  prog.SetVariableScaling(1.0, 0, 0);
+  prog.SetVariableScaling(x(0), 1.0);
+  prog.SetVariableScaling(x(1), 1.15);
+  prog.SetVariableScaling(x(2), 1.15);
+  prog.SetVariableScaling(x(3), 1.3);
   EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
   EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(3), 1.3);
   EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 
-  EXPECT_FALSE(prog.IsVariableScalingUnset(3, 3));
-  prog.SetVariableScaling(3.0, 3, 3);
+  prog.SetVariableScaling(x(3), 3.0);
   EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
   EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
   EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);

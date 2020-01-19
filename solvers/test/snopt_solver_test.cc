@@ -388,8 +388,8 @@ GTEST_TEST(SnoptTest, VariableScaling1) {
   prog.AddLinearConstraint(x(1) >= -0.0001);
   prog.AddLinearCost(Eigen::Vector2d(1, 1), x);
 
-  prog.SetVariableScaling(1000000000000, 0, 0);
-  prog.SetVariableScaling(0.0001, 1, 1);
+  prog.SetVariableScaling(x(0), 1000000000000);
+  prog.SetVariableScaling(x(1), 0.0001);
 
   SnoptSolver solver;
   if (solver.available()) {
@@ -416,7 +416,7 @@ GTEST_TEST(SnoptTest, VariableScaling2) {
   prog.AddQuadraticCost((x(0) / s + 2) * (x(0) / s + 2));
   prog.AddQuadraticCost((x(1) + 2) * (x(1) + 2));
 
-  prog.SetVariableScaling(s, 0, 0);
+  prog.SetVariableScaling(x(0), s);
 
   SnoptSolver solver;
   if (solver.available()) {
