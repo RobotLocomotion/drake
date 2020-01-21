@@ -86,6 +86,35 @@ of `continuous <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_,
 `weekly <https://drake-jenkins.csail.mit.edu/view/Weekly/>`_ builds,
 but you should not schedule continuous, nightly, or weekly builds directly.
 
+.. _update-install-prereqs:
+
+Updating Installation Prerequisites
+-----------------------------------
+
+Installation prerequisites are packages that are not pulled in Bazel, but
+instead installed on the OS itself using a package manager like ``apt``,
+Homebrew, or ``pip`` (only on Mac). They are installed via the scripts under
+``setup/``, and are split between ``binary_distribution`` (dependencies that
+are necessary for :ref:`binary installation <binary-installation>`) and
+``source_distribution`` (dependencies, in addition to those in
+``binary_distribution``, necessary for
+:ref:`source installation <build_from_source>`). Since
+``source_distribution`` will also install prerequisites in
+``binary_distribution``, you do not need to duplicate binary prerequisites in
+``source_distribution``.
+
+When updating prerequisites with these scripts, the normal experimental CI will
+most likely fail. To test new prerequisites, you should first request
+unprovisioned experimental builds, e.g.:
+
+* ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-mojave-unprovisioned-clang-bazel-experimental-release please``
+
+After this has passed, go through normal review. Once normal review is done,
+add ``@jamiesnape`` for review and request that the provisioned instances be
+updated. He will then respond on when it is appropriate to merge the PR.
+
 .. _building-binary-packages-on-demand:
 
 Building Binary Packages on Demand
