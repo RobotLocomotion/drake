@@ -2929,6 +2929,31 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   DRAKE_EXPECT_NO_THROW(prog.AddEqualityConstraintBetweenPolynomials(
       p1, symbolic::Polynomial(b * x, {x})));
 }
+
+GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.GetVariableScaling().size(), 0);
+
+  auto x = prog.NewContinuousVariables<4>();
+
+  prog.SetVariableScaling(x(0), 1.0);
+  prog.SetVariableScaling(x(1), 1.15);
+  prog.SetVariableScaling(x(2), 1.15);
+  prog.SetVariableScaling(x(3), 1.3);
+  EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
+  EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
+  EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
+  EXPECT_EQ(prog.GetVariableScaling().at(3), 1.3);
+  EXPECT_EQ(prog.GetVariableScaling().size(), 4);
+
+  prog.SetVariableScaling(x(3), 3.0);
+  EXPECT_EQ(prog.GetVariableScaling().at(0), 1.0);
+  EXPECT_EQ(prog.GetVariableScaling().at(1), 1.15);
+  EXPECT_EQ(prog.GetVariableScaling().at(2), 1.15);
+  EXPECT_EQ(prog.GetVariableScaling().at(3), 3.0);
+  EXPECT_EQ(prog.GetVariableScaling().size(), 4);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

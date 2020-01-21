@@ -348,6 +348,11 @@ void SolveProgramThroughTwoSlackVariablesApproach(
 void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          const Eigen::VectorXd&, const SolverOptions&,
                          MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+        "CsdpSolver doesn't support the feature of variable scaling.");
+  }
+
   result->set_solver_id(CsdpSolver::id());
   const SdpaFreeFormat sdpa_free_format(prog);
   if (sdpa_free_format.num_free_variables() == 0) {

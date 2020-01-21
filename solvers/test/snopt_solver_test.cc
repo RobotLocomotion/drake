@@ -380,6 +380,55 @@ GTEST_TEST(SnoptTest, AutoDiffOnlyCost) {
   }
 }
 
+GTEST_TEST(SnoptTest, VariableScaling1) {
+  // Linear cost and bounding box constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) >= -1000000000000);
+  prog.AddLinearConstraint(x(1) >= -0.0001);
+  prog.AddLinearCost(Eigen::Vector2d(1, 1), x);
+
+  prog.SetVariableScaling(x(0), 1000000000000);
+  prog.SetVariableScaling(x(1), 0.0001);
+
+  SnoptSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
+    const double tol = 1E-6;
+    EXPECT_NEAR(result.get_optimal_cost(), -1000000000000.0001, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                                Eigen::Vector2d(-1000000000000, -0.0001), tol));
+  }
+}
+
+GTEST_TEST(SnoptTest, VariableScaling2) {
+  // Quadractic cost, linear and quadratic constraints
+  double s = 100;
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(4 * x(0) / s - 3 * x(1) >= 0);
+  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+  Q(0, 0) /= (s * s);
+  prog.AddConstraint(std::make_shared<QuadraticConstraint>(
+                         2 * Q, Eigen::Vector2d::Zero(), 25, 25),
+                     x);
+  prog.AddQuadraticCost((x(0) / s + 2) * (x(0) / s + 2));
+  prog.AddQuadraticCost((x(1) + 2) * (x(1) + 2));
+
+  prog.SetVariableScaling(x(0), s);
+
+  SnoptSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog, Eigen::Vector2d(1 * s, -1), {});
+    EXPECT_TRUE(result.is_success());
+    const double tol = 1E-6;
+    EXPECT_NEAR(result.get_optimal_cost(), 5, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                                Eigen::Vector2d(-3 * s, -4), tol));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

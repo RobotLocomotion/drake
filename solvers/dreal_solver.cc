@@ -13,6 +13,7 @@
 
 #include "dreal/api/api.h"
 
+#include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -532,6 +533,11 @@ void DrealSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "DrealSolver doesn't support the feature of variable scaling.");
+  }
+
   unused(initial_guess);
 
   // 1. Extracts the constraints from @p prog and constructs an equivalent

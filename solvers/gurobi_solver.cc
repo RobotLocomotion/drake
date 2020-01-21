@@ -686,6 +686,11 @@ void GurobiSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "GurobiSolver doesn't support the feature of variable scaling.");
+  }
+
   if (!license_) {
     license_ = AcquireLicense();
   }

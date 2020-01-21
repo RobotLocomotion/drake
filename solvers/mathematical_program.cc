@@ -1179,5 +1179,18 @@ void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
 }
 
+void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
+                                             double s) {
+  DRAKE_DEMAND(0 < s);
+  int idx = FindDecisionVariableIndex(var);
+  if (var_scaling_map_.find(idx) != var_scaling_map_.end()) {
+    // Update the scaling factor
+    var_scaling_map_[idx] = s;
+  } else {
+    // Add a new scaling factor
+    var_scaling_map_.insert(std::pair<int, double>(idx, s));
+  }
+}
+
 }  // namespace solvers
 }  // namespace drake
