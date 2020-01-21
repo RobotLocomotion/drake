@@ -1258,8 +1258,8 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
                           const SolverOptions& merged_options,
                           MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("The feature of decision variable scaling is only "
-      "supported in SNOPT solve currently");
+    drake::log()->warn("MosekSolver doesn't support the feature of variable "
+      "scaling.");
   }
 
   // num_decision_vars is the total number of decision variables in @p prog. It

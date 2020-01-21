@@ -614,8 +614,8 @@ void ScsSolver::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("The feature of decision variable scaling is only "
-      "supported in SNOPT solve currently");
+    drake::log()->warn("ScsSolver doesn't support the feature of variable "
+      "scaling.");
   }
 
   // TODO(hongkai.dai): allow warm starting SCS with initial guess on

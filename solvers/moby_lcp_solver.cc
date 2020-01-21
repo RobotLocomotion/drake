@@ -168,8 +168,8 @@ void MobyLCPSolver<T>::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("The feature of decision variable scaling is only "
-      "supported in SNOPT solve currently");
+    drake::log()->warn("MobyLCPSolver doesn't support the feature of variable "
+      "scaling.");
   }
 
   // Moby doesn't use initial guess or the solver options.

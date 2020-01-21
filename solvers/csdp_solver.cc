@@ -349,8 +349,8 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          const Eigen::VectorXd&, const SolverOptions&,
                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("The feature of decision variable scaling is only "
-      "supported in SNOPT solve currently");
+    drake::log()->warn("CsdpSolver doesn't support the feature of variable "
+      "scaling.");
   }
 
   result->set_solver_id(CsdpSolver::id());
