@@ -169,6 +169,7 @@ drake_cc_library(
     hdrs = ["proximity_properties.h"],
     deps = [
         ":geometry_roles",
+        "//multibody/plant:coulomb_friction",
     ],
 )
 
@@ -368,6 +369,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_roles",
         ":proximity_properties",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

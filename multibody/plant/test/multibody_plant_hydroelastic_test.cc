@@ -43,7 +43,8 @@ class HydroelasticModelTests : public ::testing::Test {
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
     AddGround(kFrictionCoefficient_, plant_);
-    body_ = &AddObject(plant_, kSphereRadius_, kFrictionCoefficient_);
+    body_ = &AddObject(plant_, kSphereRadius_, kElasticModulus_, kDissipation_,
+                       kFrictionCoefficient_);
 
     // The default contact model today is point contact.
     EXPECT_EQ(plant_->get_contact_model(), ContactModel::kPointContactOnly);
@@ -71,9 +72,10 @@ class HydroelasticModelTests : public ::testing::Test {
                                   "GroundVisualGeometry", green);
     geometry::ProximityProperties props;
     geometry::AddRigidHydroelasticProperties(kSize, &props);
-    props.AddProperty(
-        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
-        CoulombFriction<double>(friction_coefficient, friction_coefficient));
+    geometry::AddContactMaterial(
+        {}, {},
+        CoulombFriction<double>(friction_coefficient, friction_coefficient),
+        &props);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG, ground,
                                      "GroundCollisionGeometry",
                                      std::move(props));
@@ -81,6 +83,8 @@ class HydroelasticModelTests : public ::testing::Test {
 
   const RigidBody<double>& AddObject(MultibodyPlant<double>* plant,
                                      double radius,
+                                     double elastic_modulus,
+                                     double dissipation,
                                      double friction_coefficient) {
     // Inertial properties are only needed when verifying accelerations since
     // hydro forces are only a function of state.
@@ -102,13 +106,10 @@ class HydroelasticModelTests : public ::testing::Test {
     geometry::ProximityProperties props;
     // This should produce a level-2 refinement (two steps beyond octohedron).
     geometry::AddSoftHydroelasticProperties(radius / 2, &props);
-    props.AddProperty(
-        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
-        CoulombFriction<double>(friction_coefficient, friction_coefficient));
-    props.AddProperty(geometry::internal::kMaterialGroup,
-                      geometry::internal::kElastic, kElasticModulus_);
-    props.AddProperty(geometry::internal::kMaterialGroup,
-                      geometry::internal::kHcDissipation, kDissipation_);
+    geometry::AddContactMaterial(
+        elastic_modulus, dissipation,
+        CoulombFriction<double>(friction_coefficient, friction_coefficient),
+        &props);
     plant->RegisterCollisionGeometry(
         body, X_BG, shape, "BodyCollisionGeometry", std::move(props));
     return body;

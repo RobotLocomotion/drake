@@ -34,8 +34,6 @@ using std::vector;
 ProximityProperties rigid_properties() {
   ProximityProperties props;
   const double chararacteristic_length = 0.1;
-  props.AddProperty(kMaterialGroup, kElastic,
-                    std::numeric_limits<double>::infinity());
   AddRigidHydroelasticProperties(chararacteristic_length, &props);
   return props;
 }
@@ -44,7 +42,7 @@ ProximityProperties rigid_properties() {
 // for supported geometries.
 ProximityProperties soft_properties() {
   ProximityProperties props;
-  props.AddProperty(kMaterialGroup, kElastic, 1e8);
+  AddContactMaterial(1e8, {}, {}, &props);
   const double chararacteristic_length = 0.25;
   AddSoftHydroelasticProperties(chararacteristic_length, &props);
   return props;
