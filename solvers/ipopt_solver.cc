@@ -654,8 +654,8 @@ void IpoptSolver::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("IpoptSolver doesn't support the feature of variable "
-      "scaling.");
+    static const logging::Warn log_once(
+      "IpoptSolver doesn't support the feature of variable scaling.");
   }
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();

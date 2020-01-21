@@ -342,8 +342,8 @@ void NloptSolver::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("NloptSolver doesn't support the feature of variable "
-      "scaling.");
+    static const logging::Warn log_once(
+      "NloptSolver doesn't support the feature of variable scaling.");
   }
 
   const int nx = prog.num_vars();

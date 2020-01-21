@@ -168,8 +168,8 @@ void MobyLCPSolver<T>::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("MobyLCPSolver doesn't support the feature of variable "
-      "scaling.");
+    static const logging::Warn log_once(
+      "MobyLCPSolver doesn't support the feature of variable scaling.");
   }
 
   // Moby doesn't use initial guess or the solver options.

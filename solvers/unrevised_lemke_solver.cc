@@ -93,8 +93,8 @@ void UnrevisedLemkeSolver<T>::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("UnrevisedLemkeSolver doesn't support the feature of "
-      "variable scaling.");
+    static const logging::Warn log_once(
+      "UnrevisedLemkeSolver doesn't support the feature of variable scaling.");
   }
 
   unused(initial_guess);

@@ -101,8 +101,9 @@ void EqualityConstrainedQPSolver::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("EqualityConstrainedQPSolver doesn't support the "
-      "feature of variable scaling.");
+    static const logging::Warn log_once(
+        "EqualityConstrainedQPSolver doesn't support the feature of variable "
+        "scaling.");
   }
 
   // An equality constrained QP problem has analytical solution. It doesn't

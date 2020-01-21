@@ -232,8 +232,8 @@ void OsqpSolver::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("OsqpSolver doesn't support the feature of variable "
-      "scaling.");
+    static const logging::Warn log_once(
+      "OsqpSolver doesn't support the feature of variable scaling.");
   }
 
   OsqpSolverDetails& solver_details =

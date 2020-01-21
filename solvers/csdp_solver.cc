@@ -349,8 +349,8 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          const Eigen::VectorXd&, const SolverOptions&,
                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
-    drake::log()->warn("CsdpSolver doesn't support the feature of variable "
-      "scaling.");
+    static const logging::Warn log_once(
+        "CsdpSolver doesn't support the feature of variable scaling.");
   }
 
   result->set_solver_id(CsdpSolver::id());
