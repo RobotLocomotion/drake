@@ -266,7 +266,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "urdf_dynamics_test",
+    name = "multibody_dynamics_test",
     data = [":models"],
     deps = [
         ":acrobot_plant",
