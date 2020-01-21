@@ -15,15 +15,15 @@ using math::RotationMatrix;
 
 template <typename T>
 LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
-                          const Frame<T>& frameAb,
-                          const Frame<T>& frameBa,
+                          const Frame<T>& frameA,
+                          const Frame<T>& frameC,
                           const Vector3<double>& torque_stiffness_constants,
                           const Vector3<double>& torque_damping_constants,
                           const Vector3<double>& force_stiffness_constants,
                           const Vector3<double>& force_damping_constants) :
-    ForceElement<T>(frameAb.body().model_instance()),
-    frameAb_(frameAb),
-    frameBa_(frameBa),
+    ForceElement<T>(frameA.body().model_instance()),
+    frameA_(frameA),
+    frameC_(frameC),
     torque_stiffness_constants_(torque_stiffness_constants),
     torque_damping_constants_(torque_damping_constants),
     force_stiffness_constants_(force_stiffness_constants),
@@ -43,7 +43,7 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
   const SpatialForce<T> F_Abo_Ab = CalcBushingSpatialForceOnAb(context);
 
   // Form spatial force F_Abo_W by expressing F_Ab_Ab in the world frame W.
-  const RigidTransform<T> X_WAb = frameAb().CalcPoseInWorld(context);
+  const RigidTransform<T> X_WAb = frameA().CalcPoseInWorld(context);
   const RotationMatrix<T>& R_WAb = X_WAb.rotation();
   const SpatialForce<T> F_Abo_W = R_WAb * F_Abo_Ab;
 
@@ -51,7 +51,7 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
   const RigidTransform<T> X_WA = bodyA().EvalPoseInWorld(context);
   const RotationMatrix<T>& R_WA = X_WA.rotation();
   const Vector3<T> p_AoAbo_A =
-      frameAb().CalcPoseInBodyFrame(context).translation();
+      frameA().CalcPoseInBodyFrame(context).translation();
   const Vector3<T> p_AboAo_W = -(R_WA * p_AoAbo_A);
 
   // Form the spatial force F_Ao_W by shifting the spatial force F_Abo_W from
@@ -185,8 +185,8 @@ template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const Frame<ToScalar>& frameAb_clone = tree_clone.get_variant(frameAb());
-  const Frame<ToScalar>& frameBa_clone = tree_clone.get_variant(frameBa());
+  const Frame<ToScalar>& frameA_clone = tree_clone.get_variant(frameA());
+  const Frame<ToScalar>& frameC_clone = tree_clone.get_variant(frameC());
   const Vector3<double>& k012 = torque_stiffness_constants();
   const Vector3<double>& b012 = torque_damping_constants();
   const Vector3<double>& kxyz = force_stiffness_constants();
@@ -195,7 +195,7 @@ LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
   // Make the Joint<T> clone.
   auto bushing_clone =
       std::make_unique<LinearBushingRollPitchYaw<ToScalar>>(
-          frameAb_clone, frameBa_clone, k012, b012, kxyz, bxyz);
+          frameA_clone, frameC_clone, k012, b012, kxyz, bxyz);
 
   return std::move(bushing_clone);
 }

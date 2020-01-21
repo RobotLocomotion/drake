@@ -15,29 +15,32 @@ namespace multibody {
 
 template <typename T> class Body;
 
-/// This %ForceElement models a massless bushing that connects a frame Aʙ of a
-/// body A to a frame Bᴀ of a body B.  The bushing can apply both a torque and
-/// force due to stiffness (spring) and dissipation (damper) properties.
+/// This %ForceElement models a massless bushing B that connects a frame A of a
+/// body (link) L1 to a frame C of body L2.  The bushing can apply both a torque
+/// and force due to stiffness (spring) and dissipation (damper) properties.
+/// Frame A is regarded as welded to body (link) L1.
+/// Frame C is regarded as welded to body (link) L2.
 ///
-/// The set of forces on body B from the bushing is equivalent to a torque τ on
-/// body B and a force f applied to a point Bc of B.
-/// The set of forces on body A from the bushing is equivalent to a torque -τ on
-/// body A and a force -f applied to the point Ac of A.
-/// Points Bc and Ac are coincident and located halfway between point Aʙₒ
-/// (the origin of frame Aʙ) and point Bᴀₒ (the origin of frame Bᴀ).
+/// The set of forces on frame C from the bushing is equivalent to a torque τ
+/// on frame C and a force f applied to a point Cp of C.
+/// The set of forces on frame A from the bushing is equivalent to a torque -τ
+/// on frame A and a force -f applied to the point Ap of A.
+/// Points Ap and Cp are coincident and located halfway between point Aₒ
+/// (frame A's origin) and point Cₒ (frame C's origin).
 ///
-/// The torque τ on B and force f applied to point Bc of B are expressed in
-/// terms of orthogonal unit vectors Aʙx, Aʙy, Aʙz fixed in frame Aʙ as <pre>
-/// τ = Tx Aʙx + Ty Aʙy + Tz Aʙz
-/// f = Fx Aʙx + Fy Aʙy + Fz Aʙz
+/// The torque τ on C and force f applied to point Cp are expressed in terms of
+/// orthogonal unit vectors Bx, By, Bz fixed in the bushing frame B as <pre>
+/// τ = Tx Bx + Ty By + Tz Bz
+/// f = Fx Bx + Fy By + Fz Bz
 /// </pre>
 ///
-/// Torque τ and force f depend on the orientation and position of frames Bᴀ and
-/// Aʙ.  %Frame Bᴀ's orientation relative to frame Aʙ determines roll-pitch-yaw
-/// angles q₀, q₁, q₂ [`-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`].
-/// The position of Bᴀₒ (frame Bᴀ's origin) from Aʙₒ (frame Aʙ's origin) is
-/// `x Aʙx + y Aʙy + z Aʙz`.
-/// Note: When frame Bᴀ's angular velocity in Aʙ is `ωx Aʙx + ωy Aʙy + ωz Aʙz`,
+/// Torque τ depends on roll-pitch-yaw angles q₀, q₁, q₂ which are
+/// determined from frame C's orientation relative to frame A, with
+/// [`-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`].
+/// Force f depends on the position from Ao to Co, which is expressed as
+/// `p_AoCo_B = x Bx + y By + z Bz`.
+///
+/// Note: When frame C's angular velocity in A is `ωx Ax + ωy Ay + ωz Az`,
 /// then q̇₀, q̇₁, q̇₂ are related to ωx, ωy, ωz by a matrix N as <pre>
 /// ⌈ q̇₀ ⌉ = ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉ ⌈ ωx ⌉
 /// | q̇₁ | = |   -sin(q2)            cos(q2)      0 | | ωy |
@@ -56,13 +59,13 @@ template <typename T> class Body;
 /// ⌊ Tz ⌋ = ⌊        0             0             1        ⌋ ⌊ T₂ ⌋
 /// </pre>
 /// where kx, ky, kz and bx, by, bz are force stiffness/damping constants and
-/// k₀, k₁, k₂ and b₀, b₁, b₂ are torque stiffness/damping constants.  Note:
-/// Tx, Ty, Tz relate to T₀, T₁, T₂, by Nᵀ (the transpose of the N matrix).
+/// k₀, k₁, k₂ and b₀, b₁, b₂ are torque stiffness/damping constants.
+/// Note: Tx, Ty, Tz are related to T₀, T₁, T₂ by Nᵀ (the transpose of N).
 ///
 /// The expressions for Tx, Ty, Tz in terms of T₀, T₁, T₂ were found by equating
-/// the generalized forces produced by torque `τ = Tx Aʙx + Ty Aʙy + Tz Aʙz` to
+/// the generalized forces produced by torque `τ = Tx Ax + Ty Ay + Tz Az` to
 /// the generalized forces produced by the three spring-damper torques
-///  `T₀ Bᴀx`,  `T₁ Py`,  `T₂ Aʙz`  (each of these torques are associated with
+///  `T₀ Bx`,  `T₁ Py`,  `T₂ Az`  (each of these torques are associated with
 /// a frame in the RollPitchYaw successive rotation sequence, where `Py` denotes
 /// a unit vector of the pitch intermediate frame).
 ///
@@ -86,9 +89,10 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw)
 
-  /// Constructor for a RollPitchYaw bushing that connects bodies `A` and `B`.
-  /// @param[in] frameAb the frame Aʙ of body `A` that connects to the bushing.
-  /// @param[in] frameBa the frame Bᴀ of body `B` that connects to the bushing.
+  /// Constructor for a RollPitchYaw bushing B that connects frames A and C,
+  /// where A is welded to body (link) L1 and C is welded to body (link) L2.
+  /// @param[in] frameA frame A of body `L1` that connects to bushing B.
+  /// @param[in] frameC frame C of body `L2` that connects to bushing B.
   /// @param[in] torque_stiffness_constants  the constants `[k₀, k₁, k₂]`
   /// associated with the rotational part `1/2 (k₀q₀² + k₁q₁² + k₂q₂²)` of the
   /// potential energy U, where `[q₀, q₁, q₂]` are the roll, pitch, yaw angles.
@@ -108,17 +112,17 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @note Refer to the class documentation for details about U, D, q₀, etc.
   /// @note The stiffness constants `[k₀, k₁, k₂]`, `[kx, ky, kz]` and the
   /// damping constants `[b₀, b₁, b₂]`, `[bx, by, bz]` are usually non-negative.
-  LinearBushingRollPitchYaw(const Frame<T>& frameAb,
-                            const Frame<T>& frameBa,
+  LinearBushingRollPitchYaw(const Frame<T>& frameA,
+                            const Frame<T>& frameC,
                             const Vector3<double>& torque_stiffness_constants,
                             const Vector3<double>& torque_damping_constants,
                             const Vector3<double>& force_stiffness_constants,
                             const Vector3<double>& force_damping_constants);
 
-  const Body<T>& bodyA() const { return frameAb_.body(); }
-  const Body<T>& bodyB() const { return frameBa_.body(); }
-  const Frame<T>& frameAb() const { return frameAb_; }
-  const Frame<T>& frameBa() const { return frameBa_; }
+  const Body<T>& bodyA() const { return frameA_.body(); }
+  const Body<T>& bodyB() const { return frameC_.body(); }
+  const Frame<T>& frameA() const { return frameA_; }
+  const Frame<T>& frameC() const { return frameC_; }
 
   /// Returns the torque stiffness constants [k₀, k₁, k₂].
   const Vector3<double>& torque_stiffness_constants() const {
@@ -161,7 +165,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (the position vector from Aʙₒ to Bᴀₒ expressed in Aʙ).
   math::RigidTransform<T> CalcBushingRigidTransform(
       const systems::Context<T>& context) const {
-    return frameBa().CalcPose(context, frameAb());
+    return frameC().CalcPose(context, frameA());
   }
 
   /// Calculates the bushing's RollPitchYaw from the rotation matrix R_AʙBᴀ that
@@ -206,7 +210,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @see CalcBushingRollPitchYawAngleRates() for `[q̇₀, q̇₁, q̇₂]`.
   SpatialVelocity<T> CalcBushingSpatialVelocity(
       const systems::Context<T>& context) const {
-    return frameBa().CalcSpatialVelocity(context, frameAb(), frameAb());
+    return frameC().CalcSpatialVelocity(context, frameA(), frameA());
   }
 
   /// Calculates F_Bc_Ab, the spatial force on point Bc of body B expressed in
@@ -345,8 +349,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
-  const Frame<T>& frameAb_;
-  const Frame<T>& frameBa_;
+  const Frame<T>& frameA_;
+  const Frame<T>& frameC_;
 
   const Vector3<double> torque_stiffness_constants_;
   const Vector3<double> torque_damping_constants_;
