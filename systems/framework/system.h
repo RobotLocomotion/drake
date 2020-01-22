@@ -828,6 +828,42 @@ class System : public SystemBase {
     return saved_attr;
   }
 
+  /// Returns true iff the state dynamics of this system are governed
+  /// exclusively by a difference equation on a single discrete state group
+  /// and with a unique periodic update (having zero offset).  E.g., it is
+  /// amenable to analysis of the form:
+  ///   x[n+1] = f(x[n], u[n])
+  /// Note that we do NOT consider the number of input ports here, because
+  /// in practice many systems of interest (e.g. MultibodyPlant) have input
+  /// ports that are safely treated as constant during the analysis.
+  /// Consider using get_input_port_selection() to choose one.
+  ///
+  /// @param[out] time_period if non-null, then iff the function
+  /// returns `true`, then time_period is set to the period data
+  /// returned from GetUniquePeriodicDiscreteUpdateAttribute().  If the
+  /// function returns `false` (the system is not a difference equation
+  /// system), then `time_period` does not receive a value.
+  bool IsDifferenceEquationSystem(double* time_period = nullptr) const {
+    if (num_continuous_states() || num_abstract_states()) { return false; }
+
+    // TODO(#12616): Replace this
+    if (CreateDefaultContext()->num_discrete_state_groups() != 1) {
+      return false;
+    }
+    // with
+    // if (num_discrete_state_groups() != 1) { return false; }
+
+    std::optional<PeriodicEventData> periodic_data =
+        GetUniquePeriodicDiscreteUpdateAttribute();
+    if (!periodic_data) { return false; }
+    if (periodic_data->offset_sec() != 0.0) { return false; }
+
+    if (time_period != nullptr) {
+      *time_period = periodic_data->period_sec();
+    }
+    return true;
+  }
+
   /// Gets all periodic triggered events for a system. Each periodic attribute
   /// (offset and period, in seconds) is mapped to one or more update events
   /// that are to be triggered at the proper times.
