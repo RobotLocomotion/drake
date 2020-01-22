@@ -47,7 +47,14 @@ enum class ContactModel {
 
   /// Contact forces are computed using a point contact model, see @ref
   /// point_contact_approximation "Numerical Approximation of Point Contact".
-  kPointContactOnly
+  kPointContactOnly,
+
+  /// Contact forces are computed using the hydroelastic model, where possible.
+  /// For most other unsupported colliding pairs, the point model from
+  /// kPointContactOnly is used. See
+  /// geometry::QueryObject:ComputeContactSurfacesWithFallback for more
+  /// details.
+  kHydroelasticWithFallback
 };
 
 /// @cond
@@ -3321,6 +3328,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
+    systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
@@ -3512,6 +3520,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         ->get_cache_entry(cache_indexes_.contact_surfaces)
         .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
   }
+
+  // Evaluates the "trick" cache entry to enable hydroelastic contact with
+  // a point pair fallback (see ContactModel for more about the "fallback").
+  // The trick is as follows:
+  //   - this invokes a custom query on geometry::QueryObject that handles the
+  //     specific callback logic but returns data in two heterogeneous types:
+  //       PenetrationAsPointPair and ContactSurface.
+  //   - After evaluating the query, it stores the results into the two cache
+  //     entries designed to store those quantities.
+  //   - In turn, the logic for calculating those cache entries are now aware
+  //     of the contact model; if they are in fallback mode, they simply
+  //     evaluate this cache entry and return. Otherwise, they proceed with
+  //     their normal query.
+  // This allows us to simply compute all forces dependent on each cache entry
+  // and sum them all up -- maximum code reuse.
+  void CalcHydroelasticWithFallback(const drake::systems::Context<T>& context,
+                                  int* value) const;
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
@@ -4185,6 +4210,9 @@ template <>
 void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     const systems::Context<symbolic::Expression>&,
     std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
+template <>
+void MultibodyPlant<double>::CalcHydroelasticWithFallback(
+    const systems::Context<double>&, int*) const;
 #endif
 
 }  // namespace multibody
