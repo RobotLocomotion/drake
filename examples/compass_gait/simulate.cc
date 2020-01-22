@@ -4,11 +4,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/compass_gait/compass_gait.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/examples/compass_gait/compass_gait_geometry.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -28,41 +25,11 @@ int DoMain() {
   auto compass_gait = builder.AddSystem<CompassGait>();
   compass_gait->set_name("compass_gait");
 
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/compass_gait/CompassGait.urdf"),
-      multibody::joints::kRollPitchYaw, tree.get());
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  CompassGaitGeometry::AddToBuilder(&builder,
+      compass_gait->get_floating_base_state_output_port(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
 
-  {  // Add ramp
-    // TODO(russt): Consider moving/reusing this block (useful for all passive
-    // walkers).
-    const double box_depth = 10.0;
-    DrakeShapes::Box geom(Eigen::Vector3d(100, 1, box_depth));
-
-    // In the following use W for world frame and B for box frame.
-    Eigen::Isometry3d X_WB = Eigen::Isometry3d::Identity();
-    X_WB.translation() << 0, 0, -box_depth / 2;  // Top of the box is at z = 0.
-    double ramp_pitch = CompassGaitParams<double>().slope();
-    X_WB.rotate(
-        math::RotationMatrix<double>::MakeYRotation(ramp_pitch).matrix());
-
-    // Defines a color called "desert sand" according to htmlcsscolor.com.
-    Eigen::Vector4d color(0.9297, 0.7930, 0.6758, 1);
-
-    RigidBody<double>& world = tree->world();
-    world.AddVisualElement(DrakeShapes::VisualElement(geom, X_WB, color));
-    tree->addCollisionElement(
-        drake::multibody::collision::Element(geom, X_WB, &world), world,
-        "terrain");
-    tree->compile();
-  }
-
-  lcm::DrakeLcm lcm;
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
-
-  builder.Connect(compass_gait->get_floating_base_state_output_port(),
-                  publisher->get_input_port(0));
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
