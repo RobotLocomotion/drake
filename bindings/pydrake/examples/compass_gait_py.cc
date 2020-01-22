@@ -4,6 +4,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/compass_gait/compass_gait.h"
+#include "drake/examples/compass_gait/compass_gait_geometry.h"
 #include "drake/examples/compass_gait/gen/compass_gait_continuous_state.h"
 #include "drake/examples/compass_gait/gen/compass_gait_params.h"
 
@@ -28,7 +29,14 @@ PYBIND11_MODULE(compass_gait, m) {
 
   py::class_<CompassGait<T>, LeafSystem<T>>(
       m, "CompassGait", doc.CompassGait.doc)
-      .def(py::init<>(), doc.CompassGait.ctor.doc);
+      .def(py::init<>(), doc.CompassGait.ctor.doc)
+      .def("get_minimal_state_output_port",
+          &CompassGait<T>::get_minimal_state_output_port, py_reference_internal,
+          doc.CompassGait.get_minimal_state_output_port.doc)
+      .def("get_floating_base_state_output_port",
+          &CompassGait<T>::get_floating_base_state_output_port,
+          py_reference_internal,
+          doc.CompassGait.get_floating_base_state_output_port.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<CompassGaitParams<T>, BasicVector<T>>(
@@ -79,6 +87,31 @@ PYBIND11_MODULE(compass_gait, m) {
           doc.CompassGaitContinuousState.set_stancedot.doc)
       .def("set_swingdot", &CompassGaitContinuousState<T>::set_swingdot,
           doc.CompassGaitContinuousState.set_swingdot.doc);
+
+  py::class_<CompassGaitGeometry, LeafSystem<double>>(
+      m, "CompassGaitGeometry", doc.CompassGaitGeometry.doc)
+      .def_static("AddToBuilder",
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const systems::OutputPort<double>&,
+              const CompassGaitParams<double>&, geometry::SceneGraph<double>*>(
+              &CompassGaitGeometry::AddToBuilder),
+          py::arg("builder"), py::arg("floating_base_state_port"),
+          py::arg("compass_gait_params"), py::arg("scene_graph"),
+          // Keep alive, ownership: `return` keeps `builder` alive.
+          py::keep_alive<0, 1>(),
+          // See #11531 for why `py_reference` is needed.
+          py_reference, doc.CompassGaitGeometry.AddToBuilder.doc_4args)
+      .def_static("AddToBuilder",
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const systems::OutputPort<double>&,
+              geometry::SceneGraph<double>*>(
+              &CompassGaitGeometry::AddToBuilder),
+          py::arg("builder"), py::arg("floating_base_state_port"),
+          py::arg("scene_graph"),
+          // Keep alive, ownership: `return` keeps `builder` alive.
+          py::keep_alive<0, 1>(),
+          // See #11531 for why `py_reference` is needed.
+          py_reference, doc.CompassGaitGeometry.AddToBuilder.doc_3args);
 }
 
 }  // namespace pydrake

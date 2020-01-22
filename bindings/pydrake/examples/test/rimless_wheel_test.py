@@ -42,8 +42,7 @@ class TestRimlessWheel(unittest.TestCase):
         scene_graph = builder.AddSystem(SceneGraph())
         geom = RimlessWheelGeometry.AddToBuilder(
             builder=builder,
-            floating_base_state_port=plant
-            .get_floating_base_state_output_port(),
+            floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
             scene_graph=scene_graph)
         # Confirming that the resulting diagram builds.
         builder.Build()
@@ -55,8 +54,7 @@ class TestRimlessWheel(unittest.TestCase):
         scene_graph = builder.AddSystem(SceneGraph())
         geom = RimlessWheelGeometry.AddToBuilder(
             builder=builder,
-            floating_base_state_port=plant
-            .get_floating_base_state_output_port(),
+            floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
             rimless_wheel_params=RimlessWheelParams(), scene_graph=scene_graph)
         # Confirming that the resulting diagram builds.
         builder.Build()

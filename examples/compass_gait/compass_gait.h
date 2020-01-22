@@ -65,9 +65,9 @@ class CompassGait final : public systems::LeafSystem<T> {
     return this->get_output_port(0);
   }
 
-  /// Returns reference to the output port that provides the state required by
-  /// a RigidBodyTree loaded from CompassGait.urdf (as instantiated with
-  /// FloatingBaseType::kRollPitchYaw).
+  /// Returns reference to the output port that provides the state in the
+  /// floating-base coordinates (described via left leg xyz & rpy + hip angle +
+  /// derivatives).
   const systems::OutputPort<T>& get_floating_base_state_output_port() const {
     return this->get_output_port(1);
   }

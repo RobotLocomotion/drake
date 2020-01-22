@@ -1,14 +1,21 @@
 import unittest
 
 from pydrake.examples.compass_gait import (
-    CompassGaitParams, CompassGait, CompassGaitContinuousState
-    )
-from pydrake.systems.analysis import (
-    Simulator
-    )
+    CompassGait, CompassGaitContinuousState,
+    CompassGaitGeometry, CompassGaitParams
+)
+from pydrake.geometry import SceneGraph
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestCompassGait(unittest.TestCase):
+    def test_compass_gait(self):
+        plant = CompassGait()
+        # Confirm the spelling on the output ports.
+        plant.get_minimal_state_output_port()
+        plant.get_floating_base_state_output_port()
+
     def test_params(self):
         params = CompassGaitParams()
         params.set_mass_hip(1.)
@@ -34,6 +41,30 @@ class TestCompassGait(unittest.TestCase):
         self.assertEqual(state.swing(), 2.)
         self.assertEqual(state.stancedot(), 3.)
         self.assertEqual(state.swingdot(), 4.)
+
+    def test_geometry(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(CompassGait())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = CompassGaitGeometry.AddToBuilder(
+            builder=builder,
+            floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
+            scene_graph=scene_graph)
+        # Confirming that the resulting diagram builds.
+        builder.Build()
+        self.assertIsInstance(geom, CompassGaitGeometry)
+
+    def test_geometry_with_params(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(CompassGait())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = CompassGaitGeometry.AddToBuilder(
+            builder=builder,
+            floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
+            compass_gait_params=CompassGaitParams(), scene_graph=scene_graph)
+        # Confirming that the resulting diagram builds.
+        builder.Build()
+        self.assertIsInstance(geom, CompassGaitGeometry)
 
     def test_simulation(self):
         # Basic compass_gait simulation.
