@@ -85,6 +85,9 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 
 /** Adds contact material properties to the given set of proximity `properties`.
+ Only the parameters that carry values will be added to the given set of
+ `properties`; no default values will be provided. Downstream consumers of the
+ contact materials can optionally provide defaults for missing properties.
 
  @throws std::logic_error if `elastic_modulus` is not positive, `dissipation` is
                           negative, or any of the contact material properties
