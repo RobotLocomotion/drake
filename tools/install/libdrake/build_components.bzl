@@ -60,6 +60,7 @@ LIBDRAKE_COMPONENTS = [
     "//examples/quadrotor:quadrotor_geometry",  # unpackaged
     "//examples/quadrotor:quadrotor_plant",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel",  # unpackaged
+    "//examples/rimless_wheel:rimless_wheel_geometry",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
     "//examples/van_der_pol:van_der_pol",  # unpackaged
     "//geometry",
