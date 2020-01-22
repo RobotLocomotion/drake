@@ -1059,6 +1059,13 @@ template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
+  if (contact_model_ == ContactModel::kHydroelasticWithFallback) {
+    this->get_cache_entry(cache_indexes_.hydro_fallback)
+        .template Eval<int>(context);
+    return this->get_cache_entry(cache_indexes_.point_pairs)
+        .Eval<std::vector<PenetrationAsPointPair<double>>>(context);
+  }
+
   if (num_collision_geometries() > 0) {
     if (!geometry_query_port_.is_valid()) {
       throw std::logic_error(
@@ -1153,6 +1160,21 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
       break;
 
     case ContactModel::kHydroelasticsOnly:
+      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticWithFallback:
+      // Simply compute the contributions of both contact representations.
+
+      // TODO(SeanCurtis-TRI): In the current semantics,
+      // CalcContactResultsContinuousPointPair() *clears* the input parameter.
+      // CalcContactResultsContinuousHydroelastic() does *not*. That suggests
+      // the *name* of CalcContactResultsContinuousHydroelastic() is
+      // inconsistent with its behavior. Reconcile the two and if it's not a
+      // name change (but rather a behavior change) modify this accumulation
+      // accordingly. But, for now, executing these methods in this order should
+      // properly accumulate all contact results.
+      CalcContactResultsContinuousPointPair(context, contact_results);
       CalcContactResultsContinuousHydroelastic(context, contact_results);
       break;
   }
@@ -1702,6 +1724,12 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactSurfaces(
     const drake::systems::Context<T>& context,
     std::vector<ContactSurface<T>>* contact_surfaces) const {
+  if (contact_model_ == ContactModel::kHydroelasticWithFallback) {
+    this->get_cache_entry(cache_indexes_.hydro_fallback)
+        .template Eval<int>(context);
+    return;
+  }
+
   DRAKE_DEMAND(contact_surfaces);
 
   const auto& query_object =
@@ -1717,6 +1745,51 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     std::vector<geometry::ContactSurface<symbolic::Expression>>*) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
+}
+
+template <>
+void MultibodyPlant<double>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<double>& context,
+    int*) const {
+  // We don't need to actually write to the cache value; it is garbage.
+
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<double>>(context);
+
+  // We're going to write the geometric query result directly to the
+  // corresponding cache entries for the types. We rely on the geometric
+  // query to partition all contacts into two disjoint sets: one set of
+  // ContactSurfaces and one of PenetrationAsPointPair.
+
+  auto& cache = context.get_mutable_cache();
+
+  auto& surfaces_value =
+      cache.get_mutable_cache_entry_value(cache_indexes_.contact_surfaces);
+  auto& surfaces = surfaces_value.template GetMutableValueOrThrow<
+      std::vector<geometry::ContactSurface<double>>>();
+  surfaces.clear();
+
+  auto& point_pairs_value =
+      cache.get_mutable_cache_entry_value(cache_indexes_.point_pairs);
+  auto& point_pairs =
+      point_pairs_value.template GetMutableValueOrThrow<
+          std::vector<geometry::PenetrationAsPointPair<double>>>();
+  point_pairs.clear();
+
+  query_object.ComputeContactSurfacesWithFallback(&surfaces, &point_pairs);
+
+  surfaces_value.mark_up_to_date();
+  point_pairs_value.mark_up_to_date();
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<T>&, int*) const {
+  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
+  //  as long as there are no collisions -- akin to CalcPontPairPenetrations().
+  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
+                                      NiceTypeName::Get<T>()));
 }
 
 template <typename T>
@@ -2013,6 +2086,18 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
 
     case ContactModel::kHydroelasticsOnly:
       *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
+      break;
+
+    case ContactModel::kHydroelasticWithFallback:
+      // Combine the point-penalty forces with the contact surface forces.
+      CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
+      auto hydro_forces = EvalHydroelasticContactForces(context).F_BBo_W_array;
+      DRAKE_DEMAND(F_BBo_W_array->size() == hydro_forces.size());
+      for (int i = 0; i < static_cast<int>(hydro_forces.size()); ++i) {
+        // Both sets of forces are applied to the body's origins and expressed
+        // in frame W. They should simply sum.
+        (*F_BBo_W_array)[i] += hydro_forces[i];
+      }
       break;
   }
 }
@@ -2331,6 +2416,17 @@ template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());
 
+  // Declare "trick" cache entry for doing hydroelastic with point-pair
+  // fallback. See the details of CalcHydroelasticWithFallback() for details of
+  // the trick.
+  int hydro_point_value{};
+  auto& hydro_point_cache_entry = this->DeclareCacheEntry(
+      std::string("Hydroelastic contact with point-pair fallback"),
+      hydro_point_value,
+      &MultibodyPlant::CalcHydroelasticWithFallback,
+      {this->configuration_ticket()});
+  cache_indexes_.hydro_fallback = hydro_point_cache_entry.cache_index();
+
   // Cache entry for point contact queries.
   auto& point_pairs_cache_entry = this->DeclareCacheEntry(
       std::string("Point pair penetrations."),
@@ -2345,7 +2441,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             std::vector<geometry::PenetrationAsPointPair<T>>>();
         point_pairs_cache = this->CalcPointPairPenetrations(context);
       },
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), hydro_point_cache_entry.ticket()});
   cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
 
   // Cache entry for hydroelastic contact surfaces.
@@ -2362,8 +2458,9 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             std::vector<ContactSurface<T>>>();
         this->CalcContactSurfaces(context, &contact_surfaces_cache);
       },
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), hydro_point_cache_entry.ticket()});
   cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
+
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
@@ -2428,7 +2525,10 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
-  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+  const bool use_hydroelastic =
+      contact_model_ == ContactModel::kHydroelasticsOnly ||
+      contact_model_ == ContactModel::kHydroelasticWithFallback;
+  if (use_hydroelastic) {
     auto& contact_info_and_body_spatial_forces_cache_entry =
         this->DeclareCacheEntry(
             std::string("Hydroelastic contact info and body spatial forces."),
@@ -2457,20 +2557,21 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // In discrete mode contact forces computation requires to advance the system
   // from step n to n+1. Therefore they are a function of state and input.
   // In continuous mode contact forces are simply a function of state.
-  std::set<systems::DependencyTicket> dependency_ticket = [this]() {
+  std::set<systems::DependencyTicket> dependency_ticket = [this,
+                                                           use_hydroelastic]() {
     std::set<systems::DependencyTicket> tickets;
-     if (is_discrete()) {
-       tickets.insert(
-           this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
-     } else {
-       tickets.insert(this->kinematics_ticket());
-       if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-         tickets.insert(this->cache_entry_ticket(
-             cache_indexes_.contact_info_and_body_spatial_forces));
-       }
-     }
+    if (is_discrete()) {
+      tickets.insert(
+          this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
+    } else {
+      tickets.insert(this->kinematics_ticket());
+      if (use_hydroelastic) {
+        tickets.insert(this->cache_entry_ticket(
+            cache_indexes_.contact_info_and_body_spatial_forces));
+      }
+    }
 
-     return tickets;
+    return tickets;
   }();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
       std::string("Contact results."),
