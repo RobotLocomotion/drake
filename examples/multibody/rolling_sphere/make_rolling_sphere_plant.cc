@@ -26,7 +26,8 @@ using drake::math::RigidTransformd;
 std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     double radius, double mass, double elastic_modulus, double dissipation,
     const CoulombFriction<double>& surface_friction,
-    const Vector3<double>& gravity_W, SceneGraph<double>* scene_graph) {
+    const Vector3<double>& gravity_W, bool rigid_sphere,
+    SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
@@ -60,7 +61,11 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     ProximityProperties ball_props;
     AddContactMaterial(elastic_modulus, dissipation, surface_friction,
                        &ball_props);
-    AddSoftHydroelasticProperties(radius, &ball_props);
+    if (rigid_sphere) {
+      AddRigidHydroelasticProperties(radius, &ball_props);
+    } else {
+      AddSoftHydroelasticProperties(radius, &ball_props);
+    }
     plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
                                      std::move(ball_props));
 
