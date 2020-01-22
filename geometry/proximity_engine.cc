@@ -315,6 +315,33 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     collision_filter_.AddGeometry(encoding.encoding());
   }
 
+  void UpdateRepresentationForNewProperties(
+      const InternalGeometry& geometry,
+      const ProximityProperties& new_properties) {
+    const GeometryId id = geometry.id();
+    // Note: Currently, the only aspect of a geometry's representation that can
+    // be affected by its proximity properties is its hydroelastic
+    // representation.
+    if (dynamic_objects_.count(id) == 0 && anchored_objects_.count(id) == 0) {
+      throw std::logic_error(
+          fmt::format("The proximity engine does not contain a geometry with "
+                      "the id {}; its properties cannot be updated",
+                      id));
+    }
+
+    // TODO(SeanCurtis-TRI): Precondition this with a test -- currently,
+    //  I'm mindlessly replacing the old hydroelastic representation with a
+    //  new -- even it doesn't actually change. Such an optimization probably
+    //  has limited value as this type of operation would really only be done
+    //  at initialization.
+
+    // We'll simply mindlessly destroy and recreate the hydroelastic
+    // representation.
+    hydroelastic_geometries_.RemoveGeometry(id);
+    hydroelastic_geometries_.MaybeAddGeometry(geometry.shape(), id,
+                                              new_properties);
+  }
+
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (is_dynamic) {
       if (dynamic_objects_.find(id) != dynamic_objects_.end()) {
@@ -1121,6 +1148,13 @@ void ProximityEngine<T>::AddAnchoredGeometry(
     const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
     const ProximityProperties& props) {
   impl_->AddAnchoredGeometry(shape, X_WG, id, props);
+}
+
+template <typename T>
+void ProximityEngine<T>::UpdateRepresentationForNewProperties(
+    const InternalGeometry& geometry,
+    const ProximityProperties& new_properties) {
+  impl_->UpdateRepresentationForNewProperties(geometry, new_properties);
 }
 
 template <typename T>

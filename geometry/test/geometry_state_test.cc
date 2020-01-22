@@ -146,6 +146,18 @@ class GeometryStateTester {
   GeometryState<T>* state_;
 };
 
+namespace internal {
+
+class ProximityEngineTester {
+ public:
+  static const hydroelastic::Geometries& hydroelastic_geometries(
+      const ProximityEngine<double>& engine) {
+    return engine.hydroelastic_geometries();
+  }
+};
+
+}  // namespace internal
+
 namespace {
 
 // Class to aid in testing Shape introspection. Instantiated with a model
@@ -2424,6 +2436,7 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
   props1.AddProperty("prop1", "value", 1);
   ProximityProperties props2;
   props2.AddProperty("prop2", "value", 2);
+  AddRigidHydroelasticProperties(1.0, &props2);
 
   // Case: Can't reassign when it hasn't been assigned.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -2434,6 +2447,13 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
       " role.*");
 
   // Case: Try reassigning the properties.
+  // We need to confirm that GeometryState gives ProximityEngine the chance to
+  // update its representation based on the proximity properties. Currently,
+  // the only way to do that is by looking at the hydroelastic representation.
+  // Originally, it should have none, after the update, it should.
+  const auto& hydroelastic_geometries =
+      internal::ProximityEngineTester::hydroelastic_geometries(
+          gs_tester_.proximity_engine());
 
   // Configure and confirm initial state.
   geometry_state_.AssignRole(source_id_, geometries_[0], props1);
@@ -2446,20 +2466,24 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
   EXPECT_TRUE(props->HasProperty("prop1", "value"));
   EXPECT_EQ(props->GetProperty<int>("prop1", "value"),
             props1.GetProperty<int>("prop1", "value"));
+  EXPECT_EQ(hydroelastic_geometries.hydroelastic_type(geometries_[0]),
+            internal::HydroelasticType::kUndefined);
 
   DRAKE_EXPECT_NO_THROW(geometry_state_.AssignRole(
       source_id_, geometries_[0], props2, RoleAssign::kReplace));
+
   // Confirm modification doesn't introduce duplicates; should still be one.
   EXPECT_EQ(gs_tester_.proximity_engine().num_geometries(), 1);
 
-  props =
-      geometry_state_.GetProximityProperties(geometries_[0]);
+  props = geometry_state_.GetProximityProperties(geometries_[0]);
   EXPECT_NE(props, nullptr);
   EXPECT_TRUE(props->HasGroup("prop2"));
   EXPECT_FALSE(props->HasGroup("prop1"));
   EXPECT_TRUE(props->HasProperty("prop2", "value"));
   EXPECT_EQ(props->GetProperty<int>("prop2", "value"),
             props2.GetProperty<int>("prop2", "value"));
+  EXPECT_EQ(hydroelastic_geometries.hydroelastic_type(geometries_[0]),
+            internal::HydroelasticType::kRigid);
 
   // Case: confirm throw for perception and illustration properties.
   PerceptionProperties perception_props =

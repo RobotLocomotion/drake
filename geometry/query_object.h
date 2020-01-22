@@ -210,15 +210,21 @@ class QueryObject {
        | Convex    |  no   |  no   |
 
      - One geometry must be soft, and the other must be rigid. There is no
-       support for soft-soft collision or rigid-rigid collision.
+       support for soft-soft collision or rigid-rigid collision. If such
+       pairs collide, an exception will be thrown. More particularly, if such
+       a pair *cannot be culled* an exception will be thrown. No exception
+       is thrown if the pair has been filtered.
      - The elasticity modulus E (N/m^2) of each geometry is set in
-       ProximityProperties (see proximity_properties.cc). A rigid geometry must
-       have E = ∞.
+       ProximityProperties (see AddContactMaterial()).
      - The tessellation of the corresponding meshes is controlled by the
        resolution hint, as defined by AddSoftHydroelasticProperties() and
        AddRigidHydroelasticProperties().
-     - Attempting to invoke this method with T = AutoDiffXd will throw an
-       exception if there are *any* geometry pairs that couldn't be culled.
+
+   <h3>Scalar support</h3>
+
+   This method provides support only for double. Attempting to invoke this
+   method with T = AutoDiffXd will throw an exception if there are *any*
+   geometry pairs that couldn't be culled.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */

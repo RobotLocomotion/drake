@@ -148,7 +148,8 @@ namespace geometry {
  <!-- TODO(SeanCurtis-TRI): When the hydroelastic geometry module is written,
   put a reference to the discussion of ProximityProperties here.  -->
  Examples of functionality that depends on the proximity role:
-   - n/a
+ <!-- TODO(SeanCurtis-TRI): Write up a module on hydroelastic proximity
+       properties and link to that.  -->
  */
 class ProximityProperties final : public GeometryProperties {
  public:

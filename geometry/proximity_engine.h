@@ -114,6 +114,24 @@ class ProximityEngine {
                            const math::RigidTransformd& X_WG, GeometryId id,
                            const ProximityProperties& props = {});
 
+  /** Possibly updates the proximity representation of the given `geometry`
+   based on the relationship between its _current_ proximity properties and the
+   given _new_ proximity properties. The underlying representation may not
+   change if the change in proximity properties isn't of significance to the
+   %ProximityEngine.
+
+   @param geometry          The geometry to update.
+   @param new_properties    The properties to associate with the given geometry.
+   @throws std::logic_error   if `geometry` doesn't map to a known geometry in
+                              the engine or if the new properties trigger work
+                              that can't meaningfully be completed because of
+                              incomplete or inconsistent property definitions.
+   @pre `geometry` still has a copy of the original proximity properties that
+         are to be replaced.  */
+  void UpdateRepresentationForNewProperties(
+      const InternalGeometry& geometry,
+      const ProximityProperties& new_properties);
+
   // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
   //  is *actually* sufficiently helpful to justify this act.
   /** Removes the given geometry indicated by `id` from the engine.
