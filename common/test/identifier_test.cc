@@ -1,4 +1,4 @@
-#include "drake/geometry/identifier.h"
+#include "drake/common/identifier.h"
 
 #include <set>
 #include <sstream>
