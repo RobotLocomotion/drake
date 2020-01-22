@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/identifier.h"
+#include "drake/common/identifier.h"
 
 namespace drake {
 namespace geometry {
@@ -11,14 +11,14 @@ class EncodedData;
 }  // namespace internal
 
 /** Type used to identify geometry sources in SceneGraph. */
-using SourceId = Identifier<class SourceTag>;
+using SourceId = drake::Identifier<class SourceTag>;
 
 /** Type used to identify geometry frames in SceneGraph.*/
-using FrameId = Identifier<class FrameTag>;
+using FrameId = drake::Identifier<class FrameTag>;
 
 /** Type used to identify geometry instances in SceneGraph. */
-class GeometryId : public Identifier<class GeometryTag> {
-  using Base = Identifier<class GeometryTag>;
+class GeometryId : public drake::Identifier<class GeometryTag> {
+  using Base = drake::Identifier<class GeometryTag>;
  public:
   GeometryId() = default;
 

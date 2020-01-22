@@ -11,7 +11,6 @@
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
-namespace geometry {
 
 /**
  A simple identifier class.
@@ -224,11 +223,9 @@ inline std::ostream& operator<<(std::ostream& out,
  it should be invoked as: `to_string(id);` and should be preceded by
  `using std::to_string`.*/
 template <typename Tag> inline
-std::string to_string(const drake::geometry::Identifier<Tag>& id) {
+std::string to_string(const drake::Identifier<Tag>& id) {
   return std::to_string(id.get_value());
 }
-
-}  // namespace geometry
 
 }  // namespace drake
 
@@ -238,6 +235,6 @@ namespace std {
  @relates Identifier
  */
 template <typename Tag>
-struct hash<drake::geometry::Identifier<Tag>> : public drake::DefaultHash {};
+struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std
