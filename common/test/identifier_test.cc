@@ -1,4 +1,4 @@
-#include "drake/geometry/identifier.h"
+#include "drake/common/identifier.h"
 
 #include <set>
 #include <sstream>
@@ -14,7 +14,6 @@
 #include "drake/common/unused.h"
 
 namespace drake {
-namespace geometry {
 namespace {
 
 // Creates various dummy index types to test.
@@ -97,7 +96,7 @@ TEST_F(IdentifierTests, ServeAsMapKey) {
   EXPECT_EQ(ids.find(a3_), ids.end());
 }
 
-// Confirms that SortedPair<GeometryId> can serve as a key in STL containers.
+// Confirms that SortedPair<FooId> can serve as a key in STL containers.
 // This shows that Identifier is not just hashable, but implicitly shows that
 // it is compatible with the Drake hash mechanism (because it assumes that the
 // SortedPair is compatible).
@@ -260,5 +259,4 @@ TEST_F(IdentifierTests, InvalidStream) {
 }
 
 }  // namespace
-}  // namespace geometry
 }  // namespace drake

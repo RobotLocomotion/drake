@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":find_resource",
         ":find_runfiles",
         ":hash",
+        ":identifier",
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
@@ -256,6 +257,15 @@ drake_cc_library(
 )
 
 # Miscellaneous utilities.
+
+drake_cc_library(
+    name = "identifier",
+    hdrs = ["identifier.h"],
+    deps = [
+        ":essential",
+        ":hash",
+    ],
+)
 
 DRAKE_RESOURCE_SENTINEL = "//:.drake-find_resource-sentinel"
 
@@ -872,6 +882,17 @@ drake_cc_googletest(
     name = "hash_test",
     deps = [
         ":hash",
+    ],
+)
+
+drake_cc_googletest(
+    name = "identifier_test",
+    deps = [
+        ":identifier",
+        ":sorted_pair",
+        ":unused",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
