@@ -1,5 +1,6 @@
 import pydrake.geometry as mut
 
+import sys
 import unittest
 import warnings
 from math import pi
@@ -73,6 +74,13 @@ class TestGeometry(unittest.TestCase):
                                     mut.render.RenderEngineVtkParams()))
         self.assertTrue(scene_graph.HasRenderer("test_renderer"))
         self.assertEqual(scene_graph.RendererCount(), 1)
+        if 'darwin' in sys.platform:  # OpenGL is not supported on macOS.
+            self.assertRaises(RuntimeError, mut.render.MakeRenderEngineGl)
+        else:
+            scene_graph.AddRenderer("gl_renderer",
+                                    mut.render.MakeRenderEngineGl())
+            self.assertTrue(scene_graph.HasRenderer("gl_renderer"))
+            self.assertEqual(scene_graph.RendererCount(), 2)
 
         # Test SceneGraphInspector API
         inspector = scene_graph.model_inspector()
