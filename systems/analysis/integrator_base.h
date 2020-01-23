@@ -772,7 +772,7 @@ class IntegratorBase {
   /**
    Sets the requested minimum step size `h_min` that may be taken by this
    integrator. No step smaller than this will be taken except under
-   circumstances as described @link Minstep above. @endlink This setting will
+   circumstances as described @ref integrator-minstep "above". This setting will
    be ignored if it is smaller than the absolute minimum `h_floor` also
    described above. Default value is zero.
    @param min_step_size a non-negative value. Setting this value to zero
@@ -800,7 +800,7 @@ class IntegratorBase {
    must take a step smaller than the minimum step size (for, e.g., purposes
    of error control). Default is `true`. If `false`, the integrator will
    advance time and state using the minimum specified step size in such
-   situations. See @link Minstep this section @endlink for more detail.
+   situations. See @ref integrator-minstep "this section" for more detail.
    */
   void set_throw_on_minimum_step_size_violation(bool throws) {
     min_step_exceeded_throws_ = throws;
@@ -819,7 +819,7 @@ class IntegratorBase {
    Gets the current value of the working minimum step size `h_work(t)` for
    this integrator, which may vary with the current time t as stored in the
    integrator's context.
-   @see @link Minstep this section @endlink for more detail.
+   See @ref integrator-minstep "this section" for more detail.
    */
   T get_working_minimum_step_size() const {
     using std::max;
@@ -1618,7 +1618,8 @@ class IntegratorBase {
   // result of the step and might "rewind" and take a smaller one.
   // @returns `true` if successful, `false` otherwise (due to, e.g., integrator
   //          convergence failure).
-  // @note The working minimum step size does not apply here- see @link Minstep.
+  // @note The working minimum step size does not apply here- see
+  // @ref integrator-minstep "this section" for details.
   // @sa DoStep()
   // @sa DoDenseStep()
   bool Step(const T& h) {
