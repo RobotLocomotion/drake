@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "render",
     deps = [
         ":render_engine",
+        ":render_engine_gl",
         ":render_engine_ospray",
         ":render_engine_vtk",
         ":render_engine_vtk_base",
@@ -76,6 +77,19 @@ drake_cc_library(
         "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
         "@vtk//:vtkRenderingSceneGraph",
+    ],
+)
+
+# The pure OpenGL-based render engine implementation.
+drake_cc_library(
+    name = "render_engine_gl",
+    srcs = select({
+        "//tools/cc_toolchain:apple": ["no_render_engine_gl.cc"],
+        "//conditions:default": ["render_engine_gl.cc"],
+    }),
+    hdrs = ["render_engine_gl.h"],
+    deps = [
+        ":render_engine",
     ],
 )
 
@@ -167,6 +181,29 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry:geometry_ids",
         "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_engine_gl_test",
+    args = select({
+        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":render_engine_gl",
+    ],
+)
+
+drake_cc_googletest(
+    name = "no_render_engine_gl_test",
+    args = select({
+        "//tools/cc_toolchain:linux": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":render_engine_gl",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
