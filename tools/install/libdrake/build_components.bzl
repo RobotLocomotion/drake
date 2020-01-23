@@ -61,6 +61,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/proximity",
     "//geometry/query_results",
     "//geometry/render",
+    "//geometry/render/gl_renderer",
     "//geometry/render/shaders",
     "//lcm",
     "//manipulation/kuka_iiwa",
@@ -101,5 +102,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
+    # //common:filesystem (indirectly)
     # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
 ]

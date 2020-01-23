@@ -1,0 +1,9 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# On macOS, no targets should depend on @opengl.
+cc_library(
+    name = "opengl",
+    srcs = ["missing-macos.cc"],
+)

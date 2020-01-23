@@ -22,6 +22,7 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/render/render_label.h"
@@ -108,6 +109,8 @@ void def_geometry_render(py::module m) {
           doc.RenderEngineVtkParams.default_label.doc)
       .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
           doc.RenderEngineVtkParams.default_diffuse.doc);
+
+  m.def("MakeRenderEngineGl", &MakeRenderEngineGl, doc.MakeRenderEngineGl.doc);
 
   m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
       doc.MakeRenderEngineVtk.doc);

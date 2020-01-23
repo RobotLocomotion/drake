@@ -56,6 +56,7 @@ load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
 load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
+load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
@@ -205,6 +206,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         octomap_repository(name = "octomap", mirrors = mirrors)
     if "openblas" not in excludes:
         openblas_repository(name = "openblas")
+    if "opengl" not in excludes:
+        opengl_repository(name = "opengl")
     if "optitrack_driver" not in excludes:
         optitrack_driver_repository(name = "optitrack_driver", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
