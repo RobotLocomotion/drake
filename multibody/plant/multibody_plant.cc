@@ -2197,7 +2197,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
                                     BasicVector<T>(num_multibody_states()),
-                                    &MultibodyPlant::CopyContinuousStateOut,
+                                    &MultibodyPlant::CopyMultibodyStateOut,
                                     {this->all_state_ticket()})
           .get_index();
 
@@ -2236,7 +2236,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 [this, model_instance_index](
                     const systems::Context<T>& context,
                     systems::BasicVector<T>* result) {
-                  this->CopyContinuousStateOut(model_instance_index, context,
+                  this->CopyMultibodyStateOut(model_instance_index, context,
                                                result);
                 },
                 {this->all_state_ticket()})
@@ -2547,35 +2547,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
               cache_indexes_.spatial_contact_forces_continuous)});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
-      }
-
-      template <typename T>
-      const systems::BasicVector<T> &
-      MultibodyPlant<T>::GetStateVector(const Context<T>& context) const {
-    if (is_discrete()) {
-      return context.get_discrete_state(0);
-    } else {
-      return dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state_vector());
-    }
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyContinuousStateOut(
+void MultibodyPlant<T>::CopyMultibodyStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  state_vector->SetFrom(GetStateVector(context));
+  state_vector->SetFromVector(GetPositionsAndVelocities(context));
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyContinuousStateOut(
+void MultibodyPlant<T>::CopyMultibodyStateOut(
     ModelInstanceIndex model_instance,
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-
-  VectorX<T> instance_state_vector =
-      GetPositionsAndVelocities(context, model_instance);
-  state_vector->SetFromVector(instance_state_vector);
+  state_vector->SetFromVector(
+      GetPositionsAndVelocities(context, model_instance));
 }
 
 template <typename T>

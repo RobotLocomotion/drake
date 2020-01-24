@@ -412,8 +412,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// SceneGraph.
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
-  /// Returns a constant reference to the output port for the full state
-  /// x = [q v] of the model.
+  /// Returns a constant reference to the output port for the multibody state
+  /// x = [q, v] of the model.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_state_output_port() const;
@@ -3664,17 +3664,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         body_index_to_frame_id_.end();
   }
 
-  // Helper to retrieve a constant reference to the state vector from context.
-  const systems::BasicVector<T>& GetStateVector(
-      const systems::Context<T>& context) const;
-
-  // Calc method for the continuous state vector output port.
-  void CopyContinuousStateOut(
+  // Calc method for the multibody state vector output port. It only copies the
+  // multibody state [q, v], ignoring any miscellaneous state z if present.
+  void CopyMultibodyStateOut(
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
-  // Calc method for the per-model-instance continuous state vector output
-  // port.
-  void CopyContinuousStateOut(
+  // Calc method for the per-model-instance multibody state vector output port.
+  // It only copies the per-model-instance multibody state [q, v], ignoring any
+  // miscellaneous state z if present.
+  void CopyMultibodyStateOut(
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
