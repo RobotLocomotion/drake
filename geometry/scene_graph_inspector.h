@@ -152,14 +152,14 @@ class SceneGraphInspector {
   /** Reports `true` if the given `id` maps to a registered source.  */
   bool SourceIsRegistered(SourceId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->source_is_registered(id);
+    return state_->SourceIsRegistered(id);
   }
 
   /** Reports the name for the source with the given `id`.
    @throws std::logic_error if `id` does not map to a registered source.  */
   const std::string& GetSourceName(SourceId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_source_name(id);
+    return state_->GetSourceName(id);
   }
 
   /** Reports the number of frames registered to the source with the given `id`.
@@ -209,7 +209,7 @@ class SceneGraphInspector {
    */
   const std::string& GetName(FrameId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_frame_name(id);
+    return state_->GetName(id);
   }
 
   /** Reports the frame group for the frame with the given `id`.
@@ -217,7 +217,7 @@ class SceneGraphInspector {
    @internal This value is equivalent to the old "model instance id".  */
   int GetFrameGroup(FrameId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_frame_group(id);
+    return state_->GetFrameGroup(id);
   }
 
   /** Reports the number of geometries affixed to the frame with the given `id`.
@@ -253,7 +253,7 @@ class SceneGraphInspector {
   GeometryId GetGeometryIdByName(FrameId id, Role role,
                                  const std::string& name) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetGeometryFromName(id, role, name);
+    return state_->GetGeometryIdByName(id, role, name);
   }
 
   //@}

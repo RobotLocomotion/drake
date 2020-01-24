@@ -702,8 +702,8 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
   SourceId s_id;
   const string name = "Unique";
   DRAKE_EXPECT_NO_THROW((s_id = geometry_state_.RegisterNewSource(name)));
-  EXPECT_TRUE(geometry_state_.source_is_registered(s_id));
-  EXPECT_EQ(geometry_state_.get_source_name(s_id), name);
+  EXPECT_TRUE(geometry_state_.SourceIsRegistered(s_id));
+  EXPECT_EQ(geometry_state_.GetSourceName(s_id), name);
 
   // Case: User-specified name duplicates previously registered name.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -712,7 +712,7 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
 
   // Case: query with invalid source id.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.get_source_name(SourceId::get_new_id()), std::logic_error,
+      geometry_state_.GetSourceName(SourceId::get_new_id()), std::logic_error,
       "Querying source name for an invalid source id: \\d+.");
 }
 
@@ -722,7 +722,7 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
 TEST_F(GeometryStateTest, GeometryStatistics) {
   const SourceId dummy_source = SetUpSingleSourceTree();
 
-  EXPECT_TRUE(geometry_state_.source_is_registered(dummy_source));
+  EXPECT_TRUE(geometry_state_.SourceIsRegistered(dummy_source));
   // Dummy source + self source.
   EXPECT_EQ(geometry_state_.get_num_sources(), 2);
   EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count());
@@ -741,7 +741,7 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
   const SourceId false_id = SourceId::get_new_id();
-  EXPECT_FALSE(geometry_state_.source_is_registered(false_id));
+  EXPECT_FALSE(geometry_state_.SourceIsRegistered(false_id));
 }
 
 TEST_F(GeometryStateTest, GetOwningSourceName) {
@@ -1763,18 +1763,18 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   const FrameId world = InternalFrame::world_frame_id();
 
   // Query frame group.
-  EXPECT_EQ(geometry_state_.get_frame_group(frames_[0]), 0);
-  EXPECT_EQ(geometry_state_.get_frame_group(world),
+  EXPECT_EQ(geometry_state_.GetFrameGroup(frames_[0]), 0);
+  EXPECT_EQ(geometry_state_.GetFrameGroup(world),
             InternalFrame::world_frame_group());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.get_frame_group(FrameId::get_new_id()), std::logic_error,
+      geometry_state_.GetFrameGroup(FrameId::get_new_id()), std::logic_error,
       "No frame group available for invalid frame id: \\d+");
 
   // Query frame name.
-  EXPECT_EQ(geometry_state_.get_frame_name(frames_[0]), "f0");
-  EXPECT_EQ(geometry_state_.get_frame_name(world), "world");
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), "f0");
+  EXPECT_EQ(geometry_state_.GetName(world), "world");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.get_frame_name(FrameId::get_new_id()), std::logic_error,
+      geometry_state_.GetName(FrameId::get_new_id()), std::logic_error,
       "No frame name available for invalid frame id: \\d+");
 
   // Set the frame poses to query geometry and frame poses.
@@ -2180,21 +2180,20 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       int g_index = f * kGeometryCount + g;
       const GeometryId expected_id = geometries_[g_index];
       // Look up with the canonical name.
-      EXPECT_EQ(geometry_state_.GetGeometryFromName(frames_[f],
-                                                    Role::kProximity,
-                                                    geometry_names_[g_index]),
+      EXPECT_EQ(geometry_state_.GetGeometryIdByName(
+                    frames_[f], Role::kProximity, geometry_names_[g_index]),
                 expected_id);
       // Look up with non-canonical name.
-      EXPECT_EQ(geometry_state_.GetGeometryFromName(
-                    frames_[f], Role::kProximity,
-                    " " + geometry_names_[g_index]),
-                expected_id);
+      EXPECT_EQ(
+          geometry_state_.GetGeometryIdByName(frames_[f], Role::kProximity,
+                                              " " + geometry_names_[g_index]),
+          expected_id);
     }
   }
 
   // Grab anchored.
   EXPECT_EQ(
-      geometry_state_.GetGeometryFromName(InternalFrame::world_frame_id(),
+      geometry_state_.GetGeometryIdByName(InternalFrame::world_frame_id(),
                                           Role::kProximity, anchored_name_),
       anchored_geometry_);
 
@@ -2202,21 +2201,21 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
 
   // Bad frame id.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(FrameId::get_new_id(),
+      geometry_state_.GetGeometryIdByName(FrameId::get_new_id(),
                                           Role::kUnassigned, "irrelevant"),
       std::logic_error, "Referenced frame \\d+ has not been registered.");
 
   // Bad *anchored* geometry name.
   const FrameId world_id = gs_tester_.get_world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(world_id, Role::kUnassigned, "bad"),
+      geometry_state_.GetGeometryIdByName(world_id, Role::kUnassigned, "bad"),
       std::logic_error,
       "The frame 'world' .\\d+. has no geometry with the role 'unassigned' "
       "and the canonical name '.+'");
 
   // Bad *dynamic* geometry name.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+      geometry_state_.GetGeometryIdByName(frames_[0], Role::kUnassigned,
                                           "bad_name"),
       std::logic_error,
       "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
@@ -2232,7 +2231,7 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
                                       make_unique<Sphere>(1), dummy_name));
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+      geometry_state_.GetGeometryIdByName(frames_[0], Role::kUnassigned,
                                           dummy_name),
       std::logic_error,
       "The frame '.+?' .\\d+. has multiple geometries with the role "

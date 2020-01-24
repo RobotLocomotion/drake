@@ -142,10 +142,10 @@ class GeometryState {
   //@{
 
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
-  bool source_is_registered(SourceId source_id) const;
+  bool SourceIsRegistered(SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::GetSourceName().  */
-  const std::string& get_source_name(SourceId id) const;
+  const std::string& GetSourceName(SourceId id) const;
 
   /** Implementation of SceneGraphInspector::NumFramesForSource().  */
   int NumFramesForSource(SourceId source_id) const;
@@ -167,10 +167,10 @@ class GeometryState {
   const std::string& GetOwningSourceName(FrameId id) const;
 
   /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
-  const std::string& get_frame_name(FrameId frame_id) const;
+  const std::string& GetName(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::GetFrameGroup().  */
-  int get_frame_group(FrameId frame_id) const;
+  int GetFrameGroup(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::NumGeometriesForFrame().  */
   int GetNumFrameGeometries(FrameId frame_id) const;
@@ -187,7 +187,7 @@ class GeometryState {
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIdByName().  */
-  GeometryId GetGeometryFromName(FrameId frame_id, Role role,
+  GeometryId GetGeometryIdByName(FrameId frame_id, Role role,
                                  const std::string& name) const;
 
   //@}

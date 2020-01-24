@@ -177,12 +177,12 @@ GeometryState<T>::GetCollisionCandidates() const {
 }
 
 template <typename T>
-bool GeometryState<T>::source_is_registered(SourceId source_id) const {
+bool GeometryState<T>::SourceIsRegistered(SourceId source_id) const {
   return source_frame_id_map_.find(source_id) != source_frame_id_map_.end();
 }
 
 template <typename T>
-const std::string& GeometryState<T>::get_source_name(SourceId id) const {
+const std::string& GeometryState<T>::GetSourceName(SourceId id) const {
   auto itr = source_names_.find(id);
   if (itr != source_names_.end()) return itr->second;
   throw std::logic_error(
@@ -218,7 +218,7 @@ const std::string& GeometryState<T>::GetOwningSourceName(FrameId id) const {
 }
 
 template <typename T>
-const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
+const std::string& GeometryState<T>::GetName(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
         to_string(frame_id);
@@ -227,7 +227,7 @@ const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
 }
 
 template <typename T>
-int GeometryState<T>::get_frame_group(FrameId frame_id) const {
+int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame group available for invalid frame id: " +
         to_string(frame_id);
@@ -267,7 +267,7 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
 }
 
 template <typename T>
-GeometryId GeometryState<T>::GetGeometryFromName(
+GeometryId GeometryState<T>::GetGeometryIdByName(
     FrameId frame_id, Role role, const std::string& name) const {
   const std::string canonical_name = internal::CanonicalizeStringName(name);
 
