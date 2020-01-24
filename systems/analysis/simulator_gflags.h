@@ -1,5 +1,9 @@
 #pragma once
 
+/// @file
+/// This file defines gflags settings to control Simulator settings.
+/// Only include this from translation units that declare a `main` function.
+
 #include <memory>
 #include <string>
 
@@ -8,14 +12,14 @@
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
 
-// Declares integrator's gflags.
-DECLARE_string(integration_scheme);
-DECLARE_double(max_time_step);
-DECLARE_double(accuracy);
+// Declares integrator gflags.
+DECLARE_string(simulator_integration_scheme);
+DECLARE_double(simulator_max_time_step);
+DECLARE_double(simulator_accuracy);
 
 // Declares simulator gflags.
-DECLARE_double(target_realtime_rate);
-DECLARE_bool(publish_every_time_step);
+DECLARE_double(simulator_target_realtime_rate);
+DECLARE_bool(simulator_publish_every_time_step);
 
 namespace drake {
 namespace systems {
@@ -27,8 +31,8 @@ namespace systems {
 ///   On input, a valid pointer to a Simulator. On output the
 ///   integrator for `simulator` is reset according to the gflags declared in
 ///   this file.
-/// @returns The newly created integrator. Access with
-/// Simulator::get_integrator().
+/// @returns  A reference to the the newly created integrator owned by
+/// `simulator`.
 IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
 
 /// Makes a new simulator according to the gflags declared in this file.

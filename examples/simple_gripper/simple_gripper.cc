@@ -148,7 +148,7 @@ int do_main() {
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  DRAKE_DEMAND(FLAGS_max_time_step > 0);
+  DRAKE_DEMAND(FLAGS_simulator_max_time_step > 0);
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
@@ -215,7 +215,7 @@ int do_main() {
   // least 30 time steps. Usually this is a good starting point for fixed step
   // size integrators to be stable.
   const double max_time_step =
-      FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
+      FLAGS_simulator_max_time_step > 0 ? FLAGS_simulator_max_time_step :
       plant.get_contact_penalty_method_time_scale() / 30;
 
   // Print maximum time step and the time scale introduced by the compliance in
@@ -334,7 +334,7 @@ int do_main() {
 
   const systems::IntegratorBase<double>& integrator =
       simulator->get_integrator();
-  fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
+  fmt::print("Stats for integrator {}:\n", FLAGS_simulator_integration_scheme);
   fmt::print("Number of time steps taken = {:d}\n",
              integrator.get_num_steps_taken());
   if (!integrator.get_fixed_step_mode()) {

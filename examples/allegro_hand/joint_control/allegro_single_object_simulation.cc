@@ -195,7 +195,6 @@ void DoMain() {
   // Set up simulator.
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
-  simulator->set_publish_every_time_step(true);
   simulator->AdvanceTo(FLAGS_simulation_time);
 }
 

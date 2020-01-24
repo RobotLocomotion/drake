@@ -43,7 +43,7 @@ drake_cc_library(
     srcs = ["simulator_gflags.cc"],
     hdrs = ["simulator_gflags.h"],
     tags = [
-        # Don't add this library into the ":common" package library.
+        # Don't add this library into the ":analysis" package library.
         # Only programs with a main() function should ever use this header.
         "exclude_from_package",
         # Don't install this header via this cc_library, because that would

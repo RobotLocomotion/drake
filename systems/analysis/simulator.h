@@ -26,6 +26,10 @@
 namespace drake {
 namespace systems {
 
+const double kDefaultTargetRealtimeRate = 0.0;
+const char* const kDefaultIntegratorName = "runge_kutta3";
+const bool kDefaultPublishEveryTimeStep = false;
+
 /** @ingroup simulation
 A class for advancing the state of hybrid dynamic systems, represented by
 `System<T>` objects, forward in time. Starting with an initial Context for a
@@ -796,9 +800,9 @@ class Simulator {
   VectorX<T> w0_, wf_;
 
   // Slow down to this rate if possible (user settable).
-  double target_realtime_rate_{0.};
+  double target_realtime_rate_{kDefaultTargetRealtimeRate};
 
-  bool publish_every_time_step_{false};
+  bool publish_every_time_step_{kDefaultPublishEveryTimeStep};
 
   bool publish_at_initialization_{false};
 
@@ -895,6 +899,8 @@ Simulator<T>::Simulator(const System<T>* system,
   if (!context_) context_ = system_.CreateDefaultContext();
 
   // Create a default integrator and initialize it.
+  // N.B. Keep this in sinc with systems::kDefaultIntegratorName at the top of
+  // this file.
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta3Integrator<T>(system_, context_.get()));
   integrator_->request_initial_step_size_target(initial_step_size);

@@ -42,8 +42,9 @@ int do_main() {
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
   auto pair = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(
-                    FLAGS_mbp_discrete_update_period));
+      &builder,
+      std::make_unique<MultibodyPlant<double>>(
+          FLAGS_mbp_discrete_update_period));
   MultibodyPlant<double>& plant = pair.plant;
 
   const std::string full_name =
