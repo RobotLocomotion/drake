@@ -84,6 +84,20 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
     const double tol = 1E-7;
     EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
 
+    typedef AutoDiffd<3> AD3d;
+    typedef Vector3<AD3d> Vector3AD3d;
+    typedef Vector2<AD3d> Vector2AD3d;
+
+    // We verify we can compile ComputeNumericalGradient() with autodiff but it
+    // throws at runtime.
+    std::function<void(const Vector3AD3d&, Vector2AD3d*)> ToyFunctionAD3d =
+        ToyFunction<AD3d>;
+    EXPECT_THROW(
+        ComputeNumericalGradient(
+            ToyFunctionAD3d, x_autodiff,
+            NumericalGradientOption{NumericalGradientMethod::kForward}),
+        std::runtime_error);
+
     // backward difference
     J = ComputeNumericalGradient(
         ToyFunctionDouble, x,

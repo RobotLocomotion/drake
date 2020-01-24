@@ -66,6 +66,9 @@ class NumericalGradientOption {
  * ComputeNumericalGradient<DerivedX, DerivedY>(calc_fun, x);
  * @retval gradient a matrix of size x.rows() x y.rows(). gradient(i, j) is
  * ∂f(i) / ∂x(j)
+ * @throws std::runtime_error if DerivedX, DerivedY or DerivedCalcX have a
+ * scalar type different from 'double'. However this implementation allows to
+ * compile your code with any other scalar types.
  *
  * Examples:
  * @code{cc}
@@ -95,54 +98,62 @@ ComputeNumericalGradient(
     const DerivedX& x,
     const NumericalGradientOption& option = NumericalGradientOption{
         NumericalGradientMethod::kForward}) {
+  // All input Eigen types must be vectors templated on the same scalar type.
+  typedef typename DerivedX::Scalar T;
+  static_assert(
+      is_eigen_vector_of<DerivedY, T>::value,
+      "DerivedY must be templated on the same scalar type as DerivedX.");
+  static_assert(
+      is_eigen_vector_of<DerivedCalcX, T>::value,
+      "DerivedCalcX must be templated on the same scalar type as DerivedX.");
+
   if constexpr (!is_eigen_scalar_same<DerivedX, double>::value) {
     unused(calc_fun, x, option);
     throw std::runtime_error("Only T = double is supported.");
   } else {
+    // First evaluate f(x).
+    Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y;
+    calc_fun(x, &y);
 
-  // First evaluate f(x).
-  Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y;
-  calc_fun(x, &y);
-
-  // Now evaluate f(x + Δx) and f(x - Δx) along each dimension.
-  Eigen::Matrix<double, DerivedX::RowsAtCompileTime, 1> x_plus = x;
-  Eigen::Matrix<double, DerivedX::RowsAtCompileTime, 1> x_minus = x;
-  Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y_plus, y_minus;
-  Eigen::Matrix<double, DerivedY::RowsAtCompileTime,
-                DerivedX::RowsAtCompileTime>
-      J(y.rows(), x.rows());
-  for (int i = 0; i < x.rows(); ++i) {
-    if (option.method() == NumericalGradientMethod::kForward ||
-        option.method() == NumericalGradientMethod::kCentral) {
-      x_plus(i) += std::max(option.perturbation_size(),
-                            std::abs(x(i)) * option.perturbation_size());
-      calc_fun(x_plus, &y_plus);
-    }
-    if (option.method() == NumericalGradientMethod::kBackward ||
-        option.method() == NumericalGradientMethod::kCentral) {
-      x_minus(i) -= std::max(option.perturbation_size(),
-                             std::abs(x(i)) * option.perturbation_size());
-      calc_fun(x_minus, &y_minus);
-    }
-    switch (option.method()) {
-      case NumericalGradientMethod::kForward: {
-        J.col(i) = (y_plus - y) / (x_plus(i) - x(i));
-        break;
+    // Now evaluate f(x + Δx) and f(x - Δx) along each dimension.
+    Eigen::Matrix<double, DerivedX::RowsAtCompileTime, 1> x_plus = x;
+    Eigen::Matrix<double, DerivedX::RowsAtCompileTime, 1> x_minus = x;
+    Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y_plus, y_minus;
+    Eigen::Matrix<double, DerivedY::RowsAtCompileTime,
+                  DerivedX::RowsAtCompileTime>
+        J(y.rows(), x.rows());
+    for (int i = 0; i < x.rows(); ++i) {
+      if (option.method() == NumericalGradientMethod::kForward ||
+          option.method() == NumericalGradientMethod::kCentral) {
+        x_plus(i) += std::max(option.perturbation_size(),
+                              std::abs(x(i)) * option.perturbation_size());
+        calc_fun(x_plus, &y_plus);
       }
-      case NumericalGradientMethod::kBackward: {
-        J.col(i) = (y - y_minus) / (x(i) - x_minus(i));
-        break;
+      if (option.method() == NumericalGradientMethod::kBackward ||
+          option.method() == NumericalGradientMethod::kCentral) {
+        x_minus(i) -= std::max(option.perturbation_size(),
+                               std::abs(x(i)) * option.perturbation_size());
+        calc_fun(x_minus, &y_minus);
       }
-      case NumericalGradientMethod::kCentral: {
-        J.col(i) = (y_plus - y_minus) / (x_plus(i) - x_minus(i));
-        break;
+      switch (option.method()) {
+        case NumericalGradientMethod::kForward: {
+          J.col(i) = (y_plus - y) / (x_plus(i) - x(i));
+          break;
+        }
+        case NumericalGradientMethod::kBackward: {
+          J.col(i) = (y - y_minus) / (x(i) - x_minus(i));
+          break;
+        }
+        case NumericalGradientMethod::kCentral: {
+          J.col(i) = (y_plus - y_minus) / (x_plus(i) - x_minus(i));
+          break;
+        }
       }
+      // Restore perturbed values.
+      x_plus(i) = x_minus(i) = x(i);
     }
-    // Restore perturbed values.
-    x_plus(i) = x_minus(i) = x(i);
+    return J;
   }
-  return J;
-  } 
 }
 }  // namespace math
 }  // namespace drake
