@@ -23,7 +23,6 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_visualization",
-        ":identifier",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -93,7 +92,7 @@ drake_cc_library(
     name = "geometry_ids",
     srcs = [],
     hdrs = ["geometry_ids.h"],
-    deps = [":identifier"],
+    deps = ["//common:identifier"],
 )
 
 drake_cc_library(
@@ -246,16 +245,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "identifier",
-    srcs = [],
-    hdrs = ["identifier.h"],
-    deps = [
-        "//common:essential",
-        "//common:hash",
-    ],
-)
-
-drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
@@ -398,17 +387,6 @@ drake_cc_googletest(
     name = "geometry_visualization_test",
     deps = [
         ":geometry_visualization",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "identifier_test",
-    deps = [
-        ":identifier",
-        "//common:sorted_pair",
-        "//common:unused",
-        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )

@@ -36,7 +36,7 @@ using systems::LeafSystem;
 
 template <typename Class>
 void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
-  auto& cls_doc = pydrake_doc.drake.geometry.Identifier;
+  auto& cls_doc = pydrake_doc.drake.Identifier;
 
   py::class_<Class> cls(m, name.c_str(), id_doc);
   py::handle cls_handle = cls;
