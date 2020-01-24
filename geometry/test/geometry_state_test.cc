@@ -702,8 +702,8 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
   SourceId s_id;
   const string name = "Unique";
   DRAKE_EXPECT_NO_THROW((s_id = geometry_state_.RegisterNewSource(name)));
-  EXPECT_TRUE(geometry_state_.source_is_registered(s_id));
-  EXPECT_EQ(geometry_state_.get_source_name(s_id), name);
+  EXPECT_TRUE(geometry_state_.SourceIsRegistered(s_id));
+  EXPECT_EQ(geometry_state_.GetName(s_id), name);
 
   // Case: User-specified name duplicates previously registered name.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -712,7 +712,7 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
 
   // Case: query with invalid source id.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.get_source_name(SourceId::get_new_id()), std::logic_error,
+      geometry_state_.GetName(SourceId::get_new_id()), std::logic_error,
       "Querying source name for an invalid source id: \\d+.");
 }
 
@@ -722,7 +722,7 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
 TEST_F(GeometryStateTest, GeometryStatistics) {
   const SourceId dummy_source = SetUpSingleSourceTree();
 
-  EXPECT_TRUE(geometry_state_.source_is_registered(dummy_source));
+  EXPECT_TRUE(geometry_state_.SourceIsRegistered(dummy_source));
   // Dummy source + self source.
   EXPECT_EQ(geometry_state_.get_num_sources(), 2);
   EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count());
@@ -731,17 +731,17 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.NumFramesForSource(SourceId::get_new_id()),
       std::logic_error, "Referenced geometry source .* is not registered.");
-  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
             single_tree_dynamic_geometry_count());
-  EXPECT_EQ(geometry_state_.GetNumAnchoredGeometries(),
+  EXPECT_EQ(geometry_state_.NumAnchoredGeometries(),
             anchored_geometry_count());
   EXPECT_EQ(
-      geometry_state_.GetNumAnchoredGeometries(),
-      geometry_state_.GetNumFrameGeometries(InternalFrame::world_frame_id()));
+      geometry_state_.NumAnchoredGeometries(),
+      geometry_state_.NumGeometriesForFrame(InternalFrame::world_frame_id()));
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
   const SourceId false_id = SourceId::get_new_id();
-  EXPECT_FALSE(geometry_state_.source_is_registered(false_id));
+  EXPECT_FALSE(geometry_state_.SourceIsRegistered(false_id));
 }
 
 TEST_F(GeometryStateTest, GetOwningSourceName) {
@@ -974,22 +974,20 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.get_num_geometries());
   EXPECT_EQ(single_tree_total_geometry_count(),
-            geometry_state_.GetNumGeometriesWithRole(Role::kProximity));
-  EXPECT_EQ(0, geometry_state_.GetNumGeometriesWithRole(Role::kPerception));
-  EXPECT_EQ(0, geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
+            geometry_state_.NumGeometriesWithRole(Role::kProximity));
+  EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kPerception));
+  EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kIllustration));
 
   for (int i = 0; i < kFrameCount; ++i) {
     EXPECT_EQ(kGeometryCount,
-              geometry_state_.GetNumFrameGeometries(frames_[i]));
-    EXPECT_EQ(kGeometryCount,
-              geometry_state_.GetNumFrameGeometriesWithRole(frames_[i],
-                                                            Role::kProximity));
+              geometry_state_.NumGeometriesForFrame(frames_[i]));
+    EXPECT_EQ(kGeometryCount, geometry_state_.NumGeometriesForFrameWithRole(
+                                  frames_[i], Role::kProximity));
     EXPECT_EQ(0,
-              geometry_state_.GetNumFrameGeometriesWithRole(
+              geometry_state_.NumGeometriesForFrameWithRole(
                   frames_[i], Role::kPerception));
-    EXPECT_EQ(0,
-              geometry_state_.GetNumFrameGeometriesWithRole(
-                  frames_[i], Role::kIllustration));
+    EXPECT_EQ(0, geometry_state_.NumGeometriesForFrameWithRole(
+                     frames_[i], Role::kIllustration));
   }
 }
 
@@ -1008,7 +1006,7 @@ TEST_F(GeometryStateTest, AddFirstFrameToValidSource) {
   const FrameId fid = geometry_state_.RegisterFrame(s_id, *frame_);
   EXPECT_EQ(fid, frame_->id());
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
-  const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
+  const auto &frame_set = geometry_state_.FramesForSource(s_id);
   EXPECT_NE(frame_set.find(fid), frame_set.end());
   EXPECT_EQ(frame_set.size(), 1);
   // The frame *is* a root frame; so both sets should be the same size.
@@ -1023,7 +1021,7 @@ TEST_F(GeometryStateTest, AddFrameToSourceWithFrames) {
   const FrameId fid = geometry_state_.RegisterFrame(s_id, *frame_);
   EXPECT_EQ(fid, frame_->id());
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
-  const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
+  const auto& frame_set = geometry_state_.FramesForSource(s_id);
   EXPECT_NE(frame_set.find(fid), frame_set.end());
   EXPECT_EQ(frame_set.size(), kFrameCount + 1);
   // The added frame *is* a root frame. The single-source tree has *one*
@@ -1042,13 +1040,13 @@ TEST_F(GeometryStateTest, AddFrameToNewSourceWithFrames) {
   // Confirm addition.
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, new_s_id));
   {
-    const auto &frame_set = geometry_state_.GetFramesForSource(new_s_id);
+    const auto& frame_set = geometry_state_.FramesForSource(new_s_id);
     EXPECT_NE(frame_set.find(fid), frame_set.end());
     EXPECT_EQ(frame_set.size(), 1);
   }
   // Confirm original source is unchanged.
   {
-    const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
+    const auto& frame_set = geometry_state_.FramesForSource(s_id);
     EXPECT_EQ(frame_set.find(fid), frame_set.end());
     EXPECT_EQ(frame_set.size(), kFrameCount);
   }
@@ -1353,7 +1351,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   ASSERT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
-  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
             single_tree_dynamic_geometry_count());
   // We assume that role assignment works (tested below), such that the
   // geometries are registered with the appropriate engines.
@@ -1362,7 +1360,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
 
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() - 1);
-  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
             single_tree_dynamic_geometry_count() - 1);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
@@ -1420,14 +1418,14 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
 
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() + 1);
-  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
             single_tree_dynamic_geometry_count() + 1);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
 
   geometry_state_.RemoveGeometry(s_id, root_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() - 1);
-  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
             single_tree_dynamic_geometry_count() - 1);
 
   const auto& frame = gs_tester_.get_frames().at(f_id);
@@ -1460,7 +1458,7 @@ TEST_F(GeometryStateTest, RemoveChildLeaf) {
 
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
-  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(), geometries_.size());
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), geometries_.size());
   EXPECT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
@@ -1763,18 +1761,18 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   const FrameId world = InternalFrame::world_frame_id();
 
   // Query frame group.
-  EXPECT_EQ(geometry_state_.get_frame_group(frames_[0]), 0);
-  EXPECT_EQ(geometry_state_.get_frame_group(world),
+  EXPECT_EQ(geometry_state_.GetFrameGroup(frames_[0]), 0);
+  EXPECT_EQ(geometry_state_.GetFrameGroup(world),
             InternalFrame::world_frame_group());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.get_frame_group(FrameId::get_new_id()), std::logic_error,
+      geometry_state_.GetFrameGroup(FrameId::get_new_id()), std::logic_error,
       "No frame group available for invalid frame id: \\d+");
 
   // Query frame name.
-  EXPECT_EQ(geometry_state_.get_frame_name(frames_[0]), "f0");
-  EXPECT_EQ(geometry_state_.get_frame_name(world), "world");
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), "f0");
+  EXPECT_EQ(geometry_state_.GetName(world), "world");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.get_frame_name(FrameId::get_new_id()), std::logic_error,
+      geometry_state_.GetName(FrameId::get_new_id()), std::logic_error,
       "No frame name available for invalid frame id: \\d+");
 
   // Set the frame poses to query geometry and frame poses.
@@ -2180,21 +2178,20 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       int g_index = f * kGeometryCount + g;
       const GeometryId expected_id = geometries_[g_index];
       // Look up with the canonical name.
-      EXPECT_EQ(geometry_state_.GetGeometryFromName(frames_[f],
-                                                    Role::kProximity,
-                                                    geometry_names_[g_index]),
+      EXPECT_EQ(geometry_state_.GetGeometryIdByName(
+                    frames_[f], Role::kProximity, geometry_names_[g_index]),
                 expected_id);
       // Look up with non-canonical name.
-      EXPECT_EQ(geometry_state_.GetGeometryFromName(
-                    frames_[f], Role::kProximity,
-                    " " + geometry_names_[g_index]),
-                expected_id);
+      EXPECT_EQ(
+          geometry_state_.GetGeometryIdByName(frames_[f], Role::kProximity,
+                                              " " + geometry_names_[g_index]),
+          expected_id);
     }
   }
 
   // Grab anchored.
   EXPECT_EQ(
-      geometry_state_.GetGeometryFromName(InternalFrame::world_frame_id(),
+      geometry_state_.GetGeometryIdByName(InternalFrame::world_frame_id(),
                                           Role::kProximity, anchored_name_),
       anchored_geometry_);
 
@@ -2202,21 +2199,21 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
 
   // Bad frame id.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(FrameId::get_new_id(),
+      geometry_state_.GetGeometryIdByName(FrameId::get_new_id(),
                                           Role::kUnassigned, "irrelevant"),
       std::logic_error, "Referenced frame \\d+ has not been registered.");
 
   // Bad *anchored* geometry name.
   const FrameId world_id = gs_tester_.get_world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(world_id, Role::kUnassigned, "bad"),
+      geometry_state_.GetGeometryIdByName(world_id, Role::kUnassigned, "bad"),
       std::logic_error,
       "The frame 'world' .\\d+. has no geometry with the role 'unassigned' "
       "and the canonical name '.+'");
 
   // Bad *dynamic* geometry name.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+      geometry_state_.GetGeometryIdByName(frames_[0], Role::kUnassigned,
                                           "bad_name"),
       std::logic_error,
       "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
@@ -2232,7 +2229,7 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
                                       make_unique<Sphere>(1), dummy_name));
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+      geometry_state_.GetGeometryIdByName(frames_[0], Role::kUnassigned,
                                           dummy_name),
       std::logic_error,
       "The frame '.+?' .\\d+. has multiple geometries with the role "

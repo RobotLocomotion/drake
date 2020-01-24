@@ -244,7 +244,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     const int geometry_count = pair.second;
     const internal::InternalFrame& frame = state.frames_.at(frame_id);
     SourceId s_id = state.get_source_id(frame.id());
-    const std::string& src_name = state.get_source_name(s_id);
+    const std::string& src_name = state.GetName(s_id);
     // TODO(SeanCurtis-TRI): The name in the load message *must* match the name
     // in the update message. Make sure this code and the SceneGraph output
     // use a common code-base to translate (source_id, frame) -> name.
