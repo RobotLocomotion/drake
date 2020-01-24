@@ -128,7 +128,7 @@ GeometryState<T>::GeometryState()
 }
 
 template <typename T>
-int GeometryState<T>::GetNumGeometriesWithRole(Role role) const {
+int GeometryState<T>::NumGeometriesWithRole(Role role) const {
   int count = 0;
   for (const auto& pair : geometries_) {
     if (pair.second.has_role(role)) ++count;
@@ -137,7 +137,7 @@ int GeometryState<T>::GetNumGeometriesWithRole(Role role) const {
 }
 
 template <typename T>
-int GeometryState<T>::GetNumDynamicGeometries() const {
+int GeometryState<T>::NumDynamicGeometries() const {
   int count = 0;
   for (const auto& pair : frames_) {
     const InternalFrame& frame = pair.second;
@@ -148,7 +148,7 @@ int GeometryState<T>::GetNumDynamicGeometries() const {
 }
 
 template <typename T>
-int GeometryState<T>::GetNumAnchoredGeometries() const {
+int GeometryState<T>::NumAnchoredGeometries() const {
   const InternalFrame& frame = frames_.at(InternalFrame::world_frame_id());
   return frame.num_child_geometries();
 }
@@ -177,12 +177,12 @@ GeometryState<T>::GetCollisionCandidates() const {
 }
 
 template <typename T>
-bool GeometryState<T>::source_is_registered(SourceId source_id) const {
+bool GeometryState<T>::SourceIsRegistered(SourceId source_id) const {
   return source_frame_id_map_.find(source_id) != source_frame_id_map_.end();
 }
 
 template <typename T>
-const std::string& GeometryState<T>::get_source_name(SourceId id) const {
+const std::string& GeometryState<T>::GetName(SourceId id) const {
   auto itr = source_names_.find(id);
   if (itr != source_names_.end()) return itr->second;
   throw std::logic_error(
@@ -196,7 +196,7 @@ int GeometryState<T>::NumFramesForSource(SourceId source_id) const {
 }
 
 template <typename T>
-const FrameIdSet& GeometryState<T>::GetFramesForSource(
+const FrameIdSet& GeometryState<T>::FramesForSource(
     SourceId source_id) const {
   return GetValueOrThrow(source_id, source_frame_id_map_);
 }
@@ -218,7 +218,7 @@ const std::string& GeometryState<T>::GetOwningSourceName(FrameId id) const {
 }
 
 template <typename T>
-const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
+const std::string& GeometryState<T>::GetName(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
         to_string(frame_id);
@@ -227,7 +227,7 @@ const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
 }
 
 template <typename T>
-int GeometryState<T>::get_frame_group(FrameId frame_id) const {
+int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame group available for invalid frame id: " +
         to_string(frame_id);
@@ -236,13 +236,13 @@ int GeometryState<T>::get_frame_group(FrameId frame_id) const {
 }
 
 template <typename T>
-int GeometryState<T>::GetNumFrameGeometries(FrameId frame_id) const {
+int GeometryState<T>::NumGeometriesForFrame(FrameId frame_id) const {
   const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
   return static_cast<int>(frame.child_geometries().size());
 }
 
 template <typename T>
-int GeometryState<T>::GetNumFrameGeometriesWithRole(FrameId frame_id,
+int GeometryState<T>::NumGeometriesForFrameWithRole(FrameId frame_id,
                                                     Role role) const {
   const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
   int count = 0;
@@ -267,7 +267,7 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
 }
 
 template <typename T>
-GeometryId GeometryState<T>::GetGeometryFromName(
+GeometryId GeometryState<T>::GetGeometryIdByName(
     FrameId frame_id, Role role, const std::string& name) const {
   const std::string canonical_name = internal::CanonicalizeStringName(name);
 
@@ -1013,7 +1013,7 @@ template <typename ValueType>
 void GeometryState<T>::ValidateFrameIds(
     const SourceId source_id,
     const FrameKinematicsVector<ValueType>& kinematics_data) const {
-  auto& frames = GetFramesForSource(source_id);
+  auto& frames = FramesForSource(source_id);
   const int ref_frame_count = static_cast<int>(frames.size());
   if (ref_frame_count != kinematics_data.size()) {
     // TODO(SeanCurtis-TRI): Determine if more specific information is required.
