@@ -79,7 +79,6 @@ struct CallbackData {
   std::vector<SignedDistanceToPoint<T>>& distances;
 };
 
-
 /** @name Functions for computing distance from point to primitives
  This family of functions compute the distance from a point Q to a primitive
  shape.  Refer to QueryObject::ComputeSignedDistanceToPoint() for more details.
@@ -102,6 +101,40 @@ struct CallbackData {
  @param is_grad_w_unique[out] True if the value in `grad_W` is unique.  */
 //@{
 
+/** Computes distance from point to sphere with the understanding that all
+ quantities are measured and expressed in the sphere's frame, S. Otherwise, the
+ semantics of the parameters are as documented as above.  */
+template <typename T>
+void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
+                                 const Vector3<T>& p_SQ, Vector3<T>* p_SN,
+                                 T* distance, Vector3<T>* grad_S,
+                                 bool* is_grad_W_unique) {
+  const double radius = sphere.radius;
+  const T dist_SQ = p_SQ.norm();
+  // The gradient is always in the direction from the center of the sphere to
+  // the query point Q, regardless of whether the point Q is outside or inside
+  // the sphere S.  The gradient is undefined if the query point Q is at the
+  // center of the sphere S.
+  //
+  // If the query point Q is near the center of the sphere G within a
+  // tolerance, we arbitrarily set the gradient vector as documented in
+  // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
+  const double tolerance = DistanceToPointRelativeTolerance(radius);
+  // Unit vector in x-direction of S's frame.
+  const Vector3<T> Sx = Vector3<T>::UnitX();
+  *is_grad_W_unique = (dist_SQ > tolerance);
+  // Gradient vector expressed in S's frame.
+  *grad_S = *is_grad_W_unique ? p_SQ / dist_SQ : Sx;
+
+  // p_SN is the position of a witness point N in the geometry frame S.
+  *p_SN = T(radius) * (*grad_S);
+
+  // Do not compute distance as ∥p_SQ∥₂, because the gradient of ∥p_SQ∥₂ w.r.t.
+  // p_SQ is p_SQᵀ/∥p_SQ∥₂ which is not well defined at p_SQ = 0. Instead,
+  // compute the distance as p_NQ_S.dot(grad_S).
+  *distance = (p_SQ - *p_SN).dot(*grad_S);
+}
+
 /** Overload of ComputeDistanceToPrimitive() for sphere primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
@@ -109,32 +142,10 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W,
                                 bool* is_grad_W_unique) {
-  const double radius = sphere.radius;
   const Vector3<T> p_GQ_G = X_WG.inverse() * p_WQ;
-  const T dist_GQ = p_GQ_G.norm();
-
-  // The gradient is always in the direction from the center of the sphere to
-  // the query point Q, regardless of whether the point Q is outside or inside
-  // the sphere G.  The gradient is undefined if the query point Q is at the
-  // center of the sphere G.
-  //
-  // If the query point Q is near the center of the sphere G within a
-  // tolerance, we arbitrarily set the gradient vector as documented in
-  // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
-  const double tolerance = DistanceToPointRelativeTolerance(radius);
-  // Unit vector in x-direction of G's frame.
-  const Vector3<T> Gx = Vector3<T>::UnitX();
-  *is_grad_W_unique = (dist_GQ > tolerance);
-  // Gradient vector expressed in G's frame.
-  const Vector3<T> grad_G = *is_grad_W_unique ? p_GQ_G / dist_GQ : Gx;
-
-  // p_GN is the position of a witness point N in the geometry frame G.
-  *p_GN = T(radius) * grad_G;
-
-  // Do not compute distance as ∥p_GQ∥₂, because the gradient of ∥p_GQ∥₂ w.r.t.
-  // p_GQ is p_GQᵀ/∥p_GQ∥₂ which is not well defined at p_GQ = 0. Instead,
-  // compute the distance as p_NQ_G.dot(grad_G).
-  *distance = (p_GQ_G - *p_GN).dot(grad_G);
+  Vector3<T> grad_G;
+  SphereDistanceInSphereFrame(sphere, p_GQ_G, p_GN, distance, &grad_G,
+                              is_grad_W_unique);
 
   // Gradient vector expressed in World frame.
   *grad_W = X_WG.rotation() * grad_G;
@@ -192,26 +203,35 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
   if (p_GQ.z() >= half_length || p_GQ.z() <= -half_length) {
     // Represent the end cap of the capsule using a sphere S of the same radius.
     const fcl::Sphered sphere_S(radius);
-    // S's pose is expressed in G's frame as a translation by half_length along
-    // the z-axis.
-    const math::RigidTransform<T> X_GS{Vector3<T>{
-        0, 0, (p_GQ.z() >= half_length) ? half_length : -half_length}};
-    const math::RigidTransform<T> X_WS = X_WG * X_GS;
+    // The sphere is defined centered on the origin of frame S. Frame S and G
+    // are related by a simple translation (their bases are perfectly aligned).
+    // So, a quantity expressed in frame G is the same as when expressed in S.
+    const Vector3<T> p_GS_G{
+        0, 0, (p_GQ.z() >= half_length) ? half_length : -half_length};
+    // The query point measured w.r.t. the sphere origin (equivalently expressed
+    // in G or S).
+    const Vector3<T> p_SQ_G = p_GQ - p_GS_G;
     // Position vector of the nearest point N expressed in S's frame.
-    Vector3<T> p_SN;
-    ComputeDistanceToPrimitive(sphere_S, X_WS, p_WQ, &p_SN, distance, grad_W,
-                               is_grad_W_unique);
-    *p_GN = X_GS * p_SN;
-
+    Vector3<T> grad_S;  // grad_S = grad_G because R_GS = I.
+    Vector3<T> p_SN_G;  // p_SN_G = p_SN_S because R_GS = I.
+    SphereDistanceInSphereFrame(sphere_S, p_SQ_G, &p_SN_G, distance, &grad_S,
+                                is_grad_W_unique);
+    *grad_W = X_WG.rotation() * grad_S;
+    *p_GN = p_GS_G + p_SN_G;
   } else {
-    // Otherwise the query point Q lies in the section nearest to the spine.
-    // The gradient is always in the direction perpendicular from the spine of
-    // the capsule to the query point Q, regardless of whether the point Q is
-    // outside or inside the capsule G. To simplify further, the gradient is
-    // the same from the origin of the capsule G to the point R, where point R
-    // is point Q with a projection to the x-y plane of G's frame. Point M is
-    // similarly obtained by projecting the witness point N on to the x-y plane
-    // of G's frame.
+    // The query point Q projects onto (and is nearest to) the spine. The
+    // gradient is perpendicular to the spine and points from N' to Q (where
+    // N' is the point on the spine nearest Q). Equivalently, the gradient is
+    // in the same direction as the vector from G's origin to R, where point R
+    // is the projection of Q onto G's x-y plane. And M is the nearest point
+    // on the capsule's surface to R. The distance between Q and N is the same
+    // as between R and M.
+    //
+    // This allows us to solve for the gradient, distance, and nearest point
+    // by computing the distance from R to a sphere with the same radius and
+    // centered on G's origin. We can then shift M to N by adding the
+    // z-component back into N.
+    //
     // z
     // ^           ● ●
     // |         ●     ●
@@ -225,30 +245,15 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
     // |         ●     ●
     // |           ● ●
 
+    // TODO(SeanCurtis-TRI): For further efficiency, consider doing these
+    //  calculations in 2D and then promoting them back into 3D.
     const Vector3<T> p_GR{p_GQ.x(), p_GQ.y(), 0};
-    const T dist_GoR = p_GR.norm();
-    // The gradient is undefined if the query point Q is at the spine of the
-    // capsule G. So if it is near the spine of the capsule G within a
-    // tolerance, we arbitrarily set the gradient vector as documented in
-    // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
-    const double tolerance = DistanceToPointRelativeTolerance(radius);
-    // Unit vector in x-direction of G's frame.
-    const Vector3<T> Gx = Vector3<T>::UnitX();
-    *is_grad_W_unique = (dist_GoR > tolerance);
-    // Gradient vector expressed in G's frame.
-    const Vector3<T> grad_G =
-        *is_grad_W_unique ? p_GR / dist_GoR : Gx;
-
-    // p_GN is the position of a witness point N in the geometry frame G.
-    const Vector3<T> p_GM = T(radius) * grad_G;
-    *p_GN = {p_GM.x(), p_GM.y(), p_GQ.z()};
-
-    // To support AutoDiff, do not compute distance as ∥p_GQ∥₂, because the
-    // gradient of ∥p_GQ∥₂ w.r.t. p_GQ is p_GQᵀ/∥p_GQ∥₂ which is not well
-    // defined at p_GQ = 0. Instead, compute the distance as p_NQ_G.dot(grad_G).
-    *distance = (p_GQ - *p_GN).dot(grad_G);
-
-    // Gradient vector expressed in World frame.
+    const fcl::Sphered sphere_S(radius);
+    Vector3<T> p_GM;
+    Vector3<T> grad_G;
+    SphereDistanceInSphereFrame(sphere_S, p_GR, &p_GM, distance, &grad_G,
+                                is_grad_W_unique);
+    *p_GN << p_GM.x(), p_GM.y(), p_GQ.z();
     *grad_W = X_WG.rotation() * grad_G;
   }
 }
@@ -303,6 +308,10 @@ class DistanceToPoint {
 
   /** Overload to compute distance to a capsule.  */
   SignedDistanceToPoint<T> operator()(const fcl::Capsuled& capsule) {
+    // TODO(SeanCurtis-TRI): This would be better if `SignedDistanceToPoint`
+    //  could be default constructed in an uninitialized state and then
+    //  pointers to its contents could be passed directly to ComputeDistance...
+    //  This would eliminate the inevitable copy in the constructor.
     T distance{};
     Vector3<T> p_GN_G, grad_W;
     bool is_grad_W_unique{};
