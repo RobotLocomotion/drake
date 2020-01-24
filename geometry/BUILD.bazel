@@ -93,7 +93,7 @@ drake_cc_library(
     name = "geometry_ids",
     srcs = [],
     hdrs = ["geometry_ids.h"],
-    deps = [":identifier"],
+    deps = ["//common:identifier"],
 )
 
 drake_cc_library(
@@ -247,11 +247,19 @@ drake_cc_library(
 
 drake_cc_library(
     name = "identifier",
-    srcs = [],
+    srcs = ["identifier.cc"],
     hdrs = ["identifier.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
+    deprecation = "The @drake//geometry:identifier library is deprecated and will be removed on 2020-05-01.  Use @drake//common:identifier instead.",  # noqa
+    tags = [
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
     deps = [
-        "//common:essential",
-        "//common:hash",
+        "//common:identifier",
     ],
 )
 
@@ -398,17 +406,6 @@ drake_cc_googletest(
     name = "geometry_visualization_test",
     deps = [
         ":geometry_visualization",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "identifier_test",
-    deps = [
-        ":identifier",
-        "//common:sorted_pair",
-        "//common:unused",
-        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
