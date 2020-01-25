@@ -37,8 +37,8 @@ it, in the lower-right corner of the "Review discussion" box.
 
 .. _run_specific_build:
 
-Running an On-Demand Build
-==========================
+Scheduling an On-Demand Build
+=============================
 
 There are a number of Jenkins builds that do not normally run pre-merge, but do
 run post-merge, nightly, or weekly. These builds include lower-priority
@@ -61,6 +61,11 @@ For example:
 * ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
 
+.. _scheduling-builds-via-the-jenkins-user-interface:
+
+Scheduling Builds via the Jenkins User Interface
+------------------------------------------------
+
 Alternatively, to schedule a build of an open pull request or arbitrary commit
 in the ``RobotLocomotion/drake`` repository:
 
@@ -80,3 +85,32 @@ of `continuous <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_,
 `nightly <https://drake-jenkins.csail.mit.edu/view/Nightly/>`_, and
 `weekly <https://drake-jenkins.csail.mit.edu/view/Weekly/>`_ builds,
 but you should not schedule continuous, nightly, or weekly builds directly.
+
+.. _building-binary-packages-on-demand:
+
+Building Binary Packages on Demand
+----------------------------------
+
+To schedule an "experimental" build of the :ref:`binary packages <binary-installation>`,
+comment on an open pull request as follows:
+
+* ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot mac-mojave-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+
+or follow the :ref:`instructions above <scheduling-builds-via-the-jenkins-user-interface>`
+to schedule a build of one of the following jobs from the Jenkins user
+interface:
+
+* linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging
+* mac-mojave-unprovisioned-clang-bazel-experimental-snopt-packaging
+
+The URL from which to download the built package will be indicated in the
+Jenkins console log for the completed build, for example::
+
+    -- Uploading package archive 1 of 1 to AWS S3...
+
+    upload: drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz
+    -- Package URL 1 of 1: https://drake-packages.csail.mit.edu/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz
+    -- Uploading package archive checksum 1 of 1 to AWS S3...
+
+    upload: drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz.sha512 to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz.sha512

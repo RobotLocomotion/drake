@@ -41,13 +41,25 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
    * reference to the MultibodyPlant object so you must ensure that @p plant
    * has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
    *
-   * @pre @p plant must be registered with a SceneGraph.
-   * @pre @p plant must be finalized.
+   * @throws if `plant` is not finalized and registered with a SceneGraph.
    */
   explicit MultibodyPositionToGeometryPose(
       const multibody::MultibodyPlant<T>& plant);
 
+  /**
+   * The %MultibodyPositionToGeometryPose owns its internal plant.
+   *
+   * @throws if `owned_plant` is not finalized and registered with a SceneGraph.
+   */
+  explicit MultibodyPositionToGeometryPose(
+      std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant);
+
   ~MultibodyPositionToGeometryPose() override = default;
+
+  const multibody::MultibodyPlant<T>& multibody_plant() const { return plant_; }
+
+  /** Returns true if this system owns its MultibodyPlant. */
+  bool owns_plant() const { return owned_plant_ != nullptr; }
 
   /** Returns the multibody position input port. */
   const InputPort<T>& get_input_port() const {
@@ -60,9 +72,18 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
   }
 
  private:
+  // Configure the input/output ports and prepare for calculation.
+  // @pre plant_ must reference a valid MBP.
+  void Configure();
+
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 
+  // NOTE: The constructor's correctness depends on these two members declared
+  // in this order (plant_ followed by owned_plant_). Do not change them.
   const multibody::MultibodyPlant<T>& plant_;
+  // The optionally owned plant. If not null, owned_plant_ == &plant_ must be
+  // true.
+  const std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
 
   // This is a context of the plant_ system, which is only owned here to avoid
   // runtime allocation.  It contains no relevant state.

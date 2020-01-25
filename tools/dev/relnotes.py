@@ -2,6 +2,9 @@
 This is intended for use by Drake maintainers (only).
 This program is only supported on Ubuntu Bionic 18.04.
 
+The usage of this tools is outlined in the "201912 Drake release playbook"
+document on Google Drive.
+
 The tool reads the commit history of github.com/RobotLocomotion/drake using
 the GitHub APIs -- the status of your current git clone is ignored.
 

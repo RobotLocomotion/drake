@@ -236,11 +236,9 @@ enum class ContactModel {
 ///   items.plant.DoFoo(...);
 ///   items.scene_graph.DoBar(...);
 /// @endcode
-/// or
+/// or taking advantage of C++17's structured binding
 /// @code
-///   auto items = AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
-///   MultibodyPlant<double>& plant = items.plant;
-///   SceneGraph<double>& scene_graph = items.scene_graph;
+///   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
 ///   ...
 ///   plant.DoFoo(...);
 ///   scene_graph.DoBar(...);
@@ -3789,10 +3787,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
-  // Helper to create the underlying hydroelastic fields used in the
-  // hydroelastic model.
-  void MakeHydroelasticModels();
-
   // Helper method to compute contact forces using the hydroelastic model.
   // F_BBo_W_array is indexed by BodyNodeIndex and it gets overwritten on
   // output. F_BBo_W_array must be of size num_bodies() or an exception is
@@ -4212,6 +4206,20 @@ struct AddMultibodyPlantSceneGraphResult final {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
+  // Returns the N-th member referenced by this struct.
+  // If N = 0, returns the reference to the MultibodyPlant.
+  // If N = 1, returns the reference to the geometry::SceneGraph.
+  // Provided to support C++17's structured binding.
+  template <std::size_t N>
+  decltype(auto) get() const {
+    if constexpr (N == 0)
+      return plant;
+    else if constexpr (N == 1)
+      return scene_graph;
+  }
+#endif
+
+#ifndef DRAKE_DOXYGEN_CXX
   // Only the move constructor is enabled; copy/assign/move-assign are deleted.
   AddMultibodyPlantSceneGraphResult(
       AddMultibodyPlantSceneGraphResult&&) = default;
@@ -4253,8 +4261,6 @@ std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>&) const;
 template <>
-void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
-template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
     HydroelasticContactInfoAndBodySpatialForces*) const;
@@ -4263,10 +4269,46 @@ void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(
         const systems::Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
+    const systems::Context<symbolic::Expression>&,
+    std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
 #endif
 
 }  // namespace multibody
 }  // namespace drake
+
+#ifndef DRAKE_DOXYGEN_CXX
+// Specializations provided to support C++17's structured binding for
+// AddMultibodyPlantSceneGraphResult.
+namespace std {
+// The GCC standard library defines tuple_size as class and struct which
+// triggers a warning here.
+// We found this solution in: https://github.com/nlohmann/json/issues/1401
+#if defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-tags"
+#endif
+template <typename T>
+struct tuple_size<drake::multibody::AddMultibodyPlantSceneGraphResult<T>>
+    : std::integral_constant<std::size_t, 2> {};
+
+template <typename T>
+struct tuple_element<0,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::multibody::MultibodyPlant<T>;
+};
+
+template <typename T>
+struct tuple_element<1,
+                     drake::multibody::AddMultibodyPlantSceneGraphResult<T>> {
+  using type = drake::geometry::SceneGraph<T>;
+};
+#if defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+}  // namespace std
+#endif
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)

@@ -98,7 +98,7 @@ RenderEngineOspray::RenderEngineOspray(const RenderEngineOsprayParams& params)
     background_color_ = ColorD{c(0), c(1), c(2)};
   }
 
-  InitializePipelines(params.samples_per_pixel);
+  InitializePipelines(params.samples_per_pixel, params.use_shadows);
 }
 
 void RenderEngineOspray::UpdateViewpoint(const RigidTransformd& X_WC) {
@@ -228,6 +228,10 @@ void RenderEngineOspray::ImplementGeometry(const Convex& convex,
   ImplementObj(convex.filename(), convex.scale(), user_data);
 }
 
+void RenderEngineOspray::SetDefaultLightPosition(const Vector3<double>& X_DL) {
+  light_->SetPosition(X_DL[0], X_DL[1], X_DL[2]);
+}
+
 bool RenderEngineOspray::DoRegisterVisual(
     GeometryId id, const Shape& shape, const PerceptionProperties& properties,
     const RigidTransformd& X_FG) {
@@ -240,10 +244,12 @@ bool RenderEngineOspray::DoRegisterVisual(
 RenderEngineOsprayParams RenderEngineOspray::get_params() const {
   const int samples_per_pixel = vtkOSPRayRendererNode::GetSamplesPerPixel(
       pipelines_[ImageType::kColor]->renderer);
+  const bool use_shadows =
+      pipelines_[ImageType::kColor]->renderer->GetUseShadows();
   return {
       render_mode_, default_diffuse_,
       Vector3d{background_color_.r, background_color_.g, background_color_.b},
-      samples_per_pixel};
+      samples_per_pixel, use_shadows};
 }
 
 void RenderEngineOspray::DoUpdateVisualPose(GeometryId id,
@@ -286,7 +292,8 @@ RenderEngineOspray::RenderEngineOspray(const RenderEngineOspray& other)
       default_diffuse_{other.default_diffuse_},
       background_color_{other.background_color_},
       render_mode_(other.render_mode_) {
-  InitializePipelines(other.get_params().samples_per_pixel);
+  RenderEngineOsprayParams params = other.get_params();
+  InitializePipelines(params.samples_per_pixel, params.use_shadows);
 
   // Utility function for creating a cloned actor which *shares* the same
   // underlying polygonal data.
@@ -347,7 +354,8 @@ RenderEngineOspray::RenderEngineOspray(const RenderEngineOspray& other)
   // TODO(SeanCurtis-TRI): Copy light.
 }
 
-void RenderEngineOspray::InitializePipelines(int samples_per_pixel) {
+void RenderEngineOspray::InitializePipelines(int samples_per_pixel,
+                                             bool use_shadows) {
   const vtkSmartPointer<vtkTransform> vtk_identity =
       ConvertToVtkTransform(RigidTransformd::Identity());
 
@@ -371,7 +379,7 @@ void RenderEngineOspray::InitializePipelines(int samples_per_pixel) {
     if (render_mode_ == OsprayMode::kRayTracer) {
       vtkOSPRayRendererNode::SetRendererType("scivis", pipeline->renderer);
       vtkOSPRayRendererNode::SetAmbientSamples(0, pipeline->renderer);
-      pipeline->renderer->UseShadowsOn();
+      pipeline->renderer->SetUseShadows(use_shadows);
       // NOTE: It appears that ospray does [0, 1] -> [0, 255] conversion via
       // truncation. So, to affect rounding, we have to bump the background
       // color by half a bit so that it rounds properly.

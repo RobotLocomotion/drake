@@ -74,7 +74,7 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
   // (2.0, 2.0, 1.0).
   RigidTransformd X_WR(Vector3d{3., 3., 1.});
 
-  return mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
+  return ComputeContactSurfaceFromSoftVolumeRigidSurface(
       GeometryId::get_new_id(), soft_pressure, X_WS,
       GeometryId::get_new_id(), rigid_mesh, X_WR);
 }

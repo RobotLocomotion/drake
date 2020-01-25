@@ -109,8 +109,10 @@ PYBIND11_MODULE(rendering, m) {
   py::class_<MultibodyPositionToGeometryPose<T>, LeafSystem<T>>(m,
       "MultibodyPositionToGeometryPose",
       doc.MultibodyPositionToGeometryPose.doc)
-      .def(py::init<const multibody::MultibodyPlant<T>&>(),
-          doc.MultibodyPositionToGeometryPose.ctor.doc)
+      .def(py::init<const multibody::MultibodyPlant<T>&>(), py::arg("plant"),
+          // Keep alive, reference: `self` keeps `plant` alive.
+          py::keep_alive<1, 2>(),
+          doc.MultibodyPositionToGeometryPose.ctor.doc_1args_plant)
       .def("get_input_port",
           &MultibodyPositionToGeometryPose<T>::get_input_port,
           py_reference_internal,

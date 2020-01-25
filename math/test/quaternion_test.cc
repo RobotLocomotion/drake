@@ -258,7 +258,52 @@ GTEST_TEST(IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB, testA) {
   EXPECT_FALSE(b);
 }
 
+void CheckQuaternionToAngleAxis(double w, double x, double y, double z) {
+  const Eigen::Quaternion quaternion(w, x, y, z);
+  const Eigen::AngleAxisd angle_axis =
+      internal::QuaternionToAngleAxisLikeEigen(quaternion);
+  const Eigen::AngleAxisd angle_axis_expected(quaternion);
+  EXPECT_GE(angle_axis.angle(), 0.);
+  EXPECT_LE(angle_axis.angle(), M_PI);
+  EXPECT_DOUBLE_EQ(angle_axis.angle(), angle_axis_expected.angle());
+  EXPECT_TRUE(CompareMatrices(angle_axis.axis(), angle_axis_expected.axis()));
+}
 
+GTEST_TEST(TestQuaternionToAngleAxisLikeEigen, TestDouble) {
+  CheckQuaternionToAngleAxis(1., 0., 0., 0.);
+  CheckQuaternionToAngleAxis(-1., 0., 0., 0.);
+  CheckQuaternionToAngleAxis(0., 1., 0., 0.);
+  CheckQuaternionToAngleAxis(0., -1., 0., 0.);
+  CheckQuaternionToAngleAxis(0., 0., 1., 0.);
+  CheckQuaternionToAngleAxis(0., 0., -1., 0.);
+  CheckQuaternionToAngleAxis(0., 0., 0., 1.);
+  CheckQuaternionToAngleAxis(0., 0., 0., -1.);
+  CheckQuaternionToAngleAxis(1. / 2., 1. / 2., 1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(-1. / 2., 1. / 2., 1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(1. / 2., -1. / 2., 1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(1. / 2., -1. / 2., -1. / 2., 1. / 2);
+  CheckQuaternionToAngleAxis(1. / 3., -2. / 3., -2. / 3., 0.);
+  CheckQuaternionToAngleAxis(1. / 3., 2. / 3., 2. / 3., 0.);
+  CheckQuaternionToAngleAxis(0., 1. / 3., 2. / 3., 2. / 3.);
+  CheckQuaternionToAngleAxis(0., 1. / 3., -2. / 3., 2. / 3.);
+  CheckQuaternionToAngleAxis(0., 2. / 3., -1. / 3., 2. / 3.);
+  CheckQuaternionToAngleAxis(1. / 3, 2. / 3., 0., 2. / 3.);
+}
+
+GTEST_TEST(TestQuaternionToAngleAxisLikeEigen, TestSymbolic) {
+  const symbolic::Variable w("w");
+  const symbolic::Variable x("x");
+  const symbolic::Variable y("y");
+  const symbolic::Variable z("z");
+
+  const Eigen::Quaternion<symbolic::Expression> quaternion(w, x, y, z);
+  const Eigen::AngleAxis<symbolic::Expression> angle_axis =
+      internal::QuaternionToAngleAxisLikeEigen(quaternion);
+  EXPECT_EQ(angle_axis.angle().GetVariables().size(), 4);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(angle_axis.axis()(i).GetVariables().size(), 4);
+  }
+}
 }  // namespace quaternion_test
 }  // namespace math
 }  // namespace drake

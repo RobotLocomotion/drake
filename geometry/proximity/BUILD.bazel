@@ -327,6 +327,7 @@ drake_cc_library(
     hdrs = ["mesh_intersection.h"],
     deps = [
         "//common",
+        "//geometry/proximity:bounding_volume_hierarchy",
         "//geometry/proximity:mesh_field",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",
