@@ -29,48 +29,58 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  * A first-order, fully implicit integrator optimized for second-order systems.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
- * The velocity-implicit Euler integrator implements first-order implicit Euler
- * by alternating between steps from Newton's method for solving the
- * generalized velocity and miscellaneous states with fixed-point iterations
- * for solving the position states. This integrator is designed to perform
- * better than ImplicitEulerIntegrator for second-order systems that can be 
- * expressed as (1-2).
+ * The velocity-implicit Euler integrator is a variant of the first-order
+ * implicit Euler that takes advantage of the simple mapping q̇ = N(q) v
+ * of second order systems to formulate a smaller problem in velocities (and
+ * miscellaneous states if any) only. For second-order systems,
+ * %VelocityImplicitEulerIntegrator formulates a problem that is half as large
+ * as that formulated by Drake's ImplicitEulerIntegrator, resulting in improved
+ * run-time performance. Upon convergence of the resulting system of equations,
+ * this method provides the same discretization as ImplicitEulerIntegrator, but
+ * at a fraction of the computational cost.
  *
  * This integrator requires a system of ordinary differential equations in
  * state `x = (q,v,z)` to be expressible in the following form:
  *
  *     q̇ = N(q) v;                           (1)
  *     ẏ = fᵥ(t,q,y),                        (2)
- * where `q̇` and `v` are linearly related via the matrix `N(q)`, `y = (v,z)`,
- * and `fᵥ` is a function that can depend on the time and state.
+ * where `q̇` and `v` are linearly related via the kinematic mapping `N(q)`, 
+ * `y = (v,z)`, and `fᵥ` is a function that can depend on the time and state.
  *
  * Implicit Euler uses the following update rule at time step n:
  *
  *     qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;           (3)
- *     yⁿ⁺¹ = yⁿ + h f(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).      (4)
+ *     yⁿ⁺¹ = yⁿ + h fᵥ(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).     (4)
  *
  * To solve the nonlinear system, the velocity-implicit Euler integrator
- * iteratively solves for `(qⁿ⁺¹,yⁿ⁺¹)` with Newton's method: At iteration `k`,
- * it finds `(qₖ₊₁,yₖ₊₁)` that satisfies
+ * iteratively solves for `(qⁿ⁺¹,yⁿ⁺¹)` with a Newton's method: At iteration
+ * `k`, it finds `(qₖ₊₁,yₖ₊₁)` that satisfies
  *
- *     yₖ₊₁ = yⁿ + h f(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);      (5)
- *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.             (6)
+ *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.             (5)
+ *     yₖ₊₁ = yⁿ + h fᵥ(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);     (6)
  *
  * In this notation, the `n`'s index timesteps, while the `k`'s index the
  * specific Newton-Raphson iterations within each time step.
+ * 
+ * Notice that we've intentionally lagged N(qₖ) one iteration behind in Eq (5).
+ * This allows it to substitute (5) into (6) to obtain a non-linear system in
+ * `y` only. Contrast this strategy with the one implemented by
+ * ImplicitEulerIntegrator, which solves a larger non-linear system in the full
+ * state x.
  *
  * To solve (5-6), first define
  *
- *     l(y) = f(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),      (7)
+ *     l(y) = fᵥ(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),     (7)
  *     Jₗ(y) = ∂l(y) / ∂y.                   (8)
  *
  * Next, it solves the following linear equation for `Δy`:
  *
  *     (I - h Jₗ) Δy = - R(yₖ),              (9)
- * where `R(y) = y - yⁿ - h l(y)` and `Δy = yₖ₊₁ - yₖ`. It then directly uses
- * `yₖ₊₁` in (6) to get `qₖ₊₁`.
+ * where `R(y) = y - yⁿ - h l(y)` and `Δy = yₖ₊₁ - yₖ`. The `Δy` solution
+ * directly gives us `yₖ₊₁`. It then substitutes the `vₖ₊₁` component of `yₖ₊₁`
+ * in (5) to get `qₖ₊₁`.
  *
- * This implementation uses Newton-Raphson (NR) and relies upon the obvious
+ * This implementation uses a Newton method and relies upon the obvious
  * convergence to a solution for `y` in `R(y) = 0` where
  * `R(y) = y - yⁿ - h l(y)` as `h` becomes sufficiently small.
  * General implementational details were gleaned from [Hairer, 1996].
@@ -143,21 +153,22 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   bool DoImplicitIntegratorStep(const T& h) final;
 
-  // Steps the system forward by a single step of at most h using the
-  // Velocity-Implicit Euler method.
+  // Steps the system forward by a single step of h using the Velocity-Implicit
+  // Euler method.
   // @param t0 the time at the left end of the integration interval.
-  // @param h the maximum time increment to step forward.
-  // @param xt0, xⁿ, the continuous state at t0.
+  // @param h the time increment to step forward.
+  // @param xt0 the continuous state at t0, which is xⁿ.
   // @param xtplus_guess the starting guess for xⁿ⁺¹.
   // @param [out] xtplus the computed value for xⁿ⁺¹ on successful return.
   // @param [in, out] iteration_matrix the cached iteration matrix, which is
-  //        only updated if the Newton-Raphson fails to converge on the first
-  //        try.
-  // @param [in, out] Jv the cached velocity Jacobian, which is only updated if
-  //        the Newton-Raphson fails to converge on the second try.
-  // @param trial the attempt for this approach (1-4). StepImplicitEuler() uses
-  //        more computationally expensive methods as the trial numbers
-  //        increase.
+  //        updated either if get_use_full_newton() is true or if the Newton-
+  //        Raphson fails to converge on the first try.
+  // @param [in, out] Jy the cached Jacobian Jₗ(y), which is updated either if
+  //        get_use_full_newton() is true or if the Newton-Raphson fails to
+  //        converge on the second try.
+  // @param trial the attempt for this approach (1-4). Similar to other implicit
+  //        integrators, StepImplicitEuler() uses increasingly computationally
+  //        expensive methods as the trial numbers increase.
   // @returns `true` if the step of size `h` was successful, `false` otherwise.
   // @note The time and continuous state in the context are indeterminate upon
   //       exit.
@@ -165,34 +176,32 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const T& t0, const T& h, const VectorX<T>& xt0,
       const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jv, int trial = 1);
-
-  // Velocity Jacobians for implicit Euler.
-  MatrixX<T>& get_mutable_velocity_jacobian_implicit_euler() { return Jv_ie_; }
+      MatrixX<T>* Jy, int trial = 1);
 
   // Compute the partial derivatives of the ordinary differential equations with
   // respect to the y variables of a given x(t). In particular, we compute the
   // Jacobian, Jₗ(y), of the function l(y), used in this integrator's
   // residual computation, with respect to y, where y = (v,z) and x = (q,v,z).
   // This Jacobian is then defined as:
-  //     l(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (7)
+  //     l(y)  = fᵥ(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
   //     Jₗ(y) = ∂l(y)/∂y                      (8)
-  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y)
+  // @param tf refers to tⁿ⁺¹, the time used in the definition of l(y)
   // @param h is the timestep size parameter, h, used in the definition of
   //        l(y)
-  // @param x is (qₖ, y), the continuous state around which to evaluate Jₗ(y)
+  // @param x is (qₖ, y), the continuous state around which to evaluate Jₗ(y);
+  //        qₖ is used in the definition of l(y).
   // @param qt0 refers to qⁿ, the initial position used in l(y)
-  // @param [out] Jv is the Jacobian matrix, Jₗ(y).
+  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
   // @post the context's time and continuous state will be temporarily set
   //       during this call (and then reset to their original values) on
   //       return.
-  void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& xtplus,
-                            const VectorX<T>& qt0, MatrixX<T>* Jv);
+  void CalcVelocityJacobian(const T& tf, const T& h, const VectorX<T>& x,
+                            const VectorX<T>& qt0, MatrixX<T>* Jy);
 
   // Uses first-order forward differencing to compute the Jacobian, Jₗ(y), of
   // the function l(y), used in this integrator's residual computation, with
   // respect to y, where y = (v,z). This Jacobian is then defined as:
-  //     l(y)  = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)    (7)
+  //     l(y)  = fᵥ(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
   //     Jₗ(y) = ∂l(y)/∂y                      (8)
   //
   // In this method, we compute the Jacobian Jₗ(y) using a first-order forward
@@ -204,21 +213,22 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param t refers to tⁿ⁺¹, the time used in the definition of l(y)
   // @param h is the timestep size parameter, h, used in the definition of
   //        l(y)
-  // @param x is (qₖ, y), the continuous state around which to evaluate Jₗ(y)
+  // @param x is (qₖ, y), the continuous state around which to evaluate Jₗ(y);
+  //        qₖ is used in the definition of l(y).
   // @param qt0 refers to qⁿ, the initial position used in l(y)
   // @param context the Context of the system, at time and continuous state
   //        unknown.
-  // @param [out] Jv is the Jacobian matrix, Jₗ(y).
+  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
   // @note The continuous state will be indeterminate on return.
   void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
                                           const VectorX<T>& xt,
                                           const VectorX<T>& qt0,
-                                          Context<T>* context, MatrixX<T>* Jv);
+                                          Context<T>* context, MatrixX<T>* Jy);
 
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
   // ImplicitIntegrator<T>::MaybeFreshenMatrices. We implement our own version
-  // here to use a specialized velocity Jacobian. The aformentioned method was
+  // here to use a specialized Jacobian Jₗ(y). The aformentioned method was
   // designed for use in DoImplicitIntegratorStep() processes that follow this
   // model:
   // 1. DoImplicitIntegratorStep(h) is called;
@@ -234,12 +244,12 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //
   // We provide our own method to execute the same logic, but with the
   // following differences:
-  // 1. We use the velocity Jacobian instead of the full Jacobian.
+  // 1. We use the specialized Jacobian Jₗ(y) instead of the full Jacobian.
   // 2. We no longer use the get_reuse() logic to reuse a Jacobian
-  //    when the time-step size (h) shrinks, because the velocity Jacobian
-  //    depends on h.
+  //    when the time-step size (h) shrinks, because the specialized Jacobian
+  //    Jₗ(y) depends on h.
   // These changes allow the velocity-implicit Euler method to use the smaller
-  // velocity Jacobian in its Newton solves.
+  // specialized Jacobian Jₗ(y) in its Newton solves.
   //
   // @param t the time at which to compute the Jacobian.
   // @param xt the continuous state at which the Jacobian is computed.
@@ -251,8 +261,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //        computing and factoring the iteration matrix.
   // @param [out] iteration_matrix the updated and factored iteration matrix on
   //            return.
-  // @param [out] Jv the updated and factored velocity Jacobian matrix on
-  //             return.
+  // @param [out] Jy the updated and factored Jacobian matrix Jₗ(y) on return.
   // @returns `false` if the calling stepping method should indicate failure;
   //          `true` otherwise.
   // @pre 1 <= `trial` <= 4.
@@ -266,7 +275,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                typename ImplicitIntegrator<T>::IterationMatrix*)>&
           compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jv);
+      MatrixX<T>* Jy);
 
   // Computes necessary matrices (Jacobian and iteration matrix) for full
   // Newton-Raphson (NR) iterations, if full Newton-Raphson method is activated
@@ -278,8 +287,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //        computing and factoring the iteration matrix.
   // @param[out] iteration_matrix the updated and factored iteration matrix on
   //             return.
-  // @post the state in the internal context will be set to (t, xt) and this
-  //       will store the updated Jacobian matrix, on return.
+  // @param[out] Jy the updated Jacobian matrix Jₗ(y).
+  // @post the state in the internal context will be set to (t, xt).
   void FreshenVelocityMatricesIfFullNewton(
       const T& t, const VectorX<T>& xt, const VectorX<T>& qt0, const T& h,
       const std::function<
@@ -287,12 +296,12 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                typename ImplicitIntegrator<T>::IterationMatrix*)>&
           compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jv);
+      MatrixX<T>* Jy);
 
   // This helper method evaluates the Newton-Raphson residual R(y), defined as
   // the following:
   //     R(y)  = y - yⁿ - h l(y),
-  //     l(y) = f(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
+  //     l(y) = fᵥ(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
   //  with tⁿ⁺¹, qₖ, y derived from the context and qⁿ, yⁿ, h passed in.
   // @param qt0 is qⁿ, the generalized position at the beginning of the step
   // @param yt0 is yⁿ, the generalized velocity and miscellaneous states at the
@@ -319,7 +328,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_nr_iterations_{0};
 
   // The last computed velocity+misc Jacobian matrices.
-  MatrixX<T> Jv_ie_;
+  MatrixX<T> Jy_ie_;
 };
 
 template <class T>
@@ -339,7 +348,7 @@ void VelocityImplicitEulerIntegrator<T>::DoInitialize() {
     throw std::logic_error("Maximum step size has not been set!");
 
   // Reset the Jacobian matrix (so that recomputation is forced).
-  this->get_mutable_velocity_jacobian_implicit_euler().resize(0, 0);
+  this->Jy_ie_.resize(0, 0);
 
   // TODO(antequ): Change this to the recommended default accuracy after error
   // control is implemented.
@@ -365,7 +374,7 @@ void VelocityImplicitEulerIntegrator<T>::
 template <class T>
 void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     const T& t, const T& h, const VectorX<T>& x, const VectorX<T>& qt0,
-    Context<T>* context, MatrixX<T>* Jv) {
+    Context<T>* context, MatrixX<T>* Jy) {
   using std::abs;
   using std::max;
 
@@ -389,7 +398,7 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   DRAKE_LOGGER_DEBUG("  computing from state {}", x.transpose());
 
   // Initialize the Jacobian.
-  Jv->resize(ny, ny);
+  Jy->resize(ny, ny);
 
   // qk, v, y refer to the baseline state from x.
   const Eigen::VectorBlock<const VectorX<T>> qk = x.head(nq);
@@ -414,11 +423,13 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   q_prime = qt0_plus_hNv;
 
   // Initialize the finite-difference baseline, l(y), by evaluating the
-  // context at l(y) = f(t, qⁿ + h N(qₖ) v, y) = f(t,x).
+  // context at l(y) = fᵥ(t, qⁿ + h N(qₖ) v, y) = fᵥ(t,x).
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
-      .SetFromVector(q_prime);
-  const VectorX<T> l_of_y = this->EvalTimeDerivatives(*context).CopyToVector();
+      .SetFromVector(qt0_plus_hNv);
+  // This variable stores l(y) evaluated at y.
+  const VectorX<T> l_of_y_at_y = this->EvalTimeDerivatives(*context)
+      .CopyToVector().tail(ny);
 
   // Now evaluate each l(y') where y' modifies one value of y at a time
   for (int j = 0; j < ny; ++j) {
@@ -449,9 +460,9 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 
     // Compute l(y') and set the relevant column of the Jacobian matrix.
     context->SetTimeAndContinuousState(t, x_prime);
-    Jv->col(j) =
-        (this->EvalTimeDerivatives(*context).CopyToVector() - l_of_y).tail(ny) /
-        dyj;
+    Jy->col(j) =
+        (this->EvalTimeDerivatives(*context).CopyToVector().tail(ny)
+        - l_of_y_at_y) / dyj;
 
     // Reset y' to y.
     y_prime(j) = y(j);
@@ -461,7 +472,7 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 template <class T>
 void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(
     const T& t, const T& h, const VectorX<T>& x, const VectorX<T>& qt0,
-    MatrixX<T>* Jv) {
+    MatrixX<T>* Jy) {
   // Just like ImplicitIntegrator<T>::CalcJacobian, we change the context but
   // will change it back. The user should assume all caches are dirty after it
   // finishes.
@@ -485,7 +496,7 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(
   switch (this->get_jacobian_computation_scheme()) {
     case VelocityImplicitEulerIntegrator<
         T>::JacobianComputationScheme::kForwardDifference:
-      ComputeForwardDiffVelocityJacobian(t, h, x, qt0, &*context, Jv);
+      ComputeForwardDiffVelocityJacobian(t, h, x, qt0, &*context, Jy);
       break;
     case VelocityImplicitEulerIntegrator<
         T>::JacobianComputationScheme::kCentralDifference:
@@ -516,16 +527,16 @@ bool VelocityImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
                              typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    MatrixX<T>* Jv) {
-  DRAKE_DEMAND(Jv != nullptr);
+    MatrixX<T>* Jy) {
+  DRAKE_DEMAND(Jy != nullptr);
   DRAKE_DEMAND(iteration_matrix != nullptr);
   // Compute the initial Jacobian and iteration matrices and factor them, if
   // necessary.
 
-  if (!this->get_reuse() || Jv->rows() == 0 || this->IsBadJacobian(*Jv)) {
-    CalcVelocityJacobian(t, h, xt, qt0, Jv);
+  if (!this->get_reuse() || Jy->rows() == 0 || this->IsBadJacobian(*Jy)) {
+    CalcVelocityJacobian(t, h, xt, qt0, Jy);
     this->increment_num_iter_factorizations();
-    compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
+    compute_and_factor_iteration_matrix(*Jy, h, iteration_matrix);
     return true;  // Indicate success.
   }
 
@@ -533,7 +544,7 @@ bool VelocityImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
   // If the iteration matrix has not been set and factored, do only that.
   if (!iteration_matrix->matrix_factored()) {
     this->increment_num_iter_factorizations();
-    compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
+    compute_and_factor_iteration_matrix(*Jy, h, iteration_matrix);
     return true;  // Indicate success.
   }
 
@@ -548,7 +559,7 @@ bool VelocityImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
       // For the second trial, we perform the (likely) next least expensive
       // operation, re-constructing and factoring the iteration matrix.
       this->increment_num_iter_factorizations();
-      compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
+      compute_and_factor_iteration_matrix(*Jy, h, iteration_matrix);
       return true;
     }
 
@@ -560,9 +571,9 @@ bool VelocityImplicitEulerIntegrator<T>::MaybeFreshenVelocityMatrices(
       // optimization when matrices are already fresh in
       // ImplicitIntegrator<T>::MaybeFreshenMatrices does not significantly help
       // here, especially because our Jacobian depends on step size h.
-      CalcVelocityJacobian(t, h, xt, qt0, Jv);
+      CalcVelocityJacobian(t, h, xt, qt0, Jy);
       this->increment_num_iter_factorizations();
-      compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
+      compute_and_factor_iteration_matrix(*Jy, h, iteration_matrix);
       return true;
 
       case 4: {
@@ -583,17 +594,17 @@ void VelocityImplicitEulerIntegrator<T>::FreshenVelocityMatricesIfFullNewton(
                              typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    MatrixX<T>* Jv) {
+    MatrixX<T>* Jy) {
   DRAKE_DEMAND(iteration_matrix != nullptr);
-  DRAKE_DEMAND(Jv != nullptr);
+  DRAKE_DEMAND(Jy != nullptr);
 
   // Return immediately if full-Newton is not in use.
   if (!this->get_use_full_newton()) return;
 
   // Compute the initial Jacobian and iteration matrices and factor them.
-  CalcVelocityJacobian(t, h, xt, qt0, Jv);
+  CalcVelocityJacobian(t, h, xt, qt0, Jy);
   this->increment_num_iter_factorizations();
-  compute_and_factor_iteration_matrix(*Jv, h, iteration_matrix);
+  compute_and_factor_iteration_matrix(*Jy, h, iteration_matrix);
 }
 
 template <class T>
@@ -616,7 +627,7 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualR(
       *context, cstate.get_generalized_velocity(), &qdot);
   const VectorX<T> q = qt0 + h * qdot.get_value();
 
-  // Evaluate l = f(q, v, z)
+  // Evaluate l = fᵥ(t, q, v, z)
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
       .SetFromVector(q);
@@ -635,7 +646,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     const T& t0, const T& h, const VectorX<T>& xt0,
     const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    MatrixX<T>* Jv, int trial) {
+    MatrixX<T>* Jy, int trial) {
   using std::abs;
 
   // Verify the trial number is valid.
@@ -687,7 +698,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
   if (!this->get_use_full_newton() &&
       !this->MaybeFreshenVelocityMatrices(
           t0, xt0, qt0, h, trial, ComputeAndFactorImplicitEulerIterationMatrix,
-          iteration_matrix, Jv)) {
+          iteration_matrix, Jy)) {
     return false;
   }
 
@@ -699,7 +710,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
     this->FreshenVelocityMatricesIfFullNewton(
         tf, *xtplus, qt0, h, ComputeAndFactorImplicitEulerIterationMatrix,
-        iteration_matrix, Jv);
+        iteration_matrix, Jy);
 
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
@@ -784,7 +795,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
   // Try StepImplicitEuler again. That method will
   // freshen Jacobians and iteration matrix factorizations as necessary.
   return StepImplicitEuler(t0, h, xt0, xtplus_guess, xtplus, iteration_matrix,
-                           Jv, trial + 1);
+                           Jy, trial + 1);
 }
 
 template <class T>
@@ -812,7 +823,7 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
     // [Hairer 1996] validates this choice (p. 120).
     const VectorX<T>& xtplus_guess = xt0_;
     bool success = StepImplicitEuler(t0, h, xt0_, xtplus_guess, &xtplus_ie_,
-                                     &iteration_matrix_ie_, &Jv_ie_);
+                                     &iteration_matrix_ie_, &Jy_ie_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
