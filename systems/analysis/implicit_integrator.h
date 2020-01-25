@@ -329,6 +329,35 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     return true;
   }
 
+  enum class ConvergenceStatus {
+    kDiverged,
+    kConverged,
+    kNotConverged,
+  };
+
+  /// Checks a Newton-Raphson iteration process for convergence. The logic
+  /// is based on the description on p. 121 from
+  /// [Hairer, 1996] E. Hairer and G. Wanner. Solving Ordinary Differential
+  ///                Equations II (Stiff and Differential-Algebraic Problems).
+  ///                Springer, 1996.
+  /// This function is called after the dx is computed in an iteration, to
+  /// determine if the Newton process converged, diverged, or needs further
+  /// iterations.
+  /// @param iteration the iteration index, starting at 0 for the first
+  ///           iteration.
+  /// @param xtplus the state x at the current iteration.
+  /// @param dx the state change dx the difference between xtplus at the
+  ///           current and the previous iteration.
+  /// @param dx_norm the weighted norm of dx
+  /// @param last_dx_norm the weighted norm of dx from the previous iteration.
+  ///           This parameter is ignored during the first iteration.
+  /// @return `kConverged` for convergence, `kDiverged` for divergence,
+  ///         otherwise `kNotConverged` if Newton-Raphson should simply
+  ///         continue.
+  ConvergenceStatus CheckNewtonConvergence(int iteration,
+      const VectorX<T>& xtplus, const VectorX<T>& dx, const T& dx_norm,
+      const T& last_dx_norm) const;
+
   /// Resets any statistics particular to a specific implicit integrator. The
   /// default implementation of this function does nothing. If your integrator
   /// collects its own statistics, you should re-implement this method and
@@ -664,6 +693,60 @@ ImplicitIntegrator<AutoDiffXd>::IterationMatrix::Solve(
     const VectorX<AutoDiffXd>& b) const {
   return QR_.solve(b);
 }
+
+template <typename T>
+typename ImplicitIntegrator<T>::ConvergenceStatus
+ImplicitIntegrator<T>::CheckNewtonConvergence(
+    int iteration, const VectorX<T>& xtplus, const VectorX<T>& dx,
+    const T& dx_norm, const T& last_dx_norm) const {
+  // The check below looks for convergence by identifying cases where the
+  // update to the state results in no change.
+  // Note: Since we are performing this check at the end of the iteration,
+  // after xtplus has been updated, we also know that there is at least some
+  // change to the state, no matter how small, on a non-stationary system.
+  // Future maintainers should make sure this check only occurs after a change
+  // has been made to the state.
+  if (this->IsUpdateZero(xtplus, dx)) {
+    DRAKE_LOGGER_DEBUG("magnitude of state update indicates convergence");
+    return ConvergenceStatus::kConverged;
+  }
+
+  // Compute the convergence rate and check convergence.
+  // [Hairer, 1996] notes that this convergence strategy should only be applied
+  // after *at least* two iterations (p. 121). In practice, we find that it
+  // needs to run at least three iterations otherwise some error-controlled runs
+  // may choke, hence we check if iteration > 1.
+  if (iteration > 1) {
+    // TODO(edrumwri) Hairer's RADAU5 implementation (allegedly) uses
+    // theta = sqrt(dx[k] / dx[k-2]) while DASSL uses
+    // theta = pow(dx[k] / dx[0], 1/k), so investigate setting
+    // theta to these alternative values for minimizing convergence failures.
+    const T theta = dx_norm / last_dx_norm;
+    const T eta = theta / (1 - theta);
+    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
+                iteration, theta, eta);
+
+    // Look for divergence.
+    if (theta > 1) {
+      DRAKE_LOGGER_DEBUG("Newton-Raphson divergence detected");
+      return ConvergenceStatus::kDiverged;
+    }
+
+    // Look for convergence using Equation IV.8.10 from [Hairer, 1996].
+    // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
+    // efficiently on a number of test problems with *Radau5* (a fifth order
+    // implicit integrator), p. 121. We select a value halfway in-between.
+    const double kappa = 0.05;
+    const double k_dot_tol = kappa * this->get_accuracy_in_use();
+    if (eta * dx_norm < k_dot_tol) {
+      DRAKE_LOGGER_DEBUG("Newton-Raphson converged; η = {}", eta);
+      return ConvergenceStatus::kConverged;
+    }
+  }
+
+  return ConvergenceStatus::kNotConverged;
+}
+
 
 template <class T>
 bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
