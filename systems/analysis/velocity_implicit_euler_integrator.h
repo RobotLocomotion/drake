@@ -314,6 +314,16 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   VectorX<T> ComputeResidualR(const VectorX<T>& qt0, const VectorX<T>& yt0,
                               const T& h);
 
+  // This helper method evaluates l(y), defined as the following:
+  //     l(y) = fᵥ(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
+  //  with tⁿ⁺¹, qₖ, y derived from the context and qⁿ, h passed in.
+  // @param qt0 is qⁿ, the generalized position at the beginning of the step
+  // @param h is the step size
+  // @param [out] result is set to l(y)
+  // @post The position of the context is invalidated.
+  VectorX<T> ComputeLOfYWithQkAndYFromContext(const VectorX<T>& qt0,
+      const T& h);
+
   // The last computed iteration matrix and factorization; the _ie_ is for
   // the large step and the _hie_ is for the small step
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_;
@@ -414,22 +424,21 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 
   // Compute the Jacobian.
 
-  // Define x' = (qⁿ + h N(qₖ) v, y), to compute the baseline l(y), and then
-  // reuse x' = (qⁿ + h N(qₖ) v', y') to compute each prime l(y').
-  VectorX<T> x_prime = x;
-  Eigen::VectorBlock<VectorX<T>> q_prime = x_prime.head(nq);
-  Eigen::VectorBlock<VectorX<T>> v_prime = x_prime.segment(nq, nv);
-  Eigen::VectorBlock<VectorX<T>> y_prime = x_prime.tail(ny);
-  q_prime = qt0_plus_hNv;
+  // Define a y' to perturb
+  VectorX<T> y_prime = y;
+
+  auto l_of_y = [&ny, &nq, &qk, &t, &qt0, &h, this](const VectorX<T>& y_state)
+      -> VectorX<T> {
+    VectorX<T> x_state(ny + nq);
+    x_state.head(nq) = qk;
+    x_state.tail(ny) = y_state;
+    this->get_mutable_context()->SetTimeAndContinuousState(t, x_state);
+    return this->ComputeLOfYWithQkAndYFromContext(qt0, h);
+  };
 
   // Initialize the finite-difference baseline, l(y), by evaluating the
   // context at l(y) = fᵥ(t, qⁿ + h N(qₖ) v, y) = fᵥ(t,x).
-  context->get_mutable_continuous_state()
-      .get_mutable_generalized_position()
-      .SetFromVector(qt0_plus_hNv);
-  // This variable stores l(y) evaluated at y.
-  const VectorX<T> l_of_y_at_y = this->EvalTimeDerivatives(*context)
-      .CopyToVector().tail(ny);
+  const VectorX<T> l_of_y_at_y = l_of_y(y);
 
   // Now evaluate each l(y') where y' modifies one value of y at a time
   for (int j = 0; j < ny; ++j) {
@@ -445,24 +454,10 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     // Press, W., Teukolsky, S., Vetterling, W., and Flannery, P. Numerical
     //   Recipes in C++, 2nd Ed., Cambridge University Press, 2002.
     y_prime(j) = y(j) + dyj;
-    if (j < nv) {
-      // Set q' = qⁿ + h N(qₖ) v' with v' from y'
-      context->get_mutable_continuous_state()
-          .get_mutable_generalized_position()
-          .SetFromVector(qk);
-      this->get_system().MapVelocityToQDot(*context, v_prime, &qdot);
-      q_prime = qt0 + h * qdot.get_value();
-    } else {
-      // In this scenario, v' = v, and so q' is unchanged.
-      q_prime = qt0_plus_hNv;
-    }
     dyj = y_prime(j) - y(j);
 
     // Compute l(y') and set the relevant column of the Jacobian matrix.
-    context->SetTimeAndContinuousState(t, x_prime);
-    Jy->col(j) =
-        (this->EvalTimeDerivatives(*context).CopyToVector().tail(ny)
-        - l_of_y_at_y) / dyj;
+    Jy->col(j) = (l_of_y(y_prime) - l_of_y_at_y) / dyj;
 
     // Reset y' to y.
     y_prime(j) = y(j);
@@ -620,19 +615,7 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualR(
   const Eigen::VectorBlock<const VectorX<T>> qk = xk.head(nq);
   const Eigen::VectorBlock<const VectorX<T>> yk = xk.tail(ny);
 
-  // Suppose context has state (qk, v, z).
-  // Compute q = qt0 + h N(qk) v
-  BasicVector<T> qdot(nq);
-  this->get_system().MapVelocityToQDot(
-      *context, cstate.get_generalized_velocity(), &qdot);
-  const VectorX<T> q = qt0 + h * qdot.get_value();
-
-  // Evaluate l = fᵥ(t, q, v, z)
-  context->get_mutable_continuous_state()
-      .get_mutable_generalized_position()
-      .SetFromVector(q);
-  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
-  const VectorX<T> l_of_y = xc_deriv.CopyToVector().tail(ny);
+  const VectorX<T> l_of_y = ComputeLOfYWithQkAndYFromContext(qt0, h);
 
   // reset the context back.
   context->get_mutable_continuous_state()
@@ -640,6 +623,29 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualR(
       .SetFromVector(qk);
   return (yk - yt0 - h * l_of_y).eval();
 }
+
+
+template <class T>
+VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfYWithQkAndYFromContext(
+    const VectorX<T>& qt0, const T& h) {
+  Context<T>* context = this->get_mutable_context();
+  const systems::ContinuousState<T>& cstate = context->get_continuous_state();
+  int nq = qt0.rows();
+  int ny = cstate.size() - nq;
+
+  // Compute q = qt0 + h N(qk) v
+  BasicVector<T> qdot(nq);
+  this->get_system().MapVelocityToQDot(
+      *context, cstate.get_generalized_velocity(), &qdot);
+  const VectorX<T> q = qt0 + h * qdot.get_value();
+  // Evaluate l = fᵥ(t, q, v, z)
+  context->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(q);
+  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
+  return xc_deriv.CopyToVector().tail(ny);
+}
+
 
 template <class T>
 bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
