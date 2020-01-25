@@ -424,10 +424,10 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
 
   // Compute the Jacobian.
 
-  // Define a y' to perturb
+  // Define a y' to perturb.
   VectorX<T> y_prime = y;
 
-  // Define the lambda l_of_y to evaluate l(y)
+  // Define the lambda l_of_y to evaluate l(y).
   auto l_of_y = [&ny, &nq, &qk, &t, &qt0, &h, this](const VectorX<T>& y_state)
       -> VectorX<T> {
     VectorX<T> x_state(ny + nq);
