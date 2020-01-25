@@ -161,11 +161,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param xtplus_guess the starting guess for xⁿ⁺¹.
   // @param [out] xtplus the computed value for xⁿ⁺¹ on successful return.
   // @param [in, out] iteration_matrix the cached iteration matrix, which is
-  //        updated either if get_use_full_newton() is true or if the Newton-
-  //        Raphson fails to converge on the first try.
-  // @param [in, out] Jy the cached Jacobian Jₗ(y), which is updated either if
-  //        get_use_full_newton() is true or if the Newton-Raphson fails to
-  //        converge on the second try.
+  //        updated if get_use_full_newton() is true, if get_reuse() is false,
+  //        or if the Newton-Raphson fails to converge on the first try.
+  // @param [in, out] Jy the cached Jacobian Jₗ(y), which is updated if
+  //        get_use_full_newton() is true, if get_reuse() is false, or if the
+  //        Newton-Raphson fails to converge on the second try.
   // @param trial the attempt for this approach (1-4). Similar to other implicit
   //        integrators, StepImplicitEuler() uses increasingly computationally
   //        expensive methods as the trial numbers increase.
@@ -711,6 +711,9 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
 
   // Do the Newton-Raphson iterations.
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
+    DRAKE_LOGGER_DEBUG("StepImplicitEuler() entered for t={}, h={}, trial={}",
+      t0, h, trial);
+  
     // Evaluate the residual error, which is defined above as R(yₖ):
     //     R(yₖ) = yₖ - yⁿ - h l(yₖ).
     // Since yₖ comes from the context, this needs to be performed before the
