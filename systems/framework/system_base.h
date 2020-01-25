@@ -1069,7 +1069,7 @@ class SystemBase : public internal::SystemMessageInterface {
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
-  static uint64_t get_next_id();
+  static internal::SystemId get_next_id();
 
   // Used to create trackers for variable-number System-allocated objects.
   struct TrackerInfo {
@@ -1133,9 +1133,8 @@ class SystemBase : public internal::SystemMessageInterface {
   // Name of this system.
   std::string name_;
 
-  // Unique ID of this system. The default value (zero) should be treated as
-  // uninitialized and invalid.
-  const uint64_t system_id_{get_next_id()};
+  // Unique ID of this system.
+  const internal::SystemId system_id_{get_next_id()};
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

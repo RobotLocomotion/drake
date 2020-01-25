@@ -94,6 +94,8 @@ class DiagramContextTest : public ::testing::Test {
     // This chunk of code is partially mimicking Diagram::DoAllocateContext()
     // which is normally in charge of making DiagramContexts.
     context_ = std::make_unique<DiagramContext<double>>(kNumSystems);
+    internal::SystemBaseContextBaseAttorney::set_system_id(
+        context_.get(), internal::SystemId::get_new_id());
 
     // Don't change these indexes -- tests below depend on them.
     AddSystem(*adder0_, SubsystemIndex(0));
@@ -507,6 +509,10 @@ TEST_F(DiagramContextTest, MutableParameterNotifications) {
 TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   auto clone = context_->Clone();
   ASSERT_TRUE(clone != nullptr);
+
+  // Verify that the system id was copied.
+  EXPECT_TRUE(context_->get_system_id().is_valid());
+  EXPECT_EQ(context_->get_system_id(), clone->get_system_id());
 
   // Make sure clone's values are different from context's. These numbers are
   // arbitrary as long as they don't match the default context_ values.

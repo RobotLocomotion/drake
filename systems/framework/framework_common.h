@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/identifier.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/value.h"
 
@@ -110,6 +111,9 @@ class InputPortBase;
 class SystemBase;
 
 namespace internal {
+
+// Type used to match a Context to its System.
+using SystemId = drake::Identifier<class SystemIdTag>;
 
 // A utility to call the package-private constructor of some framework classes.
 class FrameworkFactory {
