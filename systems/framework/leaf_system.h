@@ -525,10 +525,15 @@ class LeafSystem : public System<T> {
   /// ContinuousState vector is a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
+      DRAKE_DEMAND(model_continuous_state_vector_->size() ==
+                   this->num_continuous_states());
+      const SystemBase::ContextSizes& sizes = this->get_context_sizes();
       return std::make_unique<ContinuousState<T>>(
-          model_continuous_state_vector_->Clone(), num_generalized_positions_,
-          num_generalized_velocities_, num_misc_continuous_states_);
+          model_continuous_state_vector_->Clone(),
+          sizes.num_generalized_positions, sizes.num_generalized_velocities,
+          sizes.num_misc_continuous_states);
     }
+    DRAKE_DEMAND(this->num_continuous_states() == 0);
     return std::make_unique<ContinuousState<T>>();
   }
 
@@ -1489,9 +1494,15 @@ class LeafSystem : public System<T> {
                               int num_v, int num_z) {
     DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
     model_continuous_state_vector_ = model_vector.Clone();
-    num_generalized_positions_ = num_q;
-    num_generalized_velocities_ = num_v;
-    num_misc_continuous_states_ = num_z;
+
+    // Note that only the last DeclareContinuousState() takes effect;
+    // we're not accumulating these as we do for discrete & abstract states.
+    SystemBase::ContextSizes& context_sizes =
+        this->get_mutable_context_sizes();
+    context_sizes.num_generalized_positions = num_q;
+    context_sizes.num_generalized_velocities = num_v;
+    context_sizes.num_misc_continuous_states = num_z;
+
     MaybeDeclareVectorBaseInequalityConstraint(
         "continuous state", model_vector,
         [](const Context<T>& context) -> const VectorBase<T>& {
@@ -2437,11 +2448,28 @@ class LeafSystem : public System<T> {
   using SystemBase::NextInputPortName;
   using SystemBase::NextOutputPortName;
 
-  int do_get_num_continuous_states() const final {
-    int total = num_generalized_positions_ +
-        num_generalized_velocities_+
-        num_misc_continuous_states_;
-    return total;
+  void AddInContextSizes(SystemBase::ContextSizes* sizes) const final {
+    DRAKE_DEMAND(sizes != nullptr);
+    const SystemBase::ContextSizes& context_sizes = this->get_context_sizes();
+
+    // Some sanity checks.
+    const int num_continuous_states = context_sizes.num_generalized_positions +
+                                      context_sizes.num_generalized_velocities +
+                                      context_sizes.num_misc_continuous_states;
+    DRAKE_DEMAND(num_continuous_states ==
+                 (model_continuous_state_vector_
+                      ? model_continuous_state_vector_->size()
+                      : 0));
+    DRAKE_DEMAND(context_sizes.num_abstract_states ==
+                 model_abstract_states_.size());
+    DRAKE_DEMAND(context_sizes.num_discrete_state_groups ==
+                 model_discrete_state_.num_groups());
+    DRAKE_DEMAND(context_sizes.num_numeric_parameter_groups ==
+                 model_numeric_parameters_.size());
+    DRAKE_DEMAND(context_sizes.num_abstract_parameters ==
+                 model_abstract_parameters_.size());
+
+    (*sizes) += this->get_context_sizes();
   }
 
   // Either clones the model_value, or else for vector ports allocates a
@@ -2767,9 +2795,6 @@ class LeafSystem : public System<T> {
 
   // A model continuous state to be used during Context allocation.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
-  int num_generalized_positions_{0};
-  int num_generalized_velocities_{0};
-  int num_misc_continuous_states_{0};
 
   // A model discrete state to be used during Context allocation.
   DiscreteValues<T> model_discrete_state_;

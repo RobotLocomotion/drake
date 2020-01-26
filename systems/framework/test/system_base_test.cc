@@ -49,6 +49,8 @@ class MySystemBase final : public SystemBase {
     return context;
   }
 
+  void AddInContextSizes(ContextSizes*) const final {}
+
   void DoCheckValidContext(const ContextBase& context) const final {
     auto& my_context = dynamic_cast<const MyContextBase&>(context);
     if (my_context.is_good())
