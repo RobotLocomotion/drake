@@ -2435,11 +2435,17 @@ class LeafSystem : public System<T> {
   using SystemBase::NextInputPortName;
   using SystemBase::NextOutputPortName;
 
-  int do_get_num_continuous_states() const final {
-    int total = num_generalized_positions_ +
-        num_generalized_velocities_+
-        num_misc_continuous_states_;
-    return total;
+  SystemBase::ContextSizes
+  DoGetDeclaredContextSizes() const final {
+    SystemBase::ContextSizes sizes;
+    sizes.num_generalized_positions = num_generalized_positions_;
+    sizes.num_generalized_velocities = num_generalized_velocities_;
+    sizes.num_misc_continuous_states = num_misc_continuous_states_;
+    sizes.num_discrete_state_groups = model_discrete_state_.num_groups();
+    sizes.num_abstract_states = model_abstract_states_.size();
+    sizes.num_numeric_parameter_groups = model_numeric_parameters_.size();
+    sizes.num_abstract_parameters = model_abstract_parameters_.size();
+    return sizes;
   }
 
   // Either clones the model_value, or else for vector ports allocates a

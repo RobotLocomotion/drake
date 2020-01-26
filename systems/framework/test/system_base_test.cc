@@ -49,6 +49,10 @@ class MySystemBase final : public SystemBase {
     return context;
   }
 
+  SystemBase::ContextSizes DoGetDeclaredContextSizes() const final {
+    return SystemBase::ContextSizes();
+  }
+
   void DoCheckValidContext(const ContextBase& context) const final {
     auto& my_context = dynamic_cast<const MyContextBase&>(context);
     if (my_context.is_good())

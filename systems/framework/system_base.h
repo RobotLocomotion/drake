@@ -751,26 +751,38 @@ class SystemBase : public internal::SystemMessageInterface {
     return output_ports_[index]->ticket();
   }
 
+  /** Returns the dimension of the continuous state vector that has been
+  declared until now. */
+  int num_continuous_states() const {
+    const SystemBase::ContextSizes sizes = DoGetDeclaredContextSizes();
+    return sizes.num_generalized_positions + sizes.num_generalized_velocities +
+        sizes.num_misc_continuous_states;
+  }
+
   /** Returns the number of declared discrete state groups (each group is
   a vector-valued discrete state variable). */
   int num_discrete_state_groups() const {
-    return static_cast<int>(discrete_state_tickets_.size());
+    const SystemBase::ContextSizes sizes = DoGetDeclaredContextSizes();
+    return sizes.num_discrete_state_groups;
   }
 
   /** Returns the number of declared abstract state variables. */
   int num_abstract_states() const {
-    return static_cast<int>(abstract_state_tickets_.size());
+    const SystemBase::ContextSizes sizes = DoGetDeclaredContextSizes();
+    return sizes.num_abstract_states;
   }
 
   /** Returns the number of declared numeric parameters (each of these is
   a vector-valued parameter). */
   int num_numeric_parameter_groups() const {
-    return static_cast<int>(numeric_parameter_tickets_.size());
+    const SystemBase::ContextSizes sizes = DoGetDeclaredContextSizes();
+    return sizes.num_numeric_parameter_groups;
   }
 
   /** Returns the number of declared abstract parameters. */
   int num_abstract_parameters() const {
-    return static_cast<int>(abstract_parameter_tickets_.size());
+    const SystemBase::ContextSizes sizes = DoGetDeclaredContextSizes();
+    return sizes.num_abstract_parameters;
   }
   //@}
 
@@ -880,7 +892,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre The supplied index must be the next available one; that is, indexes
        must be assigned sequentially. */
   void AddDiscreteStateGroup(DiscreteStateIndex index) {
-    DRAKE_DEMAND(index == num_discrete_state_groups());
+    DRAKE_DEMAND(index == discrete_state_tickets_.size());
     const DependencyTicket ticket(assign_next_dependency_ticket());
     discrete_state_tickets_.push_back(
         {ticket, "discrete state group " + std::to_string(index)});
@@ -892,7 +904,7 @@ class SystemBase : public internal::SystemMessageInterface {
        must be assigned sequentially. */
   void AddAbstractState(AbstractStateIndex index) {
     const DependencyTicket ticket(assign_next_dependency_ticket());
-    DRAKE_DEMAND(index == num_abstract_states());
+    DRAKE_DEMAND(index == abstract_state_tickets_.size());
     abstract_state_tickets_.push_back(
         {ticket, "abstract state " + std::to_string(index)});
   }
@@ -902,7 +914,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre The supplied index must be the next available one; that is, indexes
        must be assigned sequentially. */
   void AddNumericParameter(NumericParameterIndex index) {
-    DRAKE_DEMAND(index == num_numeric_parameter_groups());
+    DRAKE_DEMAND(index == numeric_parameter_tickets_.size());
     const DependencyTicket ticket(assign_next_dependency_ticket());
     numeric_parameter_tickets_.push_back(
         {ticket, "numeric parameter " + std::to_string(index)});
@@ -914,7 +926,7 @@ class SystemBase : public internal::SystemMessageInterface {
        must be assigned sequentially. */
   void AddAbstractParameter(AbstractParameterIndex index) {
     const DependencyTicket ticket(assign_next_dependency_ticket());
-    DRAKE_DEMAND(index == num_abstract_parameters());
+    DRAKE_DEMAND(index == abstract_parameter_tickets_.size());
     abstract_parameter_tickets_.push_back(
         {ticket, "abstract parameter " + std::to_string(index)});
   }
@@ -1062,6 +1074,41 @@ class SystemBase : public internal::SystemMessageInterface {
   parameters and state should be allocated. */
   virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
+  /** Return type for DoGetDeclaredContextSizes(). Initialized to zero
+  and equipped with a += operator for Diagram use in aggregation. */
+  struct ContextSizes {
+    int num_generalized_positions{0};     // q }
+    int num_generalized_velocities{0};    // v | Sum is num continuous states x.
+    int num_misc_continuous_states{0};    // z }
+    int num_discrete_state_groups{0};     // Each "group" is a vector.
+    int num_abstract_states{0};
+    int num_numeric_parameter_groups{0};  // Each "group" is a vector.
+    int num_abstract_parameters{0};
+
+    ContextSizes& operator+=(const ContextSizes& other) {
+      num_generalized_positions += other.num_generalized_positions;
+      num_generalized_velocities += other.num_generalized_velocities;
+      num_misc_continuous_states += other.num_misc_continuous_states;
+      num_discrete_state_groups += other.num_discrete_state_groups;
+      num_abstract_states += other.num_abstract_states;
+      num_numeric_parameter_groups += other.num_numeric_parameter_groups;
+      num_abstract_parameters += other.num_abstract_parameters;
+      return *this;
+    }
+  };
+
+  /** Derived class implementations should return the sizes for the various
+  Context partitions that will be used when DoAllocateContext() is invoked.
+  A LeafSystem should just return the sizes of its own Context; a Diagrm
+  should recursively sum up all the sizes from its subsystems. */
+  virtual ContextSizes DoGetDeclaredContextSizes() const = 0;
+
+  /** Allows Diagram to access protected DoGetDeclaredContextSizes()
+  recursively on its subsystems. */
+  static ContextSizes GetDeclaredContextSizes(const SystemBase& system) {
+    return system.DoGetDeclaredContextSizes();
+  }
+
   // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
   // removed, also remove this function.
   virtual void DoCheckValidContext(const ContextBase&) const {}
@@ -1079,25 +1126,25 @@ class SystemBase : public internal::SystemMessageInterface {
 
   const TrackerInfo& discrete_state_tracker_info(
       DiscreteStateIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_discrete_state_groups());
+    DRAKE_DEMAND(0 <= index && index < discrete_state_tickets_.size());
     return discrete_state_tickets_[index];
   }
 
   const TrackerInfo& abstract_state_tracker_info(
       AbstractStateIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_abstract_states());
+    DRAKE_DEMAND(0 <= index && index < abstract_state_tickets_.size());
     return abstract_state_tickets_[index];
   }
 
   const TrackerInfo& numeric_parameter_tracker_info(
       NumericParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_groups());
+    DRAKE_DEMAND(0 <= index && index < numeric_parameter_tickets_.size());
     return numeric_parameter_tickets_[index];
   }
 
   const TrackerInfo& abstract_parameter_tracker_info(
       AbstractParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_abstract_parameters());
+    DRAKE_DEMAND(0 <= index && index < abstract_parameter_tickets_.size());
     return abstract_parameter_tickets_[index];
   }
 

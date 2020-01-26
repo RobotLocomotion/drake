@@ -128,8 +128,8 @@ class TestSystem : public System<double> {
   }
 
  protected:
-  int do_get_num_continuous_states() const final {
-    return 0;
+  SystemBase::ContextSizes DoGetDeclaredContextSizes() const final {
+    return SystemBase::ContextSizes();
   }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -568,9 +568,9 @@ class ValueIOTestSystem : public System<T> {
 
   ~ValueIOTestSystem() override {}
 
-  int do_get_num_continuous_states() const final {
+  SystemBase::ContextSizes DoGetDeclaredContextSizes() const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
+    return SystemBase::ContextSizes();
   }
 
   T DoCalcWitnessValue(const Context<T>&,
@@ -925,9 +925,9 @@ class ComputationTestSystem final : public System<double> {
   }
 
  private:
-  int do_get_num_continuous_states() const final {
+  SystemBase::ContextSizes DoGetDeclaredContextSizes() const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
+    return SystemBase::ContextSizes();
   }
 
   // Two discrete variable groups of lengths 2 and 4.

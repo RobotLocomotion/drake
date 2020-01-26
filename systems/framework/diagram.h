@@ -915,13 +915,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
  private:
-  int do_get_num_continuous_states() const final {
-    int num_states = 0;
+  SystemBase::ContextSizes DoGetDeclaredContextSizes() const final {
+    SystemBase::ContextSizes sizes;
     for (const auto& system : registered_systems_) {
-      num_states += system->num_continuous_states();
+      // Recurse to pick up everything.
+      sizes += SystemBase::GetDeclaredContextSizes(*system);
     }
-
-    return num_states;
+    return sizes;
   }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
