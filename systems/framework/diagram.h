@@ -915,13 +915,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
  private:
-  int do_get_num_continuous_states() const final {
-    int num_states = 0;
+  // Visit all contained subsystems recursively to sum up all the Context
+  // partition sizes that will be needed for the Diagram Context.
+  void AddInContextSizes(SystemBase::ContextSizes* sizes) const final {
     for (const auto& system : registered_systems_) {
-      num_states += system->num_continuous_states();
+      // Recurse to pick up everything.
+      SystemBase::AddInContextSizes(*system, sizes);
     }
-
-    return num_states;
   }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -1534,6 +1534,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     this->set_forced_unrestricted_update_events(
         AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
             &System<T>::AllocateForcedUnrestrictedUpdateEventCollection));
+
+    // Total up all needed Context resources.
+    AddInContextSizes(&this->get_mutable_context_sizes());
   }
 
   // Exposes the given port as an input of the Diagram.

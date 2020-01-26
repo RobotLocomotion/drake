@@ -160,6 +160,8 @@ class MySystemBase final : public SystemBase {
     return context;
   }
 
+  void AddInContextSizes(SystemBase::ContextSizes*) const final {}
+
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex /* unused */) const final {
     return {};

@@ -847,12 +847,9 @@ class System : public SystemBase {
   bool IsDifferenceEquationSystem(double* time_period = nullptr) const {
     if (num_continuous_states() || num_abstract_states()) { return false; }
 
-    // TODO(#12616): Replace this
-    if (CreateDefaultContext()->num_discrete_state_groups() != 1) {
+    if (num_discrete_state_groups() != 1) {
       return false;
     }
-    // with
-    // if (num_discrete_state_groups() != 1) { return false; }
 
     std::optional<PeriodicEventData> periodic_data =
         GetUniquePeriodicDiscreteUpdateAttribute();
@@ -1270,12 +1267,6 @@ class System : public SystemBase {
   /// Returns the number of constraints specified for the system.
   int num_constraints() const {
     return static_cast<int>(constraints_.size());
-  }
-
-  /// Returns the dimension of the continuous state vector that has been
-  /// declared until now.
-  int num_continuous_states() const {
-    return do_get_num_continuous_states();
   }
 
   /// Returns the constraint at index @p constraint_index.
@@ -2125,9 +2116,6 @@ class System : public SystemBase {
     qdot->SetFromVector(generalized_velocity);
   }
   //@}
-
-  /// Totals the number of continuous state variables in this System or Diagram.
-  virtual int do_get_num_continuous_states() const = 0;
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
