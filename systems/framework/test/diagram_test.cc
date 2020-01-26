@@ -350,6 +350,54 @@ GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
   EXPECT_FALSE(diagram.inside().get_input_port(1).HasValue(inside_context));
 }
 
+/* This System declares at least one of every kind of state and parameter
+so we can check if the SystemBase "declared sizes" counts work correctly.
+(FYI this has nothing to do with dishwashing -- think "everything but the
+kitchen sink"!) */
+template <typename T>
+class KitchenSinkStateAndParameters final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KitchenSinkStateAndParameters)
+
+  KitchenSinkStateAndParameters() :
+      LeafSystem<T>(systems::SystemTypeTag<KitchenSinkStateAndParameters>{}) {
+    this->DeclareContinuousState(4, 3, 5);  // nq, nv, nz
+    for (int i = 0; i < 2; ++i)  // Make two "groups" of discrete variables.
+      this->DeclareDiscreteState(4 + i);
+    for (int i = 0; i < 10; ++i)  // Ten abstract state variables.
+      this->DeclareAbstractState(AbstractValue::Make<int>(3 + i));
+    for (int i = 0; i < 3; ++i)  // Three "groups" of numeric parameters.
+      this->DeclareNumericParameter(BasicVector<T>(1 + i));
+    for (int i = 0; i < 7; ++i)  // Seven abstract parameters.
+      this->DeclareAbstractParameter(*AbstractValue::Make<int>(29 + i));
+  }
+
+  // Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit KitchenSinkStateAndParameters(
+      const KitchenSinkStateAndParameters<U>&)
+      : KitchenSinkStateAndParameters<T>() {}
+
+ private:
+  // Must provide derivatives since we have continuous states.
+  void DoCalcTimeDerivatives(
+      const Context<T>& context,
+      ContinuousState<T>* derivatives) const override {
+    // xdot = 0.
+    derivatives->SetFromVector(
+        VectorX<T>::Zero(this->num_continuous_states()));
+  }
+};
+
+GTEST_TEST(KitchenSinkStateAndParametersTest, LeafSystemCounts) {
+  KitchenSinkStateAndParameters<double> kitchen_sink;
+  EXPECT_EQ(kitchen_sink.num_continuous_states(), 12);
+  EXPECT_EQ(kitchen_sink.num_discrete_state_groups(), 2);
+  EXPECT_EQ(kitchen_sink.num_abstract_states(), 10);
+  EXPECT_EQ(kitchen_sink.num_numeric_parameter_groups(), 3);
+  EXPECT_EQ(kitchen_sink.num_abstract_parameters(), 7);
+}
+
 /* ExampleDiagram has the following structure:
 adder0_: (input0_ + input1_) -> A
 adder1_: (A + input2_)       -> B, output 0
@@ -385,11 +433,11 @@ witness functions from its subsystems.
              |                |  3, 9, 27  |             |81,243,729 |  |
              |                +------------+             +-----------+  |
              |                                                          |
-             |  +----------------+            +-------------------+     |
-             |  |                |            |    ConstantVector |     |
-             |  |  Stateless     |            |    or             |     |
-             |  |                |            |    DoubleOnly     |     |
-             |  +----------------+            +-------------------+     |
+             |  +-----------+  +----------------+  +----------------+   |
+             |  |           |  | ConstantVector |  |                |   |
+             |  | Stateless |  |   or           |  |  KitchenSink   |   |
+             |  |           |  | DoubleOnly     |  |                |   |
+             |  +-----------+  +----------------+  +----------------+   |
              |                                                          |
              +----------------------------------------------------------|
 */
@@ -438,6 +486,9 @@ class ExampleDiagram : public Diagram<double> {
       builder.AddSystem<DoubleOnlySystem>();
     }
 
+    kitchen_sink_ = builder.AddSystem<KitchenSinkStateAndParameters<double>>();
+    kitchen_sink_->set_name("kitchen_sink");
+
     builder.BuildInto(this);
   }
 
@@ -447,6 +498,9 @@ class ExampleDiagram : public Diagram<double> {
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
   analysis_test::StatelessSystem<double>* stateless() { return stateless_; }
+  KitchenSinkStateAndParameters<double>* kitchen_sink() {
+    return kitchen_sink_;
+  }
 
  private:
   Adder<double>* adder0_ = nullptr;
@@ -456,6 +510,8 @@ class ExampleDiagram : public Diagram<double> {
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
+
+  KitchenSinkStateAndParameters<double>* kitchen_sink_ = nullptr;
 };
 
 class DiagramTest : public ::testing::Test {
@@ -550,9 +606,10 @@ class DiagramTest : public ::testing::Test {
 
 // Tests that the diagram returns the correct number of continuous states
 // without a context. The class ExampleDiagram above contains two integrators,
-// each of which has three state variables.
+// each of which has three state variables, plus the "kitchen sink" which
+// has 12.
 TEST_F(DiagramTest, NumberOfContinuousStates) {
-  EXPECT_EQ(3+3, diagram_->num_continuous_states());
+  EXPECT_EQ(3+3+12, diagram_->num_continuous_states());
 }
 
 // Tests that the diagram returns the correct number of witness functions and
@@ -790,10 +847,10 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
 
   diagram_->CalcTimeDerivatives(*context_, derivatives.get());
 
-  ASSERT_EQ(6, derivatives->size());
-  ASSERT_EQ(0, derivatives->get_generalized_position().size());
-  ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
-  ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
+  ASSERT_EQ(18, derivatives->size());
+  ASSERT_EQ(4, derivatives->get_generalized_position().size());
+  ASSERT_EQ(3, derivatives->get_generalized_velocity().size());
+  ASSERT_EQ(11, derivatives->get_misc_continuous_state().size());
 
   // The derivative of the first integrator is A.
   const ContinuousState<double>& integrator0_xcdot =
@@ -1100,6 +1157,43 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
+
+// Now we can check that the nested Diagram reports correct declared sizes.
+// It is sufficient to check the Diagram declared sizes with the actual
+// Context sizes since we verify elsewhere that Diagrams produce correct
+// Contexts.
+TEST_F(DiagramOfDiagramsTest, DeclaredContextSizes) {
+  EXPECT_EQ(diagram_->num_continuous_states(),
+            context_->num_continuous_states());
+  EXPECT_EQ(diagram_->num_discrete_state_groups(),
+            context_->num_discrete_state_groups());
+  EXPECT_EQ(diagram_->num_abstract_states(),
+            context_->num_abstract_states());
+  EXPECT_EQ(diagram_->num_numeric_parameter_groups(),
+            context_->num_numeric_parameter_groups());
+  EXPECT_EQ(diagram_->num_abstract_parameters(),
+            context_->num_abstract_parameters());
+}
+
+// ContextSizes for a Diagram must be accumulated recursively. We checked
+// above that a Diagram built using DiagramBuilder counts properly. Diagrams
+// can also be built via scalar conversion. We'll check here that the
+// context sizes are correct that way also.
+TEST_F(DiagramOfDiagramsTest, ScalarConvertAndCheckContextSizes) {
+  Diagram<AutoDiffXd> diagram_ad(*diagram_);
+
+  // Anticipated context sizes should be unchanged from the original.
+  EXPECT_EQ(diagram_ad.num_continuous_states(),
+            context_->num_continuous_states());
+  EXPECT_EQ(diagram_ad.num_discrete_state_groups(),
+            context_->num_discrete_state_groups());
+  EXPECT_EQ(diagram_ad.num_abstract_states(),
+            context_->num_abstract_states());
+  EXPECT_EQ(diagram_ad.num_numeric_parameter_groups(),
+            context_->num_numeric_parameter_groups());
+  EXPECT_EQ(diagram_ad.num_abstract_parameters(),
+            context_->num_abstract_parameters());
+}
 
 TEST_F(DiagramOfDiagramsTest, Graphviz) {
   const std::string dot = diagram_->GetGraphvizString();
@@ -1620,7 +1714,8 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
   EXPECT_EQ((std::vector<const System<double>*>{
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
                 diagram->stateless(),
-                diagram->integrator0(), diagram->integrator1()
+                diagram->integrator0(), diagram->integrator1(),
+                diagram->kitchen_sink()
             }),
             diagram->GetSystems());
 }
@@ -1948,6 +2043,18 @@ class TwoDiscreteSystemDiagram : public Diagram<double> {
   SystemWithDiscreteState* sys2_{nullptr};
 };
 
+// Check that a flat Diagram correctly aggregates the number of discrete
+// state groups from its subsystems. Separately we'll check that nested
+// Diagrams recurse properly to count up everything in the tree.
+GTEST_TEST(DiscreteStateDiagramTest, NumDiscreteStateGroups) {
+  DiagramBuilder<double> builder;
+  builder.template AddSystem<SystemWithDiscreteState>(1, 2.);
+  const auto diagram = builder.Build();
+  const auto context = diagram->CreateDefaultContext();
+  EXPECT_EQ(diagram->num_discrete_state_groups(),
+            context->num_discrete_state_groups());
+}
+
 GTEST_TEST(DiscreteStateDiagramTest, IsDifferenceEquationSystem) {
   // Two unique periods, two state groups.
   DiagramBuilder<double> builder;
@@ -2168,6 +2275,12 @@ class AbstractStateDiagramTest : public ::testing::Test {
   AbstractStateDiagram diagram_;
   std::unique_ptr<Context<double>> context_;
 };
+
+// Check that we count the abstract states correctly for a flat Diagram.
+// DiagramOfDiagramsTest below checks nested diagrams.
+TEST_F(AbstractStateDiagramTest, NumAbstractStates) {
+  EXPECT_EQ(diagram_.num_abstract_states(), context_->num_abstract_states());
+}
 
 // Tests CalcUnrestrictedUpdate() when there are multiple subsystems and only
 // one has an event to handle (call that the "participating subsystem"). We want
@@ -3180,6 +3293,11 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
   auto diagram = builder.Build();
 
   auto context = diagram->CreateDefaultContext();
+
+  // Make sure the Diagram correctly reports its aggregate number of
+  // parameters.
+  EXPECT_EQ(diagram->num_numeric_parameter_groups(),
+            context->num_numeric_parameter_groups());
 
   // Get pointers to the parameters.
   auto params1 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
