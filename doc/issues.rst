@@ -51,11 +51,11 @@ their responsibilities are:
   responsibilities: optimizers, solvers, symbolic analysis,
   ``drake/manipulation/`` subdirectory
 
-- ``robot locomotion group`` and ``6.832``
+- ``robot locomotion group``
 
   lead: RussTedrake
 
-  responsibilities: MIT CSAIL research lab / MIT courses
+  responsibilities: examples/requests from MIT projects / MIT courses
 
 .. _issues-priority:
 
