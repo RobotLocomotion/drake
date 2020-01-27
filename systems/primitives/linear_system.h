@@ -189,6 +189,9 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 /// then the created systems inputs are (u-u0), states are (x-x0), and
 /// outputs are (y-y0).
 ///
+/// @note This method does *not* (yet) set the initial conditions (default nor
+/// random) of the LinearSystem based on `system`.
+///
 /// @ingroup primitive_systems
 ///
 std::unique_ptr<LinearSystem<double>> Linearize(
@@ -236,9 +239,12 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 ///         continuous or not (only) discrete time with a single periodic
 ///         update.
 ///
-/// Note that x, u and y are in the same coordinate system as the original
+/// @note x, u and y are in the same coordinate system as the original
 /// @p system, since the terms involving @f$ x_0, u_0 @f$ reside in
 /// @f$ f_0 @f$.
+///
+/// @note This method does *not* (yet) set the initial conditions (default nor
+/// random) of the AffineSystem based on `system`.
 ///
 /// @ingroup primitive_systems
 ///

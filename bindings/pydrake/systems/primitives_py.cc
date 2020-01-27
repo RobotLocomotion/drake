@@ -93,6 +93,13 @@ PYBIND11_MODULE(primitives, m) {
             doc.TimeVaryingAffineSystem.get_output_port.doc)
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc)
+        .def("set_initial_state",
+            &TimeVaryingAffineSystem<T>::set_initial_state, py::arg("x0"),
+            doc.TimeVaryingAffineSystem.set_initial_state.doc)
+        .def("set_initial_state_covariance",
+            &TimeVaryingAffineSystem<T>::set_initial_state_covariance,
+            py::arg("covariance"),
+            doc.TimeVaryingAffineSystem.set_initial_state_covariance.doc)
         // Need to specifically redeclare the System to have both overloads
         // available.
         .def("get_input_port", &System<T>::get_input_port,

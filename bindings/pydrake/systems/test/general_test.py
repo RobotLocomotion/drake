@@ -9,6 +9,7 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import RandomGenerator
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import Expression
@@ -112,6 +113,9 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
         system.SetDefaultContext(context)
+
+        # Check random context method.
+        system.SetRandomContext(context=context, generator=RandomGenerator())
 
         context = system.CreateDefaultContext()
         self.assertIsInstance(
