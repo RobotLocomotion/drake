@@ -73,6 +73,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "frame_visualizer",
+    srcs = [
+        "frame_visualizer.cc",
+    ],
+    hdrs = [
+        "frame_visualizer.h",
+    ],
+    copts = ["-g"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":multibody_plant_core",
+        "//lcmtypes:viewer",
+    ],
+)
+
+drake_cc_library(
     name = "point_pair_contact_info",
     srcs = [
         "point_pair_contact_info.cc",

@@ -17,6 +17,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/frame_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -24,6 +25,9 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+
+#include "drake/examples/manipulation_station/pdc_ik.h"
 
 namespace drake {
 namespace examples {
@@ -42,7 +46,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, std::numeric_limits<double>::infinity(),
               "Simulation duration.");
-DEFINE_string(setup, "manipulation_class",
+DEFINE_string(setup, "pdc",
               "Manipulation station type to simulate. "
               "Can be {manipulation_class, clutter_clearing}");
 
@@ -59,8 +63,17 @@ int do_main(int argc, char* argv[]) {
         "drake/examples/manipulation_station/models/061_foam_brick.sdf",
         math::RigidTransform<double>(math::RotationMatrix<double>::Identity(),
                                      Eigen::Vector3d(0.6, 0, 0)));
+  } else if (FLAGS_setup == "pdc") {
+    math::RigidTransform<double> X_WC(
+        math::RollPitchYaw<double>(-12 * M_PI / 180., 0, M_PI_2),
+        Eigen::Vector3d(0.05, 0, 0.114));
+    station->SetupPdcDataCollectStation(X_WC);
+    station->AddManipulandFromFile(
+        "drake/manipulation/models/plastic_mug/plastic_mug.sdf",
+        math::RigidTransform<double>(math::RollPitchYaw<double>(-1.57, 0, 3),
+                                     Eigen::Vector3d(-0.3, -0.55, 0.36)));
   } else if (FLAGS_setup == "clutter_clearing") {
-    station->SetupClutterClearingStation();
+    station->SetupClutterClearingStation(std::nullopt);
     station->AddManipulandFromFile(
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         math::RigidTransform<double>(math::RollPitchYaw<double>(-1.57, 0, 3),
@@ -139,9 +152,60 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(wsg_status->get_output_port(0),
                   wsg_status_publisher->get_input_port());
 
-  // TODO(russt): Publish the camera outputs.
+  // Publish the camera outputs.
+  auto image_to_lcm_image_array =
+      builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();
+  image_to_lcm_image_array->set_name("converter");
+  for (const auto& name : station->get_camera_names()) {
+    drake::log()->info("camera name: {}", name);
+    const auto& rgb_port =
+        image_to_lcm_image_array
+            ->DeclareImageInputPort<systems::sensors::PixelType::kRgba8U>(
+                "camera_" + name + "_rgb");
+    builder.Connect(station->GetOutputPort("camera_" + name + "_rgb_image"),
+                    rgb_port);
+    const auto& depth_port =
+        image_to_lcm_image_array
+            ->DeclareImageInputPort<systems::sensors::PixelType::kDepth16U>(
+                "camera_" + name + "_depth");
+    builder.Connect(station->GetOutputPort("camera_" + name + "_depth_image"),
+                    depth_port);
+    const auto& label_port =
+        image_to_lcm_image_array
+            ->DeclareImageInputPort<systems::sensors::PixelType::kLabel16I>(
+                "camera_" + name + "_label");
+    builder.Connect(station->GetOutputPort("camera_" + name + "_label_image"),
+                    label_port);
+  }
+  auto image_array_lcm_publisher = builder.template AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
+          "DRAKE_RGBD_CAMERA_IMAGES", lcm, 1 / 30.));
+  image_array_lcm_publisher->set_name("rgbd_publisher");
+  builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
+                  image_array_lcm_publisher->get_input_port());
+
+  // Frame Visualizer
+  std::vector<const multibody::Frame<double>*> frames_to_viz;
+  const auto& plant = station->get_multibody_plant();
+  frames_to_viz.push_back(&plant.GetFrameByName("wrist_camera_frame"));
+  auto frame_viz = builder.template AddSystem<multibody::FrameVisualizer>(
+      &plant, frames_to_viz);
+  auto frame_viz_lcm_publisher = builder.template AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_viewer_draw>(
+          "DRAKE_DRAW_FRAMES", lcm, 1 / 60.));
+  frame_viz_lcm_publisher->set_name("frame_viz_lcm_publisher");
+  builder.Connect(station->GetOutputPort("plant_continuous_state"),
+                  frame_viz->get_input_port(0));
+  builder.Connect(frame_viz->get_output_port(0),
+                  frame_viz_lcm_publisher->get_input_port());
 
   auto diagram = builder.Build();
+
+  // Solve
+  const auto& camera_frame = plant.GetFrameByName("wrist_camera_frame");
+  std::vector<Eigen::VectorXd> q_solutions = SovleGaze(
+      plant, camera_frame, {Eigen::Vector3d(0.5, -0.1, 0.235)}, 15, 0.1, 1);
+  drake::log()->info("q {}", q_solutions.at(0).transpose());
 
   systems::Simulator<double> simulator(*diagram);
   auto& context = simulator.get_mutable_context();

@@ -227,7 +227,7 @@ void ManipulationStation<T>::SetupClutterClearingStation(
     const int kWidth = 848;
     const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
     geometry::render::DepthCameraProperties camera_properties(
-        kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
+        kWidth, kHeight, fov_y, default_renderer_name_, 0.0, 20000.0);
 
     RegisterRgbdSensor("0", plant_->world_frame(),
                        X_WCameraBody.value_or(math::RigidTransform<double>(
@@ -238,6 +238,63 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 
   AddDefaultIiwa(collision_model);
   AddDefaultWsg();
+}
+
+template <typename T>
+void ManipulationStation<T>::SetupPdcDataCollectStation(
+    const std::optional<const math::RigidTransform<double>>& X_7CameraBody,
+    IiwaCollisionModel collision_model) {
+  DRAKE_DEMAND(setup_ == Setup::kNone);
+  setup_ = Setup::kPdcDataCollect;
+
+  // Add the bins.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/bin.sdf");
+
+    RigidTransform<double> X_WC(RotationMatrix<double>::MakeZRotation(M_PI_2),
+                                Vector3d(-0.145, -0.63, 0.235));
+    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
+                                  Vector3d(0.5, -0.1, 0.235));
+    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+  }
+
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg();
+
+  // Add the camera.
+  {
+    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+    // depth are slightly different. And we are not able to model that at the
+    // moment.
+    // RGB:
+    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+    // DEPTH:
+    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+    // For this camera, we are going to assume that fx = fy, and we can compute
+    // fov_y by: fy = height / 2 / tan(fov_y / 2)
+    const double kFocalY = 645.;
+    const int kHeight = 480;
+    const int kWidth = 848;
+    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+    geometry::render::DepthCameraProperties camera_properties(
+        kWidth, kHeight, fov_y, default_renderer_name_, 0.0, 5.0);
+
+    const auto& link7 =
+        plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
+
+    auto X_7C = X_7CameraBody.value_or(math::RigidTransform<double>(
+        math::RollPitchYaw<double>(0, 0, 0), Eigen::Vector3d(0.05, 0, 0.114)));
+    const auto& cam_frame =
+        plant_->AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "wrist_camera_frame", link7, X_7C));
+    RegisterRgbdSensor("0", cam_frame, math::RigidTransform<double>(),
+                       camera_properties);
+  }
 }
 
 template <typename T>
@@ -492,6 +549,23 @@ void ManipulationStation<T>::Finalize(
       // Set the initial positions of the IIWA to a configuration right above
       // the picking bin.
       q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+
+      std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
+          y(-0.8, -.55), z(0.3, 0.35);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
+      break;
+    }
+    case Setup::kPdcDataCollect: {
+      // Set the initial positions of the IIWA to a configuration right above
+      // the picking bin.
+      // q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+      q0_iiwa << -0.483169, 0.565567, -2.5566, 1.10944, -0.382038, -1.7204,
+          0.751417;
 
       std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
           y(-0.8, -.55), z(0.3, 0.35);

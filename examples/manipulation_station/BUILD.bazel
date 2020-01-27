@@ -25,12 +25,14 @@ drake_cc_library(
     hdrs = [
         "manipulation_station.h",
     ],
+    copts = ["-g"],
     data = [
         ":models",
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/ycb:models",
+        "//manipulation/models/plastic_mug:models",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -76,6 +78,25 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pdc_ik",
+    srcs = [
+        "pdc_ik.cc",
+    ],
+    hdrs = [
+        "pdc_ik.h"
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":manipulation_station",
+        "//geometry:geometry_visualization",
+        "//lcm",
+        "//multibody/inverse_kinematics:inverse_kinematics",
+        "//solvers:solve",
+        "@gflags",
+    ],
+)
+
 drake_cc_binary(
     name = "mock_station_simulation",
     srcs = [
@@ -86,13 +107,16 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         ":manipulation_station",
+        ":pdc_ik",
         "//geometry:geometry_visualization",
         "//lcm",
         "//manipulation/kuka_iiwa:iiwa_command_receiver",
         "//manipulation/kuka_iiwa:iiwa_status_sender",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//systems/analysis:simulator",
+        "//systems/sensors:image_to_lcm_image_array_t",
         "//systems/lcm",
+        "//multibody/plant:frame_visualizer",
         "@gflags",
     ],
 )
@@ -102,12 +126,14 @@ drake_cc_binary(
     srcs = [
         "proof_of_life.cc",
     ],
+    copts = ["-g"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1 --test"],
     test_rule_timeout = "moderate",
     deps = [
         ":manipulation_station",
+        "//manipulation/robot_bridge:robot_bridge",
         "//geometry:geometry_visualization",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",

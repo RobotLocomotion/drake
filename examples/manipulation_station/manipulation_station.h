@@ -21,7 +21,13 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
+enum class Setup {
+  kNone,
+  kManipulationClass,
+  kClutterClearing,
+  kPlanarIiwa,
+  kPdcDataCollect
+};
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -148,6 +154,10 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupClutterClearingStation(
       const std::optional<const math::RigidTransformd>& X_WCameraBody = {},
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
+  void SetupPdcDataCollectStation(
+      const std::optional<const math::RigidTransformd>& X_GCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
