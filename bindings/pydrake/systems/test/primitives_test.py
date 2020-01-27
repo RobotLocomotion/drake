@@ -204,6 +204,17 @@ class TestGeneral(unittest.TestCase):
         system = MatrixGain(D=A)
         self.assertTrue((system.D() == A).all())
 
+    def test_linear_system_zero_size(self):
+        # Explicitly test #12633.
+        num_x = 0
+        num_y = 2
+        num_u = 2
+        A = np.zeros((num_x, num_x))
+        B = np.zeros((num_x, num_u))
+        C = np.zeros((num_y, num_x))
+        D = np.zeros((num_y, num_u))
+        self.assertIsNotNone(LinearSystem(A, B, C, D))
+
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
         system = PassThrough(model_value.size())
