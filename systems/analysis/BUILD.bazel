@@ -39,6 +39,34 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "simulator_gflags",
+    srcs = ["simulator_gflags.cc"],
+    hdrs = ["simulator_gflags.h"],
+    tags = [
+        # Don't add this library into the ":analysis" package library.
+        # Only programs with a main() function should ever use this header.
+        "exclude_from_package",
+        # Don't install this header via this cc_library, because that would
+        # introduce a dependency from libdrake onto gflags.
+        "exclude_from_libdrake",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":bogacki_shampine3_integrator",
+        ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
+        ":radau_integrator",
+        ":runge_kutta2_integrator",
+        ":runge_kutta3_integrator",
+        ":runge_kutta5_integrator",
+        ":semi_explicit_euler_integrator",
+        ":simulator",
+        "//common:essential",
+        "@gflags",
+    ],
+)
+
+drake_cc_library(
     name = "bogacki_shampine3_integrator",
     srcs = ["bogacki_shampine3_integrator.cc"],
     hdrs = ["bogacki_shampine3_integrator.h"],
