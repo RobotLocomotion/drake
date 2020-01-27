@@ -65,10 +65,10 @@ Tutorials and Examples
 
 .. TODO(russt): make this a table with different algorithms, too.
 
-We have Python tutorials implemented as Jupyter Notebooks in
-`the tutorials directory of the source tree
-<https://github.com/RobotLocomotion/drake/tree/master/tutorials>`_, with
-text explaining the high-level concepts and each of the main steps.
+We have Python tutorials implemented as Jupyter Notebooks in `the tutorials
+directory of the source tree
+<https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials/>`_,
+with text explaining the high-level concepts and each of the main steps.
 
 We have a number of use cases demonstrated in `the examples directory of
 the source tree
