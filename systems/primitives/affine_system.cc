@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include <Eigen/Eigenvalues>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -18,13 +20,15 @@ using std::unique_ptr;
 
 template <typename T>
 TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
-    SystemScalarConverter converter,
-    int num_states, int num_inputs, int num_outputs, double time_period)
+    SystemScalarConverter converter, int num_states, int num_inputs,
+    int num_outputs, double time_period)
     : LeafSystem<T>(std::move(converter)),
       num_states_(num_states),
       num_inputs_(num_inputs),
       num_outputs_(num_outputs),
-      time_period_(time_period) {
+      time_period_(time_period),
+      x0_(VectorX<T>::Zero(num_states)),
+      Sigma_x0_(Eigen::MatrixXd::Zero(num_states, num_states)) {
   DRAKE_DEMAND(num_states_ >= 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
   DRAKE_DEMAND(num_outputs_ >= 0);
@@ -58,6 +62,22 @@ const OutputPort<T>& TimeVaryingAffineSystem<T>::get_output_port()
     const {
   DRAKE_DEMAND(num_outputs_ > 0);
   return System<T>::get_output_port(0);
+}
+
+template <typename T>
+void TimeVaryingAffineSystem<T>::configure_default_state(
+    const Eigen::Ref<const VectorX<T>>& x0) {
+  DRAKE_DEMAND(x0.rows() == num_states_);
+  x0_ = x0;
+}
+
+template <typename T>
+void TimeVaryingAffineSystem<T>::configure_random_state(
+    const Eigen::Ref<const Eigen::MatrixXd>& covariance) {
+  DRAKE_DEMAND(covariance.rows() == num_states_);
+  DRAKE_DEMAND(covariance.cols() == num_states_);
+  Sigma_x0_ =
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(covariance).operatorSqrt();
 }
 
 // This is the default implementation for this virtual method.
@@ -145,6 +165,35 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     xn += Bt * u;
   }
   updates->get_mutable_vector().SetFromVector(xn);
+}
+
+template <typename T>
+void TimeVaryingAffineSystem<T>::SetDefaultState(const Context<T>& context,
+                                                 State<T>* state) const {
+  unused(context);
+  if (time_period_ == 0.0) {
+    state->get_mutable_continuous_state().SetFromVector(x0_);
+  } else {
+    state->get_mutable_discrete_state(0).SetFromVector(x0_);
+  }
+}
+
+template <typename T>
+void TimeVaryingAffineSystem<T>::SetRandomState(
+    const Context<T>& context, State<T>* state,
+    RandomGenerator* generator) const {
+  unused(context);
+  Eigen::VectorXd w(num_states_);
+  std::normal_distribution<double> normal;
+  for (int i = 0; i < num_states_; i++) {
+    w[i] = normal(*generator);
+  }
+  const auto x0 = x0_ + Sigma_x0_ * w;
+  if (time_period_ == 0.0) {
+    state->get_mutable_continuous_state().SetFromVector(x0);
+  } else {
+    state->get_mutable_discrete_state(0).SetFromVector(x0);
+  }
 }
 
 // Our public constructor declares that our most specific subclass is

@@ -98,6 +98,50 @@ TEST_F(AffineSystemTest, Output) {
       expected_output, dut_->get_output_port().Eval(*context_), 1e-10));
 }
 
+TEST_F(AffineSystemTest, InitialConditions) {
+  // Confirm default is zero initial conditions.
+  dut_->SetDefaultContext(context_.get());
+  EXPECT_TRUE(
+      CompareMatrices(context_->get_continuous_state_vector().CopyToVector(),
+                      Eigen::Vector2d::Zero(), 1e-16));
+
+  // Random states should be zero by default.
+  RandomGenerator generator;
+  dut_->SetRandomContext(context_.get(), &generator);
+  EXPECT_TRUE(
+      CompareMatrices(context_->get_continuous_state_vector().CopyToVector(),
+                      Eigen::Vector2d::Zero(), 1e-16));
+
+  // Confirm I can set the initial conditions / sample mean.
+  const Eigen::Vector2d x0(.123, .456);
+  dut_->configure_default_state(x0);
+  dut_->SetDefaultContext(context_.get());
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_continuous_state_vector().CopyToVector(), x0, 1e-16));
+  dut_->SetRandomContext(context_.get(), &generator);
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_continuous_state_vector().CopyToVector(), x0, 1e-16));
+
+  // Set a random initial state distribution and check that it results in the
+  // proper covariance.
+  const Eigen::Matrix2d cov = Eigen::Vector2d(.567, .89).asDiagonal();
+  dut_->configure_random_state(cov);
+
+  const int kNumSamples = 100000;
+  Eigen::Matrix2Xd samples(2, kNumSamples);
+  for (int i = 0; i < kNumSamples; i++) {
+    dut_->SetRandomContext(context_.get(), &generator);
+    samples.col(i) =
+        context_->get_continuous_state_vector().CopyToVector() - x0;
+  }
+  const Eigen::Matrix2d sample_cov =
+      (samples * samples.transpose()) / (kNumSamples - 1);
+  // We expect the sample covariance to be within sqrt(n/N) via Bai, Yin in
+  // https://case.edu/artsci/math/mwmeckes/perspectivesInHighDimensions/litvak.pdf
+  // NOTE(russt): I expected to need a fudge factor, but did not.
+  EXPECT_LE((sample_cov - cov).norm(), std::sqrt(2. / kNumSamples));
+}
+
 // Tests converting to different scalar types.
 TEST_F(AffineSystemTest, ConvertScalarType) {
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
@@ -180,6 +224,9 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   AffineSystem<double> system(A, B, f0, C, D, y0, 1.0);
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->has_only_discrete_state());
+  EXPECT_TRUE(
+      CompareMatrices(context->get_discrete_state_vector().CopyToVector(),
+                      Eigen::Vector3d::Zero(), 1e-16));
 
   Eigen::Vector3d x0(26, 27, 28);
 
@@ -205,6 +252,23 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   // Compare the calculated output against the expected output.
   EXPECT_TRUE(CompareMatrices(system.get_output_port().Eval(*context),
                               C * x0 + D * u0 + y0));
+
+  // Check the initial conditions.  The covariance math is tested in the
+  // continuous time case; I only need to confirm here that all code paths
+  // are setting the discrete state vector appropriately.
+  RandomGenerator generator;
+  system.SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE(
+      CompareMatrices(context->get_discrete_state_vector().CopyToVector(),
+                      Eigen::Vector3d::Zero(), 1e-16));
+  x0 << .123, .456, .789;
+  system.configure_default_state(x0);
+  system.SetDefaultContext(context.get());
+  EXPECT_TRUE(CompareMatrices(
+      context->get_discrete_state_vector().CopyToVector(), x0, 1e-16));
+  system.SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE(CompareMatrices(
+      context->get_discrete_state_vector().CopyToVector(), x0, 1e-16));
 }
 
 // [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,

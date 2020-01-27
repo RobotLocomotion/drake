@@ -62,6 +62,18 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   virtual VectorX<T> y0(const T& t) const = 0;
   /// @}
 
+  /// Configures the value that will be assigned to the state vector in
+  /// `SetDefaultContext`. `x0` must be a vector of length `num_states`.
+  void configure_default_state(const Eigen::Ref<const VectorX<T>>& x0);
+
+  /// Configures the Gaussian distribution over state vectors used in the
+  /// `SetRandomContext` methods.  The mean of the distribution will be the
+  /// default state (@see `configure_default_state`). `covariance` must have
+  /// size `num_states` by `num_states` and must be symmetric and positive
+  /// semi-definite.
+  void configure_random_state(
+      const Eigen::Ref<const Eigen::MatrixXd>& covariance);
+
   double time_period() const { return time_period_; }
   int num_states() const { return num_states_; }
   int num_inputs() const { return num_inputs_; }
@@ -102,11 +114,22 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
+  /// Sets the initial conditions.
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override;
+
+  /// Sets the random initial conditions.
+  void SetRandomState(const Context<T>& context, State<T>* state,
+      RandomGenerator* generator) const override;
+
  private:
   const int num_states_{0};
   const int num_inputs_{0};
   const int num_outputs_{0};
   const double time_period_{0.0};
+
+  VectorX<T> x0_;     // Initial state.
+  Eigen::MatrixXd Sigma_x0_;  // Initial state covariance.
 };
 
 /// A discrete OR continuous affine system (with constant coefficients).
