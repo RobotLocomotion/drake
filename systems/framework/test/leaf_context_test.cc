@@ -44,6 +44,8 @@ class LeafContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_.SetTime(kTime);
+    internal::SystemBaseContextBaseAttorney::set_system_id(
+        &context_, internal::SystemId::get_new_id());
 
     // Set up slots for input and output ports.
     AddInputPorts(kNumInputPorts, &context_);
@@ -493,6 +495,10 @@ TEST_F(LeafContextTest, Clone) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());
+
+  // Verify that the system id was copied.
+  EXPECT_TRUE(context_.get_system_id().is_valid());
+  EXPECT_EQ(context_.get_system_id(), clone->get_system_id());
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
