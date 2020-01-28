@@ -168,7 +168,7 @@ class ArticulatedBodyInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool, bool>
   IsPhysicallyValid() const {
     // Note that this tolerance may need to be loosened.
-    const double kTolerance = -1e-14;
+    const double kTolerance = -5e-13;
 
     // Get the eigenvalues of the matrix and see if they are all greater than or
     // equal to zero with some tolerance for floating point errors.
