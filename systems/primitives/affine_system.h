@@ -68,11 +68,19 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 
   /// Configures the Gaussian distribution over state vectors used in the
   /// `SetRandomContext` methods.  The mean of the distribution will be the
-  /// default state (@see `configure_default_state`). `covariance` must have
+  /// default state (@see configure_default_state()). `covariance` must have
   /// size `num_states` by `num_states` and must be symmetric and positive
   /// semi-definite.
   void configure_random_state(
       const Eigen::Ref<const Eigen::MatrixXd>& covariance);
+
+  /// Returns the configured default state.  @see configure_default_state().
+  const VectorX<T>& get_default_state() const { return x0_; }
+
+  /// Returns the configured random state covariance.
+  const Eigen::MatrixXd get_random_state_covariance() const {
+    return Sqrt_Sigma_x0_ * Sqrt_Sigma_x0_;
+  }
 
   double time_period() const { return time_period_; }
   int num_states() const { return num_states_; }
@@ -93,6 +101,21 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   TimeVaryingAffineSystem(SystemScalarConverter converter,
                           int num_states, int num_inputs, int num_outputs,
                           double time_period);
+
+  /// Helper method.  Derived classes should call this from the
+  // scalar-converting copy constructor.
+  template <typename U>
+  void ConfigureDefaultAndRandomStateFrom(
+      const TimeVaryingAffineSystem<U>& other) {
+    // Convert default state from U -> double -> T.
+    VectorX<T> x0(other.num_states());
+    const VectorX<U>& other_x0 = other.get_default_state();
+    for (int i = 0; i < other.num_states(); i++) {
+      x0[i] = ExtractDoubleOrThrow(other_x0[i]);
+    }
+    this->configure_default_state(x0);
+    this->configure_random_state(other.get_random_state_covariance());
+  }
 
   /// Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
   /// `C(t)`, `D(t)`, and `y0(t)` with runtime size checks.  Derived classes
@@ -128,8 +151,8 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   const int num_outputs_{0};
   const double time_period_{0.0};
 
-  VectorX<T> x0_;     // Initial state.
-  Eigen::MatrixXd Sigma_x0_;  // Initial state covariance.
+  VectorX<T> x0_;     // Default state.
+  Eigen::MatrixXd Sqrt_Sigma_x0_;  // Square root of state covariance matrix.
 };
 
 /// A discrete OR continuous affine system (with constant coefficients).

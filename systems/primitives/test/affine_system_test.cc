@@ -2,6 +2,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
@@ -20,6 +21,8 @@ class AffineSystemTest : public AffineLinearSystemTest {
   void Initialize() override {
     // Construct the system I/O objects.
     dut_ = make_unique<AffineSystem<double>>(A_, B_, f0_, C_, D_, y0_);
+    dut_->configure_default_state(x0_);
+    dut_->configure_random_state(Sigma_x0_);
     dut_->set_name("test_affine_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
@@ -31,6 +34,8 @@ class AffineSystemTest : public AffineLinearSystemTest {
  protected:
   // The Device Under Test is an AffineSystem<double>.
   unique_ptr<AffineSystem<double>> dut_;
+  const Eigen::Vector2d x0_{1.2, 3.4};
+  const Eigen::Matrix2d Sigma_x0_{Eigen::Vector2d(.567, .89).asDiagonal()};
 };
 
 // Tests that the affine system is correctly setup.
@@ -98,48 +103,34 @@ TEST_F(AffineSystemTest, Output) {
       expected_output, dut_->get_output_port().Eval(*context_), 1e-10));
 }
 
-TEST_F(AffineSystemTest, InitialConditions) {
-  // Confirm default is zero initial conditions.
-  dut_->SetDefaultContext(context_.get());
-  EXPECT_TRUE(
-      CompareMatrices(context_->get_continuous_state_vector().CopyToVector(),
-                      Eigen::Vector2d::Zero(), 1e-16));
+TEST_F(AffineSystemTest, DefaultAndRandomState) {
+  EXPECT_TRUE(CompareMatrices(dut_->get_default_state(), x0_, 0.0));
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_continuous_state_vector().CopyToVector(), x0_, 0.0));
+  EXPECT_TRUE(CompareMatrices(dut_->get_random_state_covariance(),
+      Sigma_x0_, 1e-16));
 
-  // Random states should be zero by default.
   RandomGenerator generator;
-  dut_->SetRandomContext(context_.get(), &generator);
-  EXPECT_TRUE(
-      CompareMatrices(context_->get_continuous_state_vector().CopyToVector(),
-                      Eigen::Vector2d::Zero(), 1e-16));
-
-  // Confirm I can set the initial conditions / sample mean.
-  const Eigen::Vector2d x0(.123, .456);
-  dut_->configure_default_state(x0);
-  dut_->SetDefaultContext(context_.get());
-  EXPECT_TRUE(CompareMatrices(
-      context_->get_continuous_state_vector().CopyToVector(), x0, 1e-16));
-  dut_->SetRandomContext(context_.get(), &generator);
-  EXPECT_TRUE(CompareMatrices(
-      context_->get_continuous_state_vector().CopyToVector(), x0, 1e-16));
-
-  // Set a random initial state distribution and check that it results in the
-  // proper covariance.
-  const Eigen::Matrix2d cov = Eigen::Vector2d(.567, .89).asDiagonal();
-  dut_->configure_random_state(cov);
-
   const int kNumSamples = 100000;
   Eigen::Matrix2Xd samples(2, kNumSamples);
   for (int i = 0; i < kNumSamples; i++) {
     dut_->SetRandomContext(context_.get(), &generator);
     samples.col(i) =
-        context_->get_continuous_state_vector().CopyToVector() - x0;
+        context_->get_continuous_state_vector().CopyToVector() - x0_;
   }
   const Eigen::Matrix2d sample_cov =
       (samples * samples.transpose()) / (kNumSamples - 1);
   // We expect the sample covariance to be within sqrt(n/N) via Bai, Yin in
   // https://case.edu/artsci/math/mwmeckes/perspectivesInHighDimensions/litvak.pdf
   // NOTE(russt): I expected to need a fudge factor, but did not.
-  EXPECT_LE((sample_cov - cov).norm(), std::sqrt(2. / kNumSamples));
+  EXPECT_LE((sample_cov - Sigma_x0_).norm(), std::sqrt(2. / kNumSamples));
+
+  // Confirm that I can reset the random state to zero covariance
+  // (deterministic).
+  dut_->configure_random_state(Eigen::Matrix2d::Zero());
+  dut_->SetRandomContext(context_.get(), &generator);
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_continuous_state_vector().CopyToVector(), x0_, 0.0));
 }
 
 // Tests converting to different scalar types.
@@ -151,6 +142,10 @@ TEST_F(AffineSystemTest, ConvertScalarType) {
     EXPECT_EQ(converted.C(), C_);
     EXPECT_EQ(converted.D(), D_);
     EXPECT_EQ(converted.y0(), y0_);
+    EXPECT_TRUE(CompareMatrices(
+        math::autoDiffToValueMatrix(converted.get_default_state()), x0_, 0.0));
+    EXPECT_TRUE(CompareMatrices(
+        converted.get_random_state_covariance(), Sigma_x0_, 1e-16));
   }));
   EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
     EXPECT_EQ(converted.A(), A_);
@@ -159,6 +154,10 @@ TEST_F(AffineSystemTest, ConvertScalarType) {
     EXPECT_EQ(converted.C(), C_);
     EXPECT_EQ(converted.D(), D_);
     EXPECT_EQ(converted.y0(), y0_);
+    EXPECT_TRUE(CompareMatrices(
+        symbolic::Evaluate(converted.get_default_state()), x0_, 0.0));
+    EXPECT_TRUE(CompareMatrices(
+        converted.get_random_state_covariance(), Sigma_x0_, 1e-16));
   }));
 }
 

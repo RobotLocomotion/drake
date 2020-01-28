@@ -28,7 +28,7 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
       num_outputs_(num_outputs),
       time_period_(time_period),
       x0_(VectorX<T>::Zero(num_states)),
-      Sigma_x0_(Eigen::MatrixXd::Zero(num_states, num_states)) {
+      Sqrt_Sigma_x0_(Eigen::MatrixXd::Zero(num_states, num_states)) {
   DRAKE_DEMAND(num_states_ >= 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
   DRAKE_DEMAND(num_outputs_ >= 0);
@@ -76,8 +76,10 @@ void TimeVaryingAffineSystem<T>::configure_random_state(
     const Eigen::Ref<const Eigen::MatrixXd>& covariance) {
   DRAKE_DEMAND(covariance.rows() == num_states_);
   DRAKE_DEMAND(covariance.cols() == num_states_);
-  Sigma_x0_ =
-      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(covariance).operatorSqrt();
+  if (num_states_ > 0) {
+    Sqrt_Sigma_x0_ = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(covariance)
+                         .operatorSqrt();
+  }
 }
 
 // This is the default implementation for this virtual method.
@@ -188,7 +190,7 @@ void TimeVaryingAffineSystem<T>::SetRandomState(
   for (int i = 0; i < num_states_; i++) {
     w[i] = normal(*generator);
   }
-  const auto x0 = x0_ + Sigma_x0_ * w;
+  const auto x0 = x0_ + Sqrt_Sigma_x0_ * w;
   if (time_period_ == 0.0) {
     state->get_mutable_continuous_state().SetFromVector(x0);
   } else {
@@ -245,7 +247,9 @@ template <typename T>
 template <typename U>
 AffineSystem<T>::AffineSystem(const AffineSystem<U>& other)
     : AffineSystem(other.A(), other.B(), other.f0(), other.C(), other.D(),
-                   other.y0(), other.time_period()) {}
+                   other.y0(), other.time_period()) {
+  this->ConfigureDefaultAndRandomStateFrom(other);
+}
 
 template <typename T>
 unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(

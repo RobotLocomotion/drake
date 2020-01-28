@@ -56,7 +56,9 @@ class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
   template <typename U>
   explicit TrajectoryLinearSystem(const TrajectoryLinearSystem<U>& other)
       : TrajectoryLinearSystem<T>(*other.A_, *other.B_, *other.C_, *other.D_,
-                                  other.time_period()) {}
+                                  other.time_period()) {
+    this->ConfigureDefaultAndRandomStateFrom(other);
+  }
 
   /// @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
   /// methods.
