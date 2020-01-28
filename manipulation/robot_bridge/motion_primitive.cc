@@ -1,4 +1,7 @@
 #include "drake/manipulation/robot_bridge/motion_primitive.h"
+
+#include <utility>
+
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -51,8 +54,8 @@ void MotionPrimitive::CalcPositionOutput(
     systems::BasicVector<double>* output) const {
   const auto& x_current = get_x_command(context.get_state()).get_value();
   output->set_value(x_current.head(plant().num_positions()));
-  drake::log()->info("{}::CalcPositionOutput @ {}: {}", this->get_name(),
-                     context.get_time(), output->get_value().transpose());
+  drake::log()->debug("{}::CalcPositionOutput @ {}: {}", this->get_name(),
+                      context.get_time(), output->get_value().transpose());
   if (output->get_value().array().isNaN().any()) {
     drake::log()->error("{}::CalcPositionOutput @ {}: {}", this->get_name(),
                         context.get_time(), output->get_value().transpose());
@@ -114,7 +117,7 @@ void MoveJoint::UpdateCommand(const systems::Context<double>& context,
   const double interp_time = context.get_time();
   const auto& cmd_traj = get_command_traj(*state);
   const Eigen::VectorXd q_cmd = cmd_traj.value(interp_time);
-  // TODO set v
+  // TODO(siyuanfeng-tri): set v
   Eigen::VectorXd x_cmd = Eigen::VectorXd::Zero(plant().num_multibody_states());
   x_cmd.head(plant().num_positions()) = q_cmd;
   get_mutable_x_command(state).set_value(x_cmd);
@@ -140,12 +143,12 @@ MoveTool::MoveTool(const multibody::MultibodyPlant<double>* plant,
     : MotionPrimitive(plant, timestep),
       tool_frame_(*tool_frame),
       params_(plant->num_positions(), plant->num_velocities()) {
+  // TODO(siyuanfeng-tri): allow params_ to come from input.
   params_.set_unconstrained_degrees_of_freedom_velocity_limit(0.6);
   params_.set_joint_position_limits(std::pair<Eigen::VectorXd, Eigen::VectorXd>(
       plant->GetPositionLowerLimits(), plant->GetPositionUpperLimits()));
   params_.set_joint_velocity_limits(std::pair<Eigen::VectorXd, Eigen::VectorXd>(
       plant->GetVelocityLowerLimits(), plant->GetVelocityUpperLimits()));
-  // TODO
   params_.set_nominal_joint_position(
       Eigen::VectorXd::Zero(plant->num_positions()));
   params_.set_timestep(timestep);
@@ -264,7 +267,7 @@ void MoveToolStraight::UpdateLogic(const systems::Context<double>& context,
         math::RigidTransform<double>(input_traj.get_pose(
             input_traj.get_position_trajectory().get_start_time()));
 
-    DRAKE_THROW_UNLESS(X_WT_now.IsNearlyEqualTo(X_WT_traj, 1e-3));
+    DRAKE_THROW_UNLESS(X_WT_now.IsNearlyEqualTo(X_WT_traj, 1e-2));
 
     cmd_traj = input_traj;
   }

@@ -13,16 +13,25 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+drake_cc_package_library(
+    name = "robot_bridge",
+    deps = [
+        ":motion_primitive",
+        ":motion_primitive_selector",
+        ":robot_bridge_core",
+    ],
+)
+
 drake_cc_library(
     name = "motion_primitive",
     srcs = ["motion_primitive.cc"],
     hdrs = ["motion_primitive.h"],
     copts = ["-g"],
     deps = [
+        "//manipulation/planner:differential_inverse_kinematics",
         "//manipulation/util:trajectory_utils",
         "//multibody/plant",
         "//solvers:mathematical_program",
-        "//manipulation/planner:differential_inverse_kinematics",
     ],
 )
 
@@ -37,7 +46,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "robot_bridge",
+    name = "robot_bridge_core",
     srcs = ["robot_bridge.cc"],
     hdrs = ["robot_bridge.h"],
     copts = ["-g"],
@@ -54,9 +63,11 @@ drake_cc_binary(
     srcs = [
         "single_diagram_demo.cc",
     ],
+    add_test_rule = 1,
+    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":robot_bridge",
-        "//examples/manipulation_station:manipulation_station",
+        "//examples/manipulation_station",
         "//geometry:geometry_visualization",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",

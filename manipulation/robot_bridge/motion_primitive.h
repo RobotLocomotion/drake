@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
 #include "drake/manipulation/util/trajectory_utils.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -126,7 +130,7 @@ class MotionPrimitive : public systems::LeafSystem<double> {
   void DoCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-      systems::State<double>* state) const override final;
+      systems::State<double>* state) const final;
 
   const multibody::MultibodyPlant<double>& plant_;
   const double timestep_;
@@ -196,7 +200,7 @@ class MoveTool : public MotionPrimitive {
       const systems::State<double>& state, double time) const = 0;
 
   void UpdateCommand(const systems::Context<double>& context,
-                     systems::State<double>* state) const override final;
+                     systems::State<double>* state) const final;
 
   math::RigidTransform<double> CalcRelativeTransform(
       const multibody::Frame<double>& frame_A,

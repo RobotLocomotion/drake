@@ -3,6 +3,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 
 #include "drake/manipulation/robot_bridge/motion_primitive.h"
 #include "drake/systems/framework/leaf_system.h"

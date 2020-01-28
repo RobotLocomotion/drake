@@ -26,7 +26,6 @@ using math::RotationMatrix;
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
-DEFINE_double(duration, 1e33, "Simulation duration.");
 
 template <typename T>
 multibody::ModelInstanceIndex AddAndWeldModelFrom(
@@ -57,6 +56,7 @@ int do_main(int argc, char* argv[]) {
       "drake/examples/manipulation_station/models/061_foam_brick.sdf",
       RigidTransform<double>(RollPitchYaw<double>(-1.57, 0, 3),
                              Eigen::Vector3d(-0.3, -0.55, 0.36)));
+  station->SetIiwaPositionGains(Eigen::VectorXd::Constant(7, 1e3));
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
@@ -117,9 +117,10 @@ int do_main(int argc, char* argv[]) {
   Eigen::VectorXd q1 = q0;
   double t1 = t0 + 1;
   q1[1] -= M_PI_2;
+  const Eigen::VectorXd zero_v = Eigen::VectorXd::Zero(q0.size());
   const trajectories::PiecewisePolynomial<double> q_traj0 =
-      trajectories::PiecewisePolynomial<double>::FirstOrderHold({t0, t1},
-                                                                {q0, q1});
+      trajectories::PiecewisePolynomial<double>::Cubic({t0, t1}, {q0, q1},
+          zero_v, zero_v);
   robot_comm->GetInputPort("q_trajectory")
       .FixValue(&rb_context,
                 Value<trajectories::PiecewisePolynomial<double>>(q_traj0));
@@ -145,18 +146,21 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   // Exec first move j.
+  const double settling_time = 0.1;
+  t1 += settling_time;
   simulator.AdvanceTo(t1);
 
   // Change command for the second move j.
   t0 = t1;
   t1 = t0 + 1;
   const trajectories::PiecewisePolynomial<double> q_traj1 =
-      trajectories::PiecewisePolynomial<double>::FirstOrderHold({t0, t1},
-                                                                {q1, q0});
+      trajectories::PiecewisePolynomial<double>::Cubic(
+          {t0, t1}, {q1, q0}, zero_v, zero_v);
   robot_comm->GetInputPort("q_trajectory")
       .FixValue(&rb_context,
                 Value<trajectories::PiecewisePolynomial<double>>(q_traj1));
   // Exec second move j.
+  t1 += settling_time;
   simulator.AdvanceTo(t1);
 
   // Change command for move tool.
@@ -174,7 +178,22 @@ int do_main(int argc, char* argv[]) {
                 Value<manipulation::SingleSegmentCartesianTrajectory<double>>(
                     tool_traj1));
   // Exec last move t.
-  simulator.AdvanceTo(t1 + 1);
+  t1 += settling_time;
+  simulator.AdvanceTo(t1);
+
+  // Check actual tool pose is close to commanded.
+  {
+    auto temp_context = rb_plant.CreateDefaultContext();
+    q0 = station->GetIiwaPosition(station_context);
+    rb_plant.SetPositions(temp_context.get(), q0);
+    X_WT0 = rb_plant.CalcRelativeTransform(*temp_context,
+                                           rb_plant.world_frame(), tool_frame);
+  }
+  drake::log()->info("Actual tool pose:\n{}", X_WT0.matrix());
+  drake::log()->info("Commanded tool pose:\n{}", X_WT1.matrix());
+  if (!X_WT0.IsNearlyEqualTo(X_WT1, 1e-3)) {
+    return EXIT_FAILURE;
+  }
 
   return 0;
 }

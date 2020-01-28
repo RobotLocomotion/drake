@@ -41,8 +41,8 @@ void MotionPrimitiveSelector::CalcSelection(
   // selector port, which is port 0. Thus offset by 1.
   *summary = systems::InputPortIndex(
       primitive_name_to_input_index_.at(active_primitive_name) + 1);
-  drake::log()->info("active primitive: {}, port idx: {}",
-                     active_primitive_name, *summary);
+  drake::log()->debug("active primitive: {}, port idx: {}",
+                      active_primitive_name, *summary);
 }
 
 void MotionPrimitiveSelector::DoCalcUnrestrictedUpdate(
