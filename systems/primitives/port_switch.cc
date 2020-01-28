@@ -76,7 +76,8 @@ void PortSwitch<T>::CopyVectorOut(const Context<T>& context,
                                   BasicVector<T>* vector) const {
   const InputPortIndex selector =
       get_port_selector_input_port().template Eval<InputPortIndex>(context);
-  DRAKE_DEMAND(selector >= 0 && selector < this->num_input_ports());
+  // Should never forward port 0, which is the selector input.
+  DRAKE_DEMAND(selector >= 1 && selector < this->num_input_ports());
   vector->set_value(this->get_input_port(selector).Eval(context));
 }
 
@@ -85,7 +86,8 @@ void PortSwitch<T>::CopyValueOut(const Context<T>& context,
                                  AbstractValue* value) const {
   const InputPortIndex selector =
       get_port_selector_input_port().template Eval<InputPortIndex>(context);
-  DRAKE_DEMAND(selector >= 0 && selector < this->num_input_ports());
+  // Should never forward port 0, which is the selector input.
+  DRAKE_DEMAND(selector >= 1 && selector < this->num_input_ports());
   value->SetFrom(
       this->get_input_port(selector).template Eval<AbstractValue>(context));
 }

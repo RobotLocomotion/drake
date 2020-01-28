@@ -1,0 +1,70 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "motion_primitive",
+    srcs = ["motion_primitive.cc"],
+    hdrs = ["motion_primitive.h"],
+    copts = ["-g"],
+    deps = [
+        "//manipulation/util:trajectory_utils",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//manipulation/planner:differential_inverse_kinematics",
+    ],
+)
+
+drake_cc_library(
+    name = "motion_primitive_selector",
+    srcs = ["motion_primitive_selector.cc"],
+    hdrs = ["motion_primitive_selector.h"],
+    copts = ["-g"],
+    deps = [
+        ":motion_primitive",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_bridge",
+    srcs = ["robot_bridge.cc"],
+    hdrs = ["robot_bridge.h"],
+    copts = ["-g"],
+    deps = [
+        ":motion_primitive",
+        ":motion_primitive_selector",
+        "//systems/primitives:pass_through",
+        "//systems/primitives:port_switch",
+    ],
+)
+
+drake_cc_binary(
+    name = "single_diagram_demo",
+    srcs = [
+        "single_diagram_demo.cc",
+    ],
+    deps = [
+        ":robot_bridge",
+        "//examples/manipulation_station:manipulation_station",
+        "//geometry:geometry_visualization",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "@gflags",
+    ],
+)
+
+# === test/ ===
+
+add_lint_tests()
