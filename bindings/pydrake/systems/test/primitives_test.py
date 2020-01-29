@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import RandomDistribution
+from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Expression, Variable
@@ -171,6 +171,20 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.D(), D)
         self.assertEqual(system.y0(), y0)
         self.assertEqual(system.time_period(), 0.)
+
+        x0 = np.array([1, 2])
+        system.configure_default_state(x0=x0)
+        system.SetDefaultContext(context)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), x0)
+        generator = RandomGenerator()
+        system.SetRandomContext(context, generator)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), x0)
+        system.configure_random_state(covariance=np.eye(2))
+        system.SetRandomContext(context, generator)
+        self.assertNotEqual(
+            context.get_continuous_state_vector().CopyToVector()[1], x0[1])
 
         Co = ControllabilityMatrix(system)
         self.assertEqual(Co.shape, (2, 2))

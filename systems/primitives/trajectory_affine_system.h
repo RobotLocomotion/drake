@@ -59,7 +59,9 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
   template <typename U>
   explicit TrajectoryAffineSystem(const TrajectoryAffineSystem<U>& other)
       : TrajectoryAffineSystem<T>(*other.A_, *other.B_, *other.f0_, *other.C_,
-                                  *other.D_, *other.y0_, other.time_period()) {}
+                                  *other.D_, *other.y0_, other.time_period()) {
+    this->ConfigureDefaultAndRandomStateFrom(other);
+  }
 
   /// @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
   /// methods.

@@ -353,6 +353,7 @@ drake_cc_googletest(
         ":affine_system",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:autodiff",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

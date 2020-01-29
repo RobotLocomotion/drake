@@ -330,6 +330,9 @@ struct Impl {
             doc.System.CreateDefaultContext.doc)
         .def("SetDefaultContext", &System<T>::SetDefaultContext,
             doc.System.SetDefaultContext.doc)
+        .def("SetRandomContext", &System<T>::SetRandomContext,
+            py::arg("context"), py::arg("generator"),
+            doc.System.SetRandomContext.doc)
         .def("AllocateOutput",
             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                 &System<T>::AllocateOutput),
