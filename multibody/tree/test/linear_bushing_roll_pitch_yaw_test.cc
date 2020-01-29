@@ -24,41 +24,42 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    // In preparation to add a rigid body B to the model, form a spatial inertia
-    // containing B's mass and inertia properties about Bcm, expressed in B.
-    const RotationalInertia<double> I_BBcm_B(Ixx_, Iyy_, Izz_,
+    // In preparing to add a rigid link C to the model, form a spatial inertia
+    // containing C's mass and inertia properties about Ccm, expressed in C.
+    // Note: Point Co (C's origin) is coincident with CCm (C's center of mass).
+    const RotationalInertia<double> I_CCcm_C(Ixx_, Iyy_, Izz_,
                                              Ixy_, Ixz_, Iyz_);
-    const SpatialInertia<double> M_BBo_B =
-        SpatialInertia<double>::MakeFromCentralInertia(mB_, p_BoBcm_, I_BBcm_B);
+    const SpatialInertia<double> M_CCo_C =
+        SpatialInertia<double>::MakeFromCentralInertia(mC_, p_CoCcm_, I_CCcm_C);
 
     bodyA_ = &(model->world_body());
-    bodyB_ = &(model->AddRigidBody("BodyB", M_BBo_B));
+    bodyC_ = &(model->AddRigidBody("BodyC", M_CCo_C));
 
     // Calculate "reasonable" torque and force stiffness/damping constants,
-    // where "reasonable" means a critical damping ratio ζ = 0.1 and damped
-    // natural periods of a few seconds.
+    // where "reasonable" means a critical damping ratio ζ = 0.1 for each of the
+    // six modes and a damped natural period of a few seconds for each mode.
     Vector3<double> torque_stiffness_constants;
     Vector3<double> torque_damping_constants;
     Vector3<double> force_stiffness_constants;
     Vector3<double> force_damping_constants;
-    CalcStiffnessAndDampingConstants(&torque_stiffness_constants,
-                                     &torque_damping_constants,
-                                     &force_stiffness_constants,
-                                     &force_damping_constants);
+    CalcReasonableStiffnessAndDampingConstants(&torque_stiffness_constants,
+                                               &torque_damping_constants,
+                                               &force_stiffness_constants,
+                                               &force_damping_constants);
 
-    // Form frameAb, the frame Aʙ of body `A` that connects to the bushing.
-    // Form frameBa, the frame Bᴀ of body `B` that connects to the bushing.
-    const Frame<double>& frameAb = bodyA_->body_frame();
-    const Frame<double>& frameBa = bodyB_->body_frame();
+    // Designate frameA as the frame of bodyA (world) connected to the bushing.
+    // Designate frameC as the frame of bodyC (body)  connected to the bushing.
+    const Frame<double>& frameA = bodyA_->body_frame();
+    const Frame<double>& frameC = bodyC_->body_frame();
 
-    // Allow relative motion between bodies A and B by adding a mobilizer
-    // between frame Aʙ of body A and frame Bᴀ of body B.
+    // Allow relative motion between bodies A and C by adding a 6-DOF mobilizer
+    // between frameA of bodyA (world) and frameC of bodyC.
     mobilizer_ = &model->AddMobilizer(
-       std::make_unique<QuaternionFloatingMobilizer<double>>(frameAb, frameBa));
+       std::make_unique<QuaternionFloatingMobilizer<double>>(frameA, frameC));
 
-    // Add a bushing force element between frame Aʙ of body A and frame Bᴀ of B.
+    // Add a bushing force element between frame A and frame C.
     bushing_ = &(model->AddForceElement<LinearBushingRollPitchYaw>(
-                              frameAb, frameBa,
+                              frameA, frameC,
                               torque_stiffness_constants,
                               torque_damping_constants,
                               force_stiffness_constants,
@@ -76,17 +77,53 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   }
 
 
-  // Compares the Drake results whose those calculated by MotionGenesis.
-  // @param[in] rpy roll, pitch, yaw angles relating frames Aʙ and Bᴀ.
-  // @param[in] w_AbBa frame Bᴀ's angular velocity in frame Aʙ, expressed in Aʙ.
-  // @param[in] p_AbBa position vector from Aʙₒ to Bᴀₒ, expressed in frame Aʙ.
-  // @param[in] v_AbBa point Bᴀₒ's velocity in frame Aʙ, expressed in frame Aʙ.
-  // @see linear_bushing_roll_pitch_yaw.h for definitions of q₀, x, ẋ, etc.
+  // Compare the Drake results whose those calculated by MotionGenesis.
+  // @param[in] rpy roll, pitch, yaw angles relating frames A and C.
+  // @param[in] w_AC_A frame C's angular velocity in frame A, expressed in A.
+  // @param[in] p_AoCo_A position vector from Aₒ to Cₒ, expressed in frame A.
+  // @param[in] v_ACo_A point Cₒ's velocity in frame A, expressed in frame A.
   void CompareToMotionGenesisResults(const math::RollPitchYaw<double>& rpy,
-                                     const Vector3<double>& w_AbBa,
-                                     const Vector3<double>& p_AbBa,
-                                     const Vector3<double>& v_AbBa) const {
+                                     const Vector3<double>& w_AC_A,
+                                     const Vector3<double>& p_AoCo_A,
+                                     const Vector3<double>& v_ACo_A) const {
     //-------------- Start of MotionGenesis calculations -------------
+    // Get the bushing's configuration and motion.
+    const double q0 = rpy.roll_angle();                           // rad
+    const double q1 = rpy.pitch_angle();                          // rad
+    const double q2 = rpy.yaw_angle();                            // rad
+    const double wx = w_AC_A(0), wy = w_AC_A(1), wz = w_AC_A(2);  // rad/s
+
+    // Form kinematical ODEs that relate q̇₀, q̇₁, q̇₂ to wx, wy, wz.
+    const double c1 = cos(q1), s1 = sin(q1), tan1 = s1 / c1;
+    const double c2 = cos(q2), s2 = sin(q2);
+    const double q0Dt = c2 / c1 * wx + s2 / c1 * wy;
+    const double q1Dt = -s2 * wx + c2 * wy;
+    const double q2Dt = c2 * tan1 * wx + s2 * tan1 * wy + wz;
+
+    // Frame B is oriented "half-way" between frames A and C.  To determine B's
+    // orientation relative to A, determine the angle-axis representation of C's
+    // orientation in A and use half its angle to form the R_AB rotation matrix.
+    const math::RotationMatrix<double> R_AC(rpy);
+    const Eigen::AngleAxis<double> angleAxis_AC = R_AC.ToAngleAxis();
+    const Vector3<double>& axis_AC = angleAxis_AC.axis();
+    const double& angle_AC = angleAxis_AC.angle();
+    const Eigen::AngleAxis<double> angleAxis_AB(0.5 * angle_AC, axis_AC);
+    const math::RotationMatrix<double> R_AB(angleAxis_AB);
+    const math::RotationMatrix<double> R_BA = R_AB.transpose();
+    const math::RotationMatrix<double> R_CB = (R_BA * R_AC).transpose();
+
+    // Form x, y, z, which are defined so p_AoCo_B = x*Bx + y*By + z*Bz.
+    const Vector3<double> p_AoCo_B = R_BA * p_AoCo_A;
+    const double x = p_AoCo_B(0), y = p_AoCo_B(1), z = p_AoCo_B(2);  // meters
+
+    // Form [ẋ, ẏ, ż] -- which involves kinematics.
+    const Vector3<double> w_AB_A = 0.5 * w_AC_A;
+    const Vector3<double> DtB_p_AoCo_A = v_ACo_A - w_AB_A.cross(p_AoCo_A);
+    const Vector3<double> DtB_p_AoCo_B = R_BA * DtB_p_AoCo_A;
+    const double xDt = DtB_p_AoCo_B(0);  // m/s
+    const double yDt = DtB_p_AoCo_B(1);  // m/s
+    const double zDt = DtB_p_AoCo_B(2);  // m/s
+
     // Get the bushing's torque and force stiffness/damping constants.
     const Vector3<double>& k012 = bushing_->torque_stiffness_constants();
     const Vector3<double>& b012 = bushing_->torque_damping_constants();
@@ -97,34 +134,45 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double k0 = k012(0), k1 = k012(1), k2 = k012(2);  // N*m/rad
     const double kx = kxyz(0), ky = kxyz(1), kz = kxyz(2);  // N/m
 
-    // Get the bushing's configuration and motion.
-    const double q0 = rpy.roll_angle();                              // rad
-    const double q1 = rpy.pitch_angle();                             // rad
-    const double q2 = rpy.yaw_angle();                               // rad
-    const double wx = w_AbBa(0), wy = w_AbBa(1), wz = w_AbBa(2);     // rad/sec
-    const double x = p_AbBa(0), y = p_AbBa(1), z = p_AbBa(2);        // m
-    const double xDt = v_AbBa(0), yDt = v_AbBa(1), zDt = v_AbBa(2);  // m/s
-
-    const double c1 = cos(q1), s1 = sin(q1), tan1 = s1 / c1;
-    const double c2 = cos(q2), s2 = sin(q2);
-    const double q0Dt = c2 / c1 * wx + s2 / c1 * wy;
-    const double q1Dt = -s2 * wx + c2 * wy;
-    const double q2Dt = c2 * tan1 * wx + s2 * tan1 * wy + wz;
+    // Form net force Fx*Bx + Fy*By + Fz*Bz on frameC from the bushing.
     const double Fx = -(kx * x + bx * xDt);
     const double Fy = -(ky * y + by * yDt);
     const double Fz = -(kz * z + bz * zDt);
+    const Vector3<double> f_Ao_B_expected(-Fx, -Fy, -Fz);
+    const Vector3<double> f_Co_B_expected(Fx, Fy, Fz);
+
+    // Re-express net force on frame A in frame A.
+    const Vector3<double> f_Ao_A_expected = R_AB * f_Ao_B_expected;
+
+    // Re-express net force on frame C in frame C.
+    const Vector3<double> f_Co_C_expected = R_CB * f_Co_B_expected;
+
+    // Form torques T0, T1, T2 associated with roll-pitch-yaw rotation sequence.
     const double T0 = -(k0 * q0 + b0 * q0Dt);
     const double T1 = -(k1 * q1 + b1 * q1Dt);
     const double T2 = -(k2 * q2 + b2 * q2Dt);
+
+    // Calculate the torque on C expressed in A which produces the same
+    // generalized forces as T0, T1, T2.
     const double Tx = c2 / c1 * T0 - s2 * T1 + c2 * tan1 * T2;
     const double Ty = s2 / c1 * T0 + c2 * T1 + s2 * tan1 * T2;
     const double Tz = T2;
-    const double MBox =  Tx + 0.5*Fy*z - 0.5*Fz*y;
-    const double MBoy =  Ty + 0.5*Fz*x - 0.5*Fx*z;
-    const double MBoz =  Tz + 0.5*Fx*y - 0.5*Fy*x;
-    const double MAox = -Tx + 0.5*Fy*z - 0.5*Fz*y;
-    const double MAoy = -Ty + 0.5*Fz*x - 0.5*Fx*z;
-    const double MAoz = -Tz + 0.5*Fx*y - 0.5*Fy*x;
+    std::cout << "\n TTx = " << Tx
+              << "   TTy = " << Ty
+              << "   TTz = " << Tz << "\n";
+
+    // Calculate the moment on frame A about Ao, expressed in A.
+    const Vector3<double> p_AoBo_B = 0.5 * p_AoCo_B;
+    const Vector3<double> t_A_A_expected =
+        Vector3<double>(-Tx, -Ty, -Tz) + R_AB * p_AoBo_B.cross(f_Ao_B_expected);
+
+    // Calculate the moment on frame C about Co, expressed in A.
+    const Vector3<double> p_CoBo_B = -p_AoBo_B;
+    const Vector3<double> t_C_C_expected =
+        R_AC.transpose() * Vector3<double>(Tx, Ty, Tz) +
+        R_CB * p_CoBo_B.cross(f_Co_B_expected);
+
+    // Contributions to potential energy.
     const double potentialTranslation = 0.5 * kx * pow(x, 2)
                                       + 0.5 * ky * pow(y, 2)
                                       + 0.5 * kz * pow(z, 2);
@@ -132,6 +180,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
                                    + 0.5 * k1 * pow(q1, 2)
                                    + 0.5 * k2 * pow(q2, 2);
     const double potentialEnergy_MG = potentialRotation + potentialTranslation;
+
+    // Contributions to power.
     const double powerConservative_MG = -k0 * q0 * q0Dt - kx * x * xDt
                                        - k1 * q1 * q1Dt - ky * y * yDt
                                        - k2 * q2 * q2Dt - kz * z * zDt;
@@ -147,69 +197,46 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Harvest the context for Drake information.
     systems::Context<double>* context = context_.get();
 
-    // Use the mobilizer to set frame Bᴀ's orientation in frame Aʙ.
-    // Use the mobilizer to set Bᴀo's position from Aʙo expressed in frame Aʙ.
-    const math::RotationMatrix<double> R_AbBa(rpy);
-    mobilizer_->SetFromRotationMatrix(context, R_AbBa);
-    mobilizer_->set_position(context, p_AbBa);
+    // Use the mobilizer to set frame C's orientation in frame A.
+    // Use the mobilizer to set Co's position from Ao expressed in frame A.
+    mobilizer_->SetFromRotationMatrix(context, R_AC);
+    mobilizer_->set_position(context, p_AoCo_A);
 
-    // Verify the mobilizer sets the bushing's configuration correctly.
-    const math::RigidTransform<double> X_AbBa =
-        bushing_->CalcBushingRigidTransform(*context);
-    const math::RigidTransform<double> X_AbBa_expected(R_AbBa, p_AbBa);
-    EXPECT_TRUE(X_AbBa.IsNearlyEqualTo(X_AbBa_expected, 4 * kEpsilon));
+    // Use the mobilizer to set C's angular velocity in A expressed in A.
+    // Similarly, set Co's translational velocity in A expressed in A.
+    mobilizer_->set_angular_velocity(context, w_AC_A);
+    mobilizer_->set_translational_velocity(context, v_ACo_A);
 
-    // Ensure CalcBushingRollPitchYawAngles() gives the expected results.
+    // Verify the bushing's CalcX_AC() method.
+    const math::RigidTransform<double> X_AC = bushing_->CalcX_AC(*context);
+    const math::RigidTransform<double> X_AC_expected(R_AC, p_AoCo_A);
+    EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AC_expected, 4 * kEpsilon));
+
+    // Verify the bushing's CalcBushingRollPitchYawAngles() method.
     const math::RollPitchYaw<double> bushing_rpy =
         bushing_->CalcBushingRollPitchYawAngles(*context);
     EXPECT_TRUE(bushing_rpy.IsNearlySameOrientation(rpy, 4 * kEpsilon));
 
-    // Use the mobilizer to set Bᴀ's angular velocity in Aʙ expressed in Aʙ.
-    // Similarly, set Bᴀo's translational velocity in Aʙ expressed in Aʙ.
-    mobilizer_->set_angular_velocity(context, w_AbBa);
-    mobilizer_->set_translational_velocity(context, v_AbBa);
+    // Verify the bushing's CalcV_AC_A() spatial velocity method.
+    const SpatialVelocity<double> V_AC_A = bushing_->CalcV_AC_A(*context);
+    EXPECT_EQ(V_AC_A.rotational(), w_AC_A);
+    EXPECT_EQ(V_AC_A.translational(), v_ACo_A);
 
-    // Verify the mobilizer sets the bushing's motion correctly.
-    const SpatialVelocity<double> V_AbBa =
-        bushing_->CalcBushingSpatialVelocity(*context);
-    EXPECT_EQ(V_AbBa.rotational(), w_AbBa);
-    EXPECT_EQ(V_AbBa.translational(), v_AbBa);
+    // Verify F_A_A,, the bushing's spatial force calculation on frame A.
+    const SpatialForce<double> F_A_A =
+        bushing_->CalcBushingSpatialForceOnFrameA(*context);
+    EXPECT_TRUE(CompareMatrices(F_A_A.rotational(), t_A_A_expected,
+                                32 * kEpsilon, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(F_A_A.translational(), f_Ao_A_expected,
+                                32 * kEpsilon, MatrixCompareType::relative));
 
-    // Verify the bushing's spatial force (torque and force) calculation at Bc.
-    const SpatialForce<double> F_Bc_Ab =
-        bushing_->CalcBushingSpatialForceOnBc(*context);
-    const Vector3<double> t_Bc_Ab = F_Bc_Ab.rotational();
-    const Vector3<double> f_Bc_Ab = F_Bc_Ab.translational();
-    const Vector3<double> t_Bc_Ab_expected(Tx, Ty, Tz);
-    const Vector3<double> f_Bc_Ab_expected(Fx, Fy, Fz);
-    EXPECT_TRUE(CompareMatrices(t_Bc_Ab, t_Bc_Ab_expected, 4 * kEpsilon,
-                                MatrixCompareType::relative));
-    EXPECT_TRUE(CompareMatrices(f_Bc_Ab, f_Bc_Ab_expected, 4 * kEpsilon,
-                                MatrixCompareType::relative));
-
-    // Verify the bushing's spatial force (torque and force) calculation at Bᴀₒ.
-    const SpatialForce<double> F_Ba_Ab =
-        bushing_->CalcBushingSpatialForceOnBa(*context);
-    const Vector3<double> t_Ba_Ab = F_Ba_Ab.rotational();
-    const Vector3<double> f_Ba_Ab = F_Ba_Ab.translational();
-    const Vector3<double> t_Ba_Ab_expected(MBox, MBoy, MBoz);
-    const Vector3<double> f_Ba_Ab_expected(Fx, Fy, Fz);
-    EXPECT_TRUE(CompareMatrices(t_Ba_Ab, t_Ba_Ab_expected, 4 * kEpsilon,
-                                MatrixCompareType::relative));
-    EXPECT_TRUE(CompareMatrices(f_Ba_Ab, f_Ba_Ab_expected, 4 * kEpsilon,
-                                MatrixCompareType::relative));
-
-    // Verify the bushing's spatial force (torque and force) calculation at Aʙₒ.
-    const SpatialForce<double> F_Ab_Ab =
-        bushing_->CalcBushingSpatialForceOnAb(*context);
-    const Vector3<double> t_Ab_Ab = F_Ab_Ab.rotational();
-    const Vector3<double> f_Ab_Ab = F_Ab_Ab.translational();
-    const Vector3<double> t_Ab_Ab_expected(MAox, MAoy, MAoz);
-    const Vector3<double> f_Ab_Ab_expected(-Fx, -Fy, -Fz);
-    EXPECT_TRUE(CompareMatrices(t_Ab_Ab, t_Ab_Ab_expected, 4 * kEpsilon,
-                                MatrixCompareType::relative));
-    EXPECT_TRUE(CompareMatrices(f_Ab_Ab, f_Ab_Ab_expected, 4 * kEpsilon,
-                                MatrixCompareType::relative));
+    // Verify the bushing's spatial force (torque and force) calculation at Cₒ.
+    const SpatialForce<double> F_C_C =
+        bushing_->CalcBushingSpatialForceOnFrameC(*context);
+    EXPECT_TRUE(CompareMatrices(F_C_C.rotational(), t_C_C_expected,
+                                32 * kEpsilon, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(F_C_C.translational(), f_Co_C_expected,
+                                32 * kEpsilon, MatrixCompareType::relative));
 
     // TODO(Mitiguy) Fix CalcPotentialEnergy(), CalcConservativePower(), etc.
     //  to avoid the need to form pc and vc.
@@ -221,19 +248,19 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // Verify the bushing's potential energy calculation.
     const double potential_energy = bushing_->CalcPotentialEnergy(*context, pc);
-    double scaled_epsilon = std::abs(potentialEnergy_MG) * 8 * kEpsilon;
+    double scaled_epsilon = std::abs(potentialEnergy_MG) * 32 * kEpsilon;
     EXPECT_NEAR(potential_energy, potentialEnergy_MG, scaled_epsilon);
 
     // Verify the bushing's conservative power calculation.
     const double conservative_power =
         bushing_->CalcConservativePower(*context, pc, vc);
-    scaled_epsilon = std::abs(powerConservative_MG) * 8 * kEpsilon;
+    scaled_epsilon = std::abs(powerConservative_MG) * 32 * kEpsilon;
     EXPECT_NEAR(conservative_power, powerConservative_MG, scaled_epsilon);
 
     // Verify the bushing's non-conservative power calculation.
     const double non_conservative_power =
         bushing_->CalcNonConservativePower(*context, pc, vc);
-    scaled_epsilon = std::abs(powerDissipation_MG) * 8 * kEpsilon;
+    scaled_epsilon = std::abs(powerDissipation_MG) * 32 * kEpsilon;
     EXPECT_NEAR(non_conservative_power, powerNonconservative_MG,
                 scaled_epsilon);
   }
@@ -244,29 +271,29 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   const QuaternionFloatingMobilizer<double>* mobilizer_{nullptr};
 
   const RigidBody<double>* bodyA_{nullptr};  // World body (inboard to bushing).
-  const RigidBody<double>* bodyB_{nullptr};  // Body attached to bushing.
+  const RigidBody<double>* bodyC_{nullptr};  // Body attached to bushing.
   const LinearBushingRollPitchYaw<double>* bushing_{nullptr};
 
-  // Mass and inertia parameters for this model.
-  const double mB_ = 1;                       // B's mass in kilograms (kg).
-  const double Ixx_ = 2, Iyy_ = 3, Izz_ = 4;  // B's moments  of inertia (m²).
-  const double Ixy_ = 0, Ixz_ = 0, Iyz_ = 0;  // B's products of inertia (m²).
-  const Vector3<double> p_BoBcm_{0, 0, 0};    // Position from Bo to Bcm (m).
+  // Body C's mass, center of mass, and moments/products of inertia about Ccm.
+  const double mC_ = 1;                       // C's mass in kilograms (kg).
+  const double Ixx_ = 2, Iyy_ = 3, Izz_ = 4;  // C's moments  of inertia (m²).
+  const double Ixy_ = 0, Ixz_ = 0, Iyz_ = 0;  // C's products of inertia (m²).
+  const Vector3<double> p_CoCcm_{0, 0, 0};    // Position from Co to Ccm (m).
 
  private:
   // Calculates "reasonable" torque and force stiffness/damping constants,
   // where "reasonable" means a critical damping ratio ζ = 0.1 and damped
   // natural periods of a few seconds.
-  // @param[out] torque_stiffness_constants For torque τ, the stiffness
-  //   constants `[k₀, k₁, k₂]` associated with angles `[q₀, q₁, q₂]`.
-  // @param[out] torque_damping_constants For torque τ, the damping
-  //   constants `[b₀, b₁, b₂]` associated with angular rates `[q̇₀, q̇₁, q̇₂]`.
-  // @param[out] force_stiffness_constants For force f, the stiffness constants
-  //   `[kx, ky, kz]` associated with translational displacement `[x, y, z]`
-  // @param[out] force_damping_constants For force f, the damping constants
-  //   `[bx, by, bz]` associated with translational rates `[ẋ, ẏ, ż]`.
+  // @param[out] torque_stiffness_constants `[k₀, k₁, k₂]` that multiply the
+  //   roll-pitch-yaw angles `[q₀, q₁, q₂]` to produce part of the torque τ.
+  // @param[out] torque_damping_constants `[b₀, b₁, b₂]` that multiply the
+  //   angular rates `[q̇₀, q̇₁, q̇₂]` to produce part of the torque τ.
+  // @param[out] force_stiffness_constants `[kx, ky, kz]` that multiply the
+  //   translational displacement `[x, y, z]` to produce part of the force f.
+  // @param[out] force_damping_constants `[bx, by, bz]` that multiply the
+  //   translational rates `[ẋ, ẏ, ż]` to produce part of the force f.
   // @see linear_bushing_roll_pitch_yaw.h for definitions of k₀, b₀, q₀, x, etc.
-  void CalcStiffnessAndDampingConstants(
+  void CalcReasonableStiffnessAndDampingConstants(
       Vector3<double>* torque_stiffness_constants,
       Vector3<double>* torque_damping_constants,
       Vector3<double>* force_stiffness_constants,
@@ -289,7 +316,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Since ζ = b /(2 √(m k)), the associated damping constant b = 2 ζ √(m k).
     // ------------ Calculate torque stiffness/damping constants --------------
     const double tau_rotate = 1;                                 // seconds
-    const double wDamped_rotate = 2 * M_PI / tau_rotate;         // rad/sec
+    const double wDamped_rotate = 2 * M_PI / tau_rotate;         // rad/s
     const double zeta = 0.1;                                     // No units
     const double wn_rotate = wDamped_rotate / std::sqrt(1 - zeta * zeta);
     const double k0 = Ixx_ * wn_rotate * wn_rotate;              // N*m/rad
@@ -303,101 +330,199 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // ------------ Calculate force stiffness/damping constants ---------------
     const double tauX = 2, tauY = 3, tauZ = 3;                   // seconds
-    const double wDampedX = 2 * M_PI / tauX;                     // rad/sec
-    const double wDampedY = 2 * M_PI / tauY;                     // rad/sec
-    const double wDampedZ = 2 * M_PI / tauZ;                     // rad/sec
-    const double wnX = wDampedX / std::sqrt(1 - zeta * zeta);    // rad/sec
-    const double wnY = wDampedY / std::sqrt(1 - zeta * zeta);    // rad/sec
-    const double wnZ = wDampedZ / std::sqrt(1 - zeta * zeta);    // rad/sec
-    const double kx = mB_ * wnX * wnX;                           // N/m
-    const double ky = mB_ * wnY * wnY;                           // N/m
-    const double kz = mB_ * wnZ * wnZ;                           // N/m
-    const double bx = 2 * zeta * std::sqrt(mB_ * kx);            // N*s/m
-    const double by = 2 * zeta * std::sqrt(mB_ * ky);            // N*s/m
-    const double bz = 2 * zeta * std::sqrt(mB_ * kz);            // N*s/m
+    const double wDampedX = 2 * M_PI / tauX;                     // rad/s
+    const double wDampedY = 2 * M_PI / tauY;                     // rad/s
+    const double wDampedZ = 2 * M_PI / tauZ;                     // rad/s
+    const double wnX = wDampedX / std::sqrt(1 - zeta * zeta);    // rad/s
+    const double wnY = wDampedY / std::sqrt(1 - zeta * zeta);    // rad/s
+    const double wnZ = wDampedZ / std::sqrt(1 - zeta * zeta);    // rad/s
+    const double kx = mC_ * wnX * wnX;                           // N/m
+    const double ky = mC_ * wnY * wnY;                           // N/m
+    const double kz = mC_ * wnZ * wnZ;                           // N/m
+    const double bx = 2 * zeta * std::sqrt(mC_ * kx);            // N*s/m
+    const double by = 2 * zeta * std::sqrt(mC_ * ky);            // N*s/m
+    const double bz = 2 * zeta * std::sqrt(mC_ * kz);            // N*s/m
     *force_stiffness_constants = Vector3<double>(kx, ky, kz);
     *force_damping_constants = Vector3<double>(bx, by, bz);
   }
 };
 
 TEST_F(LinearBushingRollPitchYawTester, ConstructionAndAccessors) {
-  EXPECT_EQ(bushing_->bodyA().index(), bodyA_->index());
-  EXPECT_EQ(bushing_->bodyB().index(), bodyB_->index());
+  EXPECT_EQ(bushing_->link0().index(), bodyA_->index());
+  EXPECT_EQ(bushing_->link1().index(), bodyC_->index());
 }
 
-// Verify calculations when body B has given pose and zero motion in world W.
-TEST_F(LinearBushingRollPitchYawTester, NonIdentityPoseAtRest) {
-  const Vector3<double> w_AbBa(0, 0, 0);
-  const Vector3<double> v_AbBa(0, 0, 0);
-
-  // Test with both zero and non-zero position vectors.
-  const Vector3<double> p_AbBa(1, 2, 3);
+// Verify results when body C has given orientation, but no motion in world.
+TEST_F(LinearBushingRollPitchYawTester, VariousOrientationsAtRest) {
   const Vector3<double> p_zero(0, 0, 0);
+  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> v_zero(0, 0, 0);
 
   // Test identity orientation.
   math::RollPitchYaw<double> rpy(0, 0, 0);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_zero, v_AbBa);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
 
   // Test for non-zero roll only.
   rpy.set(M_PI / 6, 0, 0);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_zero, v_AbBa);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
 
   // Test for non-zero pitch only.
   rpy.set(0, M_PI / 3, 0);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_zero, v_AbBa);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
 
   // Test for non-zero yaw only.
   rpy.set(0, 0, 2 * M_PI / 3);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_zero, v_AbBa);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+
+  // Test with roll ≠ 0, pitch ≠ 0, yaw = 0.
+  rpy.set(M_PI / 6, M_PI / 3, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+
+  // Test with roll = 0, pitch ≠ 0, yaw ≠ 0.
+  rpy.set(0, M_PI / 3, 2 * M_PI / 3);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+
+  // Test with roll ≠ 0, pitch = 0, yaw ≠ 0.
+  rpy.set(M_PI / 6, 0, 2 * M_PI / 3);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+
+  // Test with roll ≠ 0, pitch ≠ 0, yaw ≠ 0.
+  rpy.set(M_PI / 6, M_PI / 3, 2 * M_PI / 3);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+}
+
+
+// Verify results when body C has given position, but no motion in world A.
+TEST_F(LinearBushingRollPitchYawTester, VariousPositionsAtRest) {
+  const math::RollPitchYaw<double> rpy_zero(0, 0, 0);
+  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> v_zero(0, 0, 0);
+
+  // Test zero position vector.
+  Vector3<double> p_AoCo_A(0, 0, 0);
+  CompareToMotionGenesisResults(rpy_zero, w_zero, p_AoCo_A, v_zero);
+
+  // Test simple translation (x-direction).
+  p_AoCo_A = Vector3<double>(1, 0, 0);
+  CompareToMotionGenesisResults(rpy_zero, w_zero, p_AoCo_A, v_zero);
+
+  // Test simple translation (y-direction).
+  p_AoCo_A = Vector3<double>(0, 2, 0);
+  CompareToMotionGenesisResults(rpy_zero, w_zero, p_AoCo_A, v_zero);
+
+  // Test simple translation (z-direction).
+  p_AoCo_A = Vector3<double>(0, 0, 3);
+  CompareToMotionGenesisResults(rpy_zero, w_zero, p_AoCo_A, v_zero);
+
+  // Test non-simple translation.
+  p_AoCo_A = Vector3<double>(1, 2, 3);
+  CompareToMotionGenesisResults(rpy_zero, w_zero, p_AoCo_A, v_zero);
+}
+
+// Verify results when body C has given pose, but no motion in world A.
+TEST_F(LinearBushingRollPitchYawTester, VariousConfigurationsAtRest) {
+  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> v_zero(0, 0, 0);
+
+  // Test with both zero and non-zero position vectors.
+  const Vector3<double> p_zero(0, 0, 0);
+  const Vector3<double> p_AoCo_A(1, 2, 3);
+
+  // Test identity orientation.
+  math::RollPitchYaw<double> rpy(0, 0, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_zero);
+
+  // Test for non-zero roll only.
+  rpy.set(M_PI / 6, 0, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_zero);
+
+  // Test for non-zero pitch only.
+  rpy.set(0, M_PI / 3, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_zero);
+
+  // Test for non-zero yaw only.
+  rpy.set(0, 0, 2 * M_PI / 3);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_zero);
 
   // Test for non-zero roll, pitch, and yaw.
   rpy.set(M_PI / 6, M_PI / 3, 2 * M_PI / 3);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_zero, v_AbBa);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  CompareToMotionGenesisResults(rpy, w_zero, p_zero, v_zero);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_zero);
 }
 
-// Verify calculations when body B has identity pose and motion in world W.
-TEST_F(LinearBushingRollPitchYawTester, IdentityPoseButMoving) {
+// Verify results when body C has angular velocity and identity pose.
+TEST_F(LinearBushingRollPitchYawTester, IdentityPoseVariousRotationRates) {
   const math::RollPitchYaw<double> rpy(0, 0, 0);
-  const Vector3<double> p_AbBa(0, 0, 0);
-
-  // Test with both zero and non-zero angular and translational velocities.
-  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> p_AoCo_A(0, 0, 0);
   const Vector3<double> v_zero(0, 0, 0);
-  const Vector3<double> v_AbBa(3, 2, 1);
+
+  // Test zero angular velocity.
+  Vector3<double> w_AC_A(0, 0, 0);
+  CompareToMotionGenesisResults(rpy, w_AC_A, p_AoCo_A, v_zero);
 
   // Test simple angular velocity (x-direction).
-  Vector3<double> w_AbBa(2, 0, 0);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_zero);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  w_AC_A = Vector3<double>(2, 0, 0);
+  CompareToMotionGenesisResults(rpy, w_AC_A, p_AoCo_A, v_zero);
 
   // Test simple angular velocity (y-direction).
-  w_AbBa = Vector3<double>(0, 3, 0);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_zero);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  w_AC_A = Vector3<double>(0, 3, 0);
+  CompareToMotionGenesisResults(rpy, w_AC_A, p_AoCo_A, v_zero);
 
   // Test simple angular velocity (z-direction).
-  w_AbBa = Vector3<double>(0, 0, 4);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_zero);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  w_AC_A = Vector3<double>(0, 0, 4);
+  CompareToMotionGenesisResults(rpy, w_AC_A, p_AoCo_A, v_zero);
 
   // Test non-simple angular velocity.
-  w_AbBa = Vector3<double>(2, 3, 4);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_zero);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  w_AC_A = Vector3<double>(2, 3, 4);
+  CompareToMotionGenesisResults(rpy, w_AC_A, p_AoCo_A, v_zero);
 }
 
-// Verify calculations when body B has non-zero pose/motion in world W.
-TEST_F(LinearBushingRollPitchYawTester, NonIdentityPoseAndMoving) {
+// Verify results when body C has translational velocity and identity pose.
+TEST_F(LinearBushingRollPitchYawTester, IdentityPoseVariousTranslationalRates) {
+  const math::RollPitchYaw<double> rpy(0, 0, 0);
+  const Vector3<double> p_AoCo_A(0, 0, 0);
+  const Vector3<double> w_zero(0, 0, 0);
+
+  // Test no translation.
+  Vector3<double> v_ACo_A(0, 0, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_ACo_A);
+
+  // Test simple translation (x-direction).
+  v_ACo_A = Vector3<double>(2, 0, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_ACo_A);
+
+  // Test simple translation (y-direction).
+  v_ACo_A = Vector3<double>(0, 3, 0);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_ACo_A);
+
+  // Test simple translation (z-direction).
+  v_ACo_A = Vector3<double>(0, 0, 4);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_ACo_A);
+
+  // Test non-simple translation.
+  v_ACo_A = Vector3<double>(3, 2, 1);
+  CompareToMotionGenesisResults(rpy, w_zero, p_AoCo_A, v_ACo_A);
+}
+
+// Verify results when body C has various poses and motion.
+TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
+  const math::RollPitchYaw<double> rpy_zero(0, 0, 0);
+  const Vector3<double> p_zero(0, 0, 0);
+  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> v_zero(0, 0, 0);
   const math::RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
-  const Vector3<double> p_AbBa(0.4, 0.5, 0.6);
-  const Vector3<double> w_AbBa(0.7, 0.8, 0.9);
-  const Vector3<double> v_AbBa(1.1, 1.2, 1.3);
-  CompareToMotionGenesisResults(rpy, w_AbBa, p_AbBa, v_AbBa);
+  const Vector3<double> p_AoCo_A(0.4, 0.5, 0.6);
+  const Vector3<double> w_AC_A(0.7, 0.8, 0.9);
+  const Vector3<double> v_ACo_A(1.1, 1.2, 1.3);
+  CompareToMotionGenesisResults(rpy_zero, p_zero,   w_zero, v_zero);
+  CompareToMotionGenesisResults(rpy,      p_zero,   w_zero, v_zero);
+  CompareToMotionGenesisResults(rpy,      p_AoCo_A, w_zero, v_zero);
+  CompareToMotionGenesisResults(rpy,      p_AoCo_A, w_AC_A, v_zero);
+  CompareToMotionGenesisResults(rpy,      p_AoCo_A, w_AC_A, v_ACo_A);
 }
 
 }  // namespace
