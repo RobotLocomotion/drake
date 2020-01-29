@@ -30,6 +30,7 @@ drake_cc_binary(
         "//multibody/plant",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis",
+        "//systems/analysis:simulator_gflags",
         "//systems/controllers:pid_controller",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives",

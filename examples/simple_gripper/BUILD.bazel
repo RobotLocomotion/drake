@@ -30,9 +30,9 @@ drake_cc_binary(
         ":simple_gripper_models",
     ],
     test_rule_args = [
-        "--integration_scheme=runge_kutta2",
+        "--simulator_integration_scheme=runge_kutta2",
         "--simulation_time=0.01",
-        "--target_realtime_rate=0.0",
+        "--simulator_target_realtime_rate=0.0",
     ],
     test_rule_timeout = "moderate",
     deps = [
@@ -48,6 +48,7 @@ drake_cc_binary(
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:sine",

@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/sine.h"
 
@@ -41,38 +42,21 @@ using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
-using systems::ImplicitEulerIntegrator;
-using systems::RungeKutta2Integrator;
-using systems::RungeKutta3Integrator;
-using systems::SemiExplicitEulerIntegrator;
 using systems::Sine;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
 // configuration file (e.g. YAML).
-DEFINE_double(target_realtime_rate, 1.0,
-              "Desired rate relative to real time.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
-
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation. [s].");
 
 DEFINE_double(grip_width, 0.095,
               "The initial distance between the gripper fingers. [m].");
 
-// Integration parameters:
-DEFINE_string(integration_scheme, "implicit_euler",
-              "Integration scheme to be used. Available options are: "
-              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
-              "'implicit_euler'");
-DEFINE_double(max_time_step, 1.0e-3,
-              "Maximum time step used for the integrators. [s]. "
-              "If negative, a value based on parameter penetration_allowance "
-              "is used.");
-DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
-              "size integrators with error control.");
-DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
-    "discrete system with periodic updates of period 'max_time_step'."
-    "If 'false', the plant is modeled as a continuous system.");
+DEFINE_double(
+    mbp_discrete_update_period, 1.0E-3,
+    "The fixed-time step period (in seconds) of discrete updates for the "
+    "multibody plant modeled as a discrete system. Strictly positive. "
+    "Set to zero for a continuous plant model.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -164,12 +148,10 @@ int do_main() {
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  DRAKE_DEMAND(FLAGS_max_time_step > 0);
+  DRAKE_DEMAND(FLAGS_simulator_max_time_step > 0);
 
   MultibodyPlant<double>& plant =
-      FLAGS_time_stepping ?
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
-      *builder.AddSystem<MultibodyPlant>();
+      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   Parser parser(&plant);
   std::string full_name =
@@ -233,7 +215,7 @@ int do_main() {
   // least 30 time steps. Usually this is a good starting point for fixed step
   // size integrators to be stable.
   const double max_time_step =
-      FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
+      FLAGS_simulator_max_time_step > 0 ? FLAGS_simulator_max_time_step :
       plant.get_contact_penalty_method_time_scale() / 30;
 
   // Print maximum time step and the time scale introduced by the compliance in
@@ -262,9 +244,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  // (Currently only available when time stepping.)
-  if (FLAGS_time_stepping)
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
@@ -339,57 +319,29 @@ int do_main() {
   translate_joint.set_translation_rate(&plant_context, v0);
 
   // Set up simulator.
-  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-  systems::IntegratorBase<double>* integrator{nullptr};
+  auto simulator =
+      MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
-  if (FLAGS_integration_scheme == "implicit_euler") {
-    integrator =
-        &simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
-  } else if (FLAGS_integration_scheme == "runge_kutta2") {
-    integrator = &simulator.reset_integrator<RungeKutta2Integrator<double>>(
-        max_time_step);
-  } else if (FLAGS_integration_scheme == "runge_kutta3") {
-    integrator =
-        &simulator.reset_integrator<RungeKutta3Integrator<double>>();
-  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
-    integrator =
-        &simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-            max_time_step);
-  } else {
-    throw std::runtime_error(
-        "Integration scheme '" + FLAGS_integration_scheme +
-            "' not supported for this example.");
+  simulator->AdvanceTo(FLAGS_simulation_time);
+
+  if (plant.is_discrete()) {
+    fmt::print("Used time stepping with dt={}\n", plant.time_step());
   }
-  integrator->set_maximum_step_size(max_time_step);
-  if (!integrator->get_fixed_step_mode())
-    integrator->set_target_accuracy(FLAGS_accuracy);
 
-  // The error controlled integrators might need to take very small time steps
-  // to compute a solution to the desired accuracy. Therefore, to visualize
-  // these very short transients, we publish every time step.
-  simulator.set_publish_every_time_step(true);
-  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.Initialize();
-  simulator.AdvanceTo(FLAGS_simulation_time);
-
-  if (FLAGS_time_stepping) {
-    fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
-    fmt::print("Number of time steps taken = {:d}\n",
-               simulator.get_num_steps_taken());
-  } else {
-    fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
-    fmt::print("Number of time steps taken = {:d}\n",
-               integrator->get_num_steps_taken());
-    if (!integrator->get_fixed_step_mode()) {
-      fmt::print("Initial time step taken = {:10.6g} s\n",
-                 integrator->get_actual_initial_step_size_taken());
-      fmt::print("Largest time step taken = {:10.6g} s\n",
-                 integrator->get_largest_step_size_taken());
-      fmt::print("Smallest adapted step size = {:10.6g} s\n",
-                 integrator->get_smallest_adapted_step_size_taken());
-      fmt::print("Number of steps shrunk due to error control = {:d}\n",
-                 integrator->get_num_step_shrinkages_from_error_control());
-    }
+  const systems::IntegratorBase<double>& integrator =
+      simulator->get_integrator();
+  fmt::print("Stats for integrator {}:\n", FLAGS_simulator_integration_scheme);
+  fmt::print("Number of time steps taken = {:d}\n",
+             integrator.get_num_steps_taken());
+  if (!integrator.get_fixed_step_mode()) {
+    fmt::print("Initial time step taken = {:10.6g} s\n",
+               integrator.get_actual_initial_step_size_taken());
+    fmt::print("Largest time step taken = {:10.6g} s\n",
+               integrator.get_largest_step_size_taken());
+    fmt::print("Smallest adapted step size = {:10.6g} s\n",
+               integrator.get_smallest_adapted_step_size_taken());
+    fmt::print("Number of steps shrunk due to error control = {:d}\n",
+               integrator.get_num_step_shrinkages_from_error_control());
   }
 
   return 0;
