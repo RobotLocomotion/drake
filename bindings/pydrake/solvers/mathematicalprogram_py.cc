@@ -1078,6 +1078,10 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
       m, "LinearCost", doc.LinearCost.doc)
+      .def(py::init([](const Eigen::VectorXd& a, double b) {
+        return std::unique_ptr<LinearCost>(new LinearCost(a, b));
+      }),
+          py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
       .def("b", &LinearCost::b, doc.LinearCost.b.doc)
       .def("UpdateCoefficients",
@@ -1089,6 +1093,11 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost", doc.QuadraticCost.doc)
+      .def(py::init([](const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
+                        double c) {
+        return std::unique_ptr<QuadraticCost>(new QuadraticCost(Q, b, c));
+      }),
+          py::arg("Q"), py::arg("b"), py::arg("c"), doc.QuadraticCost.ctor.doc)
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
       .def("b", &QuadraticCost::b, doc.QuadraticCost.b.doc)
       .def("c", &QuadraticCost::c, doc.QuadraticCost.c.doc)
