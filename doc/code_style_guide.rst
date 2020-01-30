@@ -44,12 +44,10 @@ incorporates `PEP 257 -- Docstring Conventions
 <https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
 recommendations as well.
 
-For API documentation, Drake generally follows
-`Section 3.8. Comments and Docstrings
-<https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings>`_
-of the Google Python Style Guide, except that license boilerplate is not included
-in individual files, and (at present) class attributes are not always
-documented in class docstrings.
+Drake also follows a small subset of the
+`RobotLocomotion fork <https://drake.mit.edu/styleguide/pyguide.html>`_
+of the Google Python Style Guide. Please refer to this page for  which sections
+are adhered to, and the relevant exceptions.
 
 See :ref:`tools for complying with coding style <code-style-tools>` for details
 about the automated style checks.
@@ -95,7 +93,7 @@ Additional Rules
 
   Rationale: ``/usr/bin/env`` enables a ``PATH`` search for the Python 3
   executable. This is also recommended by
-  `PEP 394 <https://www.python.org/dev/peps/pep-0394/>`_`.
+  `PEP 394 <https://www.python.org/dev/peps/pep-0394/>`_.
 
 .. [#bazel_py_script] Generally, this means scripts that run via ``bazel run``,
    ``bazel test``, or ``./bazel-bin/...``.
