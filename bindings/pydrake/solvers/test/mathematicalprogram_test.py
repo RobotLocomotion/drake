@@ -27,6 +27,24 @@ import pydrake.symbolic as sym
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
 
+class TestCost(unittest.TestCase):
+    def test_linear_cost(self):
+        a = np.array([1., 2.])
+        b = 0.5
+        cost = mp.LinearCost(a, b)
+        np.testing.assert_allclose(cost.a(), a)
+        self.assertEqual(cost.b(), b)
+
+    def test_quadratic_cost(self):
+        Q = np.array([[1., 2.], [2., 3.]])
+        b = np.array([3., 4.])
+        c = 0.4
+        cost = mp.QuadraticCost(Q, b, c)
+        np.testing.assert_allclose(cost.Q(), Q)
+        np.testing.assert_allclose(cost.b(), b)
+        self.assertEqual(cost.c(), c)
+
+
 class TestQP:
     def __init__(self):
         # Create a simple QP that uses all deduced linear constraint types,
