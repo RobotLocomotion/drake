@@ -8,7 +8,7 @@
 #include <Eigen/LU>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/math/autodiff_gradient.h"
+#include "drake/math/compute_numerical_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
@@ -410,71 +410,31 @@ template <class T>
 void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     const T& t, const T& h, const VectorX<T>& y, const VectorX<T>& qk,
     const VectorX<T>& qn, MatrixX<T>* Jy) {
-  using std::abs;
-  using std::max;
-
-  // TODO(antequ): Refactor this to use drake::math::ComputeNumericalGradient()
-  // once it supports all scalar types (right now it only supports double).
-
-  // Set the finite difference tolerance, used to compute δy in the notation
-  // above, to √ε, the square root of machine precision.
-  const double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
-
-  // Initialize the Jacobian.
-  const int ny = y.size();
-  Jy->resize(ny, ny);
-
   DRAKE_LOGGER_DEBUG(
       "VelocityImplicitEulerIntegrator ComputeForwardDiffVelocityJacobian "
       "{}-Jacobian t={}",
-      ny, t);
+      y.size(), t);
   DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
                      y.transpose());
 
-
-  // Define a y' to perturb.
-  VectorX<T> y_prime = y;
-
   // Define the lambda l_of_y to evaluate l(y).
-  auto l_of_y = [&qk, &t, &qn, &h,
-                 this](const VectorX<T>& y_state) -> VectorX<T> {
-    return this->ComputeLOfY(t, y_state, qk, qn, h);
-  };
+  std::function<void(const VectorX<T>&, VectorX<T>*)> l_of_y =
+      [&qk, &t, &qn, &h, this](const VectorX<T>& y_state,
+                               VectorX<T>* l_result) {
+        *l_result = this->ComputeLOfY(t, y_state, qk, qn, h);
+      };
 
-  // Initialize the finite-difference baseline, l(y), by evaluating the
-  // context at l(y) = f_y(t, qⁿ + h N(qₖ) v, y) = f_y(t,x).
-  const VectorX<T> l_of_y_at_y = l_of_y(y);
-
-  // Now evaluate each l(y') where y' modifies one value of y at a time
+  // Compute Jy by passing l(y) to math::ComputeNumericalGradient.
   // TODO(antequ): Right now we modify the context twice each time we call
   // l(y): once when we calculate qⁿ + h N(qₖ) v (SetTimeAndContinuousState),
   // and once when we calculate l(y) (get_mutable_generalized_position).
-  // However, this is only necessary for each y' that modifies a velocity (v).
+  // However, this is only necessary for each y that modifies a velocity (v).
   // For all but one of the miscellaneous states (z), we can reuse the position
   // so that the context needs only one modification. Investigate how to
   // refactor this logic to achieve this performance benefit while maintaining
   // code readibility.
-  for (int j = 0; j < ny; ++j) {
-    // Compute a good increment, δy(j), to dimension j of y using approximately
-    // log(1/√ε) digits of precision. Note that if |yⱼ| is large, the increment
-    // will be large as well. If |yⱼ| is small, the increment will be no smaller
-    // than √ε.
-    const T abs_yj = abs(y(j));
-    T dyj = sqrt_eps * max(T(1), abs_yj);
-
-    // Update y', minimizing the effect of roundoff error by ensuring that
-    // y and y' differ by an exactly representable number. See p. 192 of
-    // Press, W., Teukolsky, S., Vetterling, W., and Flannery, P. Numerical
-    //   Recipes in C++, 2nd Ed., Cambridge University Press, 2002.
-    y_prime(j) = y(j) + dyj;
-    dyj = y_prime(j) - y(j);
-
-    // Compute l(y') and set the relevant column of the Jacobian matrix.
-    Jy->col(j) = (l_of_y(y_prime) - l_of_y_at_y) / dyj;
-
-    // Reset y' to y.
-    y_prime(j) = y(j);
-  }
+  *Jy = math::ComputeNumericalGradient(l_of_y, y,
+      math::NumericalGradientOption{math::NumericalGradientMethod::kForward});
 }
 
 template <class T>
