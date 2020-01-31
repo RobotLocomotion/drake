@@ -221,15 +221,13 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param qk is qₖ, the current-iteration position used in the definition of
   //        l(y).
   // @param qt0 refers to qⁿ, the initial position used in l(y).
-  // @param context the Context of the system, at time and continuous state
-  //        unknown.
   // @param [out] Jy is the Jacobian matrix, Jₗ(y).
-  // @note The continuous state will be indeterminate on return.
+  // @note The context's continuous state will be indeterminate on return.
   void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
                                           const VectorX<T>& y,
                                           const VectorX<T>& qk,
                                           const VectorX<T>& qt0,
-                                          Context<T>* context, MatrixX<T>* Jy);
+                                          MatrixX<T>* Jy);
 
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
@@ -410,7 +408,7 @@ void VelocityImplicitEulerIntegrator<T>::
 template <class T>
 void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
     const T& t, const T& h, const VectorX<T>& y, const VectorX<T>& qk,
-    const VectorX<T>& qt0, Context<T>* context, MatrixX<T>* Jy) {
+    const VectorX<T>& qt0, MatrixX<T>* Jy) {
   using std::abs;
   using std::max;
 
@@ -421,28 +419,24 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   // above, to √ε, the square root of machine precision.
   const double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
-  // Get the number of q, v, y state variables in x.
-  const ContinuousState<T>& cstate = context->get_continuous_state();
-  const int nq = cstate.num_q();
-  const int ny = cstate.num_v() + cstate.num_z();
-
   DRAKE_LOGGER_DEBUG(
-      "  ImplicitEulerIntegrator Compute ForwardDiffVelocityJacobian "
+      "VelocityImplicitEulerIntegrator Compute ForwardDiffVelocityJacobian "
       "{}-Jacobian t={}",
       ny, t);
   DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
                      y.transpose());
 
   // Initialize the Jacobian.
+  const int ny = y.size();
   Jy->resize(ny, ny);
 
   // Define a y' to perturb.
   VectorX<T> y_prime = y;
 
   // Define the lambda l_of_y to evaluate l(y).
-  auto l_of_y = [&ny, &nq, &qk, &t, &qt0, &h, context,
-      this](const VectorX<T>& y_state) -> VectorX<T> {
-    return ComputeLOfY(t, y_state, qk, qt0, h);
+  auto l_of_y = [&qk, &t, &qt0, &h,
+                 this](const VectorX<T>& y_state) -> VectorX<T> {
+    return this->ComputeLOfY(t, y_state, qk, qt0, h);
   };
 
   // Initialize the finite-difference baseline, l(y), by evaluating the
@@ -498,7 +492,7 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& tf,
   switch (this->get_jacobian_computation_scheme()) {
     case VelocityImplicitEulerIntegrator<
         T>::JacobianComputationScheme::kForwardDifference:
-      ComputeForwardDiffVelocityJacobian(tf, h, y, qk, qt0, &*context, Jy);
+      ComputeForwardDiffVelocityJacobian(tf, h, y, qk, qt0, Jy);
       break;
     case VelocityImplicitEulerIntegrator<
         T>::JacobianComputationScheme::kCentralDifference:
