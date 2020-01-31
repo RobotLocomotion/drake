@@ -419,6 +419,10 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   // above, to √ε, the square root of machine precision.
   const double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
+  // Initialize the Jacobian.
+  const int ny = y.size();
+  Jy->resize(ny, ny);
+
   DRAKE_LOGGER_DEBUG(
       "VelocityImplicitEulerIntegrator Compute ForwardDiffVelocityJacobian "
       "{}-Jacobian t={}",
@@ -426,9 +430,6 @@ void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
   DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
                      y.transpose());
 
-  // Initialize the Jacobian.
-  const int ny = y.size();
-  Jy->resize(ny, ny);
 
   // Define a y' to perturb.
   VectorX<T> y_prime = y;
