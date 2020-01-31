@@ -326,13 +326,10 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //        beginning of the step
   // @param h is the step size.
   // @param [out] result is set to R(y).
-  // @post The context is set to (tⁿ⁺¹, qₖ, y).
-  VectorX<T> ComputeResidualRAndSetContext(const T& t,
-                                           const VectorX<T> y,
-                                           const VectorX<T>& qk,
-                                           const VectorX<T>& qn,
-                                           const VectorX<T>& yn,
-                                           const T& h);
+  // @post The context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
+  VectorX<T> ComputeResidualR(const T& t, const VectorX<T> y,
+                              const VectorX<T>& qk, const VectorX<T>& qn,
+                              const VectorX<T>& yn, const T& h);
 
   // This helper method evaluates l(y), defined as the following:
   //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
@@ -574,16 +571,11 @@ void VelocityImplicitEulerIntegrator<T>::FreshenVelocityMatricesIfFullNewton(
 }
 
 template <class T>
-VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualRAndSetContext(
+VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualR(
     const T& t, const VectorX<T> y, const VectorX<T>& qk, const VectorX<T>& qn,
     const VectorX<T>& yn, const T& h) {
   // Compute l(y), which also sets the time and y states of the context.
   const VectorX<T> l_of_y = ComputeLOfY(t, y, qk, qn, h);
-
-  // Set the context position to qk.
-  this->get_mutable_context()->get_mutable_continuous_state()
-      .get_mutable_generalized_position()
-      .SetFromVector(qk);
 
   // Evaluate R(y).
   return (y - yn - h * l_of_y).eval();
@@ -599,7 +591,7 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(const T& t,
   int nq = qn.size();
   int ny = y.size();
 
-  // Set the context to (t, qk, y)
+  // Set the context to (t, qₖ, y)
   VectorX<T> x(nq+ny);
   x.head(nq) = qk;
   x.tail(ny) = y;
@@ -663,9 +655,8 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
   // Initialize the vector for qdot.
   BasicVector<T> qdot(nq);
 
-  // Advance the context time and state to compute derivatives at t0 + h.
+  // We compute our residuals at tf = t0 + h.
   const T tf = t0 + h;
-  context->SetTimeAndContinuousState(tf, *xtplus);
 
   // Initialize the "last" state update norm; this will be used to detect
   // convergence.
@@ -681,11 +672,6 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     return false;
   }
 
-  // Evaluate the residual error, which is defined above as R(yₖ):
-  //     R(yₖ) = yₖ - yⁿ - h l(yₖ).
-  VectorX<T> residual = ComputeResidualRAndSetContext(tf, ytplus, qtplus, qn,
-                                                      yn, h);
-
   // Do the Newton-Raphson iterations.
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
     DRAKE_LOGGER_DEBUG(
@@ -699,6 +685,11 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
+    // Evaluate the residual error, which is defined above as R(yₖ):
+    //     R(yₖ) = yₖ - yⁿ - h l(yₖ).
+    VectorX<T> residual = ComputeResidualR(tf, ytplus, qtplus, qn,
+                                          yn, h);
+
     // Compute the state update using the equation A*y = -R(), where A is the
     // iteration matrix.
     const VectorX<T> dy = iteration_matrix->Solve(-residual);
@@ -706,11 +697,11 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     // Update the y portion of xtplus to yₖ₊₁.
     ytplus += dy;
 
-    // Update the q portion of xtplus to qₖ₊₁. Note that at this point, the
-    // context has its position q equal to qtplus = qₖ, because
-    // ComputeResidualRAndSetContext and FreshenVelocityMatricesIfFullNewton
-    // would both have set the position to qₖ. This means that we can directly
-    // call MapVelocityToQDot on the context, which will evaluate N(qₖ).
+    // Update the q portion of xtplus to qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁. Note that
+    // currently, qtplus is set to qₖ, while vtplus is set to vₖ₊₁.
+    context->get_mutable_continuous_state()
+        .get_mutable_generalized_position()
+        .SetFromVector(qtplus);
     system.MapVelocityToQDot(*context, vtplus, &qdot);
     qtplus = qn + h * qdot.get_value();
     dx << qtplus - last_qtplus, dy;
@@ -727,22 +718,15 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     typename ImplicitIntegrator<T>::ConvergenceStatus status =
         this->CheckNewtonConvergence(i, *xtplus, dx, dx_norm, last_dx_norm);
 
-    // If it converged, set the context, and we're done.
-    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged) {
-      context->SetTimeAndContinuousState(tf, *xtplus);
+    // If it converged, we're done.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged)
       return true;
-    }
-
     // If it diverged, we have to abort and try again.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged)
       break;
     // Otherwise, continue to the next Newton-Raphson iteration.
     DRAKE_DEMAND(status ==
                  ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
-
-    // Evaluate the residual error R(yₖ).
-    residual = ComputeResidualRAndSetContext(tf, ytplus, qtplus,
-                                             qn, yn, h);
 
     last_dx_norm = dx_norm;
     last_qtplus = qtplus;

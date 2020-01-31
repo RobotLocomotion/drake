@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 #include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"
 
 namespace drake {
