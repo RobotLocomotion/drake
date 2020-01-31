@@ -399,9 +399,6 @@ drake_cc_googletest(
     name = "velocity_implicit_euler_integrator_test",
     timeout = "moderate",
     shard_count = 2,
-    tags = [
-        "no_memcheck",
-    ],
     deps = [
         ":velocity_implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",

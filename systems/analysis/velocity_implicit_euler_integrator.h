@@ -782,7 +782,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepImplicitEuler(
     last_qtplus = qtplus;
   }
 
-  DRAKE_LOGGER_DEBUG("VIE convergence failed");
+  DRAKE_LOGGER_DEBUG("Velocity-Implicit Euler integrator convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try; otherwise, the following code will recurse
