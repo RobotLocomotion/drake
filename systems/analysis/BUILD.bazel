@@ -396,18 +396,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "velocity_implicit_euler_integrator_test",
-    timeout = "moderate",
-    shard_count = 2,
-    deps = [
-        ":velocity_implicit_euler_integrator",
-        "//common/test_utilities:expect_throws_message",
-        "//systems/analysis/test_utilities",
-        "//systems/plants/spring_mass_system",
-    ],
-)
-
-drake_cc_googletest(
     name = "implicit_integrator_test",
     deps = [
         ":implicit_integrator",
@@ -433,7 +421,10 @@ drake_cc_googletest(
     deps = [
         ":implicit_euler_integrator",
         ":radau_integrator",
-        "//systems/analysis/test_utilities",
+        "//systems/analysis/test_utilities:cubic_scalar_system",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:linear_scalar_system",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -503,6 +494,17 @@ drake_cc_googletest(
         ":semi_explicit_euler_integrator",
         "//multibody/plant",
         "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_implicit_euler_integrator_test",
+    timeout = "moderate",
+    shard_count = 2,
+    deps = [
+        ":velocity_implicit_euler_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
     ],
 )
 
