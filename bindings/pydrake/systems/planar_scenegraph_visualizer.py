@@ -72,7 +72,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                  ylim=[-1, 1],
                  facecolor=[1, 1, 1],
                  use_random_colors=False,
-                 ax=None):
+                 ax=None,
+                 show=None):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -90,13 +91,16 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             ax: If supplied, the visualizer will draw onto those axes instead
                 of creating a new set of axes. The visualizer will still change
                 the view range and figure size of those axes.
+            show: Opens a window during initialization / publish iff True.
+                Default is None, which implies show=True unless
+                matplotlib.get_backend() is 'template'.
         """
         default_size = matplotlib.rcParams['figure.figsize']
         scalefactor = (ylim[1]-ylim[0]) / (xlim[1]-xlim[0])
         figsize = (default_size[0], default_size[0]*scalefactor)
 
         PyPlotVisualizer.__init__(self, facecolor=facecolor, figsize=figsize,
-                                  ax=ax, draw_period=draw_period)
+                                  ax=ax, draw_period=draw_period, show=show)
         self.set_name('planar_multibody_visualizer')
 
         self._scene_graph = scene_graph
