@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
@@ -66,6 +67,9 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   controllers::PidController<T>* controller_;
   ConstantVectorSource<T>* target_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class PidControlledSpringMassSystem)
 
 }  // namespace systems
 }  // namespace drake

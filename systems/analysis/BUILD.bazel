@@ -127,6 +127,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "integrator_base",
+    srcs = ["integrator_base.cc"],
     hdrs = ["integrator_base.h"],
     deps = [
         ":dense_output",
@@ -184,7 +185,6 @@ drake_cc_library(
     srcs = ["runge_kutta3_integrator.cc"],
     hdrs = [
         "runge_kutta3_integrator.h",
-        "runge_kutta3_integrator-inl.h",
     ],
     deps = [
         ":integrator_base",
@@ -206,7 +206,6 @@ drake_cc_library(
     srcs = ["implicit_euler_integrator.cc"],
     hdrs = [
         "implicit_euler_integrator.h",
-        "implicit_euler_integrator-inl.h",
     ],
     deps = [
         ":implicit_integrator",
@@ -258,7 +257,6 @@ drake_cc_library(
     ],
     hdrs = [
         "initial_value_problem.h",
-        "initial_value_problem-inl.h",
     ],
     deps = [
         ":dense_output",
@@ -280,7 +278,6 @@ drake_cc_library(
     ],
     hdrs = [
         "scalar_initial_value_problem.h",
-        "scalar_initial_value_problem-inl.h",
     ],
     deps = [
         ":initial_value_problem",
@@ -299,7 +296,6 @@ drake_cc_library(
     ],
     hdrs = [
         "antiderivative_function.h",
-        "antiderivative_function-inl.h",
     ],
     deps = [
         ":scalar_dense_output",

@@ -1,22 +1,7 @@
-#pragma once
-
-/// @file
-/// Template method implementations for implicit_euler_integrator.h.
-/// Most users should only include that file, not this one.
-/// For background, see https://drake.mit.edu/cxx_inl.html.
-
-/* clang-format off to disable clang-format-includes */
 #include "drake/systems/analysis/implicit_euler_integrator.h"
-/* clang-format on */
 
-#include <algorithm>
-#include <limits>
-#include <memory>
-#include <stdexcept>
-#include <utility>
-
-#include "drake/common/text_logging.h"
-#include "drake/math/autodiff.h"
+#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
@@ -466,5 +451,10 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   return true;
 }
 
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ImplicitEulerIntegrator)
+
 }  // namespace systems
 }  // namespace drake
+
+
