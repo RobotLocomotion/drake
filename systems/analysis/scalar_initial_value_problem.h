@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/initial_value_problem.h"
@@ -224,6 +225,9 @@ class ScalarInitialValueProblem {
   // Vector IVP representation of this scalar IVP.
   std::unique_ptr<InitialValueProblem<T>> vector_ivp_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ScalarInitialValueProblem)
 
 }  // namespace systems
 }  // namespace drake

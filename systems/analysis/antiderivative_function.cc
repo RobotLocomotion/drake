@@ -1,7 +1,7 @@
 #include "drake/systems/analysis/antiderivative_function.h"
-#include "drake/systems/analysis/antiderivative_function-inl.h"
 
 #include "drake/common/default_scalars.h"
+#include "drake/systems/analysis/scalar_initial_value_problem.h"
 
 namespace drake {
 namespace systems {
