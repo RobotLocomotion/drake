@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -94,5 +95,8 @@ class RungeKutta3Integrator final : public IntegratorBase<T> {
   // interval.
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class RungeKutta3Integrator)
 }  // namespace systems
 }  // namespace drake
