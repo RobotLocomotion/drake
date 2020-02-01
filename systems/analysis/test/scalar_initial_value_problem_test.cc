@@ -6,7 +6,6 @@
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/scalar_initial_value_problem-inl.h"
 
 namespace drake {
 namespace systems {

@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
 namespace drake {
@@ -44,8 +45,8 @@ void Simulator<T>::ResetStatistics() {
   initial_realtime_ = Clock::now();
 }
 
-template class Simulator<double>;
-template class Simulator<AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class Simulator)
 
 }  // namespace systems
 }  // namespace drake
