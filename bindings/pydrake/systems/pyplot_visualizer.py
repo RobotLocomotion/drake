@@ -1,8 +1,8 @@
 import matplotlib
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 import numpy as np
+from warnings import warn
 
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
 from pydrake.systems.primitives import SignalLogger
@@ -26,7 +26,7 @@ class PyPlotVisualizer(LeafSystem):
     """
 
     def __init__(self, draw_period=1./30, facecolor=[1, 1, 1],
-                 figsize=None, ax=None):
+                 figsize=None, ax=None, show=None):
         LeafSystem.__init__(self)
 
         self.set_name('pyplot_visualization')
@@ -41,13 +41,21 @@ class PyPlotVisualizer(LeafSystem):
             self.ax = ax
             self.fig = ax.get_figure()
 
+        if show is None:
+            show = (matplotlib.get_backend().lower() != 'template')
+        self._show = show
+
         self.ax.axis('equal')
         self.ax.axis('off')
 
+        if not show:
+            # This is the preferred way to support the jupyter notebook
+            # animation workflow and the `inline` backend grabbing an
+            # extraneous render of the figure.
+            plt.close(self.fig)
+
         self._is_recording = False
         self._recorded_contexts = []
-
-        self._show = (matplotlib.get_backend().lower() != 'template')
 
         def on_initialize(context, event):
             if self._show:
@@ -77,13 +85,16 @@ class PyPlotVisualizer(LeafSystem):
         """
         raise NotImplementedError
 
-    def start_recording(self, show=True):
-        self.show = show
+    def start_recording(self, show=None):
+        if show is not None:
+            warn("The `show` argument of this `start_recording()` method "
+                 "actually never worked.  Pass `show` to the class "
+                 "constructor instead.  This argument will be removed on or "
+                 "after 2020-04-01.")
         self._is_recording = True
 
     def stop_recording(self):
         self._is_recording = False
-        self.show = (matplotlib.get_backend().lower() != 'template')
 
     def reset_recording(self):
         self._recorded_contexts = []  # Reset recorded data.
