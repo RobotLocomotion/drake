@@ -37,6 +37,12 @@ framework:
  - ZMP
  - grasping
  - mass_spring_damper
+ - valkyrie [1]
 
 To view the original implementation of these examples, you'll need to consult
 the above link.
+
+[1] To view or use the final C++ implementation of Valkyrie based on
+RigidBodyTree (removed as of 2019), you may use this commit:
+
+https://github.com/RobotLocomotion/drake/tree/v0.11.0/examples/valkyrie
