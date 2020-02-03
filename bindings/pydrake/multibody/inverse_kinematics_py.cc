@@ -27,7 +27,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  m.doc() = "InverseKinematics module";
+  m.doc() = R"""(
+Python bindings for the inverse kinematics module.
+
+For original API documentation, please refer to the
+`drake::multibody <https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1multibody.html>`_
+namespace in the Doxygen C++ documentation.
+)""";
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");

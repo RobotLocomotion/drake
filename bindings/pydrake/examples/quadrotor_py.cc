@@ -17,7 +17,7 @@ PYBIND11_MODULE(quadrotor, m) {
   using namespace drake::examples::quadrotor;
   constexpr auto& doc = pydrake_doc.drake.examples.quadrotor;
 
-  m.doc() = "Bindings for the Quadrotor example.";
+  m.doc() = "Python bindings for the Quadrotor example.";
 
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");

@@ -44,7 +44,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  m.doc() = "Bindings for multibody math.";
+  m.doc() = R"""(
+Python bindings for multibody math.
+
+For original API documentation, please refer to the
+`drake::multibody <https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1multibody.html>`_
+namespace in the Doxygen C++ documentation.
+)""";
 
   {
     using Class = SpatialVelocity<T>;

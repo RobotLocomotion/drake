@@ -18,7 +18,7 @@ PYBIND11_MODULE(rimless_wheel, m) {
   using namespace drake::examples::rimless_wheel;
   constexpr auto& doc = pydrake_doc.drake.examples.rimless_wheel;
 
-  m.doc() = "Bindings for the rimless_wheel example.";
+  m.doc() = "Python bindings for the rimless_wheel example.";
 
   py::module::import("pydrake.systems.framework");
 

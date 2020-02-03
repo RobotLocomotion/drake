@@ -21,7 +21,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::manipulation_station;
 
-  m.doc() = "Bindings for the Manipulation Station example.";
+  m.doc() = "Python bindings for the Manipulation Station example.";
   constexpr auto& doc = pydrake_doc.drake.examples.manipulation_station;
 
   py::module::import("pydrake.systems.framework");

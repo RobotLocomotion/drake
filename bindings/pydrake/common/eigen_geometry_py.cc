@@ -388,7 +388,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 
 PYBIND11_MODULE(eigen_geometry, m) {
-  m.doc() = "Bindings for Eigen geometric types.";
+  m.doc() = "Python bindings for Eigen geometric types for Drake.";
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");

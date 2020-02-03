@@ -14,7 +14,13 @@ PYBIND11_MODULE(gurobi, m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
-  m.doc() = "Gurobi solver bindings for MathematicalProgram";
+  m.doc() = R"""(
+Python bindings for the MathematicalProgram Gurobi solver.
+
+For original API documentation, please refer to the
+`solvers module <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`_
+in the Doxygen C++ documentation.
+)""";
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 

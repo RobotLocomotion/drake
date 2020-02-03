@@ -22,7 +22,7 @@ PYBIND11_MODULE(pendulum, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::pendulum;
 
-  m.doc() = "Bindings for the Pendulum example.";
+  m.doc() = "Python bindings for the Pendulum example.";
   constexpr auto& doc = pydrake_doc.drake.examples.pendulum;
 
   py::module::import("pydrake.systems.framework");

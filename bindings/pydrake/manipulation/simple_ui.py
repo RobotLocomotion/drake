@@ -1,6 +1,6 @@
 """
-Provides a number of tcl/tk-based user interfaces helpful for manipulation (
-and potentially other robotics) applications.
+Provides a number of tcl/tk-based user interfaces helpful for manipulation
+(and potentially other robotics) applications.
 """
 
 try:

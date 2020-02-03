@@ -908,6 +908,14 @@ PYBIND11_MODULE(plant, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
+  m.doc() = R"""(
+Python bindings for MultibodyPlant and related classes.
+
+For original API documentation, please refer to the
+`drake::multibody <https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1multibody.html>`_
+namespace in the Doxygen C++ documentation.
+)""";
+
   m.doc() = "Bindings for MultibodyPlant and related classes.";
 
   py::module::import("pydrake.geometry");

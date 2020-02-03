@@ -17,7 +17,7 @@ PYBIND11_MODULE(compass_gait, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::compass_gait;
 
-  m.doc() = "Bindings for the compass gait example.";
+  m.doc() = "Python bindings for the compass gait example.";
   constexpr auto& doc = pydrake_doc.drake.examples.compass_gait;
 
   py::module::import("pydrake.systems.framework");

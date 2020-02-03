@@ -15,7 +15,14 @@ namespace pydrake {
 
 PYBIND11_MODULE(parsing, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  m.doc() = "SDF and URDF parsing for MultibodyPlant and SceneGraph.";
+
+  m.doc() = R"""(
+Python bindings for multibody parsing for SDFormat and URDF files.
+
+For original API documentation, please refer to the
+`drake::multibody <https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1multibody.html>`_
+namespace in the Doxygen C++ documentation.
+)""";
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;

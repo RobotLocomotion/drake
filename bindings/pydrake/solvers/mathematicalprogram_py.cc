@@ -201,13 +201,18 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
-  m.doc() = R"""(
-Bindings for MathematicalProgram
+  constexpr auto& doc = pydrake_doc.drake.solvers;
+
+    m.doc() = R"""(
+Python bindings for MathematicalProgram.
+
+For original API documentation, please refer to the
+`solvers module <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`_
+in the Doxygen C++ documentation.
 
 If you are formulating constraints using symbolic formulas, please review the
 top-level documentation for :py:mod:`pydrake.math`.
 )""";
-  constexpr auto& doc = pydrake_doc.drake.solvers;
 
   py::module::import("pydrake.autodiffutils");
   py::object variable = py::module::import("pydrake.symbolic").attr("Variable");

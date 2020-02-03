@@ -1,1 +1,3 @@
-# Blank Python module.
+"""
+Python visualization tools for Drake.
+"""

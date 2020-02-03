@@ -11,7 +11,7 @@ namespace pydrake {
 
 PYBIND11_MODULE(planner, m) {
   using drake::manipulation::planner::DifferentialInverseKinematicsStatus;
-  m.doc() = "Tools for manipulation planning.";
+  m.doc() = "Python bindings for manipulation planning tools.";
   constexpr auto& doc = pydrake_doc.drake.manipulation.planner;
 
   py::enum_<DifferentialInverseKinematicsStatus>(m,

@@ -14,7 +14,13 @@ PYBIND11_MODULE(osqp, m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
-  m.doc() = "OSQP solver bindings for MathematicalProgram";
+  m.doc() = R"""(
+Python bindings for the MathematicalProgram OSQP solver.
+
+For original API documentation, please refer to the
+`solvers module <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`_
+in the Doxygen C++ documentation.
+)""";
 
   py::module::import("pydrake.solvers.mathematicalprogram");
   py::module::import("pydrake.systems.framework").attr("AbstractValue");

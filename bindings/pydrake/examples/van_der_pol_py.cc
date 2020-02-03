@@ -15,7 +15,7 @@ PYBIND11_MODULE(van_der_pol, m) {
   using namespace drake::examples::van_der_pol;
   constexpr auto& doc = pydrake_doc.drake.examples.van_der_pol;
 
-  m.doc() = "Bindings for the van_der_pol example.";
+  m.doc() = "Python bindings for the van_der_pol example.";
 
   py::module::import("pydrake.systems.framework");
 

@@ -19,6 +19,8 @@ void init_acrobot(py::module m) {
   using namespace drake::multibody::benchmarks::acrobot;
   constexpr auto& doc = pydrake_doc.drake.multibody.benchmarks.acrobot;
 
+  m.doc() = "Python bindings for multibody benchmarks.";
+
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.multibody.plant");
 
