@@ -1,9 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/solvers/constraint.h"
+#include "drake/solvers/cost.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -67,6 +70,64 @@ class Binding {
   std::shared_ptr<C> evaluator_;
   VectorXDecisionVariable vars_;
 };
+
+/**
+ * Get a description of the binding.
+ */
+template <typename C>
+std::string to_string(const Binding<C>& binding) {
+  std::string name = binding.evaluator()->get_description() + " on";
+  for (int i = 0; i < binding.variables().rows(); ++i) {
+    name += " " + binding.variables()(i).get_name();
+  }
+  name += "\n";
+  return name;
+}
+
+template <typename C>
+std::ostream& operator<<(std::ostream& os, const Binding<C>& binding) {
+  return os << to_string(binding);
+}
+
+/**
+ * Specialized template function to get the description of a linear cost
+ * binding.
+ */
+template <>
+std::string to_string<LinearCost>(
+    const Binding<LinearCost>& linear_cost_binding);
+
+/**
+ * Specialized template function to get the description of a quadratic cost
+ * binding.
+ */
+template <>
+std::string to_string<QuadraticCost>(
+    const Binding<QuadraticCost>& quadratic_cost_binding);
+
+/**
+ * Specialized template function to get the description of a bounding box
+ * constraint binding.
+ */
+template <>
+std::string to_string<BoundingBoxConstraint>(
+    const Binding<BoundingBoxConstraint>& bounding_box_binding);
+
+/**
+ * Specialized template function to get the description of a linear equality
+ * constraint binding.
+ */
+template <>
+std::string to_string<LinearEqualityConstraint>(
+    const Binding<LinearEqualityConstraint>& linear_eq_binding);
+
+/**
+ * Specialized template function to get the description of a linear constraint
+ * binding.
+ */
+template <>
+std::string to_string<LinearConstraint>(
+    const Binding<LinearConstraint>& linear_eq_binding);
 
 namespace internal {
 

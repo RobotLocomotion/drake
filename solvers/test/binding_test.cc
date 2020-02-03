@@ -28,6 +28,11 @@ GTEST_TEST(TestBinding, TestConstraint) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding1.variables()(i), var1_expected(i));
   }
+  const std::string str_expected1 =
+      std::to_string(0.) + "<=x3<=" + std::to_string(1.) + "\n" +
+      std::to_string(0.) + "<=x1<=" + std::to_string(1.) + "\n" +
+      std::to_string(0.) + "<=x2<=" + std::to_string(1.) + "\n";
+  EXPECT_EQ(to_string(binding1), str_expected1);
 
   // Creates a binding with a single VectorDecisionVariable.
   Binding<BoundingBoxConstraint> binding2(
@@ -36,6 +41,29 @@ GTEST_TEST(TestBinding, TestConstraint) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding2.variables()(i), var1_expected(i));
   }
+
+  // Test to_string() for LinearEqualityConstraint binding.
+  Eigen::Matrix2d Aeq;
+  Aeq << 1, 2, 3, 4;
+  auto linear_eq_constraint =
+      std::make_shared<LinearEqualityConstraint>(Aeq, Eigen::Vector2d(1, 2));
+  Binding<LinearEqualityConstraint> linear_eq_binding(
+      linear_eq_constraint, VectorDecisionVariable<2>(x1, x2));
+  const std::string str_expected2 =
+      "(x1 + 2 * x2) == " + std::to_string(1.) +
+      "\n(3 * x1 + 4 * x2) == " + std::to_string(2.) + "\n";
+  EXPECT_EQ(to_string(linear_eq_binding), str_expected2);
+
+  const Eigen::Matrix2d Ain = Aeq;
+  auto linear_ineq_constraint = std::make_shared<LinearConstraint>(
+      Ain, Eigen::Vector2d(1, 2), Eigen::Vector2d(2, 3));
+  Binding<LinearConstraint> linear_binding(linear_ineq_constraint,
+                                           Vector2<symbolic::Variable>(x1, x2));
+  const std::string str_expected3 =
+      std::to_string(1.) + " <= (x1 + 2 * x2) <= " + std::to_string(2.) + "\n" +
+      std::to_string(2.) + " <= (3 * x1 + 4 * x2) <= " + std::to_string(3.) +
+      "\n";
+  EXPECT_EQ(to_string(linear_binding), str_expected3);
 }
 
 GTEST_TEST(TestBinding, TestCost) {
@@ -44,14 +72,24 @@ GTEST_TEST(TestBinding, TestCost) {
   const symbolic::Variable x2("x2");
   const symbolic::Variable x3("x3");
   const VectorDecisionVariable<3> x(x1, x2, x3);
-  auto cost = std::make_shared<LinearCost>(Eigen::Vector3d(1, 2, 3), 1);
-  Binding<LinearCost> binding(cost, x);
-  EXPECT_EQ(binding.evaluator().get(), cost.get());
-  EXPECT_EQ(binding.evaluator()->num_outputs(), 1);
-  EXPECT_EQ(binding.GetNumElements(), 3);
+  // Test a linear cost binding.
+  auto cost1 = std::make_shared<LinearCost>(Eigen::Vector3d(1, 2, 3), 1);
+  Binding<LinearCost> binding1(cost1, x);
+  EXPECT_EQ(binding1.evaluator().get(), cost1.get());
+  EXPECT_EQ(binding1.evaluator()->num_outputs(), 1);
+  EXPECT_EQ(binding1.GetNumElements(), 3);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_PRED2(VarEqual, binding.variables()(i), x(i));
+    EXPECT_PRED2(VarEqual, binding1.variables()(i), x(i));
   }
+  EXPECT_EQ(to_string(binding1), "(1 + x1 + 2 * x2 + 3 * x3)");
+
+  // Test a quadratic cost binding.
+  auto cost2 = std::make_shared<QuadraticCost>(Eigen::Matrix2d::Identity(),
+                                               Eigen::Vector2d(2, 3), 1);
+  Binding<QuadraticCost> binding2(cost2, x.head<2>());
+  VectorX<symbolic::Expression> e2;
+  cost2->Eval(x.head<2>(), &e2);
+  EXPECT_EQ(to_string(binding2), e2[0].to_string());
 }
 
 class DummyEvaluator : public EvaluatorBase {
@@ -90,10 +128,12 @@ GTEST_TEST(TestBinding, TestEvaluator) {
   const symbolic::Variable x3("x3");
   const VectorDecisionVariable<3> x(x1, x2, x3);
   const auto evaluator = std::make_shared<DummyEvaluator>();
+  evaluator->set_description("dummy");
   Binding<DummyEvaluator> binding(evaluator, x);
   EXPECT_EQ(binding.evaluator().get(), evaluator.get());
   EXPECT_EQ(binding.evaluator()->num_outputs(), 2);
   EXPECT_EQ(binding.GetNumElements(), 3);
+  EXPECT_EQ(to_string(binding), "dummy on x1 x2 x3\n");
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding.variables()(i), x(i));
   }

@@ -92,9 +92,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "binding",
-    srcs = [],
+    srcs = ["binding.cc"],
     hdrs = ["binding.h"],
     deps = [
+        ":constraint",
+        ":cost",
         ":decision_variable",
     ],
 )
@@ -194,7 +196,6 @@ drake_cc_library(
     hdrs = ["create_constraint.h"],
     deps = [
         ":binding",
-        ":constraint",
         ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
