@@ -10,7 +10,6 @@
 # edits, then `git status` will show this file as modified; in that case, you
 # should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
-    "//attic/manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//attic/manipulation/planner",
     "//attic/manipulation/scene_generation:random_clutter_generator",  # unpackaged  # noqa
     "//attic/manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged  # noqa
