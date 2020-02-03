@@ -53,7 +53,6 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/quadrotor",
     "//examples/rimless_wheel",
     "//examples/simple_four_bar",
-    "//examples/valkyrie",
     "//examples/zmp",
 ]
 
