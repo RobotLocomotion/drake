@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
+        ":kinematics_calculator",
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":tamsi_solver",
@@ -69,6 +70,20 @@ drake_cc_library(
         "//multibody/tree",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematics_calculator",
+    srcs = [
+        "kinematics_calculator.cc",
+    ],
+    hdrs = [
+        "kinematics_calculator.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":multibody_plant_core",
     ],
 )
 
@@ -520,6 +535,19 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kinematics_calculator_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":kinematics_calculator",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
     ],
 )
 

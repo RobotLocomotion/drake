@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "rendering",
     deps = [
         ":frame_velocity",
+        ":frame_visualizer",
         ":multibody_position_to_geometry_pose",
         ":pose_aggregator",
         ":pose_bundle",
@@ -67,6 +68,20 @@ drake_cc_library(
         "//common:default_scalars",
         "//multibody/math:spatial_velocity",
         "//systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
+    name = "frame_visualizer",
+    srcs = [
+        "frame_visualizer.cc",
+    ],
+    hdrs = [
+        "frame_visualizer.h",
+    ],
+    deps = [
+        "//lcmtypes:viewer",
+        "//multibody/plant",
     ],
 )
 
@@ -127,6 +142,19 @@ drake_cc_googletest(
     deps = [
         ":frame_velocity",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_visualizer_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":frame_visualizer",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
     ],
 )
 
