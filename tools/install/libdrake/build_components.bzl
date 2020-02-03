@@ -13,7 +13,6 @@ LIBDRAKE_COMPONENTS = [
     "//attic/manipulation/planner",
     "//attic/manipulation/scene_generation:random_clutter_generator",  # unpackaged  # noqa
     "//attic/manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged  # noqa
-    "//attic/manipulation/sensors",
     "//attic/manipulation/util",
     "//attic/multibody",
     "//attic/multibody/collision",
