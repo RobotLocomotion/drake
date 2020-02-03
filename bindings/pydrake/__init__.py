@@ -1,4 +1,14 @@
-"""Python bindings for Drake.
+"""
+Python bindings for
+`Drake: Model-Based Design and Verification for Robotics
+<https://drake.mit.edu/>`_.
+
+At present, this Python API documentation is not fully comprehensive. For
+general overview and API documentation, please see the
+`Doxygen C++ Documentation <https://drake.mit.edu/doxygen_cxx/index.html>`_.
+
+For examples and tutorials that tie in and use this API, please see
+`here <https://drake.mit.edu/#tutorials-and-examples>`_.
 """
 
 import os
