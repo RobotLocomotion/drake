@@ -4,6 +4,8 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
@@ -30,9 +32,19 @@ class KukaTorqueController
       public systems::controllers::StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KukaTorqueController)
+
+  DRAKE_DEPRECATED("2020-05-01",
+                   "The RigidBodyTree version is being removed.")
   KukaTorqueController(std::unique_ptr<RigidBodyTree<T>> tree,
                        const VectorX<double>& stiffness,
                        const VectorX<double>& damping);
+
+  /// @p plant is aliased and must remain valid for the lifetime of the
+  /// controller.
+  KukaTorqueController(
+      const multibody::MultibodyPlant<T>& plant,
+      const VectorX<double>& stiffness,
+      const VectorX<double>& damping);
 
   const systems::InputPort<T>& get_input_port_commanded_torque() const {
     return systems::Diagram<T>::get_input_port(
@@ -55,7 +67,11 @@ class KukaTorqueController
  private:
   void SetUp(const VectorX<double>& stiffness,
              const VectorX<double>& damping_ratio);
+  void SetUpRbt(const VectorX<double>& stiffness,
+                const VectorX<double>& damping_ratio);
   std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
+  multibody::MultibodyPlant<T> placeholder_for_rbt_version_;
+  const multibody::MultibodyPlant<T>& plant_;
   int input_port_index_estimated_state_{-1};
   int input_port_index_desired_state_{-1};
   int input_port_index_commanded_torque_{-1};
