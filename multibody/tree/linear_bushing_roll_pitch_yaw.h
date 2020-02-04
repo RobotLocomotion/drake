@@ -15,8 +15,6 @@ namespace multibody {
 
 template <typename T> class Body;
 
-#define private public
-#define protected public
 /// This %ForceElement models a massless bushing B that connects a frame A of a
 /// body/link L0 to a frame C of body/link L1.  The bushing can apply a torque
 /// and force due to stiffness (spring) and dissipation (damper) properties.
@@ -162,17 +160,11 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     //--------------------------------------------------------
     // Calculate bushing torque τ on frame A, expressed in frame A.
     const Vector3<T> t_A_A = -CalcBushingTorqueOnCExpressedInA(context);
-    std::cout << "\n Tx = " << t_A_A(0)
-              << "   Ty = " << t_A_A(1)
-              << "   Tz = " << t_A_A(2) << "\n";
 
     // Calculate bushing force f on point Ap of frame A, expressed in frame A.
     const math::RotationMatrix<T> R_AB = CalcR_AB(context);
     const Vector3<T> f_Ap_B = -CalcBushingNetForceOnCExpressedInB(context);
     const Vector3<T> f_Ap_A = R_AB * f_Ap_B;
-    std::cout <<   " Fx = " << f_Ap_A(0)
-              << "   Fy = " << f_Ap_A(1)
-              << "   Fz = " << f_Ap_A(2) << "\n";
 
     // Form spatial force for point Ap of A (expressed in A), then shift to Ao.
     // Reminder: Point Ap is the point of frame A that is coincident with Bo and
@@ -334,13 +326,16 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const Vector3<T> w_AB_A = 0.5 * w_AC_A;
     const Vector3<T> p_AoCo_A = Calcp_AoCo_A(context);
 
-    // Calculate the time-derivative in frame B of p_AoCo.
+    // Calculate the time-derivative in frame B of p_AoCo, derived below.
     // The results of this calculation is a vector expressed in frame A.
+    // v_ACo = DtA_p_AoCo                  (definition)
+    //       = DtB_p_AoCo + w_AB x p_AoCo  (Golden rule for vector derivatives)
+    // DtB_p_AoCo = v_ACo - wAB x p_AoCo   (rearrange previous line).
     const Vector3<T> DtB_p_AoCo_A = v_ACo_A - w_AB_A.cross(p_AoCo_A);
 
     // Form the time-derivative in frame B of p_AoCo, expressed in frame B.
-    const math::RotationMatrix<T> R_AB = CalcR_AB(context);
-    const Vector3<T> DtB_p_AoCo_B = R_AB * DtB_p_AoCo_A;
+    const math::RotationMatrix<T> R_BA = CalcR_AB(context).transpose();
+    const Vector3<T> DtB_p_AoCo_B = R_BA * DtB_p_AoCo_A;
     return DtB_p_AoCo_B;  // This vector derivative happens to be [ẋ, ẏ, ż].
   }
 
@@ -385,8 +380,9 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
     const T q1 = rpy.pitch_angle();
     const T q2 = rpy.yaw_angle();
-    const T c1 = cos(q1), s1 = sin(q1), oneOverc1 = 1/c1, tan1 = s1 * oneOverc1;
+    const T c1 = cos(q1), s1 = sin(q1);
     const T c2 = cos(q2), s2 = sin(q2);
+    const T oneOverc1 = 1.0/c1, tan1 = s1 * oneOverc1;
     Matrix3<T> mat33;
     // clang-format off
     mat33 << c2 * oneOverc1,  s2 * oneOverc1,  0,
@@ -415,6 +411,17 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return torque_damping_constants().cwiseProduct(rpyDt);
   }
 
+  // Calculate the 3x1 array (not really a vector) containing [T₀ T₁ T₂].
+  // @param[in] context The state of the multibody system.
+  Vector3<T> CalcBushingTorque012(const systems::Context<T>& context) const {
+    // T₀ = -(k₀ q₀ + b₀ q̇₀)
+    // T₁ = -(k₁ q₁ + b₁ q̇₁)
+    // T₂ = -(k₂ q₂ + b₂ q̇₂)
+    const Vector3<T> t012 = TorqueStiffnessConstantsTimesAngles(context) +
+                            TorqueDampingConstantsTimesAngleRates(context);
+    return t012;
+  }
+
   // Calculates the bushing torque on frame C, expressed in frame A.
   // @param[in] context The state of the multibody system.
   // @note The set of forces on frame C from the bushing is equivalent to a
@@ -426,12 +433,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   //          CalcBushingSpatialForceOnFrameC().
   Vector3<T> CalcBushingTorqueOnCExpressedInA(
       const systems::Context<T>& context) const {
-    // Calculate the 3x1 array (not really a vector) containing [T₀ T₁ T₂].
-    // T₀ = -(k₀ q₀ + b₀ q̇₀)
-    // T₁ = -(k₁ q₁ + b₁ q̇₁)
-    // T₂ = -(k₂ q₂ + b₂ q̇₂)
-    const Vector3<T> t012 = -(TorqueStiffnessConstantsTimesAngles(context) +
-                              TorqueDampingConstantsTimesAngleRates(context));
+    const Vector3<T> t012 = -CalcBushingTorque012(context);
 
     // Calculate torque `τ = Tx Ax + Ty Ay + Tz Az` applied to frame C.
     // ⌈ Tx ⌉ = ⌈ cos(q₂)/cos(q₁)  -sin(q2)   cos(q₂)*tan(q₁) ⌉ ⌈ T₀ ⌉

@@ -143,16 +143,14 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   const T Pn_force0 = -(bXDt.dot(xyzDt));
 
   // Calculate the part of nonconservative power that is due to additional terms
-  // in the calculation of power.
-  // Extra = -0.5*kx*x*(y*wz-z*wy) - 0.5*ky*y*(z*wx-x*wz) - 0.5*kz*z*(x*wy-y*wx)
-  //       -  0.5*bx*ẋ*(y*wz-z*wy) - 0.5*by*ẏ*(z*wx-x*wz) - 0.5*bz*ż*(x*wy-y*wx)
-  const Vector3<T> xyz = CalcBushing_xyz(context);  // p_AoCo_B
+  // in the calculation of power which is  (w_AC.cross(p_AoCo)).dot(force).
+  const Vector3<T> p_AoCo_B = Calcp_AoCo_B(context);
   const Vector3<T> w_AC_A = Calcw_AC_A(context);
   const math::RotationMatrix<T> R_BA = CalcR_AB(context).transpose();
   const Vector3<T> w_AC_B = R_BA * w_AC_A;
-  const Vector3<T> w_cross_xyz = w_AC_B.cross(xyz);
-  const Vector3<T> force = CalcBushingNetForceOnCExpressedInB(context);
-  const T Pn_force_extra = force.dot(w_cross_xyz);
+  const Vector3<T> w_cross_p_B = w_AC_B.cross(p_AoCo_B);
+  const Vector3<T> force_B = CalcBushingNetForceOnCExpressedInB(context);
+  const T Pn_force_extra = w_cross_p_B.dot(force_B);
 
   return Pn_torque + Pn_force0 + Pn_force_extra;
 }
