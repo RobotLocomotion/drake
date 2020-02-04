@@ -55,7 +55,6 @@ generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
     exclude_hdr_patterns = [
-        "drake/common/text_logging_gflags.h",
         # Exclude LCM-generated classes to reduce size of generated
         # docstrings.
         "drake/lcmtypes/**",
