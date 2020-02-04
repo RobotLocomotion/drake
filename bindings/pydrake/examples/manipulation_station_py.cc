@@ -29,14 +29,16 @@ PYBIND11_MODULE(manipulation_station, m) {
   // ManipulationStation currently only supports double.
   using T = double;
 
-  py::enum_<IiwaCollisionModel>(m, "IiwaCollisionModel")
+  py::enum_<IiwaCollisionModel>(
+      m, "IiwaCollisionModel", doc.IiwaCollisionModel.doc)
       .value("kNoCollision", IiwaCollisionModel::kNoCollision,
           doc.IiwaCollisionModel.kNoCollision.doc)
       .value("kBoxCollision", IiwaCollisionModel::kBoxCollision,
           doc.IiwaCollisionModel.kBoxCollision.doc)
       .export_values();
 
-  py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
+  py::class_<ManipulationStation<T>, Diagram<T>>(
+      m, "ManipulationStation", doc.ManipulationStation.doc)
       .def(py::init<double>(), py::arg("time_step") = 0.002,
           doc.ManipulationStation.ctor.doc)
       .def("SetupManipulationClassStation",
@@ -165,8 +167,9 @@ PYBIND11_MODULE(manipulation_station, m) {
           &ManipulationStation<T>::SetIiwaIntegralGains,
           doc.ManipulationStation.SetIiwaIntegralGains.doc);
 
-  py::class_<ManipulationStationHardwareInterface, Diagram<double>>(
-      m, "ManipulationStationHardwareInterface")
+  py::class_<ManipulationStationHardwareInterface, Diagram<double>>(m,
+      "ManipulationStationHardwareInterface",
+      doc.ManipulationStationHardwareInterface.doc)
       .def(py::init<const std::vector<std::string>>(),
           py::arg("camera_names") = std::vector<std::string>{},
           doc.ManipulationStationHardwareInterface.ctor.doc)
