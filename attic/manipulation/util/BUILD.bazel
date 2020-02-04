@@ -24,6 +24,7 @@ drake_cc_library(
     name = "world_sim_tree_builder",
     srcs = ["world_sim_tree_builder.cc"],
     hdrs = ["world_sim_tree_builder.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody:rigid_body_tree_construction",
@@ -38,6 +39,7 @@ drake_cc_library(
     name = "robot_state_msg_translator",
     srcs = ["robot_state_msg_translator.cc"],
     hdrs = ["robot_state_msg_translator.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/util",
@@ -50,6 +52,7 @@ drake_cc_library(
     name = "sim_diagram_builder",
     srcs = ["sim_diagram_builder.cc"],
     hdrs = ["sim_diagram_builder.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody/rigid_body_plant",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
@@ -64,6 +67,7 @@ drake_cc_googletest(
     name = "robot_state_msg_translator_test",
     # TODO(siyuan): we should eventually move the models for test outside of
     # /examples.
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
@@ -80,6 +84,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sim_diagram_builder_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
