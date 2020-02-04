@@ -75,9 +75,7 @@ drake_cc_library(
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_nodiscard.h",
-        "drake_optional.h",
         "drake_throw.h",
-        "drake_variant.h",
         "eigen_stl_types.h",
         "eigen_types.h",
         "never_destroyed.h",
@@ -826,32 +824,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "drake_optional_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":essential",
-    ],
-)
-
-drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":essential",
         "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "drake_variant_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":essential",
     ],
 )
 

@@ -76,7 +76,6 @@ load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
 load("@drake//tools/workspace/sphinx:repository.bzl", "sphinx_repository")
 load("@drake//tools/workspace/spruce:repository.bzl", "spruce_repository")
-load("@drake//tools/workspace/stx:repository.bzl", "stx_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinydir:repository.bzl", "tinydir_repository")
@@ -248,8 +247,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         sphinx_repository(name = "sphinx")
     if "spruce" not in excludes:
         spruce_repository(name = "spruce")
-    if "stx" not in excludes:
-        stx_repository(name = "stx", mirrors = mirrors)
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "suitesparse" not in excludes:
