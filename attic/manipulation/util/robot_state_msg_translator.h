@@ -6,6 +6,7 @@
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
@@ -39,7 +40,9 @@ namespace manipulation {
  * comprehensive information, and the individual subscribers can pay attention
  * to whatever subset of interest using reduced models.
  */
-class RobotStateLcmMessageTranslator {
+class DRAKE_DEPRECATED("2020-05-01",
+    "The attic/manipulation/util package is being removed.")
+RobotStateLcmMessageTranslator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotStateLcmMessageTranslator)
 

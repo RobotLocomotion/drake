@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
@@ -23,7 +24,9 @@ namespace util {
  * Access to a mutable DiagramBuilder is provided by get_mutable_builder().
  */
 template <typename T>
-class SimDiagramBuilder {
+class DRAKE_DEPRECATED("2020-05-01",
+    "The attic/manipulation/util package is being removed.")
+SimDiagramBuilder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimDiagramBuilder)
 

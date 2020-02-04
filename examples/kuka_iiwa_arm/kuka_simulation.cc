@@ -62,7 +62,14 @@ using systems::controllers::rbt::InverseDynamicsController;
 using systems::controllers::StateFeedbackControllerInterface;
 
 int DoMain() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // N.B. If SimDiagramBuilder reaches its deprecation date of 2020-05-01 prior
+  // to kuka_simulation being rewritten, then instead of completely removing
+  // the SimDiagramBuilder, we should instead mark it private, remove it from
+  // the installation, but keep using it here.
   SimDiagramBuilder<double> builder;
+#pragma GCC diagnostic pop
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
 
   // Adds a plant.
