@@ -18,10 +18,11 @@ cc_library(
     deprecation = "DRAKE DEPRECATED: The @json external is being removed from Drake on or after 2020-05-01.  Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
 )
 
+# N.B. Not intended for public use!  This is only intended for the regression
+# test in @drake//tools/workspace/json, and will be removed on 2020-05-01.
 cc_library(
     name = "json_for_stub_test",
     deps = [":json"],
-    visibility = ["@drake//tools/workspace/json:__pkg__"],
 )
 
 install(
