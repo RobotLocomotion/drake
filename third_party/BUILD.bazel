@@ -11,12 +11,6 @@ exports_files(
 )
 
 exports_files(
-    glob(["josephdavisco_spruce/**"]),
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = ["@spruce//:__pkg__"],
-)
-
-exports_files(
     ["com_github_grahamdumpleton_wrapt/" + f for f in [
         "LICENSE",
         "__init__.py",
