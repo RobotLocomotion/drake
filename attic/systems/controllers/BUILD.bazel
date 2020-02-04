@@ -13,126 +13,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "controllers",
     deps = [
-        ":control_util",
-        ":instantaneous_qp_controller",
-        ":polynomial_encode_decode",
-        ":qp_common",
         ":rbt_inverse_dynamics",
         ":rbt_inverse_dynamics_controller",
-        ":side",
-        ":yaml_util",
-        ":zmp_util",
-    ],
-)
-
-drake_cc_library(
-    name = "control_util",
-    srcs = ["controlUtil.cpp"],
-    hdrs = ["controlUtil.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//attic/multibody:resolve_center_of_pressure",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/util",
-        "//common:essential",
-        "//common/trajectories:piecewise_polynomial",
-        "//math:autodiff",
-        "//math:expmap",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "side",
-    srcs = ["side.cc"],
-    hdrs = ["side.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "qp_common",
-    srcs = [],
-    hdrs = ["QPCommon.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":control_util",
-        ":side",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/util",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "zmp_util",
-    srcs = ["zmpUtil.cpp"],
-    hdrs = ["zmpUtil.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "yaml_util",
-    srcs = ["yaml_util.cc"],
-    hdrs = ["yaml_util.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
-    # headers; yaml_util.h is only included internally within this package.
-    install_hdrs_exclude = ["yaml_util.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":qp_common",
-        "//common:essential",
-        "@yaml_cpp",
-    ],
-)
-
-drake_cc_library(
-    name = "polynomial_encode_decode",
-    srcs = ["polynomial_encode_decode.cc"],
-    hdrs = ["polynomial_encode_decode.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//attic/util",
-        "//common/trajectories:piecewise_polynomial",
-        "//lcmtypes:piecewise_polynomial",
-        "//lcmtypes:polynomial",
-        "//lcmtypes:polynomial_matrix",
-    ],
-)
-
-# This library is empty unless Gurobi is available.
-drake_cc_library(
-    name = "instantaneous_qp_controller",
-    srcs = select({
-        "//tools:with_gurobi": ["InstantaneousQPController.cpp"],
-        "//conditions:default": [],
-    }),
-    hdrs = select({
-        "//tools:with_gurobi": ["InstantaneousQPController.h"],
-        "//conditions:default": [],
-    }),
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":control_util",
-        ":polynomial_encode_decode",
-        ":qp_common",
-        ":yaml_util",
-        "//attic/multibody/joints",
-        "//attic/multibody/parsers",
-        "//attic/util",
-        "//common:essential",
-        "//common:find_resource",
-        "//common:is_approx_equal_abstol",
-        "//lcmtypes:qp_controller_input",
-        "//lcmtypes:zmp_com_observer_state",
-        "//math:geometric_transform",
-        "//solvers:gurobi_qp",
     ],
 )
 
@@ -176,16 +58,6 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "polynomial_encode_decode_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":polynomial_encode_decode",
-        "//common/test_utilities",
-        "//common/trajectories:random_piecewise_polynomial",
-    ],
-)
-
-drake_cc_googletest(
     name = "rbt_inverse_dynamics_test",
     data = [
         "//examples/simple_four_bar:models",
@@ -216,12 +88,6 @@ drake_cc_googletest(
     ],
 )
 
-# The extra_srcs are required here because add_lint_tests() doesn't understand
-# how to extract labels from select() functions yet.
 add_lint_tests(
     cpplint_data = ["//attic:CPPLINT.cfg"],
-    cpplint_extra_srcs = [
-        "InstantaneousQPController.cpp",
-        "InstantaneousQPController.h",
-    ],
 )
