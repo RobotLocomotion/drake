@@ -445,12 +445,6 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        with catch_drake_warnings(expected_count=1):
-            Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
-                context=context, frame_B=base_frame,
-                p_BoFo_B=[0, 0, 0])
-            self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
-
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [
