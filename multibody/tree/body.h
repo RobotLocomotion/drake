@@ -72,19 +72,39 @@ class BodyFrame final : public Frame<T> {
     return math::RigidTransform<T>::Identity();
   }
 
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>&) const override {
+    return math::RotationMatrix<T>::Identity();
+  }
+
   math::RigidTransform<T> CalcOffsetPoseInBody(
       const systems::Context<T>&,
       const math::RigidTransform<T>& X_FQ) const override {
     return X_FQ;
   }
 
+  math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+      const systems::Context<T>&,
+      const math::RotationMatrix<T>& R_FQ) const override {
+    return R_FQ;
+  }
+
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     return math::RigidTransform<T>::Identity();
+  }
+
+  math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const override {
+    return math::RotationMatrix<T>::Identity();
   }
 
   math::RigidTransform<T> GetFixedOffsetPoseInBody(
       const math::RigidTransform<T>& X_FQ) const override {
     return X_FQ;
+  }
+
+  math::RotationMatrix<T> GetFixedRotationMatrixInBody(
+      const math::RotationMatrix<T>& R_FQ) const override {
+    return R_FQ;
   }
 
  protected:
@@ -327,8 +347,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    const math::RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
-    const math::RotationMatrix<T>& R_WE = X_WE.rotation();
+    const math::RotationMatrix<T> R_WE =
+        frame_E.CalcRotationMatrixInWorld(context);
     const Vector3<T> p_PB_W = -(R_WE * p_BP_E);
     const SpatialForce<T> F_Bo_W = (R_WE * F_Bp_E).Shift(p_PB_W);
     AddInForceInWorld(context, F_Bo_W, forces);

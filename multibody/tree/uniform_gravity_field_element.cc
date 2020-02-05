@@ -87,7 +87,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const math::RotationMatrix<T> R_WB = pc.get_X_WB(node_index).rotation();
+    const math::RotationMatrix<T> R_WB = pc.get_R_WB(node_index);
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
