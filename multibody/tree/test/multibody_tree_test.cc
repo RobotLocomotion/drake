@@ -850,9 +850,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
                               kTolerance, MatrixCompareType::relative));
 
   // Express the expected bias acceleration result in frame_H_.
-  const math::RigidTransform<double> X_WH =
-      frame_H_->CalcPoseInWorld(*context_);
-  const math::RotationMatrix<double>& R_HW = X_WH.rotation().inverse();
+  const math::RotationMatrix<double> R_WH =
+      frame_H_->CalcRotationMatrixInWorld(*context_);
+  const math::RotationMatrix<double> R_HW = R_WH.inverse();
   Vector6<double> abias_WHp_H_expected;
   abias_WHp_H_expected.head(3) = R_HW * abias_WHp_W_expected.head(3);
   abias_WHp_H_expected.tail(3) = R_HW * abias_WHp_W_expected.tail(3);

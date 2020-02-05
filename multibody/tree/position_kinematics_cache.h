@@ -69,6 +69,15 @@ class PositionKinematicsCache {
     return X_WB_pool_[body_node_index];
   }
 
+  /// Returns a const reference to the rotation matrix `R_WB` that relates the
+  /// orientation of the world frame W with the body frame B.
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with body B.
+  const math::RotationMatrix<T>& get_R_WB(BodyNodeIndex body_node_index) const {
+    const RigidTransform<T>& X_WB = get_X_WB(body_node_index);
+    return X_WB.rotation();
+  }
+
   /// Returns a const reference to the pose `X_PB` of the body frame B
   /// as measured and expressed in its parent body frame P.
   /// @param[in] body_node_id The unique identifier for the computational

@@ -83,9 +83,23 @@ class FixedOffsetFrame final : public Frame<T> {
     return parent_frame_.CalcOffsetPoseInBody(context, X_PF_.cast<T>());
   }
 
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>& context) const override {
+    // R_BF = R_BP * R_PF
+    const math::RotationMatrix<double>& R_PF = X_PF_.rotation();
+    return parent_frame_.CalcOffsetRotationMatrixInBody(context,
+                                                        R_PF.cast<T>());
+  }
+
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     // X_BF = X_BP * X_PF
     return parent_frame_.GetFixedOffsetPoseInBody(X_PF_.cast<T>());
+  }
+
+  math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const override {
+    // R_BF = R_BP * R_PF
+    const math::RotationMatrix<double>& R_PF = X_PF_.rotation();
+    return parent_frame_.GetFixedRotationMatrixInBody(R_PF.cast<T>());
   }
 
  protected:
