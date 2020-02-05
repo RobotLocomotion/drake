@@ -81,7 +81,7 @@ class RollPitchYaw {
 
   /// Uses a %RotationMatrix to construct a %RollPitchYaw with
   /// roll-pitch-yaw angles `[r, p, y]` in the range
-  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   /// @param[in] R a %RotationMatrix.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
@@ -91,7 +91,7 @@ class RollPitchYaw {
 
   /// Uses a %Quaternion to construct a %RollPitchYaw with
   /// roll-pitch-yaw angles `[r, p, y]` in the range
-  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   /// @param[in] quaternion unit %Quaternion.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
@@ -119,7 +119,7 @@ class RollPitchYaw {
 
   /// Uses a %Quaternion to set `this` %RollPitchYaw with
   /// roll-pitch-yaw angles `[r, p, y]` in the range
-  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   /// @param[in] quaternion unit %Quaternion.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
@@ -130,7 +130,7 @@ class RollPitchYaw {
   /// angles `[r, p, y]` that underlie `this` @RollPitchYaw, even when the pitch
   /// angle p is very near a singularity (when p is within 1E-6 of π/2 or -π/2).
   /// After calling this method, the underlying roll-pitch-yaw `[r, p, y]` has
-  /// range `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// range `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   /// @param[in] R a %RotationMatrix.
   /// @note This high-accuracy algorithm was invented at TRI in October 2016 and
   /// avoids numerical round-off issues encountered by some algorithms when
@@ -212,7 +212,7 @@ class RollPitchYaw {
                                      double tolerance) const;
 
   /// Returns true if roll-pitch-yaw angles `[r, p, y]` are in the range
-  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   boolean<T> IsRollPitchYawInCanonicalRange() const {
     const T& r = roll_angle();
     const T& p = pitch_angle();
@@ -439,7 +439,7 @@ class RollPitchYaw {
   // that underlie `this` @RollPitchYaw, even when the pitch angle p is very
   // near a singularity (e.g., when p is within 1E-6 of π/2 or -π/2).
   // After calling this method, the underlying roll-pitch-yaw `[r, p, y]` has
-  // range `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  // range `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   // @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
   // @param[in] R The %RotationMatrix corresponding to `quaternion`.
   // @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
