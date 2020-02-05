@@ -82,7 +82,7 @@ GTEST_TEST(TestBinding, TestCost) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding1.variables()(i), x(i));
   }
-  EXPECT_EQ(fmt::format("{}", binding1), "(1 + x1 + 2 * x2 + 3 * x3)");
+  EXPECT_EQ(fmt::format("{}", binding1), "LinearCost (1 + x1 + 2 * x2 + 3 * x3)");
 
   // Test a quadratic cost binding.
   auto cost2 = std::make_shared<QuadraticCost>(Eigen::Matrix2d::Identity(),

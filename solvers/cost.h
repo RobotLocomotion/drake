@@ -86,6 +86,9 @@ class LinearCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>*) const override;
+
  private:
   template <typename DerivedX, typename U>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const;

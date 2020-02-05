@@ -30,6 +30,32 @@ void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
   DoEvalGeneric(x, y);
 }
 
+std::ostream& LinearCost::DoDisplay(
+    std::ostream& os,
+    const VectorX<symbolic::Variable>* vars) const {
+  os << "Linear cost ";
+
+  // Append the expression.
+  VectorX<symbolic::Expression> e;
+  if (vars != nullptr) {
+    this->Eval(*vars, &e);
+  } else {
+    os << "(unbound) ";
+    auto xs = symbolic::MakeVectorContinuousVariable(this->num_vars(), "x");
+    this->Eval(xs, &e);
+  }
+  DRAKE_DEMAND(e.size() == 1);
+  os << "y = " << e[0];
+
+  // Append the description (when provided).
+  const std::string& description = get_description();
+  if (!description.empty()) {
+    os << " described as '" << description << "'";
+  }
+
+  return os;
+}
+
 template <typename DerivedX, typename U>
 void QuadraticCost::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                   VectorX<U>* y) const {

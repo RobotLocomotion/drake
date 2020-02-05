@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
@@ -67,6 +68,11 @@ class Binding {
   std::shared_ptr<C> evaluator_;
   VectorXDecisionVariable vars_;
 };
+
+template <typename C>
+std::ostream& operator<<(std::ostream& os, const Binding<C>& binding) {
+  return binding.evaluator()->Display(os, binding.variables());
+}
 
 namespace internal {
 
