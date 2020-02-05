@@ -3278,56 +3278,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   /// @} <!-- Introspection -->
 
-  /// @name                  Deprecated methods
-  /// Don't use these -- use the specified replacement instead.
-  /// @{
-
-  /// For a point Fp fixed/welded to a frame F, calculates `Jv_V_WFp`, Fp's
-  /// spatial velocity Jacobian with respect to generalized velocities v.
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_F
-  ///   The position vector `p_FoFp` is expressed in this frame F.
-  /// @param[in] p_FoFp
-  ///   The position vector from Fo (frame F's origin) to Fp, expressed in F.
-  /// @param[out] Jv_V_WFp
-  ///   Fp's spatial velocity Jacobian with respect to generalized velocities v.
-  ///   `V_WFp`, Fp's spatial velocity in world frame W, can be written <pre>
-  ///   V_WFp(q, v) = Jv_V_WFp(q) * v
-  /// </pre>
-  ///   The Jacobian `Jv_V_WFp(q)` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_WFp` **must**
-  ///   have size `6 x nv` or this method throws an exception. The top rows of
-  ///   this matrix (which can be accessed with Jv_WFp.topRows<3>()) is the
-  ///   Jacobian `Hw_WFp` related to the angular velocity of `Fp` in W by
-  ///   `w_WFp = Hw_WFp⋅v`. The bottom rows of this matrix (which can be
-  ///   accessed with Jv_WFp.bottomRows<3>()) is the Jacobian `Hv_WFp` related
-  ///   to the translational velocity of the origin `P` of frame `Fp` in W by
-  ///   `v_WFpo = Hv_WFp⋅v`. This ordering is consistent with the internal
-  ///   storage of the SpatialVelocity class. Therefore the following operations
-  ///   results in a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> Jv_WFp_times_v(Jv_WFp * v);
-  ///   </pre>
-  /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
-  ///   `6 x nv`.
-  DRAKE_DEPRECATED("2020-02-01", "Use CalcJacobianSpatialVelocity().")
-  void CalcFrameGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const Vector3<T>>& p_FP,
-      EigenPtr<MatrixX<T>> J_WFp) const {
-    const Frame<T>& frame_W = world_frame();
-    return CalcJacobianSpatialVelocity(context,
-                                       JacobianWrtVariable::kV,
-                                       frame_F,
-                                       p_FP,
-                                       frame_W,
-                                       frame_W,
-                                       J_WFp);
-  }
-  /// @} <!-- Deprecated methods -->
-
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;

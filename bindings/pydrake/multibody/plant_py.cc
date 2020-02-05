@@ -249,28 +249,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
-    // Bind deprecated overload.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("CalcFrameGeometricJacobianExpressedInWorld",
-        WrapDeprecated(
-            cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc_deprecated,
-            [](const Class* self, const Context<T>& context,
-                const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
-              MatrixX<T> Jv_WF(6, self->num_velocities());
-              self->CalcFrameGeometricJacobianExpressedInWorld(
-                  context, frame_B, p_BoFo_B, &Jv_WF);
-              return Jv_WF;
-            }),
-        py::arg("context"), py::arg("frame_B"),
-        py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
-        cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc_deprecated);
-#pragma GCC diagnostic pop
-    cls  // BR
-         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
-         // overload that (a) services MBP directly and (b) uses body
-         // association that is less awkward than implicit BodyNodeIndex.
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
+        // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
+        // overload that (a) services MBP directly and (b) uses body
+        // association that is less awkward than implicit BodyNodeIndex.
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
