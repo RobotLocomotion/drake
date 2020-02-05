@@ -21,7 +21,6 @@ libnetcdf13
 libnlopt0
 libogg0
 libpng16-16
-libprotobuf-dev
 libqt5multimedia5
 libqt5x11extras5
 libtbb2

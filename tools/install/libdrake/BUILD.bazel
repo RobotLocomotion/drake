@@ -218,7 +218,6 @@ cc_library(
         "//common:drake_marker_shared_library",
         "@ignition_math",
         "@lcm",
-        "@libprotobuf",
         "@spdlog",
         "@tinyxml2",
         "@yaml_cpp",

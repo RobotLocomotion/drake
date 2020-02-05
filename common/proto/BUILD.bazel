@@ -21,23 +21,7 @@ drake_cc_package_library(
     name = "proto",
     deps = [
         ":call_python",
-        ":protobuf",
         ":rpc_pipe_temp_directory",
-    ],
-)
-
-drake_cc_library(
-    name = "protobuf",
-    srcs = ["protobuf.cc"],
-    hdrs = ["protobuf.h"],
-    deprecation = "To be removed from Drake on or after 2020-02-01, with no replacement.",  # noqa
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        "//common:essential",
-        "@libprotobuf",
     ],
 )
 
@@ -106,18 +90,6 @@ drake_py_unittest(
     isolate = 0,
     # Fails when run under Valgrind tools.
     tags = ["no_valgrind_tools"],
-)
-
-drake_cc_googletest(
-    name = "protobuf_test",
-    copts = ["-Wno-deprecated-declarations"],
-    data = [
-        "test/test_string.txt",
-    ],
-    deps = [
-        ":protobuf",
-        "//common",
-    ],
 )
 
 drake_cc_googletest(
