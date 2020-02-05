@@ -1,7 +1,7 @@
 <sdf version='1.6'>
   <model name='CartPole'>
     <!-- This sdf file produces a model with the default parameters as
-         documented in cart_pole_params.named_vector.
+         documented in cart_pole_params_named_vector.yaml.
          They MUST be kept in sync. -->
     <link name='Cart'>
       <pose>0 0 0 0 0 0</pose>

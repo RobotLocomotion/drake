@@ -43,7 +43,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant)
 
   /// Constructs the plant.  The parameters of the system are stored as
-  /// Parameters in the Context (see acrobot_params.named_vector).
+  /// Parameters in the Context (see acrobot_params_named_vector.yaml).
   AcrobotPlant();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

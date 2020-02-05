@@ -51,7 +51,7 @@ drake_cc_library(
 
 drake_cc_vector_gen_library(
     name = "schunk_wsg_trajectory_generator_state_vector",
-    srcs = ["schunk_wsg_trajectory_generator_state_vector.named_vector"],
+    srcs = ["schunk_wsg_trajectory_generator_state_vector_named_vector.yaml"],
     visibility = [":__subpackages__"],
 )
 

@@ -18,7 +18,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_vector_gen_library(
     name = "cart_pole_params",
-    srcs = ["cart_pole_params.named_vector"],
+    srcs = ["cart_pole_params_named_vector.yaml"],
 )
 
 drake_cc_binary(

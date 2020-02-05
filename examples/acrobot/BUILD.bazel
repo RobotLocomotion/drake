@@ -17,25 +17,25 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_vector_gen_library(
     name = "acrobot_input",
-    srcs = ["acrobot_input.named_vector"],
+    srcs = ["acrobot_input_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(
     name = "acrobot_params",
-    srcs = ["acrobot_params.named_vector"],
+    srcs = ["acrobot_params_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(
     name = "acrobot_state",
-    srcs = ["acrobot_state.named_vector"],
+    srcs = ["acrobot_state_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(
     name = "spong_controller_params",
-    srcs = ["spong_controller_params.named_vector"],
+    srcs = ["spong_controller_params_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
