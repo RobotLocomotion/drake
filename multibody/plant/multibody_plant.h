@@ -621,6 +621,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     collision_geometries_.emplace_back();
     DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
     X_WB_default_list_.emplace_back();
+    RegisterRigidBodyWithSceneGraph(body);
     return body;
   }
 
@@ -3613,6 +3614,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return body_index_to_frame_id_.find(body.index()) !=
         body_index_to_frame_id_.end();
   }
+
+  // Registers the given body with this plant's SceneGraph instance (if it has
+  // one).
+  void RegisterRigidBodyWithSceneGraph(const Body<T>& body);
 
   // Calc method for the multibody state vector output port. It only copies the
   // multibody state [q, v], ignoring any miscellaneous state z if present.

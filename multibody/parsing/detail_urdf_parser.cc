@@ -152,10 +152,12 @@ void ParseBody(const multibody::PackageMap& package_map,
 
 // Parse the collision filter group tag information into the collision filter
 // groups and a set of pairs between which the collisions will be excluded.
+// @pre plant.geometry_source_is_registered() is `true`.
 void RegisterCollisionFilterGroup(
     const MultibodyPlant<double>& plant, XMLElement* node,
     std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
     std::set<SortedPair<std::string>>* collision_filter_pairs) {
+  DRAKE_DEMAND(plant.geometry_source_is_registered());
   std::string drake_ignore;
   if (ParseStringAttribute(node, "ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
@@ -202,8 +204,10 @@ void RegisterCollisionFilterGroup(
   }
 }
 
+// @pre plant->geometry_source_is_registered() is `true`.
 void ParseCollisionFilterGroup(XMLElement* node,
                                MultibodyPlant<double>* plant) {
+  DRAKE_DEMAND(plant->geometry_source_is_registered());
   std::map<std::string, geometry::GeometrySet> collision_filter_groups;
   std::set<SortedPair<std::string>> collision_filter_pairs;
   for (XMLElement* group_node =

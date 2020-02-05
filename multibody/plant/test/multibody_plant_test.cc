@@ -955,9 +955,8 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
 // (SN-1, SN) and between the ground and all elements: (G, S1), (G, S2), ...,
 // (G, SN).
 //
-// The chain terminates with two additional bodies: one body registers a frame
-// (but has no geometry), the other has no frame at all. It will have no bearing
-// on collision tests but is used for geometry collection testing.
+// The chain terminates with one additional body with no geometry.  It has no
+// bearing on collision tests but is used for geometry collection testing.
 //
 // Also accepts a filtering function that is applied between geometry
 // registration and context compilation.
@@ -1090,6 +1089,30 @@ class SphereChainScenario {
   std::set<std::pair<GeometryId, GeometryId>> unfiltered_collisions_;
   const RigidBody<double>* no_geometry_body_{};
 };
+
+// This confirms that every body *always* has a corresponding SceneGraph FrameId
+// if the MBP has been registered as a SceneGraph source.
+GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& body1 = plant.AddRigidBody(
+      "body1", SpatialInertia<double>());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodyFrameIdOrThrow(body1.index()), std::logic_error,
+      "Body 'body1' does not have geometry registered with it.");
+
+  geometry::SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  ASSERT_TRUE(plant.geometry_source_is_registered());
+
+  // Now that the plant has been registered as a source, old bodies have been
+  // updated with FrameIds.
+  DRAKE_EXPECT_NO_THROW(plant.GetBodyFrameIdOrThrow(body1.index()));
+
+  // And new bodies have FrameIds immediately upon creation.
+  const RigidBody<double>& body2 = plant.AddRigidBody(
+      "body2", SpatialInertia<double>());
+  DRAKE_EXPECT_NO_THROW(plant.GetBodyFrameIdOrThrow(body2.index()));
+}
 
 // Tests the automatic filtering of adjacent bodies.
 // Introduces a ground plane with three spheres sitting on the plane.
