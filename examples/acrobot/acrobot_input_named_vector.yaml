@@ -1,0 +1,8 @@
+namespace: "drake::examples::acrobot"
+
+element {
+    name: "tau"
+    doc: "Torque at the elbow"
+    doc_units: "Nm"
+    default_value: "0.0"
+}
