@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -32,7 +33,7 @@ GTEST_TEST(TestBinding, TestConstraint) {
       std::to_string(0.) + "<=x3<=" + std::to_string(1.) + "\n" +
       std::to_string(0.) + "<=x1<=" + std::to_string(1.) + "\n" +
       std::to_string(0.) + "<=x2<=" + std::to_string(1.) + "\n";
-  EXPECT_EQ(to_string(binding1), str_expected1);
+  EXPECT_EQ(fmt::format("{}", binding1), str_expected1);
 
   // Creates a binding with a single VectorDecisionVariable.
   Binding<BoundingBoxConstraint> binding2(
@@ -52,7 +53,7 @@ GTEST_TEST(TestBinding, TestConstraint) {
   const std::string str_expected2 =
       "(x1 + 2 * x2) == " + std::to_string(1.) +
       "\n(3 * x1 + 4 * x2) == " + std::to_string(2.) + "\n";
-  EXPECT_EQ(to_string(linear_eq_binding), str_expected2);
+  EXPECT_EQ(fmt::format("{}", linear_eq_binding), str_expected2);
 
   const Eigen::Matrix2d Ain = Aeq;
   auto linear_ineq_constraint = std::make_shared<LinearConstraint>(
@@ -63,7 +64,7 @@ GTEST_TEST(TestBinding, TestConstraint) {
       std::to_string(1.) + " <= (x1 + 2 * x2) <= " + std::to_string(2.) + "\n" +
       std::to_string(2.) + " <= (3 * x1 + 4 * x2) <= " + std::to_string(3.) +
       "\n";
-  EXPECT_EQ(to_string(linear_binding), str_expected3);
+  EXPECT_EQ(fmt::format("{}", linear_binding), str_expected3);
 }
 
 GTEST_TEST(TestBinding, TestCost) {
@@ -81,7 +82,7 @@ GTEST_TEST(TestBinding, TestCost) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding1.variables()(i), x(i));
   }
-  EXPECT_EQ(to_string(binding1), "(1 + x1 + 2 * x2 + 3 * x3)");
+  EXPECT_EQ(fmt::format("{}", binding1), "(1 + x1 + 2 * x2 + 3 * x3)");
 
   // Test a quadratic cost binding.
   auto cost2 = std::make_shared<QuadraticCost>(Eigen::Matrix2d::Identity(),
@@ -89,7 +90,7 @@ GTEST_TEST(TestBinding, TestCost) {
   Binding<QuadraticCost> binding2(cost2, x.head<2>());
   VectorX<symbolic::Expression> e2;
   cost2->Eval(x.head<2>(), &e2);
-  EXPECT_EQ(to_string(binding2), e2[0].to_string());
+  EXPECT_EQ(fmt::format("{}", binding2), e2[0].to_string());
 }
 
 class DummyEvaluator : public EvaluatorBase {
@@ -133,7 +134,7 @@ GTEST_TEST(TestBinding, TestEvaluator) {
   EXPECT_EQ(binding.evaluator().get(), evaluator.get());
   EXPECT_EQ(binding.evaluator()->num_outputs(), 2);
   EXPECT_EQ(binding.GetNumElements(), 3);
-  EXPECT_EQ(to_string(binding), "dummy on x1 x2 x3\n");
+  EXPECT_EQ(fmt::format("{}", binding), "dummy on x1 x2 x3\n");
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding.variables()(i), x(i));
   }
