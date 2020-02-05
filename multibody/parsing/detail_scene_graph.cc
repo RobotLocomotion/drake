@@ -272,7 +272,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 
   if (material_element != nullptr) {
     if (material_element->HasElement("drake:diffuse_map")) {
-      auto[texture_name, has_value] =
+      auto [texture_name, has_value] =
           material_element->Get<std::string>("drake:diffuse_map", {});
       if (has_value) {
         const std::string resolved_path =

@@ -367,7 +367,7 @@ GTEST_TEST(SurfaceMeshTest, TestEmptyMeshElements) {
 
 GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {
   auto mesh = TestSurfaceMesh<double>();
-  const auto[center, size] = mesh->CalcBoundingBox();
+  const auto [center, size] = mesh->CalcBoundingBox();
   EXPECT_EQ(center, Vector3d(7.5, 7.5, 0));
   EXPECT_EQ(size, Vector3d(15, 15, 0));
 }

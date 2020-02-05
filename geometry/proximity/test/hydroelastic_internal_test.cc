@@ -196,7 +196,7 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   EXPECT_EQ(mesh.num_vertices(), 14);
   EXPECT_EQ(mesh.num_faces(), 24);
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const auto[x, y, z] = unpack(mesh.vertex(v).r_MV());
+    const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
     // Only check that the vertex is within the cylinder. It does not check
     // that the vertex is near the surface of the cylinder.  We rely on the
     // correctness of the mesh generator.
@@ -229,7 +229,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   EXPECT_EQ(mesh.num_vertices(), 6);
   EXPECT_EQ(mesh.num_faces(), 8);
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const auto[x, y, z] = unpack(mesh.vertex(v).r_MV());
+    const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
     ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
   }
 }

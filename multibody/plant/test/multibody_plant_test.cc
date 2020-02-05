@@ -334,7 +334,7 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   EXPECT_EQ(&plant_ref, plant);
 
   // Check support for C++17's structured binding.
-  auto[first_element, second_element] =
+  auto [first_element, second_element] =
       AddMultibodyPlantSceneGraph(&builder, 0.0);
   // Verify the expected types.
   EXPECT_EQ(drake::NiceTypeName::Get(first_element),
