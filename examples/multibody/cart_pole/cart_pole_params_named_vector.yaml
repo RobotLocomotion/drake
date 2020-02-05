@@ -1,0 +1,26 @@
+namespace: drake::examples::multibody::cart_pole
+elements:
+  -
+    name: mc
+    doc: Mass of the cart.
+    doc_units: kg
+    default_value: 10.0
+    min_value: 0.0
+  -
+    name: mp
+    doc: Value of the point mass at the end of the pole.
+    doc_units: kg
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: l
+    doc: Length of the pole.
+    doc_units: m
+    default_value: 0.5
+    min_value: 0.0
+  -
+    name: gravity
+    doc: Standard acceleration due to gravity near Earth's surface.
+    doc_units: m/s^2
+    default_value: 9.81
+    min_value: 0.0

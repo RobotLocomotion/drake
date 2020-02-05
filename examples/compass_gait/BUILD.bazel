@@ -18,8 +18,8 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_vector_gen_library(
     name = "compass_gait_vector_types",
     srcs = [
-        "compass_gait_continuous_state.named_vector",
-        "compass_gait_params.named_vector",
+        "compass_gait_continuous_state_named_vector.yaml",
+        "compass_gait_params_named_vector.yaml",
     ],
     visibility = ["//visibility:public"],
 )

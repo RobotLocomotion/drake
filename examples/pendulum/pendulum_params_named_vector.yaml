@@ -1,0 +1,26 @@
+namespace: drake::examples::pendulum
+elements:
+  -
+    name: mass
+    doc: The simple pendulum has a single point mass at the end of the arm.
+    doc_units: kg
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: length
+    doc: The length of the pendulum arm.
+    doc_units: m
+    default_value: 0.5
+    min_value: 0.0
+  -
+    name: damping
+    doc: The damping friction coefficient relating angular velocity to torque.
+    doc_units: kg m^2/s
+    default_value: 0.1
+    min_value: 0.0
+  -
+    name: gravity
+    doc: An approximate value for gravitational acceleration.
+    doc_units: m/s^2
+    default_value: 9.81
+    min_value: 0.0

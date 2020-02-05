@@ -1,0 +1,71 @@
+namespace: drake::examples::acrobot
+elements:
+# Note: default parameter values are taken from:
+#   Spong, Mark W. Swing up control of the acrobot. Robotics and Automation,
+#   1994. Proceedings., 1994 IEEE International Conference on. IEEE, 1994.
+  -
+    name: m1
+    doc: Mass of link 1.
+    doc_units: kg
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: m2
+    doc: Mass of link 2.
+    doc_units: kg
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: l1
+    doc: Length of link 1.
+    doc_units: m
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: l2
+    doc: Length of link 2.
+    doc_units: m
+    default_value: 2.0
+    min_value: 0.0
+  -
+    name: lc1
+    doc: Vertical distance from shoulder joint to center of mass of link 1.
+    doc_units: m
+    default_value: 0.5
+    min_value: 0.0
+  -
+    name: lc2
+    doc: Vertical distance from elbow joint to center of mass of link 1.
+    doc_units: m
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: Ic1
+    doc: Inertia of link 1 about the center of mass of link 1.
+    doc_units: kg*m^2
+    default_value: 0.083
+    min_value: 0.0
+  -
+    name: Ic2
+    doc: Inertia of link 2 about the center of mass of link 2.
+    doc_units: kg*m^2
+    default_value: 0.33
+    min_value: 0.0
+  -
+    name: b1
+    doc: Damping coefficient of the shoulder joint.
+    doc_units: kg*m^2/s
+    default_value: 0.1
+    min_value: 0.0
+  -
+    name: b2
+    doc: Damping coefficient of the elbow joint.
+    doc_units: kg*m^2/s
+    default_value: 0.1
+    min_value: 0.0
+  -
+    name: gravity
+    doc: Gravitational constant.
+    doc_units: m/s^2
+    default_value: 9.81
+    min_value: 0.0

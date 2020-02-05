@@ -1,0 +1,10 @@
+namespace: drake::examples::scene_graph::bouncing_ball
+elements:
+  -
+    name: z
+    doc: z
+    default_value: 0.0
+  -
+    name: zdot
+    doc: zdot
+    default_value: 0.0

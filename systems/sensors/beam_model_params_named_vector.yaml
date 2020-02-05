@@ -1,0 +1,36 @@
+namespace: drake::systems::sensors
+elements:
+  -
+    name: lambda_short
+    doc: The rate parameter of the (truncated) exponential distribution governing short returns
+    doc_units: dimensionless
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: sigma_hit
+    doc: The standard deviation of the (truncated) Gaussian distribution governing the noisy returns of the true depth (aka hit)
+    doc_units: m
+    default_value: 0.0
+    min_value: 0.0
+  -
+    name: probability_short
+    doc: The total probability of getting a short return is probability_short * p(lambda_short*w_short <= input_depth)
+    doc_units: dimensionless
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 1.0
+  -
+    name: probability_miss
+    doc: The probability of ignoring the input depth and simply returning the max range of the sensor
+    doc_units: dimensionless
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 1.0
+  -
+    name: probability_uniform
+    doc: The probability of ignoring the input depth and simple returning a uniform random value between 0 and the max range of the sensor
+    doc_units: dimensionless
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 1.0
+

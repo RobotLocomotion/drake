@@ -1,0 +1,32 @@
+namespace: drake::examples::rod2d
+elements:
+  -
+     name: x
+     doc: Horizontal location of the center-of-mass.
+     doc_units: m
+     default_value: 0.0
+  -
+     name: y
+     doc: Vertical location of the center-of-mass.
+     doc_units: m
+     default_value: 0.0
+  -
+     name: theta
+     doc: Angle of the rod (measured counter-clockwise).
+     doc_units: rad
+     default_value: 0.0
+  -
+     name: xdot
+     doc: Velocity of the horizontal location of the center-of-mass.
+     doc_units: m/s
+     default_value: 0.0
+  -
+     name: ydot
+     doc: Velocity of the vertical location of the center-of-mass.
+     doc_units: m/s
+     default_value: 0.0
+  -
+     name: thetadot
+     doc: Angular velocity of the rod.
+     doc_units: rad/s
+     default_value: 0.0
