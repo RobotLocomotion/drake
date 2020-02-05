@@ -483,7 +483,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         "model. It is _not_ available in other proximity queries.");
     SurfaceMesh<double> surface =
         ReadObjToSurfaceMesh(mesh.filename(), mesh.scale());
-    auto[center, size] = surface.CalcBoundingBox();
+    auto [center, size] = surface.CalcBoundingBox();
     auto fcl_box = make_shared<fcl::Boxd>(size);
 
     TakeShapeOwnership(fcl_box, user_data);
