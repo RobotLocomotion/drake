@@ -30,30 +30,36 @@ void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
   DoEvalGeneric(x, y);
 }
 
-std::ostream& LinearCost::DoDisplay(
-    std::ostream& os,
-    const VectorX<symbolic::Variable>* vars) const {
-  os << "Linear cost ";
-
+namespace {
+std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
+                          const std::string& name,
+                          const VectorX<symbolic::Variable>* vars) {
+  os << name;
   // Append the expression.
   VectorX<symbolic::Expression> e;
   if (vars != nullptr) {
-    this->Eval(*vars, &e);
+    cost.Eval(*vars, &e);
   } else {
-    os << "(unbound) ";
-    auto xs = symbolic::MakeVectorContinuousVariable(this->num_vars(), "x");
-    this->Eval(xs, &e);
+    os << "(unbound)";
+    auto xs = symbolic::MakeVectorContinuousVariable(cost.num_vars(), "$");
+    cost.Eval(xs, &e);
   }
   DRAKE_DEMAND(e.size() == 1);
-  os << "y = " << e[0];
+  os << " " << e[0];
 
   // Append the description (when provided).
-  const std::string& description = get_description();
+  const std::string& description = cost.get_description();
   if (!description.empty()) {
     os << " described as '" << description << "'";
   }
 
   return os;
+}
+}  // namespace
+
+std::ostream& LinearCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+  return DisplayCost(*this, os, "LinearCost", vars);
 }
 
 template <typename DerivedX, typename U>
@@ -78,6 +84,11 @@ void QuadraticCost::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
+}
+
+std::ostream& QuadraticCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+  return DisplayCost(*this, os, "QuadraticCost", vars);
 }
 
 shared_ptr<QuadraticCost> MakeQuadraticErrorCost(

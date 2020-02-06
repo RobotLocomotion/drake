@@ -165,6 +165,9 @@ class QuadraticCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>*) const override;
+
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
   double c_{};
