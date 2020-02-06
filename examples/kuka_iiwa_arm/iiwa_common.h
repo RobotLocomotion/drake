@@ -6,6 +6,7 @@
 
 #include "robotlocomotion/robot_plan_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
@@ -29,6 +30,7 @@ using manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
 /// @param wsg_instance Identifier for the gripper in @p world_tree.
 /// @return Lumped inertia parameters.
 template <typename T>
+DRAKE_DEPRECATED("2020-05-01", "This function is being removed.")
 Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
     const RigidBodyTree<T>& world_tree,
     int iiwa_instance, const std::string& end_effector_link_name,
@@ -42,6 +44,7 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 /// the model specified by @model_file_name.
 /// This method is a convenience wrapper over `AddModelInstanceFromUrdfFile`.
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
+DRAKE_DEPRECATED("2020-05-01", "This function is being removed.")
 void CreateTreedFromFixedModelAtPose(
     const std::string& model_file_name, RigidBodyTreed* tree,
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),

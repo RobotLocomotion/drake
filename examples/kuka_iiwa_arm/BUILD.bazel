@@ -95,6 +95,8 @@ drake_cc_library(
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/systems/controllers:rbt_inverse_dynamics",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics",
         "//systems/controllers:pid_controller",
         "//systems/controllers:state_feedback_controller_interface",
         "//systems/framework:diagram_builder",
@@ -165,13 +167,13 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":kuka_torque_controller",
-        "//attic/manipulation/util:sim_diagram_builder",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/rigid_body_plant:frame_visualizer",
-        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common:add_text_logging_gflags",
+        "//geometry:geometry_visualization",
         "//lcm",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis",
+        "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:state_feedback_controller_interface",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:demultiplexer",
@@ -242,6 +244,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "kuka_torque_controller_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
@@ -251,6 +254,7 @@ drake_cc_googletest(
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody:rigid_body_tree_construction",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
     ],
 )
 
@@ -276,7 +280,6 @@ sh_test(
         "--urdf",
         "$(location :dual_iiwa14_polytope_collision.urdf)",
         "--simulation_sec=0.01",
-        "--novisualize_frames",
     ],
     data = [
         ":dual_iiwa14_polytope_collision.urdf",
