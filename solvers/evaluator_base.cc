@@ -21,6 +21,10 @@ std::ostream& EvaluatorBase::Display(
 }
 
 std::ostream& EvaluatorBase::Display(std::ostream& os) const {
+  if (this->num_vars() == Eigen::Dynamic) {
+    symbolic::Variable dynamic_var("dynamic_sized_variable");
+    return this->DoDisplay(os, Vector1<symbolic::Variable>(dynamic_var));
+  }
   return this->DoDisplay(
       os, symbolic::MakeVectorContinuousVariable(this->num_vars(), "$"));
 }
@@ -38,7 +42,7 @@ std::ostream& EvaluatorBase::DoDisplay(
 
   // Append the bound decision variables (when provided).
   const int vars_rows = vars.rows();
-  os << " bound to " << vars_rows << " decision variables";
+  os << " with " << vars_rows << " decision variables";
   for (int i = 0; i < vars_rows; ++i) {
     os << " " << vars(i).get_name();
   }

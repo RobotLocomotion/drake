@@ -136,7 +136,7 @@ GTEST_TEST(TestBinding, TestEvaluator) {
   EXPECT_EQ(binding.evaluator()->num_outputs(), 2);
   EXPECT_EQ(binding.GetNumElements(), 3);
   EXPECT_EQ(fmt::format("{}", binding),
-            "DummyEvaluator described as 'dummy' bound to 3 decision variables "
+            "DummyEvaluator described as 'dummy' with 3 decision variables "
             "x1 x2 x3");
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding.variables()(i), x(i));

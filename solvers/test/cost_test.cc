@@ -139,9 +139,9 @@ GTEST_TEST(testCost, testLinearCost) {
   new_cost->set_description("simple linear cost");
   std::ostringstream os;
   new_cost->Display(os);
-  EXPECT_EQ(fmt::format("{}", os.str()),
-            "LinearCost(unbound) (100 + $(0) + 2 * $(1)) described as 'simple "
-            "linear cost'");
+  EXPECT_EQ(
+      fmt::format("{}", os.str()),
+      "LinearCost (100 + $(0) + 2 * $(1)) described as 'simple linear cost'");
 }
 
 GTEST_TEST(testCost, testQuadraticCost) {

@@ -184,7 +184,7 @@ class EvaluatorBase {
    * NVI implementation of Display. The default implementation will report
    * the NiceTypeName, get_description, and list the bound variables.
    * Subclasses may override to customize the message.
-   * @pre: vars size is consistent with num_vars".
+   * @pre vars size is consistent with num_vars".
    */
   virtual std::ostream& DoDisplay(
       std::ostream& os, const VectorX<symbolic::Variable>& vars) const;

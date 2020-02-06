@@ -92,8 +92,9 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   std::ostringstream os;
   constraint1.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(fmt::format("{}", os.str()),
-            "QuadraticConstraint\n0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + "
-            "0.5 * pow(x(1), 2)) <= 1\n");
+            "QuadraticConstraint\n"
+            "0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + 0.5 * pow(x(1), 2)) "
+            "<= 1\n");
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
