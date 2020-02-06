@@ -261,7 +261,7 @@ class QuadraticConstraint : public Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
   std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>*) const override;
+                          const VectorX<symbolic::Variable>&) const override;
 
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
@@ -566,7 +566,7 @@ class LinearConstraint : public Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
   std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>*) const override;
+                          const VectorX<symbolic::Variable>&) const override;
 
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 
@@ -622,7 +622,7 @@ class LinearEqualityConstraint : public LinearConstraint {
   }
 
   std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>*) const override;
+                          const VectorX<symbolic::Variable>&) const override;
 };
 
 /**
@@ -661,7 +661,7 @@ class BoundingBoxConstraint : public LinearConstraint {
               VectorX<symbolic::Expression>* y) const override;
 
   std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>*) const override;
+                          const VectorX<symbolic::Variable>&) const override;
 };
 
 /**

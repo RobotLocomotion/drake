@@ -33,17 +33,11 @@ void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
 namespace {
 std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
                           const std::string& name,
-                          const VectorX<symbolic::Variable>* vars) {
+                          const VectorX<symbolic::Variable>& vars) {
   os << name;
   // Append the expression.
   VectorX<symbolic::Expression> e;
-  if (vars != nullptr) {
-    cost.Eval(*vars, &e);
-  } else {
-    os << "(unbound)";
-    auto xs = symbolic::MakeVectorContinuousVariable(cost.num_vars(), "$");
-    cost.Eval(xs, &e);
-  }
+  cost.Eval(vars, &e);
   DRAKE_DEMAND(e.size() == 1);
   os << " " << e[0];
 
@@ -58,7 +52,7 @@ std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
 }  // namespace
 
 std::ostream& LinearCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "LinearCost", vars);
 }
 
@@ -87,7 +81,7 @@ void QuadraticCost::DoEval(
 }
 
 std::ostream& QuadraticCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "QuadraticCost", vars);
 }
 

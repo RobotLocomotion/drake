@@ -36,17 +36,11 @@ symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
 
 std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
                                 const std::string& name,
-                                const VectorX<symbolic::Variable>* vars,
+                                const VectorX<symbolic::Variable>& vars,
                                 bool equality) {
   os << name;
   VectorX<symbolic::Expression> e(constraint.num_constraints());
-  if (vars != nullptr) {
-    constraint.Eval(*vars, &e);
-  } else {
-    auto xs =
-        symbolic::MakeVectorContinuousVariable(constraint.num_vars(), "$");
-    constraint.Eval(xs, &e);
-  }
+  constraint.Eval(vars, &e);
   // Append the description (when provided).
   const std::string& description = constraint.get_description();
   if (!description.empty()) {
@@ -102,7 +96,7 @@ void QuadraticConstraint::DoEval(
 }
 
 std::ostream& QuadraticConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "QuadraticConstraint", vars, false);
 }
 
@@ -181,12 +175,12 @@ void LinearConstraint::DoEval(
 }
 
 std::ostream& LinearConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
 }
 
 std::ostream& LinearEqualityConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
 }
 
@@ -213,7 +207,7 @@ void BoundingBoxConstraint::DoEval(
 }
 
 std::ostream& BoundingBoxConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "BoundingBoxConstraint", vars, false);
 }
 

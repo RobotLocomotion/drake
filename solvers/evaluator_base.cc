@@ -17,16 +17,16 @@ std::ostream& EvaluatorBase::Display(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   const int num_vars = this->num_vars();
   DRAKE_THROW_UNLESS(vars.rows() == num_vars || num_vars == Eigen::Dynamic);
-  return this->DoDisplay(os, &vars);
+  return this->DoDisplay(os, vars);
 }
 
 std::ostream& EvaluatorBase::Display(std::ostream& os) const {
-  return this->DoDisplay(os, nullptr);
+  return this->DoDisplay(
+      os, symbolic::MakeVectorContinuousVariable(this->num_vars(), "$"));
 }
 
 std::ostream& EvaluatorBase::DoDisplay(
-    std::ostream& os,
-    const VectorX<symbolic::Variable>* vars) const {
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   // Display the evaluator's most derived type name.
   os << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this));
 
@@ -37,19 +37,10 @@ std::ostream& EvaluatorBase::DoDisplay(
   }
 
   // Append the bound decision variables (when provided).
-  if (vars != nullptr) {
-    const int vars_rows = vars->rows();
-    os << " bound to " << vars_rows << " decision variables";
-    for (int i = 0; i < vars_rows; ++i) {
-      os << " " << (*vars)(i).get_name();
-    }
-  } else {
-    const int num_vars = this->num_vars();
-    if (num_vars == Eigen::Dynamic) {
-      os << " accepting an unspecified number of decision variables";
-    } else {
-      os << " accepting " << num_vars << " decision variables";
-    }
+  const int vars_rows = vars.rows();
+  os << " bound to " << vars_rows << " decision variables";
+  for (int i = 0; i < vars_rows; ++i) {
+    os << " " << vars(i).get_name();
   }
 
   return os;
@@ -89,6 +80,10 @@ void EvaluatorBase::SetGradientSparsityPattern(
                                  num_vars());
   }
   gradient_sparsity_pattern_.emplace(gradient_sparsity_pattern);
+}
+
+std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e) {
+  return e.Display(os);
 }
 
 void PolynomialEvaluator::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

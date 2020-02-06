@@ -87,7 +87,7 @@ class LinearCost : public Cost {
               VectorX<symbolic::Expression>* y) const override;
 
   std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>*) const override;
+                          const VectorX<symbolic::Variable>&) const override;
 
  private:
   template <typename DerivedX, typename U>
@@ -166,7 +166,7 @@ class QuadraticCost : public Cost {
               VectorX<symbolic::Expression>* y) const override;
 
   std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>*) const override;
+                          const VectorX<symbolic::Variable>&) const override;
 
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;

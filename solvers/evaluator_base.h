@@ -181,13 +181,13 @@ class EvaluatorBase {
                       VectorX<symbolic::Expression>* y) const = 0;
 
   /**
-   * NVI implementation of Display.
-   * The default ...
-   * @pre vars size is ...
+   * NVI implementation of Display. The default implementation will report
+   * the NiceTypeName, get_description, and list the bound variables.
+   * Subclasses may override to customize the message.
+   * @pre: vars size is consistent with num_vars".
    */
   virtual std::ostream& DoDisplay(
-      std::ostream& os,
-      const VectorX<symbolic::Variable>* vars) const;
+      std::ostream& os, const VectorX<symbolic::Variable>& vars) const;
 
   // Setter for the number of outputs.
   // This method is only meant to be called, if the sub-class structure permits
@@ -209,6 +209,11 @@ class EvaluatorBase {
   // the gradient matrix can be non-zero.
   std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
+
+/**
+ * Print out the evaluator.
+ */
+std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e);
 
 /**
  * Implements an evaluator of the form P(x, y...) where P is a multivariate

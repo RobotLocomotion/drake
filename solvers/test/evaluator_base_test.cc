@@ -204,6 +204,10 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
   const VectorXd lb = VectorXd::Constant(2, -1);
   const VectorXd ub = VectorXd::Constant(2, 1);
   SimpleEvaluator evaluator;
+  std::ostringstream os;
+  os << evaluator;
+  EXPECT_EQ(fmt::format("{}", os.str()),
+            "SimpleEvaluator bound to 3 decision variables $(0) $(1) $(2)");
   // The gradient sparsity pattern should be unset at evaluator construction.
   EXPECT_FALSE(evaluator.gradient_sparsity_pattern().has_value());
   // Now set the gradient sparsity pattern.
