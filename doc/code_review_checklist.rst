@@ -118,6 +118,19 @@ Did you use a C-style cast by accident?
 - You very, very rarely want ``reinterpret_cast``.  Use with great
   caution.
 
+Did you change third-party software?
+====================================
+
+Changes to third-party software (e.g., upgrading to a newer version) are the
+most common cause of CI divergence between Ubuntu and macOS.  For PRs with such
+changes, be sure to opt-in to the pre-merge macOS builds.
+
+:ref:`Schedule an on-demand build <run_specific_build>` using one build from
+each macOS revision currently available in CI.  For example:
+
+* ``@drake-jenkins-bot mac-mojave-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-everything-release please``
+
 Have you run linting tools?
 ===========================
 

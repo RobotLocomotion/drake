@@ -217,11 +217,17 @@ make the review faster.
 - @soonho-tri (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
 
-**Merge.** If you have write access to RobotLocomotion/drake, a green
-"Merge Pull Request" button will appear when your change is fully reviewed and
-passes CI. You may click it to merge your PR. If you do not have write access,
-or if you believe that status checks are failing for inconsequential reasons,
-ask your platform reviewer to perform the merge for you.
+**Merge.** Once the PR is fully reviewed and passes CI, the assigned platform
+reviewer will merge it to master.  If time is of the essence, you may post a
+reminder to the PR to get the reviewer's attention.  If the PR should not be
+merged yet, or if you prefer to merge it yourself, apply the label "status:
+do not merge" to disable the merge.
+
+If you are a frequent contributor who has been granted write access to
+RobotLocomotion/drake, a green "Merge Pull Request" button will appear when
+your change is fully reviewed and passes CI. You may click it to merge your PR.
+Choose the "Squash and merge option" unless otherwise instructed (see
+:ref:`curate_commits_before_merging`).
 
 **After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
 will contact you to work out a resolution.
