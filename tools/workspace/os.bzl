@@ -70,7 +70,7 @@ def _determine_linux(repository_ctx):
     sed = exec_using_which(repository_ctx, [
         "sed",
         "-n",
-        "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
+        r"/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
         "/etc/os-release",
     ])
     if sed.error != None:

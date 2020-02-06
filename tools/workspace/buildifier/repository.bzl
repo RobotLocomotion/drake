@@ -30,17 +30,17 @@ load(
 
 def _impl(repository_ctx):
     # Enumerate the possible binaries.
-    version = "0.29.0"
+    version = "1.0.0"
     mac_urls = [
         x.format(version = version, filename = "buildifier.mac")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    mac_sha256 = "9b108decaa9a624fbac65285e529994088c5d15fecc1a30866afc03a48619245"  # noqa
+    mac_sha256 = "6e7545fdfd4b142041b4fefd8f338b31dee556aa37e9fa8e244ee66a765d352f"  # noqa
     ubuntu_urls = [
         x.format(version = version, filename = "buildifier")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    ubuntu_sha256 = "4c985c883eafdde9c0e8cf3c8595b8bfdf32e77571c369bf8ddae83b042028d6"  # noqa
+    ubuntu_sha256 = "ec064a5edd2a2a210cf8162305869a27b3ed6c7e50caa70687bc9d72177f61f3"  # noqa
 
     # Choose which binary to use on the current OS.
     os_result = determine_os(repository_ctx)
