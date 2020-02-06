@@ -21,10 +21,6 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "gflags": {
-      "Version": "2.2",
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "ignition-math6": {
       "Version": "6.4",
       "Hints": ["@prefix@/lib/cmake/ignition-math6"],
@@ -80,15 +76,6 @@
         "yaml-cpp"
       ]
     },
-    "drake-common-text-logging-gflags": {
-      "Type": "interface",
-      "Includes": ["@prefix@/include"],
-      "Compile-Features": ["c++17"],
-      "Requires": [
-          ":drake",
-          "gflags"
-      ]
-    },
     "drake-lcmtypes-cpp": {
       "Type": "interface",
       "Includes": ["@prefix@/include/drake_lcmtypes"],
@@ -105,7 +92,6 @@
     }
   },
   "X-CMake-Variables-Init": {
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}",
-    "GFLAGS_USE_TARGET_NAMESPACE": 0
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }

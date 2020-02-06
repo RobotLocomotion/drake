@@ -481,53 +481,6 @@ drake_cc_library(
     alwayslink = 1,
 )
 
-# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
-# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
-# etc).
-drake_cc_library(
-    name = "text_logging_gflags",
-    hdrs = ["text_logging_gflags.h"],
-    deprecation = "DRAKE DEPRECATED: The drake/common/text_logging_gflags.h convenience header is being removed from Drake on or after 2020-02-01.  Downstream projects should maintain their own implementation of this feature.  See drake/common/add_text_logging_gflags.cc for an example.",  # noqa
-    tags = [
-        # Don't add this library into the ":common" package library.
-        # Only programs with a main() function should ever use this header.
-        "exclude_from_package",
-        # Don't install this header via this cc_library, because that would
-        # introduce a dependency from libdrake onto gflags.  Similarly, we
-        # can't use `install_hdrs_exclude` for this because the @gflags
-        # dependency should not be part of the install.  Instead, we exclude
-        # this cc_library entirely, and use a separate rule below for the
-        # installation.
-        "exclude_from_libdrake",
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        ":essential",
-        "@gflags",
-    ],
-)
-
-# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
-# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
-# etc).
-#
-# Compared to the above rule, this removes the deps attribute; we don't want to
-# link against gflags for libdrake.so, we just want to publish this header for
-# callers who have their own gflags to link against.
-drake_cc_library(
-    name = "text_logging_gflags_h",
-    hdrs = ["text_logging_gflags.h"],
-    tags = [
-        # Don't add this library into the ":common" package library.
-        # This rule should only be used for install purposes.
-        "exclude_from_package",
-    ],
-    # This rule should only be used for install purposes, not within the
-    # in-source bazel build.  We limit its visibility to enforce that.
-    visibility = ["//tools/install/libdrake:__pkg__"],
-)
-
 drake_cc_library(
     name = "type_safe_index",
     hdrs = ["type_safe_index.h"],
