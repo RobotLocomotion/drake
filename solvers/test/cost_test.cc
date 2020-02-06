@@ -137,10 +137,8 @@ GTEST_TEST(testCost, testLinearCost) {
   EXPECT_NEAR(y(0), obj_expected + b, tol);
 
   new_cost->set_description("simple linear cost");
-  std::ostringstream os;
-  new_cost->Display(os);
   EXPECT_EQ(
-      fmt::format("{}", os.str()),
+      fmt::format("{}", *new_cost),
       "LinearCost (100 + $(0) + 2 * $(1)) described as 'simple linear cost'");
 }
 
