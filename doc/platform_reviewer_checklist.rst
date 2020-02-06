@@ -25,3 +25,7 @@ by a core Drake Developer, leaving it unassigned may be acceptable when it is
 clearly an early work-in-progress -- but if it is unassigned for several days,
 you should probably encourage the developer to label it "do not review" for
 clarity.
+
+For PRs assigned to you that have passed all commit checks (other than needing
+a squash), merge the PR to master on behalf of the author -- unless it is
+labeled "status: do not merge".
