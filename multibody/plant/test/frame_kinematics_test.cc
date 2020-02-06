@@ -32,7 +32,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 
   const RotationMatrix<double> R_WH =
       frame_H_->CalcRotationMatrixInWorld(*context_);
-  const RotationMatrix<double> R_WH_expected = X_WE.rotation();
+  const RotationMatrix<double> R_WH_expected = X_WH_expected.rotation();
   EXPECT_TRUE(CompareMatrices(R_WH.matrix(), R_WH_expected.matrix(), kTolerance,
                               MatrixCompareType::relative));
 
