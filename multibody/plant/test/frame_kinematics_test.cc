@@ -32,7 +32,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 
   const RotationMatrix<double> R_WH =
       frame_H_->CalcRotationMatrixInWorld(*context_);
-  const RigidTransform<double> R_WH_expected = X_WE.rotation();
+  const RotationMatrix<double> R_WH_expected = X_WE.rotation();
   EXPECT_TRUE(CompareMatrices(R_WH.matrix(), R_WH_expected.matrix(), kTolerance,
                               MatrixCompareType::relative));
 
@@ -50,7 +50,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       link3.body_frame().CalcRotationMatrix(*context_, *frame_H_);
   const RotationMatrix<double> R_WL3 =
       link3.body_frame().CalcRotationMatrixInWorld(*context_);
-  const RigidTransform<double> R_HL3_expected = R_WH.inverse() * R_WL3;
+  const RotationMatrix<double> R_HL3_expected = R_WH.inverse() * R_WL3;
   EXPECT_TRUE(CompareMatrices(R_HL3.matrix(), R_HL3_expected.matrix(),
                               kTolerance, MatrixCompareType::relative));
 
