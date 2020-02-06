@@ -2815,7 +2815,7 @@ void MultibodyPlant<T>::CalcReactionForces(
 
     // Re-express in the joint's child frame Jc.
     const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
-    const RotationMatrix<T> R_JcW = R_WJc.transpose();
+    const RotationMatrix<T> R_JcW = R_WJc.inverse();
     F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
   }
 }

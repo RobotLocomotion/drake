@@ -114,16 +114,6 @@ class Frame : public FrameBase<T> {
     return CalcPoseInBodyFrame(context) * X_FQ;
   }
 
-  /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
-  /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
-  /// frame B to which this frame is attached.
-  /// @throws std::logic_error if called on a %Frame that does not have a
-  /// fixed offset in the body frame.
-  virtual math::RigidTransform<T> GetFixedOffsetPoseInBody(
-      const math::RigidTransform<T>& X_FQ) const {
-    return GetFixedPoseInBodyFrame() * X_FQ;
-  }
-
   /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
   /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   /// (B is the body frame to which `this` frame F is attached).
@@ -133,6 +123,16 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context,
       const math::RotationMatrix<T>& R_FQ) const {
     return CalcRotationMatrixInBodyFrame(context) * R_FQ;
+  }
+
+  /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
+  /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
+  /// frame B to which this frame is attached.
+  /// @throws std::logic_error if called on a %Frame that does not have a
+  /// fixed offset in the body frame.
+  virtual math::RigidTransform<T> GetFixedOffsetPoseInBody(
+      const math::RigidTransform<T>& X_FQ) const {
+    return GetFixedPoseInBodyFrame() * X_FQ;
   }
 
   /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
@@ -174,7 +174,7 @@ class Frame : public FrameBase<T> {
   }
 
   /// Calculates and returns the rotation matrix `R_WF` that relates the world
-  /// frame W to `this` frame F as a function of the state stored in `context`.
+  /// frame W and `this` frame F as a function of the state stored in `context`.
   math::RotationMatrix<T> CalcRotationMatrixInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().CalcRelativeRotationMatrix(
@@ -216,7 +216,7 @@ class Frame : public FrameBase<T> {
     // transformation.
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
-    return R_WE.transpose() * V_MF_W;
+    return R_WE.inverse() * V_MF_W;
   }
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the

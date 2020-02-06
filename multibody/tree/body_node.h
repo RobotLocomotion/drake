@@ -763,7 +763,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     // TODO(amcastro-tri): consider caching R_WF since also used in position and
     // velocity kinematics.
     const math::RotationMatrix<T> R_WF = R_WP * R_PF;
-    const SpatialForce<T> F_BMo_F = R_WF.transpose() * F_BMo_W;
+    const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
     auto tau = get_mutable_generalized_forces_from_array(tau_array);
