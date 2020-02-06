@@ -58,7 +58,7 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-mojave-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
 
 .. _scheduling-builds-via-the-jenkins-user-interface:
@@ -108,7 +108,6 @@ most likely fail. To test new prerequisites, you should first request
 unprovisioned experimental builds, e.g.:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-release please``
-* ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot mac-mojave-unprovisioned-clang-bazel-experimental-release please``
 
 After this has passed, go through normal review. Once normal review is done,
