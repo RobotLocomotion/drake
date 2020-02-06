@@ -123,12 +123,11 @@ Did you change third-party software?
 
 Changes to third-party software (e.g., upgrading to a newer version) are the
 most common cause of CI divergence between Ubuntu and macOS.  For PRs with such
-changes, be sure to opt-in to the pre-merge macOS builds.
+changes, be sure to opt-in to a pre-merge macOS build.
 
-:ref:`Schedule an on-demand build <run_specific_build>` using one build from
-each macOS revision currently available in CI.  For example:
+:ref:`Schedule one on-demand build <run_specific_build>` using an "everything"
+flavor, for example:
 
-* ``@drake-jenkins-bot mac-mojave-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-everything-release please``
 
 Have you run linting tools?

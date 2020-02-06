@@ -109,7 +109,6 @@ unprovisioned experimental builds, e.g.:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-release please``
 * ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-release please``
-* ``@drake-jenkins-bot mac-mojave-unprovisioned-clang-bazel-experimental-release please``
 
 After this has passed, go through normal review. Once normal review is done,
 add ``@jamiesnape`` for review and request that the provisioned instances be
