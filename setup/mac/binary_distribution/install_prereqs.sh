@@ -19,9 +19,6 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
 fi
 
 /usr/local/bin/brew update
-# TODO(jamiesnape): Remove two lines uninstalling dreal on or after 2020-02-01.
-brew uninstall --force dreal
-brew untap dreal/dreal &>/dev/null || true
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v /usr/local/bin/pip3 &>/dev/null; then

@@ -57,7 +57,6 @@ python3-lxml-dbg
 python3-matplotlib-dbg
 python3-numpy-dbg
 python3-pandas
-python3-protobuf
 python3-pydot
 python3-scipy-dbg
 python3-sphinx
