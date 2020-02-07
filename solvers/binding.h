@@ -81,7 +81,7 @@ class Binding {
 };
 
 /**
- * Print out the binding.
+ * Print out the Binding.
  */
 template <typename C>
 std::ostream& operator<<(std::ostream& os, const Binding<C>& binding) {
