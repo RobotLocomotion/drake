@@ -58,7 +58,10 @@ cmake_configure_file(
         ":version-from-xml.cmake",
         "@octomap//:cmakelists_with_version",
     ],
-    defines = ["FCL_HAVE_OCTOMAP"],
+    defines = [
+        "FCL_HAVE_OCTOMAP",
+        "GENERATED_FILE_MARKER=GENERATED FILE DO NOT EDIT",
+    ],
     visibility = ["//visibility:private"],
 )
 
