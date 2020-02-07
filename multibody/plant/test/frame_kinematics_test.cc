@@ -30,6 +30,12 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       X_WH.GetAsMatrix34(), X_WH_expected.GetAsMatrix34(),
       kTolerance, MatrixCompareType::relative));
 
+  const RotationMatrix<double> R_WH =
+      frame_H_->CalcRotationMatrixInWorld(*context_);
+  const RotationMatrix<double> R_WH_expected = X_WH_expected.rotation();
+  EXPECT_TRUE(CompareMatrices(R_WH.matrix(), R_WH_expected.matrix(), kTolerance,
+                              MatrixCompareType::relative));
+
   const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
   const RigidTransform<double> X_HL3 =
       link3.body_frame().CalcPose(*context_, *frame_H_);
@@ -39,6 +45,14 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(
       X_HL3.GetAsMatrix34(), X_HL3_expected.GetAsMatrix34(),
       kTolerance, MatrixCompareType::relative));
+
+  const RotationMatrix<double> R_HL3 =
+      link3.body_frame().CalcRotationMatrix(*context_, *frame_H_);
+  const RotationMatrix<double> R_WL3 =
+      link3.body_frame().CalcRotationMatrixInWorld(*context_);
+  const RotationMatrix<double> R_HL3_expected = R_WH.inverse() * R_WL3;
+  EXPECT_TRUE(CompareMatrices(R_HL3.matrix(), R_HL3_expected.matrix(),
+                              kTolerance, MatrixCompareType::relative));
 
   const SpatialVelocity<double> V_WE =
       end_effector_link_->EvalSpatialVelocityInWorld(*context_);

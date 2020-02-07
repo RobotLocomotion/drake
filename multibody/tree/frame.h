@@ -61,6 +61,12 @@ class Frame : public FrameBase<T> {
   virtual math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
+  /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /// frame F (B is the body frame to which `this` frame F is attached).
+  /// @note If `this` is B, this method returns the identity RotationMatrix.
+  virtual math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>& context) const = 0;
+
   /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   /// `this` frame F in the body frame B associated with this frame.
   /// @throws std::logic_error if called on a %Frame that does not have a
@@ -75,6 +81,21 @@ class Frame : public FrameBase<T> {
         "Attempting to retrieve a fixed pose from a frame of type '" +
             drake::NiceTypeName::Get(*this) +
             "', which does not support this operation.");
+  }
+
+  /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /// frame F (B is the body frame to which `this` frame F is attached).
+  /// @throws std::logic_error if `this` frame F is a %Frame that does not have
+  /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
+  /// %Frame sub-classes that have a constant `R_BF` must override this method.
+  /// An example of a frame sub-class not implementing this method would be that
+  /// of a frame on a soft body, for which its pose in the body frame depends
+  /// on the state of deformation of the body.
+  virtual math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const {
+    throw std::logic_error(
+        "Unable to retrieve a fixed rotation matrix from a frame of type '" +
+            drake::NiceTypeName::Get(*this) +
+            "', which does not support this method.");
   }
 
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
@@ -93,6 +114,16 @@ class Frame : public FrameBase<T> {
     return CalcPoseInBodyFrame(context) * X_FQ;
   }
 
+  /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
+  /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
+  /// (B is the body frame to which `this` frame F is attached).
+  /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
+  virtual math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
+      const systems::Context<T>& context,
+      const math::RotationMatrix<T>& R_FQ) const {
+    return CalcRotationMatrixInBodyFrame(context) * R_FQ;
+  }
+
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
   /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
   /// frame B to which this frame is attached.
@@ -101,6 +132,17 @@ class Frame : public FrameBase<T> {
   virtual math::RigidTransform<T> GetFixedOffsetPoseInBody(
       const math::RigidTransform<T>& X_FQ) const {
     return GetFixedPoseInBodyFrame() * X_FQ;
+  }
+
+  /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
+  /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
+  /// (B is the body frame to which `this` frame F is attached).
+  /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
+  /// @throws std::logic_error if `this` frame F is a %Frame that does not have
+  /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
+  virtual math::RotationMatrix<T> GetFixedRotationMatrixInBody(
+      const math::RotationMatrix<T>& R_FQ) const {
+    return GetFixedRotationMatrixInBodyFrame() * R_FQ;
   }
 
   /// Computes and returns the pose `X_WF` of `this` frame F in the world
@@ -120,6 +162,22 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context, const Frame<T>& frame_M) const {
     return this->get_parent_tree().CalcRelativeTransform(
         context, frame_M, *this);
+  }
+
+  /// Calculates and returns the rotation matrix `R_MF` that relates `frame_M`
+  /// and `this` frame F as a function of the state stored in `context`.
+  math::RotationMatrix<T> CalcRotationMatrix(
+      const systems::Context<T>& context, const Frame<T>& frame_M) const {
+    return this->get_parent_tree().CalcRelativeRotationMatrix(
+        context, frame_M, *this);
+  }
+
+  /// Calculates and returns the rotation matrix `R_WF` that relates the world
+  /// frame W and `this` frame F as a function of the state stored in `context`.
+  math::RotationMatrix<T> CalcRotationMatrixInWorld(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().CalcRelativeRotationMatrix(
+        context, this->get_parent_tree().world_frame(), *this);
   }
 
   /// Computes and returns the spatial velocity `V_WF` of `this` frame F in the
@@ -145,7 +203,7 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context,
       const Frame<T>& frame_M, const Frame<T>& frame_E) const {
     const math::RotationMatrix<T> R_WM =
-        frame_M.CalcPoseInWorld(context).rotation();
+        frame_M.CalcRotationMatrixInWorld(context);
     const Vector3<T> p_MF_M = this->CalcPose(context, frame_M).translation();
     const Vector3<T> p_MF_W = R_WM * p_MF_M;
     const SpatialVelocity<T> V_WM = frame_M.CalcSpatialVelocityInWorld(context);
@@ -156,8 +214,8 @@ class Frame : public FrameBase<T> {
     // If expressed-in frame_E is not the world, perform additional
     // transformation.
     const math::RotationMatrix<T> R_WE =
-        frame_E.CalcPoseInWorld(context).rotation();
-    return R_WE.transpose() * V_MF_W;
+        frame_E.CalcRotationMatrixInWorld(context);
+    return R_WE.inverse() * V_MF_W;
   }
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the

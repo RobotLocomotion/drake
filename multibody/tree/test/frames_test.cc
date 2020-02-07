@@ -137,24 +137,35 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // Verify this method computes the pose X_BF of this frame F in the body
   // frame B to which this frame attaches to. Since in this case frame F IS the
   // body frame B, X_BF = Id and this method should return the identity
-  // transformation.
+  // transformation. Next, verify the method CalcRotationMatrixInBodyFrame()
+  // returns an identity rotation matrix for the rotation matrix R_BF.
   EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).IsExactlyIdentity());
+  EXPECT_TRUE(
+      frameB_->CalcRotationMatrixInBodyFrame(*context_).IsExactlyIdentity());
 
   // Now verify the fixed pose version of the same method.
+  // Similarly, verify the method GetFixedRotationMatrixInBodyFrame() for R_BF.
   EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().IsExactlyIdentity());
+  EXPECT_TRUE(frameB_->GetFixedRotationMatrixInBodyFrame().IsExactlyIdentity());
 
   // Verify this method computes the pose of a frame G measured in this
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.
   // Since in this case frame F IS the body frame B, X_BF = Id and this method
-  // simply returns X_FG.
+  // simply returns X_FG.  Similarly, R_BG = R_BF * R_FG = Identity * R_FG.
   EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_)
                   .IsNearlyEqualTo(X_FG_, kEpsilon));
+  const math::RotationMatrix<double>& R_FG = X_FG_.rotation();
+  EXPECT_TRUE(frameB_->CalcOffsetRotationMatrixInBody(*context_, R_FG)
+                  .IsNearlyEqualTo(R_FG, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
   // As in the variant above, since in this case frame F IS the body frame B,
   // X_BF = Id and this method simply returns X_FG.
+  // Similarly, R_BG = R_BF * R_FG = Identity * R_FG = R_FG.
   EXPECT_TRUE(frameB_->GetFixedOffsetPoseInBody(X_FG_).IsNearlyEqualTo(
       X_FG_, kEpsilon));
+  EXPECT_TRUE(frameB_->GetFixedRotationMatrixInBody(R_FG).IsNearlyEqualTo(
+      R_FG, kEpsilon));
 }
 
 // Verifies the FixedOffsetFrame methods to compute poses in different frames.
@@ -165,22 +176,35 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
 //     B -------> P
 TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // Verify this method returns the pose X_BP of frame P in body frame B.
+  // Similarly, verify the method CalcRotationMatrixInBodyFrame() returns R_BP.
+  const math::RotationMatrix<double>& R_BP = X_BP_.rotation();
   EXPECT_TRUE(
       frameP_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BP_, kEpsilon));
+  EXPECT_TRUE(frameP_->CalcRotationMatrixInBodyFrame(*context_).IsNearlyEqualTo(
+      R_BP, kEpsilon));
 
-  // Now verify the fixed pose version of the same method.
+  // Now verify the fixed pose and rotation matrix versions of those methods.
   EXPECT_TRUE(
       frameP_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BP_, kEpsilon));
+  EXPECT_TRUE(frameP_->GetFixedRotationMatrixInBodyFrame().IsNearlyEqualTo(
+      R_BP, kEpsilon));
 
   // Verify this method computes the pose X_BQ of a third frame Q measured in
   // the body frame B given we know the pose X_PQ of frame G in our frame P as:
-  // X_BQ = X_BP * X_PQ
+  // X_BQ = X_BP * X_PQ.  Similarly for R_BQ = R_BP * R_PQ.
+  const math::RigidTransform<double> X_BQ = X_BP_ * X_PQ_;
   EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_)
-                  .IsNearlyEqualTo(X_BP_ * X_PQ_, kEpsilon));
+                  .IsNearlyEqualTo(X_BQ, kEpsilon));
+  const math::RotationMatrix<double>& R_PQ = X_PQ_.rotation();
+  const math::RotationMatrix<double>& R_BQ = X_BQ.rotation();
+  EXPECT_TRUE(frameP_->CalcOffsetRotationMatrixInBody(*context_, R_PQ)
+                  .IsNearlyEqualTo(R_BQ, kEpsilon));
 
-  // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameP_->GetFixedOffsetPoseInBody(X_PQ_).IsNearlyEqualTo(
-      X_BP_ * X_PQ_, kEpsilon));
+  // Now verify the fixed pose and rotation matrix versions of those methods.
+  EXPECT_TRUE(
+      frameP_->GetFixedOffsetPoseInBody(X_PQ_).IsNearlyEqualTo(X_BQ, kEpsilon));
+  EXPECT_TRUE(frameP_->GetFixedRotationMatrixInBody(R_PQ).IsNearlyEqualTo(
+      R_BQ, kEpsilon));
 }
 
 // Verifies FixedOffsetFrame methods to compute poses in different frames when
@@ -193,23 +217,37 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
 TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   EXPECT_TRUE(frameQ_->name().empty());
   // Verify this method computes the pose of frame Q in the body frame B as:
-  // X_BQ = X_BP * X_PQ
-  EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(
-      X_BP_ * X_PQ_, kEpsilon));
+  // X_BQ = X_BP * X_PQ.
+  // Similarly verify the method CalcRotationMatrixInBodyFrame() returns R_BQ.
+  const math::RigidTransform<double> X_BQ = X_BP_ * X_PQ_;
+  const math::RotationMatrix<double> R_BQ = X_BQ.rotation();
+  EXPECT_TRUE(
+      frameQ_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BQ, kEpsilon));
+  EXPECT_TRUE(frameQ_->CalcRotationMatrixInBodyFrame(*context_).IsNearlyEqualTo(
+      R_BQ, kEpsilon));
 
-  // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameQ_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BP_ * X_PQ_,
-                                                                 kEpsilon));
+  // Now verify the fixed pose and rotation matrix versions of those methods.
+  EXPECT_TRUE(
+      frameQ_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BQ, kEpsilon));
+  EXPECT_TRUE(frameQ_->GetFixedRotationMatrixInBodyFrame().IsNearlyEqualTo(
+      R_BQ, kEpsilon));
 
   // Verify this method computes the pose X_BG of a fourth frame G measured in
   // the body frame B given we know the pose X_QG of frame G in our frame Q as:
-  // X_BG = X_BP * X_PQ * X_QG
-  EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(*context_, X_QG_).
-      IsNearlyEqualTo(X_BP_ * X_PQ_ * X_QG_, kEpsilon));
+  // X_BG = X_BP * X_PQ * X_QG.  Similarly for R_BG = R_BP * R_PQ * R_QG.
+  const math::RigidTransform<double> X_BG = X_BP_ * X_PQ_ * X_QG_;
+  EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(*context_, X_QG_)
+                  .IsNearlyEqualTo(X_BG, kEpsilon));
+  const math::RotationMatrix<double>& R_QG = X_QG_.rotation();
+  const math::RotationMatrix<double>& R_BG = X_BG.rotation();
+  EXPECT_TRUE(frameQ_->CalcOffsetRotationMatrixInBody(*context_, R_QG)
+                  .IsNearlyEqualTo(R_BG, kEpsilon));
 
-  // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameQ_->GetFixedOffsetPoseInBody(X_QG_).
-      IsNearlyEqualTo(X_BP_ * X_PQ_ * X_QG_, kEpsilon));
+  // Now verify the fixed pose and rotation matrix versions of those methods.
+  EXPECT_TRUE(
+      frameQ_->GetFixedOffsetPoseInBody(X_QG_).IsNearlyEqualTo(X_BG, kEpsilon));
+  EXPECT_TRUE(frameQ_->GetFixedRotationMatrixInBody(R_QG).IsNearlyEqualTo(
+      R_BG, kEpsilon));
 }
 
 TEST_F(FrameTests, NamedFrame) {

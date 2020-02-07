@@ -946,12 +946,12 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Body<T>& A = frame_F.body();
   const Body<T>& B = frame_G.body();
-  const RotationMatrix<T>& R_WA = pc.get_X_WB(A.node_index()).rotation();
-  const RotationMatrix<T>& R_WB = pc.get_X_WB(B.node_index()).rotation();
-  const RotationMatrix<T> R_WF =
-      R_WA * frame_F.CalcPoseInBodyFrame(context).rotation();
-  const RotationMatrix<T> R_WG =
-      R_WB * frame_G.CalcPoseInBodyFrame(context).rotation();
+  const RotationMatrix<T>& R_WA = pc.get_R_WB(A.node_index());
+  const RotationMatrix<T>& R_WB = pc.get_R_WB(B.node_index());
+  const RotationMatrix<T> R_AF = frame_F.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T> R_WF = R_WA * R_AF;
+  const RotationMatrix<T> R_WG = R_WB * R_BG;
   return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
 }
 
@@ -1107,7 +1107,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
 
   // Get body B's rotation matrix in world W and angular velocity in world W.
   const Body<T>& body_B = frame_F.body();
-  const RotationMatrix<T>& R_WB = pc.get_X_WB(body_B.node_index()).rotation();
+  const RotationMatrix<T>& R_WB = pc.get_R_WB(body_B.node_index());
   const Vector3<T>& w_WB_W = vc.get_V_WB(body_B.node_index()).rotational();
 
   // We need to compute p_BoFp_W, the position from Bo to Fp, expressed in W.
@@ -1120,8 +1120,8 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
 
   // Express the resulting vectors in frame_E (rather than the world frame).
   if (&frame_E != &world_frame()) {
-    const RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
-    const RotationMatrix<T> R_EW = X_WE.rotation().inverse();
+    const RotationMatrix<T> R_WE = frame_E.CalcRotationMatrixInWorld(context);
+    const RotationMatrix<T> R_EW = R_WE.inverse();
 
     // Abias_WFp_E = R_EW * Abias_WFp_W.
     Abias_WFp = R_EW * Abias_WFp;

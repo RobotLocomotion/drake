@@ -2803,8 +2803,8 @@ void MultibodyPlant<T>::CalcReactionForces(
 
       // Now we need to shift the application point from Jp to Jc.
       // First we need to find the position vector p_JpJc_W.
-      const RigidTransform<T> X_WJp = frame_Jp.CalcPoseInWorld(context);
-      const RotationMatrix<T>& R_WJp = X_WJp.rotation();
+      const RotationMatrix<T> R_WJp =
+          frame_Jp.CalcRotationMatrixInWorld(context);
       const RigidTransform<T> X_JpJc = frame_Jc.CalcPose(context, frame_Jp);
       const Vector3<T> p_JpJc_Jp = X_JpJc.translation();
       const Vector3<T> p_JpJc_W = R_WJp * p_JpJc_Jp;
@@ -2814,8 +2814,8 @@ void MultibodyPlant<T>::CalcReactionForces(
     }
 
     // Re-express in the joint's child frame Jc.
-    const RigidTransform<T> X_WJc = frame_Jc.CalcPoseInWorld(context);
-    const RotationMatrix<T> R_JcW = X_WJc.rotation().transpose();
+    const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
+    const RotationMatrix<T> R_JcW = R_WJc.inverse();
     F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
   }
 }

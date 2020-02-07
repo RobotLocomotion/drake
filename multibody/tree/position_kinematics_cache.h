@@ -51,9 +51,8 @@ class PositionKinematicsCache {
     Allocate();
   }
 
-  /// Returns a constant reference to the pose `X_WB` of the body B
-  /// (associated with node @p body_node_index) as measured and expressed in the
-  /// world frame W.
+  /// Returns a const reference to pose `X_WB` of the body B (associated with
+  /// node @p body_node_index) as measured and expressed in the world frame W.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
   /// @returns `X_WB` the pose of the the body frame B measured and
@@ -67,6 +66,15 @@ class PositionKinematicsCache {
   RigidTransform<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
+  }
+
+  /// Returns a const reference to the rotation matrix `R_WB` that relates the
+  /// orientation of the world frame W with the body frame B.
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with body B.
+  const math::RotationMatrix<T>& get_R_WB(BodyNodeIndex body_node_index) const {
+    const RigidTransform<T>& X_WB = get_X_WB(body_node_index);
+    return X_WB.rotation();
   }
 
   /// Returns a const reference to the pose `X_PB` of the body frame B
