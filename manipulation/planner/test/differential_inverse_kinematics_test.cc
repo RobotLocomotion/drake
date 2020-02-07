@@ -175,7 +175,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
 
   const math::RotationMatrix<double> R_WE =
       frame_E_->CalcRotationMatrixInWorld(*context_);
-  const math::RotationMatrix<double> R_EW = R_WE.transpose();
+  const math::RotationMatrix<double> R_EW = R_WE.inverse();
 
   const multibody::SpatialVelocity<double> V_WE_W_desired(
     Vector3d(0.1, -0.2, 0.3) / 2, Vector3d(-0.3, 0.2, -0.1) / 2);

@@ -87,10 +87,10 @@ class Frame : public FrameBase<T> {
   /// frame F (B is the body frame to which `this` frame F is attached).
   /// @throws std::logic_error if `this` frame F is a %Frame that does not have
   /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
-  // %Frame sub-classes that have a constant `R_BF` must override this method.
-  // An example of a frame sub-class not implementing this method would be that
-  // of a frame on a soft body, for which its pose in the body frame depends
-  // on the state of deformation of the body.
+  /// %Frame sub-classes that have a constant `R_BF` must override this method.
+  /// An example of a frame sub-class not implementing this method would be that
+  /// of a frame on a soft body, for which its pose in the body frame depends
+  /// on the state of deformation of the body.
   virtual math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const {
     throw std::logic_error(
         "Unable to retrieve a fixed rotation matrix from a frame of type '" +
@@ -118,7 +118,6 @@ class Frame : public FrameBase<T> {
   /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   /// (B is the body frame to which `this` frame F is attached).
   /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
-  //  Frame subclasses can override this method for faster calculations.
   virtual math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
       const systems::Context<T>& context,
       const math::RotationMatrix<T>& R_FQ) const {

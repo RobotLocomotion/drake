@@ -482,7 +482,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     const math::RigidTransform<T> X_MB =
         frame_M.CalcPoseInBodyFrame(context).inverse();
 
-    // Pose of the parent body P in world frame W.
+    // Form the rotation matrix relating the world frame W and parent body P.
     // Available since we are called within a base-to-tip recursion.
     const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
 
@@ -818,7 +818,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     const math::RigidTransform<T> X_MB =
         frame_M.CalcPoseInBodyFrame(context).inverse();
 
-    // Pose of the parent body P in world frame W.
+    // Form the rotation matrix relating the world frame W and parent body P.
     const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
