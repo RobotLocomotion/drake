@@ -1,6 +1,5 @@
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 
-#include "drake/common/autodiff.h"
 #include "drake/common/unused.h"
 
 namespace drake {

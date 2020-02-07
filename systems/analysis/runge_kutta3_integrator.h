@@ -96,7 +96,8 @@ class RungeKutta3Integrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
 };
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class RungeKutta3Integrator)
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::RungeKutta3Integrator)
