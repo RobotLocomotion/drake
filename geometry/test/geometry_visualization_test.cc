@@ -24,6 +24,8 @@ using std::make_unique;
 using std::unique_ptr;
 
 // TODO(SeanCurtis-TRI): Test with more complex scenarios.
+// TODO(eric.cousineau): Test with diagram connection stuff / channels.
+// Currently, tests are in Python.
 
 // Confirms that, for a simple scene, the message contains the right data.
 GTEST_TEST(GeometryVisualization, SimpleScene) {
