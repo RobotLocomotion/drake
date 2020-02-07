@@ -1,6 +1,5 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 
-#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 
 namespace drake {
@@ -451,10 +450,9 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   return true;
 }
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ImplicitEulerIntegrator)
-
 }  // namespace systems
 }  // namespace drake
 
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::ImplicitEulerIntegrator)
 

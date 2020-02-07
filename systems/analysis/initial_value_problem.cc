@@ -1,11 +1,8 @@
 #include "drake/systems/analysis/initial_value_problem.h"
 
-#include "drake/common/default_scalars.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -266,8 +263,8 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
   return integrator_->StopDenseIntegration();
 }
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class InitialValueProblem)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::InitialValueProblem)

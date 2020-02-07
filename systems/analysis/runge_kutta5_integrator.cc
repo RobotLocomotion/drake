@@ -1,8 +1,5 @@
 #include "drake/systems/analysis/runge_kutta5_integrator.h"
 
-#include "drake/common/autodiff.h"
-#include "drake/common/default_scalars.h"
-
 namespace drake {
 namespace systems {
 
@@ -246,8 +243,8 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   return true;
 }
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class RungeKutta5Integrator)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::RungeKutta5Integrator)

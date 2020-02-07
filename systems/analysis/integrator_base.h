@@ -1717,8 +1717,8 @@ class IntegratorBase {
   T req_initial_step_size_{nan()};  // means "unspecified, use default"
 };
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class IntegratorBase)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::IntegratorBase)

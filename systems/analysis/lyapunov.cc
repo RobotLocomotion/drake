@@ -1,7 +1,6 @@
 #include "drake/systems/analysis/lyapunov.h"
 
-#include <string>
-
+#include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
