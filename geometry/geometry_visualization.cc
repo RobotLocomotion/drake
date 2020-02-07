@@ -278,19 +278,21 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
 // has been added to the Context it won't be loaded here. A runtime
 // geometry change will likely require a geometry-changed event.
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
-                         lcm::DrakeLcmInterface* lcm, Role role) {
+                         lcm::DrakeLcmInterface* lcm, Role role,
+                         const std::string& channel_prefix) {
   lcmt_viewer_load_robot message =
       internal::GeometryVisualizationImpl::BuildLoadMessage(
           *scene_graph.initial_state_, role);
   // Send a load message.
-  Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
+  Publish(lcm, channel_prefix + "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& pose_bundle_output_port,
-    lcm::DrakeLcmInterface* lcm_optional, Role role) {
+    lcm::DrakeLcmInterface* lcm_optional, Role role,
+    const std::string& channel_prefix) {
   using systems::lcm::LcmPublisherSystem;
   using systems::lcm::Serializer;
   using systems::rendering::PoseBundleToDrawMessage;
@@ -302,7 +304,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
 
   LcmPublisherSystem* publisher =
       builder->template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
+          channel_prefix + "DRAKE_VIEWER_DRAW",
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(),
           lcm_optional, 1 / 60.0 /* publish period */);
 
@@ -313,9 +315,10 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
   // Builder will transfer ownership of all of these objects to the Diagram it
   // eventually builds.
   publisher->AddInitializationMessage(
-      [&scene_graph, role](const systems::Context<double>&,
-                           lcm::DrakeLcmInterface* lcm) {
-        DispatchLoadMessage(scene_graph, lcm, role);
+      [&scene_graph, role, channel_prefix](
+          const systems::Context<double>&,
+          lcm::DrakeLcmInterface* lcm) {
+        DispatchLoadMessage(scene_graph, lcm, role, channel_prefix);
       });
 
   // Note that this will fail if scene_graph is not actually in builder.
@@ -328,10 +331,10 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm,
-    Role role) {
+    Role role, const std::string& channel_prefix) {
   return ConnectDrakeVisualizer(builder, scene_graph,
                                 scene_graph.get_pose_bundle_output_port(), lcm,
-                                role);
+                                role, channel_prefix);
 }
 
 }  // namespace geometry

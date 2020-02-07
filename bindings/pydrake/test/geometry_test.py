@@ -6,13 +6,17 @@ from math import pi
 
 import numpy as np
 
+from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.lcm import DrakeMockLcm
+from pydrake.lcm import DrakeMockLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
+from pydrake.systems.analysis import (
+    Simulator_,
+)
 from pydrake.systems.framework import (
     AbstractValue,
     DiagramBuilder_,
@@ -116,24 +120,70 @@ class TestGeometry(unittest.TestCase):
         T = float
         SceneGraph = mut.SceneGraph_[T]
         DiagramBuilder = DiagramBuilder_[T]
+        Simulator = Simulator_[T]
         lcm = DrakeMockLcm()
+        test_prefix = "TEST_PREFIX_"
+
+        def normal(role, builder, scene_graph):
+            mut.ConnectDrakeVisualizer(
+                builder=builder, scene_graph=scene_graph,
+                lcm=lcm, role=role)
+            mut.DispatchLoadMessage(
+                scene_graph=scene_graph, lcm=lcm, role=role)
+
+        def port(role, builder, scene_graph):
+            mut.ConnectDrakeVisualizer(
+                builder=builder, scene_graph=scene_graph,
+                pose_bundle_output_port=(
+                    scene_graph.get_pose_bundle_output_port()),
+                lcm=lcm, role=role)
+            mut.DispatchLoadMessage(
+                scene_graph=scene_graph, lcm=lcm, role=role)
+
+        def prefix(role, builder, scene_graph):
+            mut.ConnectDrakeVisualizer(
+                builder=builder, scene_graph=scene_graph,
+                lcm=lcm, role=role, channel_prefix=test_prefix)
+            mut.DispatchLoadMessage(
+                scene_graph=scene_graph, lcm=lcm, role=role,
+                channel_prefix=test_prefix)
+
+        def prefix_port(role, builder, scene_graph):
+            mut.ConnectDrakeVisualizer(
+                builder=builder, scene_graph=scene_graph,
+                pose_bundle_output_port=(
+                    scene_graph.get_pose_bundle_output_port()),
+                lcm=lcm, role=role, channel_prefix=test_prefix)
+            mut.DispatchLoadMessage(
+                scene_graph=scene_graph, lcm=lcm, role=role,
+                channel_prefix=test_prefix)
 
         for role in [mut.Role.kProximity, mut.Role.kIllustration]:
-            for i in range(2):
+            for func in [normal, port, prefix, prefix_port]:
+                # Create subscribers.
+                load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
+                draw_channel = "DRAKE_VIEWER_DRAW"
+                if func in [prefix, prefix_port]:
+                    load_channel = test_prefix + load_channel
+                    draw_channel = test_prefix + draw_channel
+                load_subscriber = Subscriber(
+                    lcm, load_channel, lcmt_viewer_load_robot)
+                draw_subscriber = Subscriber(
+                    lcm, draw_channel, lcmt_viewer_draw)
+                # Test sequence.
                 builder = DiagramBuilder()
                 scene_graph = builder.AddSystem(SceneGraph())
-                if i == 1:
-                    mut.ConnectDrakeVisualizer(
-                        builder=builder, scene_graph=scene_graph,
-                        lcm=lcm, role=role)
-                else:
-                    mut.ConnectDrakeVisualizer(
-                        builder=builder, scene_graph=scene_graph,
-                        pose_bundle_output_port=(
-                            scene_graph.get_pose_bundle_output_port()),
-                        lcm=lcm, role=role)
-                mut.DispatchLoadMessage(
-                    scene_graph=scene_graph, lcm=lcm, role=role)
+                # Only load will be published by `DispatchLoadMessage`.
+                func(role, builder, scene_graph)
+                lcm.HandleSubscriptions(0)
+                self.assertEqual(load_subscriber.count, 1)
+                self.assertEqual(draw_subscriber.count, 0)
+                diagram = builder.Build()
+                # Load and draw will be published.
+                Simulator(diagram).Initialize()
+                lcm.HandleSubscriptions(0)
+                self.assertEqual(load_subscriber.count, 2)
+                self.assertEqual(draw_subscriber.count, 1)
 
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
