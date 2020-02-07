@@ -518,28 +518,31 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role>(
-          &ConnectDrakeVisualizer),
+          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role,
+          const std::string&>(&ConnectDrakeVisualizer),
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
       py::arg("role") = geometry::Role::kIllustration,
-      // Keep alive, ownership: `return` keeps `builder` alive.
-      py::keep_alive<0, 1>(),
-      // See #11531 for why `py_reference` is needed.
-      py_reference, doc.ConnectDrakeVisualizer.doc_4args);
-  m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, const systems::OutputPort<double>&,
-          lcm::DrakeLcmInterface*, geometry::Role>(&ConnectDrakeVisualizer),
-      py::arg("builder"), py::arg("scene_graph"),
-      py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
-      py::arg("role") = geometry::Role::kIllustration,
+      py::arg("channel_prefix") = "",
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // See #11531 for why `py_reference` is needed.
       py_reference, doc.ConnectDrakeVisualizer.doc_5args);
+  m.def("ConnectDrakeVisualizer",
+      py::overload_cast<systems::DiagramBuilder<double>*,
+          const SceneGraph<double>&, const systems::OutputPort<double>&,
+          lcm::DrakeLcmInterface*, geometry::Role, const std::string&>(
+          &ConnectDrakeVisualizer),
+      py::arg("builder"), py::arg("scene_graph"),
+      py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
+      py::arg("channel_prefix") = "",
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(),
+      // See #11531 for why `py_reference` is needed.
+      py_reference, doc.ConnectDrakeVisualizer.doc_6args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
       py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
-      doc.DispatchLoadMessage.doc);
+      py::arg("channel_prefix") = "", doc.DispatchLoadMessage.doc);
 
   // Shape constructors
   {
