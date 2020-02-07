@@ -10,7 +10,6 @@ drake_cc_binary(
         "//common:filesystem",
         "//geometry/render",
         "//systems/sensors:image_writer",
-        "@fmt",
         "@gflags",
         "@googlebenchmark//:benchmark",
     ],

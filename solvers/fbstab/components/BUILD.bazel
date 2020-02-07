@@ -36,7 +36,6 @@ drake_cc_library(
     hdrs = ["dense_data.h"],
     deps = [
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -47,7 +46,6 @@ drake_cc_library(
     deps = [
         ":dense_data",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -61,7 +59,6 @@ drake_cc_library(
         ":dense_data",
         ":dense_variable",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -75,7 +72,6 @@ drake_cc_library(
         ":dense_data",
         ":dense_variable",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -90,7 +86,6 @@ drake_cc_library(
         ":dense_residual",
         ":dense_variable",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -116,7 +111,6 @@ drake_cc_library(
     hdrs = ["mpc_data.h"],
     deps = [
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -127,7 +121,6 @@ drake_cc_library(
     deps = [
         ":mpc_data",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -139,7 +132,6 @@ drake_cc_library(
         ":mpc_data",
         ":mpc_variable",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -151,7 +143,6 @@ drake_cc_library(
         ":mpc_data",
         ":mpc_variable",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -164,7 +155,6 @@ drake_cc_library(
         ":mpc_residual",
         ":mpc_variable",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -181,7 +171,6 @@ drake_cc_googletest(
         ":mpc_variable",
         ":riccati_linear_solver",
         "//common:essential",
-        "@eigen",
     ],
 )
 

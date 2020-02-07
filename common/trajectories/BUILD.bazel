@@ -52,7 +52,6 @@ drake_cc_library(
         ":piecewise_trajectory",
         "//common:essential",
         "//common:polynomial",
-        "@fmt",
     ],
 )
 

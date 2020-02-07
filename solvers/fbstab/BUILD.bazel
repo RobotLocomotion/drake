@@ -34,7 +34,6 @@ drake_cc_library(
         "//solvers/fbstab/components:dense_linear_solver",
         "//solvers/fbstab/components:dense_residual",
         "//solvers/fbstab/components:dense_variable",
-        "@eigen",
     ],
 )
 
@@ -52,7 +51,6 @@ drake_cc_library(
         "//solvers/fbstab/components:mpc_residual",
         "//solvers/fbstab/components:mpc_variable",
         "//solvers/fbstab/components:riccati_linear_solver",
-        "@eigen",
     ],
 )
 
@@ -74,7 +72,6 @@ drake_cc_library(
     deps = [
         ":fbstab_mpc",
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -84,7 +81,6 @@ drake_cc_googletest(
     srcs = ["test/fbstab_dense_unit_tests.cc"],
     deps = [
         ":fbstab_dense",
-        "@eigen",
     ],
 )
 
@@ -94,7 +90,6 @@ drake_cc_googletest(
     deps = [
         ":fbstab_mpc",
         ":ocp_generator",
-        "@eigen",
     ],
 )
 

@@ -130,7 +130,6 @@ drake_cc_googletest(
     name = "sequential_expression_manager_test",
     deps = [
         ":sequential_expression_manager",
-        "@fmt",
     ],
 )
 

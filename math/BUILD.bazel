@@ -215,7 +215,6 @@ drake_cc_library(
     hdrs = ["gray_code.h"],
     deps = [
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -235,7 +234,6 @@ drake_cc_library(
     hdrs = ["quadratic_form.h"],
     deps = [
         "//common:essential",
-        "@eigen",
     ],
 )
 

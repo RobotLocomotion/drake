@@ -61,6 +61,12 @@ drake_cc_package_library(
 
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
+#
+# This target is guaranteed to depend on @eigen, @fmt, and @spdlog.  Drake
+# build rules (`drake_cc_*` targets) must omit mention of those dependencies
+# and instead mention either //common:essential or any other Drake library that
+# transitively depends on essential; the macros in drake_cc.bzl enforce this
+# rule.
 drake_cc_library(
     name = "essential",
     srcs = [
@@ -226,7 +232,6 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         ":random",
-        "@fmt",
     ],
 )
 

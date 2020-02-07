@@ -25,7 +25,6 @@ drake_cc_library(
         "//attic/multibody/shapes",
         "//lcmtypes:viewer",
         "//math:geometric_transform",
-        "@eigen",
     ],
 )
 

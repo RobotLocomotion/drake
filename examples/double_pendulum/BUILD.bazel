@@ -19,7 +19,6 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "@eigen",
     ],
 )
 
@@ -35,7 +34,6 @@ drake_cc_library(
         ":frame_cache",
         "//attic/multibody:rigid_body_tree",
         "//common:essential",
-        "@eigen",
         "@sdformat",
     ],
 )

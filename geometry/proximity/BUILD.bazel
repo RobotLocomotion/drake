@@ -66,7 +66,6 @@ drake_cc_library(
         ":proximity_utilities",
         "//common:sorted_pair",
         "@fcl",
-        "@fmt",
     ],
 )
 
@@ -146,7 +145,6 @@ drake_cc_library(
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
         "@fcl",
-        "@fmt",
     ],
 )
 
@@ -173,7 +171,6 @@ drake_cc_library(
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/proximity:obj_to_surface_mesh",
         "//geometry/proximity:proximity_utilities",
-        "@fmt",
     ],
 )
 
@@ -226,7 +223,6 @@ drake_cc_library(
         "//geometry:geometry_index",
         "//geometry:shape_specification",
         "@fcl",
-        "@fmt",
     ],
 )
 
@@ -343,7 +339,6 @@ drake_cc_library(
     deps = [
         ":surface_mesh",
         "//common:essential",
-        "@fmt",
         "@tinyobjloader",
     ],
 )
@@ -413,7 +408,6 @@ drake_cc_library(
         ":mesh_field",
         ":surface_mesh",
         ":volume_mesh",
-        "@fmt",
     ],
 )
 
@@ -494,7 +488,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "@fmt",
     ],
 )
 

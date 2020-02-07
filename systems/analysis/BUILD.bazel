@@ -80,7 +80,6 @@ drake_cc_library(
     hdrs = ["dense_output.h"],
     deps = [
         "//common:essential",
-        "@fmt",
     ],
 )
 
@@ -121,7 +120,6 @@ drake_cc_library(
         ":dense_output",
         ":scalar_dense_output",
         "//common:essential",
-        "@fmt",
     ],
 )
 
@@ -316,7 +314,6 @@ drake_cc_library(
     hdrs = ["simulator_status.h"],
     deps = [
         "//systems/framework:system_base",
-        "@fmt",
     ],
 )
 

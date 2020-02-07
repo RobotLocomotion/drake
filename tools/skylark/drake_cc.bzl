@@ -81,6 +81,39 @@ def _dsym_command(name):
         ),
     })
 
+def _check_cc_deps_blacklist(name, deps):
+    """Report an error if a drake cc target should omit some deps.
+
+    The API comment on //common:essential promises that certain well-known
+    dependencies will always be included in the essential library, and that
+    other code within Drake should rely on :essential to declare those
+    dependencies, instead of repeating the well-known library name everywhere.
+    This macro enforces that rule.
+    """
+    if not deps:
+        return
+    if type(deps) != "list":
+        # We can't handle select() yet.
+        # TODO(jwnimmer-tri) We should handle select.
+        return
+
+    # If there are no deps pointing into Drake at all, then we don't have any
+    # blacklist.  (Stand-alone code should not be forced to use :essential.)
+    if all([x.startswith("@") for x in deps]):
+        return
+
+    # Disallow assumed dependencies from the rule's deps label.
+    # See //common:essential BUILD file documentation for details.
+    for known in ["@eigen", "@fmt", "@spdlog"]:
+        if any([dep == known or dep.startswith(known + "/") for dep in deps]):
+            target = "//{}:{}".format(native.package_name(), name)
+            fail("ERROR: Remove " + known + " from the deps list of " +
+                 target + " in its BUILD.bazel file. By convention, Drake " +
+                 "libraries must not list " + known + " in deps, because " +
+                 "//common:essential is guaranteed to provide it as a " +
+                 "dependency already. For details, refer to the comments " +
+                 "in common/BUILD.bazel regarding the :essential library.")
+
 def _check_library_deps_blacklist(name, deps):
     """Report an error if a library should not use something from deps."""
     if not deps:
@@ -89,6 +122,7 @@ def _check_library_deps_blacklist(name, deps):
         # We can't handle select() yet.
         # TODO(jwnimmer-tri) We should handle select.
         return
+    _check_cc_deps_blacklist(name, deps)
     for dep in deps:
         if name == "drake_cc_googletest_main":
             # This library-with-main is a special case.
@@ -477,6 +511,7 @@ def drake_cc_binary(
     tests. The smoke-test will be named <name>_test. You may override cc_test
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
+    _check_cc_deps_blacklist(name, deps)
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
@@ -551,6 +586,7 @@ def drake_cc_test(
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     Unconditionally forces testonly=1.
     """
+    _check_cc_deps_blacklist(name, deps)
     if size == None:
         size = "small"
     if not srcs:
