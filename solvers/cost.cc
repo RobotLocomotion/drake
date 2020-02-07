@@ -30,6 +30,32 @@ void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
   DoEvalGeneric(x, y);
 }
 
+namespace {
+std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
+                          const std::string& name,
+                          const VectorX<symbolic::Variable>& vars) {
+  os << name;
+  // Append the expression.
+  VectorX<symbolic::Expression> e;
+  cost.Eval(vars, &e);
+  DRAKE_DEMAND(e.size() == 1);
+  os << " " << e[0];
+
+  // Append the description (when provided).
+  const std::string& description = cost.get_description();
+  if (!description.empty()) {
+    os << " described as '" << description << "'";
+  }
+
+  return os;
+}
+}  // namespace
+
+std::ostream& LinearCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, os, "LinearCost", vars);
+}
+
 template <typename DerivedX, typename U>
 void QuadraticCost::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                   VectorX<U>* y) const {
@@ -52,6 +78,11 @@ void QuadraticCost::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
+}
+
+std::ostream& QuadraticCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, os, "QuadraticCost", vars);
 }
 
 shared_ptr<QuadraticCost> MakeQuadraticErrorCost(

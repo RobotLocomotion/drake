@@ -76,14 +76,30 @@ class EvaluatorBase {
   /**
    * Set a human-friendly description for the evaluator.
    */
-  inline void set_description(const std::string& description) {
+  void set_description(const std::string& description) {
     description_ = description;
   }
 
   /**
    * Getter for a human-friendly description for the evaluator.
    */
-  inline const std::string& get_description() const { return description_; }
+  const std::string& get_description() const { return description_; }
+
+  /**
+   * Formats this evaluator into the given stream using `vars` for the bound
+   * decision variable names.
+   *
+   * The size of `vars` must match the `num_vars()` declared by this evaluator.
+   * (If `num_vars()` is `Eigen::Dynamic`, then `vars` may be any size.)
+   */
+  std::ostream& Display(std::ostream& os,
+                        const VectorX<symbolic::Variable>& vars) const;
+
+  /**
+   * Formats this evaluator into the given stream, without displaying the
+   * decision variables it is bound to.
+   */
+  std::ostream& Display(std::ostream& os) const;
 
   /**
    * Getter for the number of variables, namely the number of rows in x, as
@@ -164,6 +180,15 @@ class EvaluatorBase {
   virtual void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
                       VectorX<symbolic::Expression>* y) const = 0;
 
+  /**
+   * NVI implementation of Display. The default implementation will report
+   * the NiceTypeName, get_description, and list the bound variables.
+   * Subclasses may override to customize the message.
+   * @pre vars size is consistent with num_vars".
+   */
+  virtual std::ostream& DoDisplay(
+      std::ostream& os, const VectorX<symbolic::Variable>& vars) const;
+
   // Setter for the number of outputs.
   // This method is only meant to be called, if the sub-class structure permits
   // to change the number of outputs. One example is LinearConstraint in
@@ -184,6 +209,11 @@ class EvaluatorBase {
   // the gradient matrix can be non-zero.
   std::optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
+
+/**
+ * Print out the evaluator.
+ */
+std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e);
 
 /**
  * Implements an evaluator of the form P(x, y...) where P is a multivariate

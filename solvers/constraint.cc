@@ -33,6 +33,30 @@ symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
     return e <= ub;
   }
 }
+
+std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
+                                const std::string& name,
+                                const VectorX<symbolic::Variable>& vars,
+                                bool equality) {
+  os << name;
+  VectorX<symbolic::Expression> e(constraint.num_constraints());
+  constraint.Eval(vars, &e);
+  // Append the description (when provided).
+  const std::string& description = constraint.get_description();
+  if (!description.empty()) {
+    os << " described as '" << description << "'";
+  }
+  os << "\n";
+  for (int i = 0; i < constraint.num_constraints(); ++i) {
+    if (equality) {
+      os << e(i) << " == " << constraint.upper_bound()(i) << "\n";
+    } else {
+      os << constraint.lower_bound()(i) << " <= " << e(i)
+         << " <= " << constraint.upper_bound()(i) << "\n";
+    }
+  }
+  return os;
+}
 }  // namespace
 
 symbolic::Formula Constraint::DoCheckSatisfied(
@@ -69,6 +93,11 @@ void QuadraticConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
+}
+
+std::ostream& QuadraticConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "QuadraticConstraint", vars, false);
 }
 
 template <typename DerivedX, typename ScalarY>
@@ -145,6 +174,16 @@ void LinearConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
+std::ostream& LinearConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
+}
+
+std::ostream& LinearEqualityConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
+}
+
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
@@ -165,6 +204,11 @@ void BoundingBoxConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
+}
+
+std::ostream& BoundingBoxConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "BoundingBoxConstraint", vars, false);
 }
 
 template <typename DerivedX, typename ScalarY>

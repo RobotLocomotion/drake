@@ -128,6 +128,7 @@ drake_cc_library(
         ":function",
         "//common:autodiff",
         "//common:essential",
+        "//common:nice_type_name",
         "//common:polynomial",
         "//common:symbolic",
         "//math:autodiff",

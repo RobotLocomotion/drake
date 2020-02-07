@@ -186,6 +186,9 @@ class TestMathematicalProgram(unittest.TestCase):
 
     def test_bindings(self):
         qp = TestQP()
+        self.assertEqual(
+            str(qp.constraints[0]),
+            "BoundingBoxConstraint\n1 <= x(0) <= inf\n")
         prog = qp.prog
         x = qp.x
 
