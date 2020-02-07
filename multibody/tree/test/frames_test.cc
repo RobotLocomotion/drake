@@ -200,7 +200,7 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   EXPECT_TRUE(frameP_->CalcOffsetRotationMatrixInBody(*context_, R_PQ)
                   .IsNearlyEqualTo(R_BQ, kEpsilon));
 
-  // Now verify the fixed pose version of the same method.
+  // Now verify the fixed pose and rotation matrix versions of those methods.
   EXPECT_TRUE(
       frameP_->GetFixedOffsetPoseInBody(X_PQ_).IsNearlyEqualTo(X_BQ, kEpsilon));
   EXPECT_TRUE(frameP_->GetFixedRotationMatrixInBody(R_PQ).IsNearlyEqualTo(
@@ -243,7 +243,7 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   EXPECT_TRUE(frameQ_->CalcOffsetRotationMatrixInBody(*context_, R_QG)
                   .IsNearlyEqualTo(R_BG, kEpsilon));
 
-  // Now verify the fixed pose version of the same method.
+  // Now verify the fixed pose and rotation matrix versions of those methods.
   EXPECT_TRUE(
       frameQ_->GetFixedOffsetPoseInBody(X_QG_).IsNearlyEqualTo(X_BG, kEpsilon));
   EXPECT_TRUE(frameQ_->GetFixedRotationMatrixInBody(R_QG).IsNearlyEqualTo(
