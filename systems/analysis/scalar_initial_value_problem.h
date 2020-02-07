@@ -1,10 +1,7 @@
 #pragma once
 
-#include <algorithm>
 #include <memory>
-#include <optional>
 #include <utility>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -226,8 +223,8 @@ class ScalarInitialValueProblem {
   std::unique_ptr<InitialValueProblem<T>> vector_ivp_;
 };
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ScalarInitialValueProblem)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::ScalarInitialValueProblem)

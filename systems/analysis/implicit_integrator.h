@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -467,8 +468,8 @@ ImplicitIntegrator<AutoDiffXd>::IterationMatrix::Solve(
   return QR_.solve(b);
 }
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ImplicitIntegrator)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::ImplicitIntegrator)

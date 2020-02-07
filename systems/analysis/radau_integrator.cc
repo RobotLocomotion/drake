@@ -1,8 +1,6 @@
 #include "drake/systems/analysis/radau_integrator.h"
 
 #include <limits>
-#include <memory>
-#include <vector>
 
 #include "drake/common/autodiff.h"
 
@@ -720,13 +718,17 @@ MatrixX<T> RadauIntegrator<T, num_stages>::CalcTensorProduct(
   return AB;
 }
 
-template class RadauIntegrator<double, 1>;
-template class RadauIntegrator<AutoDiffXd, 1>;
-
-template class RadauIntegrator<double, 2>;
-template class RadauIntegrator<AutoDiffXd, 2>;
-
 }  // namespace systems
 }  // namespace drake
 
+// Define class template initializations for double and AutoDiffXd.
+// Note: We don't use the macros in drake/common/default_scalars.h because
+// those macros are designed for functions with only one template argument, and
+// we need to instantiate both scalar types for both the Radau1 and Radau3
+// integrators, which have num_stages set 1 and 2, respectively.
+template class drake::systems::RadauIntegrator<double, 1>;
+template class drake::systems::RadauIntegrator<drake::AutoDiffXd, 1>;
+
+template class drake::systems::RadauIntegrator<double, 2>;
+template class drake::systems::RadauIntegrator<drake::AutoDiffXd, 2>;
 

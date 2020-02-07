@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
@@ -213,11 +214,16 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_nr_iterations_{0};
 };
 
-extern template class RadauIntegrator<double, 1>;
-extern template class RadauIntegrator<AutoDiffXd, 1>;
-
-extern template class RadauIntegrator<double, 2>;
-extern template class RadauIntegrator<AutoDiffXd, 2>;
-
 }  // namespace systems
 }  // namespace drake
+
+// Declare class template initializations for double and AutoDiffXd.
+// Note: We don't use the macros in drake/common/default_scalars.h because
+// those macros are designed for functions with only one template argument, and
+// we need to instantiate both scalar types for both the Radau1 and Radau3
+// integrators, which have num_stages set 1 and 2, respectively.
+extern template class drake::systems::RadauIntegrator<double, 1>;
+extern template class drake::systems::RadauIntegrator<drake::AutoDiffXd, 1>;
+
+extern template class drake::systems::RadauIntegrator<double, 2>;
+extern template class drake::systems::RadauIntegrator<drake::AutoDiffXd, 2>;

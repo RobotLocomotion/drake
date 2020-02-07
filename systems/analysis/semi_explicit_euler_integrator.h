@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"

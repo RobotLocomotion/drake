@@ -90,8 +90,8 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
       derivs5_, derivs6_;
 };
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class RungeKutta5Integrator)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::RungeKutta5Integrator)

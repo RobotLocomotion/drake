@@ -5,7 +5,6 @@
 /// Only include this from translation units that declare a `main` function.
 
 #include <memory>
-#include <string>
 
 #include <gflags/gflags.h>
 
