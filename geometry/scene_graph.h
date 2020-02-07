@@ -785,7 +785,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // Allow the load dispatch to peek into SceneGraph.
   friend void DispatchLoadMessage(const SceneGraph<double>&,
-                                  lcm::DrakeLcmInterface*, Role role);
+                                  lcm::DrakeLcmInterface*, Role role,
+                                  const std::string& channel_prefix);
 
   // Sets the context into the output port value so downstream consumers can
   // perform queries.

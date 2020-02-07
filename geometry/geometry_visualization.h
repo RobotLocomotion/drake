@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
@@ -78,6 +80,10 @@ class GeometryVisualizationImpl {
                      supplied.
  @param role         An optional flag to indicate the role of the geometries to
                      be visualized; defaults to the illustration role.
+ @param channel_prefix  (Advanced) An optional flag to prefix LCM channels.
+                        Setting this value should also correspond to a change
+                        on the drake_visualizer subscription; otherwise the
+                        functionality will break.
 
  @pre This method has not been previously called while building the
       builder's current Diagram.
@@ -93,7 +99,8 @@ class GeometryVisualizationImpl {
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
+    lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration,
+    const std::string& channel_prefix = "");
 
 /** Implements ConnectDrakeVisualizer, but using @p pose_bundle_output_port to
  explicitly specify the output port used to get pose bundles for
@@ -109,7 +116,8 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& pose_bundle_output_port,
-    lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
+    lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration,
+    const std::string& channel_prefix = "");
 
 /** (Advanced) Explicitly dispatches an LCM load message based on the registered
  geometry. Normally this is done automatically at Simulator initialization. But
@@ -122,7 +130,8 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
  @see geometry::ConnectDrakeVisualizer() */
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm,
-                         Role role = Role::kIllustration);
+                         Role role = Role::kIllustration,
+                         const std::string& channel_prefix = "");
 
 }  // namespace geometry
 }  // namespace drake
