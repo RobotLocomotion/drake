@@ -46,9 +46,6 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
 
   // The next calculation needs the position from Aₒ (frame A's origin) to L0ₒ
   // (the origin of link L0), expressed in the world frame W.
-  // TODO(Mitiguy) improve efficiency by implementing a frame method such as
-  //  frameA().CalcPositionInBodyFrame(context) to mimic
-  //  frameA().CalcPoseInBodyFrame(context);
   const RigidTransform<T> X_WL0 = link0().EvalPoseInWorld(context);
   const RotationMatrix<T>& R_WL0 = X_WL0.rotation();
   const Vector3<T> p_L0Ao_L0 =

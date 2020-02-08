@@ -38,20 +38,23 @@ template <typename T> class Body;
 /// </pre>
 ///
 /// This "symmetric" bushing force/torque model was developed at Toyota Research
-/// Institute and is similar to traditional bushing models in commercial and
-/// open-source dynamics codes.  The symmetric bushing is advantageous because
+/// Institute and is advantageous compared to traditional bushing models because
 /// it ensures the moment of -f on A about Ao is equal to the moment of f on C
-/// about Co.  Other models differ, e.g., they apply f at Ao, which means the
+/// about Co.  Some models differ, e.g., they apply f at Ao, which means the
 /// moment of -f on A about Ao is always zero whereas the moment of f on C about
 /// Co is nonzero. Also, unlike traditional models, the symmetric model employs
 /// a frame B with unit vectors Bx, By, Bz "halfway" between the unit vectors
 ///  Ax, Ay, Az and Cx, Cy, Cz of frames A and C.
 ///
-/// Torque T depends on roll-pitch-yaw angles q₀, q₁, q₂ which are
-/// determined from frame C's orientation relative to frame A, with
+/// Force f depends on the position vector from Ao to Co, which is expressed in
+/// terms of the "symmetry" frame B as `p_AoCo_B = x Bx + y By + z Bz`.
+///
+/// Torque T depends on roll-pitch-yaw angles q₀, q₁, q₂ which are determined
+/// from frame C's orientation relative to frame A, with
 /// [`-π < q₀ <= π`, `-π/2 <= q₁ <= π/2`, `-π < q₂ <= π`].
-/// Force f depends on the position vector from Ao to Co, which is expressed as
-/// `p_AoCo_B = x Bx + y By + z Bz`.
+/// Torque T can be discontinuous if q₀ or q₁ or q₂ is discontinuous and the
+/// associated torque spring constant is nonzero.  This can occur if the bushing
+/// has large rotations, e.g., such that q₂ jumps from ≈ -π to π.
 ///
 /// Specifically, the model of the force f and torque T is written in terms
 /// force stiffness/damping constants kx, ky, kz and bx, by, bz and
@@ -221,10 +224,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // Calculate R_AC, the rotation matrix that relates frames A and C.
   // @param[in] context The state of the multibody system.
   math::RotationMatrix<T> CalcR_AC(const systems::Context<T>& context) const {
-    // TODO(Mitiguy) improve efficiency by implementing a frame method such as
-    //  frameC().CalcRotationMatrix(context, frameA()) to mimic
-    //  frameC().CalcPose(context, frameA());
-    return CalcX_AC(context).rotation();
+    return frameC().CalcRotationMatrix(context, frameA());
   }
 
   // Calculate R_AB, the rotation matrix that relates frames A and B.
@@ -346,9 +346,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // Calculate v_ACo_A, Co's translational velocity in frame A, expressed in A.
   // @param[in] context The state of the multibody system.
   // @see CalcBushing_xyzDt() for `[ẋ, ẏ, ż]` since `[ẋ, ẏ, ż] ≠ v_ACₒ_A`.
-  // TODO(Mitiguy) improve efficiency by implementing a frame method such as
-  //  frameC().CalcTranslationalVelocity(context, frameA(), frameA()) to mimic
-  //  frameC().CalcSpatialVelocity(context, frameA(), frameA());
   Vector3<T> Calcv_ACo_A(const systems::Context<T>& context) const {
     const SpatialVelocity<T> V_ACo_A = CalcV_AC_A(context);
     return V_ACo_A.translational();
