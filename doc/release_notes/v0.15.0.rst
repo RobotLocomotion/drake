@@ -1,0 +1,234 @@
+*************
+Drake v0.15.0
+*************
+
+Announcements
+-------------
+
+TBD
+
+Breaking Changes
+----------------
+
+These are breaking changes that did not undergo a deprecation period.
+
+TBD
+
+Dynamical Systems
+-----------------
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Mathematical Program
+--------------------
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Multibody Dynamics
+------------------
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Miscellaneous features and fixes
+--------------------------------
+
+TBD
+
+pydrake bindings
+----------------
+
+TBD
+
+Build system and dependencies
+-----------------------------
+
+TBD
+
+Newly-deprecated APIs
+---------------------
+
+TBD
+
+Removal of deprecated APIs
+--------------------------
+
+TBD
+
+
+Notes
+-----
+
+This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.15.0>`__ named ``drake-TBD-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
+
+
+Commits to be categorized
+-------------------------
+
+* Add instructions for building experimental binary packages using Jenkins (`#12586`_)
+* Wire in bounding volume hierarchy to compute contact surfaces (`#12552`_)
+* Add google benchmark (`#12440`_)
+* Benchmark vtk and ospray render engines and add documentation (`#12440`_)  # * Add API for manually configuring light position * Rework geometry doxygen documentation * Add sample comparison data and instructions on how to run and interpret the benchmark Co-authored-by: Sean Curtis <sean.curtis@tri.global>
+* Move all hydroelastic geometry computations into scene graph (`#12557`_)  # 1. Simplify HydroelasticEngine so that it defers to SG for contact surface calculation. - Remove HydroelasticEngine expression specialization. 2. Modify MBP so that it no longer relies on HydroelasticEngine to do geometric work. 3. Modify examples - rolling sphere demo now rolls the sphere on a *box* (instead of a currently unsupported plane). 4. Miscellaneous clean up - MBP_test wasn't testing the MBP::RegisterCollisionGeometry variant that took proximity properties. - mesh_intersection_test.cc tests for surface normal directions. - mesh_intersection no longer returns "empty" contact surfaces. - hydroelastic_callback now handles the case where there is no contact.
+* MultibodyPositionToGeometryPose can now own its own MBP (`#12588`_)  # This gives the MB2GP class the ability to own its MBP giving a new avenue to eliminate coordinating lifespan issues.
+* doc: Consolidate older release info in release notes (`#12587`_)
+* Refactor implicit integration tests for new implicit integrator (`#12532`_)  # * Refactor implicit integration tests Change the tests in systems/analysis in the following ways in preparation for the new velocity-implicit Euler integrator (#12528): 1. Fix the incorrect velocity in the true solution in StiffDoubleMassSpring, as well as the incorrect damping force calculation in f2 in StiffDoubleMassSpring. 2. Add a velocity solution check to DoubleSpringMassDamperTest. 3. Move common tests from implicit_euler_integrator_test.cc and radau_integrator_test.cc into implicit_integrator_test.h 4. Add two flags into implicit_integrator_test.h to modify or skip tests based on whether an implicit integrator supports Error Control, Autodiff, and Central differencing. By default for existing integrators, all these flags are turned on and the tests are ran in full capability. The purpose of the fourth change is so that I can separate the new integrator into three different PRs: When the fixed-step integrator is merged, it will run the tests without error control or auto/center diff. When the Error control is merged, it will run the tests with error control. When the full integrator is merged, it'll run the tests with all flags turned on. By default for other integrators the tests run with full capability. I've tested locally to make sure that my fixed-step version, with error control removed, passes the tests with the flags turned off.
+* Re-implement the uniformly random rotation (`#12562`_)  # 1. Now uniform random rotation is truly uniform. 2. Add Hopf coordinate to parameterize SO(3).
+* Add recording functionality back in to pyplot visualizer (`#12582`_)  # * Add pyplot animation jupyter notebook to tutorials Co-authored-by: Eric Cousineau <eric.cousineau@tri.global>
+* support default parameters for AcrobotGeometry (`#12601`_)
+* Add option to MultibodyPositionToGeometryPose to use an input vector ... (`#12602`_)  # * Add option to MultibodyPositionToGeometryPose to use an input vector the size of the entire state (velocities are ignored)\.  This is a common use case and dramatically simplifies the wiring.
+* Scale decision variables (`#12576`_)  # Added a feature for scaling decision variables so that users don't need to scale the variables every time they appears in cost and constraints. This feature is only implemented for snopt currently.
+* Add utility for setting contact material properties generally (`#12595`_)  # Previously, we had `AddSoftHydroelasticProperties` and `AddRigidHydroelasticProperties` to facilitate setting valid properties without having to worry about the nitty gritty. This does the same for more general contact material properties and then makes use of it throughout the code base.
+* Allows SceneGraph::AssignRole to update proximity properties (`#12585`_)  # We can now call kReplace on proximity properties. It gives the proximity engine the chance to update its internal representation (hydroelastic) when properties are set.
+* put Acrobot.sdf under test (`#12608`_)  # (otherwise we should remove it).
+* Purge RigidBody* from rimless wheel example (`#12607`_)  # Adds RimlessWheelGeometry + tests and python bindings Also removes RimlessWheel.urdf -- I'm sad to see it go, but it is not being used right now and git remembers.
+* Remove MBP::set_[hydroelastic_properties] (`#12596`_)  # MBP offered an interface that would set hydroelastic properties after the fact and attempt to push it through to SceneGraph. This was a short-term stop gap effort. However: 1. There are now mechanisms to set these either during parsing or registration. 2. It doesn't work with SceneGraph in its present state. 3. And there are no invocations of this API any longer. We'll simply remove it, updating the documentation where appropriate.
+* tutorials: Update HTML5 animation to be conditional (`#12615`_)
+* Adds System::IsDifferenceEquationSystem (`#12579`_)
+* Purge RigidBody* from examples/compass_gait (`#12618`_)  # Adds CompassGaitGeometry (which generalizes the previous visualization by supporting the parameterized geometry) Removes CompassGait.urdf (and .xacro), but git remembers
+* Fixes broken links to the minimum step size section in IntegratorBase (`#12625`_)
+* pybind11: Prevent false cache hits for overloads (`#12589`_)
+* common: Move geometry::Identifier here (`#12621`_)
+* geometry: Add back Identifier deprecation shims (`#12621`_)
+* Exclude z from MBP::get_state_output_port() (`#12619`_)
+* Refactor the convergence check of Newton-Raphson iterations (`#12599`_)  # With the new Velocity-Implicit Integrator Euler integrator #12528, we will have at least four implementations of Newton-Raphson iterations in our implicit integrators. This PR: Moves the convergence check in each iteration, which was written based on Hairer 1996, from each implicit integrator into the parent class ImplicitIntegrator. In other words, it refactors the easiest component, the convergence check, and makes the convergence behavior consistent between the integrators. It will also simplify PR #12543 by moving the logic for this convergence check to a common location.
+* Fix initial vertex draw order in planar scenegraph visualizer (`#12627`_)
+* tutorials directory link uses binder (`#12635`_)
+* framework: Replace uint64 with Identifier for system_id (`#12622`_)  # Also add a test confirming that Context::Clone preserves the system_id.
+* Signed distance to capsule calculations with Autodiff support (`#12617`_)
+* doc: Add instructions for updating prerequisites (`#12614`_)
+* Update links to reflect modified team names.  MIT teams have been consolidated to `team: robot locomotion group` and `MIT 6.832` and `MIT 6.881` are separate (non-team) tags (`#12639`_)  # Resolves #12638
+* workspace: Update pybind11 fork to latest commit (`#12641`_)  # Add test for 0xN arrays being converted to Ref<const MatrixXd>
+* Introduces utility MakeSimulatorFromGflags (`#12527`_)  # Updates some examples to use the new utility.
+* Support Gaussian initial conditions in Affine/Linear systems (`#12637`_)  # * add scalar conversion support.
+* tutorials: Import SOS tutorial from colab (`#12642`_)  # Taken from the following notebook on 2020-01-27: https://drive.google.com/file/d/1vBkNigMecvz7lGEF_9jyD0FuzYY_iTTf Co-Authored-By: Hongkai Dai <daihongkai@gmail.com>
+* Add python binding for LinearCost and QuadraticCost constructors (`#12651`_)
+* workspace: Upgrade libdsformat to 9.1.0 (`#12653`_)
+* Enable math::ComputeNumericalGradient() for scalar types T != double (`#12629`_)
+* Fix show logic in pyplot visualizer (`#12658`_)  # The show arguments passed into the recording methods were doing nothing (they were accidentally setting self.show instead of self._show).  And it was too late, anyhow, to prevent a window being drawn in the jupyter workflow.  This commit does the shenanigans necessary to avoid that extra plot. Unfortunately, the drawing/not drawing is not something we currently test.
+* examples: Remove deprecated valkyrie (`#12664`_)
+* examples: Remove controlled_kuka (`#12663`_)  # This ends up making the upcoming deprecations of //attic/manipulation/util easier to manage. Since nothing here is public nor installed, we do not need a deprecation period.
+* attic: Remove deprecated remote_tree_viewer_wrapper (`#12666`_)  # This was the last use of nlohmann/json, so we'll deprecate that now as well.
+* workspace: Upgrade lcm to latest commit (`#12667`_)
+* attic: Remove deprecated xtion sensor and its URDF models (`#12665`_)
+* workspace: Upgrade meshcat_python to latest commit (`#12668`_)
+* Add linear program tutorial (`#12659`_)
+* workspace: Remove visibility annotation on json stub (`#12676`_)  # Older versions of Bazel (1.2.1) too-strictly enforce this visibility, leading to build failures.
+* attic: Remove deprecated manipulation, perception, and systems (`#12677`_)  # Removes: - instantaneous qp and zmp controllers, - manipulation scene_generation, - perception point cloud filters, - perception estimations, - robotInterfaces, - and some of manipulation/util.
+* py manipulation_station: Add missing class docstrings (`#12675`_)
+* attic: Deprecate manipulation/util (`#12679`_)  # This includes robot_state_msg_translator, sim_diagram_builder, and world_sim_tree_builder.
+* workspace: Remove deprecated spruce (`#12681`_)
+* common: Remove deprecated drake_optional and drake_variant (`#12682`_)  # Also remove the pydrake helpers that bind drake_optional and drake_variant, and remove the now-unused stx from the workspace.
+* workspace: Upgrade spdlog to latest release 1.5.0 (`#12669`_)
+* tutorials: Add example of using meshcat visualizer (`#12646`_)
+* Remove deprecated code (2020-02) (`#12685`_)
+* common: Hide filesystem.h from downstreams (`#12686`_)  # This file was documented as being for Drake internal use only, but was still being installed.  This removes it from the install image, and sets bazel visibility to only allow use from within Drake.
+* vector_gen: Copy *.named_vector sources to *_named_vector.yaml (`#12684`_)  # This will preserve git history through the subsequent commit's changes. (The files are unused as of this commit.)
+* vector_gen: Switch all sources to yaml format (`#12684`_)  # The protobuf source format is scheduled for removal.
+* cpplint: Update sha and reformat to support structured bindings (`#12687`_)
+* roll_pitch_yaw.h: add missing ` in doxygen (`#12691`_)
+* Move kuka_simulation (and dependencies) off of RigidBodyTree (`#12688`_)  # Also deprecates some RBT-based items which are no longer used.
+* common: Remove deprecated text_logging_gflags (`#12680`_)  # This means that the gflags header is no longer used by the drake install; only libgflags.so is required.  Accordingly, we can adjust the source vs binary deps and remove CMake infrastructure related to gflags.
+* Modifies MBP body -> SG Frame registration (`#12690`_)  # If an MBP is associated with a SG, the goal is to have every body associated with an SG FrameId, whether it has geometry or not. The current implementation does this in two ways: 1. Greedily register a body with SG when a geometry is assigned to it. 2. At finalize, find any bodies that haven't been registered and register them. This is incompatible with defining collision filter groups. We should be able to put a body in a collision filter group (even if it doesnt have any geometry -- it just won't cause anything to be filtered). But that work flow requires getting that body's FrameId *before* finalization (at least in how the parsing is currently implemented). With the same end goal that every body has a frame id, this PR changes the implementation: 1. If a SceneGraph is attached, the act of adding a body registers it immediately. 2. When "attaching" the SceneGraph, it looks to see if any bodies were added previously and registers them then. Therefore, we no longer wait for finalization and we're guaranteed that if there is a SceneGraph attached, every body definitely has a frame.
+* doc: Platform reviewers should merge PRs (`#12692`_)  # Also add checklist item for macOS on third-party version bumps.
+* workspace: Remove all dependencies on protobuf (`#12689`_)  # In common/proto, remove deprecated MakeFileInputStreamOrThrow. In vector_gen, remove support for the protobuf input format. In install, remove CMake find module for Protobuf. In workspace, remove libprotobuf. In setup, remove Ubuntu deps on libprotobuf-dev and python3-protobuf. While we're anyway modifying the setup scripts, also remove macOS's binary setup cleanup step of un-installing dreal.
+* doc: macOS pre-merge validation should prefer Catalina (`#12695`_)  # Testing on Catalina only is good enough, because Catalina and Mojave are basically identical as far as what Drake uses. Note that packaging builds still use (only) Mojave.
+* workspace: Update buildifier to latest release 1.0.0 (`#12696`_)  # Remove some backslashes that were not escapes, which it wanted to replace with double-backslashes.
+* print solvers::Binding (`#12693`_)  # Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global> print out EvaluatorBase and Binding.
+* Improve rotation matrix methods in Frame and MultibodyTree (`#12683`_)
+* Update to current FCL (`#12694`_)  # This commit represents the _expected_ commit that will be release 0.6.0. This will allow us to put those changes through the Drake CI wringer.
+* Print out added linear cost and constraint in the tutorial (`#12700`_)
+
+.. _#12440: https://github.com/RobotLocomotion/drake/pull/12440
+.. _#12527: https://github.com/RobotLocomotion/drake/pull/12527
+.. _#12532: https://github.com/RobotLocomotion/drake/pull/12532
+.. _#12552: https://github.com/RobotLocomotion/drake/pull/12552
+.. _#12557: https://github.com/RobotLocomotion/drake/pull/12557
+.. _#12562: https://github.com/RobotLocomotion/drake/pull/12562
+.. _#12576: https://github.com/RobotLocomotion/drake/pull/12576
+.. _#12579: https://github.com/RobotLocomotion/drake/pull/12579
+.. _#12582: https://github.com/RobotLocomotion/drake/pull/12582
+.. _#12585: https://github.com/RobotLocomotion/drake/pull/12585
+.. _#12586: https://github.com/RobotLocomotion/drake/pull/12586
+.. _#12587: https://github.com/RobotLocomotion/drake/pull/12587
+.. _#12588: https://github.com/RobotLocomotion/drake/pull/12588
+.. _#12589: https://github.com/RobotLocomotion/drake/pull/12589
+.. _#12595: https://github.com/RobotLocomotion/drake/pull/12595
+.. _#12596: https://github.com/RobotLocomotion/drake/pull/12596
+.. _#12599: https://github.com/RobotLocomotion/drake/pull/12599
+.. _#12601: https://github.com/RobotLocomotion/drake/pull/12601
+.. _#12602: https://github.com/RobotLocomotion/drake/pull/12602
+.. _#12607: https://github.com/RobotLocomotion/drake/pull/12607
+.. _#12608: https://github.com/RobotLocomotion/drake/pull/12608
+.. _#12614: https://github.com/RobotLocomotion/drake/pull/12614
+.. _#12615: https://github.com/RobotLocomotion/drake/pull/12615
+.. _#12617: https://github.com/RobotLocomotion/drake/pull/12617
+.. _#12618: https://github.com/RobotLocomotion/drake/pull/12618
+.. _#12619: https://github.com/RobotLocomotion/drake/pull/12619
+.. _#12621: https://github.com/RobotLocomotion/drake/pull/12621
+.. _#12622: https://github.com/RobotLocomotion/drake/pull/12622
+.. _#12625: https://github.com/RobotLocomotion/drake/pull/12625
+.. _#12627: https://github.com/RobotLocomotion/drake/pull/12627
+.. _#12629: https://github.com/RobotLocomotion/drake/pull/12629
+.. _#12635: https://github.com/RobotLocomotion/drake/pull/12635
+.. _#12637: https://github.com/RobotLocomotion/drake/pull/12637
+.. _#12639: https://github.com/RobotLocomotion/drake/pull/12639
+.. _#12641: https://github.com/RobotLocomotion/drake/pull/12641
+.. _#12642: https://github.com/RobotLocomotion/drake/pull/12642
+.. _#12646: https://github.com/RobotLocomotion/drake/pull/12646
+.. _#12651: https://github.com/RobotLocomotion/drake/pull/12651
+.. _#12653: https://github.com/RobotLocomotion/drake/pull/12653
+.. _#12658: https://github.com/RobotLocomotion/drake/pull/12658
+.. _#12659: https://github.com/RobotLocomotion/drake/pull/12659
+.. _#12663: https://github.com/RobotLocomotion/drake/pull/12663
+.. _#12664: https://github.com/RobotLocomotion/drake/pull/12664
+.. _#12665: https://github.com/RobotLocomotion/drake/pull/12665
+.. _#12666: https://github.com/RobotLocomotion/drake/pull/12666
+.. _#12667: https://github.com/RobotLocomotion/drake/pull/12667
+.. _#12668: https://github.com/RobotLocomotion/drake/pull/12668
+.. _#12669: https://github.com/RobotLocomotion/drake/pull/12669
+.. _#12675: https://github.com/RobotLocomotion/drake/pull/12675
+.. _#12676: https://github.com/RobotLocomotion/drake/pull/12676
+.. _#12677: https://github.com/RobotLocomotion/drake/pull/12677
+.. _#12679: https://github.com/RobotLocomotion/drake/pull/12679
+.. _#12680: https://github.com/RobotLocomotion/drake/pull/12680
+.. _#12681: https://github.com/RobotLocomotion/drake/pull/12681
+.. _#12682: https://github.com/RobotLocomotion/drake/pull/12682
+.. _#12683: https://github.com/RobotLocomotion/drake/pull/12683
+.. _#12684: https://github.com/RobotLocomotion/drake/pull/12684
+.. _#12685: https://github.com/RobotLocomotion/drake/pull/12685
+.. _#12686: https://github.com/RobotLocomotion/drake/pull/12686
+.. _#12687: https://github.com/RobotLocomotion/drake/pull/12687
+.. _#12688: https://github.com/RobotLocomotion/drake/pull/12688
+.. _#12689: https://github.com/RobotLocomotion/drake/pull/12689
+.. _#12690: https://github.com/RobotLocomotion/drake/pull/12690
+.. _#12691: https://github.com/RobotLocomotion/drake/pull/12691
+.. _#12692: https://github.com/RobotLocomotion/drake/pull/12692
+.. _#12693: https://github.com/RobotLocomotion/drake/pull/12693
+.. _#12694: https://github.com/RobotLocomotion/drake/pull/12694
+.. _#12695: https://github.com/RobotLocomotion/drake/pull/12695
+.. _#12696: https://github.com/RobotLocomotion/drake/pull/12696
+.. _#12700: https://github.com/RobotLocomotion/drake/pull/12700
+
+..
+  Changelog oldest_commit a5dafde3b0c766cd1f66549044e36ba1188f7635 (inclusive).
+  Changelog newest_commit 82e1b2c0aaaf544e0dfb880929eaf40e6ca75032 (inclusive).
