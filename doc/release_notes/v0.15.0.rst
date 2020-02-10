@@ -12,8 +12,8 @@ Breaking Changes
 
 These are breaking changes that did not undergo a deprecation period.
 
-* Remove MBP::set_[hydroelastic_properties] (`#12596`_)
-* common: Hide filesystem.h from downstreams (`#12686`_)
+* Remove ``MBP::set_[hydroelastic_properties]`` (`#12596`_)
+* common: Hide ``filesystem.h`` from downstreams (`#12686`_)
 
 Dynamical Systems
 -----------------
@@ -21,10 +21,10 @@ Dynamical Systems
 New features
 
 * Support Gaussian initial conditions in Affine/Linear systems (`#12637`_)
-* Enable math::ComputeNumericalGradient() for scalar types T != double (`#12629`_)
-* Add System::IsDifferenceEquationSystem (`#12579`_)
-* Replace uint64 with Identifier for system_id (`#12622`_)
-* Introduces utility MakeSimulatorFromGflags (`#12527`_)
+* Enable ``math::ComputeNumericalGradient()`` for scalar types ``T != double`` (`#12629`_)
+* Add ``System::IsDifferenceEquationSystem`` (`#12579`_)
+* Replace ``uint64`` with ``Identifier`` for ``system_id`` (`#12622`_)
+* Introduces utility ``MakeSimulatorFromGflags`` (`#12527`_)
 
 Fixes
 
@@ -39,7 +39,7 @@ Mathematical Program
 New features
 
 * Ability to scale decision variables (SNOPT only) (`#12576`_)
-* Ability to print solvers::Binding (`#12693`_, `#12700`_)
+* Ability to print ``solvers::Binding`` (`#12693`_, `#12700`_)
 
 Multibody Dynamics
 ------------------
@@ -49,29 +49,32 @@ New features
 * Wire in bounding volume hierarchy to compute contact surfaces (`#12552`_)
 * Benchmark vtk and ospray render engines and add documentation (`#12440`_)
 * Move all hydroelastic geometry computations into scene graph (`#12557`_)
-* MultibodyPositionToGeometryPose can now:
+* ``MultibodyPositionToGeometryPose`` can now:
+
   * own its own MBP (`#12588`_)
   * use an input vector the size of the entire state (`#12602`_)
+
 * Add utility for setting contact material properties generally (`#12595`_)
-* Allows SceneGraph::AssignRole to update proximity properties (`#12585`_)
+* Allows ``SceneGraph::AssignRole`` to update proximity properties (`#12585`_)
 * Signed distance to capsule calculations with Autodiff support (`#12617`_)
 * Faster, finalization-free MBP body -> SG Frame registration (`#12690`_)
-* Improve rotation matrix methods in Frame and MultibodyTree (`#12683`_)
+* Improve rotation matrix methods in ``Frame`` and ``MultibodyTree`` (`#12683`_)
 
 Fixes
 
-* Exclude z from MBP::get_state_output_port() (`#12619`_)
+* Exclude z from ``MBP::get_state_output_port()`` (`#12619`_)
 
 Examples
 --------
 
-* Support default parameters for AcrobotGeometry (`#12601`_)
+* Support default parameters for ``AcrobotGeometry`` (`#12601`_)
 * Remove deprecated valkyrie (`#12664`_)
-* Remove controlled_kuka (`#12663`_)
-* Several examples moved off of RigidBodyTree:
-  * rimless wheel (`#12607`_)
-  * compass_gait (`#12618`_)
-  * kuka_simulation (and dependencies) (`#12688`_)
+* Remove ``controlled_kuka`` (`#12663`_)
+* Several examples moved off of ``RigidBodyTree``:
+
+  * ``rimless_wheel`` (`#12607`_)
+  * ``compass_gait`` (`#12618`_)
+  * ``kuka_simulation`` (and dependencies) (`#12688`_)
 
 Miscellaneous features and fixes
 --------------------------------
@@ -96,8 +99,8 @@ Documentation updates
 pydrake bindings
 ----------------
 
-* Add python binding for LinearCost and QuadraticCost constructors (`#12651`_)
-* Add missing class docstrings for py manipulation_station (`#12675`_)
+* Add python binding for ``LinearCost`` and ``QuadraticCost`` constructors (`#12651`_)
+* Add missing class docstrings for py ``manipulation_station`` (`#12675`_)
 * Prevent false cache hits for overloads (`#12589`_)
 
 Build system and dependencies
@@ -111,28 +114,40 @@ Build system and dependencies
 * Update buildifier to latest release 1.0.0 (`#12696`_)
 * Update pybind11 fork to latest commit (`#12641`_)
 * Update cpplint (and reformat existing structured bindings) (`#12687`_)
-* Remove deprecated spruce (`#12681`_)
 * Remove all dependencies on protobuf (`#12689`_)
-* Deprecate nlohmann/json dependency. (`#12666`_)
 * Add instructions for building experimental binary packages using Jenkins (`#12586`_)
 
-Newly-deprecated APIs
+Newly-deprecated
+----------------
+
+* APIs:
+
+  * Legacy ("attic") ``manipulation/util`` (`#12679`_)
+  * ``geometry::Identifier`` (moved to ``common::Identifier``) (`#12621`_)
+
+* Dependencies
+
+  * Deprecate ``nlohmann/json`` dependency. (`#12666`_)
+
+Removal of deprecated
 ---------------------
 
-* Legacy ("attic") manipulation/util (`#12679`_)
-* geometry::Identifier (moved to common::Identifier) (`#12621`_)
+* APIs
 
-Removal of deprecated APIs
---------------------------
+  * Removing deprecated ("attic") legacy support of:
 
-* Removing deprecated ("attic") legacy support of:
-  * remote_tree_viewer_wrapper (`#12666`_)
-  * xtion sensor and its URDF models (`#12665`_)
-  * Legacy manipulation and its perception and related systems (`#12677`_)
-* CalcFrameGeometricJacobianExpressedInWorld (`#12685`_)
-* SnoptSolver::is_thread_safe (`#12685`_)
-* drake_optional and drake_variant (`#12682`_)
-* text_logging_gflags (`#12680`_)
+    * ``remote_tree_viewer_wrapper`` (`#12666`_)
+    * xtion sensor and its URDF models (`#12665`_)
+    * Legacy manipulation and its perception and related systems (`#12677`_)
+
+  * ``CalcFrameGeometricJacobianExpressedInWorld`` (`#12685`_)
+  * ``SnoptSolver::is_thread_safe`` (`#12685`_)
+  * ``drake_optional`` and ``drake_variant`` (`#12682`_)
+  * ``text_logging_gflags`` (`#12680`_)
+
+* Dependencies:
+
+  * Remove deprecated spruce (`#12681`_)
 
 Notes
 -----
