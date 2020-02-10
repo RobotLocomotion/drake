@@ -137,7 +137,7 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   TimeVaryingLinearSystem(SystemScalarConverter converter, int num_states,
                           int num_inputs, int num_outputs, double time_period)
       : TimeVaryingAffineSystem<T>(std::move(converter), num_states, num_inputs,
-                                   num_outputs, time_period) {}
+                                   num_outputs, time_period, true) {}
 
  private:
   // N.B. A linear system is simply a restricted form of an affine system with

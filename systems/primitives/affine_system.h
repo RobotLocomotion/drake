@@ -98,9 +98,13 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// @param num_inputs size of the system's input vector
   /// @param num_outputs size of the system's output vector
   /// @param time_period discrete update period, or 0.0 to use continuous time
+  /// @param has_direct_feedthrough Record that the output y has direct
+  /// feedthrough. This is used by AffineSystem where direct feedthrough
+  /// can depend on the size and value of the D matrix.
   TimeVaryingAffineSystem(SystemScalarConverter converter,
                           int num_states, int num_inputs, int num_outputs,
-                          double time_period);
+                          double time_period,
+                          bool may_have_direct_feedthrough);
 
   /// Helper method.  Derived classes should call this from the
   // scalar-converting copy constructor.
@@ -289,6 +293,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
+  const bool has_meaningful_D_{};
 };
 
 }  // namespace systems
