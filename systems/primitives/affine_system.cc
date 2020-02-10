@@ -239,6 +239,15 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
   DRAKE_DEMAND(this->num_inputs() == D.cols());
   DRAKE_DEMAND(this->num_outputs() == C.rows());
   DRAKE_DEMAND(this->num_outputs() == D.rows());
+  // This check permits a workaround for #12706 (inadvertent algebraic loops)
+  // for non-symbolic types. Symbolic versions of a system may still run into
+  // an effective algebraic loop.
+  nonzero_D_ = true;
+  if constexpr (!std::is_same<T, symbolic::Expression>::value) {
+    if ((D_.array() == 0).all()) {
+      nonzero_D_ = false;
+    }
+  }
 }
 
 // Our copy constructor delegates to the public constructor; this used only by
@@ -297,7 +306,7 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
   auto y = output_vector->get_mutable_value();
   y = C_ * x + y0_;
 
-  if (this->num_inputs()) {
+  if (this->num_inputs() && nonzero_D_) {
     const auto& u = this->get_input_port().Eval(context);
     y += D_ * u;
   }
