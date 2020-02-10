@@ -62,7 +62,6 @@ Fixes
 
 * Exclude z from MBP::get_state_output_port() (`#12619`_)
 
-
 Examples
 --------
 
@@ -93,7 +92,6 @@ Documentation updates
 * macOS pre-merge validation should prefer Catalina (`#12695`_)
 * Add instructions for updating prerequisites (`#12614`_)
 * Update links to reflect modified MIT team names (`#12639`_)
-
 
 pydrake bindings
 ----------------
