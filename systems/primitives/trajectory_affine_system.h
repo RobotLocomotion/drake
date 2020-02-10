@@ -47,7 +47,9 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
                          double time_period = 0.)
       : TimeVaryingAffineSystem<T>(
             SystemTypeTag<TrajectoryAffineSystem>{}, A.rows(),
-            B.cols(), C.rows(), time_period),
+            B.cols(), C.rows(), time_period,
+            {this->time_ticket(), this->all_state_ticket(),
+             this->all_input_ports_ticket()}),
         A_(A.Clone()),
         B_(B.Clone()),
         f0_(f0.Clone()),

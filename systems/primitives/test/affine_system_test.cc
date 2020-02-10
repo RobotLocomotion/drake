@@ -281,7 +281,9 @@ class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
   explicit SimpleTimeVaryingAffineSystem(double time_period)
       : TimeVaryingAffineSystem(
             SystemScalarConverter{},  // BR
-            kNumStates, kNumInputs, kNumOutputs, time_period) {}
+            kNumStates, kNumInputs, kNumOutputs, time_period,
+            {this->time_ticket(), this->all_state_ticket(),
+             this->all_input_ports_ticket()}) {}
   ~SimpleTimeVaryingAffineSystem() override {}
 
   Eigen::MatrixXd A(const double& t) const override {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -98,9 +99,13 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// @param num_inputs size of the system's input vector
   /// @param num_outputs size of the system's output vector
   /// @param time_period discrete update period, or 0.0 to use continuous time
+  /// @param output_prerequisites Prerequisites for the output, only used if
+  /// num_outputs > 0. Note that `all_state_ticket()` will be added to this
+  /// prerequisite list.
   TimeVaryingAffineSystem(SystemScalarConverter converter,
                           int num_states, int num_inputs, int num_outputs,
-                          double time_period);
+                          double time_period,
+                          std::set<DependencyTicket> output_prerequisites);
 
   /// Helper method.  Derived classes should call this from the
   // scalar-converting copy constructor.
@@ -289,6 +294,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
+  const bool has_meaningful_D_{};
 };
 
 }  // namespace systems
