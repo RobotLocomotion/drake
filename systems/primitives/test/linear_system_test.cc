@@ -9,12 +9,14 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
 using std::unique_ptr;
-using MatrixXd = drake::MatrixX<double>;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
@@ -836,6 +838,47 @@ GTEST_TEST(LinearizeTest, TestInputOutputPorts) {
 
   // Discrete-time version.
   TestMimo(true);
+}
+
+GTEST_TEST(LinearSystemIssueTest, Issue12706) {
+  // Ensure we do not segfault when connecting a double-integrator with a
+  // "controller", both implemented using LinearSystem (#12706).
+  DiagramBuilder<double> builder;
+
+  // Create a simple double-integrator plant.
+  MatrixXd Ap(2, 2);
+  Ap << 0, 1, 0, 0;
+  MatrixXd Bp(2, 1);
+  Bp << 0, 1;
+  MatrixXd Cp = MatrixXd::Identity(2, 2);
+  MatrixXd Dp = MatrixXd::Zero(2, 1);
+  auto* plant = builder.AddSystem(
+      std::make_unique<LinearSystem<double>>(Ap, Bp, Cp, Dp));
+
+  // Create a simple PD-controller.
+  MatrixXd Ac(0, 0);
+  MatrixXd Bc(0, 2);
+  MatrixXd Cc(1, 0);
+  MatrixXd Dc(1, 2);
+  Dc << -1, -1;
+  auto* controller = builder.AddSystem(
+      std::make_unique<LinearSystem<double>>(Ac, Bc, Cc, Dc));
+
+  // Connect, build, and allocate a context.
+  builder.Connect(controller->get_output_port(), plant->get_input_port());
+  builder.Connect(plant->get_output_port(), controller->get_input_port());
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // Compute the output, namely to ensure that we do not segfault.
+  const VectorXd y =
+      plant->get_output_port().Eval(plant->GetMyContextFromRoot(*context));
+  const VectorXd y_expected = VectorXd::Zero(2);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+
+  // Check feedthrough.
+  EXPECT_FALSE(plant->HasDirectFeedthrough(0));
+  EXPECT_TRUE(controller->HasDirectFeedthrough(0));
 }
 
 }  // namespace

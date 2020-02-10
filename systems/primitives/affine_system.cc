@@ -45,6 +45,10 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
   if (num_inputs_ > 0)
     this->DeclareInputPort(kVectorValued, num_inputs_);
   if (num_outputs_ > 0) {
+    // TODO(sherm1, eric.cousineau): For subclasses that override CalcOutputY,
+    // ideally we would offer a mechanism for them to alter the prerequisites
+    // argument to DeclareOutputPort to match their implementation, either
+    // specific to this class, or generally via #12709.
     this->DeclareVectorOutputPort(BasicVector<T>(num_outputs_),
                                   &TimeVaryingAffineSystem::CalcOutputY);
   }
@@ -212,6 +216,15 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
           SystemTypeTag<AffineSystem>{},
           A, B, f0, C, D, y0, time_period) {}
 
+namespace {
+
+// Returns whether a matrix is "meaningful" when pre-multiplying a vector.
+bool IsMeaningful(const Eigen::MatrixXd& D) {
+  return D.size() > 0 && (D.array() != 0).any();
+}
+
+}  // namespace
+
 // Our protected constructor does all of the real work -- everything else
 // delegates to here.
 template <typename T>
@@ -230,7 +243,10 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
       f0_(f0),
       C_(C),
       D_(D),
-      y0_(y0) {
+      y0_(y0),
+      // This check permits a workaround for inadvertent computational loops
+      // (#12706).
+      has_meaningful_D_(IsMeaningful(D)) {
   DRAKE_DEMAND(this->num_states() == A.rows());
   DRAKE_DEMAND(this->num_states() == A.cols());
   DRAKE_DEMAND(this->num_states() == B.rows());
@@ -297,7 +313,7 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
   auto y = output_vector->get_mutable_value();
   y = C_ * x + y0_;
 
-  if (this->num_inputs()) {
+  if (has_meaningful_D_ && this->num_inputs()) {
     const auto& u = this->get_input_port().Eval(context);
     y += D_ * u;
   }
