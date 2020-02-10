@@ -5,7 +5,15 @@ Drake v0.15.0
 Announcements
 -------------
 
-TBD
+This release includes major ports of consumers of the legacy ``RigidBodyTree``
+simulator to the newer ``MultibodyTree``, including every example used by our
+MIT users.
+
+A number of subsitutes for what are now C++ standard library mechanisms have
+completed their voyage through the deprecation pipeline; we bid farewell to
+``drake_optional``, ``drake_variant``, and the Spruce filesystem library in this
+release.
+
 
 Breaking Changes
 ----------------
@@ -13,7 +21,17 @@ Breaking Changes
 These are breaking changes that did not undergo a deprecation period.
 
 * Remove ``MBP::set_[hydroelastic_properties]`` (`#12596`_)
+
+  * We believe this API, although public, has no downstream users.
+
 * common: Hide ``filesystem.h`` from downstreams (`#12686`_)
+
+  * We believe this API, although public, has no downstream users.
+
+* Re-implement the uniformly random rotation to actually be uniform (`#12562`_)
+
+  * This has caused some problems for consumers: The existing behaviour,
+    although wrong, was relied on by some downstream code.
 
 Dynamical Systems
 -----------------
@@ -30,7 +48,6 @@ Fixes
 
 * Refactor the convergence check of Newton-Raphson iterations (`#12599`_)
 * Refactor implicit integration tests for new implicit integrator (`#12532`_)
-* Re-implement the uniformly random rotation to actually be uniform (`#12562`_)
 
 
 Mathematical Program
@@ -39,7 +56,7 @@ Mathematical Program
 New features
 
 * Ability to scale decision variables (SNOPT only) (`#12576`_)
-* Ability to print ``solvers::Binding`` (`#12693`_, `#12700`_)
+* Ability to stringify ``solvers::Binding`` (`#12693`_, `#12700`_)
 
 Multibody Dynamics
 ------------------
@@ -55,7 +72,7 @@ New features
   * use an input vector the size of the entire state (`#12602`_)
 
 * Add utility for setting contact material properties generally (`#12595`_)
-* Allows ``SceneGraph::AssignRole`` to update proximity properties (`#12585`_)
+* Allow ``SceneGraph::AssignRole`` to update proximity properties (`#12585`_)
 * Signed distance to capsule calculations with Autodiff support (`#12617`_)
 * Faster, finalization-free MBP body -> SG Frame registration (`#12690`_)
 * Improve rotation matrix methods in ``Frame`` and ``MultibodyTree`` (`#12683`_)
@@ -79,9 +96,12 @@ Examples
 Miscellaneous features and fixes
 --------------------------------
 
-* Add recording functionality back in to pyplot visualizer (`#12582`_)
-* Fix show logic in pyplot visualizer (`#12658`_)
-* Fix initial vertex draw order in planar scenegraph visualizer (`#12627`_)
+* pyplot improvements:
+
+  * Add recording functionality back in to pyplot visualizer (`#12582`_)
+  * Fix show logic in pyplot visualizer (`#12658`_)
+  * Fix initial vertex draw order in planar scenegraph visualizer (`#12627`_)
+
 * All vector-gen sources are switched to yaml format (the protobuf source format is scheduled for removal) (`#12684`_)
 
 Documentation updates
@@ -91,7 +111,7 @@ Documentation updates
 * Add linear program tutorial (`#12659`_, `#12700`_)
 * Import SOS tutorial from colab (`#12642`_)
 * Update HTML5 animation to be conditional (`#12615`_)
-* Henceforth platform reviewers should merge PRs (`#12692`_)
+* Henceforth platform reviewers should merge approved PRs (`#12692`_)
 * macOS pre-merge validation should prefer Catalina (`#12695`_)
 * Add instructions for updating prerequisites (`#12614`_)
 * Update links to reflect modified MIT team names (`#12639`_)
@@ -101,7 +121,6 @@ pydrake bindings
 
 * Add python binding for ``LinearCost`` and ``QuadraticCost`` constructors (`#12651`_)
 * Add missing class docstrings for py ``manipulation_station`` (`#12675`_)
-* Prevent false cache hits for overloads (`#12589`_)
 
 Build system and dependencies
 -----------------------------
@@ -113,6 +132,9 @@ Build system and dependencies
 * Update to current FCL (`#12694`_)
 * Update buildifier to latest release 1.0.0 (`#12696`_)
 * Update pybind11 fork to latest commit (`#12641`_)
+
+  * This fixes a bug that caused false cache hits for overloads (`#12589`_)
+
 * Update cpplint (and reformat existing structured bindings) (`#12687`_)
 * Remove all dependencies on protobuf (`#12689`_)
 * Add instructions for building experimental binary packages using Jenkins (`#12586`_)
@@ -127,7 +149,7 @@ Newly-deprecated
 
 * Dependencies
 
-  * Deprecate ``nlohmann/json`` dependency. (`#12666`_)
+  *  ``nlohmann/json`` (`#12666`_)
 
 Removal of deprecated
 ---------------------
@@ -147,7 +169,7 @@ Removal of deprecated
 
 * Dependencies:
 
-  * Remove deprecated spruce (`#12681`_)
+  * Spruce filesystem library (`#12681`_)
 
 Notes
 -----
