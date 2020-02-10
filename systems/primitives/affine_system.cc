@@ -1,5 +1,6 @@
 #include "drake/systems/primitives/affine_system.h"
 
+#include <set>
 #include <utility>
 
 #include <Eigen/Eigenvalues>
@@ -21,7 +22,7 @@ using std::unique_ptr;
 template <typename T>
 TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
     SystemScalarConverter converter, int num_states, int num_inputs,
-    int num_outputs, double time_period)
+    int num_outputs, double time_period, bool disable_feedthrough)
     : LeafSystem<T>(std::move(converter)),
       num_states_(num_states),
       num_inputs_(num_inputs),
@@ -45,8 +46,18 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
   if (num_inputs_ > 0)
     this->DeclareInputPort(kVectorValued, num_inputs_);
   if (num_outputs_ > 0) {
+    std::set<DependencyTicket> prerequisites;
+    if (disable_feedthrough) {
+      // This is effectively all_sources_ticket() - all_input_ports_ticket().
+      prerequisites = {
+        this->time_ticket(), this->accuracy_ticket(), this->all_state_ticket(),
+        this->all_parameters_ticket()};
+    } else {
+      prerequisites = {this->all_sources_ticket()};
+    }
     this->DeclareVectorOutputPort(BasicVector<T>(num_outputs_),
-                                  &TimeVaryingAffineSystem::CalcOutputY);
+                                  &TimeVaryingAffineSystem::CalcOutputY,
+                                  prerequisites);
   }
 }
 
@@ -212,6 +223,15 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
           SystemTypeTag<AffineSystem>{},
           A, B, f0, C, D, y0, time_period) {}
 
+namespace {
+
+// Returns whether a matrix is "meaningful" when pre-multiplying a vector.
+inline bool IsMeaningful(const Eigen::MatrixXd& X) {
+  return X.size() > 0 && (X.array() != 0).any();
+}
+
+}  // namespace
+
 // Our protected constructor does all of the real work -- everything else
 // delegates to here.
 template <typename T>
@@ -224,13 +244,17 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
                               const Eigen::Ref<const Eigen::VectorXd>& y0,
                               double time_period)
     : TimeVaryingAffineSystem<T>(
-          std::move(converter), f0.size(), D.cols(), D.rows(), time_period),
+          std::move(converter), f0.size(), D.cols(), D.rows(), time_period,
+          /* disable_feedthrough */ !IsMeaningful(D)),
       A_(A),
       B_(B),
       f0_(f0),
       C_(C),
       D_(D),
-      y0_(y0) {
+      y0_(y0),
+      // This check permits a workaround for inadvertent algebraic loops
+      // (#12706).
+      has_meaningful_D_(IsMeaningful(D)) {
   DRAKE_DEMAND(this->num_states() == A.rows());
   DRAKE_DEMAND(this->num_states() == A.cols());
   DRAKE_DEMAND(this->num_states() == B.rows());
@@ -297,7 +321,7 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
   auto y = output_vector->get_mutable_value();
   y = C_ * x + y0_;
 
-  if (this->num_inputs()) {
+  if (has_meaningful_D_ && this->num_inputs()) {
     const auto& u = this->get_input_port().Eval(context);
     y += D_ * u;
   }
