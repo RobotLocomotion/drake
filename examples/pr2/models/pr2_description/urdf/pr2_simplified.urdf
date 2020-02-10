@@ -5,6 +5,7 @@
 <!-- =================================================================================== -->
 <!-- =================================================================================== -->
 <!-- |    Note that this file has been edited by hand for Drake compatibility:         | -->
+<!-- |    - References to png textures have been removed.                              | -->
 <!-- |    - .stl mesh extensions were replaced with .obj extensions.                   | -->
 <!-- |    - The wheel joints intended for base movement have been changed from         | -->
 <!-- |      continuous to fixed types. Joints for planar base movement have been added | -->
@@ -71,16 +72,28 @@
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
   <material name="Caster">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_caster_texture.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <material name="Wheel_l">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_wheel_left.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <material name="Wheel_r">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_wheel_right.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <material name="RollLinks">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_wheel_left.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <!-- Now we can start using the macros included above to define the actual PR2 -->
   <!-- The first use of a macro.  This one was defined in base.urdf.xacro above.
@@ -962,7 +975,7 @@
       <!-- Needs verification with CAD -->
       <mass value="0.05"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <!-- Should probably get real visuals here at some point -->
     <visual>
@@ -1071,7 +1084,7 @@
       <!-- Needs verification with CAD -->
       <mass value="0.1"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <!-- Should probably get real visuals here at some point -->
     <visual>
