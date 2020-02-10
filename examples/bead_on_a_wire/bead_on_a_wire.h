@@ -62,9 +62,6 @@ namespace bead_on_a_wire {
 /// class expects that this inverse function may be ill-defined).
 /// g(x) = 0 will only be satisfied if x corresponds to a point on the wire.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to https://drake.mit.edu/cxx_inl.html.
-///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:

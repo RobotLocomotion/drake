@@ -11,10 +11,9 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
     name = "bead_on_a_wire",
-    srcs = ["bead_on_a_wire_stub.cc"],
+    srcs = ["bead_on_a_wire.cc"],
     hdrs = [
         "bead_on_a_wire.h",
-        "bead_on_a_wire-inl.h",
     ],
     deps = [
         "//common:essential",

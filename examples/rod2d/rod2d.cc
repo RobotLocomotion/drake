@@ -1,13 +1,4 @@
-#pragma once
-
-// @file
-// Template method implementations for rod2d.h.
-// Most users should only include that file, not this one.
-// For background, see https://drake.mit.edu/cxx_inl.html.
-
-/* clang-format off to disable clang-format-includes */
 #include "drake/examples/rod2d/rod2d.h"
-/* clang-format on */
 
 #include <algorithm>
 #include <limits>
@@ -1098,6 +1089,8 @@ void Rod2D<T>::ConvertStateToPose(const VectorX<T>& state,
   const Eigen::AngleAxis<T> rotation(theta, y_axis);
   pose->set_rotation(Eigen::Quaternion<T>(rotation));
 }
+
+template class Rod2D<double>;
 
 }  // namespace rod2d
 }  // namespace examples
