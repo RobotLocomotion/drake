@@ -26,7 +26,7 @@ These are breaking changes that did not undergo a deprecation period.
   * Remove ``MultibodyPlant::set_hunt_crossley_dissipation`` (`#12596`_)
   * We believe this API, although public, has no downstream users.
 
-* common: Hide ``filesystem.h`` from downstreams (`#12686`_)
+* Hide ``filesystem.h`` from downstreams (`#12686`_)
 
   * We believe this API, although public, has no downstream users.
 
@@ -62,6 +62,12 @@ Multibody Dynamics
 ------------------
 
 New features
+
+* New hydroelastic contact model in progress (#12552, #12557)
+
+  * Still only experimental
+  * Improve performance
+  * Improve architecture
 
 * Benchmark vtk and ospray render engines and add documentation (`#12440`_)
 * ``MultibodyPositionToGeometryPose`` can now:
@@ -282,4 +288,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Changelog oldest_commit a5dafde3b0c766cd1f66549044e36ba1188f7635 (inclusive).
-  Changelog newest_commit 82e1b2c0aaaf544e0dfb880929eaf40e6ca75032 (inclusive).
+  Changelog newest_commit 4be8f9e7bd2ba9951d668b14dac136e900ef77ec (inclusive).
