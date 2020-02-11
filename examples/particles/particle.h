@@ -27,11 +27,10 @@ namespace particles {
 /// - double
 ///
 template <typename T>
-class Particle : public systems::LeafSystem<T> {
+class Particle final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Particle)
 
-  /// A constructor that initializes the system.
   Particle();
 
  protected:
