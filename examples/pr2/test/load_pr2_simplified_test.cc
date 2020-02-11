@@ -23,7 +23,7 @@ GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
 
   EXPECT_EQ(plant.num_actuators(), 28);
   EXPECT_EQ(plant.num_positions(), 28);
-  EXPECT_EQ(plant.num_bodies(), 86);
+  EXPECT_EQ(plant.num_bodies(), 83);
 }
 
 }  // namespace pr2

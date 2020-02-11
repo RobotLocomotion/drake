@@ -98,16 +98,15 @@
   <!-- Now we can start using the macros included above to define the actual PR2 -->
   <!-- The first use of a macro.  This one was defined in base.urdf.xacro above.
        A macro like this will expand to a set of link and joint definitions, and to additional
-       Gazebo-related extensions (sensor plugins, etc).  The macro takes an argument, name, 
-       that equals "base", and uses it to generate names for its component links and joints 
-       (e.g., base_link).  The included origin block is also an argument to the macro.  By convention, 
-       the origin block defines where the component is w.r.t its parent (in this case the parent 
+       Gazebo-related extensions (sensor plugins, etc).  The macro takes an argument, name,
+       that equals "base", and uses it to generate names for its component links and joints
+       (e.g., base_link).  The included origin block is also an argument to the macro.  By convention,
+       the origin block defines where the component is w.r.t its parent (in this case the parent
        is the world frame). For more, see http://www.ros.org/wiki/xacro -->
-  <link name="world_link"/>
   <link name="base_link_0"/>
   <link name="base_link_1"/>
   <joint name="x" type="prismatic">
-    <parent link="world_link"/>
+    <parent link="world"/>
     <child link="base_link_0"/>
     <axis xyz="1 0 0"/>
   </joint>
@@ -1970,7 +1969,7 @@
   </gazebo>
   <!-- WristTransmission replaced for Drake compatibility -->
   <!--
-  <transmission name="r_wrist_trans" type="WristTransmission"> 
+  <transmission name="r_wrist_trans" type="WristTransmission">
     <rightActuator mechanicalReduction="60.1714285714" name="r_wrist_r_motor"/>
     <leftActuator mechanicalReduction="60.1714285714" name="r_wrist_l_motor"/>
     <flexJoint mechanicalReduction="-1.0" name="r_wrist_flex_joint"/>
@@ -2389,8 +2388,9 @@
     <dynamics damping="100.0"/>
     <limit effort="1000.0" lower="0.0" upper="0.09" velocity="0.2"/>
     <safety_controller k_position="20.0" k_velocity="5000.0" soft_lower_limit="-0.01" soft_upper_limit="0.088"/>
-  </joint>-->
+  </joint>
   <link name="r_gripper_l_finger_tip_frame"/>
+  -->
   <gazebo reference="r_gripper_palm_link">
     <turnGravityOff>true</turnGravityOff>
     <sensor:contact name="r_gripper_palm_contact_sensor">
@@ -2420,7 +2420,7 @@
   </gazebo>
   <!-- PR2GripperTransmission commented for Drake compatibility -->
   <!--
-  <transmission name="r_gripper_trans" type="PR2GripperTransmission"> 
+  <transmission name="r_gripper_trans" type="PR2GripperTransmission">
     <actuator name="r_gripper_motor"/>
     <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="r_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
     < if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
@@ -3322,8 +3322,9 @@
     <dynamics damping="100.0"/>
     <limit effort="1000.0" lower="0.0" upper="0.09" velocity="0.2"/>
     <safety_controller k_position="20.0" k_velocity="5000.0" soft_lower_limit="-0.01" soft_upper_limit="0.088"/>
-  </joint>-->
+  </joint>
   <link name="l_gripper_l_finger_tip_frame"/>
+  -->
   <gazebo reference="l_gripper_palm_link">
     <turnGravityOff>true</turnGravityOff>
     <sensor:contact name="l_gripper_palm_contact_sensor">
@@ -3353,7 +3354,7 @@
   </gazebo>
   <!-- PR2GripperTransmission commented for Drake compatibility -->
   <!--
-  <transmission name="l_gripper_trans" type="PR2GripperTransmission"> 
+  <transmission name="l_gripper_trans" type="PR2GripperTransmission">
     <actuator name="l_gripper_motor"/>
     <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="l_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
     < if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
