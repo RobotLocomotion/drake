@@ -224,6 +224,44 @@ void MultibodyTreeSystem<T>::Finalize() {
       {this->configuration_ticket()});
   cache_indexes_.abi_cache_index = abi_cache_entry.cache_index();
 
+  auto& spatial_acceleration_bias_cache_entry = this->DeclareCacheEntry(
+      std::string("spatial acceleration bias (Ab_WB)"),
+      [tree = tree_.get()]() {
+        return AbstractValue::Make(
+            std::vector<SpatialAcceleration<T>>(tree->num_bodies()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& spatial_acceleration_bias_cache =
+            cache_value
+                ->get_mutable_value<std::vector<SpatialAcceleration<T>>>();
+        tree->CalcSpatialAccelerationBiasCache(
+            context, &spatial_acceleration_bias_cache);
+      },
+      {this->kinematics_ticket()});
+  cache_indexes_.spatial_acceleration_bias =
+      spatial_acceleration_bias_cache_entry.cache_index();
+
+  auto& articulated_body_velocity_bias_cache_entry = this->DeclareCacheEntry(
+      std::string("ABI velocity bias cache (Zb_Bo_W)"),
+      [tree = tree_.get()]() {
+        return AbstractValue::Make(
+            std::vector<SpatialForce<T>>(tree->num_bodies()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& articulated_body_velocity_bias_cache =
+            cache_value
+                ->get_mutable_value<std::vector<SpatialForce<T>>>();
+        tree->CalcArticulatedBodyVelocityBiasCache(
+            context, &articulated_body_velocity_bias_cache);
+      },
+      {this->kinematics_ticket()});
+  cache_indexes_.articulated_body_velocity_bias =
+      articulated_body_velocity_bias_cache_entry.cache_index();
+
   already_finalized_ = true;
 }
 

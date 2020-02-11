@@ -582,6 +582,53 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcSpatialAccelerationBiasCache(
+    const systems::Context<T>& context,
+    std::vector<SpatialAcceleration<T>>* spatial_acceleration_bias_cache)
+    const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // This skips the world, body_node_index = 0.
+  for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
+       ++body_node_index) {
+    const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+    // Get references to the hinge matrix and force bias for this node.
+    SpatialAcceleration<T>& Ab_WB =
+        (*spatial_acceleration_bias_cache)[body_node_index];
+
+    node.CalcSpatialAccelerationBias(context, pc, vc, &Ab_WB);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyVelocityBiasCache(
+  const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* articulated_body_velocity_bias_cache) const {
+  DRAKE_THROW_UNLESS(articulated_body_velocity_bias_cache != nullptr);
+  DRAKE_THROW_UNLESS(
+      static_cast<int>(articulated_body_velocity_bias_cache->size()) ==
+      num_bodies());
+  const ArticulatedBodyInertiaCache<T>& abic =
+      EvalArticulatedBodyInertiaCache(context);
+  const std::vector<SpatialAcceleration<T>>& spatial_acceleration_bias_cache =
+      EvalSpatialAccelerationBiasCache(context);
+
+  // This skips the world, body_node_index = 0.
+  for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
+       ++body_node_index) {
+    const ArticulatedBodyInertia<T>& Pplus_PB_W =
+        abic.get_Pplus_PB_W(body_node_index);
+    const SpatialAcceleration<T>& Ab_WB =
+        spatial_acceleration_bias_cache[body_node_index];
+    SpatialForce<T>& Zb_Bo_W =
+        (*articulated_body_velocity_bias_cache)[body_node_index];
+    Zb_Bo_W = Pplus_PB_W * Ab_WB;
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcDynamicBiasCache(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const {
@@ -1703,6 +1750,13 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
   const std::vector<SpatialForce<T>>& dynamic_bias_cache =
       EvalDynamicBiasCache(context);
 
+  // We evaluate the kinematics dependent articulated body force bias Zb_Bo_W =
+  // Pplus_PB_W * Ab_WB. When cached, this corresponds to a significant
+  // computational gain when performing ABA with the same context (storing the
+  // same q and v) but different applied `forces`.
+  const std::vector<SpatialForce<T>>& articulated_body_velocity_bias_cache =
+      EvalArticulatedBodyVelocityBiasCache(context);
+
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
@@ -1718,10 +1772,12 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
       Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
           node.GetJacobianFromArray(H_PB_W_cache);
       const SpatialForce<T>& Fb_B_W = dynamic_bias_cache[body_node_index];
+      const SpatialForce<T>& Zb_Bo_W =
+          articulated_body_velocity_bias_cache[body_node_index];
 
       node.CalcArticulatedBodyForceBiasCache_TipToBase(
-          context, pc, &vc, Fb_B_W, abic, Fapplied_Bo_W, tau_applied, H_PB_W,
-          aba_force_bias_cache);
+          context, pc, &vc, Fb_B_W, abic, Zb_Bo_W, Fapplied_Bo_W, tau_applied,
+          H_PB_W, aba_force_bias_cache);
     }
   }
 }
@@ -1737,18 +1793,23 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
   const ArticulatedBodyInertiaCache<T>& abic =
       EvalArticulatedBodyInertiaCache(context);
+  const std::vector<SpatialAcceleration<T>>& spatial_acceleration_bias_cache =
+      EvalSpatialAccelerationBiasCache(context);
 
   // Perform base-to-tip recursion, skipping the world.
   for (int depth = 1; depth < tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
+      const SpatialAcceleration<T>& Ab_WB =
+          spatial_acceleration_bias_cache[body_node_index];
+
       // Get reference to the hinge mapping matrix.
       Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
           node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyAccelerations_BaseToTip(
-          context, pc, abic, aba_force_bias_cache, H_PB_W, ac);
+          context, pc, abic, aba_force_bias_cache, H_PB_W, Ab_WB, ac);
     }
   }
 }

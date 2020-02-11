@@ -123,6 +123,33 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
+  /** Returns a reference to the up to date cache of per-body spatial
+  acceleration bias terms in the given Context, recalculating it first if
+  necessary. For a body B, this is the spatial acceleration bias term `Ab_WB` as
+  it appears in the acceleration level motion constraint imposed by body B's
+  mobilizer `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`, with `Aplus_WB =
+  Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard body
+  P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and mobilities,
+  respectively. See @ref abi_computing_accelerations for further details. */
+  const std::vector<SpatialAcceleration<T>>& EvalSpatialAccelerationBiasCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.spatial_acceleration_bias)
+        .template Eval<std::vector<SpatialAcceleration<T>>>(context);
+  }
+
+  /** Evaluates the velocity (and configuration) dependent terms used by the
+  articulated body algorithm. Specifically, for a body B, this corresponds to
+  the articulated body bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`. This computation is
+  particularly expensive when performing O(n) forward dynamics with different
+  applied forces but with the same `context` and therefore it is worth caching.
+  */
+  const std::vector<SpatialForce<T>>&
+  EvalArticulatedBodyVelocityBiasCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.articulated_body_velocity_bias)
+        .template Eval<std::vector<SpatialForce<T>>>(context);
+  }
+
   /** For a body B connected to its parent P, returns a reference to the up to
   date cached value for H_PB_W, where H_PB_W is the `6 x nm` body-node hinge
   matrix that relates `V_PB_W` (body B's spatial velocity in its parent body P,
@@ -202,9 +229,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   struct CacheIndexes {
     systems::CacheIndex abi_cache_index;
     systems::CacheIndex across_node_jacobians;
+    systems::CacheIndex articulated_body_velocity_bias;
     systems::CacheIndex dynamic_bias;
     systems::CacheIndex position_kinematics;
     systems::CacheIndex spatial_inertia_in_world;
+    systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
   };
 
