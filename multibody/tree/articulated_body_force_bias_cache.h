@@ -57,20 +57,6 @@ class ArticulatedBodyForceBiasCache {
     return Zplus_PB_W_[body_node_index];
   }
 
-  /// The spatial acceleration bias `Ab_WB` for body node with index
-  /// `body_node_index` including Coriolis and gyroscopic terms.
-  const SpatialAcceleration<T>& get_Ab_WB(
-      BodyNodeIndex body_node_index) const {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return Ab_WB_[body_node_index];
-  }
-
-  /// Mutable version of get_Ab_WB().
-  SpatialAcceleration<T>& get_mutable_Ab_WB(BodyNodeIndex body_node_index) {
-    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return Ab_WB_[body_node_index];
-  }
-
   /// The articulated body inertia innovations generalized force `e_B` for this
   /// body's mobilizer.
   const VectorUpTo6<T>& get_e_B(BodyNodeIndex body_node_index) const {
@@ -88,7 +74,6 @@ class ArticulatedBodyForceBiasCache {
   // Allocates resources for this articulated body cache.
   void Allocate() {
     Zplus_PB_W_.resize(num_nodes_);
-    Ab_WB_.resize(num_nodes_);
     e_B_.resize(num_nodes_);
   }
 
@@ -97,7 +82,6 @@ class ArticulatedBodyForceBiasCache {
 
   // Pools indexed by BodyNodeIndex.
   std::vector<SpatialForce<T>> Zplus_PB_W_;
-  std::vector<SpatialAcceleration<T>> Ab_WB_;
   std::vector<VectorUpTo6<T>> e_B_;
 };
 
