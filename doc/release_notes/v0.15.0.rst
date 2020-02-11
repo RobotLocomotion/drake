@@ -6,7 +6,7 @@ Announcements
 -------------
 
 This release includes major ports of consumers of the legacy ``RigidBodyTree``
-simulator to the newer ``MultibodyTree``, including every example used by our
+simulator to the newer ``MultibodyPlant``, including every example used by our
 MIT users.
 
 A number of subsitutes for what are now C++ standard library mechanisms have
@@ -20,8 +20,10 @@ Breaking Changes
 
 These are breaking changes that did not undergo a deprecation period.
 
-* Remove ``MBP::set_[hydroelastic_properties]`` (`#12596`_)
+* Removed some hydroelastic property setter methods:
 
+  * Remove ``MultibodyPlant::set_elastic_modulus`` (`#12596`_)
+  * Remove ``MultibodyPlant::set_hunt_crossley_dissipation`` (`#12596`_)
   * We believe this API, although public, has no downstream users.
 
 * common: Hide ``filesystem.h`` from downstreams (`#12686`_)
@@ -41,14 +43,12 @@ New features
 * Support Gaussian initial conditions in Affine/Linear systems (`#12637`_)
 * Enable ``math::ComputeNumericalGradient()`` for scalar types ``T != double`` (`#12629`_)
 * Add ``System::IsDifferenceEquationSystem`` (`#12579`_)
-* Replace ``uint64`` with ``Identifier`` for ``system_id`` (`#12622`_)
-* Introduces utility ``MakeSimulatorFromGflags`` (`#12527`_)
+* Added a new utility, ``MakeSimulatorFromGflags`` (`#12527`_)
+* All vector-gen sources are switched to yaml format (`#12684`_)
 
 Fixes
 
 * Refactor the convergence check of Newton-Raphson iterations (`#12599`_)
-* Refactor implicit integration tests for new implicit integrator (`#12532`_)
-
 
 Mathematical Program
 --------------------
@@ -68,24 +68,24 @@ New features
 * Move all hydroelastic geometry computations into scene graph (`#12557`_)
 * ``MultibodyPositionToGeometryPose`` can now:
 
-  * own its own MBP (`#12588`_)
+  * own its own MultibodyPlant (`#12588`_)
   * use an input vector the size of the entire state (`#12602`_)
 
 * Add utility for setting contact material properties generally (`#12595`_)
 * Allow ``SceneGraph::AssignRole`` to update proximity properties (`#12585`_)
 * Signed distance to capsule calculations with Autodiff support (`#12617`_)
-* Faster, finalization-free MBP body -> SG Frame registration (`#12690`_)
+* Faster, finalization-free MultibodyPlant body -> SceneGraph
+  Frame registration (`#12690`_)
 * Improve rotation matrix methods in ``Frame`` and ``MultibodyTree`` (`#12683`_)
 
 Fixes
 
-* Exclude z from ``MBP::get_state_output_port()`` (`#12619`_)
+* Exclude z from ``MultibodyPlant::get_state_output_port()`` (`#12619`_)
 
 Examples
 --------
 
 * Support default parameters for ``AcrobotGeometry`` (`#12601`_)
-* Remove deprecated valkyrie (`#12664`_)
 * Remove ``controlled_kuka`` (`#12663`_)
 * Several examples moved off of ``RigidBodyTree``:
 
@@ -102,8 +102,6 @@ Miscellaneous features and fixes
   * Fix show logic in pyplot visualizer (`#12658`_)
   * Fix initial vertex draw order in planar scenegraph visualizer (`#12627`_)
 
-* All vector-gen sources are switched to yaml format (the protobuf source format is scheduled for removal) (`#12684`_)
-
 Documentation updates
 ---------------------
 
@@ -119,23 +117,28 @@ Documentation updates
 pydrake bindings
 ----------------
 
-* Add python binding for ``LinearCost`` and ``QuadraticCost`` constructors (`#12651`_)
-* Add missing class docstrings for py ``manipulation_station`` (`#12675`_)
+* ``pydrake.solvers.mathematicalprogram::LinearCost`` (`#12651`_)
+* ``pydrake.solvers.mathematicalprogram::QuadraticCost`` (`#12651`_)
+* Class docstrings for py
+
+  * ``drake::examples::manipulation_station::IiwaCollisionModel`` (`#12675`_)
+  * ``drake::examples::manipulation_station::ManipulationStation`` (`#12675`_)
+  * ``drake::examples::manipulation_station::ManipulationStationHardwareInterface`` (`#12675`_)
+
+* The upgrade of spdlog to its latest release 1.5.0 (`#12669`_, below) fixes a
+  bug that caused false cache hits for overloads (`#12589`_)
 
 Build system and dependencies
 -----------------------------
 
-* Upgrade libdsformat to 9.1.0 (`#12653`_)
+* Upgrade buildifier to latest release 1.0.0 (`#12696`_)
+* Upgrade fcl to latest commit (`#12694`_)
+* Upgrade libsdformat to 9.1.0 (`#12653`_)
 * Upgrade lcm to latest commit (`#12667`_)
 * Upgrade meshcat_python to latest commit (`#12668`_)
+* Upgrade pybind11 fork to latest commit (`#12641`_)
 * Upgrade spdlog to latest release 1.5.0 (`#12669`_)
-* Update to current FCL (`#12694`_)
-* Update buildifier to latest release 1.0.0 (`#12696`_)
-* Update pybind11 fork to latest commit (`#12641`_)
-
-  * This fixes a bug that caused false cache hits for overloads (`#12589`_)
-
-* Update cpplint (and reformat existing structured bindings) (`#12687`_)
+* Upgrade styleguide to latest commit (includes cpplint changes) (`#12687`_)
 * Remove all dependencies on protobuf (`#12689`_)
 * Add instructions for building experimental binary packages using Jenkins (`#12586`_)
 
@@ -158,18 +161,35 @@ Removal of deprecated
 
   * Removing deprecated ("attic") legacy support of:
 
-    * ``remote_tree_viewer_wrapper`` (`#12666`_)
-    * xtion sensor and its URDF models (`#12665`_)
-    * Legacy manipulation and its perception and related systems (`#12677`_)
+    * ``drake::manipulation::dev::RemoteTreeViewerWrapper`` (`#12666`_)
+    * ``drake::manipulation::sensors::Xtion`` and its URDF models (`#12665`_)
+    * Legacy manipulation and its perception and related systems: (`#12677`_)
+
+      * ``drake::manipulation::scene_generation::RandomClutterGenerator``
+      * ``drake::manipulation::scene_generation::SimulatePlantToRest``
+      * ``drake::manipulation::util::FramePoseTracker``
+      * ``drake::manipulation::util::SimpleTreeVisualizer``
+      * ``drake::perception::estimators::ArticulatedIcpErrorSet``
+      * ``drake::perception::estimators::ArticulatedIcpErrorCost``
+      * ``drake::perception::estimators::ArticulatedIcpErrorNormCost``
+      * ``drake::perception::estimators::ArticulatedIcpLinearizedNormCost``
+      * ``drake::perception::estimators::ArticulatedIcpBodyPoints``
+      * ``drake::perception::estimators::PointCorrespondence``
+      * ``drake::perception::estimators::ArticulatedBodyInfluence``
 
   * ``CalcFrameGeometricJacobianExpressedInWorld`` (`#12685`_)
   * ``SnoptSolver::is_thread_safe`` (`#12685`_)
   * ``drake_optional`` and ``drake_variant`` (`#12682`_)
   * ``text_logging_gflags`` (`#12680`_)
+  * ``MakeFileInputStreamOrThrow`` (`#12689`_)
 
 * Dependencies:
 
   * Spruce filesystem library (`#12681`_)
+
+* Examples:
+
+  * Valkyrie (`#12664`_)
 
 Notes
 -----
