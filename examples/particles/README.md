@@ -6,8 +6,6 @@
 
 This is a demo that creates a very simple system of a 1-DOF particle, moving at a constant acceleration.  All relevant quantities can be set through the command line: its initial position and velocity, as well its acceleration (in SI units). Additionally, simulation time and realtime rate are also exposed as command line arguments.
 
-![demo diagram](docs/uniformly_accelerated_particle_diagram.png)
-
 ### How do I build it?
 
 To build this demo, from Drake's repository root path just run:
