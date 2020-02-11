@@ -48,8 +48,8 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.num_geometries();
   inspector.GetAllGeometryIds();
   inspector.NumGeometriesWithRole(Role::kUnassigned);
-  inspector.GetNumDynamicGeometries();
-  inspector.GetNumAnchoredGeometries();
+  inspector.NumDynamicGeometries();
+  inspector.NumAnchoredGeometries();
   inspector.GetCollisionCandidates();
 
   // Source and source-related data methods.
@@ -101,6 +101,12 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   tester.mutable_state().AssignRole(source_id, geometry_id2,
                                     ProximityProperties());
   inspector.CollisionFiltered(geometry_id, geometry_id2);
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  inspector.GetNumDynamicGeometries();
+  inspector.GetNumAnchoredGeometries();
+  #pragma GCC diagnostic pop
 }
 
 }  // namespace
