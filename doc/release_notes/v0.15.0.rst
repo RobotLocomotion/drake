@@ -9,7 +9,7 @@ This release includes a number of translations of consumers of the legacy
 ``RigidBodyTree`` simulator to the newer ``MultibodyPlant``, including every
 example used by our MIT users.
 
-A number of subsitutes for what are now C++ standard library mechanisms have
+A number of substitutes for what are now C++ standard library mechanisms have
 completed their voyage through the deprecation pipeline; we bid farewell to
 ``drake_optional``, ``drake_variant``, and the Spruce filesystem library in this
 release.
@@ -63,9 +63,7 @@ Multibody Dynamics
 
 New features
 
-* Wire in bounding volume hierarchy to compute contact surfaces (`#12552`_)
 * Benchmark vtk and ospray render engines and add documentation (`#12440`_)
-* Move all hydroelastic geometry computations into scene graph (`#12557`_)
 * ``MultibodyPositionToGeometryPose`` can now:
 
   * own its own MultibodyPlant (`#12588`_)
@@ -142,8 +140,8 @@ Build system and dependencies
 * Remove all dependencies on protobuf (`#12689`_)
 * Add instructions for building experimental binary packages using Jenkins (`#12586`_)
 
-Newly-deprecated
-----------------
+Newly-deprecated items
+----------------------
 
 * APIs:
 
@@ -154,8 +152,8 @@ Newly-deprecated
 
   *  ``nlohmann/json`` (`#12666`_)
 
-Removal of deprecated
----------------------
+Removal of deprecated items
+---------------------------
 
 * APIs
 
@@ -194,9 +192,17 @@ Removal of deprecated
 Notes
 -----
 
-This release provides `pre-compiled binaries <https://github.com/RobotLocomotion/drake/releases/tag/v0.15.0>`__ named ``drake-TBD-{bionic|mac}.tar.gz``. See https://drake.mit.edu/from_binary.html#nightly-releases for instructions on how to use them
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.15.0>`__ named
+``drake-TBD-{bionic|mac}.tar.gz``. See
+https://drake.mit.edu/from_binary.html#nightly-releases for instructions on
+how to use them
 
-Drake binary releases incorporate a pre-compiled version of `SNOPT <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the `Mathematical Program toolbox <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. _#12440: https://github.com/RobotLocomotion/drake/pull/12440
 .. _#12527: https://github.com/RobotLocomotion/drake/pull/12527
