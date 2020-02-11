@@ -5,9 +5,9 @@ Drake v0.15.0
 Announcements
 -------------
 
-This release includes major ports of consumers of the legacy ``RigidBodyTree``
-simulator to the newer ``MultibodyPlant``, including every example used by our
-MIT users.
+This release includes a number of translations of consumers of the legacy
+``RigidBodyTree`` simulator to the newer ``MultibodyPlant``, including every
+example used by our MIT users.
 
 A number of subsitutes for what are now C++ standard library mechanisms have
 completed their voyage through the deprecation pipeline; we bid farewell to
