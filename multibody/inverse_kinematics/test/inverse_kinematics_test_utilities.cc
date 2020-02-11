@@ -136,7 +136,8 @@ TwoFreeSpheresTest::TwoFreeSpheresTest() {
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
     const Eigen::Vector3d& box_size, double radius, MultibodyPlant<T>** plant,
-    geometry::SceneGraph<T>** scene_graph) {
+    geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere_frame_index,
+    FrameIndex* box_frame_index) {
   systems::DiagramBuilder<T> builder;
   std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   const auto& box = (*plant)->AddRigidBody(
@@ -154,6 +155,8 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
       sphere, RigidTransformd::Identity(), geometry::Sphere(radius), "sphere",
       CoulombFriction<double>(0.9, 0.8));
 
+  *box_frame_index = box.body_frame().index();
+  *sphere_frame_index = sphere.body_frame().index();
   (*plant)->Finalize();
 
   return builder.Build();
@@ -161,16 +164,23 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
 
 BoxSphereTest::BoxSphereTest() : box_size_(10, 10, 10), radius_(1) {
   diagram_double_ = ConstructBoxSphereDiagram(
-      box_size_, radius_, &plant_double_, &scene_graph_double_);
+      box_size_, radius_, &plant_double_, &scene_graph_double_,
+      &sphere_frame_index_, &box_frame_index_);
   diagram_context_double_ = diagram_double_->CreateDefaultContext();
   plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
       *plant_double_, diagram_context_double_.get()));
 
   diagram_autodiff_ = ConstructBoxSphereDiagram(
-      box_size_, radius_, &plant_autodiff_, &scene_graph_autodiff_);
+      box_size_, radius_, &plant_autodiff_, &scene_graph_autodiff_,
+      &sphere_frame_index_, &box_frame_index_);
   diagram_context_autodiff_ = diagram_autodiff_->CreateDefaultContext();
   plant_context_autodiff_ = &(diagram_autodiff_->GetMutableSubsystemContext(
       *plant_autodiff_, diagram_context_autodiff_.get()));
+
+  sphere_geometry_id_ = plant_double_->GetCollisionGeometriesForBody(
+      plant_double_->get_frame(sphere_frame_index_).body())[0];
+  box_geometry_id_ = plant_double_->GetCollisionGeometriesForBody(
+      plant_double_->get_frame(box_frame_index_).body())[0];
 }
 
 template <typename T>

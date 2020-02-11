@@ -164,6 +164,10 @@ class BoxSphereTest : public ::testing::Test {
   std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;
   systems::Context<double>* plant_context_double_{nullptr};
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
+  FrameIndex sphere_frame_index_{};
+  FrameIndex box_frame_index_{};
+  geometry::GeometryId sphere_geometry_id_{};
+  geometry::GeometryId box_geometry_id_{};
 };
 
 /**

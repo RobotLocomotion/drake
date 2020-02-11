@@ -16,6 +16,7 @@ package(
 drake_cc_package_library(
     name = "plant",
     deps = [
+        ":calc_distance_and_time_derivative",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -232,6 +233,16 @@ drake_cc_library(
         "//common:default_scalars",
         "//multibody/math:spatial_force",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "calc_distance_and_time_derivative",
+    srcs = ["calc_distance_and_time_derivative.cc"],
+    hdrs = ["calc_distance_and_time_derivative.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:sorted_pair",
     ],
 )
 
@@ -555,6 +566,15 @@ drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
     deps = [
         ":plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_distance_and_time_derivative_test",
+    deps = [
+        ":calc_distance_and_time_derivative",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/inverse_kinematics:inverse_kinematics_test_utilities",
     ],
 )
 
