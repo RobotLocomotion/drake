@@ -70,7 +70,7 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
       forces->mutable_body_forces();
 
   // Action:   Apply torque Tᴀ to link L0 and apply force  f to L0ₒ.
-  // Reaction: Apply torque Tʙ to link L1 and apply force -f to L1ₒ.
+  // Reaction: Apply torque Tʙ to link L1 and apply force −f to L1ₒ.
   F_BodyOrigin_W_array[link0().node_index()] += F_L0_W;
   F_BodyOrigin_W_array[link1().node_index()] -= F_L1_W;
 }
@@ -106,15 +106,15 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
   // One way to calculate conservative power Pc is from potential energy V.
   // V = 1/2 k₀ q₀² + 1/2 k₁ q₁² + 1/2 k₂ q₂²
   //   + 1/2 kx x²  + 1/2 ky y²  + 1/2 kz z²
-  // Pc = -dV/dt = -(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂
+  // Pc = −dV/dt = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂
   //               + kx x ẋ   + ky y ẏ   + kz z ż)
   //--------------------------------------------------------
-  // Calculate Pc_torque = -(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂).
+  // Calculate Pc_torque = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂).
   const Vector3<T> kQ = TorqueStiffnessConstantsTimesAngles(context);
   const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
   const T Pc_torque = -(kQ.dot(q012Dt));
 
-  // Calculate Pc_force = -(kx x ẋ + ky y ẏ + kz z ż).
+  // Calculate Pc_force = −(kx x ẋ + ky y ẏ + kz z ż).
   const Vector3<T> kX = ForceStiffnessConstantsTimesDisplacement(context);
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
   const T Pc_force = -(kX.dot(xyzDt));
@@ -136,17 +136,17 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   // </pre>
   //
   // The combined power of the torque T and force f can be written as <pre>
-  // Power = -U̇ - 2*D + 0.5*[fx*(y*wz-z*wy) + fy*(z*wx-x*wz) + fz*(x*wy - y*wx)]
+  // Power = −U̇ − 2*D + 0.5*[fx*(y*wz−z*wy) + fy*(z*wx−x*wz) + fz*(x*wy−y*wx)]
   // </pre>
   //------------------------------------------------------------------
   // Calculate the part of nonconservative power due to torque damping.
-  // Pn_torque = -(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
+  // Pn_torque = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
   const Vector3<T> bQDt = TorqueDampingConstantsTimesAngleRates(context);
   const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
   const T Pn_torque = -(bQDt.dot(q012Dt));
 
   // Calculate a part of nonconservative power that is due to force damping.
-  // Pn_force = -(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
+  // Pn_force = −(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
   const Vector3<T> bXDt = ForceDampingConstantsTimesDisplacementRate(context);
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
   const T Pn_force0 = -(bXDt.dot(xyzDt));

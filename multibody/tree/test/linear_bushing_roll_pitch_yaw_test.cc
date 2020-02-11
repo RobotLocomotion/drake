@@ -149,7 +149,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Form [ẋ, ẏ, ż] -- which employs the following kinematical analysis:
     // v_ACo = DtA_p_AoCo                  (definition)
     //       = DtB_p_AoCo + w_AB x p_AoCo  (Golden rule for vector derivatives)
-    // DtB_p_AoCo = v_ACo - wAB x p_AoCo   (rearrange previous line).
+    // DtB_p_AoCo = v_ACo − wAB x p_AoCo   (rearrange previous line).
     const Vector3<double> w_AB_A = 0.5 * w_AC_A;
     const Vector3<double> DtB_p_AoCo_A = v_ACo_A - w_AB_A.cross(p_AoCo_A);
     const Vector3<double> DtB_p_AoCo_B = R_BA * DtB_p_AoCo_A;
@@ -261,19 +261,21 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
         mbt.EvalVelocityKinematics(*context);
 
     // Verify the bushing's potential energy calculation.
-    const double potential_energy = bushing_->CalcPotentialEnergy(*context, pc);
+    const ForceElement<double>* bushing_force_element = bushing_;
+    const double potential_energy =
+        bushing_force_element->CalcPotentialEnergy(*context, pc);
     double scaled_epsilon = std::abs(potentialEnergy_MG) * 32 * kEpsilon;
     EXPECT_NEAR(potential_energy, potentialEnergy_MG, scaled_epsilon);
 
     // Verify the bushing's conservative power calculation.
     const double conservative_power =
-        bushing_->CalcConservativePower(*context, pc, vc);
+        bushing_force_element->CalcConservativePower(*context, pc, vc);
     scaled_epsilon = std::abs(powerConservative_MG) * 32 * kEpsilon;
     EXPECT_NEAR(conservative_power, powerConservative_MG, scaled_epsilon);
 
     // Verify the bushing's non-conservative power calculation.
     const double non_conservative_power =
-        bushing_->CalcNonConservativePower(*context, pc, vc);
+        bushing_force_element->CalcNonConservativePower(*context, pc, vc);
     scaled_epsilon = std::abs(powerDissipation_MG) * 32 * kEpsilon;
     EXPECT_NEAR(non_conservative_power, powerNonconservative_MG,
                 scaled_epsilon);
@@ -339,7 +341,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // For this analysis, a critical damping ratio ζ = 0.1 was chosen with a
     // damped period of vibration τᴅᴀᴍᴩ ≈ 1 second for rotational motions and
     // damped periods of translation vibration of τx ≈ 2 s, τy ≈ 3 s, τz ≈ 4 s.
-    // Use τᴅᴀᴍᴩ = 2π/ωᴅᴀᴍᴩ, ωᴅᴀᴍᴩ = ωₙ√(1-ζ²) to find ωₙ = ωᴅᴀᴍᴩ / √(1-ζ²).
+    // Use τᴅᴀᴍᴩ = 2π/ωᴅᴀᴍᴩ, ωᴅᴀᴍᴩ = ωₙ√(1−ζ²) to find ωₙ = ωᴅᴀᴍᴩ / √(1−ζ²).
     // Since ζ = b /(2 √(m k)), the associated damping constant b = 2 ζ √(m k).
     // ------------ Calculate torque stiffness/damping constants --------------
     const double tau_rotate = 1;                                 // seconds
