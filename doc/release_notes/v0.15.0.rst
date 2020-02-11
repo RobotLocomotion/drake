@@ -63,6 +63,12 @@ Multibody Dynamics
 
 New features
 
+* New hydroelastic contact model in progress (#12552, #12557)
+
+  * Still only experimental
+  * Improve performance
+  * Improve architecture
+
 * Benchmark vtk and ospray render engines and add documentation (`#12440`_)
 * ``MultibodyPositionToGeometryPose`` can now:
 
