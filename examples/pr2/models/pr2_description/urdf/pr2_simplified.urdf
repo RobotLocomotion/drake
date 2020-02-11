@@ -105,8 +105,16 @@
        is the world frame). For more, see http://www.ros.org/wiki/xacro -->
   <link name="base_link_0"/>
   <link name="base_link_1"/>
-  <joint name="x" type="prismatic">
+  <!-- RigidBodyTree only supports fixed or unactuated joints to the
+       world.  Prismatic joints with a transmission don't work
+       correctly. -->
+  <link name="base_link_for_rbt_compat"/>
+  <joint name="world_joint_for_rbt_compat" type="fixed">
     <parent link="world"/>
+    <child link="base_link_for_rbt_compat"/>
+  </joint>
+  <joint name="x" type="prismatic">
+    <parent link="base_link_for_rbt_compat"/>
     <child link="base_link_0"/>
     <axis xyz="1 0 0"/>
   </joint>

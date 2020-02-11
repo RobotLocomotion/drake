@@ -56,7 +56,7 @@ class TestParsers(unittest.TestCase):
             weld_frame,
             robot)
 
-        expected_num_bodies = 86
+        expected_num_bodies = 84
         self.assertEqual(robot.get_num_bodies(), expected_num_bodies,
                          msg='Incorrect number of bodies: {0} vs. {1}'.format(
                              robot.get_num_bodies(), expected_num_bodies))
