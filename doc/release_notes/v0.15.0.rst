@@ -132,7 +132,7 @@ Build system and dependencies
 -----------------------------
 
 * Upgrade buildifier to latest release 1.0.0 (`#12696`_)
-* Upgrade fcl to latest commit (`#12694`_)
+* Upgrade fcl to latest release 0.6.0 (`#12694`_)
 * Upgrade libsdformat to 9.1.0 (`#12653`_)
 * Upgrade lcm to latest commit (`#12667`_)
 * Upgrade meshcat_python to latest commit (`#12668`_)
