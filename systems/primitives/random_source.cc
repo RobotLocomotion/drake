@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <random>
+#include <variant>
 
 #include "drake/common/never_destroyed.h"
 

@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <variant>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"

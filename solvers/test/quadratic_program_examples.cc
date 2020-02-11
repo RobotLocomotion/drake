@@ -1,6 +1,7 @@
 #include "drake/solvers/test/quadratic_program_examples.h"
 
 #include <limits>
+#include <optional>
 
 #include <gtest/gtest.h>
 

@@ -1,6 +1,7 @@
 #include "drake/solvers/test/semidefinite_program_examples.h"
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
 #include <gtest/gtest.h>

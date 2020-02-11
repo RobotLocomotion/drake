@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>

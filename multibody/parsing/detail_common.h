@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
