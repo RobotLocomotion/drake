@@ -39,7 +39,6 @@ drake_cc_binary(
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
     "//examples/atlas",
-    "//examples/contact_model",
     "//examples/compass_gait",
     "//examples/double_pendulum",
     "//examples/irb140",
