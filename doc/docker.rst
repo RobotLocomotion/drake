@@ -186,7 +186,7 @@ and CUDA support:
     --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
     drake; xhost -local:root
 
-The default command will start ``drake-visualizer`` and run the bowling ball
+The default command will start ``drake-visualizer`` and run the acrobot
 simulation.
 
 .. _useful_docker_documentation:
