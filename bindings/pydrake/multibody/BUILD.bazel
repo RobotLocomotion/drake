@@ -189,7 +189,6 @@ drake_py_unittest(
     name = "plant_test",
     data = [
         ":models",
-        "//examples/double_pendulum:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
