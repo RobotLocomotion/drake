@@ -5,7 +5,7 @@
 <!-- =================================================================================== -->
 <!-- =================================================================================== -->
 <!-- |    Note that this file has been edited by hand for Drake compatibility:         | -->
-<!-- |    - References to png textures have been removed.                              | -->
+<!-- |    - Missing material textures have been replaced with rgba colors.             | -->
 <!-- |    - .stl mesh extensions were replaced with .obj extensions.                   | -->
 <!-- |    - The wheel joints intended for base movement have been changed from         | -->
 <!-- |      continuous to fixed types. Joints for planar base movement have been added | -->
