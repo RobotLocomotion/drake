@@ -1709,7 +1709,9 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       // Get generalized force and body force for this node.
-      const VectorX<T>& tau_applied =
+      // N.B. Using the VectorBlock here avoids heap allocation. We have
+      // observed this to penalize performance for large models (nv > 36).
+      Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>> tau_applied =
           node.get_mobilizer().get_generalized_forces_from_array(
               generalized_forces);
       const SpatialForce<T>& Fapplied_Bo_W = body_forces[body_node_index];
