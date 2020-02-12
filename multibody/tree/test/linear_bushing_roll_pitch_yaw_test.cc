@@ -76,7 +76,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     context_ = mbtree_system_->CreateDefaultContext();
   }
 
-  // Compare the Drake results whose those calculated by by-hand/MotionGenesis.
+  // Compare the Drake results whose those calculated via by-hand/MotionGenesis.
   // @param[in] rpy roll, pitch, yaw angles relating frames A and C.
   // @param[in] p_AoCo_A position vector from Aₒ to Cₒ, expressed in frame A.
   // @param[in] w_AC_A frame C's angular velocity in frame A, expressed in A.
@@ -85,6 +85,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   //   bushing on frame C, expressed in frame C or nullptr (not for comparison).
   // @param[in] t_C_C_byHand By-hand calculation of the net torque from the
   //   bushing on frame C, expressed in frame C or nullptr (not for comparison).
+  // @note: f_Co_C_byHand and t_C_C_byHand are simple to calculate and serve
+  //   as a secondary check on the Drake and MotionGenesis results.
   void CompareToMotionGenesisResult(
       const math::RollPitchYaw<double>& rpy,
       const Vector3<double>& p_AoCo_A,
@@ -93,12 +95,12 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
       const Vector3<double>* f_Co_C_byHand = nullptr,
       const Vector3<double>* t_C_C_byHand = nullptr) const {
     const math::RotationMatrix<double> R_AC(rpy);
-    const math::RotationMatrix<double> R_CA = R_AC.transpose();
+    const math::RotationMatrix<double> R_CA = R_AC.inverse();
 
     // Set the context for subsequent harvest of Drake information.
     systems::Context<double>* context = context_.get();
 
-    // Use the mobilizer to set Drake's:
+    // Use the mobilizer to set the following in Drake:
     //   frame C's orientation in frame A,
     //   Co's position from Ao expressed in frame A,
     //   C's angular velocity in A expressed in A,
@@ -137,8 +139,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double& angle_AC = angleAxis_AC.angle();
     const Eigen::AngleAxis<double> angleAxis_AB(0.5 * angle_AC, axis_AC);
     const math::RotationMatrix<double> R_AB(angleAxis_AB);
-    const math::RotationMatrix<double> R_BA = R_AB.transpose();
-    const math::RotationMatrix<double> R_CB = (R_BA * R_AC).transpose();
+    const math::RotationMatrix<double> R_BA = R_AB.inverse();
+    const math::RotationMatrix<double> R_CB = (R_BA * R_AC).inverse();
 
     // Form x, y, z, which are defined so p_AoCo_B = x*Bx + y*By + z*Bz.
     const Vector3<double> p_AoCo_B = R_BA * p_AoCo_A;
@@ -184,8 +186,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double T1 = -(k1 * q1 + b1 * q1Dt);
     const double T2 = -(k2 * q2 + b2 * q2Dt);
 
-    // Calculate the torque on C expressed in A which produces the same
-    // generalized forces as T0, T1, T2.
+    // Calculate the torque T = Tx*Ax + Ty*Ay + Tz*Az on C which produces the
+    // same power as the spring-damper "gimbal" torques T0, T1, T2.
     const double Tx = c2 * oneOverc1 * T0 - s2 * T1 + c2 * tan1 * T2;
     const double Ty = s2 * oneOverc1 * T0 + c2 * T1 + s2 * tan1 * T2;
     const double Tz = T2;
@@ -312,21 +314,13 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
  private:
   // Calculates "reasonable" torque and force stiffness/damping constants,
   // where "reasonable" means a critical damping ratio ζ = 0.1 and damped
-  // natural periods of a few seconds.
-  // @param[out] torque_stiffness_constants `[k₀, k₁, k₂]` that multiply the
-  //   roll-pitch-yaw angles `[q₀, q₁, q₂]` to produce part of the torque T.
-  // @param[out] torque_damping_constants `[b₀, b₁, b₂]` that multiply the
-  //   angular rates `[q̇₀, q̇₁, q̇₂]` to produce part of the torque T.
-  // @param[out] force_stiffness_constants `[kx, ky, kz]` that multiply the
-  //   translational displacement `[x, y, z]` to produce part of the force f.
-  // @param[out] force_damping_constants `[bx, by, bz]` that multiply the
-  //   translational rates `[ẋ, ẏ, ż]` to produce part of the force f.
-  // @see linear_bushing_roll_pitch_yaw.h for definitions of k₀, b₀, q₀, x, etc.
+  // natural periods of a few seconds.  This method returns output via its
+  // arguments, which are defined in the LinearBushingRollPitchYaw constructor.
   void CalcReasonableStiffnessAndDampingConstants(
-      Vector3<double>* torque_stiffness_constants,
-      Vector3<double>* torque_damping_constants,
-      Vector3<double>* force_stiffness_constants,
-      Vector3<double>* force_damping_constants) const {
+      Vector3<double>* torque_stiffness_constants,         /* [k₀, k₁, k₂] */
+      Vector3<double>* torque_damping_constants,           /* [b₀, b₁, b₂] */
+      Vector3<double>* force_stiffness_constants,          /* [kx, ky, kz] */
+      Vector3<double>* force_damping_constants) const {    /* [bx, by, bz] */
     DRAKE_ASSERT(torque_stiffness_constants != nullptr);
     DRAKE_ASSERT(torque_damping_constants != nullptr);
     DRAKE_ASSERT(force_stiffness_constants != nullptr);

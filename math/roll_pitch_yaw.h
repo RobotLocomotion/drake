@@ -330,6 +330,46 @@ class RollPitchYaw {
     return M * w_AD_A;
   }
 
+
+  /// For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
+  /// relate the orientation of two generic frames A and D, returns the 3x3
+  /// matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
+  /// to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
+  /// In other words, `rpyDt = M * w_AD_A`.
+  /// @param[in] function_name name of the calling function/method.
+  /// @param[in] file_name name of the file with the calling function/method.
+  /// @param[in] line_number the line number in file_name that made the call.
+  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  /// @note This method has a divide-by-zero error (singularity) when the cosine
+  /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
+  /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
+  /// There are associated precision problems (inaccuracies) in the neighborhood
+  /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
+  /// TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
+  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent(
+      const char* function_name, const char* file_name, int line_number) const {
+    using std::cos;
+    using std::sin;
+    const T& p = pitch_angle();
+    const T& y = yaw_angle();
+    const T sp = sin(p), cp = cos(p);
+    if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
+      ThrowPitchAngleViolatesGimbalLockTolerance(function_name, file_name,
+                                                 line_number, p);
+    }
+    const T one_over_cp = T(1)/cp;
+    const T sy = sin(y), cy = cos(y);
+    const T cy_over_cp = cy * one_over_cp;
+    const T sy_over_cp = sy * one_over_cp;
+    Matrix3<T> M;
+    // clang-format on
+    M <<      cy_over_cp,       sy_over_cp,  T(0),
+                     -sy,               cy,  T(0),
+         cy_over_cp * sp,  sy_over_cp * sp,  T(1);
+    // clang-format off
+    return M;
+  }
+
   /// Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] rpyDt time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
@@ -542,45 +582,6 @@ class RollPitchYaw {
     M << T(1),  T(0),      -sp,
          T(0),    cr,  sr * cp,
          T(0),   -sr,  cr * cp;
-    // clang-format off
-    return M;
-  }
-
-  // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
-  // relate the orientation of two generic frames A and D, returns the 3x3
-  // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect to
-  // `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
-  // In other words, `rpyDt = M * w_AD_A`.
-  // @param[in] function_name name of the calling function/method.
-  // @param[in] file_name name of the file with the calling function/method.
-  // @param[in] line_number the line number in file_name that made the call.
-  // @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  // @note This method has a divide-by-zero error (singularity) when the cosine
-  // of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
-  // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
-  // There are associated precision problems (inaccuracies) in the neighborhood
-  // of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-      const char* function_name, const char* file_name, int line_number) const {
-    using std::cos;
-    using std::sin;
-    const T& p = pitch_angle();
-    const T& y = yaw_angle();
-    const T sp = sin(p), cp = cos(p);
-    if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
-      ThrowPitchAngleViolatesGimbalLockTolerance(function_name, file_name,
-                                                 line_number, p);
-    }
-    const T one_over_cp = T(1)/cp;
-    const T sy = sin(y), cy = cos(y);
-    const T cy_over_cp = cy * one_over_cp;
-    const T sy_over_cp = sy * one_over_cp;
-    Matrix3<T> M;
-    // clang-format on
-    M <<      cy_over_cp,       sy_over_cp,  T(0),
-                     -sy,               cy,  T(0),
-         cy_over_cp * sp,  sy_over_cp * sp,  T(1);
     // clang-format off
     return M;
   }
