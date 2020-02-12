@@ -49,6 +49,7 @@ New features
 Fixes
 
 * Refactor the convergence check of Newton-Raphson iterations (`#12599`_)
+* In ``AffineSystem`` do not add D*u to output if D==0 (`#12712`_)
 
 Mathematical Program
 --------------------
@@ -91,11 +92,13 @@ Examples
 
 * Support default parameters for ``AcrobotGeometry`` (`#12601`_)
 * Remove ``controlled_kuka`` (`#12663`_)
+* Remove ``contact_model`` (`#12719`_)
 * Several examples moved off of ``RigidBodyTree``:
 
   * ``rimless_wheel`` (`#12607`_)
   * ``compass_gait`` (`#12618`_)
   * ``kuka_simulation`` (and dependencies) (`#12688`_)
+  * ``particles`` (`#12715`_)
 
 Miscellaneous features and fixes
 --------------------------------
@@ -144,7 +147,7 @@ Build system and dependencies
 * Upgrade meshcat_python to latest commit (`#12668`_)
 * Upgrade pybind11 fork to latest commit (`#12641`_)
 * Upgrade spdlog to latest release 1.5.0 (`#12669`_)
-* Upgrade styleguide to latest commit (includes cpplint changes) (`#12687`_)
+* Upgrade styleguide to latest commit (includes cpplint changes) (`#12687`_, `#12717`_)
 * Remove all dependencies on protobuf (`#12689`_)
 * Add instructions for building experimental binary packages using Jenkins (`#12586`_)
 
@@ -285,6 +288,10 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#12696: https://github.com/RobotLocomotion/drake/pull/12696
 .. _#12700: https://github.com/RobotLocomotion/drake/pull/12700
 .. _#12711: https://github.com/RobotLocomotion/drake/pull/12711
+.. _#12712: https://github.com/RobotLocomotion/drake/pull/12712
+.. _#12715: https://github.com/RobotLocomotion/drake/pull/12715
+.. _#12717: https://github.com/RobotLocomotion/drake/pull/12717
+.. _#12719: https://github.com/RobotLocomotion/drake/pull/12719
 
 ..
   Changelog oldest_commit a5dafde3b0c766cd1f66549044e36ba1188f7635 (inclusive).
