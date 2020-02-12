@@ -426,7 +426,7 @@ class TestPlant(unittest.TestCase):
         plant_f = MultibodyPlant_[float](0.0)
 
         file_name = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         Parser(plant_f).AddModelFromFile(file_name)
         plant_f.Finalize()
@@ -1014,7 +1014,7 @@ class TestPlant(unittest.TestCase):
         RollPitchYaw = RollPitchYaw_[T]
 
         instance_file = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         # Add different joints between multiple model instances.
         # TODO(eric.cousineau): Remove the multiple instances and use
         # programmatically constructed bodies once this API is exposed in
