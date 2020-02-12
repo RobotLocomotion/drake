@@ -1,13 +1,13 @@
 #include <stdexcept>
 
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -16,11 +16,15 @@
 
 // The following sequence of tests compares the behaviour of two kinds of
 // plants : (i) A GenericQuadrotor created from the QuadrotorPlant, and
-// (ii) RigidBodyPlant created from parsing a corresponding model URDF file.
+// (ii) MultibodyPlant created from parsing a corresponding model URDF file.
 namespace drake {
 namespace examples {
 namespace quadrotor {
 namespace {
+
+using Eigen::Quaterniond;
+using math::RollPitchYawd;
+using multibody::MultibodyPlant;
 
 GTEST_TEST(QuadrotorPlantTest, DirectFeedthrough) {
   QuadrotorPlant<double> quadrotor;
@@ -37,25 +41,22 @@ template<typename T>
 class GenericQuadrotor: public systems::Diagram<T> {
  public:
   GenericQuadrotor() {
-    this->set_name("QuadrotorTest");
-
     systems::DiagramBuilder<T> builder;
 
     plant_ = builder.template AddSystem<QuadrotorPlant<T>>();
-    plant_->set_name("plant");
 
     VectorX<T> hover_input(plant_->num_total_inputs());
     hover_input.setZero();
     systems::ConstantVectorSource<T>* source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             hover_input);
-    source->set_name("hover_input");
 
     builder.Connect(source->get_output_port(), plant_->get_input_port(0));
 
     builder.BuildInto(this);
   }
 
+  // Set state given [x, y, z, r, p, y, xdot, ydot, zdot, rdot, pdot, ydot].
   void SetState(systems::Context<T>* context, VectorX<T> x) const {
     systems::Context<T>& plant_context =
         this->GetMutableSubsystemContext(*plant_, context);
@@ -66,113 +67,145 @@ class GenericQuadrotor: public systems::Diagram<T> {
   QuadrotorPlant<T>* plant_{};
 };
 
-//  A Quadrotor as a RigidBodyPlant that is created from a model
+//  A Quadrotor as a MultibodyPlant that is created from a model
 // specified in a URDF file.
 template<typename T>
-class RigidBodyQuadrotor: public systems::Diagram<T> {
+class MultibodyQuadrotor: public systems::Diagram<T> {
  public:
-  RigidBodyQuadrotor() {
-    this->set_name("Quadrotor");
+  MultibodyQuadrotor() {
+    auto owned_plant = std::make_unique<MultibodyPlant<T>>(0.0);
+    plant_ = owned_plant.get();
 
-    auto tree = std::make_unique<RigidBodyTree<T>>();
-
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
-        multibody::joints::kRollPitchYaw, nullptr, tree.get());
+    multibody::Parser(plant_).AddModelFromFile(FindResourceOrThrow(
+        "drake/examples/quadrotor/quadrotor.urdf"));
+    plant_->Finalize();
 
     systems::DiagramBuilder<T> builder;
-
-    plant_ =
-        builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
-    plant_->set_name("plant");
-
+    builder.AddSystem(std::move(owned_plant));
     builder.BuildInto(this);
   }
 
+  // Set state given [x, y, z, r, p, y, xdot, ydot, zdot, rdot, pdot, ydot].
   void SetState(systems::Context<T>* context, VectorX<T> x) const {
+    // Unpack the unit test's nominal order.
     systems::Context<T>& plant_context =
         this->GetMutableSubsystemContext(*plant_, context);
-    plant_->set_state_vector(&plant_context, x);
+    DRAKE_DEMAND(x.size() == 12);
+    const VectorX<double> q_xyz = x.segment(0, 3);
+    const VectorX<double> q_rpy = x.segment(3, 3);
+    const VectorX<double> v_xyz = x.segment(6, 3);
+    const VectorX<double> v_rpy = x.segment(9, 3);
+    const auto quat = RollPitchYawd(x.segment(3, 3)).ToQuaternion();
+
+    // Pack into QuaternionFloatingMobilizer's state vector.
+    VectorX<double> qv(13);
+    qv(0) = quat.w();
+    qv.segment(1, 3) = quat.vec();
+    qv.segment(4, 3) = q_xyz;
+    qv.segment(7, 3) = v_rpy;
+    qv.segment(10, 3) = v_xyz;
+    plant_->SetPositionsAndVelocities(&plant_context, qv);
   }
 
  private:
-  systems::RigidBodyPlant<T>* plant_{};
+  MultibodyPlant<T>* plant_{};
 };
 
 //  Combines test setup for both kinds of plants:
 //  ge_model_:  GenericQuadrotor
-//  rb_model_:  RigidBodyPlant
+//  mb_model_:  MultibodyPlant
 class QuadrotorTest: public ::testing::Test {
  public:
   QuadrotorTest() {
     ge_model_ = std::make_unique<GenericQuadrotor<double>>();
-    rb_model_ = std::make_unique<RigidBodyQuadrotor<double>>();
+    mb_model_ = std::make_unique<MultibodyQuadrotor<double>>();
 
     ge_simulator_ = std::make_unique<systems::Simulator<double>>(*ge_model_);
-    rb_simulator_ = std::make_unique<systems::Simulator<double>>(*rb_model_);
+    mb_simulator_ = std::make_unique<systems::Simulator<double>>(*mb_model_);
 
     ge_derivatives_ = ge_model_->AllocateTimeDerivatives();
-    rb_derivatives_ = rb_model_->AllocateTimeDerivatives();
+    mb_derivatives_ = mb_model_->AllocateTimeDerivatives();
   }
 
   void SetUp() override {
     ge_context_ = ge_model_->CreateDefaultContext();
-    rb_context_ = rb_model_->CreateDefaultContext();
+    mb_context_ = mb_model_->CreateDefaultContext();
 
     ge_model_->SetState(ge_context_.get(), x0_);
-    rb_model_->SetState(rb_context_.get(), x0_);
+    mb_model_->SetState(mb_context_.get(), x0_);
 
     ge_simulator_->Initialize();
-    rb_simulator_->Initialize();
+    mb_simulator_->Initialize();
   }
 
   void SetState(const VectorX<double> x0) {
     ge_context_ = ge_model_->CreateDefaultContext();
-    rb_context_ = rb_model_->CreateDefaultContext();
+    mb_context_ = mb_model_->CreateDefaultContext();
 
     ge_model_->SetState(ge_context_.get(), x0);
-    rb_model_->SetState(rb_context_.get(), x0);
+    mb_model_->SetState(mb_context_.get(), x0);
+  }
+
+  // Report state as [x, y, z, r, p, y, xdot, ydot, zdot, rdot, pdot, ydot],
+  // given the GenericQuadrotor's state.
+  VectorX<double> CopyGeState(const systems::ContinuousState<double>& x) {
+    const VectorX<double> result = x.get_vector().CopyToVector();
+    DRAKE_DEMAND(result.size() == 12);
+    return result;
+  }
+
+  // Report state as [x, y, z, r, p, y, xdot, ydot, zdot, rdot, pdot, ydot],
+  // given the MultibodyQuadrotor's state.
+  VectorX<double> CopyMbState(const systems::ContinuousState<double>& x) {
+    // Unpack QuaternionFloatingMobilizer's state vector.
+    const VectorX<double> x_vec = x.get_vector().CopyToVector();
+    DRAKE_DEMAND(x_vec.size() == 13);
+    const VectorX<double> q_wxyz = x_vec.segment(0, 4);
+    const VectorX<double> q_xyz = x_vec.segment(4, 3);
+    const VectorX<double> v_rpy = x_vec.segment(7, 3);
+    const VectorX<double> v_xyz = x_vec.segment(10, 3);
+    const Quaterniond q_quat(q_wxyz(0), q_wxyz(1), q_wxyz(2), q_wxyz(3));
+
+    // Pack it back into the unit test's expected order.
+    VectorX<double> result(12);
+    result.segment(0, 3) = q_xyz;
+    result.segment(3, 3) = RollPitchYawd(q_quat).vector();
+    result.segment(6, 3) = v_xyz;
+    result.segment(9, 3) = v_rpy;
+    return result;
   }
 
   void Simulate(const double t) {
     ge_simulator_->Initialize();
-    rb_simulator_->Initialize();
+    mb_simulator_->Initialize();
 
     ge_simulator_->AdvanceTo(t);
-    rb_simulator_->AdvanceTo(t);
-  }
-
-  VectorX<double> GetState(systems::Simulator<double> *simulator) {
-    return simulator->get_context()
-        .get_continuous_state_vector()
-        .CopyToVector();
+    mb_simulator_->AdvanceTo(t);
   }
 
   void PassiveBehaviorTest(VectorX<double> x0) {
     SetState(x0);
     Simulate(kSimulationDuration);
-    VectorX<double> my_state = ge_simulator_->get_context()
-        .get_continuous_state_vector()
-        .CopyToVector();
-    VectorX<double> rb_state = rb_simulator_->get_context()
-        .get_continuous_state_vector()
-        .CopyToVector();
+    VectorX<double> ge_state = CopyGeState(
+        ge_simulator_->get_context().get_continuous_state());
+    VectorX<double> mb_state = CopyMbState(
+        mb_simulator_->get_context().get_continuous_state());
     double tol = 1e-10;
     EXPECT_TRUE(
-        CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
+        CompareMatrices(ge_state, mb_state, tol, MatrixCompareType::absolute));
   }
 
  protected:
   VectorX<double> x0_ = VectorX<double>::Zero(12);
 
   std::unique_ptr<GenericQuadrotor<double>> ge_model_;
-  std::unique_ptr<RigidBodyQuadrotor<double>> rb_model_;
+  std::unique_ptr<MultibodyQuadrotor<double>> mb_model_;
 
-  std::unique_ptr<systems::Simulator<double>> ge_simulator_, rb_simulator_;
+  std::unique_ptr<systems::Simulator<double>> ge_simulator_, mb_simulator_;
 
-  std::unique_ptr<systems::Context<double>> ge_context_, rb_context_;
+  std::unique_ptr<systems::Context<double>> ge_context_, mb_context_;
   std::unique_ptr<systems::ContinuousState<double>> ge_derivatives_,
-      rb_derivatives_;
+      mb_derivatives_;
 };
 
 //  Test comparing the computation of derivatives for a fixed state.
@@ -181,12 +214,12 @@ TEST_F(QuadrotorTest, derivatives) {
   SetState(x0);
 
   ge_model_->CalcTimeDerivatives(*ge_context_, ge_derivatives_.get());
-  rb_model_->CalcTimeDerivatives(*rb_context_, rb_derivatives_.get());
+  mb_model_->CalcTimeDerivatives(*mb_context_, mb_derivatives_.get());
 
-  VectorX<double> my_derivative_vector = ge_derivatives_->CopyToVector();
-  VectorX<double> rb_derivative_vector = rb_derivatives_->CopyToVector();
+  VectorX<double> ge_derivative_vector = CopyGeState(*ge_derivatives_);
+  VectorX<double> mb_derivative_vector = CopyMbState(*mb_derivatives_);
 
-  EXPECT_TRUE(CompareMatrices(my_derivative_vector, rb_derivative_vector,
+  EXPECT_TRUE(CompareMatrices(ge_derivative_vector, mb_derivative_vector,
                               1e-10 /* tolerance */,
                               MatrixCompareType::absolute));
 }
