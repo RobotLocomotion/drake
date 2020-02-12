@@ -300,11 +300,11 @@ def drake_pybind_cc_googletest(
         allow_import_unittest = True,
     )
 
-def _generate_pybind_documentation_header_impl(ctx):
+def _collect_cc_header_info(targets):
     compile_flags = []
     transitive_headers_depsets = []
     package_headers_depsets = []
-    for target in ctx.attr.targets:
+    for target in targets:
         if CcInfo in target:
             compilation_context = target[CcInfo].compilation_context
 
@@ -333,11 +333,25 @@ def _generate_pybind_documentation_header_impl(ctx):
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))
 
-    transitive_headers = depset(transitive = transitive_headers_depsets)
-    package_headers = depset(transitive = package_headers_depsets)
+    return struct(
+        compile_flags = compile_flags,
+        transitive_headers = depset(transitive = transitive_headers_depsets),
+        package_headers = depset(transitive = package_headers_depsets),
+    )
+
+def _generate_pybind_documentation_header_impl(ctx):
+    targets = _collect_cc_header_info(ctx.attr.targets)
+
+    # N.B. We take this approach, rather than `target_exclude`, because it's
+    # easier to add depsets together rather than subtract them.
+    target_deps = _collect_cc_header_info(ctx.attr.target_deps)
 
     args = ctx.actions.args()
-    args.add_all(compile_flags, uniquify = True)
+    args.add_all(
+        targets.compile_flags + target_deps.compile_flags,
+        uniquify = True,
+    )
+    outputs = [ctx.outputs.out]
     args.add("-output=" + ctx.outputs.out.path)
     args.add("-quiet")
     args.add("-root-name=" + ctx.attr.root_name)
@@ -345,11 +359,16 @@ def _generate_pybind_documentation_header_impl(ctx):
         args.add("-exclude-hdr-patterns=" + p)
     args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
     args.add("-w")
-    args.add_all(package_headers)
+
+    # N.B. This is for `targets` only.
+    args.add_all(targets.package_headers)
 
     ctx.actions.run(
-        inputs = transitive_headers,
-        outputs = [ctx.outputs.out],
+        outputs = outputs,
+        inputs = depset(transitive = [
+            targets.transitive_headers,
+            target_deps.transitive_headers,
+        ]),
         arguments = [args],
         executable = ctx.executable._mkdoc,
     )
@@ -359,6 +378,8 @@ def _generate_pybind_documentation_header_impl(ctx):
 # transitive headers of the given targets.
 # @param targets Targets with header files that should have documentation
 # strings generated.
+# @param target_deps Dependencies for `targets` (necessary for compilation /
+# parsing), but should not have documentation generated.
 # @param root_name Name of the root struct in generated file.
 # @param exclude_hdr_patterns Headers whose symbols should be ignored. Can be
 # glob patterns.
@@ -367,6 +388,7 @@ generate_pybind_documentation_header = rule(
         "targets": attr.label_list(
             mandatory = True,
         ),
+        "target_deps": attr.label_list(),
         "_mkdoc": attr.label(
             default = Label("//tools/workspace/pybind11:mkdoc"),
             allow_files = True,

@@ -1,7 +1,7 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/attic/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/rbt_inverse_dynamics.h"

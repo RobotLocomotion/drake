@@ -43,7 +43,7 @@ drake_py_library(
 drake_pybind_library(
     name = "rigid_body_plant_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/attic:documentation_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
     ],
@@ -61,7 +61,7 @@ drake_pybind_library(
     name = "rigid_body_tree_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/attic:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:type_pack",
     ],
@@ -81,7 +81,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "collision_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = ["//bindings/pydrake/attic:documentation_pybind"],
     cc_srcs = ["collision_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -94,7 +94,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "joints_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/attic:documentation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
     ],
     cc_srcs = ["joints_py.cc"],
@@ -107,7 +107,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "rigid_body_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = ["//bindings/pydrake/attic:documentation_pybind"],
     cc_srcs = ["rigid_body_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -118,7 +118,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "shapes_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = ["//bindings/pydrake/attic:documentation_pybind"],
     cc_srcs = ["shapes_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
