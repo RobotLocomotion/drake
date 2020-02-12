@@ -1,6 +1,7 @@
 #include "drake/solvers/mosek_solver.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <cstdlib>

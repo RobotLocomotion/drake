@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_scene_graph.h"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>

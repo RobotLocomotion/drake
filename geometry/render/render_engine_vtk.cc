@@ -1,6 +1,7 @@
 #include "drake/geometry/render/render_engine_vtk.h"
 
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 

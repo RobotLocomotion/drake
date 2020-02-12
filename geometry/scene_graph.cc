@@ -337,10 +337,10 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
-  source_ports.pose_port =
-      this->DeclareAbstractInputPort(
-          initial_state_->get_source_name(source_id) + "_pose",
-          Value<FramePoseVector<T>>()).get_index();
+  source_ports.pose_port = this->DeclareAbstractInputPort(
+                                   initial_state_->GetName(source_id) + "_pose",
+                                   Value<FramePoseVector<T>>())
+                               .get_index();
 }
 
 template <typename T>
@@ -389,10 +389,10 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   for (int i = 0; i < output->get_num_poses(); ++i) {
     const FrameId f_id = dynamic_frames[i];
     const SourceId s_id = g_state.get_source_id(f_id);
-    const std::string& source_name = g_state.get_source_name(s_id);
-    const std::string& frame_name = g_state.get_frame_name(f_id);
+    const std::string& source_name = g_state.GetName(s_id);
+    const std::string& frame_name = g_state.GetName(f_id);
     output->set_name(i, source_name + "::" + frame_name);
-    output->set_model_instance_id(i, g_state.get_frame_group(f_id));
+    output->set_model_instance_id(i, g_state.GetFrameGroup(f_id));
     // TODO(#11888): Remove GetAsIsometry3() when PoseBundle supports
     //  RigidTransform.
     output->set_pose(i, g_state.get_pose_in_world(f_id).GetAsIsometry3());

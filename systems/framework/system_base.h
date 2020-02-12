@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_throw.h"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <variant>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"

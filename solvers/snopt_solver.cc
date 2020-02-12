@@ -1,6 +1,7 @@
 #include "drake/solvers/snopt_solver.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -8,6 +9,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <unordered_map>
 #include <utility>

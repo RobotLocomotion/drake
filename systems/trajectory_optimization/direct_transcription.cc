@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
