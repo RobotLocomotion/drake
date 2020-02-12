@@ -51,7 +51,7 @@ PYBIND11_MODULE(symbolic, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
-  const auto& var_doc = doc.Variable;
+  constexpr auto& var_doc = doc.Variable;
   py::enum_<Variable::Type>(var_cls, "Type")
       .value(
           "CONTINUOUS", Variable::Type::CONTINUOUS, var_doc.Type.CONTINUOUS.doc)
@@ -522,7 +522,7 @@ PYBIND11_MODULE(symbolic, m) {
       }),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
       .def("indeterminates", &Polynomial::indeterminates,
-          doc.Polynomial.indeterminates.doc, doc.Polynomial.indeterminates.doc)
+          doc.Polynomial.indeterminates.doc)
       .def("decision_variables", &Polynomial::decision_variables,
           doc.Polynomial.decision_variables.doc)
       .def("Degree", &Polynomial::Degree, doc.Polynomial.Degree.doc)
