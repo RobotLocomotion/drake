@@ -2,7 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/attic/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/joints/drake_joint.h"
 #include "drake/multibody/joints/fixed_axis_one_dof_joint.h"
