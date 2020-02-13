@@ -1,5 +1,6 @@
-#include "perception/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
+#include <array>
 #include <unordered_map>
 
 #include <gtest/gtest.h>
@@ -7,38 +8,27 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 namespace {
 
-using drake::geometry::Cylinder;
-using drake::geometry::Convex;
-using drake::geometry::Box;
-using drake::geometry::GeometryId;
-using drake::geometry::HalfSpace;
-using drake::geometry::Mesh;
-using drake::geometry::PerceptionProperties;
-using drake::geometry::render::CameraProperties;
-using drake::geometry::render::DepthCameraProperties;
-using drake::geometry::render::RenderEngine;
-using drake::geometry::render::RenderLabel;
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::systems::sensors::ColorI;
-using drake::systems::sensors::ImageDepth32F;
-using drake::systems::sensors::InvalidDepth;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using math::RigidTransformd;
 using std::make_unique;
-using std::optional;
 using std::unique_ptr;
 using std::unordered_map;
-using std::vector;
+using systems::sensors::ColorI;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::InvalidDepth;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -81,9 +71,9 @@ class RenderEngineGlTest : public ::testing::Test {
   RenderEngineGlTest()
       : depth_(kWidth, kHeight),
         // Looking straight down from 3m above the ground.
-        X_WR_(Eigen::Translation3d(0, 0, kDefaultDistance) *
-              Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) *
-              Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ())),
+        X_WR_(Translation3d(0, 0, kDefaultDistance) *
+              Eigen::AngleAxisd(M_PI, Vector3d::UnitY()) *
+              Eigen::AngleAxisd(-M_PI_2, Vector3d::UnitZ())),
         geometry_id_(GeometryId::get_new_id()) {}
 
  protected:
@@ -189,9 +179,9 @@ class RenderEngineGlTest : public ::testing::Test {
 
     if (add_terrain) {
       const GeometryId ground_id = GeometryId::get_new_id();
-      renderer_->RegisterVisual(
-          ground_id, HalfSpace(), PerceptionProperties(),
-          RigidTransformd::Identity(), false /** needs update */);
+      renderer_->RegisterVisual(ground_id, HalfSpace(), PerceptionProperties(),
+                                RigidTransformd::Identity(),
+                                false /** needs update */);
     }
   }
 
@@ -320,7 +310,7 @@ TEST_F(RenderEngineGlTest, BoxTest) {
   renderer_->RegisterVisual(id, box, simple_material(),
                             RigidTransformd::Identity(),
                             true /* needs update */);
-  RigidTransformd X_WV{Eigen::Translation3d(0, 0, 0.5)};
+  RigidTransformd X_WV{Translation3d(0, 0, 0.5)};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
@@ -347,7 +337,7 @@ TEST_F(RenderEngineGlTest, CylinderTest) {
                             RigidTransformd::Identity(),
                             true /* needs update */);
   // Position the top of the cylinder to be 1 m above the terrain.
-  RigidTransformd X_WV{Eigen::Translation3d(0, 0, 0.4)};
+  RigidTransformd X_WV{Translation3d(0, 0, 0.4)};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
@@ -361,7 +351,7 @@ TEST_F(RenderEngineGlTest, CylinderTest) {
 TEST_F(RenderEngineGlTest, MeshTest) {
   SetUp(X_WR_, true);
 
-  auto filename = drake::FindResourceOrThrow(
+  auto filename = FindResourceOrThrow(
       "drake/systems/sensors/test/models/meshes/box.obj");
   Mesh mesh(filename);
   PerceptionProperties material = simple_material();
@@ -370,8 +360,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   // texture.
   material.AddProperty("phong", "diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material,
-                            RigidTransformd::Identity(),
+  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
   renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
       {id, RigidTransformd::Identity()}});
@@ -386,7 +375,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
 TEST_F(RenderEngineGlTest, ConvexTest) {
   SetUp(X_WR_, true);
 
-  auto filename = drake::FindResourceOrThrow(
+  auto filename = FindResourceOrThrow(
       "drake/systems/sensors/test/models/meshes/box.obj");
   Convex convex(filename);
   PerceptionProperties material = simple_material();
@@ -395,8 +384,7 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   // texture.
   material.AddProperty("phong", "diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, convex, material,
-                            RigidTransformd::Identity(),
+  renderer_->RegisterVisual(id, convex, material, RigidTransformd::Identity(),
                             true /* needs update */);
   renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
       {id, RigidTransformd::Identity()}});
@@ -452,9 +440,9 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
     Sphere sphere{kRadius};
     const float depth = kDefaultDistance - kRadius - z;
     PerceptionProperties material;
-    renderer_->RegisterVisual(
-        geometry_id, sphere, material, RigidTransformd::Identity(), true);
-    RigidTransformd X_WV{Eigen::Translation3d(0, 0, z)};
+    renderer_->RegisterVisual(geometry_id, sphere, material,
+                              RigidTransformd::Identity(), true);
+    RigidTransformd X_WV{Translation3d(0, 0, z)};
     X_WV_.insert({geometry_id, X_WV});
     renderer_->UpdatePoses(X_WV_);
     return depth;
@@ -596,9 +584,19 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
 
     DepthCameraProperties clipping_near_plane(camera_);
     clipping_near_plane.z_near = expected_object_depth_ + 0.1;
+    const float old_object_depth_ = expected_object_depth_;
     expected_object_depth_ = 0;
     PerformCenterShapeTest(renderer_.get(), "Camera change - z near clips mesh",
                            &clipping_near_plane);
+    // NOTE: Need to restored expected object depth for next test.
+    expected_object_depth_ = old_object_depth_;
+
+    // Test rendering with a previous camera once again to make sure the
+    // existing target is reused correctly.
+    expected_outlier_depth_ = std::numeric_limits<float>::infinity();
+    PerformCenterShapeTest(renderer_.get(),
+                           "Camera change - z far clips terrain",
+                           &clipping_far_plane);
   }
 }
 
@@ -614,7 +612,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, box, PerceptionProperties(),
                             RigidTransformd::Identity(), true);
-  RigidTransformd X_WV{Eigen::Translation3d(0, 0, 0.5)};
+  RigidTransformd X_WV{Translation3d(0, 0, 0.5)};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
@@ -630,9 +628,9 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
   const GeometryId ground = GeometryId::get_new_id();
 
   auto add_terrain = [ground](auto* renderer) {
-    renderer->RegisterVisual(
-        ground, HalfSpace(), PerceptionProperties(),
-        RigidTransformd::Identity(), false /** needs update */);
+    renderer->RegisterVisual(ground, HalfSpace(), PerceptionProperties(),
+                             RigidTransformd::Identity(),
+                             false /** needs update */);
   };
 
   engine1.UpdateViewpoint(X_WR_);
@@ -649,7 +647,7 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
   const GeometryId box_id = GeometryId::get_new_id();
   engine2.RegisterVisual(box_id, box, simple_material(),
                          RigidTransformd::Identity(), true);
-  RigidTransformd X_WV{Eigen::Translation3d(0.2, 0.2, 0.5)};
+  RigidTransformd X_WV{Translation3d(0.2, 0.2, 0.5)};
   engine2.UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{box_id, X_WV}});
   PerformCenterShapeTest(&engine2, "engine2 - offset box test");
@@ -658,5 +656,7 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
 }
 
 }  // namespace
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

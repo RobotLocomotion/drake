@@ -3,10 +3,12 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "perception/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/opengl_includes.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 /** Definition of a GLSL shader program including a vertex and fragment shader.
  All operations on this shader program require an active OpenGL context. In
@@ -42,8 +44,10 @@ class ShaderProgram {
   void Unuse() const;
 
  private:
-  GLuint program_id_ = 0;
+  GLuint program_id_{0};
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

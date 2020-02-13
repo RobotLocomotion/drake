@@ -443,6 +443,17 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "geometry_render_engine_gl_test",
+    tags = [
+        "manual",  # Avoid running in CI due to dependency on X.
+    ],
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
