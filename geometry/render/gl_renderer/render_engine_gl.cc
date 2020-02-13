@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
 #include <algorithm>
 #include <fstream>
@@ -7,8 +7,10 @@
 
 #include <fmt/format.h>
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 using drake::geometry::Box;
 using drake::geometry::Convex;
@@ -16,9 +18,9 @@ using drake::geometry::Cylinder;
 using drake::geometry::GeometryId;
 using drake::geometry::HalfSpace;
 using drake::geometry::Mesh;
+using drake::geometry::PerceptionProperties;
 using drake::geometry::Shape;
 using drake::geometry::Sphere;
-using drake::geometry::PerceptionProperties;
 using drake::geometry::render::CameraProperties;
 using drake::geometry::render::DepthCameraProperties;
 using drake::geometry::render::RenderEngine;
@@ -323,8 +325,8 @@ void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = sphere.radius();
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG, drake::Vector3<double>{r, r, r}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           drake::Vector3<double>{r, r, r}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -333,44 +335,45 @@ void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG, drake::Vector3<double>{r, r, l}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           drake::Vector3<double>{r, r, l}));
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
   OpenGlGeometry geometry = GetHalfSpace();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG, drake::Vector3<double>{1, 1, 1}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           drake::Vector3<double>{1, 1, 1}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
   OpenGlGeometry geometry = GetBox();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG,
-      drake::Vector3<double>{box.width(), box.depth(), box.height()}));
+  visuals_.emplace(
+      data.id, OpenGlInstance(geometry, data.X_WG,
+                              drake::Vector3<double>{box.width(), box.depth(),
+                                                     box.height()}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   OpenGlGeometry geometry = GetMesh(mesh.filename());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG,
-      drake::Vector3<double>{1, 1, 1} * mesh.scale()));
+  visuals_.emplace(
+      data.id, OpenGlInstance(geometry, data.X_WG,
+                              drake::Vector3<double>{1, 1, 1} * mesh.scale()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   OpenGlGeometry geometry = GetMesh(convex.filename());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG,
-      drake::Vector3<double>{1, 1, 1} * convex.scale()));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           drake::Vector3<double>{1, 1, 1} *
+                                               convex.scale()));
 }
 
-bool RenderEngineGl::DoRegisterVisual(
-    GeometryId id, const Shape& shape, const PerceptionProperties&,
-    const RigidTransformd& X_FG) {
+bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
+                                      const PerceptionProperties&,
+                                      const RigidTransformd& X_FG) {
   opengl_context_->make_current();
   RegistrationData data{id, RigidTransformd{X_FG}};
   shape.Reify(this, &data);
@@ -606,5 +609,7 @@ OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
 
 RenderEngineGl::~RenderEngineGl() = default;
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

@@ -10,20 +10,21 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/gl_renderer/buffer_dim.h"
+#include "drake/geometry/render/gl_renderer/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/opengl_geometry.h"
+#include "drake/geometry/render/gl_renderer/shader_program.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/image.h"
-#include "perception/gl_renderer/buffer_dim.h"
-#include "perception/gl_renderer/load_mesh.h"
-#include "perception/gl_renderer/opengl_context.h"
-#include "perception/gl_renderer/opengl_geometry.h"
-#include "perception/gl_renderer/shader_program.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
-/** Optimized simple renderer based on direct calls to the OpenGL API. All
- geometries with perception role are added to this renderer.  */
+/** See documentation of MakeRenderEngineGl().  */
 class RenderEngineGl final : public drake::geometry::render::RenderEngine {
  public:
   /** \name Does not allow public copy, move, or assignment  */
@@ -74,11 +75,10 @@ class RenderEngineGl final : public drake::geometry::render::RenderEngine {
 
  private:
   // @see RenderEngine::DoRegisterVisual().
-  bool DoRegisterVisual(
-      drake::geometry::GeometryId id,
-      const drake::geometry::Shape& shape,
-      const drake::geometry::PerceptionProperties& properties,
-      const drake::math::RigidTransformd& X_WG) override;
+  bool DoRegisterVisual(drake::geometry::GeometryId id,
+                        const drake::geometry::Shape& shape,
+                        const drake::geometry::PerceptionProperties& properties,
+                        const drake::math::RigidTransformd& X_WG) override;
 
   // @see RenderEngine::DoUpdateVisualPose().
   void DoUpdateVisualPose(drake::geometry::GeometryId id,
@@ -159,5 +159,7 @@ class RenderEngineGl final : public drake::geometry::render::RenderEngine {
   std::unordered_map<drake::geometry::GeometryId, OpenGlInstance> visuals_;
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/opengl_context.h"
 
 #include <algorithm>
 #include <cstring>
@@ -6,14 +6,20 @@
 #include <string>
 #include <utility>
 
+// Note: This is intentionally included here since it's only needed at the
+// implementation level, and not in a grouping of more generic headers like
+// opengl_includes.h. See opengl_context.h for where pimpl is applied.
 #include <GL/glx.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
+
 namespace {
 
 // Helper function for loading OpenGL extension functions.
@@ -162,9 +168,11 @@ GLint OpenGlContext::max_renderbuffer_size() {
 
 GLint OpenGlContext::max_allowable_texture_size() {
   // TODO(duy): Take into account CUDA limits.
-  return std::min(gl_renderer::OpenGlContext::max_texture_size(),
-                  gl_renderer::OpenGlContext::max_renderbuffer_size());
+  return std::min(OpenGlContext::max_texture_size(),
+                  OpenGlContext::max_renderbuffer_size());
 }
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

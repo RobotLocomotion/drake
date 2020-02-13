@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/shader_program.h"
+#include "drake/geometry/render/gl_renderer/shader_program.h"
 
 #include <fstream>
 #include <iostream>
@@ -7,8 +7,10 @@
 #include <string>
 #include <vector>
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 namespace {
 
@@ -104,5 +106,7 @@ ShaderProgram::~ShaderProgram() {
   glDeleteProgram(program_id_);
 }
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake
