@@ -443,6 +443,19 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "geometry_render_engine_gl_test",
+    tags = [
+        # Unavailability of X windows in the CI environment forces this to be
+        # strictly manual.
+        "manual",
+    ],
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
