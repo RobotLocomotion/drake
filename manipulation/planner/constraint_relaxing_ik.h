@@ -1,14 +1,14 @@
 #pragma once
 
 #include <memory>
-#include <random>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/multibody/rigid_body_ik.h"
+#include "drake/common/random.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace manipulation {
@@ -27,7 +27,7 @@ class ConstraintRelaxingIk {
    */
   struct IkCartesianWaypoint {
     /// Desired end effector pose in the world frame.
-    Isometry3<double> pose{Isometry3<double>::Identity()};
+    math::RigidTransformd pose;
     /// Bounding box for the end effector in the world frame.
     Vector3<double> pos_tol{Vector3<double>(0.005, 0.005, 0.005)};
     /// Max angle difference (in radians) between solved end effector's
@@ -43,31 +43,24 @@ class ConstraintRelaxingIk {
    * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
    * @param model_path Path to the model file.
    * @param end_effector_link_name Link name of the end effector.
-   * @param base_to_world X_WB, transformation from robot's base to the world
-   * frame.
    */
+  ConstraintRelaxingIk(const std::string& model_path,
+                       const std::string& end_effector_link_name);
+
+
+  DRAKE_DEPRECATED("2020-06-01",
+                   "Use the two-argument constructor or "
+                   "ConstraintRelaxingIkRbt (which is also deprecated)")
   ConstraintRelaxingIk(const std::string& model_path,
                        const std::string& end_effector_link_name,
                        const Isometry3<double>& base_to_world);
 
   /**
-   * Sets end effector to @p end_effector_body.
-   */
-  void SetEndEffector(const RigidBody<double>& end_effector_body) {
-    end_effector_body_idx_ = end_effector_body.get_body_index();
-  }
-
-  /**
    * Sets end effector to @p link_name.
    */
   void SetEndEffector(const std::string& link_name) {
-    end_effector_body_idx_ = robot_->FindBodyIndex(link_name);
+    end_effector_body_idx_ = plant_.GetBodyByName(link_name).index();
   }
-
-  /**
-   * Returns constant reference to the robot model.
-   */
-  const RigidBodyTree<double>& get_robot() const { return *robot_; }
 
   /**
    * Generates IK solutions for each waypoint sequentially. For waypoint wp_i,
@@ -77,27 +70,26 @@ class ConstraintRelaxingIk {
    * function internally does constraint relaxing and initial condition
    * guessing if necessary.
    *
-   * Note that @p q_current is inserted at the beginning of @p ik_res.
+   * Note that @p q_current is inserted at the beginning of @p q_sol.
    *
    * @param waypoints A sequence of desired waypoints.
    * @param q_current The initial generalized position.
-   * @param[out] ik_res Results.
+   * @param[out] q_sol Results.
    * @return True if solved successfully.
    */
   bool PlanSequentialTrajectory(
       const std::vector<IkCartesianWaypoint>& waypoints,
-      const VectorX<double>& q_current, IKResults* ik_res);
+      const VectorX<double>& q_current,
+      std::vector<Eigen::VectorXd>* q_sol);
 
  private:
   bool SolveIk(const IkCartesianWaypoint& waypoint, const VectorX<double>& q0,
-               const VectorX<double>& q_nom,
                const Vector3<double>& pos_tol, double rot_tol,
-               VectorX<double>* q_res, std::vector<int>* info,
-               std::vector<std::string>* infeasible_constraints);
+               VectorX<double>* q_res);
 
-  std::default_random_engine rand_generator_;
-  std::unique_ptr<RigidBodyTree<double>> robot_{nullptr};
-  int end_effector_body_idx_{};
+  RandomGenerator rand_generator_;
+  multibody::MultibodyPlant<double> plant_;
+  multibody::BodyIndex end_effector_body_idx_{};
 };
 
 }  // namespace planner

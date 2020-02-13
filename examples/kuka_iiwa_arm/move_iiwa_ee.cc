@@ -67,7 +67,7 @@ class MoveDemoRunner {
   // fairly high rate operation (200Hz is typical).  The plan is
   // calculated on the first status message received, after that
   // periodically display the current position of the end effector.
-  void HandleStatus(const lcm::ReceiveBuffer*, const std::string&,
+  void HandleStatus(const ::lcm::ReceiveBuffer*, const std::string&,
                     const lcmt_iiwa_status* status) {
     status_count_++;
     Eigen::VectorXd iiwa_q(status->num_joints);
@@ -95,8 +95,7 @@ class MoveDemoRunner {
     // If this is the first status we've received, calculate a plan
     // and send it (if it succeeds).
     if (status_count_ == 1) {
-      ConstraintRelaxingIk ik(
-          urdf_, FLAGS_ee_name, Isometry3<double>::Identity());
+      ConstraintRelaxingIk ik(urdf_, FLAGS_ee_name);
 
       // Create a single waypoint for our plan (the destination).
       // This results in a trajectory with two knot points (the
@@ -104,45 +103,47 @@ class MoveDemoRunner {
       // processes and passed directly to PlanSequentialTrajectory as
       // iiwa_q) and the calculated final pose).
       ConstraintRelaxingIk::IkCartesianWaypoint wp;
-      wp.pose.translation() = Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z);
+      wp.pose.set_translation(Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z));
       const math::RollPitchYaw<double> rpy(FLAGS_roll, FLAGS_pitch, FLAGS_yaw);
-      wp.pose.linear() = rpy.ToMatrix3ViaRotationMatrix();
+      wp.pose.set_rotation(rpy);
       wp.constrain_orientation = true;
       std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints;
       waypoints.push_back(wp);
-      IKResults ik_res;
-      ik.PlanSequentialTrajectory(waypoints, iiwa_q, &ik_res);
-      drake::log()->info("IK result: {}", ik_res.info[0]);
+      std::vector<Eigen::VectorXd> q_sol;
+      const bool result =
+          ik.PlanSequentialTrajectory(waypoints, iiwa_q, &q_sol);
+      drake::log()->info("IK result: {}", result);
 
-      if (ik_res.info[0] == 1) {
-        drake::log()->info("IK sol size {}", ik_res.q_sol.size());
+      if (result) {
+        drake::log()->info("IK sol size {}", q_sol.size());
 
         // Run the resulting plan over 2 seconds (which is a fairly
         // arbitrary choice).  This may be slowed down if executing
         // the plan in that time would exceed any joint velocity
         // limits.
         std::vector<double> times{0, 2};
-        DRAKE_DEMAND(ik_res.q_sol.size() == times.size());
+        DRAKE_DEMAND(q_sol.size() == times.size());
 
         // Convert the resulting waypoints into the format expected by
         // ApplyJointVelocityLimits and EncodeKeyFrames.
-        MatrixX<double> q_mat(ik_res.q_sol.front().size(), ik_res.q_sol.size());
-        for (size_t i = 0; i < ik_res.q_sol.size(); ++i) {
-          q_mat.col(i) = ik_res.q_sol[i];
+        MatrixX<double> q_mat(q_sol.front().size(), q_sol.size());
+        for (size_t i = 0; i < q_sol.size(); ++i) {
+          q_mat.col(i) = q_sol[i];
         }
 
         // Ensure that the planned motion would not exceed the joint
         // velocity limits.  This function will scale the supplied
         // times if needed.
         ApplyJointVelocityLimits(q_mat, &times);
+        std::vector<int> info{1, 1};
         robotlocomotion::robot_plan_t plan =
-            EncodeKeyFrames(tree_, times, ik_res.info, q_mat);
+            EncodeKeyFrames(tree_, times, info, q_mat);
         lcm_.publish(FLAGS_lcm_plan_channel, &plan);
       }
     }
   }
 
-  lcm::LCM lcm_;
+  ::lcm::LCM lcm_;
   std::string urdf_;
   RigidBodyTree<double> tree_;
   int status_count_{0};
