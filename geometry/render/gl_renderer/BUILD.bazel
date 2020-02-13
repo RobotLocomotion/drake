@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
     "defs.bzl",
     "drake_cc_library_gl_ubuntu_only",
@@ -21,8 +22,24 @@ drake_cc_package_library_gl_per_os(
         ":render_engine_gl",
     ],
     ubuntu_deps = [
+        ":load_mesh",
         ":opengl_context",
+        ":opengl_geometry",
         ":render_engine_gl",
+        ":shader_program",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "load_mesh",
+    srcs = ["load_mesh.cc"],
+    hdrs = ["load_mesh.h"],
+    # NOTE: Required for compatibility with tinyobjloader.
+    linkstatic = 1,
+    deps = [
+        ":opengl_context",
+        "//common:essential",
+        "@tinyobjloader",
     ],
 )
 
@@ -35,31 +52,19 @@ drake_cc_library_gl_ubuntu_only(
     ],
     visibility = ["//visibility:private"],
     deps = [
-        "@drake//common",
+        "//common:essential",
         "@opengl",
         "@x11",
     ],
 )
 
-anzu_cc_library(
-    name = "load_mesh",
-    srcs = ["load_mesh.cc"],
-    hdrs = ["load_mesh.h"],
-    # NOTE: Required for compatibility with tinyobjloader.
-    linkstatic = 1,
-    deps = [
-        ":opengl_context",
-        "@drake//common:essential",
-        "@tinyobjloader",
-    ],
-)
-
-anzu_cc_library(
+drake_cc_library_gl_ubuntu_only(
     name = "opengl_geometry",
     hdrs = ["opengl_geometry.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":opengl_context",
-        "@drake//math:geometric_transform",
+        "//math:geometric_transform",
     ],
 )
 
@@ -87,21 +92,20 @@ drake_cc_library(
             ":load_mesh",
             ":opengl_geometry",
             ":shader_program",
-            "@drake//common:essential",
-            "@drake//geometry/render:render_engine",
-            "@drake//systems/sensors:image",
-            "@fmt",
+            "//common:essential",
+            "//geometry/render:render_engine",
+            "//systems/sensors:image",
         ],
     }),
 )
 
-anzu_cc_library(
+drake_cc_library_gl_ubuntu_only(
     name = "shader_program",
     srcs = ["shader_program.cc"],
     hdrs = ["shader_program.h"],
     deps = [
         ":opengl_context",
-        "@drake//common:essential",
+        "//common:essential",
     ],
 )
 
@@ -112,13 +116,16 @@ drake_cc_googletest(
         "//conditions:default": [],
     }),
     data = [
-        "@drake//systems/sensors:test_models",
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags() + [
+        "manual",
     ],
     deps = [
         ":render_engine_gl",
-        "@drake//common:find_resource",
-        "@drake//geometry/render:render_label",
-        "@drake//systems/sensors:color_palette",
+        "//common:find_resource",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
     ],
 )
 
