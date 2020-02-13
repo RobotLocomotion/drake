@@ -2,12 +2,14 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
-#include "perception/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/opengl_includes.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
-/** Simple struct for recording the dimensions of a render target. */
+/** Simple class for recording the dimensions of a render target. */
 class BufferDim {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BufferDim)
@@ -43,13 +45,15 @@ struct RenderTarget {
   GLuint render_buffer;
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake
 
 namespace std {
 
-/// Provides std::hash<BufferDim>.
+/** Provides std::hash<BufferDim>.  */
 template <>
-struct hash<anzu::gl_renderer::BufferDim>
+struct hash<drake::geometry::render::gl::BufferDim>
     : public drake::DefaultHash {};
 }  // namespace std

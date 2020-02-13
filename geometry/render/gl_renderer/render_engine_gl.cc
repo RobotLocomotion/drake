@@ -1,37 +1,20 @@
-#include "perception/gl_renderer/render_engine_gl.h"
-
-#include <algorithm>
-#include <fstream>
-#include <limits>
-#include <string>
+#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
 #include <fmt/format.h>
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
-using drake::geometry::Box;
-using drake::geometry::Convex;
-using drake::geometry::Cylinder;
-using drake::geometry::GeometryId;
-using drake::geometry::HalfSpace;
-using drake::geometry::Mesh;
-using drake::geometry::Shape;
-using drake::geometry::Sphere;
-using drake::geometry::PerceptionProperties;
-using drake::geometry::render::CameraProperties;
-using drake::geometry::render::DepthCameraProperties;
-using drake::geometry::render::RenderEngine;
-using drake::math::RigidTransformd;
-using drake::systems::sensors::ImageDepth32F;
-using drake::systems::sensors::ImageLabel16I;
-using drake::systems::sensors::ImageRgba8U;
-using Eigen::Isometry3d;
+using math::RigidTransformd;
 using std::make_shared;
-using std::optional;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 namespace {
 
@@ -53,7 +36,7 @@ RenderEngineGl::RenderEngineGl()
     throw std::runtime_error("OpenGL Context has not been initialized.");
 
   // Setup shader program.
-  const std::string kVertexShader = R"__(
+  const string kVertexShader = R"__(
 #version 450
 
 layout(location = 0) in vec3 p_Model;
@@ -66,7 +49,7 @@ void main() {
   depth = -p_Camera.z;
   gl_Position = projection_matrix * p_Camera;
 })__";
-  const std::string kFragmentShader = R"__(
+  const string kFragmentShader = R"__(
 #version 450
 
 in float depth;
@@ -122,13 +105,15 @@ void RenderEngineGl::SetGLProjectionMatrix(
   static constexpr float kGLZFar = 10.0;
   static constexpr float kInvZNearMinusZFar = 1. / (kGLZNear - kGLZFar);
   if (camera.z_near < kGLZNear)
-    throw std::runtime_error(fmt::format(
-        "Camera's z_near ({}) is closer than what this render can handle ({})",
-        camera.z_near, kGLZNear));
+    throw std::runtime_error(
+        fmt::format("Camera's z_near ({}) is closer than what this renderer "
+                    "can handle ({})",
+                    camera.z_near, kGLZNear));
   if (camera.z_far > kGLZFar)
-    throw std::runtime_error(fmt::format(
-        "Camera's z_far ({}) is farther than what this render can handle ({})",
-        camera.z_far, kGLZFar));
+    throw std::runtime_error(
+        fmt::format("Camera's z_far ({}) is farther than what this renderer "
+                    "can handle ({})",
+                    camera.z_far, kGLZFar));
 
   // https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
   // An OpenGL projection matrix maps points in a camera coordinate to a "clip
@@ -136,7 +121,7 @@ void RenderEngineGl::SetGLProjectionMatrix(
   // normalized device coordinate (NDC). Effectively, image corners are mapped
   // into a square from -1 to 1 in NDC. Hence, the clip coordinate is
   // essentially a scaled version of the camera coordinate, where the camera
-  // image frustrum is scaled into a "square" frustrum.
+  // image frustum is scaled into a "square" frustum.
   //
   // Because the xy elements of the image corner [f*w/2, f*h/2] is mapped to
   // [fx*f*w/2, fy*f*h/2] in the "square" clip coordinate by the OpenGL
@@ -293,7 +278,7 @@ RenderTarget RenderEngineGl::RenderAt(
 
     glViewport(0, 0, camera.width, camera.height);
     Eigen::DiagonalMatrix<float, 4, 4> X_GC(
-        drake::Vector4<float>(vis.s_GC(0), vis.s_GC(1), vis.s_GC(2), 1.0));
+        Vector4<float>(vis.s_GC(0), vis.s_GC(1), vis.s_GC(2), 1.0));
     SetGLModelViewMatrix(X_CW * vis.X_WG.GetAsMatrix4().cast<float>() * X_GC);
     glDrawElements(GL_TRIANGLES, vis.geometry.index_buffer_size,
                    GL_UNSIGNED_INT, 0);
@@ -323,8 +308,8 @@ void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = sphere.radius();
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG, drake::Vector3<double>{r, r, r}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           Vector3<double>{r, r, r}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -333,44 +318,45 @@ void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG, drake::Vector3<double>{r, r, l}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           Vector3<double>{r, r, l}));
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
   OpenGlGeometry geometry = GetHalfSpace();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG, drake::Vector3<double>{1, 1, 1}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           Vector3<double>{1, 1, 1}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
   OpenGlGeometry geometry = GetBox();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG,
-      drake::Vector3<double>{box.width(), box.depth(), box.height()}));
+  visuals_.emplace(
+      data.id, OpenGlInstance(geometry, data.X_WG,
+                              Vector3<double>{box.width(), box.depth(),
+                                                     box.height()}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   OpenGlGeometry geometry = GetMesh(mesh.filename());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG,
-      drake::Vector3<double>{1, 1, 1} * mesh.scale()));
+  visuals_.emplace(
+      data.id, OpenGlInstance(geometry, data.X_WG,
+                              Vector3<double>{1, 1, 1} * mesh.scale()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   OpenGlGeometry geometry = GetMesh(convex.filename());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(
-      geometry, data.X_WG,
-      drake::Vector3<double>{1, 1, 1} * convex.scale()));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           Vector3<double>{1, 1, 1} *
+                                               convex.scale()));
 }
 
-bool RenderEngineGl::DoRegisterVisual(
-    GeometryId id, const Shape& shape, const PerceptionProperties&,
-    const RigidTransformd& X_FG) {
+bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
+                                      const PerceptionProperties&,
+                                      const RigidTransformd& X_FG) {
   opengl_context_->make_current();
   RegistrationData data{id, RigidTransformd{X_FG}};
   shape.Reify(this, &data);
@@ -392,8 +378,8 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
   }
 }
 
-std::unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
-  return std::unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
+unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
+  return unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
 }
 
 OpenGlGeometry RenderEngineGl::GetSphere() {
@@ -606,5 +592,7 @@ OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
 
 RenderEngineGl::~RenderEngineGl() = default;
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake
