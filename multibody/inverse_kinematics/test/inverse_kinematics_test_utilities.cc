@@ -169,10 +169,15 @@ BoxSphereTest::BoxSphereTest() : box_size_(10, 10, 10), radius_(1) {
   diagram_context_double_ = diagram_double_->CreateDefaultContext();
   plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
       *plant_double_, diagram_context_double_.get()));
+  owned_diagram_autodiff_ = std::move(diagram_double_->ToAutoDiffXd());
+  diagram_autodiff_ =
+      static_cast<systems::Diagram<AutoDiffXd>*>(owned_diagram_autodiff_.get());
+  plant_autodiff_ = static_cast<const MultibodyPlant<AutoDiffXd>*>(
+      &(diagram_autodiff_->GetSubsystemByName(plant_double_->get_name())));
+  scene_graph_autodiff_ = static_cast<const geometry::SceneGraph<AutoDiffXd>*>(
+      &(diagram_autodiff_->GetSubsystemByName(
+          scene_graph_double_->get_name())));
 
-  diagram_autodiff_ = ConstructBoxSphereDiagram(
-      box_size_, radius_, &plant_autodiff_, &scene_graph_autodiff_,
-      &sphere_frame_index_, &box_frame_index_);
   diagram_context_autodiff_ = diagram_autodiff_->CreateDefaultContext();
   plant_context_autodiff_ = &(diagram_autodiff_->GetMutableSubsystemContext(
       *plant_autodiff_, diagram_context_autodiff_.get()));

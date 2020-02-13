@@ -4,6 +4,8 @@
 
 namespace drake {
 namespace multibody {
+// Since we use BoxSphereTest from inverse_kinematics_test_utilities.h, we don't
+// put this test in the anonymous namespace.
 void CheckDistanceAndTimeDerivative(
     const multibody::MultibodyPlant<double>& plant,
     multibody::FrameIndex sphere_frame_index,
@@ -15,28 +17,23 @@ void CheckDistanceAndTimeDerivative(
     const Eigen::Vector3d& v_WS, const Eigen::Vector3d& omega_WS,
     double distance_expected, double distance_time_derivative_expected,
     systems::Context<double>* plant_context) {
-  Eigen::Matrix<double, 14, 1> q;
-  Eigen::Matrix<double, 12, 1> v;
+  Eigen::Matrix<double, 26, 1> q_v;
   const auto& sphere_body = plant.get_frame(sphere_frame_index).body();
   const auto& box_body = plant.get_frame(box_frame_index).body();
-  q.segment<4>(box_body.floating_positions_start()) = quat_WB;
-  q.segment<3>(box_body.floating_positions_start() + 4) = p_WB;
-  q.segment<4>(sphere_body.floating_positions_start()) = quat_WS;
-  q.segment<3>(sphere_body.floating_positions_start() + 4) = p_WS;
-  v.segment<3>(box_body.floating_velocities_start() - 14) = omega_WB;
-  v.segment<3>(box_body.floating_velocities_start() - 14 + 3) = v_WB;
-  v.segment<3>(sphere_body.floating_velocities_start() - 14) = omega_WS;
-  v.segment<3>(sphere_body.floating_velocities_start() - 14 + 3) = v_WS;
-  Eigen::Matrix<double, 26, 1> q_v;
-  q_v << q, v;
+  q_v.segment<4>(box_body.floating_positions_start()) = quat_WB;
+  q_v.segment<3>(box_body.floating_positions_start() + 4) = p_WB;
+  q_v.segment<4>(sphere_body.floating_positions_start()) = quat_WS;
+  q_v.segment<3>(sphere_body.floating_positions_start() + 4) = p_WS;
+  q_v.segment<3>(box_body.floating_velocities_start()) = omega_WB;
+  q_v.segment<3>(box_body.floating_velocities_start() + 3) = v_WB;
+  q_v.segment<3>(sphere_body.floating_velocities_start()) = omega_WS;
+  q_v.segment<3>(sphere_body.floating_velocities_start() + 3) = v_WS;
   plant.SetPositionsAndVelocities(plant_context, q_v);
-  double distance{};
-  double distance_time_derivative{};
-  CalcDistanceAndTimeDerivative(plant, box_sphere_pair, *plant_context,
-                                &distance, &distance_time_derivative);
-  EXPECT_NEAR(distance, distance_expected, 1e-12);
-  EXPECT_NEAR(distance_time_derivative, distance_time_derivative_expected,
-              1e-12);
+  const SignedDistanceWithTimeDerivative result =
+      CalcDistanceAndTimeDerivative(plant, box_sphere_pair, *plant_context);
+  EXPECT_NEAR(result.distance, distance_expected, 1e-12);
+  EXPECT_NEAR(result.distance_time_derivative,
+              distance_time_derivative_expected, 1e-12);
 }
 
 TEST_F(BoxSphereTest, CalcDistanceAndTimeDerivative) {
@@ -69,7 +66,7 @@ TEST_F(BoxSphereTest, CalcDistanceAndTimeDerivative) {
   CheckDistanceAndTimeDerivative(
       *plant_double_, sphere_frame_index_, box_frame_index_,
       {box_geometry_id_, sphere_geometry_id_}, p_WB, quat_WB, p_WS, quat_WS,
-      v_WB, omega_WB, v_WS, omega_WS, 14, -2, plant_context_double_);
+      v_WB, omega_WB, v_WS, omega_WS, 14, v_WS(2), plant_context_double_);
 
   // Box is static, the sphere is rotating and moving towards the box. The time
   // derivative of the signed distance should be the vertical velocity of the
@@ -78,7 +75,7 @@ TEST_F(BoxSphereTest, CalcDistanceAndTimeDerivative) {
   CheckDistanceAndTimeDerivative(
       *plant_double_, sphere_frame_index_, box_frame_index_,
       {box_geometry_id_, sphere_geometry_id_}, p_WB, quat_WB, p_WS, quat_WS,
-      v_WB, omega_WB, v_WS, omega_WS, 14, -2, plant_context_double_);
+      v_WB, omega_WB, v_WS, omega_WS, 14, v_WS(2), plant_context_double_);
 
   // Box is translating, the sphere is rotating and moving towards the box. The
   // time derivative of the signed distance should be the relative vertical
@@ -87,10 +84,14 @@ TEST_F(BoxSphereTest, CalcDistanceAndTimeDerivative) {
   CheckDistanceAndTimeDerivative(
       *plant_double_, sphere_frame_index_, box_frame_index_,
       {box_geometry_id_, sphere_geometry_id_}, p_WB, quat_WB, p_WS, quat_WS,
-      v_WB, omega_WB, v_WS, omega_WS, 14, -5, plant_context_double_);
+      v_WB, omega_WB, v_WS, omega_WS, 14, v_WS(2) - v_WB(2),
+      plant_context_double_);
 
-  // Box is rotating about x axis, the sphere is static. The time derivative
-  // of the signed distance is 0.
+  // Suppose the box is tilted about the x axis with an angle θ, and the box is
+  // rotating about x axis with angular velocity θdot, the sphere is static. The
+  // distance between the box and the sphere is 20*cosθ - 6. The time derivative
+  // of the signed distance is -20*θdot*sinθ.
+  // When θ = 0, the time derivative of the signed distance is 0.
   v_WB.setZero();
   v_WS.setZero();
   omega_WS.setZero();
@@ -100,10 +101,10 @@ TEST_F(BoxSphereTest, CalcDistanceAndTimeDerivative) {
       {box_geometry_id_, sphere_geometry_id_}, p_WB, quat_WB, p_WS, quat_WS,
       v_WB, omega_WB, v_WS, omega_WS, 14, 0, plant_context_double_);
 
-  // The box is tilted about the x axis with angle theta, and rotating about
-  // the x-axis with angular velocity theta_dot. The signed distance is
-  // 20 * cos(theta) - 6, the time derivative of the signed distance is
-  // -20 * sin(theta) * theta_dot.
+  // Suppose the box is tilted about the x axis with an angle θ, and the box is
+  // rotating about x axis with angular velocity θdot, the sphere is static. The
+  // distance between the box and the sphere is 20*cosθ - 6. The time derivative
+  // of the signed distance is -20*θdot*sinθ.
   double theta = M_PI / 20;
   quat_WB << std::cos(theta / 2), std::sin(theta / 2), 0, 0;
   double thetadot = 0.5;
