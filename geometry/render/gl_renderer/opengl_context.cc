@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/opengl_context.h"
 
 #include <algorithm>
 #include <cstring>
@@ -6,14 +6,20 @@
 #include <string>
 #include <utility>
 
+// Note: This is intentionally included here since it's only needed at the
+// implementation level, and not in a grouping of more generic headers like
+// opengl_includes.h. See opengl_context.h for where pimpl is applied.
 #include <GL/glx.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
+
 namespace {
 
 // Helper function for loading OpenGL extension functions.
@@ -50,7 +56,9 @@ class OpenGlContext::Impl {
     GLXFBConfig* fb_configs = glXChooseFBConfig(
         display(), DefaultScreen(display()), kVisualAttribs, &fb_count);
     if (fb_configs == nullptr) {
-      throw std::runtime_error("Fail to get FBConfig");
+      throw std::runtime_error(
+          "Error initializing OpenGL Context for RenderEngineGL; no suitable "
+          "frame buffer configuration found.");
     }
 
     // Create an OpenGL context.
@@ -65,7 +73,9 @@ class OpenGlContext::Impl {
     context_ = glXCreateContextAttribsARB(display(), fb_configs[0], 0, True,
                                           kContextAttribs);
     if (context_ == nullptr) {
-      throw std::runtime_error("Fail to create OpenGL context.");
+      throw std::runtime_error(
+          "Error initializing OpenGL Context for RenderEngineGL; failed to "
+          "create context via glXCreateContextAttribsARB.");
     }
 
     XFree(fb_configs);
@@ -87,10 +97,6 @@ class OpenGlContext::Impl {
     if (context_ != nullptr && is_owned_) {
       glXDestroyContext(display(), context_);
     }
-  }
-
-  static std::unique_ptr<Impl> get_current() {
-    return std::unique_ptr<Impl>(new Impl(glXGetCurrentContext()));
   }
 
   void make_current() const {
@@ -138,14 +144,6 @@ class OpenGlContext::Impl {
 OpenGlContext::OpenGlContext(bool debug)
     : impl_(new OpenGlContext::Impl(debug)) {}
 
-OpenGlContext::OpenGlContext(std::unique_ptr<Impl> impl)
-    : impl_(std::move(impl)) {}
-
-std::unique_ptr<OpenGlContext> OpenGlContext::get_current() {
-  return std::unique_ptr<OpenGlContext>(
-      new OpenGlContext(OpenGlContext::Impl::get_current()));
-}
-
 OpenGlContext::~OpenGlContext() = default;
 
 void OpenGlContext::make_current() const { impl_->make_current(); }
@@ -162,9 +160,11 @@ GLint OpenGlContext::max_renderbuffer_size() {
 
 GLint OpenGlContext::max_allowable_texture_size() {
   // TODO(duy): Take into account CUDA limits.
-  return std::min(gl_renderer::OpenGlContext::max_texture_size(),
-                  gl_renderer::OpenGlContext::max_renderbuffer_size());
+  return std::min(OpenGlContext::max_texture_size(),
+                  OpenGlContext::max_renderbuffer_size());
 }
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake
