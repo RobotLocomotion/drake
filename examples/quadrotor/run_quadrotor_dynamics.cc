@@ -9,13 +9,9 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parsers/model_instance_id_table.h"
-#include "drake/multibody/parsers/sdf_parser.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/geometry/geometry_visualization.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -23,14 +19,6 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
-
-using multibody::joints::kFixed;
-using multibody::joints::kRollPitchYaw;
-using parsers::ModelInstanceIdTable;
-using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
-using parsers::sdf::AddModelInstancesFromSdfFile;
-using systems::InputPort;
-
 namespace examples {
 namespace quadrotor {
 namespace {
@@ -44,56 +32,37 @@ class Quadrotor : public systems::Diagram<T> {
   Quadrotor() {
     this->set_name("Quadrotor");
 
-    // TODO(SeanCurtis-TRI): Port this to SceneGraph pending resolution of
-    // #10775.
-    auto tree = std::make_unique<RigidBodyTree<T>>();
-    ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
-        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
-        kRollPitchYaw, tree.get());
-    const int quadrotor_id = model_id_table.at("quadrotor");
-    AddModelInstancesFromSdfFile(
-        FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"),
-        kFixed, nullptr /* weld to frame */, tree.get());
-    drake::multibody::AddFlatTerrainToWorld(tree.get());
-
     systems::DiagramBuilder<T> builder;
-
-    plant_ =
-        builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
-    plant_->set_name("plant");
-
-    // Verifies that the quadrotor has no actuators.
-    DRAKE_DEMAND(plant_->get_num_actuators() == 0);
-    DRAKE_DEMAND(plant_->get_num_actuators(quadrotor_id) == 0);
-
-    systems::DrakeVisualizer* publisher =
-        builder.template AddSystem<systems::DrakeVisualizer>(
-            plant_->get_rigid_body_tree(), &lcm_);
-
-    builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
+    auto [plant, scene_graph] =
+        multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+    geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+    multibody::Parser parser(&plant);
+    parser.AddModelFromFile(
+        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));
+    parser.AddModelFromFile(
+        FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"));
+    plant.Finalize();
+    DRAKE_DEMAND(plant.num_actuators() == 0);
+    DRAKE_DEMAND(plant.num_positions() == 7);
 
     builder.BuildInto(this);
+    plant_ = &plant;
   }
 
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);
     systems::Diagram<T>::SetDefaultState(context, state);
-    systems::State<T>& plant_state =
-        this->GetMutableSubsystemState(*plant_, state);
-    VectorX<T> x0(plant_->get_num_states());
-    x0.setZero();
-    /* x0 is the initial state where
-     * x0(0), x0(1), x0(2) are the quadrotor's x, y, z -states
-     * x0(3), x0(4), x0(5) are the quadrotor's Euler angles phi, theta, psi
-     */
-    x0(2) = FLAGS_initial_height;  // Sets arbitrary z-position.
-    plant_->set_state_vector(&plant_state, x0);
+    systems::VectorBase<T>& positions =
+        this->GetMutableSubsystemState(*plant_, state).
+            get_mutable_continuous_state().
+            get_mutable_generalized_position();
+    DRAKE_DEMAND(positions.size() == 7);
+    positions[6] = FLAGS_initial_height;
   }
 
  private:
-  systems::RigidBodyPlant<T>* plant_{};
-  lcm::DrakeLcm lcm_;
+  multibody::MultibodyPlant<T>* plant_{};
 };
 
 int do_main(int argc, char* argv[]) {
