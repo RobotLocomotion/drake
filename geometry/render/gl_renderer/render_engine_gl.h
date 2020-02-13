@@ -1,30 +1,28 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 #include <string>
 #include <unordered_map>
-#include <utility>
-#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/gl_renderer/buffer_dim.h"
+#include "drake/geometry/render/gl_renderer/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/opengl_geometry.h"
+#include "drake/geometry/render/gl_renderer/shader_program.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/image.h"
-#include "perception/gl_renderer/buffer_dim.h"
-#include "perception/gl_renderer/load_mesh.h"
-#include "perception/gl_renderer/opengl_context.h"
-#include "perception/gl_renderer/opengl_geometry.h"
-#include "perception/gl_renderer/shader_program.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
-/** Optimized simple renderer based on direct calls to the OpenGL API. All
- geometries with perception role are added to this renderer.  */
-class RenderEngineGl final : public drake::geometry::render::RenderEngine {
+/** See documentation of MakeRenderEngineGl().  */
+class RenderEngineGl final : public RenderEngine {
  public:
   /** \name Does not allow public copy, move, or assignment  */
   //@{
@@ -38,70 +36,60 @@ class RenderEngineGl final : public drake::geometry::render::RenderEngine {
   ~RenderEngineGl() override;
 
   /** Inherits RenderEngine::UpdateViewpoint().  */
-  void UpdateViewpoint(const drake::math::RigidTransformd& X_WR) override;
+  void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
   /** Inherits RenderEngine::RenderColorImage().  */
   void RenderColorImage(
-      const drake::geometry::render::CameraProperties& camera, bool show_window,
-      drake::systems::sensors::ImageRgba8U* color_image_out) const override;
+      const CameraProperties& camera, bool show_window,
+      systems::sensors::ImageRgba8U* color_image_out) const override;
 
   /** Inherits RenderEngine::RenderDepthImage().  */
   void RenderDepthImage(
-      const drake::geometry::render::DepthCameraProperties& camera,
-      drake::systems::sensors::ImageDepth32F* depth_image_out) const override;
+      const DepthCameraProperties& camera,
+      systems::sensors::ImageDepth32F* depth_image_out) const override;
 
   /** Inherits RenderEngine::RenderLabelImage().  */
   void RenderLabelImage(
-      const drake::geometry::render::CameraProperties& camera, bool show_window,
-      drake::systems::sensors::ImageLabel16I* label_image_out) const override;
+      const CameraProperties& camera, bool show_window,
+      systems::sensors::ImageLabel16I* label_image_out) const override;
 
   /** @name    Shape reification  */
   //@{
-  using drake::geometry::render::RenderEngine::ImplementGeometry;
-  void ImplementGeometry(const drake::geometry::Sphere& sphere,
-                         void* user_data) override;
-  void ImplementGeometry(const drake::geometry::Cylinder& cylinder,
-                         void* user_data) override;
-  void ImplementGeometry(const drake::geometry::HalfSpace& half_space,
-                         void* user_data) override;
-  void ImplementGeometry(const drake::geometry::Box& box,
-                         void* user_data) override;
-  void ImplementGeometry(const drake::geometry::Mesh& mesh,
-                         void* user_data) override;
-  void ImplementGeometry(const drake::geometry::Convex& convex,
-                         void* user_data) override;
+  using RenderEngine::ImplementGeometry;
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
+  void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
+  void ImplementGeometry(const Box& box, void* user_data) override;
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
+  void ImplementGeometry(const Convex& convex, void* user_data) override;
   //@}
 
  private:
   // @see RenderEngine::DoRegisterVisual().
-  bool DoRegisterVisual(
-      drake::geometry::GeometryId id,
-      const drake::geometry::Shape& shape,
-      const drake::geometry::PerceptionProperties& properties,
-      const drake::math::RigidTransformd& X_WG) override;
+  bool DoRegisterVisual(GeometryId id,
+                        const Shape& shape,
+                        const PerceptionProperties& properties,
+                        const math::RigidTransformd& X_WG) override;
 
   // @see RenderEngine::DoUpdateVisualPose().
-  void DoUpdateVisualPose(drake::geometry::GeometryId id,
-                          const drake::math::RigidTransformd& X_WG) override;
+  void DoUpdateVisualPose(GeometryId id,
+                          const math::RigidTransformd& X_WG) override;
 
   // @see RenderEngine::DoRemoveGeometry().
-  bool DoRemoveGeometry(drake::geometry::GeometryId id) override;
+  bool DoRemoveGeometry(GeometryId id) override;
 
   // see RenderEngine::DoClone().
-  std::unique_ptr<drake::geometry::render::RenderEngine> DoClone()
-      const override;
+  std::unique_ptr<RenderEngine> DoClone() const override;
 
   // Copy constructor used for cloning.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
   // Render inverse depth of the object at a specific pose in the camera frame.
-  RenderTarget RenderAt(
-      const Eigen::Matrix4f& X_CM,
-      const drake::geometry::render::DepthCameraProperties& camera) const;
+  void RenderAt(const Eigen::Matrix4f& X_CM) const;
 
   // Obtain the depth image of rendered from a specific object pose. This is
   // slow because it reads the buffer back from the GPU.
-  void GetDepthImage(drake::systems::sensors::ImageDepth32F* depth_image_out,
+  void GetDepthImage(systems::sensors::ImageDepth32F* depth_image_out,
                      const RenderTarget& target) const;
 
   // Provide triangle mesh definitions of the various geometries supported by
@@ -113,24 +101,21 @@ class RenderEngineGl final : public drake::geometry::render::RenderEngine {
   OpenGlGeometry GetMesh(const std::string& filename);
 
   // Infrastructure for setting up the frame buffer object.
-  RenderTarget SetupFBO(
-      const drake::geometry::render::DepthCameraProperties& camera);
+  RenderTarget SetupFBO(const DepthCameraProperties& camera);
 
   // Configure the model view and projection matrices.
-  void SetGLProjectionMatrix(
-      const drake::geometry::render::DepthCameraProperties& camera);
+  void SetGLProjectionMatrix(const DepthCameraProperties& camera);
   void SetGLModelViewMatrix(const Eigen::Matrix4f& X_CM) const;
 
   // Configure the OpenGL properties dependent on the camera properties.
-  void SetCameraProperties(
-      const drake::geometry::render::DepthCameraProperties& camera);
+  RenderTarget SetCameraProperties(const DepthCameraProperties& camera);
 
   // Configure the vertex array object for a triangle mesh.
   OpenGlGeometry SetupVAO(const VertexBuffer& vertices,
                           const IndexBuffer& indices);
 
   // The cached value transformation between camera and world frame.
-  mutable drake::math::RigidTransformd X_CW_;
+  mutable math::RigidTransformd X_CW_;
 
   // All clones of this context share the same underlying opengl_context_. They
   // share geometry and frame buffer objects. The following structs are either
@@ -149,15 +134,20 @@ class RenderEngineGl final : public drake::geometry::render::RenderEngine {
   OpenGlGeometry half_space_;
   OpenGlGeometry box_;
 
+  // Mapping from obj filename to the mesh loaded into an OpenGlGeometry.
   std::shared_ptr<std::unordered_map<std::string, OpenGlGeometry>> meshes_;
 
+  // Mapping from width and height to a RenderTarget. Allows for the re-use of
+  // frame buffers if they are of the same dimension.
   std::shared_ptr<std::unordered_map<BufferDim, RenderTarget>> frame_buffers_;
 
   // Mapping from RenderIndex to the visual data associated with that geometry.
   // This is copied so independent renderers can have different *instances* but
   // the instances still refer to the same, shared, underlying geometry.
-  std::unordered_map<drake::geometry::GeometryId, OpenGlInstance> visuals_;
+  std::unordered_map<GeometryId, OpenGlInstance> visuals_;
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

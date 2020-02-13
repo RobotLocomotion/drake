@@ -23,6 +23,7 @@ load(
     "get_pybind_package_info",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = [
     "//bindings:__subpackages__",
@@ -439,6 +440,17 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_render_engine_gl_test",
+    tags = vtk_test_tags() + [
+        "manual",
+    ],
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

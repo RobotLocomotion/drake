@@ -2,11 +2,13 @@
 
 #include <limits>
 
+#include "drake/geometry/render/gl_renderer/opengl_includes.h"
 #include "drake/math/rigid_transform.h"
-#include "perception/gl_renderer/opengl_includes.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 /** For a fixed OpenGL context, defines the definition of a mesh geometry. The
  geometry is defined by the handles to various objects in the OpenGL context.
@@ -17,12 +19,6 @@ struct OpenGlGeometry {
   GLuint vertex_buffer{kInvalid};
   GLuint index_buffer{kInvalid};
   int index_buffer_size{0};
-
-  void DeleteResources() {
-    if (vertex_array != kInvalid) glDeleteVertexArrays(1, &vertex_array);
-    if (vertex_buffer != kInvalid) glDeleteBuffers(1, &vertex_buffer);
-    if (index_buffer != kInvalid) glDeleteBuffers(1, &index_buffer);
-  }
 
   /** Reports true if `this` has been defined with meaningful values.  */
   bool is_defined() const {
@@ -44,15 +40,16 @@ struct OpenGlGeometry {
  pose of that geometry in the world frame.  */
 struct OpenGlInstance {
   OpenGlInstance(const OpenGlGeometry& g_in,
-                 const drake::math::RigidTransformd& pose_in,
-                 const drake::Vector3<double>& scale_in)
-      : geometry(g_in), X_WG(pose_in), s_GC(scale_in) {}
+                 const math::RigidTransformd& pose_in,
+                 const Vector3<double>& scale_in)
+      : geometry(g_in), X_WG(pose_in), scale(scale_in) {}
   OpenGlGeometry geometry;
-  drake::math::RigidTransformd X_WG;
-  // The scale factors from the geometry's canonical frame C to the full
-  // geometry frame (providing the basis for non-unit geometry).
-  drake::Vector3<double> s_GC;
+  math::RigidTransformd X_WG;
+  // The scale factors providing the basis for non-unit geometry.
+  Vector3<double> scale;
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

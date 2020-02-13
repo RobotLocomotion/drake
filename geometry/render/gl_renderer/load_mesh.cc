@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/load_mesh.h"
 
 #include <algorithm>
 #include <fstream>
@@ -11,17 +11,18 @@
 
 #include "drake/common/drake_assert.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 using std::string;
 using std::vector;
 
-std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
-    const std::string& filename) {
+std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
   tinyobj::attrib_t attrib;
-  std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
+  vector<tinyobj::shape_t> shapes;
+  vector<tinyobj::material_t> materials;
   string err;
   // This renderer assumes everything is triangles -- we rely on tinyobj to
   // triangulate for us.
@@ -31,7 +32,7 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
   // the obj file. We have to provide that directory; of course, this assumes
   // that the material library reference is relative to the obj directory.
   size_t pos = filename.find_last_of('/');
-  const std::string obj_folder = filename.substr(0, pos + 1);
+  const string obj_folder = filename.substr(0, pos + 1);
   const char* mtl_basedir = obj_folder.c_str();
   bool ret =
       tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename.c_str(),
@@ -56,8 +57,8 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
   int tri_count = 0;
   for (const auto& shape : shapes) {
     const tinyobj::mesh_t& raw_mesh = shape.mesh;
-    DRAKE_DEMAND(
-        raw_mesh.indices.size() == raw_mesh.num_face_vertices.size() * 3);
+    DRAKE_DEMAND(raw_mesh.indices.size() ==
+                 raw_mesh.num_face_vertices.size() * 3);
     tri_count += raw_mesh.num_face_vertices.size();
   }
 
@@ -79,5 +80,7 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
   return std::make_pair(vertices, indices);
 }
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake
