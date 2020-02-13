@@ -11,7 +11,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 // The following sequence of tests compares the behaviour of two kinds of
@@ -21,11 +20,6 @@ namespace drake {
 namespace examples {
 namespace quadrotor {
 namespace {
-
-GTEST_TEST(QuadrotorPlantTest, DirectFeedthrough) {
-  QuadrotorPlant<double> quadrotor;
-  EXPECT_FALSE(quadrotor.HasAnyDirectFeedthrough());
-}
 
 // The models are integrated and compared for the duration specified by the
 // following constant.
@@ -223,16 +217,6 @@ TEST_F(QuadrotorTest, drop_from_arbitrary_state) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
   x0 << 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6;  // Some initial state.
   PassiveBehaviorTest(x0);
-}
-
-TEST_F(QuadrotorTest, ToAutoDiff) {
-  const QuadrotorPlant<double> plant;
-  EXPECT_TRUE(is_autodiffxd_convertible(plant));
-}
-
-TEST_F(QuadrotorTest, ToSymbolic) {
-  const QuadrotorPlant<double> plant;
-  EXPECT_FALSE(is_symbolic_convertible(plant));
 }
 
 }  // namespace
