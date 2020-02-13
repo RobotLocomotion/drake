@@ -2,11 +2,13 @@
 
 #include <limits>
 
+#include "drake/geometry/render/gl_renderer/opengl_includes.h"
 #include "drake/math/rigid_transform.h"
-#include "perception/gl_renderer/opengl_includes.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 /** For a fixed OpenGL context, defines the definition of a mesh geometry. The
  geometry is defined by the handles to various objects in the OpenGL context.
@@ -54,5 +56,7 @@ struct OpenGlInstance {
   drake::Vector3<double> s_GC;
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

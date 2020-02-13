@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/load_mesh.h"
 
 #include <algorithm>
 #include <fstream>
@@ -11,8 +11,10 @@
 
 #include "drake/common/drake_assert.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 using std::string;
 using std::vector;
@@ -56,8 +58,8 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
   int tri_count = 0;
   for (const auto& shape : shapes) {
     const tinyobj::mesh_t& raw_mesh = shape.mesh;
-    DRAKE_DEMAND(
-        raw_mesh.indices.size() == raw_mesh.num_face_vertices.size() * 3);
+    DRAKE_DEMAND(raw_mesh.indices.size() ==
+                 raw_mesh.num_face_vertices.size() * 3);
     tri_count += raw_mesh.num_face_vertices.size();
   }
 
@@ -79,5 +81,7 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
   return std::make_pair(vertices, indices);
 }
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

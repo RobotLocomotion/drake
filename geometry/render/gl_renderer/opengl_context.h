@@ -2,10 +2,12 @@
 
 #include <memory>
 
-#include "perception/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/opengl_includes.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 
 /// Handle OpenGL context initialization, clean-up and generic OpenGL queries.
 /// This class can either create and own a new context upon construction, or
@@ -48,5 +50,7 @@ class OpenGlContext {
   std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake

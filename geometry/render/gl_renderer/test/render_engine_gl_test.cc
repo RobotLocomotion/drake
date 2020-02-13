@@ -1,4 +1,4 @@
-#include "perception/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
 #include <unordered_map>
 
@@ -7,26 +7,29 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
-namespace anzu {
-namespace gl_renderer {
+namespace drake {
+namespace geometry {
+namespace render {
+namespace gl {
 namespace {
 
-using drake::geometry::Cylinder;
-using drake::geometry::Convex;
 using drake::geometry::Box;
+using drake::geometry::Convex;
+using drake::geometry::Cylinder;
 using drake::geometry::GeometryId;
 using drake::geometry::HalfSpace;
 using drake::geometry::Mesh;
 using drake::geometry::PerceptionProperties;
+using drake::geometry::Sphere;
 using drake::geometry::render::CameraProperties;
 using drake::geometry::render::DepthCameraProperties;
 using drake::geometry::render::RenderEngine;
 using drake::geometry::render::RenderLabel;
-using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::systems::sensors::ColorI;
 using drake::systems::sensors::ImageDepth32F;
@@ -189,9 +192,9 @@ class RenderEngineGlTest : public ::testing::Test {
 
     if (add_terrain) {
       const GeometryId ground_id = GeometryId::get_new_id();
-      renderer_->RegisterVisual(
-          ground_id, HalfSpace(), PerceptionProperties(),
-          RigidTransformd::Identity(), false /** needs update */);
+      renderer_->RegisterVisual(ground_id, HalfSpace(), PerceptionProperties(),
+                                RigidTransformd::Identity(),
+                                false /** needs update */);
     }
   }
 
@@ -370,8 +373,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   // texture.
   material.AddProperty("phong", "diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material,
-                            RigidTransformd::Identity(),
+  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
   renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
       {id, RigidTransformd::Identity()}});
@@ -395,8 +397,7 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   // texture.
   material.AddProperty("phong", "diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, convex, material,
-                            RigidTransformd::Identity(),
+  renderer_->RegisterVisual(id, convex, material, RigidTransformd::Identity(),
                             true /* needs update */);
   renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
       {id, RigidTransformd::Identity()}});
@@ -452,8 +453,8 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
     Sphere sphere{kRadius};
     const float depth = kDefaultDistance - kRadius - z;
     PerceptionProperties material;
-    renderer_->RegisterVisual(
-        geometry_id, sphere, material, RigidTransformd::Identity(), true);
+    renderer_->RegisterVisual(geometry_id, sphere, material,
+                              RigidTransformd::Identity(), true);
     RigidTransformd X_WV{Eigen::Translation3d(0, 0, z)};
     X_WV_.insert({geometry_id, X_WV});
     renderer_->UpdatePoses(X_WV_);
@@ -630,9 +631,9 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
   const GeometryId ground = GeometryId::get_new_id();
 
   auto add_terrain = [ground](auto* renderer) {
-    renderer->RegisterVisual(
-        ground, HalfSpace(), PerceptionProperties(),
-        RigidTransformd::Identity(), false /** needs update */);
+    renderer->RegisterVisual(ground, HalfSpace(), PerceptionProperties(),
+                             RigidTransformd::Identity(),
+                             false /** needs update */);
   };
 
   engine1.UpdateViewpoint(X_WR_);
@@ -658,5 +659,7 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
 }
 
 }  // namespace
-}  // namespace gl_renderer
-}  // namespace anzu
+}  // namespace gl
+}  // namespace render
+}  // namespace geometry
+}  // namespace drake
