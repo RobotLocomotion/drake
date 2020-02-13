@@ -34,7 +34,8 @@ namespace kuka_iiwa_arm {
  * that contact force is the only cause of external joint torque, no other
  * effects such as friction is considered.
  */
-class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED("2020-06-01", "This class is being removed.")
+IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaContactResultsToExternalTorque)
 

@@ -20,12 +20,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -52,10 +50,9 @@ typedef PPType::PolynomialMatrix PPMatrix;
 
 class RobotPlanRunner {
  public:
-  /// tree is aliased
-  explicit RobotPlanRunner(const RigidBodyTree<double>& tree)
-      : tree_(tree), plan_number_(0) {
-    VerifyIiwaTree(tree);
+  /// plant is aliased
+  explicit RobotPlanRunner(const multibody::MultibodyPlant<double>& plant)
+      : plant_(plant), plan_number_(0) {
     lcm_.subscribe(kLcmStatusChannel,
                     &RobotPlanRunner::HandleStatus, this);
     lcm_.subscribe(kLcmPlanChannel,
@@ -109,12 +106,12 @@ class RobotPlanRunner {
   }
 
  private:
-  void HandleStatus(const lcm::ReceiveBuffer*, const std::string&,
+  void HandleStatus(const ::lcm::ReceiveBuffer*, const std::string&,
                     const lcmt_iiwa_status* status) {
     iiwa_status_ = *status;
   }
 
-  void HandlePlan(const lcm::ReceiveBuffer*, const std::string&,
+  void HandlePlan(const ::lcm::ReceiveBuffer*, const std::string&,
                   const robotlocomotion::robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
     if (iiwa_status_.utime == -1) {
@@ -128,24 +125,27 @@ class RobotPlanRunner {
 
     std::vector<Eigen::MatrixXd> knots(plan->num_states,
                                        Eigen::MatrixXd::Zero(kNumJoints, 1));
-    std::map<std::string, int> name_to_idx =
-        tree_.computePositionNameToIndexMap();
     for (int i = 0; i < plan->num_states; ++i) {
       const auto& state = plan->plan[i];
       for (int j = 0; j < state.num_joints; ++j) {
-        if (name_to_idx.count(state.joint_name[j]) == 0) {
+        if (!plant_.HasJointNamed(state.joint_name[j])) {
           continue;
         }
+        const multibody::Joint<double>& joint =
+            plant_.GetJointByName(state.joint_name[j]);
+        DRAKE_DEMAND(joint.num_positions() == 1);
+        const int idx = joint.position_start();
+        DRAKE_DEMAND(idx < kNumJoints);
+
         // Treat the matrix at knots[i] as a column vector.
         if (i == 0) {
           // Always start moving from the position which we're
           // currently commanding.
           DRAKE_DEMAND(iiwa_status_.utime != -1);
-          knots[0](name_to_idx[state.joint_name[j]], 0) =
-              iiwa_status_.joint_position_commanded[j];
+          knots[0](idx, 0) = iiwa_status_.joint_position_commanded[j];
+
         } else {
-          knots[i](name_to_idx[state.joint_name[j]], 0) =
-              state.joint_position[j];
+          knots[i](idx, 0) = state.joint_position[j];
         }
       }
     }
@@ -165,27 +165,29 @@ class RobotPlanRunner {
     ++plan_number_;
   }
 
-  void HandleStop(const lcm::ReceiveBuffer*, const std::string&,
-                    const robotlocomotion::robot_plan_t*) {
+  void HandleStop(const ::lcm::ReceiveBuffer*, const std::string&,
+                  const robotlocomotion::robot_plan_t*) {
     std::cout << "Received stop command. Discarding plan." << std::endl;
     plan_.reset();
   }
 
-  lcm::LCM lcm_;
-  const RigidBodyTree<double>& tree_;
+  ::lcm::LCM lcm_;
+  const multibody::MultibodyPlant<double>& plant_;
   int plan_number_{};
   std::unique_ptr<PiecewisePolynomial<double>> plan_;
   lcmt_iiwa_status iiwa_status_;
 };
 
 int do_main() {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+  multibody::MultibodyPlant<double> plant(0.0);
+  multibody::Parser(&plant).AddModelFromFile(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                          "iiwa14_primitive_collision.urdf"),
-      multibody::joints::kFixed, tree.get());
+                          "iiwa14_no_collision.urdf"));
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetBodyByName("base").body_frame());
+  plant.Finalize();
 
-  RobotPlanRunner runner(*tree);
+  RobotPlanRunner runner(plant);
   runner.Run();
   return 0;
 }
