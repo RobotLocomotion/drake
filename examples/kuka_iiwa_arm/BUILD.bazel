@@ -205,10 +205,10 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
-        "//attic/manipulation/planner:constraint_relaxing_ik",
         "//attic/multibody/parsers",
         "//common:add_text_logging_gflags",
         "//lcmtypes:iiwa",
+        "//manipulation/planner:constraint_relaxing_ik",
         "//math:geometric_transform",
         "@lcm",
         "@lcmtypes_bot2_core",

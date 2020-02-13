@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/rigid_body_ik.h"
@@ -18,9 +19,10 @@ namespace planner {
  * A wrapper class around the IK planner. This class improves IK's usability by
  * handling constraint relaxing and multiple initial guesses internally.
  */
-class ConstraintRelaxingIk {
+class DRAKE_DEPRECATED("2020-06-01", "Use ConstraintRelaxingIk instead")
+ConstraintRelaxingIkRbt {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintRelaxingIk);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintRelaxingIkRbt);
 
   /**
    * Cartesian waypoint. Input to the IK solver.
@@ -46,9 +48,9 @@ class ConstraintRelaxingIk {
    * @param base_to_world X_WB, transformation from robot's base to the world
    * frame.
    */
-  ConstraintRelaxingIk(const std::string& model_path,
-                       const std::string& end_effector_link_name,
-                       const Isometry3<double>& base_to_world);
+  ConstraintRelaxingIkRbt(const std::string& model_path,
+                          const std::string& end_effector_link_name,
+                          const Isometry3<double>& base_to_world);
 
   /**
    * Sets end effector to @p end_effector_body.
