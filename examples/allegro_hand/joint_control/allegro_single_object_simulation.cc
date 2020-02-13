@@ -49,7 +49,7 @@ DEFINE_bool(use_right_hand, true,
 DEFINE_bool(add_gravity, false,
             "Whether adding gravity (9.81 m/s^2) in the simulation");
 DEFINE_double(
-    mbp_discrete_update_period, 1.0E-3,
+    mbp_discrete_update_period, 1.5e-4,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
     "Set to zero for a continuous plant model.");
