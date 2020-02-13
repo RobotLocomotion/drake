@@ -3,19 +3,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/common/random.h"
+#include "drake/multibody/parsing/parser.h"
 
 namespace drake {
 namespace manipulation {
 namespace planner {
-namespace {
-
-inline double get_orientation_difference(const Matrix3<double>& rot0,
-                                         const Matrix3<double>& rot1) {
-  AngleAxis<double> err(rot0.transpose() * rot1);
-  return err.angle();
-}
-}
 
 // N random samples are taken from the configuration space (q), and
 // the corresponding end effector poses are computed with forward
@@ -27,55 +20,58 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
   const std::string kModelPath = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf");
-  std::unique_ptr<RigidBodyTree<double>> iiwa =
-      std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      kModelPath, multibody::joints::kFixed, nullptr, iiwa.get());
-
-  KinematicsCache<double> cache = iiwa->CreateKinematicsCache();
+  multibody::MultibodyPlant<double> iiwa(0);
+  multibody::Parser(&iiwa).AddModelFromFile(kModelPath);
+  iiwa.WeldFrames(iiwa.world_frame(),
+                  iiwa.GetBodyByName("base").body_frame());
+  iiwa.Finalize();
 
   const std::string kEndEffectorLinkName = "iiwa_link_ee";
-  const RigidBody<double>* end_effector = iiwa->FindBody(kEndEffectorLinkName);
+  const multibody::Body<double>& end_effector =
+      iiwa.GetBodyByName(kEndEffectorLinkName);
 
-  IKResults ik_res;
-  ConstraintRelaxingIk ik_planner(kModelPath, kEndEffectorLinkName,
-                               Isometry3<double>::Identity());
+  ConstraintRelaxingIk ik_planner(kModelPath, kEndEffectorLinkName);
+
   ConstraintRelaxingIk::IkCartesianWaypoint wp;
   wp.pos_tol = Vector3<double>(0.001, 0.001, 0.001);
   wp.rot_tol = 0.005;
   wp.constrain_orientation = true;
   std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints(1, wp);
 
-  const VectorX<double> kQcurrent = iiwa->getZeroConfiguration();
-  VectorX<double> q_fk;
+  std::unique_ptr<systems::Context<double>> context =
+      iiwa.CreateDefaultContext();
+
+  const VectorX<double> kQcurrent = iiwa.GetPositions(*context);
 
   const double kEpsilon = 1e-8;
   const Vector3<double> kUpperBound =
       wp.pos_tol + kEpsilon * Vector3<double>::Ones();
   const Vector3<double> kLowerBound =
       -wp.pos_tol - kEpsilon * Vector3<double>::Ones();
-  std::default_random_engine rand_generator(1234);
+  RandomGenerator rand_generator(1234);
 
   for (int i = 0; i < 100; ++i) {
-    q_fk = iiwa->getRandomConfiguration(rand_generator);
-    cache.initialize(q_fk);
-    iiwa->doKinematics(cache);
+    iiwa.SetRandomState(
+        *context, &context->get_mutable_state(), &rand_generator);
 
-    Isometry3<double> fk_pose =
-        iiwa->CalcBodyPoseInWorldFrame(cache, *end_effector);
+    math::RigidTransformd fk_pose = iiwa.EvalBodyPoseInWorld(
+        *context, end_effector);
     waypoints[0].pose = fk_pose;
 
-    bool ret =
-        ik_planner.PlanSequentialTrajectory(waypoints, kQcurrent, &ik_res);
-    EXPECT_TRUE(ret);
+    std::vector<Eigen::VectorXd> q_sol;
+    const bool ret =
+        ik_planner.PlanSequentialTrajectory(waypoints, kQcurrent, &q_sol);
+    ASSERT_TRUE(ret);
 
-    cache.initialize(ik_res.q_sol[1]);
-    iiwa->doKinematics(cache);
-    Isometry3<double> ik_pose =
-        iiwa->CalcBodyPoseInWorldFrame(cache, *end_effector);
-    Vector3<double> pos_diff = ik_pose.translation() - fk_pose.translation();
-    double rot_diff =
-        get_orientation_difference(ik_pose.linear(), fk_pose.linear());
+    iiwa.SetPositions(context.get(), q_sol.front());
+    const math::RigidTransformd ik_pose = iiwa.EvalBodyPoseInWorld(
+        *context, end_effector);
+
+    const Vector3<double> pos_diff =
+        ik_pose.translation() - fk_pose.translation();
+    const math::RotationMatrix R_diff =
+        ik_pose.rotation().transpose() * fk_pose.rotation();
+    const double rot_diff = R_diff.ToAngleAxis().angle();
 
     EXPECT_TRUE((pos_diff.array() <= kUpperBound.array()).all());
     EXPECT_TRUE((pos_diff.array() >= kLowerBound.array()).all());

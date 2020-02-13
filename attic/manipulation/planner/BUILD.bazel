@@ -15,15 +15,15 @@ package(
 drake_cc_package_library(
     name = "planner",
     deps = [
-        ":constraint_relaxing_ik",
+        ":constraint_relaxing_ik_rbt",
         ":rbt_differential_inverse_kinematics",
     ],
 )
 
 drake_cc_library(
-    name = "constraint_relaxing_ik",
-    srcs = ["constraint_relaxing_ik.cc"],
-    hdrs = ["constraint_relaxing_ik.h"],
+    name = "constraint_relaxing_ik_rbt",
+    srcs = ["constraint_relaxing_ik_rbt.cc"],
+    hdrs = ["constraint_relaxing_ik_rbt.h"],
     deps = [
         "//attic/multibody:inverse_kinematics",
         "//attic/multibody:rigid_body_tree",
@@ -46,9 +46,10 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "constraint_relaxing_ik_test",
+    name = "constraint_relaxing_ik_rbt_test",
     timeout = "moderate",
-    srcs = ["test/constraint_relaxing_ik_test.cc"],
+    srcs = ["test/constraint_relaxing_ik_rbt_test.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
@@ -58,7 +59,7 @@ drake_cc_googletest(
     # should enable this test.
     tags = ["snopt"],
     deps = [
-        ":constraint_relaxing_ik",
+        ":constraint_relaxing_ik_rbt",
         "//common:find_resource",
     ],
 )
