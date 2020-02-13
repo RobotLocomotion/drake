@@ -83,6 +83,7 @@ load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
 load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
+load("//tools/workspace/x11:repository.bzl", "x11_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
@@ -260,6 +261,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
     if "vtk" not in excludes:
         vtk_repository(name = "vtk", mirrors = mirrors)
+    if "x11" not in excludes:
+        x11_repository(name = "x11")
     if "yaml_cpp" not in excludes:
         yaml_cpp_repository(name = "yaml_cpp")
     if "zlib" not in excludes:
