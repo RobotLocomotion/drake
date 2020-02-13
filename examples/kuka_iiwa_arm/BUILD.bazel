@@ -42,7 +42,6 @@ drake_cc_library(
     name = "iiwa_lcm",
     srcs = ["iiwa_lcm.cc"],
     hdrs = ["iiwa_lcm.h"],
-    # TODO(hongkai.dai): move this package to manipulation folder.
     visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
@@ -191,6 +190,8 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        "//multibody/parsing",
+        "//multibody/plant",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -205,11 +206,12 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
-        "//attic/multibody/parsers",
         "//common:add_text_logging_gflags",
         "//lcmtypes:iiwa",
         "//manipulation/planner:constraint_relaxing_ik",
         "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
         "@lcm",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -232,6 +234,7 @@ alias(
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
