@@ -6,6 +6,8 @@
 /// current calculated position of the end effector is printed before,
 /// during, and after the commanded motion.
 
+#include <map>
+
 #include <gflags/gflags.h>
 #include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
@@ -19,8 +21,8 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(lcm_status_channel, "IIWA_STATUS",
@@ -48,14 +50,39 @@ const char kIiwaUrdf[] =
 
 class MoveDemoRunner {
  public:
-  MoveDemoRunner() {
+  MoveDemoRunner()
+      : plant_(0.0) {
     urdf_ =
         (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
-    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        urdf_, multibody::joints::kFixed, &tree_);
+    multibody::Parser(&plant_).AddModelFromFile(urdf_);
+    plant_.WeldFrames(plant_.world_frame(),
+                      plant_.GetBodyByName("base").body_frame());
+    plant_.Finalize();
+    context_ = plant_.CreateDefaultContext();
 
     lcm_.subscribe(FLAGS_lcm_status_channel,
                    &MoveDemoRunner::HandleStatus, this);
+
+    // TODO(sammy-tri) Move this code somewhere more generic if we get a
+    // second example which wants to encode robot plans.
+    std::map<int, std::string> position_names;
+    const int num_positions = plant_.num_positions();
+    for (int i = 0; i < plant_.num_joints(); ++i) {
+      const multibody::Joint<double>& joint =
+          plant_.get_joint(multibody::JointIndex(i));
+      if (joint.num_positions() == 0) {
+        continue;
+      }
+      DRAKE_DEMAND(joint.num_positions() == 1);
+      DRAKE_DEMAND(joint.position_start() < num_positions);
+
+      position_names[joint.position_start()] = joint.name();
+    }
+
+    DRAKE_DEMAND(static_cast<int>(position_names.size()) == num_positions);
+    for (int i = 0; i < num_positions; ++i) {
+      joint_names_.push_back(position_names[i]);
+    }
   }
 
   void Run() {
@@ -71,21 +98,18 @@ class MoveDemoRunner {
                     const lcmt_iiwa_status* status) {
     status_count_++;
     Eigen::VectorXd iiwa_q(status->num_joints);
-    Eigen::VectorXd iiwa_v(status->num_joints);
     for (int i = 0; i < status->num_joints; i++) {
-      iiwa_v[i] = status->joint_velocity_estimated[i];
       iiwa_q[i] = status->joint_position_measured[i];
     }
 
     // Only print the position every 100 messages (this results in an
     // 0.5s period in a typical configuration).
     if (status_count_ % 100 == 1) {
-      // Estimate the end effector position through forward kinematics.
-      KinematicsCache<double> cache = tree_.doKinematics(iiwa_q, iiwa_v, true);
-      const RigidBody<double>* end_effector = tree_.FindBody(FLAGS_ee_name);
+      plant_.SetPositions(context_.get(), iiwa_q);
 
-      const math::RigidTransform<double> ee_pose(
-          tree_.CalcBodyPoseInWorldFrame(cache, *end_effector));
+      const math::RigidTransform<double> ee_pose =
+          plant_.EvalBodyPoseInWorld(
+              *context_, plant_.GetBodyByName(FLAGS_ee_name));
       const math::RollPitchYaw<double> rpy(ee_pose.rotation());
       drake::log()->info("End effector at: {} {}",
                          ee_pose.translation().transpose(),
@@ -137,7 +161,7 @@ class MoveDemoRunner {
         ApplyJointVelocityLimits(q_mat, &times);
         std::vector<int> info{1, 1};
         robotlocomotion::robot_plan_t plan =
-            EncodeKeyFrames(tree_, times, info, q_mat);
+            EncodeKeyFrames(joint_names_, times, info, q_mat);
         lcm_.publish(FLAGS_lcm_plan_channel, &plan);
       }
     }
@@ -145,7 +169,9 @@ class MoveDemoRunner {
 
   ::lcm::LCM lcm_;
   std::string urdf_;
-  RigidBodyTree<double> tree_;
+  multibody::MultibodyPlant<double> plant_;
+  std::unique_ptr<systems::Context<double>> context_;
+  std::vector<std::string> joint_names_;
   int status_count_{0};
 };
 
