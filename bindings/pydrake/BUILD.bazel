@@ -435,6 +435,9 @@ drake_py_unittest(
         "//geometry:test_obj_files",
         "//systems/sensors:test_models",
     ],
+    tags = vtk_test_tags() + [
+        "manual",
+    ],
     deps = [
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
