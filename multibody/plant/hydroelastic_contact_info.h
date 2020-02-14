@@ -95,7 +95,7 @@ class HydroelasticContactInfo {
     return *this;
   }
 
-  HydroelasticContactInfo(HydroelasticContactInfo&&);
+  HydroelasticContactInfo(HydroelasticContactInfo&&) = default;
   HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
 
   //@}
@@ -135,13 +135,6 @@ class HydroelasticContactInfo {
   std::vector<HydroelasticQuadraturePointData<T>>
       quadrature_point_data_;
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-HydroelasticContactInfo<T>::HydroelasticContactInfo(
-    HydroelasticContactInfo&&) = default;
 
 }  // namespace multibody
 }  // namespace drake

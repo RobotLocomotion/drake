@@ -76,7 +76,7 @@ class OutputPort : public OutputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
 
-  ~OutputPort() override;
+  ~OutputPort() override = default;
 
   /** Returns a reference to the up-to-date value of this output port contained
   in the given Context. This is the preferred way to obtain an output port's
@@ -282,12 +282,6 @@ void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
                     GetFullDescription()));
   }
 }
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-OutputPort<T>::~OutputPort() = default;
 
 }  // namespace systems
 }  // namespace drake

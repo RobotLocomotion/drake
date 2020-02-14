@@ -28,7 +28,7 @@ namespace multibody {
 template <typename T>
 class PointPairContactInfo {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(PointPairContactInfo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointPairContactInfo)
   /**
    Constructs the contact information for a given pair of two colliding bodies.
    @param bodyA_index
@@ -105,8 +105,6 @@ class PointPairContactInfo {
   // Sliding speed, the norm of the tangential velocity.
   T slip_speed_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(PointPairContactInfo)
 
 }  // namespace multibody
 }  // namespace drake

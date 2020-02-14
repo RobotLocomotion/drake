@@ -40,7 +40,7 @@ namespace internal {
 template<typename T>
 class ArticulatedBodyInertiaCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
 
   /// Constructs an articulated body cache entry for the given
   /// MultibodyTreeTopology.
@@ -138,8 +138,6 @@ class ArticulatedBodyInertiaCache {
   std::vector<Eigen::LDLT<MatrixUpTo6<T>>> ldlt_D_B_;
   std::vector<Matrix6xUpTo6<T>> g_PB_W_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertiaCache);
 
 }  // namespace internal
 }  // namespace multibody

@@ -41,7 +41,7 @@ namespace internal {
 template <typename T>
 class VelocityKinematicsCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache)
 
   /// Constructs a velocity kinematics cache entry for the given
   /// MultibodyTreeTopology.
@@ -149,8 +149,6 @@ class VelocityKinematicsCache {
   SpatialVelocity_PoolType V_FM_pool_;
   SpatialVelocity_PoolType V_PB_W_pool_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(VelocityKinematicsCache)
 
 }  // namespace internal
 }  // namespace multibody

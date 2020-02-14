@@ -31,7 +31,7 @@ class BasicVector : public VectorBase<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BasicVector)
 
   /// Constructs an empty BasicVector.
-  BasicVector();
+  BasicVector() = default;
 
   /// Initializes with the given @p size using the drake::dummy_value<T>, which
   /// is NaN when T = double.
@@ -184,12 +184,6 @@ class BasicVector : public VectorBase<T> {
   // subclasses.  Derived class's Clone() methods currently assume that the
   // BasicVector(VectorX<T>) constructor is all that is needed.
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-BasicVector<T>::BasicVector() = default;
 
 }  // namespace systems
 }  // namespace drake

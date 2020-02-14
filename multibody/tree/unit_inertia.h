@@ -46,7 +46,7 @@ namespace multibody {
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
   /// Default %UnitInertia constructor sets all entries to NaN for quick
   /// detection of uninitialized values.
@@ -449,8 +449,6 @@ class UnitInertia : public RotationalInertia<T> {
   // End of Doxygen group
   //@}
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(UnitInertia)
 
 }  // namespace multibody
 }  // namespace drake
