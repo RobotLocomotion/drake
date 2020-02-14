@@ -1,3 +1,4 @@
+#include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -31,7 +32,7 @@ PYBIND11_MODULE(ipopt, m) {
       .def_readwrite(
           "z_U", &IpoptSolverDetails::z_U, doc.IpoptSolverDetails.z_U.doc)
       .def_readwrite("g", &IpoptSolverDetails::g, doc.IpoptSolverDetails.g.doc)
-      .def_readwrite("lambda", &IpoptSolverDetails::lambda,
+      .def_readwrite("lambda_val", &IpoptSolverDetails::lambda,
           doc.IpoptSolverDetails.lambda.doc)
       .def("ConvertStatusToString", &IpoptSolverDetails::ConvertStatusToString,
           doc.IpoptSolverDetails.ConvertStatusToString.doc);
