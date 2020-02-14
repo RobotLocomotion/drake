@@ -1,16 +1,17 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-tap 'bazelbuild/tap'
 tap 'homebrew/cask-fonts' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
+tap 'homebrew/cask-versions' unless system '/usr/libexec/java_home --version 1.8 --failfast &> /dev/null'
 tap 'robotlocomotion/director'
 
-brew 'bazelbuild/tap/bazel'
+cask 'adoptopenjdk8' unless system '/usr/libexec/java_home --version 1.8 --failfast &> /dev/null'
+cask 'font-dejavu-sans' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
+
+brew 'bazel'
 brew 'diffstat'
 brew 'doxygen'
 brew 'freetype'
 brew 'kcov'
 brew 'llvm@6'
 brew 'patchutils'
-
-cask 'font-dejavu-sans' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
