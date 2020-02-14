@@ -36,7 +36,7 @@ namespace internal {
 template <typename T>
 class AccelerationKinematicsCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
 
   /// Constructs an acceleration kinematics cache entry for the given
   /// MultibodyTreeTopology.
@@ -131,8 +131,6 @@ class AccelerationKinematicsCache {
   std::vector<SpatialAcceleration<T>> A_WB_pool_;  // Indexed by BodyNodeIndex.
   VectorX<T> vdot_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(AccelerationKinematicsCache);
 
 }  // namespace internal
 }  // namespace multibody

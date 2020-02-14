@@ -110,7 +110,7 @@ class VolumeElement {
 template <class T>
 class VolumeMesh {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
 
   /**
    @name Mesh type traits
@@ -249,7 +249,6 @@ class VolumeMesh {
   // The vertices that are shared between the tetrahedral elements.
   std::vector<VolumeVertex<T>> vertices_;
 };
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(VolumeMesh)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class VolumeMesh)

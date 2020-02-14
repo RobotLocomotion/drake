@@ -39,7 +39,7 @@ class LeafOutputPort final : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort)
 
-  ~LeafOutputPort() final;
+  ~LeafOutputPort() final = default;
 
   // TODO(sherm1) These callbacks should not be specific to this class. Move
   // elsewhere, e.g. framework_common.h so they can be shared with cache entry.
@@ -102,12 +102,6 @@ class LeafOutputPort final : public OutputPort<T> {
 
   const CacheEntry* const cache_entry_;
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-LeafOutputPort<T>::~LeafOutputPort() = default;
 
 }  // namespace systems
 }  // namespace drake

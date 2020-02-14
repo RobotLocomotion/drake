@@ -98,7 +98,7 @@ namespace multibody {
 template <typename T>
 class SpatialInertia {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
 
   /// Creates a spatial inertia for a physical body or composite body S about a
   /// point P from a given mass, center of mass, and central rotational inertia.
@@ -476,8 +476,6 @@ std::ostream& operator<<(std::ostream& o,
       << " I = " << std::endl
       << M.CalcRotationalInertia();
 }
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(SpatialInertia)
 
 }  // namespace multibody
 }  // namespace drake

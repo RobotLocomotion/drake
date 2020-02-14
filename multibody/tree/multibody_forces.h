@@ -27,7 +27,7 @@ namespace multibody {
 template <typename T>
 class MultibodyForces {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
 
   // TODO(amcastro-tri): replace with MultibodyPlant once dependency becomes
   // logical.
@@ -100,8 +100,6 @@ class MultibodyForces {
   // MultibodyTree.
   VectorX<T> tau_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(MultibodyForces)
 
 }  // namespace multibody
 }  // namespace drake

@@ -42,7 +42,7 @@ namespace internal {
 template <typename T>
 class PositionKinematicsCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
 
   template <typename U>
   using RigidTransform = drake::math::RigidTransform<U>;
@@ -186,8 +186,6 @@ class PositionKinematicsCache {
   X_PoolType X_MB_pool_;
   Vector3PoolType p_PoBo_W_pool_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(PositionKinematicsCache)
 
 }  // namespace internal
 }  // namespace multibody
