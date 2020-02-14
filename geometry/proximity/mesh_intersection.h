@@ -476,23 +476,23 @@ void AddPolygonToMeshData(
  picture:
 
      thin rigid plate N
-           ┌─┐
-           │ │    soft ball M
-           │ │     ● ● ● ●
-           │ │●               ●
-          ⇦│↘│⇨                 ●
-         ●⇦│↘│↘                   ●
-        ● ⇦│ │⇨ ↘                  ●
-        ● ⇦│ │⇨   ↘                ●
-        ● ⇦│→│⇨ → → →              ●
-        ● ⇦│ │⇨   ↗                ●    ↗ pressure gradient ∇p_M in M
-        ● ⇦│ │⇨ ↗                  ●    ⇨ surface normal f_N on N
-         ●⇦│↗│↗                   ●
-          ⇦│↗│⇨                 ●
-           │ │●               ●
-           │ │     ● ● ● ●
-           │ │
-           └─┘
+           ┌┄┐
+           ┊ ┊    soft ball M
+           ┊ ┊     ● ● ● ●
+           ┊ ║●               ●
+          ⇦┃↘║⇨                 ●
+         ●⇦┃↘║↘                   ●
+        ● ⇦┃ ║⇨ ↘                  ●
+        ● ⇦┃ ║⇨   ↘                ●
+        ● ⇦┃→║⇨ → → →              ●
+        ● ⇦┃ ║⇨   ↗                ●    ↗ pressure gradient ∇p_M in M
+        ● ⇦┃ ║⇨ ↗                  ●    ⇨ surface normal f_N on N
+         ●⇦┃↗║↗                   ●     ║ suitable intersecting surface
+          ⇦┃↗║⇨                 ●       ┃ unsuitable intersecting surface
+           ┊ ║●               ●         ┊ non-intersecting surface
+           ┊ ┊     ● ● ● ●
+           ┊ ┊
+           └┄┘
 
  In the picture above, each suitable triangle in N has its face normal making
  an acute angle with the pressure gradient in M, and each unsuitable triangle
@@ -500,10 +500,11 @@ void AddPolygonToMeshData(
  In this case, we can use π/2 as the angle threshold to distinguish the two
  kinds of triangles in N.
      However, there is no single angle threshold that works for all cases.
- For example, a rigid box N penetrates into a soft ball M in the
- following picture has triangles on its left side and right side that have
- their face normals making obtuse angles with the pressure gradient. Using
- π/2 as the threshold, we would prohibit them from the contact surface.
+ For example, a rigid box N penetrates into a soft ball M (see the
+ following picture) and has triangles on its left side and right side with
+ face normals that make obtuse angles with the pressure gradient. Using
+ π/2 as the threshold, we would prohibit these triangles from the contact
+ surface.
 
                soft ball M
                    ● ● ● ●

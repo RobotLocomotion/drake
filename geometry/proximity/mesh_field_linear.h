@@ -20,48 +20,57 @@ namespace geometry {
 /**
  %MeshFieldLinear represents a field variable defined on a simplicial
  (triangular or tetrahedral) mesh using first-order (linear) approximation.
+ In other words, it represents a smooth, continuous field as a continuous
+ piecewise linear function with a discontinuous gradient; the field value
+ changes linearly within each element and the gradient is constant within
+ each element.
 
- We store one field value per vertex of the mesh, and each element
- (triangle or tetrahedron) has (d+1) nodes, where d is the dimension of the
- element. For triangle, d = 2, and for tetrahedron, d = 3.
+ To represent a field f, we store one field value F[i] per vertex V[i] of the
+ mesh; F[i] = f(V[i]). Each element (triangle or tetrahedron) has (d+1)
+ vertices, where d is the dimension of the element. For triangle, d = 2, and
+ for tetrahedron, d = 3.
+
+ The following sections are details for interested readers.
 
  <h3> Barycentric coordinates </h3>
 
- For a linear triangle or tetrahedron in 3-D, we use barycentric coordinates
- bᵢ, where bᵢ is the weight of the iᵗʰ vertex, and their summation is 1.
- The barycentric coordinates B is:
+ For a linear triangle or tetrahedron element E in 3-D, we use barycentric
+ coordinate:
 
-        B := (b₀, b₁, b₂)       for triangle,
-          := (b₀, b₁, b₂, b₃)   for tetrahedron,
-       ∑bᵢ = 1, bᵢ ≥ 0.
+       (b₀, b₁, b₂)     for triangle,
+       (b₀, b₁, b₂, b₃) for tetrahedron,
+       ∑bᵢ = 1, bᵢ ≥ 0,
 
- The corresponding Cartesian coordinates r_M of the barycentric coordinates B
- is expressed in the frame of the mesh M as:
+ to identify a point Q that lies in the simplicial element E. The coefficients
+ b₀, b₁, b₂ (, b₃ for tetrahedron) are the weights of vertices V[i₀], V[i₁],
+ V[i₂] (, V[i₃] for tetrahedron) of element E. Each bᵢ is positive or zero, and
+ their summation is 1.  A point Q can be expressed as:
 
-      r_M := ∑bᵢ*r_MVᵢ,
-
- where r_MVᵢ is the position of vertex Vᵢ expressed in M's frame.
+    Q = b₀(Q)V[i₀] + b₁(Q)V[i₁] + b₂(Q)V[i₂]               for triangle,
+      = b₀(Q)V[i₀] + b₁(Q)V[i₁] + b₂(Q)V[i₂] + b₃(Q)V[i₃]  for tetrahedron.
 
  <h3> Field Approximation </h3>
 
- At the point r_M corresponding to the barycentric coordinates B, the weighted
- sum of the field values uᵢ's at vertex Vᵢ's is the piecewise linear
- approximation uᵉ of the field u on the element E:
+ At a point Q in element E, the piecewise linear approximation fᵉ of the
+ field f at Q is:
 
-        uᵉ = b₀ * u₀ + b₁ * u₁ + b₂ * u₂             for triangle E,
-           = b₀ * u₀ + b₁ * u₁ + b₂ * u₂ + b₃ * u₃   for tetrahedron E.
+    fᵉ(Q) = b₀(Q)F[i₀] + b₁(Q)F[i₁] + b₂(Q)F[i₂]              for triangle,
+          = b₀(Q)F[i₀] + b₁(Q)F[i₁] + b₂(Q)F[i₂] + b₃(Q)F[i₃] for tetrahedron,
+
+ where F[i₀], F[i₁], F[i₂] (, F[i₃] for tetrahedron) are the field values at
+ vertices V[i₀], V[i₁], V[i₂] (, V[i₃] for tetrahedron) of element E.
 
  <h3> Gradient </h3>
 
- Consider each barycentric coordinate bᵢ as a linear scalar field on an
- element E. The gradient ∇bᵢ is constant on E. The weighted sum of ∇bᵢ's is
- the piecewise constant approximation ∇uᵉ on E of the gradient field ∇u:
+ Consider each bᵢ as a linear scalar field on the element E. The gradient ∇bᵢ
+ is constant on E. The weighted sum of ∇bᵢ's is the piecewise constant
+ approximation ∇fᵉ on E of the gradient field ∇f:
 
-       ∇uᵉ = u₀ ∇b₀ + u₁ ∇b₁ + u₂ ∇b₂           for triangle E,
-           = u₀ ∇b₀ + u₁ ∇b₁ + u₂ ∇b₂ + u₃ ∇b₃  for tetrahedron E.
+       ∇fᵉ = F[i₀]∇b₀ + F[i₁]∇b₁ + F[i₂]∇b₂             for triangle,
+           = F[i₀]∇b₀ + F[i₁]∇b₁ + F[i₂]∇b₂ + F[i₃]∇b₃  for tetrahedron.
 
- Note that ∇bᵢ is constant on E and depends on the shape of the triangle or
- tetrahedron E.
+ Each gradient vector ∇bᵢ is constant on E and depends on the shape of the
+ triangle or tetrahedron E. Each ∇bᵢ does not depend on the field values.
 
  @tparam FieldValue  a valid Eigen scalar, or a Vector of Eigen scalar.
  @tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh.
@@ -125,9 +134,19 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
    changes (SurfaceMesh::TransformVertices()), or the field values change
    through mutable_values().
    */
-  void CalcGradientField();
+  void CalcGradientField() {
+    gradients_.clear();
+    gradients_.reserve(this->mesh().num_elements());
+    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
+         ++e) {
+      gradients_.push_back(CalcGradientVector(e));
+    }
+  }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
+  // TODO(DamrongGuoy): Change the type of parameter `field` from MeshField
+  //  to MeshFieldLinear. We will need to change the callers of this function
+  //  too.
   /** Checks to see whether the given MeshFieldLinear object is equal via deep
    exact comparison. The name of the objects are exempt from this comparison.
    NaNs are treated as not equal as per the IEEE standard.
@@ -175,16 +194,6 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   // be tetrahedra for VolumeMesh or triangles for SurfaceMesh.
   std::vector<Vector3<FieldValue>> gradients_;
 };
-
-template <class FieldValue, class MeshType>
-void MeshFieldLinear<FieldValue, MeshType>::CalcGradientField() {
-  gradients_.clear();
-  gradients_.reserve(this->mesh().num_elements());
-  for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
-       ++e) {
-    gradients_.push_back(CalcGradientVector(e));
-  }
-}
 
 template <class FieldValue, class MeshType>
 Vector3<FieldValue> MeshFieldLinear<FieldValue, MeshType>::CalcGradientVector(
