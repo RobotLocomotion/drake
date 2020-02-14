@@ -45,7 +45,6 @@ drake_cc_library(
     srcs = ["rod2d.cc"],
     hdrs = [
         "rod2d.h",
-        "rod2d-inl.h",
     ],
     deps = [
         ":rod2d_state_vector",

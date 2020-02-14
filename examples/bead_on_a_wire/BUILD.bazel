@@ -14,7 +14,6 @@ drake_cc_library(
     srcs = ["bead_on_a_wire.cc"],
     hdrs = [
         "bead_on_a_wire.h",
-        "bead_on_a_wire-inl.h",
     ],
     deps = [
         "//common:essential",
