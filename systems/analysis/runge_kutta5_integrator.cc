@@ -3,7 +3,7 @@
 namespace drake {
 namespace systems {
 
-/**
+/*
  * RK5-specific initialization function.
  * @throws std::logic_error if *neither* the initial step size target nor the
  *           maximum step size has been set before calling.

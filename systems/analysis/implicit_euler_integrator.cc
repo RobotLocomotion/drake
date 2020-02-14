@@ -377,11 +377,11 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
   }
 }
 
-/// Takes a given step of the requested size, if possible.
-/// @returns `true` if successful and `false` otherwise; on `true`, the time
-///          and continuous state will be advanced in the context (e.g., from
-///          t0 to t0 + h). On `false` return, the time and continuous state in
-///          the context will be restored to its original value (at t0).
+// Takes a given step of the requested size, if possible.
+// @returns `true` if successful and `false` otherwise; on `true`, the time
+//          and continuous state will be advanced in the context (e.g., from
+//          t0 to t0 + h). On `false` return, the time and continuous state in
+//          the context will be restored to its original value (at t0).
 template <class T>
 bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Save the current time and state.
