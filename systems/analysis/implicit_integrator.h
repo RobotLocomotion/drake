@@ -396,15 +396,15 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   // Methods for derived classes to increment the factorization and Jacobian
   // evaluation counts.
-  inline void increment_num_iter_factorizations() {
+  void increment_num_iter_factorizations() {
     ++num_iter_factorizations_;
   }
 
-  inline void increment_jacobian_computation_derivative_evaluations(int count) {
+  void increment_jacobian_computation_derivative_evaluations(int count) {
     num_jacobian_function_evaluations_ += count;
   }
 
-  inline void increment_jacobian_evaluations() {
+  void increment_jacobian_evaluations() {
     ++num_jacobian_evaluations_;
   }
 
