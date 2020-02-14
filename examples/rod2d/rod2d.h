@@ -129,9 +129,6 @@ Coulomb friction. The problem is well known to correspond to an
 *inconsistent rigid contact configuration*, where impulsive forces are
 necessary to resolve the problem.
 
-This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-this class, please refer to https://drake.mit.edu/cxx_inl.html.
-
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
 Instantiated templates for the following scalar types @p T are provided:

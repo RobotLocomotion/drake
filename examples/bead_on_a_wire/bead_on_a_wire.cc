@@ -1,13 +1,4 @@
-#pragma once
-
-// @file
-// Template method implementations for bead_on_a_wire.h.
-// Most users should only include that file, not this one.
-// For background, see https://drake.mit.edu/cxx_inl.html.
-
-/* clang-format off to disable clang-format-includes */
 #include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
-/* clang-format on */
 
 #include <limits>
 
@@ -317,6 +308,8 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>&,
   }
   state->get_mutable_continuous_state().SetFromVector(x0);
 }
+
+template class BeadOnAWire<double>;
 
 }  // namespace bead_on_a_wire
 }  // namespace examples
