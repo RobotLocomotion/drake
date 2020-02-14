@@ -170,8 +170,7 @@ BoxSphereTest::BoxSphereTest()
   diagram_context_double_ = diagram_double_->CreateDefaultContext();
   plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
       *plant_double_, diagram_context_double_.get()));
-  auto diagram_autodiff = diagram_double_->ToAutoDiffXd();
-  owned_diagram_autodiff_ = std::move(diagram_autodiff);
+  owned_diagram_autodiff_ = diagram_double_->ToAutoDiffXd();
   diagram_autodiff_ =
       static_cast<systems::Diagram<AutoDiffXd>*>(owned_diagram_autodiff_.get());
   plant_autodiff_ = static_cast<const MultibodyPlant<AutoDiffXd>*>(

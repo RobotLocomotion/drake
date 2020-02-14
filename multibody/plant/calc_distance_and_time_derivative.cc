@@ -47,9 +47,14 @@ SignedDistanceWithTimeDerivative CalcDistanceAndTimeDerivative(
   // normal n̂_BA_W. Hence
   // n̂_BA_Wᵀ * dp_CbCa_W/dt = n̂_BA_Wᵀ * (dp_BCa_W/dt - dp_BCb_W/dt)
   //                        = n̂_BA_Wᵀ * v_BCa_W
+  // where v_BCa_W is the velocity of a point that instantaneously coincides
+  // with Ca, but fixed on the geometry A.
 
   // signed_distance_pair.p_ACa is the location of the witness point Ca in the
   // geometry frame Ga. We need to compute Ca's position in body frame A.
+  // We assume that the body frame A and the geometry frame F (the parent frame
+  // of geometry A) coincide, hence X_AGa = X_FGa =
+  // inspector.GetPoseInFrame(...).
   const Eigen::Vector3d& p_GaCa = signed_distance_pair.p_ACa;
   const Eigen::Vector3d p_ACa =
       inspector.GetPoseInFrame(signed_distance_pair.id_A) * p_GaCa;
