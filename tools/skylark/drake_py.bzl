@@ -162,6 +162,7 @@ def drake_py_binary(
 
 def drake_py_unittest(
         name,
+        args = None,
         **kwargs):
     """Declares a `unittest`-based python test.
 
@@ -175,10 +176,15 @@ def drake_py_unittest(
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
     srcs = ["test/%s.py" % name, helper]
+    new_args = (args or []) + select({
+        "//tools/cc_toolchain:debug": ["--compilation_mode=dbg"],
+        "//conditions:default": ["--compilation_mode=opt"],
+    })
     drake_py_test(
         name = name,
         srcs = srcs,
         main = helper,
+        args = new_args,
         allow_import_unittest = True,
         **kwargs
     )

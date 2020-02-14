@@ -25,6 +25,16 @@ if __name__ == '__main__':
     # .../execroot/.../foo_test.runfiles/.../drake_py_unittest_main.py
     main_py = sys.argv[0]
 
+    # Copy the compilation mode from argv to `__main__.compilation_mode`
+    # immediately, so that it is available when we load the module under
+    # test, for use with a decorator like @unittest.skipIf.
+    if "--compilation_mode=opt" in sys.argv:
+        compilation_mode = "opt"
+    elif "--compilation_mode=dbg" in sys.argv:
+        compilation_mode = "dbg"
+    else:
+        compilation_mode = None
+
     # Parse the test case name out of the runfiles directory name.
     match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
     if not match:
@@ -106,6 +116,13 @@ if __name__ == '__main__':
         "--drake_deprecation_action", type=str, default="error",
         help="Action for Drake deprecation warnings. Applied after " +
              "--deprecation_action.")
+    parser.add_argument(
+        # N.B. The --compilation_mode is unused within this module; test
+        # programs use `from __main__ import compilation_mode` instead,
+        # per the manual argv scraping near the beginning of this file.
+        "--compilation_mode", type=str, default=None,
+        choices=["opt", "dbg"],
+        help="Advise this test of the Bazel compilation mode.")
     args, remaining = parser.parse_known_args()
     sys.argv = sys.argv[:1] + remaining
 
