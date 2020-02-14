@@ -587,11 +587,11 @@ void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
       SetFromVector(err_est_vec_);
 }
 
-/// Takes a given step of the requested size, if possible.
-/// @returns `true` if successful.
-/// @post the time and continuous state will be advanced only if `true` is
-///       returned (if `false` is returned, the time and state will be reset
-///       to their values on entry).
+// Takes a given step of the requested size, if possible.
+// @returns `true` if successful.
+// @post the time and continuous state will be advanced only if `true` is
+//       returned (if `false` is returned, the time and state will be reset
+//       to their values on entry).
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   Context<T>* context = this->get_mutable_context();

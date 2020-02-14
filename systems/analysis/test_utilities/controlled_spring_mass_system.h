@@ -68,8 +68,8 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   ConstantVectorSource<T>* target_;
 };
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class PidControlledSpringMassSystem)
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::PidControlledSpringMassSystem)

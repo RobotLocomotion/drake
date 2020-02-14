@@ -3,7 +3,7 @@
 namespace drake {
 namespace systems {
 
-/**
+/*
  * RK3-specific initialization function.
  * @throws std::logic_error if *neither* the initial step size target nor the
  *           maximum step size have been set before calling.

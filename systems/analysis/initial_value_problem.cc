@@ -6,15 +6,15 @@
 
 namespace drake {
 namespace systems {
-namespace internal {
+namespace anonymous {
 
-/// A LeafSystem subclass used to describe parameterized ODE systems
-/// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ.
-/// The vector variable 𝐱 corresponds to the system state that is evolved
-/// through time t by the function f, which is in turn parameterized by a
-/// vector 𝐤.
-///
-/// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
+// A LeafSystem subclass used to describe parameterized ODE systems
+// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ.
+// The vector variable 𝐱 corresponds to the system state that is evolved
+// through time t by the function f, which is in turn parameterized by a
+// vector 𝐤.
+//
+// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
 class ODESystem : public LeafSystem<T> {
  public:
@@ -22,18 +22,18 @@ class ODESystem : public LeafSystem<T> {
 
   typedef typename InitialValueProblem<T>::ODEFunction SystemFunction;
 
-  /// Constructs a system that will use the given @p system_function,
-  /// parameterized as described by the @p param_model, to compute the
-  /// derivatives and advance the @p state_model.
-  ///
-  /// @remarks Here, the 'model' term has been borrowed from LeafSystem
-  /// terminology, where these vectors are used both to provide initial
-  /// values and to convey information about the dimensionality of the
-  /// variables involved.
-  ///
-  /// @param system_function The system function f(t, 𝐱; 𝐤).
-  /// @param state_model The state model vector 𝐱₀, with initial values.
-  /// @param param_model The parameter model vector 𝐤₀, with default values.
+  // Constructs a system that will use the given @p system_function,
+  // parameterized as described by the @p param_model, to compute the
+  // derivatives and advance the @p state_model.
+  //
+  // @remarks Here, the 'model' term has been borrowed from LeafSystem
+  // terminology, where these vectors are used both to provide initial
+  // values and to convey information about the dimensionality of the
+  // variables involved.
+  //
+  // @param system_function The system function f(t, 𝐱; 𝐤).
+  // @param state_model The state model vector 𝐱₀, with initial values.
+  // @param param_model The parameter model vector 𝐤₀, with default values.
   ODESystem(const SystemFunction& system_function,
             const VectorX<T>& state_model,
             const VectorX<T>& param_model);
@@ -86,7 +86,7 @@ void ODESystem<T>::DoCalcTimeDerivatives(
       parameter_vector.get_value()));
 }
 
-}  // namespace internal
+}  // namespace anonymous
 
 template<typename T>
 const double InitialValueProblem<T>::kDefaultAccuracy = 1e-4;
@@ -114,7 +114,7 @@ InitialValueProblem<T>::InitialValueProblem(
     throw std::logic_error("No default parameters vector k was given.");
   }
   // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<internal::ODESystem<T>>(
+  system_ = std::make_unique<anonymous::ODESystem<T>>(
       ode_function, default_values_.x0.value(), default_values_.k.value());
 
   // Allocates a new default integration context with the
