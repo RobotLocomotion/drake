@@ -23,4 +23,5 @@ class TestGeometryInspector(unittest.TestCase):
              "manipulation/models/iiwa_description/sdf/" +
              "iiwa14_no_collision.sdf",
              "--test",
+             "--visualize_collisions",
              "--package_path=./manipulation/models/iiwa_description"])
