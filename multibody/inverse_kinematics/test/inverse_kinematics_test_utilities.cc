@@ -135,7 +135,8 @@ TwoFreeSpheresTest::TwoFreeSpheresTest() {
 
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
-    const Eigen::Vector3d& box_size, double radius, MultibodyPlant<T>** plant,
+    const Eigen::Vector3d& box_size, double radius,
+    const math::RigidTransformd& X_BGb, MultibodyPlant<T>** plant,
     geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere_frame_index,
     FrameIndex* box_frame_index) {
   systems::DiagramBuilder<T> builder;
@@ -144,8 +145,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
       "box", SpatialInertia<double>(1, Eigen::Vector3d(0, 0, 0),
                                     UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
-      box, RigidTransformd::Identity(),
-      geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
+      box, X_BGb, geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
       CoulombFriction<double>(0.9, 0.8));
 
   const auto& sphere = (*plant)->AddRigidBody(
@@ -162,14 +162,16 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
   return builder.Build();
 }
 
-BoxSphereTest::BoxSphereTest() : box_size_(10, 10, 10), radius_(1) {
+BoxSphereTest::BoxSphereTest()
+    : box_size_(10, 10, 10), radius_(1), X_BGb_(Eigen::Vector3d(0.1, 0, 0)) {
   diagram_double_ = ConstructBoxSphereDiagram(
-      box_size_, radius_, &plant_double_, &scene_graph_double_,
+      box_size_, radius_, X_BGb_, &plant_double_, &scene_graph_double_,
       &sphere_frame_index_, &box_frame_index_);
   diagram_context_double_ = diagram_double_->CreateDefaultContext();
   plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
       *plant_double_, diagram_context_double_.get()));
-  owned_diagram_autodiff_ = std::move(diagram_double_->ToAutoDiffXd());
+  auto diagram_autodiff = diagram_double_->ToAutoDiffXd();
+  owned_diagram_autodiff_ = std::move(diagram_autodiff);
   diagram_autodiff_ =
       static_cast<systems::Diagram<AutoDiffXd>*>(owned_diagram_autodiff_.get());
   plant_autodiff_ = static_cast<const MultibodyPlant<AutoDiffXd>*>(

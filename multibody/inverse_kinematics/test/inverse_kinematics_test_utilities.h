@@ -154,6 +154,8 @@ class BoxSphereTest : public ::testing::Test {
  protected:
   Eigen::Vector3d box_size_;
   double radius_{0};
+  // The pose of the box collision geometry frame Gb in the box body frame B.
+  math::RigidTransformd X_BGb_{};
   std::unique_ptr<systems::Diagram<double>> diagram_double_;
   std::unique_ptr<systems::System<AutoDiffXd>> owned_diagram_autodiff_;
   systems::Diagram<AutoDiffXd>* diagram_autodiff_;
