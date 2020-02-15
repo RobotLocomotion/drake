@@ -1,8 +1,11 @@
 #include "drake/systems/analysis/implicit_integrator.h"
 
-#include <Eigen/LU>
+#include <cmath>
+#include <stdexcept>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff_gradient.h"
 
 namespace drake {

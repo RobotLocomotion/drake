@@ -1,8 +1,6 @@
 #pragma once
 
-#include <limits>
 #include <memory>
-#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"

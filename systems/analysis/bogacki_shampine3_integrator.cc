@@ -1,5 +1,9 @@
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 
+#include <cmath>
+#include <stdexcept>
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
 
 namespace drake {

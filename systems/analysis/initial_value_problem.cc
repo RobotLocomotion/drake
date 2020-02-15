@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/initial_value_problem.h"
 
+#include <stdexcept>
+
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"

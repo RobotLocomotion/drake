@@ -5,6 +5,8 @@
 #include <memory>
 #include <utility>
 
+#include <Eigen/LU>
+
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"

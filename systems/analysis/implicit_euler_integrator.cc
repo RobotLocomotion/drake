@@ -1,6 +1,13 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 
-#include "drake/common/default_scalars.h"
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+
+#include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 namespace drake {
 namespace systems {

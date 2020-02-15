@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
