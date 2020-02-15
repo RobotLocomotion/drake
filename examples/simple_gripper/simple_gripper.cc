@@ -37,8 +37,8 @@ using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::Body;
-using multibody::CoulombFriction;
 using multibody::ConnectContactResultsToDrakeVisualizer;
+using multibody::CoulombFriction;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
@@ -55,8 +55,19 @@ DEFINE_double(grip_width, 0.095,
 DEFINE_double(
     mbp_discrete_update_period, 1.0E-3,
     "The fixed-time step period (in seconds) of discrete updates for the "
-    "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model.");
+    "multibody plant modeled as a discrete system. Strictly positive. [s]");
+
+DEFINE_bool(
+    mbp_use_discrete_system, true,
+    "If 'true', the plant is modeled "
+    "as a discrete system with periodic updates of period "
+    "'mbp_discrete_update_period'. Otherwise, the plant is modeled as a "
+    "continuous system.");
+DEFINE_bool(
+    simulator_uses_error_control, true,
+    "If 'true', the simulator's "
+    "integrator uses error control if it supports it. Otherwise, the simulator"
+    " attempts to use fixed steps.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -69,28 +80,36 @@ DEFINE_double(v_stiction_tolerance, 1.0e-2,
 DEFINE_int32(ring_samples, 8,
              "The number of spheres used to sample the pad ring");
 DEFINE_double(ring_orient, 0, "Rotation of the pads around x-axis. [degrees]");
-DEFINE_double(ring_static_friction, 1.0, "The coefficient of static friction "
+DEFINE_double(ring_static_friction, 1.0,
+              "The coefficient of static friction "
               "for the ring pad.");
-DEFINE_double(ring_dynamic_friction, 0.5, "The coefficient of dynamic friction "
+DEFINE_double(ring_dynamic_friction, 0.5,
+              "The coefficient of dynamic friction "
               "for the ring pad.");
 
 // Parameters for rotating the mug.
-DEFINE_double(rx, 0, "The x-rotation of the mug around its origin - the center "
+DEFINE_double(rx, 0,
+              "The x-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
-DEFINE_double(ry, 0, "The y-rotation of the mug around its origin - the center "
+DEFINE_double(ry, 0,
+              "The y-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
-DEFINE_double(rz, 0, "The z-rotation of the mug around its origin - the center "
+DEFINE_double(rz, 0,
+              "The z-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
 
 // Gripping force.
-DEFINE_double(gripper_force, 10, "The force to be applied by the gripper. [N]. "
+DEFINE_double(gripper_force, 10,
+              "The force to be applied by the gripper. [N]. "
               "A value of 0 indicates a fixed grip width as set with option "
               "grip_width.");
 
 // Parameters for shaking the mug.
-DEFINE_double(amplitude, 0.15, "The amplitude of the harmonic oscillations "
+DEFINE_double(amplitude, 0.15,
+              "The amplitude of the harmonic oscillations "
               "carried out by the gripper. [m].");
-DEFINE_double(frequency, 2.0, "The frequency of the harmonic oscillations "
+DEFINE_double(frequency, 2.0,
+              "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
 
 // The pad was measured as a torus with the following major and minor radii.
@@ -106,8 +125,8 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
 // @param[in] finger the Body representing the finger
-void AddGripperPads(MultibodyPlant<double>* plant,
-                    const double pad_offset, const Body<double>& finger) {
+void AddGripperPads(MultibodyPlant<double>* plant, const double pad_offset,
+                    const Body<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
   const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
   const double d_theta = 2 * M_PI / sample_count;
@@ -122,16 +141,15 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     // The y-offset of the center of the torus in the finger frame F.
     const double torus_center_y_position_F = 0.0265;
     p_FSo(0) = pad_offset;  // Offset from the center of the gripper.
-    p_FSo(1) =
-        std::cos(d_theta * i + sample_rotation) * kPadMajorRadius +
-            torus_center_y_position_F;
+    p_FSo(1) = std::cos(d_theta * i + sample_rotation) * kPadMajorRadius +
+               torus_center_y_position_F;
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the finger frame F.
     const RigidTransformd X_FS(p_FSo);
 
-    CoulombFriction<double> friction(
-        FLAGS_ring_static_friction, FLAGS_ring_static_friction);
+    CoulombFriction<double> friction(FLAGS_ring_static_friction,
+                                     FLAGS_ring_static_friction);
 
     plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                      "collision" + std::to_string(i), friction);
@@ -149,9 +167,12 @@ int do_main() {
   scene_graph.set_name("scene_graph");
 
   DRAKE_DEMAND(FLAGS_simulator_max_time_step > 0);
+  DRAKE_DEMAND(FLAGS_mbp_discrete_update_period > 0);
 
   MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
+      FLAGS_mbp_use_discrete_system
+          ? *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period)
+          : *builder.AddSystem<MultibodyPlant>(0.0);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   Parser parser(&plant);
   std::string full_name =
@@ -194,8 +215,7 @@ int do_main() {
     // "free" with no applied forces (thus we see it not moving).
     const double finger_width = 0.007;  // From the visual in the SDF file.
     AddGripperPads(&plant, -pad_offset, right_finger);
-    AddGripperPads(&plant,
-                   -(FLAGS_grip_width + finger_width) + pad_offset,
+    AddGripperPads(&plant, -(FLAGS_grip_width + finger_width) + pad_offset,
                    right_finger);
   } else {
     AddGripperPads(&plant, -pad_offset, right_finger);
@@ -215,8 +235,9 @@ int do_main() {
   // least 30 time steps. Usually this is a good starting point for fixed step
   // size integrators to be stable.
   const double max_time_step =
-      FLAGS_simulator_max_time_step > 0 ? FLAGS_simulator_max_time_step :
-      plant.get_contact_penalty_method_time_scale() / 30;
+      FLAGS_simulator_max_time_step > 0
+          ? FLAGS_simulator_max_time_step
+          : plant.get_contact_penalty_method_time_scale() / 30;
 
   // Print maximum time step and the time scale introduced by the compliance in
   // the contact model as a reference to the user.
@@ -257,12 +278,12 @@ int do_main() {
 
   // The mass of the gripper in simple_gripper.sdf.
   // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
-  const double mass = 1.0890;  // kg.
+  const double mass = 1.0890;                       // kg.
   const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
-  const double x0 = FLAGS_amplitude;  // meters.
+  const double x0 = FLAGS_amplitude;                // meters.
   const double v0 = -x0 * omega;  // Velocity amplitude, initial velocity, m/s.
   const double a0 = omega * omega * x0;  // Acceleration amplitude, m/s².
-  const double f0 = mass * a0;  // Force amplitude, Newton.
+  const double f0 = mass * a0;           // Force amplitude, Newton.
   fmt::print("Acceleration amplitude = {:8.4f} m/s²\n", a0);
 
   // Notice we are using the same Sine source to:
@@ -273,8 +294,8 @@ int do_main() {
   const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
   const Vector2<double> frequencies(omega, 0.0);
   const Vector2<double> phases(0.0, M_PI_2);
-  const auto& harmonic_force = *builder.AddSystem<Sine>(
-      amplitudes, frequencies, phases);
+  const auto& harmonic_force =
+      *builder.AddSystem<Sine>(amplitudes, frequencies, phases);
 
   builder.Connect(harmonic_force.get_output_port(0),
                   plant.get_actuation_input_port());
@@ -300,10 +321,10 @@ int do_main() {
   const Body<double>& mug = plant.GetBodyByName("main_body");
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  const Vector3d& p_WBr = plant.EvalBodyPoseInWorld(
-      plant_context, right_finger).translation();
-  const Vector3d& p_WBl = plant.EvalBodyPoseInWorld(
-      plant_context, left_finger).translation();
+  const Vector3d& p_WBr =
+      plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
+  const Vector3d& p_WBl =
+      plant.EvalBodyPoseInWorld(plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
   RigidTransformd X_WM(
@@ -322,26 +343,137 @@ int do_main() {
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
+  // By default, integrators that support error control enable error control.
+  // If the user wants fixed-step integration, we set fixed step mode to true.
+  if (!FLAGS_simulator_uses_error_control &&
+      !(simulator->get_integrator().get_fixed_step_mode())) {
+    simulator->get_mutable_integrator().set_fixed_step_mode(true);
+  }
+
   simulator->AdvanceTo(FLAGS_simulation_time);
 
   if (plant.is_discrete()) {
-    fmt::print("Used time stepping with dt={}\n", plant.time_step());
-  }
+    // If the plant used discrete steps, output just the step size and count.
+    fmt::print("Used time stepping with dt = {}\n", plant.time_step());
+    fmt::print("Number of steps taken = {:d}\n",
+               simulator->get_num_steps_taken());
+  } else {
+    // If continuous mode was chosen, output detailed statistics regarding the
+    // integrator.
+    const systems::IntegratorBase<double>& integrator =
+        simulator->get_integrator();
 
-  const systems::IntegratorBase<double>& integrator =
-      simulator->get_integrator();
-  fmt::print("Stats for integrator {}:\n", FLAGS_simulator_integration_scheme);
-  fmt::print("Number of time steps taken = {:d}\n",
-             integrator.get_num_steps_taken());
-  if (!integrator.get_fixed_step_mode()) {
-    fmt::print("Initial time step taken = {:10.6g} s\n",
-               integrator.get_actual_initial_step_size_taken());
-    fmt::print("Largest time step taken = {:10.6g} s\n",
-               integrator.get_largest_step_size_taken());
-    fmt::print("Smallest adapted step size = {:10.6g} s\n",
-               integrator.get_smallest_adapted_step_size_taken());
-    fmt::print("Number of steps shrunk due to error control = {:d}\n",
-               integrator.get_num_step_shrinkages_from_error_control());
+    // Check if the integrator is implicit using dynamic casting. If it's
+    // implicit, we can print out a few more helpful statistics.
+    const systems::ImplicitIntegrator<double>* implicit_integrator_ptr =
+        dynamic_cast<systems::ImplicitIntegrator<double>*>(
+            &(simulator->get_mutable_integrator()));
+    bool integrator_is_implicit = (implicit_integrator_ptr != nullptr);
+    fmt::print("Stats for integrator {} with {}:\n",
+               FLAGS_simulator_integration_scheme,
+               integrator.get_fixed_step_mode() ? "fixed steps" :
+               "error control");
+    fmt::print("Number of time steps taken = {:d}\n",
+               integrator.get_num_steps_taken());
+    if (!integrator.get_fixed_step_mode()) {
+      // Print statistics available only to error-controlled integrators.
+      fmt::print("Initial time step taken = {:10.6g} s\n",
+                 integrator.get_actual_initial_step_size_taken());
+      fmt::print("Largest time step taken = {:10.6g} s\n",
+                 integrator.get_largest_step_size_taken());
+      fmt::print("Smallest adapted step size = {:10.6g} s\n",
+                 integrator.get_smallest_adapted_step_size_taken());
+      fmt::print("Number of steps shrunk due to error control = {:d}\n",
+                 integrator.get_num_step_shrinkages_from_error_control());
+    }
+
+    // These two statistics can only be nonzero with implicit integrators, but
+    // because they're available in IntegratorBase, we print them for all
+    // integrators as a sanity check.
+    fmt::print(
+        "Number of steps shrunk due to convergence-based failure = {:d}\n",
+        integrator.get_num_step_shrinkages_from_substep_failures());
+    fmt::print(
+        "Number of convergence-based step failures (should match) = {:d}\n",
+        integrator.get_num_substep_failures());
+
+    if (integrator_is_implicit) {
+      // Print statistics available only to implicit integrators
+      if (integrator.supports_error_estimation()) {
+        // If the integrator supports error control, we include error estimator
+        // details. For each statistic's first value, "integrator", is computed
+        // by subtracting the error estimator's value from the total. The other
+        // two values are grabbed directly from the integrator's statistics.
+        // Note: Even if the integrator was ran in fixed-step mode, they still
+        // run the error estimator (but don't use the results), which is why
+        // we still output the error estimator statistics.
+        if (integrator.get_fixed_step_mode()) {
+          fmt::print("This implicit integrator was ran in fixed-step mode, "
+              "but it supports error estimation, so we will also output "
+              "statistics regarding error estimation.\n");
+        }
+        fmt::print(
+            "Implicit Integrator Statistics (integrator, error estimator, "
+            "total):\n");
+        fmt::print("Number of Derivative Evaluations = {:d}, {:d}, {:d} \n",
+                   implicit_integrator_ptr->get_num_derivative_evaluations() -
+                       implicit_integrator_ptr
+                           ->get_num_error_estimator_derivative_evaluations(),
+                   implicit_integrator_ptr
+                       ->get_num_error_estimator_derivative_evaluations(),
+                   implicit_integrator_ptr->get_num_derivative_evaluations());
+        fmt::print("Number of Jacobian Computations = {:d}, {:d}, {:d} \n",
+                   implicit_integrator_ptr->get_num_jacobian_evaluations() -
+                       implicit_integrator_ptr
+                           ->get_num_error_estimator_jacobian_evaluations(),
+                   implicit_integrator_ptr
+                       ->get_num_error_estimator_jacobian_evaluations(),
+                   implicit_integrator_ptr->get_num_jacobian_evaluations());
+        fmt::print(
+            "Number of Derivative Evaluations for Jacobians = {:d}, {:d}, {:d} "
+            "\n",
+            implicit_integrator_ptr
+                ->get_num_derivative_evaluations_for_jacobian() -
+            implicit_integrator_ptr
+                ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
+            implicit_integrator_ptr
+                ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
+            implicit_integrator_ptr
+                ->get_num_derivative_evaluations_for_jacobian());
+        fmt::print(
+            "Number of Iteration Matrix Factorizations = {:d}, {:d}, {:d} \n",
+            implicit_integrator_ptr->get_num_iteration_matrix_factorizations() -
+                implicit_integrator_ptr
+                    ->get_num_error_estimator_iteration_matrix_factorizations(),
+            implicit_integrator_ptr
+                ->get_num_error_estimator_iteration_matrix_factorizations(),
+            implicit_integrator_ptr->get_num_iteration_matrix_factorizations());
+        fmt::print(
+            "Number of Newton-Raphson Iterations = {:d}, {:d}, {:d} \n",
+            implicit_integrator_ptr->get_num_newton_raphson_iterations() -
+                implicit_integrator_ptr
+                    ->get_num_error_estimator_newton_raphson_iterations(),
+            implicit_integrator_ptr
+                ->get_num_error_estimator_newton_raphson_iterations(),
+            implicit_integrator_ptr->get_num_newton_raphson_iterations());
+      } else {
+        // If the integrator used fixed-steps, we just
+        fmt::print("Implicit Integrator Statistics:\n");
+        fmt::print("Number of Derivative Evaluations = {:d}\n",
+                   implicit_integrator_ptr->get_num_derivative_evaluations());
+        fmt::print("Number of Jacobian Computations = {:d}\n",
+                   implicit_integrator_ptr->get_num_jacobian_evaluations());
+        fmt::print("Number of Derivative Evaluations for Jacobians = {:d} \n",
+                   implicit_integrator_ptr
+                       ->get_num_derivative_evaluations_for_jacobian());
+        fmt::print(
+            "Number of Iteration Matrix Factorizations = {:d} \n",
+            implicit_integrator_ptr->get_num_iteration_matrix_factorizations());
+        fmt::print(
+            "Number of Newton-Raphson Iterations = {:d} \n",
+            implicit_integrator_ptr->get_num_newton_raphson_iterations());
+      }
+    }
   }
 
   return 0;
