@@ -79,7 +79,7 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
     simulator->reset_integrator<RungeKutta3Integrator<double>>();
   } else if (FLAGS_simulator_integration_scheme == "runge_kutta5") {
     simulator->reset_integrator<RungeKutta5Integrator<double>>();
-  } else if (FLAGS_simulator_integration_scheme == "velocity_impliict_euler") {
+  } else if (FLAGS_simulator_integration_scheme == "velocity_implicit_euler") {
     simulator->reset_integrator<VelocityImplicitEulerIntegrator<double>>();
   } else {
     throw std::runtime_error(fmt::format("Unknown integration scheme: {}",
