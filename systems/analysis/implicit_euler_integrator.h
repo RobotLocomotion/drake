@@ -1,13 +1,9 @@
 #pragma once
 
-#include <limits>
 #include <memory>
-#include <utility>
 
-#include <Eigen/LU>
-
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
@@ -175,5 +171,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_jacobian_function_evaluations_{0};
   int64_t num_err_est_nr_iterations_{0};
 };
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::ImplicitEulerIntegrator)

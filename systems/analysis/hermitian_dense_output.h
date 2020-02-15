@@ -1,21 +1,16 @@
 #pragma once
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/stepwise_dense_output.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
