@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace systems {
-namespace anonymous {
+namespace {
 
 // A LeafSystem subclass used to describe parameterized ODE systems
 // i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ.
@@ -88,7 +88,7 @@ void ODESystem<T>::DoCalcTimeDerivatives(
       parameter_vector.get_value()));
 }
 
-}  // namespace anonymous
+}  // namespace
 
 template<typename T>
 const double InitialValueProblem<T>::kDefaultAccuracy = 1e-4;
@@ -116,7 +116,7 @@ InitialValueProblem<T>::InitialValueProblem(
     throw std::logic_error("No default parameters vector k was given.");
   }
   // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<anonymous::ODESystem<T>>(
+  system_ = std::make_unique<ODESystem<T>>(
       ode_function, default_values_.x0.value(), default_values_.k.value());
 
   // Allocates a new default integration context with the
