@@ -9,8 +9,6 @@
 #include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
-#include "drake/systems/analysis/test_utilities/robertson_system.h"
-#include "drake/systems/analysis/test_utilities/stationary_system.h"
 
 namespace drake {
 namespace systems {
