@@ -19,13 +19,14 @@
 // Simulator's paramters:
 DEFINE_double(simulator_target_realtime_rate,
               drake::systems::internal::kDefaultTargetRealtimeRate,
-              "Desired rate relative to real time.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
+              "[Simulator flag] Desired rate relative to real time.  See "
+              "documentation for Simulator::set_target_realtime_rate() for "
+              "details.");
 DEFINE_bool(simulator_publish_every_time_step,
             drake::systems::internal::kDefaultPublishEveryTimeStep,
-            "Sets whether the simulation should trigger a forced-Publish event "
-            "at the end of every trajectory-advancing step. This also "
-            "includes the very first publish at t = 0 (see "
+            "[Simulator flag] Sets whether the simulation should trigger a "
+            "forced-Publish event at the end of every trajectory-advancing "
+            "step. This also includes the very first publish at t = 0 (see "
             "Simulator::set_publish_at_initialization())."
             "See Simulator::set_publish_every_time_step() for details.");
 
@@ -34,20 +35,27 @@ DEFINE_bool(simulator_publish_every_time_step,
 // ResetIntegratorFromGflags().
 DEFINE_string(simulator_integration_scheme,
               drake::systems::internal::kDefaultIntegratorName,
-              "Integration scheme to be used. Available options are: "
-              "'bogacki_shampine3',"
-              "'explicit_euler','implicit_euler','semi_explicit_euler',"
-              "'radau1','radau3',"
-              "'runge_kutta2','runge_kutta3','runge_kutta5',"
+              "[Integrator flag] Integration scheme to be used. Available "
+              "options are: 'bogacki_shampine3', "
+              "'explicit_euler', 'implicit_euler', 'semi_explicit_euler', "
+              "'radau1', 'radau3', "
+              "'runge_kutta2', 'runge_kutta3', 'runge_kutta5', "
               "'velocity_implicit_euler");
 
 DEFINE_double(simulator_max_time_step, 1.0E-3,
-              "Maximum simulation time step used for integration.");
+              "[Integrator flag] Maximum simulation time step used for "
+              "integration. [s].");
 
 const double kDefaultSimulatorAccuracy = 1.0e-2;
 DEFINE_double(simulator_accuracy, kDefaultSimulatorAccuracy,
-              "Sets the simulation accuracy for variable step "
-              "size integrators with error control.");
+              "[Integrator flag] Sets the simulation accuracy for variable "
+              "step size integrators with error control.");
+
+DEFINE_bool(simulator_uses_error_control, true,
+            "[Integrator flag] If 'true', the simulator's integrator uses "
+            "error control if it supports it. Otherwise, the simulator "
+            "attempts to use fixed steps.");
+
 
 namespace drake {
 namespace systems {
@@ -87,6 +95,11 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
   }
   IntegratorBase<double>& integrator = simulator->get_mutable_integrator();
   integrator.set_maximum_step_size(FLAGS_simulator_max_time_step);
+  // For integrators that support error control, turn on or off error control
+  // based on the simulator_uses_error_control flag.
+  if (integrator.supports_error_estimation()) {
+    integrator.set_fixed_step_mode(!FLAGS_simulator_uses_error_control);
+  }
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(FLAGS_simulator_accuracy);
   } else {
