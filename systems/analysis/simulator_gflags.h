@@ -15,6 +15,7 @@
 DECLARE_string(simulator_integration_scheme);
 DECLARE_double(simulator_max_time_step);
 DECLARE_double(simulator_accuracy);
+DECLARE_bool(simulator_uses_error_control);
 
 // Declares simulator gflags.
 DECLARE_double(simulator_target_realtime_rate);
