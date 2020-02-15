@@ -369,10 +369,10 @@ int do_main() {
         dynamic_cast<systems::ImplicitIntegrator<double>*>(
             &(simulator->get_mutable_integrator()));
     bool integrator_is_implicit = (implicit_integrator_ptr != nullptr);
-    fmt::print("Stats for integrator {} with {}:\n",
-               FLAGS_simulator_integration_scheme,
-               integrator.get_fixed_step_mode() ? "fixed steps" :
-               "error control");
+    fmt::print(
+        "Stats for integrator {} with {}:\n",
+        FLAGS_simulator_integration_scheme,
+        integrator.get_fixed_step_mode() ? "fixed steps" : "error control");
     fmt::print("Number of time steps taken = {:d}\n",
                integrator.get_num_steps_taken());
     if (!integrator.get_fixed_step_mode()) {
@@ -401,14 +401,16 @@ int do_main() {
       // Print statistics available only to implicit integrators
       if (integrator.supports_error_estimation()) {
         // If the integrator supports error control, we include error estimator
-        // details. For each statistic's first value, "integrator", is computed
-        // by subtracting the error estimator's value from the total. The other
-        // two values are grabbed directly from the integrator's statistics.
-        // Note: Even if the integrator was ran in fixed-step mode, they still
-        // run the error estimator (but don't use the results), which is why
-        // we still output the error estimator statistics.
+        // details. For each statistic, the first value, for just the
+        // "integrator", is computed by subtracting the error estimator's value
+        // from the total. The other two values are grabbed directly from the
+        // integrator's statistics. Note: Even if the integrator was ran in
+        // fixed-step mode, they still run the error estimator (but don't use
+        // the results), which is why we still output the error estimator
+        // statistics.
         if (integrator.get_fixed_step_mode()) {
-          fmt::print("This implicit integrator was ran in fixed-step mode, "
+          fmt::print(
+              "This implicit integrator was ran in fixed-step mode, "
               "but it supports error estimation, so we will also output "
               "statistics regarding error estimation.\n");
         }
