@@ -29,6 +29,14 @@ drake_jupyter_py_binary(
 )
 
 drake_jupyter_py_binary(
+    name = "nonlinear_program",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
     name = "dynamical_systems",
     add_test_rule = 1,
     deps = [
