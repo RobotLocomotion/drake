@@ -43,6 +43,7 @@ import sys
 import numpy as np
 
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
+from pydrake.geometry import MakePhongIllustrationProperties
 from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.parsing import PackageMap, Parser
 from pydrake.multibody.plant import MultibodyPlant
@@ -81,6 +82,11 @@ def main():
     args_parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
+    args_parser.add_argument(
+        "--visualize_collisions", action="store_true",
+        help="Visualize the collision geometry in the visualizer. The "
+        "collision geometries will be shown in red to differentiate "
+        "them from the visual geometries.")
     # TODO(russt): Add option to weld the base to the world pending the
     # availability of GetUniqueBaseBody requested in #9747.
     MeshcatVisualizer.add_argparse_argument(args_parser)
@@ -112,6 +118,20 @@ def main():
 
     # Add the model from the file and finalize the plant.
     parser.AddModelFromFile(filename)
+
+    # Find all the geometries that have not already been marked as
+    # 'illustration' (visual) and assume they are collision geometries.
+    # Then add illustration properties to them that will draw them in red
+    # and fifty percent translucent.
+    if args.visualize_collisions:
+        source_id = plant.get_source_id()
+        red_illustration = MakePhongIllustrationProperties([1, 0, 0, 0.5])
+        for geometry_id in scene_graph.model_inspector().GetAllGeometryIds():
+            if(scene_graph.model_inspector().GetIllustrationProperties(
+                    geometry_id) is None):
+                scene_graph.AssignRole(
+                    source_id, geometry_id, red_illustration)
+
     plant.Finalize()
 
     # Add sliders to set positions of the joints.
