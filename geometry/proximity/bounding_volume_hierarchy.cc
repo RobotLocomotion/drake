@@ -1,8 +1,12 @@
 #include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 
+#include "drake/common/eigen_types.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
+
+using Eigen::Vector3d;
 
 bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
                       const math::RigidTransform<double>& X_AB) {
@@ -61,6 +65,39 @@ bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
   }
 
   return true;
+}
+
+bool Aabb::HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
+                      const math::RigidTransformd& X_PH) {
+  // We want the two corners of the box that lie at the most extreme extents in
+  // the plane's normal direction. Then we can determine their signed distance
+  // -- if the interval of signed distance includes _zero_, the box overlaps.
+
+  // The box's canonical frame B is aligned with H; R_BH = I which implies
+  // R_PH = R_PB. However, p_HoBo is not necessarily zero.
+  const auto& R_PH = X_PH.rotation().matrix();
+  // The corner of the box that will have the *greatest* signed distance value
+  // w.r.t. the plane. Measured from the box's frame's origin (Bo) but
+  // expressed in the plane's frame.
+  Vector3d p_BoCmax_P = Vector3d::Zero();
+  // We want to compute the vectors Hᴹᵢ  ∈ {Hᵢ, -Hᵢ}, such that Hᴹᵢ ⋅ n̂ₚ is
+  // positive. The maximum box corner is a combination of those Hᴹᵢ vectors.
+  for (int i = 0; i < 3; ++i) {
+    const Vector3d& Hi_P = R_PH.col(i);
+    const Vector3d& Hi_max_P = Hi_P.dot(plane_P.normal()) > 0 ? Hi_P : -Hi_P;
+    p_BoCmax_P += Hi_max_P * bv.half_width()(i);
+  }
+
+  const Vector3d& p_HoBo_H = bv.center();
+  const Vector3d p_PoBo_P = X_PH * p_HoBo_H;
+  // Minimum corner is merely the reflection of the maximum corner across the
+  // center of the box.
+  const Vector3d p_PoCmax_P = p_PoBo_P + p_BoCmax_P;
+  const Vector3d p_PoCmin_P = p_PoBo_P - p_BoCmax_P;
+
+  const double max_distance = plane_P.CalcSignedDistance(p_PoCmax_P);
+  const double min_distance = plane_P.CalcSignedDistance(p_PoCmin_P);
+  return min_distance <= 0 && 0 <= max_distance;
 }
 
 void Aabb::PadBoundary() {
