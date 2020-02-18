@@ -1,8 +1,12 @@
 #include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 
+#include "drake/common/eigen_types.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
+
+using Eigen::Vector3d;
 
 bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
                       const math::RigidTransform<double>& X_AB) {
@@ -61,6 +65,36 @@ bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
   }
 
   return true;
+}
+
+bool Aabb::HasOverlap(const Aabb& a, const Plane<double>& plane_P,
+                      const math::RigidTransformd& X_PA) {
+  // We want the two corners of the box that lie at the most exterme extents in
+  // the plane's normal direction. Then we can determine their signed distance
+  // -- if the interval of signed distance includes _zero_, the box overlaps.
+
+  const auto& R_PA = X_PA.rotation().matrix();
+  // The corner of the box that will have the *greatest* distance from the
+  // plane. Measured from the box's origin but expressed in the plane's frame.
+  Vector3d p_ACmax_P = Vector3d::Zero();
+  // The direction of A's axes pointing in the plane normal direction (towards
+  // the "max" distance.
+  for (int i = 0; i < 3; ++i) {
+    // Ai_P = R_PA.col(i).
+    const double sign = R_PA.col(i).dot(plane_P.normal()) > 0 ? 1.0 : -1.0;
+    const Vector3d Ai_max_P = sign * R_PA.col(i);
+    p_ACmax_P += Ai_max_P * a.half_width()(i);
+  }
+
+  const Vector3d& p_PA_P = X_PA.translation();
+  // Minimum corner is merely the reflection of the maximum corder around the
+  // center of the box.
+  const Vector3d p_PCmax = p_PA_P + p_ACmax_P;
+  const Vector3d p_PCmin = p_PA_P - p_ACmax_P;
+
+  const double max_distance = plane_P.CalcSignedDistance(p_PCmax);
+  const double min_distance = plane_P.CalcSignedDistance(p_PCmin);
+  return min_distance <= 0 && 0 <= max_distance;
 }
 
 void Aabb::PadBoundary() {

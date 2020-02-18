@@ -529,6 +529,105 @@ GTEST_TEST(AABBTest, TestObbOverlap) {
   }
 }
 
+// Tests the determination of an Aabb intersects a plane. We have three frames:
+//
+//   B: the frame the box is defined in.
+//   P: the frame the plane is defined in.
+//   Q: the frame the query is performed in.
+//
+// For simplicity, we'll define the plane with a normal in the Pz direction
+// and at Pz = 0. We'll pose the box relative to the plane (so we can easily
+// reason about whether it penetrates or not). But then express the plane in the
+// query frame Q (and the pose of B in Q).
+GTEST_TEST(AabbTest, PlaneOverlap) {
+  // We'll rely on the pose to reposition the box.
+  const Vector3d center = Vector3d::Zero();
+  const Vector3d half_width{1, 2, 3};
+  Aabb aabb{center, half_width};
+
+  // Use brute force to find the position of the lowest (in the minimal
+  // z-component sense) corner for a box with the given orientation in the frame
+  // F.
+  auto lowest_corner = [&half_width](const RotationMatrixd& R_FA) {
+    Vector3d min_corner;
+    min_corner.setConstant(std::numeric_limits<double>::infinity());
+    for (const double x_sign : {-1.0, 1.0}) {
+      for (const double y_sign : {-1.0, 1.0}) {
+        for (const double z_sign : {-1.0, 1.0}) {
+          const Vector3d signs{x_sign, y_sign, z_sign};
+          const Vector3d p_AC = half_width.cwiseProduct(signs);
+          const Vector3d p_FC = R_FA * p_AC;
+          if (p_FC(2) < min_corner(2)) {
+            min_corner = p_FC;
+          }
+        }
+      }
+    }
+    return min_corner;
+  };
+
+  const double kEps = 100 * std::numeric_limits<double>::epsilon();
+  // An arbitrary collection of orientations for the box in the plane frame.
+  std::vector<AngleAxisd> R_PBs{
+      AngleAxisd{0, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitZ()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      AngleAxisd{7 * M_PI / 6, Vector3d{-1, 2, -3}.normalized()},
+      AngleAxisd{12 * M_PI / 7, Vector3d{1, -2, 3}.normalized()}
+  };
+  // An arbitrary collection of poses of the plane in the query frame Q.
+  std::vector<RigidTransformd> X_QPs {
+    RigidTransformd {},  // Identity matrix.
+      RigidTransformd{
+          RotationMatrixd{AngleAxisd{M_PI / 4, Vector3d{1, 2, 3}.normalized()}},
+          Vector3d{1, 2, 3}},
+      RigidTransformd{RotationMatrixd{AngleAxisd{
+                          12 * M_PI / 7, Vector3d{-1, -1, 3}.normalized()}},
+                      Vector3d{-7, -4, 13}}
+  };
+  for (const auto& R_PB : R_PBs) {
+    RigidTransformd X_PB;
+    X_PB.set_rotation(R_PB);
+    const Vector3d p_BC_P = lowest_corner(RotationMatrixd{R_PB});
+    for (const auto &X_QP : X_QPs) {
+      // Define the plane in the query frame Q.
+      const Vector3d& Pz_Q = X_QP.rotation().col(2);
+      Plane<double> plane_Q{Pz_Q, Pz_Q.dot(X_QP.translation())};
+
+      {
+        // Place the minimum corner just "above" the plane.
+        const Vector3d p_PoBo_P{Vector3d{0.5, -0.25, -(1 + kEps) * p_BC_P(2)}};
+        X_PB.set_translation(p_PoBo_P);
+        EXPECT_FALSE(Aabb::HasOverlap(aabb, plane_Q, X_QP * X_PB));
+      }
+      {
+        // Place the minimum corner just "below" the plane.
+        const Vector3d p_PoBo_P{Vector3d{0.5, -0.25, -(1 - kEps) * p_BC_P(2)}};
+        X_PB.set_translation(p_PoBo_P);
+        EXPECT_TRUE(Aabb::HasOverlap(aabb, plane_Q, X_QP * X_PB));
+      }
+      {
+        // Move the box in the direction of the "lowest" corner _almost_ all
+        // the way through the plane.
+        const Vector3d p_PoBo_P{Vector3d{0.5, -0.25, (1 - kEps) * p_BC_P(2)}};
+        X_PB.set_translation(p_PoBo_P);
+        EXPECT_TRUE(Aabb::HasOverlap(aabb, plane_Q, X_QP * X_PB));
+      }
+      {
+        // Move the box in the direction of the "lowest" corner all the way
+        // through the plane.
+        const Vector3d p_PoBo_P{Vector3d{0.5, -0.25, (1 + kEps) * p_BC_P(2)}};
+        X_PB.set_translation(p_PoBo_P);
+        EXPECT_FALSE(Aabb::HasOverlap(aabb, plane_Q, X_QP * X_PB));
+      }
+    }
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
