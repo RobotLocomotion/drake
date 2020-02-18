@@ -14,6 +14,7 @@
 #include "drake/systems/analysis/runge_kutta5_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/velocity_implicit_euler_integrator.h"
 
 // Simulator's paramters:
 DEFINE_double(simulator_target_realtime_rate,
@@ -37,7 +38,8 @@ DEFINE_string(simulator_integration_scheme,
               "'bogacki_shampine3',"
               "'explicit_euler','implicit_euler','semi_explicit_euler',"
               "'radau1','radau3',"
-              "'runge_kutta2','runge_kutta3','runge_kutta5'");
+              "'runge_kutta2','runge_kutta3','runge_kutta5',"
+              "'velocity_implicit_euler");
 
 DEFINE_double(simulator_max_time_step, 1.0E-3,
               "Maximum simulation time step used for integration.");
@@ -77,6 +79,8 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
     simulator->reset_integrator<RungeKutta3Integrator<double>>();
   } else if (FLAGS_simulator_integration_scheme == "runge_kutta5") {
     simulator->reset_integrator<RungeKutta5Integrator<double>>();
+  } else if (FLAGS_simulator_integration_scheme == "velocity_implicit_euler") {
+    simulator->reset_integrator<VelocityImplicitEulerIntegrator<double>>();
   } else {
     throw std::runtime_error(fmt::format("Unknown integration scheme: {}",
                                          FLAGS_simulator_integration_scheme));

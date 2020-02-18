@@ -62,6 +62,7 @@ drake_cc_library(
         ":runge_kutta5_integrator",
         ":semi_explicit_euler_integrator",
         ":simulator",
+        ":velocity_implicit_euler_integrator",
         "//common:essential",
         "@gflags",
     ],
