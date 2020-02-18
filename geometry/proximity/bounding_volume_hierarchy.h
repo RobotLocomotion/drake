@@ -13,8 +13,10 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 
@@ -62,6 +64,26 @@ class Aabb {
    between the two boxes and using Gottschalk's OBB overlap test.  */
   static bool HasOverlap(const Aabb& a, const Aabb& b,
                          const math::RigidTransform<double>& X_AB);
+
+  /** Checks whether bounding volume `bv` intersects the plane `plane_P`.
+   The bounding volume is centered on its canonical frame B and B is posed
+   in the corresponding hierarchy frame H; by construction B is aligned with H.
+   The plane is defined in frame P.
+
+   This is distinct from testing overlap with a half space because the half
+   space is a _volume_. The plane is a surface. A bounding volume can lie
+   completely on either side of the plane and not overlap.
+
+   @param bv        The bounding box to test.
+   @param plane_P   The plane to test against whose definition is given in
+                    frame P. I.e., to evaluate the signed distance of a point
+                    with respect to the plane, that point must be measured and
+                    expressed in P.
+   @param X_PH      The relative pose between the hierarchy frame H and the
+                    plane frame P.
+   @returns `true` if the plane cuts through the box.   */
+  static bool HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
+                         const math::RigidTransformd& X_PH);
 
  private:
   friend class AabbTester;
@@ -251,6 +273,51 @@ class BoundingVolumeHierarchy {
         node_pairs.emplace(node_a.right(), node_b.left());
         node_pairs.emplace(node_a.left(), node_b.right());
         node_pairs.emplace(node_a.right(), node_b.right());
+      }
+    }
+  }
+
+  /** Culls the nodes of the BVH based on the node's bounding volume's
+   relationship with a primitive object. What makes this unique is that if
+   a node is found to be overlapping the primitive, it searches down _just_ that
+   node's children (contrast that with general BVTT where there are two nodes
+   and four new node pairs to test).
+
+   The callback function consumes only a single index -- the index of the leaf
+   element whose box overlaps with the primitive; it is assumed that the
+   provider for the primitive has perfect knowledge of that primitive.
+
+   This BVH is defined in frame A and the primitive is defined in frame P.
+
+   @param primitive_P   The primitive defined in frame P.
+   @param X_PA          The relative pose between frames P and A.
+   @param callback      For each element in `this` BVH's corresponding mesh, its
+                        index will be passed to the provided callback.
+
+   @note This method can be only used for a primitive type that has an overload
+   for Aabb::HasOverlap() defined.
+   */
+  template <typename PrimitiveType>
+  void Collide(
+      const PrimitiveType& primitive_P, const math::RigidTransformd& X_PA,
+      std::function<BvttCallbackResult(typename MeshType::ElementIndex)>
+          callback) const {
+    std::stack<const BvNode<MeshType>*> nodes;
+    nodes.emplace(&root_node());
+    while (!nodes.empty()) {
+      const auto node = nodes.top();
+      nodes.pop();
+
+      if (!Aabb::HasOverlap(node->aabb(), primitive_P, X_PA)) {
+        continue;
+      }
+      // Run the call back if `node` is a leaf.
+      if (node->is_leaf()) {
+        BvttCallbackResult result = callback(node->element_index());
+        if (result == BvttCallbackResult::Terminate) return;  // Exit early.
+      } else {
+        nodes.emplace(&node->left());
+        nodes.emplace(&node->right());
       }
     }
   }

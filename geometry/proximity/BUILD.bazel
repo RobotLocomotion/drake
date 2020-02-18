@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":mesh_to_vtk",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
+        ":plane",
         ":proximity_utilities",
         ":sorted_triplet",
         ":surface_mesh",
@@ -49,9 +50,11 @@ drake_cc_library(
     srcs = ["bounding_volume_hierarchy.cc"],
     hdrs = ["bounding_volume_hierarchy.h"],
     deps = [
+        ":plane",
         ":surface_mesh",
         ":volume_mesh",
         "//common",
+        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
     ],
@@ -280,8 +283,8 @@ drake_cc_library(
         "mesh_field_linear.h",
     ],
     deps = [
+        ":surface_mesh",
         "//common",
-        "//geometry/proximity:surface_mesh",
     ],
 )
 
@@ -302,11 +305,12 @@ drake_cc_library(
     srcs = ["mesh_intersection.cc"],
     hdrs = ["mesh_intersection.h"],
     deps = [
+        ":bounding_volume_hierarchy",
+        ":mesh_field",
+        ":plane",
+        ":surface_mesh",
+        ":volume_mesh",
         "//common",
-        "//geometry/proximity:bounding_volume_hierarchy",
-        "//geometry/proximity:mesh_field",
-        "//geometry/proximity:surface_mesh",
-        "//geometry/proximity:volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],
@@ -345,6 +349,14 @@ drake_cc_library(
         ":proximity_utilities",
         "//geometry/query_results:penetration_as_point_pair",
         "@fcl",
+    ],
+)
+
+drake_cc_library(
+    name = "plane",
+    hdrs = ["plane.h"],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -392,9 +404,9 @@ drake_cc_library(
         "volume_mesh_field.h",
     ],
     deps = [
+        ":mesh_field",
         "//common",
         "//geometry:geometry_ids",
-        "//geometry/proximity:mesh_field",
     ],
 )
 
@@ -407,10 +419,10 @@ drake_cc_library(
         "volume_to_surface_mesh.h",
     ],
     deps = [
+        ":sorted_triplet",
+        ":surface_mesh",
+        ":volume_mesh",
         "//common",
-        "//geometry/proximity:sorted_triplet",
-        "//geometry/proximity:surface_mesh",
-        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -578,14 +590,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mesh_field_linear_test",
     deps = [
-        "//geometry/proximity:mesh_field",
+        ":mesh_field",
     ],
 )
 
 drake_cc_googletest(
     name = "mesh_field_test",
     deps = [
-        "//geometry/proximity:mesh_field",
+        ":mesh_field",
     ],
 )
 
@@ -599,9 +611,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mesh_intersection_test",
     deps = [
+        ":mesh_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//geometry/proximity:mesh_intersection",
     ],
 )
 
@@ -653,8 +665,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "surface_mesh_test",
     deps = [
+        ":surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
-        "//geometry/proximity:surface_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -662,7 +674,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "volume_mesh_test",
     deps = [
-        "//geometry/proximity:volume_mesh",
+        ":volume_mesh",
         "//math:geometric_transform",
     ],
 )
