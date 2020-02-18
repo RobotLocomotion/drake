@@ -422,6 +422,7 @@ drake_py_unittest(
     deps = [
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
