@@ -4,8 +4,7 @@
 
 namespace drake {
 namespace multibody {
-// Since we use BoxSphereTest from inverse_kinematics_test_utilities.h, we don't
-// put this test in the anonymous namespace.
+namespace {
 void CheckDistanceAndTimeDerivative(
     const multibody::MultibodyPlant<double>& plant,
     multibody::FrameIndex sphere_frame_index,
@@ -115,5 +114,6 @@ TEST_F(BoxSphereTest, CalcDistanceAndTimeDerivative) {
       v_WB, omega_WB, v_WS, omega_WS, 20 * std::cos(theta) - 6,
       -20 * std::sin(theta) * thetadot, plant_context_double_);
 }
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

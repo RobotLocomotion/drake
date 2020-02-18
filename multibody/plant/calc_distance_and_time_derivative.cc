@@ -4,7 +4,7 @@ namespace drake {
 namespace multibody {
 using geometry::FrameId;
 // TODO(Sean.Curtis@tri.global): when SceneGraph has frame velocities, this
-// function shoul be rolled into SceneGraph query.
+// function should be rolled into SceneGraph query.
 SignedDistanceWithTimeDerivative CalcDistanceAndTimeDerivative(
     const MultibodyPlant<double>& plant,
     const SortedPair<geometry::GeometryId>& geometry_pair,
