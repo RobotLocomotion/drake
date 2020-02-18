@@ -135,16 +135,17 @@ TwoFreeSpheresTest::TwoFreeSpheresTest() {
 
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
-    const Eigen::Vector3d& box_size, double radius, MultibodyPlant<T>** plant,
-    geometry::SceneGraph<T>** scene_graph) {
+    const Eigen::Vector3d& box_size, double radius,
+    const math::RigidTransformd& X_BGb, MultibodyPlant<T>** plant,
+    geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere_frame_index,
+    FrameIndex* box_frame_index) {
   systems::DiagramBuilder<T> builder;
   std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
   const auto& box = (*plant)->AddRigidBody(
       "box", SpatialInertia<double>(1, Eigen::Vector3d(0, 0, 0),
                                     UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
-      box, RigidTransformd::Identity(),
-      geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
+      box, X_BGb, geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
       CoulombFriction<double>(0.9, 0.8));
 
   const auto& sphere = (*plant)->AddRigidBody(
@@ -154,23 +155,38 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
       sphere, RigidTransformd::Identity(), geometry::Sphere(radius), "sphere",
       CoulombFriction<double>(0.9, 0.8));
 
+  *box_frame_index = box.body_frame().index();
+  *sphere_frame_index = sphere.body_frame().index();
   (*plant)->Finalize();
 
   return builder.Build();
 }
 
-BoxSphereTest::BoxSphereTest() : box_size_(10, 10, 10), radius_(1) {
+BoxSphereTest::BoxSphereTest()
+    : box_size_(10, 10, 10), radius_(1), X_BGb_(Eigen::Vector3d(0.1, 0, 0)) {
   diagram_double_ = ConstructBoxSphereDiagram(
-      box_size_, radius_, &plant_double_, &scene_graph_double_);
+      box_size_, radius_, X_BGb_, &plant_double_, &scene_graph_double_,
+      &sphere_frame_index_, &box_frame_index_);
   diagram_context_double_ = diagram_double_->CreateDefaultContext();
   plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
       *plant_double_, diagram_context_double_.get()));
+  owned_diagram_autodiff_ = diagram_double_->ToAutoDiffXd();
+  diagram_autodiff_ =
+      static_cast<systems::Diagram<AutoDiffXd>*>(owned_diagram_autodiff_.get());
+  plant_autodiff_ = static_cast<const MultibodyPlant<AutoDiffXd>*>(
+      &(diagram_autodiff_->GetSubsystemByName(plant_double_->get_name())));
+  scene_graph_autodiff_ = static_cast<const geometry::SceneGraph<AutoDiffXd>*>(
+      &(diagram_autodiff_->GetSubsystemByName(
+          scene_graph_double_->get_name())));
 
-  diagram_autodiff_ = ConstructBoxSphereDiagram(
-      box_size_, radius_, &plant_autodiff_, &scene_graph_autodiff_);
   diagram_context_autodiff_ = diagram_autodiff_->CreateDefaultContext();
   plant_context_autodiff_ = &(diagram_autodiff_->GetMutableSubsystemContext(
       *plant_autodiff_, diagram_context_autodiff_.get()));
+
+  sphere_geometry_id_ = plant_double_->GetCollisionGeometriesForBody(
+      plant_double_->get_frame(sphere_frame_index_).body())[0];
+  box_geometry_id_ = plant_double_->GetCollisionGeometriesForBody(
+      plant_double_->get_frame(box_frame_index_).body())[0];
 }
 
 template <typename T>
