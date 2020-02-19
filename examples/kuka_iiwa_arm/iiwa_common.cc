@@ -177,7 +177,6 @@ void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
   }
 }
 
-
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const RigidBodyTree<double>& robot,
     const std::vector<double>& time,

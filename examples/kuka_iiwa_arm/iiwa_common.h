@@ -38,6 +38,7 @@ Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
 
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.
+DRAKE_DEPRECATED("2020-06-01", "This function is being removed.")
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 /// Builds a RigidBodyTree at the specified @position and @orientation from
@@ -69,6 +70,7 @@ void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
 /// Makes a robotlocomotion::robot_plan_t message.  The number of
 /// columns in @p keyframes must match the size of @p time.  Times
 /// must be in strictly increasing order.
+DRAKE_DEPRECATED("2020-06-01", "This function is being removed.")
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const RigidBodyTree<double>& robot, const std::vector<double>& time,
     const std::vector<int>& info, const MatrixX<double>& keyframes);

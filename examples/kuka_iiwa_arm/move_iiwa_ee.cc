@@ -6,6 +6,8 @@
 /// current calculated position of the end effector is printed before,
 /// during, and after the commanded motion.
 
+#include <map>
+
 #include <gflags/gflags.h>
 #include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
@@ -19,8 +21,8 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(lcm_status_channel, "IIWA_STATUS",
@@ -48,14 +50,39 @@ const char kIiwaUrdf[] =
 
 class MoveDemoRunner {
  public:
-  MoveDemoRunner() {
+  MoveDemoRunner()
+      : plant_(0.0) {
     urdf_ =
         (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
-    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        urdf_, multibody::joints::kFixed, &tree_);
+    multibody::Parser(&plant_).AddModelFromFile(urdf_);
+    plant_.WeldFrames(plant_.world_frame(),
+                      plant_.GetBodyByName("base").body_frame());
+    plant_.Finalize();
+    context_ = plant_.CreateDefaultContext();
 
     lcm_.subscribe(FLAGS_lcm_status_channel,
                    &MoveDemoRunner::HandleStatus, this);
+
+    // TODO(sammy-tri) Move this code somewhere more generic if we get a
+    // second example which wants to encode robot plans.
+    std::map<int, std::string> position_names;
+    const int num_positions = plant_.num_positions();
+    for (int i = 0; i < plant_.num_joints(); ++i) {
+      const multibody::Joint<double>& joint =
+          plant_.get_joint(multibody::JointIndex(i));
+      if (joint.num_positions() == 0) {
+        continue;
+      }
+      DRAKE_DEMAND(joint.num_positions() == 1);
+      DRAKE_DEMAND(joint.position_start() < num_positions);
+
+      position_names[joint.position_start()] = joint.name();
+    }
+
+    DRAKE_DEMAND(static_cast<int>(position_names.size()) == num_positions);
+    for (int i = 0; i < num_positions; ++i) {
+      joint_names_.push_back(position_names[i]);
+    }
   }
 
   void Run() {
@@ -67,25 +94,22 @@ class MoveDemoRunner {
   // fairly high rate operation (200Hz is typical).  The plan is
   // calculated on the first status message received, after that
   // periodically display the current position of the end effector.
-  void HandleStatus(const lcm::ReceiveBuffer*, const std::string&,
+  void HandleStatus(const ::lcm::ReceiveBuffer*, const std::string&,
                     const lcmt_iiwa_status* status) {
     status_count_++;
     Eigen::VectorXd iiwa_q(status->num_joints);
-    Eigen::VectorXd iiwa_v(status->num_joints);
     for (int i = 0; i < status->num_joints; i++) {
-      iiwa_v[i] = status->joint_velocity_estimated[i];
       iiwa_q[i] = status->joint_position_measured[i];
     }
 
     // Only print the position every 100 messages (this results in an
     // 0.5s period in a typical configuration).
     if (status_count_ % 100 == 1) {
-      // Estimate the end effector position through forward kinematics.
-      KinematicsCache<double> cache = tree_.doKinematics(iiwa_q, iiwa_v, true);
-      const RigidBody<double>* end_effector = tree_.FindBody(FLAGS_ee_name);
+      plant_.SetPositions(context_.get(), iiwa_q);
 
-      const math::RigidTransform<double> ee_pose(
-          tree_.CalcBodyPoseInWorldFrame(cache, *end_effector));
+      const math::RigidTransform<double> ee_pose =
+          plant_.EvalBodyPoseInWorld(
+              *context_, plant_.GetBodyByName(FLAGS_ee_name));
       const math::RollPitchYaw<double> rpy(ee_pose.rotation());
       drake::log()->info("End effector at: {} {}",
                          ee_pose.translation().transpose(),
@@ -95,8 +119,7 @@ class MoveDemoRunner {
     // If this is the first status we've received, calculate a plan
     // and send it (if it succeeds).
     if (status_count_ == 1) {
-      ConstraintRelaxingIk ik(
-          urdf_, FLAGS_ee_name, Isometry3<double>::Identity());
+      ConstraintRelaxingIk ik(urdf_, FLAGS_ee_name);
 
       // Create a single waypoint for our plan (the destination).
       // This results in a trajectory with two knot points (the
@@ -104,47 +127,51 @@ class MoveDemoRunner {
       // processes and passed directly to PlanSequentialTrajectory as
       // iiwa_q) and the calculated final pose).
       ConstraintRelaxingIk::IkCartesianWaypoint wp;
-      wp.pose.translation() = Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z);
+      wp.pose.set_translation(Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z));
       const math::RollPitchYaw<double> rpy(FLAGS_roll, FLAGS_pitch, FLAGS_yaw);
-      wp.pose.linear() = rpy.ToMatrix3ViaRotationMatrix();
+      wp.pose.set_rotation(rpy);
       wp.constrain_orientation = true;
       std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints;
       waypoints.push_back(wp);
-      IKResults ik_res;
-      ik.PlanSequentialTrajectory(waypoints, iiwa_q, &ik_res);
-      drake::log()->info("IK result: {}", ik_res.info[0]);
+      std::vector<Eigen::VectorXd> q_sol;
+      const bool result =
+          ik.PlanSequentialTrajectory(waypoints, iiwa_q, &q_sol);
+      drake::log()->info("IK result: {}", result);
 
-      if (ik_res.info[0] == 1) {
-        drake::log()->info("IK sol size {}", ik_res.q_sol.size());
+      if (result) {
+        drake::log()->info("IK sol size {}", q_sol.size());
 
         // Run the resulting plan over 2 seconds (which is a fairly
         // arbitrary choice).  This may be slowed down if executing
         // the plan in that time would exceed any joint velocity
         // limits.
         std::vector<double> times{0, 2};
-        DRAKE_DEMAND(ik_res.q_sol.size() == times.size());
+        DRAKE_DEMAND(q_sol.size() == times.size());
 
         // Convert the resulting waypoints into the format expected by
         // ApplyJointVelocityLimits and EncodeKeyFrames.
-        MatrixX<double> q_mat(ik_res.q_sol.front().size(), ik_res.q_sol.size());
-        for (size_t i = 0; i < ik_res.q_sol.size(); ++i) {
-          q_mat.col(i) = ik_res.q_sol[i];
+        MatrixX<double> q_mat(q_sol.front().size(), q_sol.size());
+        for (size_t i = 0; i < q_sol.size(); ++i) {
+          q_mat.col(i) = q_sol[i];
         }
 
         // Ensure that the planned motion would not exceed the joint
         // velocity limits.  This function will scale the supplied
         // times if needed.
         ApplyJointVelocityLimits(q_mat, &times);
+        std::vector<int> info{1, 1};
         robotlocomotion::robot_plan_t plan =
-            EncodeKeyFrames(tree_, times, ik_res.info, q_mat);
+            EncodeKeyFrames(joint_names_, times, info, q_mat);
         lcm_.publish(FLAGS_lcm_plan_channel, &plan);
       }
     }
   }
 
-  lcm::LCM lcm_;
+  ::lcm::LCM lcm_;
   std::string urdf_;
-  RigidBodyTree<double> tree_;
+  multibody::MultibodyPlant<double> plant_;
+  std::unique_ptr<systems::Context<double>> context_;
+  std::vector<std::string> joint_names_;
   int status_count_{0};
 };
 

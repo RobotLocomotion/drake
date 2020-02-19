@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/manipulation/planner/constraint_relaxing_ik_rbt.h"
 
 #include <memory>
 
@@ -16,7 +16,7 @@ namespace {
 constexpr int kDefaultRandomSeed = 1234;
 }  // namespace
 
-ConstraintRelaxingIk::ConstraintRelaxingIk(
+ConstraintRelaxingIkRbt::ConstraintRelaxingIkRbt(
     const std::string& model_path,
     const std::string& end_effector_link_name,
     const Isometry3<double>& base_to_world)
@@ -32,7 +32,7 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
   SetEndEffector(end_effector_link_name);
 }
 
-bool ConstraintRelaxingIk::PlanSequentialTrajectory(
+bool ConstraintRelaxingIkRbt::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
     const VectorX<double>& q_current, IKResults* ik_res) {
   DRAKE_DEMAND(ik_res);
@@ -149,7 +149,7 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
   return true;
 }
 
-bool ConstraintRelaxingIk::SolveIk(
+bool ConstraintRelaxingIkRbt::SolveIk(
     const IkCartesianWaypoint& waypoint,
     const VectorX<double>& q0,
     const VectorX<double>& q_nom,
