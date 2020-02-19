@@ -178,6 +178,30 @@ class MeshIdentifier final : public ShapeReifier {
  private:
   bool is_mesh_{false};
 };
+
+// Helper functions to facilitate exercising FCL's broadphase code. FCL has
+// inconsistent usage of `const`. As such, even though the broadphase structures
+// do not change during collision and distance queries, they are nevertheless
+// declared non-const, requiring Drake to do some const casting in what would
+// otherwise be a const context.
+template <typename T, typename DataType>
+void FclCollide(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
+                const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
+                DataType* data, fcl::CollisionCallBack<T> callback) {
+  tree1.collide(
+      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
+      callback);
+}
+
+template <typename T, typename DataType>
+void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
+                 const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
+                 DataType* data, fcl::DistanceCallBack<T> callback) {
+  tree1.distance(
+      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
+      callback);
+}
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -650,12 +674,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.distance(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, shape_distance::Callback<T>);
+    FclDistance(dynamic_tree_, anchored_tree_, &data,
+                shape_distance::Callback<T>);
     return witness_pairs;
   }
 
@@ -735,12 +755,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, penetration_as_point_pair::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               penetration_as_point_pair::Callback);
+
     return contacts;
   }
 
@@ -754,12 +771,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, find_collision_candidates::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               find_collision_candidates::Callback);
     return pairs;
   }
 
@@ -772,12 +785,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, has_collisions::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data, has_collisions::Callback);
     return data.collisions_exist;
   }
 
@@ -793,31 +801,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, hydroelastic::Callback<T>);
-
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_mesh_tree_),
-        &data, hydroelastic::Callback<T>);
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &dynamic_mesh_tree_),
-        &data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, anchored_tree_, &data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, anchored_mesh_tree_, &data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, dynamic_mesh_tree_, &data,
+               hydroelastic::Callback<T>);
 
     dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
-    dynamic_mesh_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, hydroelastic::Callback<T>);
-    dynamic_mesh_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_mesh_tree_),
-        &data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_tree_, &data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data,
+               hydroelastic::Callback<T>);
 
     return surfaces;
   }
@@ -838,10 +832,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // that we can support with the point-pair fallback. Do those first.
     dynamic_tree_.collide(&data, hydroelastic::CallbackWithFallback<T>);
 
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, hydroelastic::CallbackWithFallback<T>);
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               hydroelastic::CallbackWithFallback<T>);
 
     // TODO(SeanCurtis-TRI): There is a special case where the error message is
     //  incomprehensible. If someone _attempts_ to register a soft mesh, the
@@ -858,24 +850,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // So, we default to the strict hydroleastic. Each pair generated in the
     // following broadphase calculations *must* include a mesh. If we can't
     // compute a contact surface, we must fail.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_mesh_tree_),
-        &data.data, hydroelastic::Callback<T>);
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &dynamic_mesh_tree_),
-        &data.data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, anchored_mesh_tree_, &data.data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, dynamic_mesh_tree_, &data.data,
+               hydroelastic::Callback<T>);
 
-    dynamic_mesh_tree_.collide(&data.data, hydroelastic::Callback<T>);
-    dynamic_mesh_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data.data, hydroelastic::Callback<T>);
-    dynamic_mesh_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_mesh_tree_),
-        &data.data, hydroelastic::Callback<T>);
+    dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_tree_, &data.data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data.data,
+               hydroelastic::Callback<T>);
   }
 
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
