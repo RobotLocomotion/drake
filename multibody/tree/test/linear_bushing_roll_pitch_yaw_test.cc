@@ -209,27 +209,28 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // Contributions to potential energy.
     using std::pow;
-    const double potentialTranslation = 0.5 * kx * pow(x, 2)
-                                      + 0.5 * ky * pow(y, 2)
-                                      + 0.5 * kz * pow(z, 2);
-    const double potentialRotation = 0.5 * k0 * pow(q0, 2)
-                                   + 0.5 * k1 * pow(q1, 2)
-                                   + 0.5 * k2 * pow(q2, 2);
-    const double potentialEnergy_MG = potentialRotation + potentialTranslation;
+    const double potential_translation = 0.5 * kx * pow(x, 2)
+                                       + 0.5 * ky * pow(y, 2)
+                                       + 0.5 * kz * pow(z, 2);
+    const double potential_rotation = 0.5 * k0 * pow(q0, 2)
+                                    + 0.5 * k1 * pow(q1, 2)
+                                    + 0.5 * k2 * pow(q2, 2);
+    const double potential_energy_MG = potential_rotation
+                                     + potential_translation;
 
     // Contributions to power.
-    const double powerConservative_MG = -k0 * q0 * q0Dt - kx * x * xDt
-                                       - k1 * q1 * q1Dt - ky * y * yDt
-                                       - k2 * q2 * q2Dt - kz * z * zDt;
-    const double powerDissipation_MG = -b0 * pow(q0Dt, 2) - bx * pow(xDt, 2)
-                                      - b1 * pow(q1Dt, 2) - by * pow(yDt, 2)
-                                      - b2 * pow(q2Dt, 2) - bz * pow(zDt, 2);
+    const double power_conservative_MG = -k0 * q0 * q0Dt - kx * x * xDt
+                                        - k1 * q1 * q1Dt - ky * y * yDt
+                                        - k2 * q2 * q2Dt - kz * z * zDt;
+    const double power_dissipation_MG = -b0 * pow(q0Dt, 2) - bx * pow(xDt, 2)
+                                       - b1 * pow(q1Dt, 2) - by * pow(yDt, 2)
+                                       - b2 * pow(q2Dt, 2) - bz * pow(zDt, 2);
     const Vector3<double> rCrossF_B(fz*y - fy*z,  /* Bx measure of r.cross(F) */
                                     fx*z - fz*x,  /* By measure of r.cross(F) */
                                     fy*x - fx*y); /* Bz measure of r.cross(F) */
     const Vector3<double> w_AC_B = R_BA * w_AC_A;
-    const double powerExtra_MG = w_AC_B.dot(rCrossF_B);
-    double powerNonconservative_MG = powerDissipation_MG + powerExtra_MG;
+    const double power_extra_MG = w_AC_B.dot(rCrossF_B);
+    double power_nonconservative_MG = power_dissipation_MG + power_extra_MG;
     // ---------- End of by-hand and/or MotionGenesis calculations ---------
 
     // Verify F_A_A,, the bushing's spatial force calculation on frame A.
@@ -274,14 +275,14 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const ForceElement<double>* bushing_force_element = bushing_;
     const double potential_energy =
         bushing_force_element->CalcPotentialEnergy(context, pc);
-    double scaled_epsilon = std::abs(potentialEnergy_MG) * 32 * kEpsilon;
-    EXPECT_NEAR(potential_energy, potentialEnergy_MG, scaled_epsilon);
+    double scaled_epsilon = std::abs(potential_energy_MG) * 32 * kEpsilon;
+    EXPECT_NEAR(potential_energy, potential_energy_MG, scaled_epsilon);
 
     // Verify the bushing's conservative power calculation.
     const double conservative_power =
         bushing_force_element->CalcConservativePower(context, pc, vc);
-    scaled_epsilon = std::abs(powerConservative_MG) * 32 * kEpsilon;
-    EXPECT_NEAR(conservative_power, powerConservative_MG, scaled_epsilon);
+    scaled_epsilon = std::abs(power_conservative_MG) * 32 * kEpsilon;
+    EXPECT_NEAR(conservative_power, power_conservative_MG, scaled_epsilon);
 
     // Verify the bushing's nonconservative power calculation.
     // Note: The LinearBushingRollPitchYaw class documentation describes the
@@ -289,8 +290,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // ----------------------------------------------------------------------
     const double non_conservative_power =
         bushing_force_element->CalcNonConservativePower(context, pc, vc);
-    scaled_epsilon = std::abs(powerDissipation_MG) * 32 * kEpsilon;
-    EXPECT_NEAR(non_conservative_power, powerNonconservative_MG,
+    scaled_epsilon = std::abs(power_dissipation_MG) * 32 * kEpsilon;
+    EXPECT_NEAR(non_conservative_power, power_nonconservative_MG,
                 scaled_epsilon);
   }
 
