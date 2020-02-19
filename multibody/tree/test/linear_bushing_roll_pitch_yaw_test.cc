@@ -283,9 +283,10 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     scaled_epsilon = std::abs(powerConservative_MG) * 32 * kEpsilon;
     EXPECT_NEAR(conservative_power, powerConservative_MG, scaled_epsilon);
 
-    // Verify the bushing's non-conservative power calculation.
-    // TODO(Mitiguy) clarify which calculations have been hacked to deal with
-    //  non-analytical potential energy issues before merging this PR.
+    // Verify the bushing's nonconservative power calculation.
+    // Note: The LinearBushingRollPitchYaw class documentation describes the
+    // calculation of power (conservative/nonconservative) and potential energy.
+    // ----------------------------------------------------------------------
     const double non_conservative_power =
         bushing_force_element->CalcNonConservativePower(context, pc, vc);
     scaled_epsilon = std::abs(powerDissipation_MG) * 32 * kEpsilon;
@@ -293,36 +294,6 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
                 scaled_epsilon);
   }
 
- protected:
-  // TODO(Mitiguy) Per issue #12739, consider using MultibodyPlant not MBT.
-  std::unique_ptr<MultibodyTreeSystem<double>> mbtree_system_;
-  std::unique_ptr<systems::Context<double>> context_;
-  const QuaternionFloatingMobilizer<double>* mobilizer_{nullptr};
-
-  const RigidBody<double>* bodyA_{nullptr};  // World body (inboard to bushing).
-  const RigidBody<double>* bodyC_{nullptr};  // Body attached to bushing.
-  const LinearBushingRollPitchYaw<double>* bushing_{nullptr};
-
-  // Body C's mass, center of mass, and moments/products of inertia about Ccm.
-  const double mC_ = 1;                       // C's mass in kilograms (kg).
-  const double Ixx_ = 2, Iyy_ = 3, Izz_ = 4;  // C's moments  of inertia (m²).
-  const double Ixy_ = 0, Ixz_ = 0, Iyz_ = 0;  // C's products of inertia (m²).
-  const Vector3<double> p_CoCcm_{0, 0, 0};    // Position from Co to Ccm (m).
-
-  const Vector3<double>& K012() const {
-    return bushing_->torque_stiffness_constants();
-  }
-  const Vector3<double>& B012() const {
-    return bushing_->torque_damping_constants();
-  }
-  const Vector3<double>& Kxyz() const {
-    return bushing_->force_stiffness_constants();
-  }
-  const Vector3<double>& Bxyz() const {
-    return bushing_->force_damping_constants();
-  }
-
- private:
   // Calculates "reasonable" torque and force stiffness/damping constants,
   // where "reasonable" means a critical damping ratio ζ = 0.1 and damped
   // natural periods of a few seconds.  This method returns output via its
@@ -379,12 +350,65 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     *force_stiffness_constants = Vector3<double>(kx, ky, kz);
     *force_damping_constants = Vector3<double>(bx, by, bz);
   }
+
+ protected:
+  // TODO(Mitiguy) Per issue #12739, consider using MultibodyPlant not MBT.
+  std::unique_ptr<MultibodyTreeSystem<double>> mbtree_system_;
+  std::unique_ptr<systems::Context<double>> context_;
+  const QuaternionFloatingMobilizer<double>* mobilizer_{nullptr};
+
+  const RigidBody<double>* bodyA_{nullptr};  // World body (inboard to bushing).
+  const RigidBody<double>* bodyC_{nullptr};  // Body attached to bushing.
+  const LinearBushingRollPitchYaw<double>* bushing_{nullptr};
+
+  // Body C's mass, center of mass, and moments/products of inertia about Ccm.
+  const double mC_ = 1;                       // C's mass in kilograms (kg).
+  const double Ixx_ = 2, Iyy_ = 3, Izz_ = 4;  // C's moments  of inertia (m²).
+  const double Ixy_ = 0, Ixz_ = 0, Iyz_ = 0;  // C's products of inertia (m²).
+  const Vector3<double> p_CoCcm_{0, 0, 0};    // Position from Co to Ccm (m).
+
+  const Vector3<double>& K012() const {
+    return bushing_->torque_stiffness_constants();
+  }
+  const Vector3<double>& B012() const {
+    return bushing_->torque_damping_constants();
+  }
+  const Vector3<double>& Kxyz() const {
+    return bushing_->force_stiffness_constants();
+  }
+  const Vector3<double>& Bxyz() const {
+    return bushing_->force_damping_constants();
+  }
 };
 
 TEST_F(LinearBushingRollPitchYawTester, ConstructionAndAccessors) {
   // TODO(Mitiguy) add remaining accessors before merging this PR.
   EXPECT_EQ(bushing_->link0().index(), bodyA_->index());
   EXPECT_EQ(bushing_->link1().index(), bodyC_->index());
+  EXPECT_EQ(bushing_->frameA().body().index(), bodyA_->index());
+  EXPECT_EQ(bushing_->frameC().body().index(), bodyC_->index());
+
+  Vector3<double> torque_stiffness_constants;
+  Vector3<double> torque_damping_constants;
+  Vector3<double> force_stiffness_constants;
+  Vector3<double> force_damping_constants;
+  CalcReasonableStiffnessAndDampingConstants(&torque_stiffness_constants,
+                                             &torque_damping_constants,
+                                             &force_stiffness_constants,
+                                             &force_damping_constants);
+  const double tolerance = 32 * kEpsilon;
+  EXPECT_TRUE(CompareMatrices(torque_stiffness_constants,
+                              bushing_->torque_stiffness_constants(),
+                              tolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(torque_damping_constants,
+                              bushing_->torque_damping_constants(),
+                              tolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(force_stiffness_constants,
+                              bushing_->force_stiffness_constants(),
+                              tolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(force_damping_constants,
+                              bushing_->force_damping_constants(),
+                              tolerance, MatrixCompareType::relative));
 }
 
 // Verify results when body C has given orientation, but no motion in world.
