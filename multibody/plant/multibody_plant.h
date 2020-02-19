@@ -3314,7 +3314,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // when the plant declares its cache entries.
   struct CacheIndexes {
     systems::CacheIndex aba_accelerations;
-    systems::CacheIndex aba_force_bias_cache;
+    systems::CacheIndex aba_force_cache;
     systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
@@ -3434,15 +3434,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Zplus_B, among other quantities needed by ABA.
   // N.B. Please refer to @ref internal_forward_dynamics for further details on
   // the algorithm and implementation.
-  void CalcArticulatedBodyForceBiasCache(
+  void CalcArticulatedBodyForceCache(
       const systems::Context<T>& context,
-      internal::ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const;
+      internal::ArticulatedBodyForceCache<T>* aba_force_cache) const;
 
-  // Eval version of the method CalcArticulatedBodyForceBiasCache().
-  const internal::ArticulatedBodyForceBiasCache<T>&
-  EvalArticulatedBodyForceBiasCache(const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.aba_force_bias_cache)
-        .template Eval<internal::ArticulatedBodyForceBiasCache<T>>(context);
+  // Eval version of the method CalcArticulatedBodyForceCache().
+  const internal::ArticulatedBodyForceCache<T>&
+  EvalArticulatedBodyForceCache(const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.aba_force_cache)
+        .template Eval<internal::ArticulatedBodyForceCache<T>>(context);
   }
 
   // Implements the system dynamics according to this class's documentation.
