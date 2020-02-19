@@ -32,13 +32,13 @@ namespace internal {
 ///
 /// They are already available to link against in the containing library.
 template<typename T>
-class ArticulatedBodyForceBiasCache {
+class ArticulatedBodyForceCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyForceBiasCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyForceCache)
 
-  /// Constructs an %ArticulatedBodyForceBiasCache object properly sized to
+  /// Constructs an %ArticulatedBodyForceCache object properly sized to
   /// store the force bias terms for a model with the given `topology`.
-  explicit ArticulatedBodyForceBiasCache(
+  explicit ArticulatedBodyForceCache(
       const MultibodyTreeTopology& topology) :
       num_nodes_(topology.num_bodies()) {
     Allocate();
@@ -106,4 +106,4 @@ class ArticulatedBodyForceBiasCache {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::ArticulatedBodyForceBiasCache)
+    class ::drake::multibody::internal::ArticulatedBodyForceCache)

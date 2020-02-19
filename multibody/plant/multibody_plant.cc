@@ -53,7 +53,7 @@ using systems::State;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::internal::AccelerationKinematicsCache;
-using drake::multibody::internal::ArticulatedBodyForceBiasCache;
+using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
@@ -1894,9 +1894,9 @@ void MultibodyPlant<T>::CalcTamsiResults(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache(
+void MultibodyPlant<T>::CalcArticulatedBodyForceCache(
     const systems::Context<T>& context,
-    ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+    ArticulatedBodyForceCache<T>* aba_force_bias_cache) const {
   DRAKE_DEMAND(aba_force_bias_cache != nullptr);
 
   // Applied forces including force elements (function of state x) and external
@@ -1912,7 +1912,7 @@ void MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache(
     Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
 
   // Perform the tip-to-base pass to compute the force bias terms needed by ABA.
-  internal_tree().CalcArticulatedBodyForceBiasCache(context, forces,
+  internal_tree().CalcArticulatedBodyForceCache(context, forces,
                                                     aba_force_bias_cache);
 }
 
@@ -1923,8 +1923,8 @@ void MultibodyPlant<T>::CalcForwardDynamics(
   DRAKE_DEMAND(ac != nullptr);
 
   // Evaluate the ABA cache, function of state x and inputs u.
-  const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache =
-      EvalArticulatedBodyForceBiasCache(context);
+  const ArticulatedBodyForceCache<T>& aba_force_bias_cache =
+      EvalArticulatedBodyForceCache(context);
 
   // Perform the last base-to-tip pass to compute accelerations using the O(n)
   // ABA.
@@ -2492,8 +2492,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Articulated Body Algorithm (ABA) force bias cache.
   auto& aba_force_bias_cache_entry = this->DeclareCacheEntry(
       std::string("ABA force bias cache."),
-      ArticulatedBodyForceBiasCache<T>(internal_tree().get_topology()),
-      &MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache,
+      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
+      &MultibodyPlant<T>::CalcArticulatedBodyForceCache,
       // ABA computes quantities such as Zplus which are needed for the
       // computation of acceleration and thus depend on both state and inputs.
       // All sources include: time, accuracy, state, input ports, and

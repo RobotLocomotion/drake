@@ -10,7 +10,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/tree/articulated_body_force_bias_cache.h"
+#include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/mobilizer.h"
@@ -1093,13 +1093,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   ///   A pointer to a valid, non nullptr, force bias cache.
   ///
   /// @pre pc, vc, and abic previously computed to be in sync with `context.
-  /// @pre CalcArticulatedBodyForceBiasCache_TipToBase() must have already been
+  /// @pre CalcArticulatedBodyForceCache_TipToBase() must have already been
   /// called for all the child nodes of `this` node (and, by recursive
   /// precondition, all successor nodes in the tree.)
   ///
   /// @throws when called on the _root_ node or `aba_force_bias_cache` is
   /// nullptr.
-  void CalcArticulatedBodyForceBiasCache_TipToBase(
+  void CalcArticulatedBodyForceCache_TipToBase(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>* vc,
@@ -1108,7 +1108,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+      ArticulatedBodyForceCache<T>* aba_force_bias_cache) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(aba_force_bias_cache != nullptr);
 
@@ -1261,7 +1261,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const systems::Context<T>& /* context */,
       const PositionKinematicsCache<T>& pc,
       const ArticulatedBodyInertiaCache<T>& abic,
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache,
+      const ArticulatedBodyForceCache<T>& aba_force_bias_cache,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       AccelerationKinematicsCache<T>* ac) const {
     DRAKE_THROW_UNLESS(ac != nullptr);
@@ -1559,45 +1559,45 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
   // =========================================================================
-  // ArticulatedBodyForceBiasCache Accessors and Mutators.
+  // ArticulatedBodyForceCache Accessors and Mutators.
 
   // Returns a const reference to the articulated body inertia residual force
   // `Zplus_PB_W` for this body projected across its inboard mobilizer to
   // frame P.
   const SpatialForce<T>& get_Zplus_PB_W(
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache) const {
+      const ArticulatedBodyForceCache<T>& aba_force_bias_cache) const {
     return aba_force_bias_cache.get_Zplus_PB_W(topology_.index);
   }
 
   // Mutable version of get_Zplus_PB_W().
   SpatialForce<T>& get_mutable_Zplus_PB_W(
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+      ArticulatedBodyForceCache<T>* aba_force_bias_cache) const {
     return aba_force_bias_cache->get_mutable_Zplus_PB_W(topology_.index);
   }
 
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
   const SpatialAcceleration<T>& get_Ab_WB(
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache) const {
+      const ArticulatedBodyForceCache<T>& aba_force_bias_cache) const {
     return aba_force_bias_cache.get_Ab_WB(topology_.index);
   }
 
   // Mutable version of get_Ab_WB().
   SpatialAcceleration<T>& get_mutable_Ab_WB(
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+      ArticulatedBodyForceCache<T>* aba_force_bias_cache) const {
     return aba_force_bias_cache->get_mutable_Ab_WB(topology_.index);
   }
 
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
   const VectorUpTo6<T>& get_e_B(
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache) const {
+      const ArticulatedBodyForceCache<T>& aba_force_bias_cache) const {
     return aba_force_bias_cache.get_e_B(topology_.index);
   }
 
   // Mutable version of get_e_B().
   VectorUpTo6<T>& get_mutable_e_B(
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+      ArticulatedBodyForceCache<T>* aba_force_bias_cache) const {
     return aba_force_bias_cache->get_mutable_e_B(topology_.index);
   }
 
