@@ -41,6 +41,7 @@ drake_cc_library(
         "//examples/hsr/common",
         "//geometry:scene_graph",
         "//geometry/render:render_engine_vtk",
+        "//multibody/benchmarks/inclined_plane",
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
