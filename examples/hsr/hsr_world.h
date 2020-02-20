@@ -50,9 +50,28 @@ namespace hsr {
 template <typename T>
 class HsrWorld : public systems::Diagram<T> {
  public:
+  /// Internal plants created for control purposes. The welded version of the
+  /// same robot plant is created for the purpose of using the inverse
+  /// dynamics controller, which only works for fully actuated systems.
+  struct OwnedRobotControllerPlant {
+    using mbp = multibody::MultibodyPlant<T>;
+    explicit OwnedRobotControllerPlant(const double time_step)
+        : float_plant(std::make_unique<mbp>(time_step)),
+          welded_plant(std::make_unique<mbp>(time_step)) {}
+    std::unique_ptr<mbp> float_plant;
+    std::unique_ptr<mbp> welded_plant;
+  };
+
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HsrWorld);
   /// @param config_file path to the configuration file to load.
   explicit HsrWorld(const std::string& config_file);
+
+  /// Users *must* call Finalize() after making any additions to the
+  /// multibody plant and before using this class in the Systems framework.
+  /// This should be called exactly once.
+  ///
+  /// @see multibody::MultibodyPlant<T>::Finalize()
+  void Finalize();
 
  private:
   /// Registers a RGBD sensor into the parameters of a robot. Must be called
@@ -115,7 +134,11 @@ class HsrWorld : public systems::Diagram<T> {
                            const math::RigidTransform<double>& X_PC,
                            RobotParameters<T>* robot_parameters);
 
-  const std::string default_renderer_name_ = "hsr_world_renderer";
+  // Create two versions of plants for the controller purpose. One model with
+  // floating base and one model with welded base. Assumes robots_instance_info_
+  // has already being populated. Should only be called from Finalize().
+  void MakeRobotControlPlants();
+
   const std::string config_file_;
 
   // These are only valid until Finalize() is called.
@@ -132,12 +155,7 @@ class HsrWorld : public systems::Diagram<T> {
   std::map<std::string, ModelInstanceInfo<T>> items_instance_info_;
 
   /// Create internal plants for the robots.
-  using mbp_unique_ptr = std::unique_ptr<multibody::MultibodyPlant<T>>;
-  std::vector<mbp_unique_ptr> owned_robot_plants_;
-  /// The welded version of the same robot plant is created for the purpose of
-  /// using inverse dynamics controller, which only works for fully actuated
-  /// systems.
-  std::vector<mbp_unique_ptr> owned_welded_robot_plants_;
+  std::map<std::string, OwnedRobotControllerPlant> owned_robots_plant_;
 };
 
 }  // namespace hsr
