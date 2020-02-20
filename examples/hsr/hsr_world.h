@@ -52,7 +52,23 @@ class HsrWorld : public systems::Diagram<T> {
  public:
   /// Internal plants created for control purposes. The welded version of the
   /// same robot plant is created for the purpose of using the inverse
-  /// dynamics controller, which only works for fully actuated systems.
+  /// dynamics controller (IDC), which only works for fully actuated systems.
+  /// To be more specific, the Drake IDC only supports fully actuated systems
+  /// for now. Robots with a mobile base are underactuated. We have to weld
+  /// the base to the ground or someplace to get a fully actuated system,
+  /// i.e., each moving joint should have one and only actuator associated
+  /// to it. Welding the base of a mobile robot to the ground does not
+  /// necessarily yield a fully actuated system though. However, if the
+  /// users want to use the IDC, this assumption has to be true. Otherwise,
+  /// a vanilla PID controller or PID with gravity compensation controller
+  /// can be used.
+  ///
+  /// The floating base robot (or the original robot plant) is necessary to map
+  /// the states of the welded plant back to the states of the original plant.
+  /// Then the states can be again easily inserted back to the state of the
+  /// full `hsr_world` system. The original floating robot plant can also be
+  /// useful for many other situations such as reading and setting
+  /// joint commands, etc.
   struct OwnedRobotControllerPlant {
     using mbp = multibody::MultibodyPlant<T>;
     explicit OwnedRobotControllerPlant(const double time_step)
@@ -74,6 +90,14 @@ class HsrWorld : public systems::Diagram<T> {
   void Finalize();
 
  private:
+  /// Load all the models from the given configuration file. The return is a
+  /// vector of model instance information.
+  const std::vector<ModelInstanceInfo<T>> LoadModelsFromConfigurationFile();
+
+  /// Post processing the loaded models such as setup the initial position of
+  /// items
+  void SetupWorld(const std::vector<ModelInstanceInfo<T>>& loaded_models);
+
   /// Registers a RGBD sensor into the parameters of a robot. Must be called
   /// before Finalize().
   /// @param name Name for the camera.
@@ -142,12 +166,12 @@ class HsrWorld : public systems::Diagram<T> {
   const std::string config_file_;
 
   // These are only valid until Finalize() is called.
-  std::unique_ptr<drake::multibody::MultibodyPlant<T>> owned_plant_;
-  std::unique_ptr<drake::geometry::SceneGraph<T>> owned_scene_graph_;
+  std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
+  std::unique_ptr<geometry::SceneGraph<T>> owned_scene_graph_;
 
   // These are valid for the lifetime of this system.
-  drake::multibody::MultibodyPlant<T>* plant_{};
-  drake::geometry::SceneGraph<T>* scene_graph_{};
+  multibody::MultibodyPlant<T>* plant_{};
+  geometry::SceneGraph<T>* scene_graph_{};
 
   std::map<std::string, RobotParameters<T>> robots_Parameters_;
 
