@@ -1,10 +1,13 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/examples/hsr/common/model_instance_info.h"
+#include "drake/examples/hsr/common/robot_parameters.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -21,24 +24,24 @@ namespace hsr {
 /// bottle are added as the extra objects.
 ///
 /// @system{HsrWorld,
-///   @input_port{hsr_${name}_desired_state}
-///   @output_port{hsr_${name}_commanded_position}
-///   @output_port{hsr_${name}_measured_position}
-///   @output_port{hsr_${name}_estimated_velocity}
-///   @output_port{hsr_${name}_estimated_state}
-///   @output_port{hsr_${name}_torque_external}
-///   @output_port{hsr_${name}_generalized_force}
-///   @output_port{hsr_${name}_actuation_commanded}
+///   @input_port{hsr_[name]_desired_state}
+///   @output_port{hsr_[name]_commanded_position}
+///   @output_port{hsr_[name]_measured_position}
+///   @output_port{hsr_[name]_estimated_velocity}
+///   @output_port{hsr_[name]_estimated_state}
+///   @output_port{hsr_[name]_torque_external}
+///   @output_port{hsr_[name]_generalized_force}
+///   @output_port{hsr_[name]_actuation_commanded}
 ///   @output_port{pose_bundle}
 ///   @output_port{contact_results}
 ///   @output_port{plant_continuous_state}
 ///   @output_pott{geometry_poses}
 ///   Availablity of the following ports depends on the configuration.
-///   @output_port{imu_${name}_status}
-///   @output_port{force_sensor_${name}_status}
-///   @output_port{camera_${name}_rgb_image}
-///   @output_port{camera_${name}_depth_image}
-///   @output_port{camera_${name}_label_image}
+///   @output_port{[name]_imu_status}
+///   @output_port{[name]_force_sensor_status}
+///   @output_port{[name]_camera_rgb_image}
+///   @output_port{[name]_camera_depth_image}
+///   @output_port{[name]_camera_label_image}
 /// }
 /// Note that, the exact name of the port will depend on the name of the items
 /// since the world may contain more than one robot and more than one same
@@ -47,68 +50,71 @@ namespace hsr {
 template <typename T>
 class HsrWorld : public systems::Diagram<T> {
  public:
-  /// TODO(huihua) Maybe should move these parameters into a separate header.
-  /// All these parameters should be able to be loaded from the configuration
-  /// files.
-  struct SensorLocationParameters {
-    const multibody::Frame<T>* parent_frame{};
-    math::RigidTransform<double> X_PC{math::RigidTransform<double>::Identity()};
-  };
-
-  struct CameraParameters {
-    SensorLocationParameters location;
-    geometry::render::CameraProperties color_properties{0, 0, 0, ""};
-    geometry::render::DepthCameraProperties depth_properties{0, 0, 0, "", 0, 0};
-  };
-
-  struct JointParameters {
-    explicit JointParameters(const std::string& joint_name)
-        : name(joint_name) {}
-    std::string name;
-    double position_offset{0.0};
-    double position_limit_lower{0.0};
-    double position_limit_upper{0.0};
-    double velocity_limit_lower{0.0};
-    double velocity_limit_upper{0.0};
-    double torque_limit_lower{0.0};
-    double torque_limit_upper{0.0};
-  };
-
-  /// Parameters of the parts that assemble a robot.
-  struct PartParameters {
-    explicit PartParameters(const std::string& part_name) : name(part_name) {}
-    std::string name;
-    std::vector<JointParameters> joints_parameters;
-  };
-
-  /// Parameters of a robot that includes different moving parts and the
-  /// sensors.
-  struct RobotParameters {
-    std::string name;
-    std::map<std::string, CameraParameters> camera_Parameters;
-    std::map<std::string, SensorLocationParameters> force_sensor_Parameters;
-    std::map<std::string, SensorLocationParameters> imu_Parameters;
-    std::map<std::string, PartParameters> parts_Parameters;
-  };
-
-  /// Contains all the necessary information about a loaded model instance.
-  /// This information will be useful if extra care is needed for this instance.
-  /// For example, the X_PC will be used to set the initial position if this
-  /// instance has a floating base.
-  struct ModelInstanceInfo {
-    std::string model_name;
-    std::string model_path;
-    std::string parent_frame_name;
-    std::string child_frame_name;
-    multibody::ModelInstanceIndex index;
-    drake::math::RigidTransform<T> X_PC{
-        math::RigidTransform<double>::Identity()};
-  };
-
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HsrWorld);
   /// @param config_file path to the configuration file to load.
-  HsrWorld(const std::string& config_file);
+  explicit HsrWorld(const std::string& config_file);
 
  private:
+  /// Registers a RGBD sensor into the parameters of a robot. Must be called
+  /// before Finalize().
+  /// @param name Name for the camera.
+  /// @param parent_frame The parent frame (frame P). The body that
+  ///   `parent_frame` is attached to must have a corresponding
+  ///   geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
+  /// @param X_PC Transformation between frame P and the camera body.
+  ///   see systems::sensors::RgbdCamera for descriptions about how the
+  ///   camera body, RGB, and depth image frames are related.
+  /// @param color_properties Properties for the color image of the camera.
+  /// @param depth_properties Properties for the depth image of the camera.
+  /// @param robot_parameters The target robot where the RGBD sensor will be
+  ///   registered.
+  void RegisterRgbdSensor(
+      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const math::RigidTransform<double>& X_PC,
+      const geometry::render::CameraProperties& color_properties,
+      const geometry::render::DepthCameraProperties& depth_properties,
+      RobotParameters<T>* robot_parameters);
+
+  /// Registers an IMU sensor. Must be called before Finalize().
+  /// @param name    Name of the joint where the IMU sensor is mounted. It
+  ///   must be a valid joint name of the multibody plant. Otherwise, the
+  ///   system will throw. The name should also be unique compared to the
+  ///   already registered IMU sensors. If not, a warning will be
+  ///   shown and the IMU sensor won't be added.
+  /// @param parent_frame The parent frame (frame P). The body that
+  ///   `parent_frame` is attached to must have a corresponding
+  ///   geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
+  /// @param X_PC Transformation between parent frame P and the IMU sensor.
+  /// @param robot_parameters The target robot where the RGBD sensor will be
+  ///   registered.
+  /// N.B. Since the IMU emulator has not been implemented yet, a dummy name
+  /// has been provided. It does not correspond to any actual joint name.
+  /// For every successfully registered IMU sensor joint,  a output port
+  /// with name `[name]+_imu_status` will be created.
+  void RegisterImuSensor(const std::string& name,
+                         const multibody::Frame<T>& parent_frame,
+                         const math::RigidTransform<double>& X_PC,
+                         RobotParameters<T>* robot_parameters);
+
+  /// Registers a force sensor. Must be called before Finalize().
+  /// @param name    Name of the joint where the force sensor is mounted. It
+  ///   must be a valid joint name of the multibody plant. Otherwise, the
+  ///   system will throw. The name should also be unique compared to the
+  ///   already registered joint force sensors. If not, a warning will be
+  ///   shown and the force sensor won't be added.
+  /// @param parent_frame The parent frame (frame P). The body that
+  ///   `parent_frame` is attached to must have a corresponding
+  ///   geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
+  /// @param X_PC Transformation between parent frame P and the force sensor.
+  /// @param robot_parameters The target robot where the RGBD sensor will be
+  ///   registered.
+  /// For every successfully registered force sensor joint,  a output port
+  /// with name `[name]+_force_sensor_status` will be created.
+  void RegisterForceSensor(const std::string& name,
+                           const multibody::Frame<T>& parent_frame,
+                           const math::RigidTransform<double>& X_PC,
+                           RobotParameters<T>* robot_parameters);
+
   const std::string default_renderer_name_ = "hsr_world_renderer";
   const std::string config_file_;
 
@@ -120,10 +126,10 @@ class HsrWorld : public systems::Diagram<T> {
   drake::multibody::MultibodyPlant<T>* plant_{};
   drake::geometry::SceneGraph<T>* scene_graph_{};
 
-  std::map<std::string, RobotParameters> robots_Parameters_;
+  std::map<std::string, RobotParameters<T>> robots_Parameters_;
 
-  std::map<std::string, ModelInstanceInfo> robots_instance_info_;
-  std::map<std::string, ModelInstanceInfo> items_instance_info_;
+  std::map<std::string, ModelInstanceInfo<T>> robots_instance_info_;
+  std::map<std::string, ModelInstanceInfo<T>> items_instance_info_;
 
   /// Create internal plants for the robots.
   using mbp_unique_ptr = std::unique_ptr<multibody::MultibodyPlant<T>>;
