@@ -6,8 +6,22 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "parameters",
+    srcs = [
+        "parameters.cc",
+    ],
+    hdrs = [
+        "parameters.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:essential",
+        "@gflags",
+    ],
+)
 
 drake_cc_library(
     name = "hsr_world",
@@ -22,6 +36,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":parameters",
         "//common:find_resource",
         "//examples/hsr/common",
         "//geometry:scene_graph",
