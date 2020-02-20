@@ -5,6 +5,7 @@
 
 #include "drake/examples/hsr/parameters.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/parsing/parser.h"
 namespace drake {
 namespace examples {
@@ -42,13 +43,54 @@ HsrWorld<T>::HsrWorld(const std::string& config_file)
   this->set_name("hsr_world");
 
   // Load the models here. Something like
-  // const auto config_params = LoadWorldConfigurationParameters(config_file_);
+  const std::vector<ModelInstanceInfo<T>> loaded_models =
+      LoadModelsFromConfigurationFile();
 
   // Parse urdfs to get the models from the configuration parameters.
-  // SetupWorld(config_params);
+  SetupWorld(loaded_models);
 
   // This function will finalize the plant and all the ports.
   Finalize();
+}
+
+template <typename T>
+const std::vector<ModelInstanceInfo<T>>
+HsrWorld<T>::LoadModelsFromConfigurationFile() {
+  std::vector<ModelInstanceInfo<T>> added_models;
+  // Replace the following code with local libraries.
+  // anzu::common::schema::ModelDirectives directives =
+  //     anzu::common::LoadModelDirectives(config_file_);
+  // anzu::common::ProcessModelDirectives(directives, plant_, &added_models);
+  return added_models;
+}
+
+template <typename T>
+void HsrWorld<T>::SetupWorld(
+    const std::vector<ModelInstanceInfo<T>>& added_models) {
+  const auto& sim_params = hsr_sim_flags();
+  // Add a ground plane.
+  {
+    const multibody::CoulombFriction<double> coef_friction_inclined_plane(
+        sim_params.inclined_plane_coef_static_friction,
+        sim_params.inclined_plane_coef_kinetic_friction);
+    multibody::benchmarks::inclined_plane::AddInclinedPlaneAndGravityToPlant(
+        sim_params.gravity, 0.0, std::nullopt, coef_friction_inclined_plane,
+        plant_);
+  }
+
+  // Use model directives to load the robot and the world.
+  {
+    // Parse the added models to different catagories.
+    for (const auto& model_info : added_models) {
+      if (model_info.model_name.find("hsr") != std::string::npos) {
+        robots_instance_info_.insert({model_info.model_name, model_info});
+        continue;
+      } else {
+        items_instance_info_.insert({model_info.model_name, model_info});
+        continue;
+      }
+    }
+  }
 }
 
 template <typename T>

@@ -74,6 +74,14 @@ class HsrWorld : public systems::Diagram<T> {
   void Finalize();
 
  private:
+  /// Load all the models from the given configuration file. The return is a
+  /// vector of model instance information.
+  const std::vector<ModelInstanceInfo<T>> LoadModelsFromConfigurationFile();
+
+  /// Post processing the loaded models such as setup the initial position of
+  /// items
+  void SetupWorld(const std::vector<ModelInstanceInfo<T>>& loaded_models);
+
   /// Registers a RGBD sensor into the parameters of a robot. Must be called
   /// before Finalize().
   /// @param name Name for the camera.
