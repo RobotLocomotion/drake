@@ -5,6 +5,7 @@ namespace examples {
 namespace hsr {
 
 using drake::geometry::SceneGraph;
+using drake::multibody::Frame;
 using drake::multibody::MultibodyPlant;
 
 template <typename T>
@@ -34,6 +35,62 @@ HsrWorld<T>::HsrWorld(const std::string& config_file)
   // Finalize();
 }
 
+template <typename T>
+void HsrWorld<T>::RegisterRgbdSensor(
+    const std::string& name, const Frame<T>& parent_frame,
+    const math::RigidTransform<double>& X_PC,
+    const geometry::render::CameraProperties& color_properties,
+    const geometry::render::DepthCameraProperties& depth_properties,
+    RobotParameters<T>* robot_parameters) {
+  CameraParameters<T> param;
+  param.location.parent_frame = &parent_frame;
+  param.location.X_PC = X_PC;
+  param.color_properties = color_properties;
+  param.depth_properties = depth_properties;
+
+  const auto res = robot_parameters->camera_parameters.insert({name, param});
+  if (!res.second) {
+    drake::log()->warn("The camera: " + name +
+                       " already registered. Skip adding this one");
+  }
+}
+
+template <typename T>
+void HsrWorld<T>::RegisterImuSensor(const std::string& name,
+                                    const Frame<T>& parent_frame,
+                                    const math::RigidTransform<double>& X_PC,
+                                    RobotParameters<T>* robot_parameters) {
+  SensorLocationParameters<T> imu_location;
+  imu_location.parent_frame = &parent_frame;
+  imu_location.X_PC = X_PC;
+
+  const auto res =
+      robot_parameters->imu_parameters.insert({name, imu_location});
+  if (!res.second) {
+    drake::log()->warn("The imu: " + name +
+                       " already registered. Skip adding this one");
+  }
+}
+
+template <typename T>
+void HsrWorld<T>::RegisterForceSensor(const std::string& name,
+                                      const Frame<T>& parent_frame,
+                                      const math::RigidTransform<double>& X_PC,
+                                      RobotParameters<T>* robot_parameters) {
+  SensorLocationParameters<T> force_sensor_location;
+  force_sensor_location.parent_frame = &parent_frame;
+  force_sensor_location.X_PC = X_PC;
+
+  const auto res = robot_parameters->force_sensor_parameters.insert(
+      {name, force_sensor_location});
+  if (!res.second) {
+    drake::log()->warn("The force sensor: " + name +
+                       " already registered. Skip adding this one");
+  }
+}
+
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake
+
+template class drake::examples::hsr::HsrWorld<double>;
