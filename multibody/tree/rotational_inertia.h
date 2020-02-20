@@ -555,9 +555,14 @@ class RotationalInertia {
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
+    using std::max;
     const double precision = 10 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
-    const T epsilon = precision * max_possible_inertia_moment;
+
+    // In order to avoid false negatives for inertias close to zero we use, in
+    // addition to a relative tolerance of "precision", an absolute tolerance
+    // equal to "precision" as well.
+    const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.

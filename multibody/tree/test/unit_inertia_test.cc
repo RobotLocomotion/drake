@@ -595,6 +595,72 @@ GTEST_TEST(UnitInertia, CompatibleWithSymbolicExpression) {
               std::numeric_limits<double>::epsilon());
 }
 
+// This test verifies that we can robustly handle near zero inertias for point
+// masses.
+GTEST_TEST(UnitInertia, NearZeroInertia) {
+  const double eps = std::numeric_limits<double>::epsilon();
+
+  // Notice that, if using exact arithmetic, this inertia is not physically
+  // valid given it does not satisfy the triangle inequality.
+  const UnitInertia<double> G(0.0, 0.0, eps);
+
+  // However we treat it as valid given that "catastrophic cancellation"
+  // occurring when using floating point arithmetic might lead to similar
+  // results when working with point inertias.
+  EXPECT_TRUE(G.CouldBePhysicallyValid());
+}
+
+// With inertias for point masses, shifting to and from the center of mass (the
+// actual point's position) might lead to "catastrophic cancellation" that
+// triggers false negatives in CouldBePhysicallyValid(). We verify that we can
+// handle this case without generating spurious false negatives due to the loss
+// of significance occuring with floating point precision.
+GTEST_TEST(UnitInertia, CatastrophicCancellationForPointInertias) {
+  // We use a value eps smaller than machine precision in order to trigger a
+  // "catastrophic cancellation", see notes below.
+  const double eps = std::numeric_limits<double>::epsilon() / 2.0;
+
+  // Unit inertia for a unit mass B located at Bo, therefore close to zero.
+  const UnitInertia<double> G_BBo_W =
+      UnitInertia<double>::TriaxiallySymmetric(eps);
+
+  const Vector3d p_BoP_W = Vector3d::UnitZ();
+  const Vector3d p_PBo_W = -p_BoP_W;
+
+  // For p_BoP_W = Vector3d::UnitZ(), ShiftFromCenterOfMassInPlace() has the
+  // effect of adding the inertia of a unit point mass located at P, with
+  // inertia:
+  //            [1 0 0]
+  // G_PBcm_W = [0 1 0]
+  //            [0 0 0]
+  const UnitInertia<double> G_BP_W = G_BBo_W.ShiftFromCenterOfMass(p_BoP_W);
+
+  // Therefore the new inertia will be:
+  //          [1+eps     0     0]
+  // G_BP_W = [    0 1+eps     0]
+  //          [    0     0   eps]
+
+  // Now ShiftToCenterOfMassInPlace() has the effect of subtracting G_PBcm_W.
+  const UnitInertia<double> Gtilde_BBo_W = G_BP_W.ShiftToCenterOfMass(p_PBo_W);
+
+  // We should be getting G_BBo_W, triaxially symmetric with eps in its
+  // diagonal entries. However, due to "catastrophic cancellation", we instead
+  // get the unphysical inertia:
+  //                [0   0   0]
+  // Gtilde_BBo_W = [0   0   0]
+  //                [0   0 eps]
+  // which does not satisfy the triangle inequality and therefore it is
+  // unphysical.
+
+  // What we want is to treat G_BBo_W and Gtilde_BBo_W as what they actually
+  // are: the rotational inertia of a point mass B about B, and thus zero.
+  // Therefore, even when "catastrophic cancellation" leads to an unphysical
+  // result in exact arithmetic, we should understand it as being a zero
+  // inertia. Therefore, we verify here that CouldBePhysicallyValid() correctly
+  // reports a physical inertia.
+  EXPECT_TRUE(Gtilde_BBo_W.CouldBePhysicallyValid());
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace multibody
