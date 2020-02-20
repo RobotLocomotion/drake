@@ -1,0 +1,37 @@
+directives:
+- add_model:
+    name: hsr
+    file: examples/hsr/models/urdfs/hsr4bs.obj.urdf
+
+robot_configuration:
+- add_joint:
+    name:
+    position_offset:
+    position_limit_lower:
+    position_limit_upper:
+    velocity_limit_lower:
+    velocity_limit_upper:
+    torque_limit_lower:
+    torque_limit_upper:
+
+- add_joint:
+    name:
+    position_offset:
+    position_limit_lower:
+    position_limit_upper:
+    velocity_limit_lower:
+    velocity_limit_upper:
+    torque_limit_lower:
+    torque_limit_upper:
+
+
+sensor_configuration:
+- add_sensor:
+    name:
+    type:
+    parent_frame_name:
+
+- add_sensor:
+    name:
+    type:
+    parent_frame_name:

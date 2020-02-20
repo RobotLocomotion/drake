@@ -1,0 +1,19 @@
+directives:
+# - Main structure
+- add_model:
+    name: main_structure
+    file: examples/hsr/models/urdfs/sandbox_environment.sdf
+
+# - Item 1
+- add_model:
+    name: table
+    file: examples/hsr/models/urdfs/sandbox_environment.sdf
+
+# - Item 2
+- add_model:
+    name: bottle
+    file: examples/hsr/models/urdfs/bottle.sdf
+
+# - Robot
+- add_directives:
+    file: examples/hsr/models/config/hsrb.yaml
