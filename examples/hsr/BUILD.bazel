@@ -1,0 +1,39 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+
+load("@drake//tools/skylark:test_tags.bzl", "vtk_test_tags")
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "hsr_world",
+    srcs = [
+        "hsr_world.cc",
+    ],
+    hdrs = [
+        "hsr_world.h",
+    ],
+    data = [
+        ":models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+    ],
+)
+
+install_data()
+
+add_lint_tests()
