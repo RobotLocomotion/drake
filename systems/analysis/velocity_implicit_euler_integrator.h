@@ -97,7 +97,7 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *     e(tⁿ+h, h) = c(tⁿ) h² + O(h³),         (10)
  * where c(tⁿ) depends on the higher-order time derivatives of the system. This 
  * expression stems from the well-known fact that implicit Euler has second-
- * order truncation error. For a step of size h/2, we have that
+ * order truncation error. With the half-sized steps, we have that
  *
  *     x̃ⁿ⁺¹ - xⁿ⁺¹ = e(tⁿ+h/2, h/2) + e(tⁿ+h, h/2) + O(h³),
  *                 = c(tⁿ) h²/4 + c(tⁿ+h/2) h²/4 + O(h³),
