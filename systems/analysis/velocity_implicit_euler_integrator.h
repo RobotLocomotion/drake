@@ -11,23 +11,14 @@
 namespace drake {
 namespace systems {
 
-namespace internal {
-#ifndef DRAKE_DOXYGEN_CXX
-__attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
-  throw std::logic_error(
-      "No error estimator is currently implemented, so "
-      "query error estimator statistics is not yet supported.");
-}
-#endif
-}  // namespace internal
-
 /**
- * A first-order, fully implicit integrator optimized for second-order systems.
+ * A first-order, fully implicit integrator optimized for second-order systems,
+ * with a second-order error estimate.
  *
  * The velocity-implicit Euler integrator is a variant of the first-order
  * implicit Euler that takes advantage of the simple mapping q̇ = N(q) v
  * of second order systems to formulate a smaller problem in velocities (and
- * miscellaneous states if any) only. For second-order systems,
+ * miscellaneous states if any) only. For systems with second-order dynamics,
  * %VelocityImplicitEulerIntegrator formulates a problem that is half as large
  * as that formulated by Drake's ImplicitEulerIntegrator, resulting in improved
  * run-time performance. Upon convergence of the resulting system of equations,
@@ -39,7 +30,7 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *
  *     q̇ = N(q) v;                            (1)
  *     ẏ = f_y(t,q,y),                        (2)
- * where `q̇` and `v` are linearly related via the kinematic mapping `N(q)`, 
+ * where `q̇` and `v` are linearly related via the kinematic mapping `N(q)`,
  * `y = (v,z)`, and `f_y` is a function that can depend on the time and state.
  *
  * Implicit Euler uses the following update rule at time step n:
@@ -48,7 +39,7 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *     yⁿ⁺¹ = yⁿ + h f_y(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).     (4)
  *
  * To solve the nonlinear system for `(qⁿ⁺¹,yⁿ⁺¹)`, the velocity-implicit Euler
- * integrator iterates with a modified Newton's method: At iteration `k`, it 
+ * integrator iterates with a modified Newton's method: At iteration `k`, it
  * finds a `(qₖ₊₁,yₖ₊₁)` that attempts to satisfy
  *
  *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.              (5)
@@ -56,7 +47,7 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *
  * In this notation, the `n`'s index timesteps, while the `k`'s index the
  * specific Newton-Raphson iterations within each time step.
- * 
+ *
  * Notice that we've intentionally lagged N(qₖ) one iteration behind in Eq (5).
  * This allows it to substitute (5) into (6) to obtain a non-linear system in
  * `y` only. Contrast this strategy with the one implemented by
@@ -81,6 +72,36 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  * convergence to a solution for `y` in `R(y) = 0` where
  * `R(y) = y - yⁿ - h l(y)` as `h` becomes sufficiently small.
  * General implementational details were gleaned from [Hairer, 1996].
+ *
+ * ### Error Estimation
+ *
+ * In this integrator, we simultaneously take a large step at the requested
+ * step size of h as well as two half-sized steps each with step size h/2.
+ * The result from two half-sized steps is propagated as the solution, while
+ * the difference between the two results is used as the error estimate for the
+ * propagated solution. This error estimate is accurate to the second order.
+ *
+ * To be precise, let x̅ⁿ⁺¹ be the computed solution from a large step, x̃ⁿ⁺¹
+ * be the computed solution from two small steps, and xⁿ⁺¹ be the true
+ * solution. Since the integrator propagates x̃ⁿ⁺¹ as its solution, we denote
+ * the true error vector as ε = x̃ⁿ⁺¹ - xⁿ⁺¹. VelocityImplicitEulerIntegrator
+ * uses ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, the difference between the two solutions, as the
+ * second-order error estimate, because for a smooth system, |ε - ε'| = O(h³).
+ * See the notes in
+ * VelocityImplicitEulerIntegrator<T>::get_error_estimate_order() for a
+ * detailed derivation of the error estimate's truncation error.
+ *
+ * Note: In the statistics reported by IntegratorBase, all statistics that deal
+ * with the number of steps or the step sizes will track the large full-sized
+ * steps. Furthermore, because the small half-sized steps are propagated as the
+ * solution, the large full-sized step is the error estimator, and the error
+ * estimation statistics track the effort during the large full-sized step.
+ * Depending on the system, the statistics may be unintuitive and difficult to
+ * compare against other integrators, because the large error-estimation step
+ * is performed first, followed by the two small propagated steps, implying
+ * that most of the work in constructing and factorizing matrices and failed
+ * Newton-Raphson iterations are performed during the large steps and counted
+ * toward the error estimation statistics.
  *
  * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
  *                    Equations II (Stiff and Differential-Algebraic Problems).
@@ -107,38 +128,136 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                                            Context<T>* context = nullptr)
       : ImplicitIntegrator<T>(system, context) {}
 
-  /// The integrator does not support error estimation.
-  bool supports_error_estimation() const final { return false; }
+  /// The integrator supports error estimation.
+  bool supports_error_estimation() const final { return true; }
 
-  /// Returns 0 for the error estimation order because this integrator does not
-  /// support error estimation.
-  int get_error_estimate_order() const final { return 0; }
+  /// The asymptotic order of the difference between the large and small steps
+  /// (from which the error estimate is computed) is O(h²), and the error
+  /// estimate is accurate to within O(h³) of the true error.
+  /// @note Here is the derivation for why this error estimate is second-order.
+  ///
+  /// Let us first define the vector-valued function
+  /// `e(tⁱ, tᶠ, xⁱ) = x̅ⁿ⁺¹ - xⁿ⁺¹`, the truncation error for a single,
+  /// full-sized velocity-implicit Euler integration step, with initial
+  /// conditions `tⁿ=tⁱ`, `xⁿ=xⁱ`, and a step size of `h = tᶠ - tⁱ`.
+  /// Furthermore, use `∇f` to denote the Jacobian df/dx.
+  ///
+  /// Let us look at a single step, and use `f` to denote `f(tⁿ, xⁿ)`. Upon
+  /// Newton-Raphson convergence, the truncation error for velocity-implicit
+  /// Euler, which is the same as the truncation error for implicit Euler
+  /// (because both methods solve Eqs. (3-4)), is
+  ///
+  ///     e(tⁿ, tⁿ+h, xⁿ) = ½ h²(∂f/∂t + ∇f f) + O(h³).       (10)
+  ///
+  /// Let us use `xⁿ*` to denote the true solution after a half-step,
+  /// `x(tⁿ+½h)`, and `x̃ⁿ*` to denote the velocity-implicit Euler solution
+  /// after a single half-sized step. After one small half-sized step, the
+  /// solution `x̃ⁿ*` is
+  ///
+  ///     x̃ⁿ* = xⁿ* + e(tⁿ, tⁿ+½h, xⁿ)
+  ///         = xⁿ* + (1/8) h²(∂f/∂t + ∇f f) + O(h³),
+  ///     x̃ⁿ* - xⁿ* = (1/8) h²(∂f/∂t + ∇f f) + O(h³).         (11)
+  ///
+  /// Let us use `xⁿ*¹` to denote the true solution of the system at time
+  /// `t = tⁿ+h` if the system were at `x̃ⁿ*` when `t = tⁿ+½h`. Taylor
+  /// expanding about `t = tⁿ+½h` in this alternate reality,
+  ///
+  ///     xⁿ*¹ = x̃ⁿ* + h f(tⁿ+½h, x̃ⁿ*) + O(h²).               (12)
+  ///
+  /// Similarly, Taylor expansions give us
+  ///
+  ///     xⁿ⁺¹ = xⁿ* + h f(tⁿ+½h, xⁿ*) + O(h²),               (13)
+  ///     f(tⁿ+½h, x̃ⁿ*) = f(tⁿ+½h, xⁿ*) + ∇f(tⁿ+½h, xⁿ*)(x̃ⁿ* - xⁿ*)
+  ///                   = f(tⁿ+½h, xⁿ*) + O(h²),              (14)
+  /// where in the last line we substituted Eq. (11).
+  ///
+  /// Eq. (12) minus Eq. (13) gives us,
+  ///
+  ///     xⁿ*¹ - xⁿ⁺¹ = x̃ⁿ* - xⁿ* + h(f(tⁿ+½h, x̃ⁿ*) - f(tⁿ+½h, xⁿ*)) + O(h³),
+  ///                 = x̃ⁿ* - xⁿ* + O(h³),
+  /// where we just substituted in Eq. (14). Finally, substituting in Eq. (11),
+  ///
+  ///     xⁿ*¹ - xⁿ⁺¹ = (1/8) h²(∂f/∂t + ∇f f) + O(h³).       (15)
+  ///
+  /// After the second small step, the solution `x̃ⁿ⁺¹` is
+  ///
+  ///     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, tⁿ+h, x̃ⁿ*)
+  ///          = xⁿ*¹ +
+  ///            (1/8) h² (∂f/∂t(tⁿ+½h, x̃ⁿ*) +
+  ///                      ∇f(tⁿ+½h, x̃ⁿ*) f(tⁿ+½h, x̃ⁿ*)) +
+  ///            O(h³).                                       (16)
+  ///
+  /// Taking Taylor expansions,
+  ///
+  ///     xⁿ* = xⁿ + ½h f + O(h²) = xⁿ + O(h).                (17)
+  ///     x̃ⁿ* - xⁿ = (x̃ⁿ* - xⁿ*) + (xⁿ* - xⁿ) = O(h),         (18)
+  /// where we substituted in Eqs. (11) and (17),
+  ///
+  ///     ∂f/∂t(tⁿ+½h, x̃ⁿ*) = ∂f/∂t + ½h ∂²f/∂t² + ∇∂f/∂t (x̃ⁿ* - xⁿ) + O(h²)
+  ///                       = ∂f/∂t + O(h),                   (19)
+  /// where we substituted in Eq. (18), and
+  ///
+  ///     ∇f(tⁿ+½h, x̃ⁿ*) = ∇f + ½h (∂/∂t)∇f(tⁿ+½h, x̃ⁿ*) + ∇²f (x̃ⁿ* - xⁿ) +
+  ///                      O(h²)
+  ///                    = ∇f + O(h),                         (20)
+  ///     f(tⁿ+½h, x̃ⁿ*)  = f + ½h ∂f/∂t + ∇f (x̃ⁿ* - xⁿ)
+  ///                    = f + O(h),                          (21)
+  /// therefore,
+  ///
+  ///     ∂f/∂t(tⁿ+½h, x̃ⁿ*) + ∇f(tⁿ+½h, x̃ⁿ*) f(tⁿ+½h, x̃ⁿ*)
+  ///         = ∂f/∂t + ∇f f + O(h).                          (22)
+  ///
+  /// Substituting (22) into (16),
+  ///
+  ///     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h² (∂f/∂t + ∇f f) + O(h³)
+  ///          = xⁿ⁺¹ + (1/4) h² (∂f/∂t + ∇f f) + O(h³),
+  /// therefore
+  ///
+  ///     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = (1/4) h² (∂f/∂t + ∇f f) + O(h³).  (23)
+  ///
+  /// Subtracting Eq. (23) from Eq. (10),
+  ///
+  ///     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h² (∂f/∂t + ∇f f) + O(h³),
+  ///     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h² (∂f/∂t + ∇f f) + O(h³).
+  ///
+  /// Since the first term on the RHS matches `ε` (Eq. (23)) and the LHS
+  /// matches `ε'`,
+  ///
+  ///     ε' = ε + O(h³).                                     (24)
+  int get_error_estimate_order() const final { return 2; }
 
  private:
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
   }
 
+  // These methods return the effort done by the large step, which is the error
+  // estimator for the half-sized steps.
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
-    internal::EmitNoErrorEstimatorStatAndMessage();
+    return this->get_num_derivative_evaluations() -
+           num_half_vie_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
       const final {
-    internal::EmitNoErrorEstimatorStatAndMessage();
+    return this->get_num_derivative_evaluations_for_jacobian() -
+           num_half_vie_jacobian_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_newton_raphson_iterations() const final {
-    internal::EmitNoErrorEstimatorStatAndMessage();
+    return this->get_num_newton_raphson_iterations() -
+           num_half_vie_nr_iterations_;
   }
 
   int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
-    internal::EmitNoErrorEstimatorStatAndMessage();
+    return this->get_num_jacobian_evaluations() -
+           num_half_vie_jacobian_reforms_;
   }
 
   int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
       const final {
-    internal::EmitNoErrorEstimatorStatAndMessage();
+    return this->get_num_iteration_matrix_factorizations() -
+           num_half_vie_iter_factorizations_;
   }
 
   void DoResetImplicitIntegratorStatistics() final;
@@ -151,7 +270,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   bool DoImplicitIntegratorStep(const T& h) final;
 
-  // Steps the system forward by a single step of h using the Velocity-Implicit
+  // Steps the system forward by a single step of h using the velocity-implicit
   // Euler method.
   // @param t0 the time at the left end of the integration interval.
   // @param h the time increment to step forward.
@@ -176,6 +295,44 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       MatrixX<T>* Jy, int trial = 1);
 
+  // Steps the system forward by two half-sized steps of size h/2 using the
+  // velocity-implicit Euler method, and keeps track of separate statistics
+  // for the derivative evaluations, matrix refactorizations, and Jacobian
+  // recomputations during these half-sized steps. This method calls
+  // StepVelocityImplicitEuler() up to twice to perform the
+  // two half-sized steps.
+  // @param t0 the time at the left end of the integration interval.
+  // @param h the combined time increment to step forward.
+  // @param xn the continuous state at t0, which is xⁿ.
+  // @param xtplus_guess the starting guess for xⁿ⁺¹.
+  // @param [out] xtplus the computed value for xⁿ⁺¹ on successful return.
+  // @param [in, out] iteration_matrix the cached iteration matrix, which is
+  //        updated if either StepVelocityImplicitEuler() calls update it.
+  // @param [in, out] Jy the cached Jacobian Jₗ(y), which is updated if
+  //        either StepVelocityImplicitEuler() calls update it.
+  // @returns `true` if both steps were successful, `false` otherwise.
+  // @note The time and continuous state in the context are indeterminate upon
+  //       exit.
+  bool StepHalfVelocityImplicitEulers(
+      const T& t0, const T& h, const VectorX<T>& xn,
+      const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+      MatrixX<T>* Jy);
+
+  // Takes a large velocity-implicit Euler step (of size h) and two half-sized
+  // velocity-implicit Euler steps (of size h/2), if possible.
+  // @param t0 the time at the left end of the integration interval.
+  // @param h the integration step size to attempt.
+  // @param [out] xtplus_vie contains the velocity-implicit Euler solution
+  //              (i.e., `xⁿ⁺¹`) after the large step, if successful, on return.
+  // @param [out] xtplus_hvie contains the velocity-implicit Euler solution
+  //              (i.e., `xⁿ⁺¹`) after the two small steps, if successful, on
+  //              return.
+  // @returns `true` if all three step attempts were successful, `false`
+  //          otherwise.
+  bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
+                         VectorX<T>* xtplus_vie, VectorX<T>* xtplus_hvie);
+
   // Compute the partial derivatives of the ordinary differential equations with
   // respect to the y variables of a given x(t). In particular, we compute the
   // Jacobian, Jₗ(y), of the function l(y), used in this integrator's
@@ -183,6 +340,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // This Jacobian is then defined as:
   //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
   //     Jₗ(y) = ∂l(y)/∂y                       (8)
+  // We use the Jacobian computation scheme from
+  // get_jacobian_computation_scheme(), which is either a first-order forward
+  // difference, a second-order centered difference, or automatic
+  // differentiation. See math::ComputeNumericalGradient() for more details on
+  // the first two methods.
   // @param t refers to tⁿ⁺¹, the time used in the definition of l(y)
   // @param h is the timestep size parameter, h, used in the definition of
   //        l(y)
@@ -198,38 +360,9 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                             const VectorX<T>& qk, const VectorX<T>& qn,
                             MatrixX<T>* Jy);
 
-  // Uses first-order forward differencing to compute the Jacobian, Jₗ(y), of
-  // the function l(y), used in this integrator's residual computation, with
-  // respect to y, where y = (v,z). This Jacobian is then defined as:
-  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
-  //     Jₗ(y) = ∂l(y)/∂y                       (8)
-  //
-  // In this method, we compute the Jacobian Jₗ(y) using a first-order forward
-  // difference (i.e. numerical differentiation),
-  //     Jₗ(y)ᵢⱼ = (l(y')ᵢ - l(y)ᵢ )/ δy(j),
-  // where y' = y + δy(j) eⱼ, δy(j) = (√ε) max(1,|yⱼ|), and eⱼ is the j-th
-  // standard Cartesian basis vector.
-  // In the code we hereby refer to y as "the baseline" and y' as "prime".
-  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
-  // @param h is the timestep size parameter, h, used in the definition of
-  //        l(y).
-  // @param y is the generalized velocity and miscellaneous states around which
-  //        to evaluate Jₗ(y).
-  // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
-  // @param qn refers to qⁿ, the initial position used in l(y).
-  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
-  // @note The context's time will be set to t, and its continuous state will
-  //       be indeterminate on return.
-  void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
-                                          const VectorX<T>& y,
-                                          const VectorX<T>& qk,
-                                          const VectorX<T>& qn,
-                                          MatrixX<T>* Jy);
-
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
-  // ImplicitIntegrator<T>::MaybeFreshenMatrices. We implement our own version
+  // ImplicitIntegrator<T>::MaybeFreshenMatrices(). We implement our own version
   // here to use a specialized Jacobian Jₗ(y). The aformentioned method was
   // designed for use in DoImplicitIntegratorStep() processes that follow this
   // model:
@@ -356,19 +489,33 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                          BasicVector<T>* qdot);
 
   // The last computed iteration matrix and factorization.
-  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_ie_;
+  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_vie_;
+
+  // Vector used in error estimate calculations. At the end of every step, we
+  // set this to ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, which is our estimate for ε = x̃ⁿ⁺¹ - xⁿ⁺¹,
+  // the error of the propagated half-sized steps.
+  VectorX<T> err_est_vec_;
 
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
   // Variables to avoid heap allocations.
-  VectorX<T> xn_, xdot_, xtplus_ie_;
+  VectorX<T> xn_, xdot_, xtplus_vie_, xtplus_hvie_;
+  std::unique_ptr<BasicVector<T>> qdot_{nullptr};
+
+  // The last computed velocity+misc Jacobian matrix.
+  MatrixX<T> Jy_vie_;
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
 
-  // The last computed velocity+misc Jacobian matrix.
-  MatrixX<T> Jy_ie_;
+  // Half-sized-step-specific statistics, only updated when taking the half-
+  // sized steps.
+  int64_t num_half_vie_jacobian_reforms_{0};
+  int64_t num_half_vie_iter_factorizations_{0};
+  int64_t num_half_vie_function_evaluations_{0};
+  int64_t num_half_vie_jacobian_function_evaluations_{0};
+  int64_t num_half_vie_nr_iterations_{0};
 };
 
 }  // namespace systems
@@ -376,4 +523,3 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::VelocityImplicitEulerIntegrator)
-
