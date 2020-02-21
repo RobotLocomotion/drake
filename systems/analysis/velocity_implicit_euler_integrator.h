@@ -106,7 +106,7 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *
  *     x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = e(tⁿ+h, h) - (x̃ⁿ⁺¹ - xⁿ⁺¹),
  *                 = c(tⁿ) h²/2 + O(h³),
- *     x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = x̃ⁿ⁺¹ - xⁿ⁺¹ + O(h³).    (11)
+ *     x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = x̃ⁿ⁺¹ - xⁿ⁺¹ + O(h³).     (11)
  *
  * Our error estimate, x̅ⁿ⁺¹ - x̃ⁿ⁺¹, therefore estimates the true error,
  * x̃ⁿ⁺¹ - xⁿ⁺¹, to within O(h³). Therefore we say that it is a second-order
