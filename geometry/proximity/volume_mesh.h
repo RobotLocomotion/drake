@@ -130,7 +130,7 @@ class VolumeMesh {
 
   // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
   //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
-  //  bounding_volume_hierarchy.
+  //  bounding_volume_hierarchy. Issue #12756.
 
   static constexpr int kDim = 3;
 
@@ -264,6 +264,8 @@ class VolumeMesh {
    @returns `true` if the given mesh is equal.
    */
   bool Equal(const VolumeMesh<T>& mesh) const {
+    if (this == &mesh) return true;
+
     if (this->num_elements() != mesh.num_elements()) return false;
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
@@ -318,14 +320,76 @@ template <typename T>
 Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
                                               int i) const {
   DRAKE_DEMAND(0 <= i && i < 4);
-  const Vector3<T>& V = vertices_[elements_[e].vertex(i)].r_MV();
-  const Vector3<T>& A = vertices_[elements_[e].vertex((i + 1) % 4)].r_MV();
-  const Vector3<T>& B = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
-  const Vector3<T>& C = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
-  // nhat may point into or out of tetrahedron.
-  const Vector3<T> nhat = ((B - A).cross(C - A)).normalized();
-  // nhat.dot(AV) = nhat.dot(BV) = nhat.dot(CV)
-  return nhat / nhat.dot(V - A);
+  // Vertex V corresponds to bᵢ in the barycentric coordinate in the
+  // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
+  // the tetrahedron. Their positions are expressed in frame M of the mesh.
+  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)].r_MV();
+  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)].r_MV();
+  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
+  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
+
+  // We use `p` for positional vector and `r` for displacement vectors. Both
+  // are expressed in frame M of the mesh.
+  const Vector3<T> r_AB_M = p_MB - p_MA;
+  const Vector3<T> r_AC_M = p_MC - p_MA;
+
+  // Observation. Define N(P,Q,R) as PQ x PR, which is a normal (but not
+  // necessarily unit) vector to triangle PQR. For a tetrahedron with
+  // vertices V₀,V₁,V₂,V₃ in positive orientation, we have:
+  //    N(V₀,V₁,V₂) points into the tetrahedron.
+  //    N(V₁,V₂,V₃) points out of the tetrahedron.
+  //    N(V₂,V₃,V₀) points into the tetrahedron.
+  //    N(V₃,V₀,V₁) points out of the tetrahedron.
+  //
+  // This means that the code below does not claim that N points into the
+  // tetrahedron. It is normal to ABC but might be inwards or outwards of the
+  // tetrahedron. We will show later that both N and -N work.
+  const Vector3<T> r_N_M = r_AB_M.cross(r_AC_M);
+
+  // Let bᵥ be the barycentric coordinate function corresponding to vertex V.
+  // bᵥ is a linear function of the points in the tetrahedron.
+  // bᵥ = 0 on the plane through triangle ABC.
+  // bᵥ = 1 on the plane through V parallel to ABC.
+  // Therefore, bᵥ changes fastest in the direction of the face normal vector
+  // of ABC towards V. The rate of change is 1/h, where h is the
+  // height of vertex V from the base ABC.
+  //
+  //    ──────────────V────────────── plane bᵥ = 1
+  //                 ╱ ╲       ┊
+  //                ╱   ╲      ┊         Triangle ABC is perpendicular to
+  //               ╱     ╲     ┊ h       this view, so ABC looks like a line
+  //              ╱       ╲    ┊         segment instead of a triangle.
+  //             ╱    ↑n   ╲   ┊
+  //    ────────A━━━B━━━━━━━C──────── plane bᵥ = 0
+  //
+  // Let n be the unit normal vector of ABC towards V. We can calculate ∇bᵥ
+  // from n and h:
+  //
+  //       ∇bᵥ = n/h
+  //
+  // Notice that h equals the dot product of AV and the unit vector n,
+  // therefore:
+  //
+  //       ∇bᵥ = n/(AV⋅n)
+  //
+  // Finally we can use any vector perpendicular to ABC in the above formula,
+  // since the length of the vector cancel out. In particular, we can use the
+  // vector N = AB x AC:
+  //
+  //       ∇bᵥ = N/(AV⋅N)
+  //
+  // Notice that both N and -N are applicable because the sign would cancel
+  // out, which means that both inward and outward normal vector N give the
+  // same result.
+  const Vector3<T> r_AV_M = p_MV - p_MA;
+  const T AV_dot_N = r_AV_M.dot(r_N_M);
+  // TODO(DamrongGuoy): Explain what happens with very poor tetrahedra; for
+  //  example, ABC has zero or almost-zero area, or V is co-planar or almost
+  //  co-planar with ABC. They will have AV_dot_N equal zero or near zero, or
+  //  the cross product N = AB x AC might not be reliable? Furthermore, since
+  //  AV⋅N is the signed volume of the parallelepiped spanned by AB,AC,AV, so
+  //  we might use ε³ as the threshold for numerical rounding?
+  return r_N_M / AV_dot_N;
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

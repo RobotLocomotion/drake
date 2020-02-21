@@ -99,6 +99,7 @@ void TestVolumeMeshEqual() {
   const auto mesh_too = TestVolumeMesh<T>();
   const auto mesh_translate =
       TestVolumeMesh<T>(RigidTransform<T>(Vector3<T>(1., 1., 1.)));
+  EXPECT_TRUE(mesh->Equal(*mesh));
   EXPECT_TRUE(mesh->Equal(*mesh_too));
   EXPECT_FALSE(mesh->Equal(*mesh_translate));
 }

@@ -131,7 +131,7 @@ class SurfaceMesh {
 
   // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
   //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
-  //  bounding_volume_hierarchy.
+  //  bounding_volume_hierarchy. Issue #12756.
 
   /**
    A surface mesh has the intrinsic dimension 2.  It is embedded in 3-d space.
@@ -404,6 +404,8 @@ class SurfaceMesh {
    @returns `true` if the given mesh is equal.
    */
   bool Equal(const SurfaceMesh<T>& mesh) const {
+    if (this == &mesh) return true;
+
     if (this->num_faces() != mesh.num_faces()) return false;
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
@@ -510,9 +512,12 @@ template <typename T>
 Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
                                                int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
-  const Vector3<T>& V = vertices_[faces_[f].vertex(i)].r_MV();
-  const Vector3<T>& A = vertices_[faces_[f].vertex((i + 1) % 3)].r_MV();
-  const Vector3<T>& B = vertices_[faces_[f].vertex((i + 2) % 3)].r_MV();
+  // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
+  // indexed by `f`. A and B are the other two vertices of the triangle.
+  // Positions of the vertices are expressed in frame M of the mesh.
+  const Vector3<T>& p_MV = vertices_[faces_[f].vertex(i)].r_MV();
+  const Vector3<T>& p_MA = vertices_[faces_[f].vertex((i + 1) % 3)].r_MV();
+  const Vector3<T>& p_MB = vertices_[faces_[f].vertex((i + 2) % 3)].r_MV();
 
   // TODO(DamrongGuoy): Provide a mechanism for users to set the gradient
   //  vector in SurfaceMeshFieldLinear since this calculation is not reliable
@@ -521,7 +526,7 @@ Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
   //  pressure gradient along a contact polygon by projecting the soft
   //  tetrahedron's pressure gradient onto the plane of the rigid triangle.
 
-  // Let bᵥ be the barycentric coordinate function of vertex V.
+  // Let bᵥ be the barycentric coordinate function corresponding to vertex V.
   // bᵥ is a linear function of the points in the triangle.
   // bᵥ = 0 on the line through AB.
   // bᵥ = 1 on the line through V parallel to AB.
@@ -529,14 +534,13 @@ Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
   // towards V with the rate of change 1/h, where h is the height of vertex V
   // from the base AB.
   //
-  //    ──────────────V────────────── Nᵥ = 1
+  //    ──────────────V────────────── bᵥ = 1
   //                 ╱↑╲       ┊
   //                ╱ ┊ ╲      ┊
   //               ╱  ┊  ╲     ┊ h
   //              ╱   ┊H  ╲    ┊
   //             ╱    ┊    ╲   ┊
-  //    ────────A━━━━ → ━━━━B──────── Nᵥ = 0
-  //                  ê
+  //    ────────A━━━━━━━━━━━B──────── bᵥ = 0
   //
   // Let H be the height vector from the base AB to the vertex V, i.e., the
   // vector perpendicular to the line AB that starts from a point on the
@@ -544,17 +548,31 @@ Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
   // along the unit vector H/h. Along that direction, bᵥ changes at the rate
   // of 1/h per unit distance. Therefore,
   //
-  //       ∇bᵥ = H/h²
+  //       ∇bᵥ = H/h².
   //
-  // To calculate H, let ê be the unit vector in the direction from A to B.
-  // H is the remaining component of the vector AV after subtracting its
-  // component (AV⋅ê)ê along ê.
+  // We can calculate H from AV by subtracting its component along AB:
   //
-  const Vector3<T> ehat = (B - A).normalized();
-  const Vector3<T> AV = V - A;
-  const Vector3<T> H = AV - (AV.dot(ehat)) * ehat;
-  const T h2 = H.squaredNorm();
-  return (h2 != T(0.0)) ? H / h2 : H;
+  //       H = AV - (AV⋅AB)AB/|AB|²
+  //
+  // Here we use p for positional vectors and r for displacement vectors.
+  // They are expressed in frame M of the mesh.
+  const Vector3<T> r_AB_M = p_MB - p_MA;
+  const T ab2 = r_AB_M.squaredNorm();
+  const Vector3<T> r_AV_M = p_MV - p_MA;
+  // I could not use constexpr because pow() did not allow it. The next best
+  // thing is `static const`.
+  static const double kEps2 =
+      std::pow(std::numeric_limits<double>::epsilon(), 2.);
+  // For a skinny triangle with the edge AB that has zero or almost-zero
+  // length, we set the vector H to be AV.
+  const Vector3<T> r_H_M =
+      (ab2 <= kEps2) ? r_AV_M : r_AV_M - (r_AV_M.dot(r_AB_M)) * r_AB_M / ab2;
+  const T h2 = r_H_M.squaredNorm();
+  // If V is collinear or almost collinear with AB, we return the zero or
+  // almost-zero vector H as ∇bᵥ, even though mathematically ∇bᵥ is undefined
+  // or too large to represent numerically, since the line bᵥ = 0 and the line
+  // bᵥ = 1 are the same line or almost the same line.
+  return (h2 <= kEps2) ? r_H_M : r_H_M / h2;
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

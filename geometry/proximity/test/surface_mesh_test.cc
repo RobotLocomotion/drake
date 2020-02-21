@@ -503,6 +503,7 @@ GTEST_TEST(SurfaceMeshTest, TestEqual) {
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
   SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
+  EXPECT_TRUE(triangle_mesh->Equal(*triangle_mesh));
   EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
   EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
 }
