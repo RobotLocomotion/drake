@@ -1579,6 +1579,16 @@ class IntegratorBase {
   // Sets the "ideal" next step size (typically done via error control).
   void set_ideal_next_step_size(const T& h) { ideal_next_step_size_ = h; }
 
+  // If the child integrator propagates the results of two consecutive half-
+  // sized steps from each call to DoStep(), it should call this function
+  // once to set the boolean to true. This ensures that statistics are
+  // accurate.
+  void set_integrator_propagates_half_sized_steps(bool
+      integrator_propagates_half_sized_steps) {
+    integrator_propagates_half_sized_steps_ =
+        integrator_propagates_half_sized_steps;
+  }
+
  private:
   // Validates that a smaller step size does not fall below the working minimum
   // and throws an exception if desired.
@@ -1600,16 +1610,23 @@ class IntegratorBase {
   // Updates the integrator statistics, accounting for a step just taken of
   // size h.
   void UpdateStepStatistics(const T& h) {
+    double step_size_factor = integrator_propagates_half_sized_steps_ ?
+        0.5 : 1.0;
+    T propagated_h = step_size_factor * h;
     // Handle first step specially.
     if (++num_steps_taken_ == 1) {
-      set_actual_initial_step_size_taken(h);
-      set_largest_step_size_taken(h);
+      set_actual_initial_step_size_taken(propagated_h);
+      set_largest_step_size_taken(propagated_h);
     } else {
-      if (h > get_largest_step_size_taken()) set_largest_step_size_taken(h);
+      if (propagated_h > get_largest_step_size_taken())
+          set_largest_step_size_taken(propagated_h);
     }
 
     // Update the previous step size.
-    prev_step_size_ = h;
+    prev_step_size_ = propagated_h;
+
+    // Increment num steps taken again if two half-sized steps were taken.
+    if (integrator_propagates_half_sized_steps_) ++num_steps_taken_;
   }
 
   // Steps the system forward exactly by @p h, if possible, by calling DoStep
@@ -1679,6 +1696,11 @@ class IntegratorBase {
   int64_t num_shrinkages_from_error_control_{0};
   int64_t num_shrinkages_from_substep_failures_{0};
   int64_t num_substep_failures_{0};
+
+  // If the child integrator propagates the results of two consecutive half-
+  // sized steps from each call to DoStep(), this boolean is true and the
+  // statistics are updated accordingly.
+  bool integrator_propagates_half_sized_steps_{false};
 
   // Applied as diagonal matrices to weight state change variables.
   Eigen::VectorXd qbar_weight_, z_weight_;

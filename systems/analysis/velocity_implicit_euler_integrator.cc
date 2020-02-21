@@ -25,19 +25,34 @@ void VelocityImplicitEulerIntegrator<T>::DoInitialize() {
   // Allocate storage for changes to state variables during Newton-Raphson.
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
-  // Verify that the maximum step size has been set.
-  if (isnan(this->get_maximum_step_size()))
-    throw std::logic_error("Maximum step size has not been set!");
+  const double kDefaultAccuracy = 1e-1;  // Good for this particular integrator.
+  const double kLoosestAccuracy = 5e-1;  // Loosest accuracy is quite loose.
+
+  // Set an artificial step size target, if not set already.
+  if (isnan(this->get_initial_step_size_target())) {
+    // Verify that maximum step size has been set.
+    if (isnan(this->get_maximum_step_size()))
+      throw std::logic_error(
+          "Neither initial step size target nor maximum "
+          "step size has been set!");
+
+    this->request_initial_step_size_target(this->get_maximum_step_size());
+  }
+
+  // Sets the working accuracy to a good value.
+  double working_accuracy = this->get_target_accuracy();
+
+  // If the user asks for accuracy that is looser than the loosest this
+  // integrator can provide, use the integrator's loosest accuracy setting
+  // instead.
+  if (isnan(working_accuracy))
+    working_accuracy = kDefaultAccuracy;
+  else if (working_accuracy > kLoosestAccuracy)
+    working_accuracy = kLoosestAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
 
   // Reset the Jacobian matrix (so that recomputation is forced).
-  this->Jy_ie_.resize(0, 0);
-
-  // TODO(antequ): Change this to the recommended default accuracy after error
-  // control is implemented.
-  // Set an initial working accuracy so that the integrator doesn't take too
-  // long.
-  if (isnan(this->get_accuracy_in_use()))
-    this->set_accuracy_in_use(1e-6);
+  this->Jy_vie_.resize(0, 0);
 }
 
 template <class T>
@@ -272,7 +287,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepVelocityImplicitEuler(
   // Verify the trial number is valid.
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
   DRAKE_LOGGER_DEBUG(
-      "VelocityImplicitEulerIntegrator::StepVelocityImplicitEuler(h={}) t={}",
+      "VelocityImplicitEulerIntegrator::StepVelocityImplicitEuler(h={}, t={})",
       h, t0);
 
   const System<T>& system = this->get_system();
@@ -406,6 +421,107 @@ bool VelocityImplicitEulerIntegrator<T>::StepVelocityImplicitEuler(
 }
 
 template <class T>
+bool VelocityImplicitEulerIntegrator<T>::StepHalfVelocityImplicitEulers(
+    const T& t0, const T& h, const VectorX<T>& xn,
+    const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+    MatrixX<T>* Jy) {
+  DRAKE_LOGGER_DEBUG(
+      "VelocityImplicitEulerIntegrator::StepHalfVelocityImplicitEulers(h={}, "
+      "t={})", h, t0);
+
+  // Store statistics before "error control". The difference between
+  // the modified statistics and the stored statistics will be used to compute
+  // the half-sized-step-specific statistics.
+  int64_t stored_num_jacobian_evaluations =
+      this->get_num_jacobian_evaluations();
+  int64_t stored_num_iter_factorizations =
+      this->get_num_iteration_matrix_factorizations();
+  int64_t stored_num_function_evaluations =
+      this->get_num_derivative_evaluations();
+  int64_t stored_num_jacobian_function_evaluations =
+      this->get_num_derivative_evaluations_for_jacobian();
+  int64_t stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
+
+  // We set our guess for the state after a half-step to the average of the
+  // guess for the final state, xtplus_guess, and the initial state, xt0.
+  const VectorX<T>& xthalf_guess = 0.5 * (xn + xtplus_guess);
+  bool success = StepVelocityImplicitEuler(t0, 0.5 * h, xn, xthalf_guess,
+                                           xtplus, iteration_matrix, Jy);
+  if (!success) {
+    DRAKE_LOGGER_DEBUG("First Half VIE convergence failed");
+  } else {
+    // Copy the current output, xtplus, into xthalf, which functions as the new
+    // xⁿ.
+    const VectorX<T> xthalf = *xtplus;
+    // TODO(antequ): set the second xthalf to xtplus_guess
+    success = StepVelocityImplicitEuler(t0 + 0.5 * h, 0.5 * h, xthalf,
+                                        xtplus_guess, xtplus, iteration_matrix,
+                                        Jy);
+    if (!success) {
+      DRAKE_LOGGER_DEBUG("Second Half VIE convergence failed");
+    }
+  }
+
+  // Move statistics to error estimate-specific.
+  num_err_est_jacobian_reforms_ +=
+      this->get_num_jacobian_evaluations() - stored_num_jacobian_evaluations;
+  num_err_est_iter_factorizations_ +=
+      this->get_num_iteration_matrix_factorizations() -
+      stored_num_iter_factorizations;
+  num_err_est_function_evaluations_ +=
+      this->get_num_derivative_evaluations() - stored_num_function_evaluations;
+  num_err_est_jacobian_function_evaluations_ +=
+      this->get_num_derivative_evaluations_for_jacobian() -
+      stored_num_jacobian_function_evaluations;
+  num_err_est_nr_iterations_ +=
+      this->get_num_newton_raphson_iterations() - stored_num_nr_iterations;
+
+  return success;
+}
+
+
+template <class T>
+bool VelocityImplicitEulerIntegrator<T>::AttemptStepPaired(
+    const T& t0, const T& h, const VectorX<T>& xn, VectorX<T>* xtplus_vie,
+    VectorX<T>* xtplus_hvie) {
+  DRAKE_LOGGER_DEBUG(
+    "VelocityImplicitEulerIntegrator::AttemptStepPaired(h={}, "
+    "t={})", h, t0);
+  using std::abs;
+  DRAKE_ASSERT(xtplus_vie);
+  DRAKE_ASSERT(xtplus_hvie);
+
+  // Use the current state as the candidate value for the next state.
+  // [Hairer 1996] validates this choice (p. 120).
+  const VectorX<T>& xtplus_guess = xn;
+
+  // Do the large Velocity-Implicit Euler step.
+  if (!StepVelocityImplicitEuler(t0, h, xn, xtplus_guess, xtplus_vie,
+                                 &iteration_matrix_vie_, &Jy_vie_)) {
+    DRAKE_LOGGER_DEBUG(
+        "Velocity-Implicit Euler approach did not converge for "
+        "step size {}",
+        h);
+    return false;
+  }
+
+  // Do the half Velocity-Implicit Euler steps. We reuse the Jacobian and
+  // iteration Matrices from the big step because they work quite well,
+  // based on a few empirical tests.
+  if (!StepHalfVelocityImplicitEulers(t0, h, xn, *xtplus_vie, xtplus_hvie,
+                                      &iteration_matrix_vie_, &Jy_vie_)) {
+    DRAKE_LOGGER_DEBUG(
+        "Velocity-Implicit Euler half-step approach failed with a step size "
+        "that succeeded for the normal approach {}",
+        h);
+    return false;
+  }
+
+  return true;
+}
+
+template <class T>
 bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Save the current time and state.
   Context<T>* context = this->get_mutable_context();
@@ -414,7 +530,6 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
       "DoImplicitIntegratorStep(h={}) t={}", h, t0);
 
   xn_ = context->get_continuous_state().CopyToVector();
-  xtplus_ie_.resize(xn_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
@@ -423,28 +538,44 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
         "-- requested step too small, taking explicit step instead, at t={}, "
         "h={}, minimum_h={}", t0, h, this->get_working_minimum_step_size());
 
+    // The error estimation process for explicit Euler uses two half-sized
+    // steps so that the order of the asymptotic term matches that used
+    // for estimating the error of the velocity-implicit Euler integrator.
+
     // Compute the explicit Euler step.
     xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
-    xtplus_ie_ = xn_ + h * xdot_;
+    xtplus_vie_ = xn_ + h * xdot_;
+
+    // Compute the two explicit Euler steps
+    xtplus_hvie_ = xn_ + 0.5 * h * xdot_;
+    context->SetTimeAndContinuousState(t0 + 0.5 * h, xtplus_hvie_);
+    xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
+    xtplus_hvie_ += 0.5 * h * xdot_;
   } else {
-    // Use the current state as the candidate value for the next state.
-    // [Hairer 1996] validates this choice (p. 120).
-    const VectorX<T>& xtplus_guess = xn_;
-    const bool success = StepVelocityImplicitEuler(t0, h, xn_, xtplus_guess,
-        &xtplus_ie_, &iteration_matrix_ie_, &Jy_ie_);
+    // Try taking the requested step.
+    const bool success = AttemptStepPaired(t0, h, xn_, &xtplus_vie_,
+        &xtplus_hvie_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
       DRAKE_LOGGER_DEBUG(
-          "Velocity-Implicit Euler approach did not converge for "
+          "Velocity-Implicit Euler paired approach did not converge for "
           "time t={}, step size h={}", t0, h);
       context->SetTimeAndContinuousState(t0, xn_);
       return false;
     }
   }
 
-  // Set the state to the computed state.
-  context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
+  // Compute and update the error estimate. IntegratorBase will use the norm of
+  // this vector to adjust step size.
+  err_est_vec_ = (xtplus_vie_ - xtplus_hvie_);
+
+  // Update the caller-accessible error estimate.
+  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(
+      err_est_vec_);
+
+  // Set the state to the computed state from the half-steps.
+  context->SetTimeAndContinuousState(t0 + h, xtplus_hvie_);
 
   return true;
 }

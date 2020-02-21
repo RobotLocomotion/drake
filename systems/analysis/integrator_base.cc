@@ -106,14 +106,21 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
       if (!h_was_artificially_limited)
         ideal_next_step_size_ = next_step_size;
 
-      if (isnan(get_actual_initial_step_size_taken()))
-        set_actual_initial_step_size_taken(step_size_to_attempt);
+      double step_size_factor = integrator_propagates_half_sized_steps_ ?
+          0.5 : 1.0;
+      if (isnan(get_actual_initial_step_size_taken())) {
+        set_actual_initial_step_size_taken(
+            step_size_factor * step_size_to_attempt);
+      }
 
       // Record the adapted step size taken.
       if (isnan(get_smallest_adapted_step_size_taken()) ||
-          (step_size_to_attempt < get_smallest_adapted_step_size_taken() &&
-                step_size_to_attempt < h_max))
-          set_smallest_adapted_step_size_taken(step_size_to_attempt);
+          (step_size_factor * step_size_to_attempt <
+          get_smallest_adapted_step_size_taken() &&
+          step_size_to_attempt < h_max)) {
+        set_smallest_adapted_step_size_taken(
+            step_size_factor * step_size_to_attempt);
+      }
     } else {
       ++num_shrinkages_from_error_control_;
 
