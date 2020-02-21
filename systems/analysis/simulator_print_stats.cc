@@ -19,11 +19,11 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
   std::string integrator_scheme_name =
       NiceTypeName::RemoveNamespaces(NiceTypeName::Get(integrator));
   // Remove "<double>" from the scheme name if it's in it.
-  size_t templated_type_string_location =
+  size_t templated_type_string_index =
       integrator_scheme_name.find("<double>");
-  if (templated_type_string_location != 0) {
+  if (templated_type_string_index != 0) {
     integrator_scheme_name = integrator_scheme_name.substr(
-        0, templated_type_string_location);
+        0, templated_type_string_index);
   }
   fmt::print(
       "Stats for integrator {} with {}:\n", integrator_scheme_name,
