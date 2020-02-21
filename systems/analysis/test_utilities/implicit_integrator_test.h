@@ -84,8 +84,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Test that setting the target accuracy and initial step size target is
     // successful.
     integrator.set_maximum_step_size(h_);
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports error estimation
     if (integrator.supports_error_estimation()) {
       integrator.set_target_accuracy(1.0);
       integrator.request_initial_step_size_target(h_);
@@ -94,8 +92,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verifies that setting accuracy too loose (from above) makes the working
     // accuracy different than the target accuracy after initialization.
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports error estimation
     if (integrator.supports_error_estimation()) {
       EXPECT_NE(integrator.get_accuracy_in_use(),
                 integrator.get_target_accuracy());
@@ -117,8 +113,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // For fixed step integrators, we need to use a smaller step size to get
     // the desired accuracy. By experimentation, we found that 0.1 h_ works.
-    // TODO(antequ): remove these checks once the Velocity-Implicit Euler
-    // supports error estimation
     double h = integrator.supports_error_estimation() ? large_h_ : 0.1 * h_;
 
     // Designate the solution tolerance. For reference, the true positions are
@@ -186,8 +180,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Set error controlled integration parameters.
     const double xtol = 1e-6;
     const double vtol = xtol * 100;
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports error estimation
     if (integrator.supports_error_estimation()) {
       integrator.set_target_accuracy(xtol);
     }
@@ -292,8 +284,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
                               mod_spring_mass_damper_context_.get());
     integrator.set_maximum_step_size(h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports error estimation
     if (integrator.supports_error_estimation()) {
       integrator.set_target_accuracy(1e-5);
     }
@@ -420,8 +410,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     IntegratorType integrator(spring_mass, context.get());
     // For fixed step integrators, we need to use a smaller step size to get
     // the desired accuracy. By experimentation, we found that 0.5 h_ works.
-    // TODO(antequ): remove these checks once the Velocity-Implicit Euler
-    // supports error estimation
     double h = integrator.supports_error_estimation() ? large_h_ : 0.5 * h_;
     integrator.set_maximum_step_size(h);
     if (integrator.supports_error_estimation()) {
@@ -528,8 +516,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     IntegratorType integrator(spring_mass, context.get());
 
     // Skip this test if the integrator doesn't have error estimate.
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports error estimation
     if (!integrator.supports_error_estimation()) GTEST_SKIP();
 
     integrator.set_maximum_step_size(large_h_);
@@ -621,8 +607,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Spring-mass system is necessary only to setup the problem.
     IntegratorType integrator(spring_mass, context.get());
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports error estimation
     if (!integrator.supports_error_estimation()) GTEST_SKIP();
     integrator.set_maximum_step_size(large_h_);
     integrator.set_requested_minimum_step_size(small_h_);
@@ -700,8 +684,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // Checks the validity of general integrator statistics and resets statistics.
   void CheckGeneralStatsValidity(IntegratorType* integrator) {
     EXPECT_GT(integrator->get_num_newton_raphson_iterations(), 0);
-    // TODO(antequ): remove these checks once the Velocity-Implicit Euler
-    // supports error estimation
     if (integrator->supports_error_estimation()) {
       EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_iterations(),
                 0);
@@ -844,8 +826,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, FullNewton) {
   using Integrator = TypeParam;
   Integrator integrator(*robertson, context.get());
 
-  // TODO(antequ): Remove this check once the Velocity-Implicit Euler Integrator
-  // supports error estimation.
   if (integrator.supports_error_estimation()) {
     integrator.request_initial_step_size_target(1e0);
   } else {
@@ -900,8 +880,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
   // Create the integrator.
   using Integrator = TypeParam;
   Integrator integrator(*stationary, context.get());
-  // TODO(antequ): remove this check once the Velocity-Implicit Euler
-  // supports error estimation
+
   if (integrator.supports_error_estimation()) {
     integrator.set_maximum_step_size(1.0);
     integrator.set_target_accuracy(1e-3);
@@ -944,8 +923,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, Robertson) {
   //                  step size (see issue #6329).
   integrator.set_maximum_step_size(10000000.0);
   integrator.set_throw_on_minimum_step_size_violation(false);
-  // TODO(antequ): remove this check once the Velocity-Implicit Euler
-  // supports error estimation
+
   if (integrator.supports_error_estimation()) {
     integrator.set_target_accuracy(tol);
     integrator.request_initial_step_size_target(1e-4);
@@ -983,8 +961,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   integrator.set_fixed_step_mode(true);
 
   // Values we have used successfully in other Robertson system tests.
-  // TODO(antequ): remove this check once the Velocity-Implicit Euler
-  // supports error estimation
   if (integrator.supports_error_estimation()) {
     integrator.set_target_accuracy(5e-5);
   }
@@ -1017,8 +993,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   using Integrator = TypeParam;
   Integrator integrator(this->spring_mass(), this->spring_mass_context_.get());
 
-  // TODO(antequ): remove this once error estimation is supported in
-  // Velocity-Implicit Euler.
   if (!integrator.supports_error_estimation()) GTEST_SKIP();
 
   EXPECT_EQ(integrator.supports_error_estimation(), true);
@@ -1048,8 +1022,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, LinearTest) {
   integrator1.set_fixed_step_mode(true);
   integrator1.Initialize();
   ASSERT_TRUE(integrator1.IntegrateWithSingleFixedStepToTime(t_final));
-  // TODO(antequ): remove this check once the Velocity-Implicit Euler
-  // supports error estimation
   if (integrator1.supports_error_estimation()) {
     const double err_est = integrator1.get_error_estimate()->get_vector()[0];
 
