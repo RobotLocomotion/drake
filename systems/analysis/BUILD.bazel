@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":scalar_view_dense_output",
         ":semi_explicit_euler_integrator",
         ":simulator",
+        ":simulator_print_stats",
         ":simulator_status",
         ":stepwise_dense_output",
         ":velocity_implicit_euler_integrator",
@@ -317,6 +318,18 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "simulator_print_stats",
+    srcs = ["simulator_print_stats.cc"],
+    hdrs = ["simulator_print_stats.h"],
+    deps = [
+        ":implicit_integrator",
+        ":integrator_base",
+        ":simulator",
+        "@fmt",
     ],
 )
 

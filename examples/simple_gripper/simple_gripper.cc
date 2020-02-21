@@ -16,12 +16,9 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
+#include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/sine.h"
 
@@ -335,131 +332,13 @@ int do_main() {
 
   if (plant.is_discrete()) {
     // If the plant used discrete steps, output just the step size and count.
-    fmt::print("Used time stepping with dt = {}\n", plant.time_step());
+    fmt::print("Used time stepping with dt = {} s\n", plant.time_step());
     fmt::print("Number of steps taken = {:d}\n",
                simulator->get_num_steps_taken());
   } else {
     // If continuous mode was chosen, output detailed statistics regarding the
     // integrator.
-    const systems::IntegratorBase<double>& integrator =
-        simulator->get_integrator();
-
-    fmt::print(
-        "Stats for integrator {} with {}:\n",
-        FLAGS_simulator_integration_scheme,
-        integrator.get_fixed_step_mode() ? "fixed steps" : "error control");
-    fmt::print("Number of time steps taken (simulator stats) = {:d}\n",
-               simulator->get_num_steps_taken());
-    fmt::print("Number of time steps taken (integrator stats) = {:d}\n",
-               integrator.get_num_steps_taken());
-    if (!integrator.get_fixed_step_mode()) {
-      // Print statistics available only to error-controlled integrators.
-      fmt::print("Initial time step taken = {:10.6g} s\n",
-                 integrator.get_actual_initial_step_size_taken());
-      fmt::print("Largest time step taken = {:10.6g} s\n",
-                 integrator.get_largest_step_size_taken());
-      fmt::print("Smallest adapted step size = {:10.6g} s\n",
-                 integrator.get_smallest_adapted_step_size_taken());
-      fmt::print("Number of steps shrunk due to error control = {:d}\n",
-                 integrator.get_num_step_shrinkages_from_error_control());
-    }
-
-    // These two statistics can only be nonzero with implicit integrators, but
-    // because they're available in IntegratorBase, we print them for all
-    // integrators as a sanity check.
-    fmt::print(
-        "Number of steps shrunk due to convergence-based failure = {:d}\n",
-        integrator.get_num_step_shrinkages_from_substep_failures());
-    fmt::print(
-        "Number of convergence-based step failures (should match) = {:d}\n",
-        integrator.get_num_substep_failures());
-
-    // Check if the integrator is implicit using dynamic casting. If it's
-    // implicit, we can print out a few more helpful statistics.
-    const systems::ImplicitIntegrator<double>* implicit_integrator =
-        dynamic_cast<systems::ImplicitIntegrator<double>*>(
-            &(simulator->get_mutable_integrator()));
-    const bool integrator_is_implicit = (implicit_integrator != nullptr);
-    if (integrator_is_implicit) {
-      // In this section, we print statistics available only to implicit
-      // integrators.
-      if (integrator.supports_error_estimation()) {
-        // If the integrator supports error control, we include error estimator
-        // details. For each statistic, the first value, for just the
-        // "integrator", is computed by subtracting the error estimator's value
-        // from the total. The other two values are grabbed directly from the
-        // integrator's statistics. Note: Even if the integrator was ran in
-        // fixed-step mode, they still run the error estimator (but don't use
-        // the results), which is why we still output the error estimator
-        // statistics.
-        if (integrator.get_fixed_step_mode()) {
-          // Warn the user that integrators that support error estimation will
-          // run the error estimator even in fixed-step mode.
-          fmt::print(
-              "Note: This implicit integrator was ran in fixed-step mode, but "
-              "it supports error estimation, so the error estimator is "
-              "expected to have nonzero values in the following statistics.\n");
-        }
-        fmt::print(
-            "Implicit Integrator Statistics (integrator, error estimator, "
-            "total):\n");
-        fmt::print("Number of Derivative Evaluations = {:d}, {:d}, {:d} \n",
-                   implicit_integrator->get_num_derivative_evaluations() -
-                       implicit_integrator
-                           ->get_num_error_estimator_derivative_evaluations(),
-                   implicit_integrator
-                       ->get_num_error_estimator_derivative_evaluations(),
-                   implicit_integrator->get_num_derivative_evaluations());
-        fmt::print(
-            "Number of Jacobian Computations = {:d}, {:d}, {:d} \n",
-            implicit_integrator->get_num_jacobian_evaluations() -
-                implicit_integrator
-                    ->get_num_error_estimator_jacobian_evaluations(),
-            implicit_integrator->get_num_error_estimator_jacobian_evaluations(),
-            implicit_integrator->get_num_jacobian_evaluations());
-        fmt::print(
-            "Number of Derivative Evaluations for Jacobians = {:d}, {:d}, {:d} "
-            "\n",
-            implicit_integrator->get_num_derivative_evaluations_for_jacobian() -
-                implicit_integrator
-                    ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
-            implicit_integrator
-                ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
-            implicit_integrator->get_num_derivative_evaluations_for_jacobian());
-        fmt::print(
-            "Number of Iteration Matrix Factorizations = {:d}, {:d}, {:d} \n",
-            implicit_integrator->get_num_iteration_matrix_factorizations() -
-                implicit_integrator
-                    ->get_num_error_estimator_iteration_matrix_factorizations(),
-            implicit_integrator
-                ->get_num_error_estimator_iteration_matrix_factorizations(),
-            implicit_integrator->get_num_iteration_matrix_factorizations());
-        fmt::print(
-            "Number of Newton-Raphson Iterations = {:d}, {:d}, {:d} \n",
-            implicit_integrator->get_num_newton_raphson_iterations() -
-                implicit_integrator
-                    ->get_num_error_estimator_newton_raphson_iterations(),
-            implicit_integrator
-                ->get_num_error_estimator_newton_raphson_iterations(),
-            implicit_integrator->get_num_newton_raphson_iterations());
-      } else {
-        // If the integrator used fixed-steps, we just print the total for each
-        // statistic.
-        fmt::print("Implicit Integrator Statistics:\n");
-        fmt::print("Number of Derivative Evaluations = {:d}\n",
-                   implicit_integrator->get_num_derivative_evaluations());
-        fmt::print("Number of Jacobian Computations = {:d}\n",
-                   implicit_integrator->get_num_jacobian_evaluations());
-        fmt::print(
-            "Number of Derivative Evaluations for Jacobians = {:d} \n",
-            implicit_integrator->get_num_derivative_evaluations_for_jacobian());
-        fmt::print(
-            "Number of Iteration Matrix Factorizations = {:d} \n",
-            implicit_integrator->get_num_iteration_matrix_factorizations());
-        fmt::print("Number of Newton-Raphson Iterations = {:d} \n",
-                   implicit_integrator->get_num_newton_raphson_iterations());
-      }
-    }
+    systems::PrintSimulatorStatistics(*simulator, FLAGS_simulator_integration_scheme);
   }
 
   return 0;
