@@ -75,8 +75,9 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator,
           "Number of Derivative Evaluations = {:d}, {:d}, {:d} \n",
           implicit_integrator->get_num_derivative_evaluations() -
               implicit_integrator
-                  ->get_num_error_estimator_derivative_evaluations(),
-          implicit_integrator->get_num_error_estimator_derivative_evaluations(),
+              ->get_num_error_estimator_derivative_evaluations(),
+          implicit_integrator
+              ->get_num_error_estimator_derivative_evaluations(),
           implicit_integrator->get_num_derivative_evaluations());
       fmt::print(
           "Number of Jacobian Computations = {:d}, {:d}, {:d} \n",
@@ -90,7 +91,7 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator,
           "\n",
           implicit_integrator->get_num_derivative_evaluations_for_jacobian() -
               implicit_integrator
-                  ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
+              ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
           implicit_integrator
               ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
           implicit_integrator->get_num_derivative_evaluations_for_jacobian());
@@ -105,7 +106,7 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator,
       fmt::print("Number of Newton-Raphson Iterations = {:d}, {:d}, {:d} \n",
                  implicit_integrator->get_num_newton_raphson_iterations() -
                      implicit_integrator
-                         ->get_num_error_estimator_newton_raphson_iterations(),
+                     ->get_num_error_estimator_newton_raphson_iterations(),
                  implicit_integrator
                      ->get_num_error_estimator_newton_raphson_iterations(),
                  implicit_integrator->get_num_newton_raphson_iterations());

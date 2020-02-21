@@ -338,7 +338,8 @@ int do_main() {
   } else {
     // If continuous mode was chosen, output detailed statistics regarding the
     // integrator.
-    systems::PrintSimulatorStatistics(*simulator, FLAGS_simulator_integration_scheme);
+    systems::PrintSimulatorStatistics(*simulator,
+        FLAGS_simulator_integration_scheme);
   }
 
   return 0;
