@@ -83,31 +83,31 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  * convergence to a solution for `y` in `R(y) = 0` where
  * `R(y) = y - yⁿ - h l(y)` as `h` becomes sufficiently small.
  * General implementational details were gleaned from [Hairer, 1996].
- * 
+ *
  * In this integrator, we simultaneously take a large step at the requested
  * step size of h as well as two half-sized steps each with step size h/2.
  * The solution at h/2 is propagated as the solution, while the difference
  * is used as the error estimate, which is accurate to second order.
- * 
+ *
  * To see this, let x̅ⁿ⁺¹ be the computed solution from a large step, x̃ⁿ⁺¹ be
  * the computed solution from two small steps, and xⁿ⁺¹ be the true solution.
  * Upon Newton-Raphson convergence, the truncation error,
  * e(tⁿ+h, h) = x̅ⁿ⁺¹ - xⁿ⁺¹, from equations (3-4) can be expressed as
- * 
+ *
  *     e(tⁿ+h, h) = c(tⁿ) h² + O(h³),         (10)
  * where c(tⁿ) depends on the higher-order time derivatives of the system. This 
  * expression stems from the well-known fact that implicit Euler has second-
  * order truncation error. For a step of size h/2, we have that
- * 
+ *
  *     x̃ⁿ⁺¹ - xⁿ⁺¹ = e(tⁿ+h/2, h/2) + e(tⁿ+h, h/2) + O(h³),
  *                 = c(tⁿ) h²/4 + c(tⁿ+h/2) h²/4 + O(h³),
  *     x̃ⁿ⁺¹ - xⁿ⁺¹ = c(tⁿ) h²/2 + O(h³),
  * from the fact that c(tⁿ+h/2) = c(tⁿ) + O(h). Therefore, 
- * 
+ *
  *     x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = e(tⁿ+h, h) - (x̃ⁿ⁺¹ - xⁿ⁺¹),
  *                 = c(tⁿ) h²/2 + O(h³),
  *     x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = x̃ⁿ⁺¹ - xⁿ⁺¹ + O(h³).    (11)
- * 
+ *
  * Our error estimate, x̅ⁿ⁺¹ - x̃ⁿ⁺¹, therefore estimates the true error,
  * x̃ⁿ⁺¹ - xⁿ⁺¹, to within O(h³). Therefore we say that it is a second-order
  * error estimate.
