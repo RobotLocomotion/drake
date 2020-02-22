@@ -554,25 +554,20 @@ Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
   //
   //       H = AV - (AV⋅AB)AB/|AB|²
   //
-  // Here we use p for positional vectors and r for displacement vectors.
-  // They are expressed in frame M of the mesh.
-  const Vector3<T> r_AB_M = p_MB - p_MA;
-  const T ab2 = r_AB_M.squaredNorm();
-  const Vector3<T> r_AV_M = p_MV - p_MA;
-  // I could not use constexpr because pow() did not allow it. The next best
-  // thing is `static const`.
-  static const double kEps2 =
-      std::pow(std::numeric_limits<double>::epsilon(), 2.);
+  const Vector3<T> p_AB_M = p_MB - p_MA;
+  const T ab2 = p_AB_M.squaredNorm();
+  const Vector3<T> p_AV_M = p_MV - p_MA;
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  constexpr double kEps2 = kEps * kEps;
   // For a skinny triangle with the edge AB that has zero or almost-zero
   // length, we set the vector H to be AV.
-  const Vector3<T> r_H_M =
-      (ab2 <= kEps2) ? r_AV_M : r_AV_M - (r_AV_M.dot(r_AB_M)) * r_AB_M / ab2;
-  const T h2 = r_H_M.squaredNorm();
-  // If V is collinear or almost collinear with AB, we return the zero or
-  // almost-zero vector H as ∇bᵥ, even though mathematically ∇bᵥ is undefined
-  // or too large to represent numerically, since the line bᵥ = 0 and the line
-  // bᵥ = 1 are the same line or almost the same line.
-  return (h2 <= kEps2) ? r_H_M : r_H_M / h2;
+  const Vector3<T> H_M =
+      (ab2 <= kEps2) ? p_AV_M : p_AV_M - (p_AV_M.dot(p_AB_M)) * p_AB_M / ab2;
+  const T h2 = H_M.squaredNorm();
+  if (h2 <= kEps2) {
+    throw std::runtime_error("Bad triangle. Cannot compute gradient.");
+  }
+  return H_M / h2;
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

@@ -331,12 +331,12 @@ void TestCalcGradBarycentric() {
   const Vector3<T> expect_gradb1_M = Vector3<T>::UnitX();
   const Vector3<T> expect_gradb2_M = Vector3<T>::UnitY() / 2.;
 
-  const auto R_WM = X_WM.rotation();
+  const auto& R_WM = X_WM.rotation();
   EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb0_M, gradb0_W, 1e-14));
   EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb1_M, gradb1_W, 1e-14));
   EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb2_M, gradb2_W, 1e-14));
 
-  // Check the invariance ∑(∇bᵢ) = 0.
+  // Since ∑bᵢ = 1, the gradients have zero sum: ∑(∇bᵢ) = 0.
   EXPECT_TRUE(CompareMatrices(gradb0_W + gradb1_W + gradb2_W,
                               Vector3<T>::Zero(), 1e-14));
 }
@@ -347,6 +347,13 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricDouble) {
 
 GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
   TestCalcGradBarycentric<AutoDiffXd>();
+}
+
+GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
+  std::unique_ptr<SurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
+  const SurfaceMeshTester<double> tester(*mesh);
+  EXPECT_THROW(tester.CalcGradBarycentric(SurfaceFaceIndex(0), 0),
+               std::runtime_error);
 }
 
 template <typename T>

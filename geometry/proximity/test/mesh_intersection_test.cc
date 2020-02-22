@@ -378,8 +378,9 @@ unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
 // +X    |
 //      -Z
 //
-template<typename T>
-unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
+template <typename T>
+unique_ptr<VolumeMesh<T>> TrivialVolumeMesh(
+    const math::RigidTransform<T>& X_MN = math::RigidTransform<T>::Identity()) {
   const int element_data[2][4] = {
       {0, 1, 2, 3},
       {0, 2, 1, 4}};
@@ -388,11 +389,11 @@ unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
     elements.emplace_back(element);
   }
   const Vector3<T> vertex_data[5] = {
-      Vector3<T>::Zero(),
-      Vector3<T>::UnitX(),
-      Vector3<T>::UnitY(),
-      Vector3<T>::UnitZ(),
-      -Vector3<T>::UnitZ()
+      X_MN * Vector3<T>::Zero(),
+      X_MN * Vector3<T>::UnitX(),
+      X_MN * Vector3<T>::UnitY(),
+      X_MN * Vector3<T>::UnitZ(),
+      X_MN * (-Vector3<T>::UnitZ())
   };
   std::vector<VolumeVertex<T>> vertices;
   for (auto& vertex : vertex_data) {
@@ -676,35 +677,50 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
 // TODO(DamrongGuoy): Add unit tests for AddPolygonToMeshData().
 
 GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
-  // VolumeMesh M has the tetrahedron Element_0 above the X-Y plane.
-  const auto volume_M = TrivialVolumeMesh<double>();
-  // VolumeMeshField of M has the gradient vector in Element_0 in +Z direction.
+  // It is ok to use the trivial mesh and trivial mesh field in this test.
+  // The function under test asks for the gradient values and operates on it.
+  // It is not responsible for making sure that the gradient is computed
+  // correctly -- that is tested elsewhere.
+
+  // Let T be the expressed-in frame of the trivial volume mesh. In frame T,
+  // the tetrahedron Element_0 is above the X-Y plane, and its trivial volume
+  // mesh field has the gradient vector in Element_0 in +Z direction of frame
+  // T. We will use the following general rigid transform X_MT to express the
+  // volume mesh and its field in another frame M, so the test is more general.
+  RigidTransformd X_MT(RollPitchYawd(M_PI_4, 2. * M_PI / 3., M_PI / 6.),
+                       Vector3d(1.1, 2.5, 4.0));
+  const auto volume_M = TrivialVolumeMesh<double>(X_MT);
   const auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
-  // SurfaceMesh N has the triangle Face_0 with its face normal vector in +Z
-  // direction.
+  // Rigid surface mesh N has the triangle Face_0 with its face normal vector
+  // in +Z direction of N's frame.
   const auto rigid_N = TrivialSurfaceMesh<double>();
 
-  // We will set the pose of SurfaceMesh N in M's frame so that the triangle
-  // Face_0 of N has its face normal vector make various angle with the
-  // gradient vector in the tetrahedron Element_0 of M.
+  // We will set the pose of SurfaceMesh N in frame M so that triangle
+  // Face_0 of N has its face normal vector make various angles with the
+  // gradient vector in tetrahedron Element_0.
   struct TestData {
     double angle;        // Angle between the face normal and the gradient.
     bool expect_result;  // true when `angle` < threshold 5π/8.
-  } test_data[6]{{0, true},
+  } test_data[]{{0, true},
                  {M_PI_2, true},
                  {(5. * M_PI / 8.) * 0.99, true},   // slightly less than 5π/8
                  {(5. * M_PI / 8.) * 1.01, false},  // slightly more than 5π/8
                  {3. * M_PI_4, false},
                  {M_PI, false}};
 
+  // Whether triangle Face_0 intersects tetrahedron Element_0 is not
+  // relevant to this test because IsFaceNormalAlongPressureGradient()
+  // only checks the angle between the normal and the gradient without
+  // triangle-tetrahedron intersection test.
   for (const TestData& t : test_data) {
-    // Rotate the triangle Face_0 of SurfaceMesh N around the X-axis of
-    // VolumeMesh M. Whether the triangle Face_0 intersects the tetrahedron
-    // Element_0 is not relevant to this test because the code only checks
-    // the angle between the normal and the gradient without checking whether
-    // the triangle and the tetrahedron intersect.
-    const auto X_MN =
+    // First we use a simple pose of surface N in frame T of the trivial volume
+    // mesh, so we can check the angle threshold conveniently.
+    const auto X_TN =
         RigidTransformd(RollPitchYawd(t.angle, 0, 0), Vector3d::Zero());
+    // Then, we use the general rigid transform X_MT to change simple X_TN to
+    // general X_MN as an argument to the tested function
+    // IsFaceNormalAlongPressureGradient().
+    const auto X_MN = X_MT * X_TN;
     EXPECT_EQ(t.expect_result, IsFaceNormalAlongPressureGradient<double>(
                                    *volume_field_M, *rigid_N, X_MN,
                                    VolumeElementIndex(0), SurfaceFaceIndex(0)));

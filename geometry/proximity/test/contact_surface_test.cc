@@ -41,9 +41,6 @@ class ContactSurfaceTester {
 
 namespace {
 
-using Eigen::AngleAxisd;
-using math::RigidTransformd;
-using Eigen::Vector3d;
 using std::make_unique;
 using std::move;
 
@@ -94,7 +91,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
   std::vector<SurfaceVertex<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh =
-      std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices));
+      make_unique<SurfaceMesh<T>>(move(faces), move(vertices));
   return surface_mesh;
 }
 
@@ -114,11 +111,11 @@ ContactSurface<T> TestContactSurface() {
   const T e2{2.};
   const T e3{3.};
   std::vector<T> e_values = {e0, e1, e2, e3};
-  auto e_field = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(e_values), surface_mesh.get());
+  auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", move(e_values), surface_mesh.get());
 
-  ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
-                                    std::move(e_field));
+  ContactSurface<T> contact_surface(id_M, id_N, move(surface_mesh),
+                                    move(e_field));
 
   // Start testing the ContactSurface<> data structure.
   EXPECT_EQ(id_M, contact_surface.id_M());
@@ -204,7 +201,7 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
 GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // Create the original contact surface for comparison later.
   const ContactSurface<double> original = TestContactSurface<double>();
-  auto mesh = std::make_unique<SurfaceMesh<double>>(original.mesh_W());
+  auto mesh = make_unique<SurfaceMesh<double>>(original.mesh_W());
   SurfaceMesh<double>* mesh_pointer = mesh.get();
   // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
   //  direct access to e_MN.
@@ -217,9 +214,9 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   auto id_M = GeometryId::get_new_id();
   ASSERT_LT(id_N, id_M);
   ContactSurface<double> dut(
-      id_M, id_N, std::move(mesh),
-      std::make_unique<SurfaceMeshFieldLinear<double, double>>(
-          "e_MN", std::move(e_MN_values), mesh_pointer));
+      id_M, id_N, move(mesh),
+      make_unique<SurfaceMeshFieldLinear<double, double>>(
+          "e_MN", move(e_MN_values), mesh_pointer));
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
   // These tests are just to confirm that those things changed where we

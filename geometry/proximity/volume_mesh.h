@@ -328,23 +328,9 @@ Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
   const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
   const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
 
-  // We use `p` for positional vector and `r` for displacement vectors. Both
-  // are expressed in frame M of the mesh.
-  const Vector3<T> r_AB_M = p_MB - p_MA;
-  const Vector3<T> r_AC_M = p_MC - p_MA;
-
-  // Observation. Define N(P,Q,R) as PQ x PR, which is a normal (but not
-  // necessarily unit) vector to triangle PQR. For a tetrahedron with
-  // vertices V₀,V₁,V₂,V₃ in positive orientation, we have:
-  //    N(V₀,V₁,V₂) points into the tetrahedron.
-  //    N(V₁,V₂,V₃) points out of the tetrahedron.
-  //    N(V₂,V₃,V₀) points into the tetrahedron.
-  //    N(V₃,V₀,V₁) points out of the tetrahedron.
-  //
-  // This means that the code below does not claim that N points into the
-  // tetrahedron. It is normal to ABC but might be inwards or outwards of the
-  // tetrahedron. We will show later that both N and -N work.
-  const Vector3<T> r_N_M = r_AB_M.cross(r_AC_M);
+  const Vector3<T> p_AV_M = p_MV - p_MA;
+  const Vector3<T> p_AB_M = p_MB - p_MA;
+  const Vector3<T> p_AC_M = p_MC - p_MA;
 
   // Let bᵥ be the barycentric coordinate function corresponding to vertex V.
   // bᵥ is a linear function of the points in the tetrahedron.
@@ -359,37 +345,25 @@ Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
   //                ╱   ╲      ┊         Triangle ABC is perpendicular to
   //               ╱     ╲     ┊ h       this view, so ABC looks like a line
   //              ╱       ╲    ┊         segment instead of a triangle.
-  //             ╱    ↑n   ╲   ┊
+  //             ╱    ↑∇bᵥ ╲   ┊
   //    ────────A━━━B━━━━━━━C──────── plane bᵥ = 0
   //
-  // Let n be the unit normal vector of ABC towards V. We can calculate ∇bᵥ
-  // from n and h:
+  // We conclude that ∇bᵥ is the vector of length 1/h that is perpendicular to
+  // ABC and points into the tetrahedron.
   //
-  //       ∇bᵥ = n/h
+  // To calculate ∇bᵥ, consider the scalar triple product (AB x AC)⋅AV, which
+  // is the signed volume of the parallelepiped spanned by AB, AC, and AV, and
+  // consider the cross product AB x AC, which is the area vector of the
+  // parallelogram spanned by AB and AC. We have:
   //
-  // Notice that h equals the dot product of AV and the unit vector n,
-  // therefore:
+  //       ∇bᵥ = normal vector inversely proportional to height
+  //           = area vector / signed volume
+  //           = (AB x AC) / (AB x AC)⋅AV
   //
-  //       ∇bᵥ = n/(AV⋅n)
-  //
-  // Finally we can use any vector perpendicular to ABC in the above formula,
-  // since the length of the vector cancel out. In particular, we can use the
-  // vector N = AB x AC:
-  //
-  //       ∇bᵥ = N/(AV⋅N)
-  //
-  // Notice that both N and -N are applicable because the sign would cancel
-  // out, which means that both inward and outward normal vector N give the
-  // same result.
-  const Vector3<T> r_AV_M = p_MV - p_MA;
-  const T AV_dot_N = r_AV_M.dot(r_N_M);
+  const Vector3<T> p_ABxAC_M = p_AB_M.cross(p_AC_M);
   // TODO(DamrongGuoy): Explain what happens with very poor tetrahedra; for
-  //  example, ABC has zero or almost-zero area, or V is co-planar or almost
-  //  co-planar with ABC. They will have AV_dot_N equal zero or near zero, or
-  //  the cross product N = AB x AC might not be reliable? Furthermore, since
-  //  AV⋅N is the signed volume of the parallelepiped spanned by AB,AC,AV, so
-  //  we might use ε³ as the threshold for numerical rounding?
-  return r_N_M / AV_dot_N;
+  //  example, ABC has zero area, or V is co-planar with ABC.
+  return p_ABxAC_M / p_ABxAC_M.dot(p_AV_M);
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

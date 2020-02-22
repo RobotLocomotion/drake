@@ -260,7 +260,7 @@ void TestCalcGradBarycentric() {
   EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb2_M, gradb2_W, 1e-14));
   EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb3_M, gradb3_W, 1e-14));
 
-  // Check the invariance ∑(∇bᵢ) = 0.
+  // Since ∑bᵢ = 1, the gradients have zero sum: ∑(∇bᵢ) = 0.
   EXPECT_TRUE(CompareMatrices(gradb0_W + gradb1_W + gradb2_W + gradb3_W,
                               Vector3<T>::Zero(), 1e-14));
 }
@@ -331,12 +331,12 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   auto volume_mesh = TestVolumeMesh<T>();
 
   // We give names to the values at vertices for testing later.
-  const T p0{1.};
-  const T p1{2.};
-  const T p2{3.};
-  const T p3{4.};
-  const T p4{5.};
-  std::vector<T> p_values = {p0, p1, p2, p3, p4};
+  const T f0{1.};
+  const T f1{2.};
+  const T f2{3.};
+  const T f3{4.};
+  const T f4{5.};
+  std::vector<T> p_values = {f0, f1, f2, f3, f4};
 
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
       "pressure", std::move(p_values), volume_mesh.get());
@@ -344,7 +344,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   // Tests evaluation of the field on the element e0 {v0, v1, v2, v3}.
   const VolumeElementIndex e0(0);
   const typename VolumeMesh<T>::Barycentric b{0.4, 0.3, 0.2, 0.1};
-  const T expect_p = b(0) * p0 + b(1) * p1 + b(2) * p2 + b(3) * p3;
+  const T expect_p = b(0) * f0 + b(1) * f1 + b(2) * f2 + b(3) * f3;
   EXPECT_EQ(expect_p, volume_mesh_field->Evaluate(e0, b));
 
   // Tests the gradient vector ∇p on the element e0 {v0, v1, v2, v3}.
@@ -353,7 +353,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   // calculated by VolumeMesh. The vectors are expressed in frame M of the mesh.
   Vector3<T> gradp_M = volume_mesh_field->EvaluateGradient(e0);
   Vector3<T> expect_gradp_M = volume_mesh->CalcGradientVectorOfLinearField(
-      std::array<T, 4>{p0, p1, p2, p3}, e0);
+      std::array<T, 4>{f0, f1, f2, f3}, e0);
   EXPECT_TRUE(CompareMatrices(expect_gradp_M, gradp_M, 1e-14));
 
   return volume_mesh_field;

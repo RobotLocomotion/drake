@@ -24,10 +24,5 @@ using VolumeMeshField = MeshField<FieldValue, VolumeMesh<T>>;
 template <typename FieldValue, typename T>
 using VolumeMeshFieldLinear = MeshFieldLinear<FieldValue, VolumeMesh<T>>;
 
-extern template class MeshField<double, VolumeMesh<double>>;
-extern template class MeshField<AutoDiffXd, VolumeMesh<AutoDiffXd>>;
-extern template class MeshFieldLinear<double, VolumeMesh<double>>;
-extern template class MeshFieldLinear<AutoDiffXd, VolumeMesh<AutoDiffXd>>;
-
 }  // namespace geometry
 }  // namespace drake

@@ -13,6 +13,7 @@
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/mesh_field.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -191,26 +192,6 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   std::vector<Vector3<FieldValue>> gradients_;
 };
 
-template <class FieldValue, class MeshType>
-void MeshFieldLinear<FieldValue, MeshType>::CalcGradientField() {
-  gradients_.clear();
-  gradients_.reserve(this->mesh().num_elements());
-  for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
-       ++e) {
-    gradients_.push_back(CalcGradientVector(e));
-  }
-}
-
-template <class FieldValue, class MeshType>
-Vector3<FieldValue> MeshFieldLinear<FieldValue, MeshType>::CalcGradientVector(
-    typename MeshType::ElementIndex e) const {
-  std::array<FieldValue, MeshType::kVertexPerElement> u;
-  for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
-    u[i] = values_[this->mesh().element(e).vertex(i)];
-  }
-  return this->mesh().CalcGradientVectorOfLinearField(u, e);
-}
-
 /**
  @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
                      the field value.
@@ -218,6 +199,11 @@ Vector3<FieldValue> MeshFieldLinear<FieldValue, MeshType>::CalcGradientVector(
  */
 template <typename FieldValue, typename T>
 using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;
+
+extern template class MeshFieldLinear<double, SurfaceMesh<double>>;
+extern template class MeshFieldLinear<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
+extern template class MeshFieldLinear<double, VolumeMesh<double>>;
+extern template class MeshFieldLinear<AutoDiffXd, VolumeMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake

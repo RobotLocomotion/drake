@@ -118,9 +118,9 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradient) {
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           "e", std::move(e_values), mesh.get());
 
-  Vector3<double> gradient = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
 
-  Vector3<double> expect_gradient(1., 1., 0.);
+  Vector3d expect_gradient(1., 1., 0.);
   EXPECT_TRUE(CompareMatrices(expect_gradient, gradient, 1e-14));
 }
 
