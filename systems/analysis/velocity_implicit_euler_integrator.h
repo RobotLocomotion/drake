@@ -279,18 +279,14 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                             const VectorX<T>& qk, const VectorX<T>& qn,
                             MatrixX<T>* Jy);
 
-  // Uses first-order forward differencing to compute the Jacobian, Jₗ(y), of
+  // Uses numerical differencing to compute the Jacobian, Jₗ(y), of
   // the function l(y), used in this integrator's residual computation, with
   // respect to y, where y = (v,z). This Jacobian is then defined as:
   //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
   //     Jₗ(y) = ∂l(y)/∂y                       (8)
-  //
-  // In this method, we compute the Jacobian Jₗ(y) using a first-order forward
-  // difference (i.e. numerical differentiation),
-  //     Jₗ(y)ᵢⱼ = (l(y')ᵢ - l(y)ᵢ )/ δy(j),
-  // where y' = y + δy(j) eⱼ, δy(j) = (√ε) max(1,|yⱼ|), and eⱼ is the j-th
-  // standard Cartesian basis vector.
-  // In the code we hereby refer to y as "the baseline" and y' as "prime".
+  // In this method, we compute the Jacobian Jₗ(y) using either a first-order
+  // forward difference or a second-order centered difference.
+  // See math::ComputeNumericalGradient for more details.
   // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
   // @param h is the timestep size parameter, h, used in the definition of
   //        l(y).
@@ -302,7 +298,32 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param [out] Jy is the Jacobian matrix, Jₗ(y).
   // @note The context's time will be set to t, and its continuous state will
   //       be indeterminate on return.
-  void ComputeForwardDiffVelocityJacobian(const T& t, const T& h,
+  void ComputeNumericalDiffVelocityJacobian(const T& t, const T& h,
+                                          const VectorX<T>& y,
+                                          const VectorX<T>& qk,
+                                          const VectorX<T>& qn,
+                                          MatrixX<T>* Jy);
+
+  // Uses second-order central differencing to compute the Jacobian, Jₗ(y), of
+  // the function l(y), used in this integrator's residual computation, with
+  // respect to y, where y = (v,z). This Jacobian is then defined as:
+  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
+  //     Jₗ(y) = ∂l(y)/∂y                       (8)
+  //
+  // In this method, we compute the Jacobian Jₗ(y) using automatic
+  // differentiation.
+  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
+  // @param h is the timestep size parameter, h, used in the definition of
+  //        l(y).
+  // @param y is the generalized velocity and miscellaneous states around which
+  //        to evaluate Jₗ(y).
+  // @param qk is qₖ, the current-iteration position used in the definition of
+  //        l(y).
+  // @param qn refers to qⁿ, the initial position used in l(y).
+  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
+  // @note The context's time will be set to t, and its continuous state will
+  //       be indeterminate on return.
+  void ComputeAutoDiffVelocityJacobian(const T& t, const T& h,
                                           const VectorX<T>& y,
                                           const VectorX<T>& qk,
                                           const VectorX<T>& qn,
