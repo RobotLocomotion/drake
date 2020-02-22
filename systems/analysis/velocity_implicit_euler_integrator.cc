@@ -291,7 +291,8 @@ bool VelocityImplicitEulerIntegrator<T>::StepVelocityImplicitEuler(
       h, t0);
 
   const System<T>& system = this->get_system();
-  // Verify xtplus
+  // Verify xtplus. We also verify the size to make sure we're not making
+  // unnecessary heap allocations.
   DRAKE_ASSERT(xtplus != nullptr && xtplus->size() == xn.size() &&
                xtplus_guess.size() == xn.size());
 
@@ -530,6 +531,8 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
       "DoImplicitIntegratorStep(h={}) t={}", h, t0);
 
   xn_ = context->get_continuous_state().CopyToVector();
+  xtplus_vie_.resize(xn_.size());
+  xtplus_hvie_.resize(xn_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
