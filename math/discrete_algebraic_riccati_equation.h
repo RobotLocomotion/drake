@@ -11,9 +11,9 @@ namespace math {
 /// Computes the unique stabilizing solution X to the discrete-time algebraic
 /// Riccati equation:
 ///
-/// \f[
+/// @f[
 /// A'XA - X - A'XB(B'XB+R)^{-1}B'XA + Q = 0
-/// \f]
+/// @f]
 ///
 /// @throws std::runtime_error if Q is not positive semi-definite.
 /// @throws std::runtime_error if R is not positive definite.
