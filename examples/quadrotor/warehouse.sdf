@@ -2,6 +2,24 @@
 <sdf version='1.6'>
   <model name='room_w_lidar'>
     <static>true</static>
+    <link name='bottom_wall'>
+      <pose frame=''>3.5 -0.25 -1.6 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>10 4.5 0.2</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>10 4.5 0.2</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
     <link name='left_wall'>
       <pose frame=''>3.5 1.75 0 0 0 0</pose>
       <visual name='wall'>
