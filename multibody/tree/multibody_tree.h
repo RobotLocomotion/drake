@@ -19,7 +19,7 @@
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/tree/articulated_body_force_bias_cache.h"
+#include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -1699,13 +1699,13 @@ class MultibodyTree {
   1. CalcArticulatedBodyInertiaCache(): which performs a tip-to-base pass to
      compute the ArticulatedBodyInertia for each body along with other ABA
      quantities that are configuration dependent only.
-  2. CalcArticulatedBodyForceBiasCache(): a second tip-to-base pass which
+  2. CalcArticulatedBodyForceCache(): a second tip-to-base pass which
      essentially computes the bias terms in the ABA equations. These are a
      function of the full state x = [q; v] and externally applied actuation and
      forces.
   3. CalcArticulatedBodyAccelerations(): which performs a final base-to-tip
      recursion to compute the acceleration of each body in the model. These
-     accelerations are a function of the ArticulatedBodyForceBiasCache
+     accelerations are a function of the ArticulatedBodyForceCache
      previously computed by CalcArticulatedBodyForces(). That is, accelerations
      are a function of state x and applied forces.
 
@@ -1953,9 +1953,9 @@ class MultibodyTree {
   /// `x = [q; v]`, stored in `context`, and externally applied `forces`.
   /// Refer to @ref abi_and_bias_force "Articulated Body Inertia and Force Bias"
   /// for further details.
-  void CalcArticulatedBodyForceBiasCache(
+  void CalcArticulatedBodyForceCache(
       const systems::Context<T>& context, const MultibodyForces<T>& forces,
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const;
+      ArticulatedBodyForceCache<T>* aba_force_cache) const;
 
   /// Performs the final base-to-tip pass of ABA to compute the acceleration of
   /// each body in the model into output `ac`.
@@ -1963,7 +1963,7 @@ class MultibodyTree {
   /// further details.
   void CalcArticulatedBodyAccelerations(
     const systems::Context<T>& context,
-    const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache,
+    const ArticulatedBodyForceCache<T>& aba_force_cache,
     AccelerationKinematicsCache<T>* ac) const;
 
   /// @}
