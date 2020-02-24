@@ -425,6 +425,32 @@ class SpatialInertia {
         w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
   }
 
+  /// Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
+  /// as columns of input matrix `Vmatrix`. The top three rows of Vmatrix are
+  /// expected to store the rotational components while the bottom three rows
+  /// are expected to store the translational components.
+  /// The output matrix is of the same size as `Vmatrix` and each j-th colum
+  /// stores the spatial vector in F⁶ result of multiplying `this` spatial
+  /// inertia with the j-th column of `Vmatrix`.
+  Matrix6X<T> operator*(
+      const Eigen::Ref<const Matrix6X<T>>& Vmatrix) const {
+    const auto& Vrotational = Vmatrix.template topRows<3>();
+    const auto& Vtranslational = Vmatrix.template bottomRows<3>();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+    const Matrix3<T> I_SP_E = CalcRotationalInertia().CopyToFullMatrix3();
+
+    Matrix6X<T> F_Bo_E(6, Vmatrix.cols());
+
+    // Rotational component.
+    F_Bo_E.template topRows<3>() =
+        I_SP_E * Vrotational - Vtranslational.colwise().cross(mp_BoBcm_E);
+
+    // Translational component.
+    F_Bo_E.template bottomRows<3>() =
+        Vrotational.colwise().cross(mp_BoBcm_E) + get_mass() * Vtranslational;
+    return F_Bo_E;
+  }
+
  private:
   // Helper method for NaN initialization.
   static constexpr T nan() {

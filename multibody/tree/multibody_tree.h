@@ -1671,6 +1671,10 @@ class MultibodyTree {
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
 
   /// See MultibodyPlant method.
+  void CalcMassMatrix(const systems::Context<T>& context,
+                      EigenPtr<MatrixX<T>> H) const;
+
+  /// See MultibodyPlant method.
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
