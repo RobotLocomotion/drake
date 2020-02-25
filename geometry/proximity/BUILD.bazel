@@ -16,6 +16,7 @@ drake_cc_package_library(
         ":bounding_volume_hierarchy",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
+        ":contact_surface_utility",
         ":distance_to_point_callback",
         ":distance_to_point_with_gradient",
         ":distance_to_shape_callback",
@@ -78,6 +79,14 @@ drake_cc_library(
         ":collision_filter_legacy",
         "//geometry:geometry_ids",
         "@fcl",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_surface_utility",
+    hdrs = ["contact_surface_utility.h"],
+    deps = [
+        ":surface_mesh",
     ],
 )
 
@@ -306,6 +315,7 @@ drake_cc_library(
     hdrs = ["mesh_intersection.h"],
     deps = [
         ":bounding_volume_hierarchy",
+        ":contact_surface_utility",
         ":mesh_field",
         ":plane",
         ":surface_mesh",
@@ -452,6 +462,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",
         "//geometry/query_results:contact_surface",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_surface_utility_test",
+    deps = [
+        ":contact_surface_utility",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

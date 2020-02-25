@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/surface_mesh.h"
@@ -351,64 +352,6 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
 }
 
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
-//  remove the note below about duplicate vertices.
-/** Adds a convex `polygon` to the given set of `faces` and `vertices` as a set
- of _triangles_. If the polygon is not _already_ a triangle, this will decompose
- the polygon into a set of triangles by introducing a new vertex at the centroid
- of the polygon and creating a fan of triangles from that vertex to all others.
- @param[in] polygon_vertices_F
-     The input polygon is represented by positions of its vertices measured and
-     expressed in frame F.
- @param[in, out] faces
-     New triangles are added into `faces`. Each new triangle has the same
-     orientation as the input polygon.
- @param[in ,out] vertices_F
-     The set of vertex positions to be extended, each vertex is measured and
-     expressed in frame F.
- @note
-     This can add vertex positions that already exist in `vertices_F`.
- @pre `faces` and `vertices_F` are not `nullptr`.
- */
-template <typename T>
-void AddPolygonToMeshData(
-    const std::vector<Vector3<T>>& polygon_vertices_F,
-    std::vector<SurfaceFace>* faces,
-    std::vector<SurfaceVertex<T>>* vertices_F) {
-  DRAKE_DEMAND(faces != nullptr);
-  DRAKE_DEMAND(vertices_F != nullptr);
-
-  const int polygon_size = static_cast<int>(polygon_vertices_F.size());
-  if (polygon_size < 3) return;
-
-  const int num_original_vertices = static_cast<int>(vertices_F->size());
-
-  // Triangulate the polygon by creating a fan around the polygon's centroid.
-  // This is important because it gives us a smoothly changing tessellation as
-  // the polygon itself smoothly changes. Even if the polygon is already a
-  // triangle, we still add its centroid because the triangular polygon can
-  // smoothly change to a quadrilateral polygon. Therefore, an intersection
-  // triangle will contribute 3 triangles to the ContactSurface and smoothly
-  // change to 4 triangles from an intersection quadrilateral.
-  Vector3<T> centroid = Vector3<T>::Zero();
-  for (int i = 0; i < polygon_size; ++i) {
-    vertices_F->emplace_back(polygon_vertices_F[i]);
-    centroid += polygon_vertices_F[i];
-  }
-  centroid /= polygon_size;
-  SurfaceVertexIndex centroid_index(vertices_F->size());
-  vertices_F->emplace_back(centroid);
-
-  for (int i = 0; i < polygon_size; ++i) {
-    SurfaceVertexIndex current(i + num_original_vertices);
-    // TODO(SeanCurtis-TRI):  The `% polygon_size` is only needed in the last
-    //  iteration. To squeeze performance, reformulate this to avoid modulo
-    //  entirely.
-    SurfaceVertexIndex next((i + 1) % polygon_size + num_original_vertices);
-    faces->emplace_back(current, next, centroid_index);
-  }
-}
-
-// TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
 //  remove the note in the function documentation.
 
 // TODO(tehbelinda): Restructure how the intersecting mesh and field are
@@ -473,9 +416,25 @@ void SampleVolumeFieldOnSurface(
       //  best balance for best average performance.
       std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
           tet_index, mesh_M, tri_index, surface_N, X_MN);
+
+      const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
+      if (poly_vertex_count < 3) continue;
+
       const int num_previous_vertices = surface_vertices_M.size();
-      AddPolygonToMeshData(polygon_vertices_M, &surface_faces,
+
+      // Add the new polygon vertices to the mesh vertices and construct a
+      // polygon from the vertex indices.
+      std::vector<SurfaceVertexIndex> polygon;
+      polygon.reserve(polygon_vertices_M.size());
+      for (int i = 0; i < poly_vertex_count; ++i) {
+        polygon.emplace_back(surface_vertices_M.size());
+        surface_vertices_M.emplace_back(polygon_vertices_M[i]);
+      }
+      const Vector3<T>& nhat_M =
+          X_MN.rotation() * surface_N.face_normal(tri_index);
+      AddPolygonToMeshData(polygon, nhat_M, &surface_faces,
                            &surface_vertices_M);
+
       const int num_current_vertices = surface_vertices_M.size();
       // Calculate values of the pressure field and the normal field at the
       // new vertices.
@@ -528,9 +487,24 @@ void SampleVolumeFieldOnSurface(
     //  best balance for best average performance.
     std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
         tet_index, mesh_M, tri_index, surface_N, X_MN);
+
+    const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
+    if (poly_vertex_count < 3) return BvttCallbackResult::Continue;
+
     const int num_previous_vertices = surface_vertices_M.size();
-    AddPolygonToMeshData(polygon_vertices_M, &surface_faces,
+    // Add the new polygon vertices to the mesh vertices and construct a
+    // polygon from the vertex indices.
+    std::vector<SurfaceVertexIndex> polygon;
+    polygon.reserve(polygon_vertices_M.size());
+    for (int i = 0; i < poly_vertex_count; ++i) {
+      polygon.emplace_back(surface_vertices_M.size());
+      surface_vertices_M.emplace_back(polygon_vertices_M[i]);
+    }
+    const Vector3<T>& nhat_M =
+        X_MN.rotation() * surface_N.face_normal(tri_index);
+    AddPolygonToMeshData(polygon, nhat_M, &surface_faces,
                          &surface_vertices_M);
+
     const int num_current_vertices = surface_vertices_M.size();
     // Calculate values of the pressure field and the normal field at the
     // new vertices.
