@@ -9,7 +9,7 @@
 DEFINE_double(simulation_time, 20,
               "Desired duration of the simulation in seconds");
 
-DEFINE_double(time_step, 2.5e-3,
+DEFINE_double(time_step, 1.0e-3,
               "Simulation time step used for the discrete systems.");
 
 DEFINE_double(gravity, 9.8, "Value of gravity in the direction of -z.");
