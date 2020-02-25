@@ -82,6 +82,16 @@ class HsrWorld : public systems::Diagram<T> {
   /// @param config_file path to the configuration file to load.
   explicit HsrWorld(const std::string& config_file);
 
+  /// Sets the default State using the Diagram's default state but override
+  /// free body positions with data from the model directive yaml files and the
+  /// default joint positions and velocities of the HSR robot from
+  /// GetModelPositionState() and GetModelVelocityState().
+  /// @param context A const reference to the HsrWorld context.
+  /// @param state A pointer to the State of the HsrWorld system.
+  /// @pre `state` must be the systems::State<T> object contained in `context`.
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
+
   /// Users *must* call Finalize() after making any additions to the
   /// multibody plant and before using this class in the Systems framework.
   /// This should be called exactly once.
@@ -89,10 +99,79 @@ class HsrWorld : public systems::Diagram<T> {
   /// @see multibody::MultibodyPlant<T>::Finalize()
   void Finalize();
 
+  /// Returns a reference to the main plant responsible for the dynamics of
+  /// the robot and the environment.  This can be used to, e.g., add
+  /// additional elements into the world before calling Finalize().
+  const multibody::MultibodyPlant<T>& get_multibody_plant() const {
+    return *plant_;
+  }
+
+  /// Returns a mutable reference to the main plant responsible for the
+  /// dynamics of the robot and the environment.  This can be used to, e.g.,
+  /// add additional elements into the world before calling Finalize().
+  multibody::MultibodyPlant<T>& get_mutable_multibody_plant() {
+    return *plant_;
+  }
+
+  /// Returns a reference to the SceneGraph responsible for all of the geometry
+  /// for the robot and the environment.  This can be used to, e.g., add
+  /// additional elements into the world before calling Finalize().
+  const geometry::SceneGraph<T>& get_scene_graph() const {
+    return *scene_graph_;
+  }
+
+  /// Returns a mutable reference to the SceneGraph responsible for all of the
+  /// geometry for the robot and the environment.  This can be used to, e.g.,
+  /// add additional elements into the world before calling Finalize().
+  geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
+
+  VectorX<T> GetModelPositionState(
+      const systems::Context<T>& context,
+      const multibody::ModelInstanceIndex& model_index) const;
+
+  VectorX<T> GetModelVelocityState(
+      const systems::Context<T>& context,
+      const multibody::ModelInstanceIndex& model_index) const;
+
+  /// Set the position state of a model that has at least one free moving joint.
+  /// For example, the model could be a robot or a dishwasher.
+  /// @param context A const reference to the HsrWorld context.
+  /// @param model_index Const reference of the interested model instance index.
+  /// @param q The target position state of the corresponding model to be set.
+  /// @param state The full state of the robot world, must be the
+  /// systems::State<T> object contained in `context`.
+  void SetModelPositionState(const systems::Context<T>& context,
+                             const multibody::ModelInstanceIndex& model_index,
+                             const Eigen::Ref<const VectorX<T>>& q,
+                             systems::State<T>* state) const;
+
+  /// Set the velocity state of a model that has at least one free moving joint.
+  /// For example, the model could be a robot or a dishwasher.
+  /// @param context A const reference to the HsrWorld context.
+  /// @param model_index Const reference of the interested model instance index.
+  /// @param v The target velocity state of the corresponding model to be set.
+  /// @param state The full state of the HsrWorld, must be the
+  /// systems::State<T> object contained in `context`.
+  void SetModelVelocityState(
+      const drake::systems::Context<T>& context,
+      const drake::multibody::ModelInstanceIndex& model_index,
+      const Eigen::Ref<const drake::VectorX<T>>& v,
+      drake::systems::State<T>* state) const;
+
  private:
   /// Load all the models from the given configuration file. The return is a
   /// vector of model instance information.
+  /// N.B. Anzu repo already has a nice implementation of loading models from
+  /// yaml files. It's possible that Drake will have a taste of that feature
+  /// soon. Before that, we will use the simple method which simply loads
+  /// urdfs one by one.
+  /// TODO(huihua) Once the model directive feature is in Drake, finish the
+  /// implementation of this function.
   const std::vector<ModelInstanceInfo<T>> LoadModelsFromConfigurationFile();
+
+  const std::vector<ModelInstanceInfo<T>> LoadModelsFromUrdfs();
+
+  const ModelInstanceInfo<T> AddDefaultHsr();
 
   /// Post processing the loaded models such as setup the initial position of
   /// items

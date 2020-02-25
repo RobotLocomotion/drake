@@ -3,6 +3,7 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -41,12 +42,29 @@ drake_cc_library(
         "//examples/hsr/common",
         "//geometry:scene_graph",
         "//geometry/render:render_engine_vtk",
-        "//multibody/benchmarks/inclined_plane",
         "//math:geometric_transform",
+        "//multibody/benchmarks/inclined_plane",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
+        "//systems/primitives",
+    ],
+)
+
+drake_cc_binary(
+    name = "sim_runner",
+    srcs = [
+        "sim_runner.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hsr_world",
+        ":parameters",
+        "//geometry:geometry_visualization",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "@gflags",
     ],
 )
 
