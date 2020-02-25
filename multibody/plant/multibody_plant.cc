@@ -1059,14 +1059,6 @@ template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
-  if (contact_model_ == ContactModel::kHydroelasticWithFallback) {
-    this->get_cache_entry(cache_indexes_.hydro_fallback)
-        .template Eval<int>(context);
-    // TODO(SeanCurtis-TRI): Stop this extra copy of the point-pair data.
-    return this->get_cache_entry(cache_indexes_.point_pairs)
-        .Eval<std::vector<PenetrationAsPointPair<double>>>(context);
-  }
-
   if (num_collision_geometries() > 0) {
     if (!geometry_query_port_.is_valid()) {
       throw std::logic_error(
@@ -1725,12 +1717,6 @@ template <typename T>
   void MultibodyPlant<T>::CalcContactSurfaces(
     const drake::systems::Context<T>& context,
     std::vector<ContactSurface<T>>* contact_surfaces) const {
-  if (contact_model_ == ContactModel::kHydroelasticWithFallback) {
-    this->get_cache_entry(cache_indexes_.hydro_fallback)
-        .template Eval<int>(context);
-    return;
-  }
-
   DRAKE_DEMAND(contact_surfaces);
 
   const auto& query_object =
@@ -1751,7 +1737,8 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
 template <>
 void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     const drake::systems::Context<double>& context,
-    int*) const {
+    HydroelasticFallbackCacheData* data) const {
+  DRAKE_DEMAND(data != nullptr);
   // We don't need to actually write to the cache value; it is garbage.
   if (num_collision_geometries() > 0) {
     if (!geometry_query_port_.is_valid()) {
@@ -1764,37 +1751,17 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     const auto &query_object =
         this->get_geometry_query_input_port()
             .template Eval<geometry::QueryObject<double>>(context);
+    data->contact_surfaces.clear();
+    data->point_pairs.clear();
 
-    // We're going to write the geometric query result directly to the
-    // corresponding cache entries for the types. We rely on the geometric
-    // query to partition all contacts into two disjoint sets: one set of
-    // ContactSurfaces and one of PenetrationAsPointPair.
-
-    auto &cache = context.get_mutable_cache();
-
-    auto &surfaces_value =
-        cache.get_mutable_cache_entry_value(cache_indexes_.contact_surfaces);
-    auto &surfaces = surfaces_value.template GetMutableValueOrThrow<
-        std::vector<geometry::ContactSurface<double>>>();
-    surfaces.clear();
-
-    auto &point_pairs_value =
-        cache.get_mutable_cache_entry_value(cache_indexes_.point_pairs);
-    auto &point_pairs =
-        point_pairs_value.template GetMutableValueOrThrow<
-            std::vector<geometry::PenetrationAsPointPair<double>>>();
-    point_pairs.clear();
-
-    query_object.ComputeContactSurfacesWithFallback(&surfaces, &point_pairs);
-
-    surfaces_value.mark_up_to_date();
-    point_pairs_value.mark_up_to_date();
+    query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
+                                                    &data->point_pairs);
   }
 }
 
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<T>&, int*) const {
+    const drake::systems::Context<T>&, HydroelasticFallbackCacheData*) const {
   // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
   //  as long as there are no collisions -- akin to CalcPontPairPenetrations().
   throw std::domain_error(fmt::format("This method doesn't support T = {}.",
@@ -2425,14 +2392,16 @@ template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());
 
-  // Declare "trick" cache entry for doing hydroelastic with point-pair
-  // fallback. See the details of CalcHydroelasticWithFallback() for details of
-  // the trick.
-  int hydro_point_value{};
   auto& hydro_point_cache_entry = this->DeclareCacheEntry(
       std::string("Hydroelastic contact with point-pair fallback"),
-      hydro_point_value,
-      &MultibodyPlant::CalcHydroelasticWithFallback,
+      []() { return AbstractValue::Make(HydroelasticFallbackCacheData()); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& fallback_data =
+            cache_value->get_mutable_value<HydroelasticFallbackCacheData>();
+        this->CalcHydroelasticWithFallback(context, &fallback_data);
+      },
       {this->configuration_ticket()});
   cache_indexes_.hydro_fallback = hydro_point_cache_entry.cache_index();
 
