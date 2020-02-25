@@ -66,22 +66,22 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/base_v2/base_light.obj"/>
+        <mesh filename="../meshes/base_v2/base_light.obj"/>
       </geometry>
     </visual>
     <visual>
       <geometry>
-        <mesh filename="meshes/base_v2/body_light.obj"/>
+        <mesh filename="../meshes/base_v2/body_light.obj"/>
       </geometry>
     </visual>
     <visual>
       <geometry>
-        <mesh filename="meshes/base_v2/torso_base.obj"/>
+        <mesh filename="../meshes/base_v2/torso_base.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/base_v2/base.obj"/>
+        <mesh filename="../meshes/base_v2/base.obj"/>
       </geometry>
     </collision>
   </link>
@@ -268,12 +268,12 @@ POSSIBILITY OF SUCH DAMAGE.
   <link name="base_range_sensor_link">
     <visual>
       <geometry>
-        <mesh filename="meshes/sensors/laser.obj"/>
+        <mesh filename="../meshes/sensors/laser.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/sensors/laser.obj"/>
+        <mesh filename="../meshes/sensors/laser.obj"/>
       </geometry>
     </collision>
   </link>
@@ -309,105 +309,6 @@ POSSIBILITY OF SUCH DAMAGE.
     <child link="base_imu_frame"/>
   </joint>
   <link name="base_imu_frame"/>
-  <gazebo reference="base_imu_frame">
-    <sensor name="base_imu" type="imu">
-      <update_rate>10.0</update_rate>
-      <imu>
-        <noise>
-          <type>gaussian</type>
-          <rate>
-            <mean>0.0</mean>
-            <stddev>2e-4</stddev>
-            <bias_mean>0.0000075</bias_mean>
-            <bias_stddev>0.0000008</bias_stddev>
-          </rate>
-          <accel>
-            <mean>0.0</mean>
-            <stddev>1.7e-2</stddev>
-            <bias_mean>0.1</bias_mean>
-            <bias_stddev>0.001</bias_stddev>
-          </accel>
-        </noise>
-      </imu>
-    </sensor>
-  </gazebo>
-  <gazebo>
-    <!-- IMU Plugin is a model plugin. Then it should be atached to HSR-B model. -->
-    <plugin filename="libgazebo_ros_imu.so" name="base_imu_plugin">
-      <imuName>base_imu</imuName>
-      <topicName>base_imu/data</topicName>
-      <serviceName>base_imu/calibrate</serviceName>
-      <frameName>base_imu_frame</frameName>
-      <bodyName>base_link</bodyName>
-      <robotNamespace>hsrb</robotNamespace>
-    </plugin>
-  </gazebo>
-  <gazebo reference="base_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="base_roll_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="base_r_drive_wheel_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <turnGravityOff>false</turnGravityOff>
-    <kp>1000000.0</kp>
-    <kd>10.0</kd>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-    <fdir1>1 0 0</fdir1>
-    <maxVel>1.0</maxVel>
-    <minDepth>0.00</minDepth>
-    <material value="Gazebo/FlatBlack"/>
-  </gazebo>
-  <gazebo reference="base_l_drive_wheel_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <turnGravityOff>false</turnGravityOff>
-    <kp>1000000.0</kp>
-    <kd>10.0</kd>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-    <fdir1>1 0 0</fdir1>
-    <maxVel>1.0</maxVel>
-    <minDepth>0.00</minDepth>
-    <material value="Gazebo/FlatBlack"/>
-  </gazebo>
-  <gazebo reference="base_r_passive_wheel_z_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.1</mu1>
-    <mu2>0.1</mu2>
-    <maxVel>1.0</maxVel>
-    <material value="Gazebo/FlatBlack"/>
-  </gazebo>
-  <gazebo reference="base_l_passive_wheel_z_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.1</mu1>
-    <mu2>0.1</mu2>
-    <maxVel>1.0</maxVel>
-    <material value="Gazebo/FlatBlack"/>
-  </gazebo>
-  <gazebo reference="base_range_sensor_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="base_imu_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
   <transmission name="base_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="base_r_drive_wheel_joint">
@@ -456,25 +357,15 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/torso_v0/torso_light.obj"/>
+        <mesh filename="../meshes/torso_v0/torso_light.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/torso_v0/torso.obj"/>
+        <mesh filename="../meshes/torso_v0/torso.obj"/>
       </geometry>
     </collision>
   </link>
-  <gazebo reference="torso_lift_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="torso_lift_joint">
-    </gazebo>
-  <gazebo>
-        </gazebo>
   <joint name="head_pan_joint" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0.0 0.0 1.0"/>
@@ -491,12 +382,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/head_v1/head_pan.obj"/>
+        <mesh filename="../meshes/head_v1/head_pan.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/head_v1/head_pan.obj"/>
+        <mesh filename="../meshes/head_v1/head_pan.obj"/>
       </geometry>
     </collision>
   </link>
@@ -516,27 +407,27 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/head_v1/head_upper.obj"/>
+        <mesh filename="../meshes/head_v1/head_upper.obj"/>
       </geometry>
     </visual>
     <visual>
       <geometry>
-        <mesh filename="meshes/head_v1/head_tilt.obj"/>
+        <mesh filename="../meshes/head_v1/head_tilt.obj"/>
       </geometry>
     </visual>
     <visual>
       <geometry>
-        <mesh filename="meshes/head_v1/tablet_base.obj"/>
+        <mesh filename="../meshes/head_v1/tablet_base.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/head_v1/head.obj"/>
+        <mesh filename="../meshes/head_v1/head.obj"/>
       </geometry>
     </collision>
     <collision>
       <geometry>
-        <mesh filename="meshes/head_v1/tablet.obj"/>
+        <mesh filename="../meshes/head_v1/tablet.obj"/>
       </geometry>
     </collision>
   </link>
@@ -549,7 +440,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/sensors/head_camera.obj"/>
+        <mesh filename="../meshes/sensors/head_camera.obj"/>
       </geometry>
     </visual>
   </link>
@@ -605,7 +496,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/sensors/head_camera.obj"/>
+        <mesh filename="../meshes/sensors/head_camera.obj"/>
       </geometry>
     </visual>
   </link>
@@ -710,13 +601,13 @@ POSSIBILITY OF SUCH DAMAGE.
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/sensors/rgbd_light.obj"/>
+        <mesh filename="../meshes/sensors/rgbd_light.obj"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/sensors/rgbd.obj"/>
+        <mesh filename="../meshes/sensors/rgbd.obj"/>
       </geometry>
     </collision>
   </link>
@@ -725,95 +616,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <parent link="head_rgbd_sensor_link"/>
     <child link="head_rgbd_sensor_gazebo_frame"/>
   </joint>
-
-        `
-
   <link name="head_rgbd_sensor_gazebo_frame"/>
-  <gazebo reference="head_rgbd_sensor_gazebo_frame">
-    <sensor name="openni_camera_camera" type="depth">
-      <always_on>0</always_on>
-      <update_rate>30</update_rate>
-      <visualize>true</visualize>
-      <camera>
-        <horizontal_fov>1.047</horizontal_fov>
-        <image>
-          <width>640</width>
-          <height>480</height>
-          <format>B8G8R8</format>
-        </image>
-        <depth_camera>
-                    </depth_camera>
-        <clip>
-          <near>0.1</near>
-          <far>100</far>
-        </clip>
-      </camera>
-      <plugin filename="libgazebo_ros_openni_kinect.so" name="head_rgbd_sensor_controller">
-        <alwaysOn>true</alwaysOn>
-        <baseline>0.2</baseline>
-        <updateRate>1.0</updateRate>
-        <cameraName>head_rgbd_sensor</cameraName>
-        <frameName>head_rgbd_sensor_rgb_frame</frameName>
-        <imageTopicName>/hsrb/head_rgbd_sensor/rgb/image_rect_color</imageTopicName>
-        <cameraInfoTopicName>/hsrb/head_rgbd_sensor/rgb/camera_info</cameraInfoTopicName>
-        <depthImageTopicName>/hsrb/head_rgbd_sensor/depth_registered/image_rect_raw</depthImageTopicName>
-        <pointCloudTopicName>/hsrb/head_rgbd_sensor/depth_registered/rectified_points</pointCloudTopicName>
-        <depthImageCameraInfoTopicName>/hsrb/head_rgbd_sensor/depth_registered/camera_info</depthImageCameraInfoTopicName>
-        <pointCloudCutoff>0.5</pointCloudCutoff>
-        <pointCloudCutoffMax>9.2</pointCloudCutoffMax>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-        <CxPrime>0.0</CxPrime>
-        <Cx>0.0</Cx>
-        <Cy>0.0</Cy>
-        <focalLength>0.0</focalLength>
-        <hackBaseline>0</hackBaseline>
-      </plugin>
-    </sensor>
-  </gazebo>
-  <gazebo reference="head_pan_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="head_tilt_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="head_l_stereo_camera_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="head_r_stereo_camera_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="head_center_camera_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>false</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="head_rgbd_sensor_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="head_pan_joint">
-  </gazebo>
-  <gazebo reference="head_tilt_joint">
-  </gazebo>
   <transmission name="head_pan_joint_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="head_pan_joint">
@@ -850,12 +653,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/arm_v0/shoulder.obj"/>
+        <mesh filename="../meshes/arm_v0/shoulder.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/arm_v0/shoulder.obj"/>
+        <mesh filename="../meshes/arm_v0/shoulder.obj"/>
       </geometry>
     </collision>
   </link>
@@ -875,12 +678,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/arm_v0/arm_flex_light.obj"/>
+        <mesh filename="../meshes/arm_v0/arm_flex_light.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/arm_v0/arm_flex.obj"/>
+        <mesh filename="../meshes/arm_v0/arm_flex.obj"/>
       </geometry>
     </collision>
   </link>
@@ -900,39 +703,15 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/arm_v0/arm_roll_light.obj"/>
+        <mesh filename="../meshes/arm_v0/arm_roll_light.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/arm_v0/arm_roll.obj"/>
+        <mesh filename="../meshes/arm_v0/arm_roll.obj"/>
       </geometry>
     </collision>
   </link>
-  <gazebo reference="arm_lift_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="arm_flex_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="arm_roll_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="arm_lift_joint">
-  </gazebo>
-  <gazebo reference="arm_flex_joint">
-  </gazebo>
-  <gazebo reference="arm_roll_joint">
-  </gazebo>
   <transmission name="arm_lift_joint_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="arm_lift_joint">
@@ -979,7 +758,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/wrist_v0/wrist_flex.obj"/>
+        <mesh filename="../meshes/wrist_v0/wrist_flex.obj"/>
       </geometry>
       <material name="body_sub"/>
     </visual>
@@ -1013,12 +792,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/wrist_v0/wrist_roll.obj"/>
+        <mesh filename="../meshes/wrist_v0/wrist_roll.obj"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/wrist_v0/wrist_roll.obj"/>
+        <mesh filename="../meshes/wrist_v0/wrist_roll.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1028,40 +807,6 @@ POSSIBILITY OF SUCH DAMAGE.
     <child link="wrist_ft_sensor_frame"/>
   </joint>
   <link name="wrist_ft_sensor_frame"/>
-  <gazebo reference="wrist_roll_joint">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_force.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>wrist_wrench</topicName>
-      <jointName>wrist_roll_joint</jointName>
-      <bodyName>wrist_roll_link</bodyName>
-      <robotNamespace>hsrb</robotNamespace>
-    </plugin>
-  </gazebo>
-  <gazebo reference="wrist_flex_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="wrist_roll_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="wrist_ft_sensor_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="wrist_flex_joint">
-  </gazebo>
-  <gazebo reference="wrist_roll_joint">
-  </gazebo>
   <transmission name="wrist_flex_joint_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="wrist_flex_joint">
@@ -1094,13 +839,13 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/hand_v0/palm.obj"/>
+        <mesh filename="../meshes/hand_v0/palm.obj"/>
       </geometry>
       <material name="body_sub"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/hand_v0/palm.obj"/>
+        <mesh filename="../meshes/hand_v0/palm.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1147,13 +892,13 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/hand_v0/l_proximal.obj"/>
+        <mesh filename="../meshes/hand_v0/l_proximal.obj"/>
       </geometry>
       <material name="body_sub"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/hand_v0/l_proximal.obj"/>
+        <mesh filename="../meshes/hand_v0/l_proximal.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1188,13 +933,13 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/hand_v0/l_distal.obj"/>
+        <mesh filename="../meshes/hand_v0/l_distal.obj"/>
       </geometry>
       <material name="body_sub"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/hand_v0/l_distal.obj"/>
+        <mesh filename="../meshes/hand_v0/l_distal.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1257,13 +1002,13 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/hand_v0/r_proximal.obj"/>
+        <mesh filename="../meshes/hand_v0/r_proximal.obj"/>
       </geometry>
       <material name="body_sub"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/hand_v0/r_proximal.obj"/>
+        <mesh filename="../meshes/hand_v0/r_proximal.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1298,13 +1043,13 @@ POSSIBILITY OF SUCH DAMAGE.
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/hand_v0/r_distal.obj"/>
+        <mesh filename="../meshes/hand_v0/r_distal.obj"/>
       </geometry>
       <material name="body_sub"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="meshes/hand_v0/r_distal.obj"/>
+        <mesh filename="../meshes/hand_v0/r_distal.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1331,143 +1076,6 @@ POSSIBILITY OF SUCH DAMAGE.
     <child link="hand_camera_gazebo_frame"/>
   </joint>
   <link name="hand_camera_gazebo_frame"/>
-  <gazebo reference="hand_camera_gazebo_frame">
-    <sensor name="hand_camera" type="camera">
-      <update_rate>10.0</update_rate>
-      <camera name="hand_camera">
-        <horizontal_fov>2.00</horizontal_fov>
-        <image>
-          <width>640</width>
-          <height>480</height>
-          <format>R8G8B8</format>
-        </image>
-        <clip>
-          <near>0.05</near>
-          <far>100</far>
-        </clip>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.007</stddev>
-        </noise>
-      </camera>
-      <plugin filename="libhsrb_gazebo_ros_camera.so" name="camera_controller">
-        <robotNamespace>hsrb</robotNamespace>
-        <alwaysOn>0</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>hand_camera</cameraName>
-        <imageTopicName>image_raw</imageTopicName>
-        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-        <frameName>hand_camera_frame</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
-    </sensor>
-  </gazebo>
-  <gazebo reference="hand_palm_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="hand_camera_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>false</gravity>
-    <mu1>0.9</mu1>
-    <mu2>0.9</mu2>
-  </gazebo>
-  <gazebo reference="hand_l_proximal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_l_spring_proximal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_l_mimic_distal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_l_distal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_l_finger_tip_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>false</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_l_finger_vacuum_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>false</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_r_proximal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_r_spring_proximal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_r_mimic_distal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>true</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_r_distal_link">
-    <selfCollide>false</selfCollide>
-    <gravity>false</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_r_finger_tip_frame">
-    <selfCollide>false</selfCollide>
-    <gravity>false</gravity>
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-  </gazebo>
-  <gazebo reference="hand_palm_joint">
-  </gazebo>
-  <gazebo reference="hand_motor_joint">
-  </gazebo>
-  <gazebo reference="hand_l_proximal_joint">
-  </gazebo>
-  <gazebo reference="hand_l_spring_proximal_joint">
-  </gazebo>
-  <gazebo reference="hand_l_mimic_distal_joint">
-  </gazebo>
-  <gazebo reference="hand_l_distal_joint">
-  </gazebo>
-  <gazebo reference="hand_r_proximal_joint">
-  </gazebo>
-  <gazebo reference="hand_r_spring_proximal_joint">
-  </gazebo>
-  <gazebo reference="hand_r_mimic_distal_joint">
-  </gazebo>
-  <gazebo reference="hand_r_distal_joint">
-  </gazebo>
-  <gazebo>
-        </gazebo>
   <transmission name="hand_motor_joint_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="hand_motor_joint">
@@ -1498,16 +1106,4 @@ POSSIBILITY OF SUCH DAMAGE.
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <gazebo>
-    <plugin filename="libhsrb_gazebo_ros_control.so" name="hsrb_ros_control">
-      <robotNamespace>hsrb</robotNamespace>
-    </plugin>
-    <plugin filename="libgazebo_ros_p3d.so" name="hsrb_p3d_ground_truth">
-      <robotNamespace>hsrb</robotNamespace>
-      <bodyName>base_footprint</bodyName>
-      <topicName>odom_ground_truth</topicName>
-      <frameName>map</frameName>
-      <updateRate>30</updateRate>
-    </plugin>
-  </gazebo>
 </robot>
