@@ -752,26 +752,33 @@ class SystemBase : public internal::SystemMessageInterface {
     return output_ports_[index]->ticket();
   }
 
+  /** Returns the number of declared continuous state variables. */
+  int num_continuous_states() const {
+    return context_sizes_.num_generalized_positions +
+           context_sizes_.num_generalized_velocities +
+           context_sizes_.num_misc_continuous_states;
+  }
+
   /** Returns the number of declared discrete state groups (each group is
   a vector-valued discrete state variable). */
   int num_discrete_state_groups() const {
-    return static_cast<int>(discrete_state_tickets_.size());
+    return context_sizes_.num_discrete_state_groups;
   }
 
   /** Returns the number of declared abstract state variables. */
   int num_abstract_states() const {
-    return static_cast<int>(abstract_state_tickets_.size());
+    return context_sizes_.num_abstract_states;
   }
 
   /** Returns the number of declared numeric parameters (each of these is
   a vector-valued parameter). */
   int num_numeric_parameter_groups() const {
-    return static_cast<int>(numeric_parameter_tickets_.size());
+    return context_sizes_.num_numeric_parameter_groups;
   }
 
   /** Returns the number of declared abstract parameters. */
   int num_abstract_parameters() const {
-    return static_cast<int>(abstract_parameter_tickets_.size());
+    return context_sizes_.num_abstract_parameters;
   }
   //@}
 
@@ -881,10 +888,12 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre The supplied index must be the next available one; that is, indexes
        must be assigned sequentially. */
   void AddDiscreteStateGroup(DiscreteStateIndex index) {
-    DRAKE_DEMAND(index == num_discrete_state_groups());
+    DRAKE_DEMAND(index == discrete_state_tickets_.size());
+    DRAKE_DEMAND(index == context_sizes_.num_discrete_state_groups);
     const DependencyTicket ticket(assign_next_dependency_ticket());
     discrete_state_tickets_.push_back(
         {ticket, "discrete state group " + std::to_string(index)});
+    ++context_sizes_.num_discrete_state_groups;
   }
 
   /** (Internal use only) Assigns a ticket to a new abstract state variable with
@@ -893,9 +902,11 @@ class SystemBase : public internal::SystemMessageInterface {
        must be assigned sequentially. */
   void AddAbstractState(AbstractStateIndex index) {
     const DependencyTicket ticket(assign_next_dependency_ticket());
-    DRAKE_DEMAND(index == num_abstract_states());
+    DRAKE_DEMAND(index == abstract_state_tickets_.size());
+    DRAKE_DEMAND(index == context_sizes_.num_abstract_states);
     abstract_state_tickets_.push_back(
         {ticket, "abstract state " + std::to_string(index)});
+    ++context_sizes_.num_abstract_states;
   }
 
   /** (Internal use only) Assigns a ticket to a new numeric parameter with
@@ -903,10 +914,12 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre The supplied index must be the next available one; that is, indexes
        must be assigned sequentially. */
   void AddNumericParameter(NumericParameterIndex index) {
-    DRAKE_DEMAND(index == num_numeric_parameter_groups());
+    DRAKE_DEMAND(index == numeric_parameter_tickets_.size());
+    DRAKE_DEMAND(index == context_sizes_.num_numeric_parameter_groups);
     const DependencyTicket ticket(assign_next_dependency_ticket());
     numeric_parameter_tickets_.push_back(
         {ticket, "numeric parameter " + std::to_string(index)});
+    ++context_sizes_.num_numeric_parameter_groups;
   }
 
   /** (Internal use only) Assigns a ticket to a new abstract parameter with
@@ -915,9 +928,11 @@ class SystemBase : public internal::SystemMessageInterface {
        must be assigned sequentially. */
   void AddAbstractParameter(AbstractParameterIndex index) {
     const DependencyTicket ticket(assign_next_dependency_ticket());
-    DRAKE_DEMAND(index == num_abstract_parameters());
+    DRAKE_DEMAND(index == abstract_parameter_tickets_.size());
+    DRAKE_DEMAND(index == context_sizes_.num_abstract_parameters);
     abstract_parameter_tickets_.push_back(
         {ticket, "abstract parameter " + std::to_string(index)});
+    ++context_sizes_.num_abstract_parameters;
   }
 
   /** (Internal use only) This is for cache entries associated with pre-defined
@@ -1063,6 +1078,43 @@ class SystemBase : public internal::SystemMessageInterface {
   parameters and state should be allocated. */
   virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
+  /** Return type for get_context_sizes(). Initialized to zero
+  and equipped with a += operator for Diagram use in aggregation. */
+  struct ContextSizes {
+    int num_generalized_positions{0};     // q }
+    int num_generalized_velocities{0};    // v | Sum is num continuous states x.
+    int num_misc_continuous_states{0};    // z }
+    int num_discrete_state_groups{0};     // Each "group" is a vector.
+    int num_abstract_states{0};
+    int num_numeric_parameter_groups{0};  // Each "group" is a vector.
+    int num_abstract_parameters{0};
+
+    ContextSizes& operator+=(const ContextSizes& other) {
+      num_generalized_positions += other.num_generalized_positions;
+      num_generalized_velocities += other.num_generalized_velocities;
+      num_misc_continuous_states += other.num_misc_continuous_states;
+      num_discrete_state_groups += other.num_discrete_state_groups;
+      num_abstract_states += other.num_abstract_states;
+      num_numeric_parameter_groups += other.num_numeric_parameter_groups;
+      num_abstract_parameters += other.num_abstract_parameters;
+      return *this;
+    }
+  };
+
+  /** Obtains access to the declared Context partition sizes as accumulated
+  during LeafSystem or Diagram construction .*/
+  const ContextSizes& get_context_sizes() const { return context_sizes_; }
+
+  /** Obtains mutable access to the Context sizes struct. Should be used only
+  during LeafSystem or Diagram construction. */
+  ContextSizes& get_mutable_context_sizes() { return context_sizes_; }
+
+  /** Allows Diagram to access protected get_context_sizes() recursively on its
+  subsystems. */
+  static const ContextSizes& get_context_sizes(const SystemBase& system) {
+    return system.get_context_sizes();
+  }
+
   // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
   // removed, also remove this function.
   virtual void DoCheckValidContext(const ContextBase&) const {}
@@ -1080,25 +1132,25 @@ class SystemBase : public internal::SystemMessageInterface {
 
   const TrackerInfo& discrete_state_tracker_info(
       DiscreteStateIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_discrete_state_groups());
+    DRAKE_DEMAND(0 <= index && index < discrete_state_tickets_.size());
     return discrete_state_tickets_[index];
   }
 
   const TrackerInfo& abstract_state_tracker_info(
       AbstractStateIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_abstract_states());
+    DRAKE_DEMAND(0 <= index && index < abstract_state_tickets_.size());
     return abstract_state_tickets_[index];
   }
 
   const TrackerInfo& numeric_parameter_tracker_info(
       NumericParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_groups());
+    DRAKE_DEMAND(0 <= index && index < numeric_parameter_tickets_.size());
     return numeric_parameter_tickets_[index];
   }
 
   const TrackerInfo& abstract_parameter_tracker_info(
       AbstractParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_abstract_parameters());
+    DRAKE_DEMAND(0 <= index && index < abstract_parameter_tickets_.size());
     return abstract_parameter_tickets_[index];
   }
 
@@ -1136,6 +1188,12 @@ class SystemBase : public internal::SystemMessageInterface {
 
   // Unique ID of this system.
   const internal::SystemId system_id_{get_next_id()};
+
+  // Records the total sizes of Context resources as they will appear
+  // in a Context allocated by this System. Starts at zero, counts up during
+  // declaration for LeafSystem construction; computed recursively during
+  // Diagram construction.
+  ContextSizes context_sizes_;
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

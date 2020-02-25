@@ -915,15 +915,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
  private:
-  int do_get_num_continuous_states() const final {
-    int num_states = 0;
-    for (const auto& system : registered_systems_) {
-      num_states += system->num_continuous_states();
-    }
-
-    return num_states;
-  }
-
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const final {
     // Ask the subsystem to perform the allocation.
@@ -1534,6 +1525,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     this->set_forced_unrestricted_update_events(
         AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
             &System<T>::AllocateForcedUnrestrictedUpdateEventCollection));
+
+    // Total up all needed Context resources. Note that we are depending
+    // on sub-Diagrams already to have been initialized so that their counts
+    // are already correct.
+    SystemBase::ContextSizes& sizes = this->get_mutable_context_sizes();
+    for (const auto& system : registered_systems_) {
+      sizes += SystemBase::get_context_sizes(*system);
+    }
   }
 
   // Exposes the given port as an input of the Diagram.
