@@ -205,20 +205,19 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   // | ṗ | = N | ωy |     N = |   −sin(y)          cos(y)      0 |
   // ⌊ ẏ ⌋     ⌊ ωz ⌋ᴀ        ⌊ cos(y)*tan(p)   sin(y)*tan(p)  1 ⌋
   const Matrix3<double> N =
-      rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-          __func__, __FILE__, __LINE__);
+      rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
   EXPECT_TRUE(CompareMatrices(N * N_inv, Matrix3<double>::Identity(),
                               4 * kEpsilon, MatrixCompareType::absolute));
 
   // Check that CalcMatrixRelatingRpyDtToAngularVelocityInParent() throws near
   // gimbal lock.
-  const char* expected_messageA = "RollPitchYaw::TestNMatrixFailure()"
-                                  ".*gimbal-lock.*"
-                                  "roll_pitch_yaw_test.cc:222.*";
+  const char* expected_messageA =
+      "RollPitchYaw::CalcMatrixRelatingRpyDtToAngularVelocityInParent()"
+      ".*gimbal-lock.*"
+      "roll_pitch_yaw.h.*";
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      rpyA.CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-          "TestNMatrixFailure", "roll_pitch_yaw_test.cc", 222),
+      rpyA.CalcMatrixRelatingRpyDtToAngularVelocityInParent(),
       std::logic_error, expected_messageA);
 
   // Now test the inverse relationship.

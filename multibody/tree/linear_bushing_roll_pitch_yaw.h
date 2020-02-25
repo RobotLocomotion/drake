@@ -23,6 +23,7 @@ template <typename T> class Body;
 /// Frame B is the bushing frame whose origin Bo is halfway between Ao (A's
 /// origin) and Co (C's origin) and whose unit vectors Bx, By, Bz are "halfway"
 /// (in an angle-axis sense) between the unit vectors of frame A and frame C.
+/// @image html multibody/tree/images/LinearBushingRollPitchYaw.png width=80%
 ///
 /// The set of forces on frame C from the bushing is equivalent to a
 /// torque T on frame C and a force f applied to a point Cp of C.
@@ -507,8 +508,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // C's angular velocity in A is expressed `w_AC_A = ωx Ax + ωy Ay + ωz Az`.
     // The calculation of N is documented in the class math::RollPitchYaw.
     const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
-    const Matrix3<T> N = rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-        __func__, __FILE__, __LINE__);
+    const Matrix3<T> N = rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
 
     // Form `Txyz = Tx Ax + Ty Ay + Tz Az` which is the torque required when the
     // bushing forces on C have their resultant force f applied at Cp (not Co).
