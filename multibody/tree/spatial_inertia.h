@@ -10,6 +10,7 @@
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -442,9 +443,9 @@ class SpatialInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
     if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting spatial inertia is not physically valid. "
-              "See SpatialInertia::IsPhysicallyValid()");
+      throw std::runtime_error(fmt::format(
+          "The resulting spatial inertia:{} is not physically valid. "
+          "See SpatialInertia::IsPhysicallyValid()", *this));
     }
   }
 
@@ -470,11 +471,14 @@ class SpatialInertia {
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {
-  return o
+  return o << std::endl
       << " mass = " << M.get_mass() << std::endl
       << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
-      << " I = " << std::endl
-      << M.CalcRotationalInertia();
+      << " I =" << std::endl
+      // Like M.CalcRotationalInertia(), but without the IsPhysicallyValid
+      // checks, so that we can use operator<< in error messages.
+      << (M.get_mass() * M.get_unit_inertia().CopyToFullMatrix3())
+      << std::endl;
 }
 
 }  // namespace multibody

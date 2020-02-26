@@ -130,12 +130,13 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   std::stringstream stream;
   stream << std::fixed << std::setprecision(4) << M;
   std::string expected_string =
+      "\n"
       " mass = 2.5000\n"
       " com = [ 0.1000 -0.2000  0.3000]ᵀ\n"
-      " I = \n"
-      "[ 5.0000,  0.2500, -0.2500]\n"
-      "[ 0.2500,  5.7500,  0.5000]\n"
-      "[-0.2500,  0.5000,  6.0000]\n";
+      " I =\n"
+      " 5.0000  0.2500 -0.2500\n"
+      " 0.2500  5.7500  0.5000\n"
+      "-0.2500  0.5000  6.0000\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -298,8 +299,14 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
-        "The resulting spatial inertia is not physically valid. "
-        "See SpatialInertia::IsPhysicallyValid()";
+        "The resulting spatial inertia:\n"
+        " mass = -1\n"
+        " com = [0 0 0]ᵀ\n"
+        " I =\n"
+        "-0.4   -0   -0\n"
+        "  -0 -0.4   -0\n"
+        "  -0   -0 -0.4\n"
+        " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -314,8 +321,14 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
-        "The resulting spatial inertia is not physically valid. "
-        "See SpatialInertia::IsPhysicallyValid()";
+        "The resulting spatial inertia:\n"
+        " mass = 1\n"
+        " com = [2 0 0]ᵀ\n"
+        " I =\n"
+        "0.4   0   0\n"
+        "  0 0.4   0\n"
+        "  0   0 0.4\n"
+        " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
