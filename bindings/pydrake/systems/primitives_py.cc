@@ -150,38 +150,38 @@ PYBIND11_MODULE(primitives, m) {
                 .doc_3args_update_sec_delay_timesteps_abstract_model_value);
 
     DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
-      m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
-      .def(py::init<int, double>(),
-          py::arg("num_inputs"),
-          py::arg("time_step"),
-          doc.DiscreteDerivative.ctor.doc)
-      .def("time_step",
-          &DiscreteDerivative<T>::time_step,
-          doc.DiscreteDerivative.time_step.doc);
+        m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
+        .def(py::init<int, double>(),
+            py::arg("num_inputs"),
+            py::arg("time_step"),
+            doc.DiscreteDerivative.ctor.doc)
+        .def("time_step",
+            &DiscreteDerivative<T>::time_step,
+            doc.DiscreteDerivative.time_step.doc);
 
-    DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
-                                   Diagram<T>>(
-      m, "StateInterpolatorWithDiscreteDerivative", GetPyParam<T>(),
-      doc.StateInterpolatorWithDiscreteDerivative.doc)
-      .def(py::init<int, double>(),
-          py::arg("num_positions"),
-          py::arg("time_step"),
-          doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
-      .def("set_initial_position",
-        [](const StateInterpolatorWithDiscreteDerivative<T>* self,
+    DefineTemplateClassWithDefault<
+        StateInterpolatorWithDiscreteDerivative<T>, Diagram<T>>(
+        m, "StateInterpolatorWithDiscreteDerivative", GetPyParam<T>(),
+        doc.StateInterpolatorWithDiscreteDerivative.doc)
+        .def(py::init<int, double>(),
+            py::arg("num_positions"),
+            py::arg("time_step"),
+            doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
+        .def("set_initial_position",
+          [](const StateInterpolatorWithDiscreteDerivative<T>* self,
               Context<T>* context,
               const Eigen::Ref<const VectorX<T>>& position) {
             return self->set_initial_position(context, position);
-          }, py_reference,
-          py::arg("context"), py::arg("position"),
+          },
+          py_reference, py::arg("context"), py::arg("position"),
           doc.StateInterpolatorWithDiscreteDerivative.set_initial_position.doc)
-      .def("set_initial_position",
-        [](const StateInterpolatorWithDiscreteDerivative<T>* self,
+        .def("set_initial_position",
+          [](const StateInterpolatorWithDiscreteDerivative<T>* self,
               State<T>* state,
               const Eigen::Ref<const VectorX<T>>& position) {
             return self->set_initial_position(state, position);
-          }, py_reference,
-          py::arg("state"), py::arg("position"),
+          },
+          py_reference, py::arg("state"), py::arg("position"),
           doc.StateInterpolatorWithDiscreteDerivative.set_initial_position.doc);
 
 
