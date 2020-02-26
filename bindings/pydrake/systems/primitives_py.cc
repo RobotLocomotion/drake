@@ -12,8 +12,8 @@
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
-#include "drake/systems/primitives/discrete_time_delay.h"
 #include "drake/systems/primitives/discrete_derivative.h"
+#include "drake/systems/primitives/discrete_time_delay.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
@@ -151,39 +151,10 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
         m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
-        .def(py::init<int, double>(),
-            py::arg("num_inputs"),
-            py::arg("time_step"),
-            doc.DiscreteDerivative.ctor.doc)
-        .def("time_step",
-            &DiscreteDerivative<T>::time_step,
+        .def(py::init<int, double>(), py::arg("num_inputs"),
+            py::arg("time_step"), doc.DiscreteDerivative.ctor.doc)
+        .def("time_step", &DiscreteDerivative<T>::time_step,
             doc.DiscreteDerivative.time_step.doc);
-
-    DefineTemplateClassWithDefault<
-        StateInterpolatorWithDiscreteDerivative<T>, Diagram<T>>(
-        m, "StateInterpolatorWithDiscreteDerivative", GetPyParam<T>(),
-        doc.StateInterpolatorWithDiscreteDerivative.doc)
-        .def(py::init<int, double>(),
-            py::arg("num_positions"),
-            py::arg("time_step"),
-            doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
-        .def("set_initial_position",
-          [](const StateInterpolatorWithDiscreteDerivative<T>* self,
-              Context<T>* context,
-              const Eigen::Ref<const VectorX<T>>& position) {
-            return self->set_initial_position(context, position);
-          },
-          py_reference, py::arg("context"), py::arg("position"),
-          doc.StateInterpolatorWithDiscreteDerivative.set_initial_position.doc)
-        .def("set_initial_position",
-          [](const StateInterpolatorWithDiscreteDerivative<T>* self,
-              State<T>* state,
-              const Eigen::Ref<const VectorX<T>>& position) {
-            return self->set_initial_position(state, position);
-          },
-          py_reference, py::arg("state"), py::arg("position"),
-          doc.StateInterpolatorWithDiscreteDerivative.set_initial_position.doc);
-
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //
@@ -275,6 +246,30 @@ PYBIND11_MODULE(primitives, m) {
         .def("data", &SignalLogger<T>::data, py_reference_internal,
             doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
+
+    DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
+        Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
+        GetPyParam<T>(), doc.StateInterpolatorWithDiscreteDerivative.doc)
+        .def(py::init<int, double>(), py::arg("num_positions"),
+            py::arg("time_step"),
+            doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
+        .def("set_initial_position",
+            [](const StateInterpolatorWithDiscreteDerivative<T>* self,
+                Context<T>* context,
+                const Eigen::Ref<const VectorX<T>>& position) {
+              return self->set_initial_position(context, position);
+            },
+            py_reference, py::arg("context"), py::arg("position"),
+            doc.StateInterpolatorWithDiscreteDerivative.set_initial_position
+                .doc)
+        .def("set_initial_position",
+            [](const StateInterpolatorWithDiscreteDerivative<T>* self,
+                State<T>* state, const Eigen::Ref<const VectorX<T>>& position) {
+              return self->set_initial_position(state, position);
+            },
+            py_reference, py::arg("state"), py::arg("position"),
+            doc.StateInterpolatorWithDiscreteDerivative.set_initial_position
+                .doc);
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
         "SymbolicVectorSystem", GetPyParam<T>(), doc.SymbolicVectorSystem.doc)
