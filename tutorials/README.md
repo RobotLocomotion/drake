@@ -14,20 +14,19 @@ bazel run //tutorials:mathematical_program
 
 ## Viewing and Running the Notebooks Online
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials)
 
 The notebooks in this folder can be viewed and run online using
-[Binder](https://mybinder.org). To see them from Drake `master` on
-GitHub, please visit:
+[Binder](https://mybinder.org). To see them from the Drake `nightly-release`
+branch on GitHub, please visit:
 
-<https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials>
+<https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials>
 
 Since Binder uses the `robotlocomotion/drake:latest` image on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake) that is published
-once a day, it may be missing features used by the notebooks on `master`. If you
-encounter issues running a notebook, please try a commit from earlier in the
-day, as close as possible following the publication of the
-`robotlocomotion/drake:latest` image.
+once a day from the `nightly-release` branch, it may be missing features used by
+notebooks on `master`. These will be available the next day when the
+`nightly-release` branch is automatically updated.
 
 ## For Developers
 
@@ -38,10 +37,10 @@ display correctly on Binder.*
 When you add a notebook, please make the first cell be a Markdown cell with the tutorial's title and the following preamble:
 
     For instructions on how to run these tutorial notebooks, please see the
-    [README](https://github.com/RobotLocomotion/drake/blob/master/tutorials/README.md).
+    [README](https://github.com/RobotLocomotion/drake/blob/nightly-release/tutorials/README.md).
 
-If appropriate, add a Binder link to the notebook on `master` in the
-relevant documentation in `/doc`, e.g.,
+If appropriate, add a Binder link to the notebook on the `nightly-release`
+branch in the relevant documentation in `/doc`, e.g.,
 ```
-https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials/notebook.ipynb`
+https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/notebook.ipynb`
 ```
