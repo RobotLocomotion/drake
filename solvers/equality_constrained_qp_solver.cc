@@ -1,6 +1,7 @@
 #include "drake/solvers/equality_constrained_qp_solver.h"
 
 #include <cstring>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <optional>
