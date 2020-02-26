@@ -99,6 +99,16 @@ class HsrWorld : public systems::Diagram<T> {
   /// @see multibody::MultibodyPlant<T>::Finalize()
   void Finalize();
 
+  /// Return a reference to the floating base hsr plant used for the internal
+  /// controller calculation purpose. If the given robot (by name) does not
+  /// exist, it will throw.
+  const multibody::MultibodyPlant<T>& get_hsr_plant(
+      const std::string& hsr_name) const {
+    const auto& hsr_owned_plant = owned_robots_plant_.find(hsr_name);
+    DRAKE_DEMAND(hsr_owned_plant != owned_robots_plant_.end());
+    return *(hsr_owned_plant->second.float_plant);
+  }
+
   /// Returns a reference to the main plant responsible for the dynamics of
   /// the robot and the environment.  This can be used to, e.g., add
   /// additional elements into the world before calling Finalize().

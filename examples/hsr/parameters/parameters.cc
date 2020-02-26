@@ -1,4 +1,4 @@
-#include "drake/examples/hsr/parameters.h"
+#include "drake/examples/hsr/parameters/parameters.h"
 
 #include <limits>
 
@@ -32,6 +32,15 @@ DEFINE_double(inclined_plane_coef_kinetic_friction, 0.6,
               "When time_step > 0, this value is ignored.  Only the "
               "coefficient of static friction is used in fixed-time step.");
 
+DEFINE_double(kp, 200.0,
+              "The constant default p gain for the inverse dynamic controller");
+
+DEFINE_double(kd, 40.0,
+              "The constant default d gain for the inverse dynamic controller");
+
+DEFINE_double(ki, 2.0,
+              "The constant default i gain for the inverse dynamic controller");
+
 namespace drake {
 namespace examples {
 namespace hsr {
@@ -50,14 +59,16 @@ Parameters CreateParameters() {
       FLAGS_inclined_plane_coef_static_friction;
   result.inclined_plane_coef_kinetic_friction =
       FLAGS_inclined_plane_coef_kinetic_friction;
+  result.kp = FLAGS_kp;
+  result.kd = FLAGS_kd;
+  result.ki = FLAGS_ki;
   return result;
 }
 
 }  // namespace
 
 const Parameters& hsr_sim_flags() {
-  static const drake::never_destroyed<Parameters> global(
-      CreateParameters());
+  static const drake::never_destroyed<Parameters> global(CreateParameters());
   return global.access();
 }
 

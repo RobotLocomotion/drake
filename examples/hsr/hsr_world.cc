@@ -4,11 +4,11 @@
 #include <utility>
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/hsr/parameters.h"
+#include "drake/examples/hsr/controllers/main_controller.h"
+#include "drake/examples/hsr/parameters/parameters.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 
@@ -26,10 +26,43 @@ using drake::multibody::Frame;
 using drake::multibody::ModelInstanceIndex;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
+using drake::systems::BasicVector;
 using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::State;
 using Eigen::VectorXd;
+
+namespace {
+/// Converts the generalized force output of the ID controller (internally using
+/// a control plant with only the gripper) to the generalized force input for
+/// the full simulation plant (containing gripper and object).
+class RobotToPlantForceConverter final : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotToPlantForceConverter);
+  RobotToPlantForceConverter(const MultibodyPlant<double>& plant,
+                             ModelInstanceIndex robot_instance)
+      : plant_(plant), robot_instance_(robot_instance) {
+    this->DeclareVectorInputPort(
+        "input", BasicVector<double>(plant_.num_velocities(robot_instance_)));
+    this->DeclareVectorOutputPort("output",
+                                  BasicVector<double>(plant_.num_velocities()),
+                                  &RobotToPlantForceConverter::remap_output);
+  }
+
+  void remap_output(const Context<double>& context,
+                    BasicVector<double>* output_vector) const {
+    auto output_value = output_vector->get_mutable_value();
+    auto input_value = get_input_port(0).Eval(context);
+
+    output_value.setZero();
+    plant_.SetVelocitiesInArray(robot_instance_, input_value, &output_value);
+  }
+
+ private:
+  const MultibodyPlant<double>& plant_;
+  const ModelInstanceIndex robot_instance_;
+};
+}  // namespace
 
 template <typename T>
 HsrWorld<T>::HsrWorld(const std::string& config_file)
@@ -70,8 +103,8 @@ HsrWorld<T>::LoadModelsFromConfigurationFile() {
 // Add default HSR.
 template <typename T>
 const ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
-  const std::string model_path =
-      FindResourceOrThrow("drake/examples/hsr/models/urdfs/hsrb4s.obj.urdf");
+  const std::string model_path = FindResourceOrThrow(
+      "drake/examples/hsr/models/urdfs/hsrb4s_fix_free_joints.urdf");
   const std::string model_name = "hsr";
 
   Parser parser(plant_);
@@ -308,7 +341,6 @@ void HsrWorld<T>::Finalize() {
   const auto& hsr_instance = robots_instance_info_["hsr"].index;
   const int num_hsr_positions = plant_->num_positions(hsr_instance);
   const int num_hsr_velocities = plant_->num_velocities(hsr_instance);
-  const int num_hsr_actuators = plant_->num_actuators();
 
   // Export HSR "state" outputs.
   {
@@ -322,12 +354,47 @@ void HsrWorld<T>::Finalize() {
                          "hsr_state_estimated");
   }
 
-  auto constant_source =
-      builder.template AddSystem<systems::ConstantVectorSource<T>>(
-          VectorXd::Zero(num_hsr_actuators));
+  // Connect the states with controllers.
+  // TODO(huihua) We currently assume that there is only one default hsr robot.
+  {
+    const auto& hsr_owned_robots_plant = owned_robots_plant_.find("hsr");
+    auto hsr_main_controller =
+        builder.template AddSystem<controller::MainController>(
+            *(hsr_owned_robots_plant->second.float_plant),
+            *(hsr_owned_robots_plant->second.welded_plant),
+            robots_Parameters_["hsr"]);
 
-  builder.Connect(constant_source->get_output_port(),
-                  plant_->get_actuation_input_port(hsr_instance));
+    builder.ExportInput(hsr_main_controller->get_desired_state_input_port(),
+                        "hsr_desired_state");
+
+    builder.Connect(plant_->get_state_output_port(hsr_instance),
+                    hsr_main_controller->get_estimated_state_input_port());
+
+    // The hsr main controller internally uses the "hsr plant",
+    // which contains the hsr model *only* (i.e., no object). Therefore,
+    // its output must be re-mapped to the input of the full "simulation
+    // plant", which contains both hsr and other objects. The system
+    // hsrToSimPlantForceConverter fills this role.
+    // Generalized force is calculated for the upper body.
+    auto generalized_force_map =
+        builder.template AddSystem<RobotToPlantForceConverter>(*plant_,
+                                                               hsr_instance);
+
+    builder.Connect(hsr_main_controller->get_generalized_force_output_port(),
+                    generalized_force_map->get_input_port(0));
+    builder.Connect(generalized_force_map->get_output_port(0),
+                    plant_->get_applied_generalized_force_input_port());
+
+    builder.ExportOutput(
+        hsr_main_controller->get_generalized_force_output_port(),
+        "hsr_generalized_force");
+
+    builder.Connect(hsr_main_controller->get_actuation_output_port(),
+                    plant_->get_actuation_input_port(hsr_instance));
+
+    builder.ExportOutput(hsr_main_controller->get_actuation_output_port(),
+                         "hsr_actuation_commanded");
+  }
 
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");

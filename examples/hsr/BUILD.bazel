@@ -10,21 +10,6 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "parameters",
-    srcs = [
-        "parameters.cc",
-    ],
-    hdrs = [
-        "parameters.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//common:essential",
-        "@gflags",
-    ],
-)
-
-drake_cc_library(
     name = "hsr_world",
     srcs = [
         "hsr_world.cc",
@@ -37,9 +22,10 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":parameters",
         "//common:find_resource",
         "//examples/hsr/common",
+        "//examples/hsr/controllers:main_controller",
+        "//examples/hsr/parameters",
         "//geometry:scene_graph",
         "//geometry/render:render_engine_vtk",
         "//math:geometric_transform",
@@ -60,10 +46,11 @@ drake_cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":hsr_world",
-        ":parameters",
+        "//examples/hsr/parameters",
         "//geometry:geometry_visualization",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
+        "//systems/primitives:constant_vector_source",
         "@gflags",
     ],
 )
