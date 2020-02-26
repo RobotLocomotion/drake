@@ -1,6 +1,7 @@
 This directory contains examples of using
 [google-benchmark](https://github.com/google/benchmark) to benchmark
-functions.
+functions and [perf](https://perf.wiki.kernel.org/index.php/Main_Page) for more
+detailed profiling.
 
 # Benchmark infrastructure
 
@@ -37,3 +38,21 @@ Benchmark program to compare different mesh intersection optimizations with
 varying mesh attributes and overlaps. It is targeted toward developers during
 the process of optimizing the performance of hydroelastic contact and may be
 removed once sufficient work has been done in that effort.
+
+# Profile infrastructure
+
+The profiling tool, `perf`, can be run on the binary without any special
+compilation needed. Typically a run is triggered using the command
+`perf record -g <binary>`, after which the result can be viewed using the
+command `perf report -g`.
+
+## Arguments
+
+For `perf`, the argument `-g` enables call-graph recording and display. Other
+gflag arguments can be specified depending on the profile itself.
+
+## Available Profiles
+
+* [simple_contact_surface_profile.cc](https://drake.mit.edu/doxygen_cxx/html/group__simple__contact__surface__profile.html):
+A simulation that illustrates the contact surfaces between various
+configurations of soft and rigid meshes.
