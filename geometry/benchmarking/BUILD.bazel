@@ -30,4 +30,18 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "simple_contact_surface_profile",
+    srcs = ["simple_contact_surface_profile.cc"],
+    deps = [
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//lcmtypes:contact_results_for_viz",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
+    ],
+)
+
 add_lint_tests()
