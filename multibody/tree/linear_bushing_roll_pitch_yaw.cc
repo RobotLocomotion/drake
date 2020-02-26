@@ -85,8 +85,8 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
     const internal::PositionKinematicsCache<T>& /* pc */) const {
   // Note: The LinearBushingRollPitchYaw class documentation describes the
   // calculation of power (conservative/nonconservative) and potential energy.
-  // TODO(Mitiguy) Improve ForceElement class to allow improved return values
-  //  as documented in the LinearBushingRollPitchYaw class documentation.
+  // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
+  //  values and LinearBushingRollPitchYaw class documentation.
   // ----------------------------------------------------------------------
   // Use the torque stiffness constants [k₀ k₁ k₂] and roll-pitch-yaw angles
   // [q₀ q₁ q₂] to form torque potential energy 0.5*(k₀*q₀² + k₁*q₁² + k₂*q₂²).
@@ -96,7 +96,7 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
   const T torque_potential_energy =
       0.5 * (torque_stiffness_constants().dot(q012Squared));
 
-  // Use the force stiffness constants [kx, ky, kz] and `p_AₒBₒ_B = [x, y, z]`
+  // Use the force stiffness constants [kx, ky, kz] and `p_AₒCₒ_B = [x, y, z]`
   // (the position vector from Aₒ to Bₒ expressed in frame B) to form the
   // analytical part of the force potential energy 0.5*(kx*x² + ky*y² + kz*z²).
   const Vector3<T> xyz = CalcBushing_xyz(context);
@@ -114,11 +114,11 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
   // Note: The LinearBushingRollPitchYaw class documentation describes the
   // calculation of power (conservative/nonconservative) and potential energy.
-  // TODO(Mitiguy) Improve ForceElement class to allow improved return values
-  //  as documented in the LinearBushingRollPitchYaw class documentation.
+  // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
+  //  values and LinearBushingRollPitchYaw class documentation.
   // ----------------------------------------------------------------------
   // Conservative power Pc is related to potential energy Uᴄ by Pᴄ = −U̇ᴄ.
-  // U  = 1/2 (k₀ q₀² + k₁ q₁² + k₂ q₂²  +  kx x² + ky y² + kz z²)
+  // Uᴄ = 1/2 (k₀ q₀² + k₁ q₁² + k₂ q₂²  +  kx x² + ky y² + kz z²)
   // Pc = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂  +  kx x ẋ + ky y ẏ + kz z ż)
   // ----------------------------------------------------------------------
   // Calculate Pc_torque = τᴋ ⋅ q̇ = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂).
@@ -126,7 +126,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
   const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
   const T Pc_torque = -(kQ.dot(q012Dt));
 
-  // Calculate Pc_force = fᴋ ⋅ X = −(kx x ẋ + ky y ẏ + kz z ż).
+  // Calculate Pc_force = fᴋ ⋅ Ẋ = −(kx x ẋ + ky y ẏ + kz z ż).
   const Vector3<T> kX = ForceStiffnessConstantsTimesDisplacement(context);
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
   const T Pc_force = -(kX.dot(xyzDt));
@@ -141,8 +141,8 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
   // Note: The LinearBushingRollPitchYaw class documentation describes the
   // calculation of power (conservative/nonconservative) and potential energy.
-  // TODO(Mitiguy) Improve ForceElement class to allow improved return values
-  //  as documented in the LinearBushingRollPitchYaw class documentation.
+  // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
+  //  values and LinearBushingRollPitchYaw class documentation.
   // ----------------------------------------------------------------------
   // Calculate the part of nonconservative power due to torque damping.
   // Pn_torque = τʙ ⋅ q̇ = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)

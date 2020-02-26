@@ -342,7 +342,7 @@ class RollPitchYaw {
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
   /// There are associated precision problems (inaccuracies) in the neighborhood
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent( ) const {
+  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent() const {
     const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
         __func__, __FILE__, __LINE__);
     return M;

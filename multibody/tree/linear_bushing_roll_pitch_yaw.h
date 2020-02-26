@@ -38,29 +38,18 @@ template <typename T> class Body;
 /// models differ, e.g., not using a "symmetric" frame B and applying −f at Ao,
 /// which means the  moment of −f on A about Ao is always zero.
 ///
-/// The torque model depends on spring-damper "gimbal" torques `τ = [T₀ T₁ T₂]ᵀ`
-/// which themselves depend on roll-pitch-yaw angles `q = [q₀ q₁ q₂]ᵀ` and
-/// rates `q̇ = [q̇₀ q̇₁ q̇₂]ᵀ`.  `τ = τᴋ + τʙ` is the sum of a stiffness term
-/// τᴋ = −K₀₁₂ q (K₀₁₂ is a diagonal torque-stiffness matrix) and a damping term
-/// τʙ = −B₀₁₂ q̇ (B₀₁₂ is a diagonal torque-damping matrix), i.e., as <pre>
-/// ⌈ T₀ ⌉     ⌈k₀    0    0⌉ ⌈ q₀ ⌉     ⌈b₀    0    0⌉ ⌈ q̇₀ ⌉
-/// | T₁ | = − | 0   k₁    0| | q₁ |  −  | 0   b₁    0| | q̇₁ |
-/// ⌊ T₂ ⌋     ⌊ 0    0   k₂⌋ ⌊ q₂ ⌋     ⌊ 0    0   b₂⌋ ⌊ q̇₂ ⌋
-/// </pre>
-
-/// The torque model depends on spring-damper "gimbal" torques `τ = [T₀ T₁ T₂]ᵀ`
+/// The torque model depends on spring-damper "gimbal" torques `τ = [τ₀ τ₁ τ₂]ᵀ`
 /// which themselves depend on roll-pitch-yaw angles `q = [q₀ q₁ q₂]ᵀ` and
 /// rates `q̇ = [q̇₀ q̇₁ q̇₂]ᵀ` via a diagonal torque-stiffness matrix K₀₁₂ and a
 /// diagonal torque-damping matrix B₀₁₂ as <pre>
-/// ⌈ T₀ ⌉     ⌈k₀    0    0⌉ ⌈ q₀ ⌉     ⌈b₀    0    0⌉ ⌈ q̇₀ ⌉
-/// | T₁ | = − | 0   k₁    0| | q₁ |  −  | 0   b₁    0| | q̇₁ |
-/// ⌊ T₂ ⌋     ⌊ 0    0   k₂⌋ ⌊ q₂ ⌋     ⌊ 0    0   b₂⌋ ⌊ q̇₂ ⌋
-///
+/// ⌈ τ₀ ⌉     ⌈k₀    0    0⌉ ⌈ q₀ ⌉     ⌈b₀    0    0⌉ ⌈ q̇₀ ⌉
+/// | τ₁ | = − | 0   k₁    0| | q₁ |  −  | 0   b₁    0| | q̇₁ |
+/// ⌊ τ₂ ⌋     ⌊ 0    0   k₂⌋ ⌊ q₂ ⌋     ⌊ 0    0   b₂⌋ ⌊ q̇₂ ⌋
 /// </pre>
 /// where k₀, k₁, k₂ and b₀, b₁, b₂ are torque stiffness and damping constants.
-/// Note: As discussed in the Advanced section below, the aforementioned torque
-/// T is not τ `(T ≠ τ)`.
-/// <br>Note: it helps to write τ = τᴋ + τʙ where τᴋ = −K₀₁₂ q and τʙ = −B₀₁₂ q̇.
+/// Note: As discussed in the Advanced section below, T is not τ `(T ≠ τ)`.
+/// <br>Note: This is a "linear" bushing model as the torque τ varies linearly
+/// with q and q̇ as τ = τᴋ + τʙ where τᴋ = −K₀₁₂ q and τʙ = −B₀₁₂ q̇.
 ///
 /// The symmetric bushing model for f depends on X = [x y z]ᵀ, which is defined
 /// so the position from Ao to Co is `p_AoCo_B = x Bx + y By + z Bz`.  The model
@@ -68,37 +57,65 @@ template <typename T> class Body;
 /// matrix Bxyᴢ, and defines fx, fy, fz so `f = fx Bx + fy By + fz Bz`. <pre>
 /// ⌈ fx ⌉      ⌈kx    0    0⌉ ⌈ x ⌉     ⌈bx    0    0⌉ ⌈ ẋ ⌉
 /// | fy | =  − | 0   ky    0| | y |  −  | 0   by    0| | ẏ |
-/// ⌊ fz ⌋ʙ     ⌊ 0    0   kz⌋ ⌊ z ⌋     ⌊ 0    0   bz⌋ ⌊ ż ⌋
+/// ⌊ fz ⌋ʙ     ⌊ 0    0   kz⌋ ⌊ z ⌋ʙ    ⌊ 0    0   bz⌋ ⌊ ż ⌋ʙ
 /// </pre>
 /// where kx, ky, kz and bx, by, bz are force stiffness and damping constants.
-/// <br>Note: it helps to write f = fᴋ + fʙ where fᴋ = −Kxyz X and fʙ = −Bxyz Ẋ.
+/// <br>Note: This is a "linear" bushing model as the force f varies linearly
+/// with X and Ẋ as f = fᴋ + fʙ where fᴋ = −Kxyz X and fʙ = −Bxyz Ẋ.
+///
+/// This bushing's constructor sets the torque stiffness/damping constants
+/// [k₀ k₁ k₂] and [b₀ b₁ b₂] and the force stiffness/damping constants
+/// [kx ky kz] and [bx by bz].  The examples below demonstrate how to model
+/// various joints that have a flexible (e.g., rubber) mount.
+///
+/// Bushing type                     | torque constants    | force constants
+/// ---------------------------------|:--------------------|:------------------
+/// z-axis revolute joint            | K₀₁₂ = `[k₀ k₁ 0]`  | Kxyz = [kx ky kz]
+/// ^                                | B₀₁₂ = `[b₀ b₁ 0]`  | Bxyz = [bx by bz]
+/// x-axis prismatic joint           | K₀₁₂ = `[k₀ k₁ k₂]` | Kxyz = [0 ky kz]
+/// ^                                | B₀₁₂ = `[b₀ b₁ b₂]` | Bxyz = [0 by bz]
+/// Ball and socket joint            | K₀₁₂ = `[0  0  0]`  | Kxyz = [kx ky kz]
+/// ^                                | B₀₁₂ = `[0  0  0]`  | Bxyz = [bx by bz]
+/// Weld/rigid joint                 | K₀₁₂ = `[k₀ k₁ k₂]` | Kxyz = [kx ky kz]
+/// ^                                | B₀₁₂ = `[b₀ b₁ b₂]` | Bxyz = [bx by bz]
 ///
 /// <b>Advanced:</b> The torque model uses spring-damper "gimbal" torques
-/// `T₀ Cx`, `T₁ Py`, `T₂ Az`, where each of Cx, Py, Az are associated with a
+/// `τ₀ Cx`, `τ₁ Py`, `τ₂ Az`, where each of Cx, Py, Az are associated with a
 /// frame in the roll-pitch-yaw rotation sequence and `Py` denotes a unit vector
 /// of the "pitch" intermediate frame.  As shown in code documentation, the
 /// torque `T = Tx Ax + Ty Ay + Tz Az` was found by equating its power to the
 /// gimbal torque power as T ⋅ w_AC = τ ⋅ q̇, which leads to <pre>
-/// ⌈ Tx ⌉       ⌈ T₀ ⌉             ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉
-/// | Ty |  = Nᵀ | T₁ |   where N = |   −sin(q2)            cos(q2)      0 |
-/// ⌊ Tz ⌋ᴀ      ⌊ T₂ ⌋             ⌊ cos(q₂)*tan(q₁)   sin(q₂)*tan(q₁)  1 ⌋
+/// ⌈ Tx ⌉       ⌈ τ₀ ⌉             ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉
+/// | Ty |  = Nᵀ | τ₁ |   where N = |   −sin(q2)            cos(q2)      0 |
+/// ⌊ Tz ⌋ᴀ      ⌊ τ₂ ⌋             ⌊ cos(q₂)*tan(q₁)   sin(q₂)*tan(q₁)  1 ⌋
 /// </pre>
 ///
 /// Angles q₀, q₁, q₂ are calculated from frame C's orientation relative to
-/// frame A, with [`−π < q₀ <= π`, `−π/2 <= q₁ <= π/2`, `−π < q₂ <= π`].
-/// Torque T can be discontinuous if one of q₀, q₁, q₂ or q̇₀, q̇₁, q̇₂ is
-/// discontinuous and its associated torque spring/damper constant is nonzero.
-/// For example, this can occur if `k₂ ≠ 0` and the bushing has a large rotation
-/// such that q₂ jumps from `≈ −π to π` or if `b₀ ≠ 0` and q̇₀ is undefined
-/// (which occurs when `q₁ = π/2`).
+/// frame A, with [`−π < q₀ <= π`, `−π/2 <= q₁ <= π/2`, `−π < q₂ <= π`],
+/// hence, there is no angle wrapping and torque stiffness has a limited range.
+/// Torque T can be discontinuous if one of q₀, q₁, q₂ is discontinuous and its
+/// associated torque spring constant is nonzero. For example, this occurs if
+/// k₂ ≠ 0` and the bushing has a large rotation so q₂ jumps from `≈ −π to π`.
+/// Torque T can also be discontinuous if one of q̇₀, q̇₁, q̇₂ is discontinuous and
+/// its associated torque damper constant is nonzero.  For example, this occurs
+/// if `b₀ ≠ 0` and q̇₀ is undefined (which occurs when `pitch = q₁ = π/2`).
 ///
 /// The power due to bushing forces on A and C is P = T ⋅ w_AC + f ⋅ v_CpAp
-/// where v_CpAp is the relative velocity between Cp and Ap in <a>any</a> frame.
+/// where v_CpAp is the relative velocity between Cp and Ap in <b>any</b> frame
+/// (<b>any</b> frame because Cp and Ap are coincident).
 /// Herein, we use frame B, and <pre>
 /// v_CpAp = v_BCp - v_BAp = DtB_p_AoCo + w_AC ⨯ p_AoCo </pre>
+/// where DtB_p_AoCo is the time-derivative in B of the position from Ao to Co.
 /// Substitution of v_CpAp into power P and subsequent rearrangement gives <pre>
 /// P = τ ⋅ q̇  +  f ⋅ DtB_p_AoCo  +  w_AC ⋅ (p_AoCo ⨯ f) </pre>
-/// Power P can be written as four terms, namely conservative power Pᴄ which
+/// When kx = ky = kz, p_AoCo is parallel to fᴋ so (p_AoCo ⨯ fᴋ) = 0 and we are
+/// able to write the bushing full potential energy analytically.  However, with
+/// distinct kx, ky, kz, we have been unable to find a fully analytical
+/// potential energy.  There is a remainder term for which we can write its
+/// power but not its potential energy.  Thus to compute the full potential
+/// energy requires adding the analytical potential energy to a numerical
+/// integral of the remainder term.  Due to these complexities,
+/// power P is written as four terms, namely conservative power Pᴄ which
 /// has an analytical potential energy Uᴄ (Pᴄ = −U̇ᴄ), nonconservative power Pᴅ
 /// which has a dissipation function D (Pᴅ = −2*D), a power Pᴋ associated with
 /// fᴋ that only seems to have an analytical potential energy when kx = ky = kz,
@@ -109,8 +126,10 @@ template <typename T> class Body;
 /// Pʙ = w_AC ⋅ (p_AoCo ⨯ fʙ)
 /// P =  Pᴄ + Pᴅ + Pᴋ + Pʙ  </pre>
 /// Shown below are this class's power and potential energy methods and their
-/// current return values (which may change as the parent class ForceElement is
-/// updated to provide for a non-analytical potential energy).
+/// current return values.  Currently, the Drake System framework does not have
+/// provisions for non-analytical potential energy, so for now we implemented
+/// a workaround as described below. We anticipate changes to the ForceElement
+/// parent class for non-analytical potential energy (issue #12752).
 ///
 /// Method                     | Currently returns    | Ideally it returns
 /// ---------------------------|:---------------------|:-----------------------
@@ -123,9 +142,10 @@ template <typename T> class Body;
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
-/// @see math::RollPitchYaw for definitions of roll, pitch, yaw `[q₀, q₁, q₂]`.
+/// @see math::RollPitchYaw for definitions of roll, pitch, yaw `[q₀  q₁  q₂]`.
 template <typename T>
 class LinearBushingRollPitchYaw final : public ForceElement<T> {
+  // TODO(Mitiguy) move most of the code in this .h file to its .cc file.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw)
 
@@ -135,10 +155,10 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @param[in] frameC frame C of link L1 that connects to bushing B.
   /// @param[in] torque_stiffness_constants `[k₀, k₁, k₂]` multiply the
   /// roll-pitch-yaw angles `[q₀, q₁, q₂]` to produce the spring portion of the
-  /// "gimbal" torques T₀, T₁, T₂. The SI units of `k₀, k₁, k₂` are N*m/rad.
+  /// "gimbal" torques τ₀, τ₁, τ₂. The SI units of `k₀, k₁, k₂` are N*m/rad.
   /// @param[in] torque_damping_constants `[b₀, b₁, b₂]` multiply the
   /// roll-pitch-yaw rates `[q̇₀, q̇₁, q̇₂]` to produce the damper portion of the
-  /// "gimbal" torques T₀, T₁, T₂.  The SI units of `b₀, b₁, b₂` are N*m/rad.
+  /// "gimbal" torques τ₀, τ₁, τ₂.  The SI units of `b₀, b₁, b₂` are N*m/rad.
   /// @param[in] force_stiffness_constants `[kx, ky, kz]` multiply the
   /// bushing displacements `[x, y, z]` to form the spring portion of the
   /// force measures [fx fy fz].  The SI units of `kx, ky, kz` are N/m.
@@ -200,7 +220,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @see CalcBushingSpatialForceOnFrameC().
   SpatialForce<T> CalcBushingSpatialForceOnFrameA(
       const systems::Context<T>& context) const {
-    // TODO(Mitiguy) move most of the code in this .h file to its .cc file.
     // Reminder: The set of all forces applied by the bushing to frame A are
     // replaced by the set's resultant force applied to point Ap of frame A
     // together with a torque equal to the moment of the set about point Ap.
@@ -461,12 +480,12 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return torque_damping_constants().cwiseProduct(rpyDt);
   }
 
-  // Calculate the 3x1 array (not really a vector) containing [T₀ T₁ T₂].
+  // Calculate the 3x1 array (not really a vector) containing [τ₀ τ₁ τ₂].
   // @param[in] context The state of the multibody system.
   Vector3<T> CalcBushingTorque012(const systems::Context<T>& context) const {
-    // T₀ = −(k₀ q₀ + b₀ q̇₀)
-    // T₁ = −(k₁ q₁ + b₁ q̇₁)
-    // T₂ = −(k₂ q₂ + b₂ q̇₂)
+    // τ₀ = −(k₀ q₀ + b₀ q̇₀)
+    // τ₁ = −(k₁ q₁ + b₁ q̇₁)
+    // τ₂ = −(k₂ q₂ + b₂ q̇₂)
     const Vector3<T> t012 = -(TorqueStiffnessConstantsTimesAngles(context) +
                               TorqueDampingConstantsTimesAngleRates(context));
     return t012;
@@ -487,21 +506,21 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // ------------------------------------------------------------------------
     // This method calculates the torque `T = Tx Ax + Ty Ay + Tz Az` that
     // the bushing applies to C as
-    // ⌈ Tx ⌉       ⌈ T₀ ⌉                       ⌈ q̇₀ ⌉     ⌈ ωx ⌉
-    // | Ty |  = Nᵀ | T₁ |  where N arises from  | q̇₁ | = N | ωy |
-    // ⌊ Tz ⌋ᴀ      ⌊ T₂ ⌋                       ⌊ q̇₂ ⌋     ⌊ ωz ⌋ᴀ
+    // ⌈ Tx ⌉       ⌈ τ₀ ⌉                       ⌈ q̇₀ ⌉     ⌈ ωx ⌉
+    // | Ty |  = Nᵀ | τ₁ |  where N arises from  | q̇₁ | = N | ωy |
+    // ⌊ Tz ⌋ᴀ      ⌊ τ₂ ⌋                       ⌊ q̇₂ ⌋     ⌊ ωz ⌋ᴀ
     // ------------------------------------------------------------------------
-    // The expressions for Tx, Ty, Tz in terms of T₀, T₁, T₂ is derived below by
+    // The expressions for Tx, Ty, Tz in terms of τ₀, τ₁, τ₂ is derived below by
     // equating the power `T ⋅ w_CA_A = Tx ωx + Ty ωy + Tz ωz` of torque T to
-    // the power `T₀ q̇₀ + T₁ q̇₁ + T₂ q̇₂` of the three spring-damper "gimbal"
-    // torques `T₀ Cx`, `T₁ Py`, `T₂ Az` (each of Cx, Py, Az are associated with
+    // the power `τ₀ q̇₀ + τ₁ q̇₁ + τ₂ q̇₂` of the three spring-damper "gimbal"
+    // torques `τ₀ Cx`, `τ₁ Py`, `τ₂ Az` (each of Cx, Py, Az are associated with
     // a frame in the roll-pitch-yaw rotation sequence, where `Py` denotes a
     // unit vector of the "pitch" intermediate frame).
     // ------------------------------------------------------------------------
-    // Power = [T₀ T₁ T₂]⌈ q̇₀ ⌉ = [T₀ T₁ T₂] N ⌈ ωx ⌉ =  [Tx Ty Tz]ᴀ ⌈ ωx ⌉
+    // Power = [τ₀ τ₁ τ₂]⌈ q̇₀ ⌉ = [τ₀ τ₁ τ₂] N ⌈ ωx ⌉ =  [Tx Ty Tz]ᴀ ⌈ ωx ⌉
     //                   | q̇₁ |                | ωy |                | ωy |
     //                   ⌊ q̇₂ ⌋                ⌊ ωz ⌋                ⌊ ωz ⌋
-    // which is true in view of the transpose of `[Tx Ty Tz]ᴀ = [T₀ T₁ T₂] N`.
+    // which is true in view of the transpose of `[Tx Ty Tz]ᴀ = [τ₀ τ₁ τ₂] N`.
     // ------------------------------------------------------------------------
 
     // Calculate the matrix N that relates q̇₀, q̇₁, q̇₂ to ωx, ωy, ωz, where frame
