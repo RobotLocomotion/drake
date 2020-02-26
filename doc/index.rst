@@ -48,10 +48,10 @@ Core Library
         </tr>
         <tr>
             <td style="text-align:center">
-                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__systems.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials/dynamical_systems.ipynb">tutorial</a>
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__systems.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/dynamical_systems.ipynb">tutorial</a>
             </td>
             <td style="text-align:center">
-                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials/mathematical_program.ipynb">tutorial</a>
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/mathematical_program.ipynb">tutorial</a>
             </td>
             <td style="text-align:center">
                 <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html">doc</a>
@@ -67,7 +67,7 @@ Tutorials and Examples
 
 We have Python tutorials implemented as Jupyter Notebooks in `the tutorials
 directory of the source tree
-<https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials/>`_,
+<https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/>`_,
 with text explaining the high-level concepts and each of the main steps.
 
 We have a number of use cases demonstrated in `the examples directory of
@@ -112,7 +112,7 @@ Next steps
 
    gallery
    installation
-   Tutorials <https://mybinder.org/v2/gh/RobotLocomotion/drake/master?filepath=tutorials>
+   Tutorials <https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials>
    API Documentation (C++) <doxygen_cxx/index.html#://>
    API Documentation (Python) <pydrake/index.html#://>
    getting_help

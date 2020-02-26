@@ -8,6 +8,7 @@ FROM robotlocomotion/drake:latest
 ARG NB_USER=jovyan
 ARG NB_UID=1000
 ARG NB_GID=100
+EXPOSE 7000/tcp
 EXPOSE 8888/tcp
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update -qq \
