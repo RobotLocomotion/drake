@@ -1,0 +1,37 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "inverse_dynamics_controller",
+    srcs = ["inverse_dynamics_controller.cc"],
+    hdrs = ["inverse_dynamics_controller.h"],
+    deps = [
+        "//common:essential",
+        "//examples/hsr/common",
+        "//examples/hsr/parameters",
+        "//multibody/plant",
+        "//systems/controllers",
+        "//systems/primitives:matrix_gain",
+    ],
+)
+
+drake_cc_library(
+    name = "main_controller",
+    srcs = ["main_controller.cc"],
+    hdrs = ["main_controller.h"],
+    deps = [
+        ":inverse_dynamics_controller",
+        "//systems/framework",
+    ],
+)
+
+add_lint_tests()

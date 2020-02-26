@@ -9,6 +9,9 @@ namespace hsr {
 /// A structure to hold values that are constant at runtime after
 /// command-line processing.  Access the sole instance via `flags()`.
 struct Parameters {
+  double kp{};
+  double kd{};
+  double ki{};
   double gravity{};
   double target_realtime_rate{};
   double integration_accuracy{};
