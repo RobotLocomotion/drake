@@ -31,6 +31,10 @@ day, as close as possible following the publication of the
 
 ## For Developers
 
+*The `meshcat-visualizer` is not supported by Binder since port 7000 is not
+exposed, so tutorials that use `meshcat.Visualizer.jupyter_cell()` will not
+display correctly on Binder.*
+
 When you add a notebook, please make the first cell be a Markdown cell with the tutorial's title and the following preamble:
 
     For instructions on how to run these tutorial notebooks, please see the
