@@ -7,6 +7,7 @@ jupyter-notebook
 libamd2
 libblas3
 libboost-all-dev
+libeigen3-dev
 libexpat1
 libgflags2.2
 libgfortran4
