@@ -10,10 +10,11 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 drake_cc_library(
     name = "parameters",
     srcs = [
-        "parameters.cc",
+        "sim_parameters.cc",
     ],
     hdrs = [
-        "parameters.h",
+        "robot_parameters.h",
+        "sim_parameters.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

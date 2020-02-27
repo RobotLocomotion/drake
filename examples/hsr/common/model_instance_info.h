@@ -8,6 +8,7 @@
 namespace drake {
 namespace examples {
 namespace hsr {
+namespace common {
 
 /// Contains the necessary information about a loaded model instance.
 /// This information will be useful if extra care is needed for this instance.
@@ -23,6 +24,7 @@ struct ModelInstanceInfo {
   math::RigidTransform<T> X_PC;
 };
 
+}  // namespace common
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake

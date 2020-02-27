@@ -5,10 +5,11 @@
 namespace drake {
 namespace examples {
 namespace hsr {
+namespace parameters {
 
 /// A structure to hold values that are constant at runtime after
 /// command-line processing.  Access the sole instance via `flags()`.
-struct Parameters {
+struct SimParameters {
   double kp{};
   double kd{};
   double ki{};
@@ -23,9 +24,10 @@ struct Parameters {
   double time_step{};
 };
 
-/// @return a constref to the singleton `Parameters` instance.
-const Parameters& hsr_sim_flags();
+/// @return a constref to the singleton `SimParameters` instance.
+const SimParameters& hsr_sim_flags();
 
+}  // namespace parameters
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake

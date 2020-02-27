@@ -1,14 +1,14 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/hsr/common/robot_parameters.h"
+#include "drake/examples/hsr/parameters/robot_parameters.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace examples {
 namespace hsr {
-namespace controller {
+namespace controllers {
 
 /// This class calculates the torque for all the actuators of the robot
 /// using different controllers for different parts. This class will be used
@@ -38,40 +38,38 @@ namespace controller {
 ///          implementation, only the generalized force is used. Therefore, this
 ///          port only outputs zero values.
 /// }
-class MainController final : public drake::systems::Diagram<double> {
+class MainController final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MainController)
   /// @p welded_robot_plant is aliased and must remain valid for the lifetime
   /// of the controller.
-  MainController(
-      const drake::multibody::MultibodyPlant<double>& robot_plant,
-      const drake::multibody::MultibodyPlant<double>& welded_robot_plant,
-      const RobotParameters<double>& parameters);
+  MainController(const multibody::MultibodyPlant<double>& robot_plant,
+                 const multibody::MultibodyPlant<double>& welded_robot_plant,
+                 const hsr::parameters::RobotParameters<double>& parameters);
 
-  const drake::systems::InputPort<double>& get_estimated_state_input_port()
-      const {
-    return drake::systems::Diagram<double>::get_input_port(
+  const systems::InputPort<double>& get_estimated_state_input_port() const {
+    return systems::Diagram<double>::get_input_port(
         input_port_index_estimated_state_);
   }
 
-  const drake::systems::InputPort<double>& get_desired_state_input_port()
-      const {
-    return drake::systems::Diagram<double>::get_input_port(
+  const systems::InputPort<double>& get_desired_state_input_port() const {
+    return systems::Diagram<double>::get_input_port(
         input_port_index_desired_state_);
   }
 
-  const drake::systems::OutputPort<double>& get_generalized_force_output_port()
-      const {
-    return drake::systems::Diagram<double>::get_output_port(
+  const systems::OutputPort<double>& get_generalized_force_output_port() const {
+    return systems::Diagram<double>::get_output_port(
         output_port_index_generalized_force_);
   }
 
-  const drake::systems::OutputPort<double>& get_actuation_output_port() const {
-    return drake::systems::Diagram<double>::get_output_port(
+  const systems::OutputPort<double>& get_actuation_output_port() const {
+    return systems::Diagram<double>::get_output_port(
         output_port_index_actuation_);
   }
 
-  const RobotParameters<double>& parameters() const { return parameters_; }
+  const hsr::parameters::RobotParameters<double>& parameters() const {
+    return parameters_;
+  }
 
  private:
   int input_port_index_estimated_state_{-1};
@@ -79,10 +77,10 @@ class MainController final : public drake::systems::Diagram<double> {
   int output_port_index_generalized_force_{-1};
   int output_port_index_actuation_{-1};
 
-  const RobotParameters<double> parameters_;
+  const hsr::parameters::RobotParameters<double> parameters_;
 };
 
-}  // namespace controller
+}  // namespace controllers
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake

@@ -1,20 +1,18 @@
 #include "drake/examples/hsr/controllers/inverse_dynamics_controller.h"
 
-#include "drake/examples/hsr/parameters/parameters.h"
+#include "drake/examples/hsr/parameters/sim_parameters.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace examples {
 namespace hsr {
-namespace controller {
-
-using systems::DiagramBuilder;
+namespace controllers {
 
 InverseDynamicsController::InverseDynamicsController(
     const multibody::MultibodyPlant<double>& robot_plant,
     const multibody::MultibodyPlant<double>& welded_robot_plant,
-    const RobotParameters<double>& parameters) {
+    const hsr::parameters::RobotParameters<double>& parameters) {
   // Confirm that the number of actuators should be same between the floating
   // base model and fixed base model
   DRAKE_DEMAND(robot_plant.num_actuators() ==
@@ -29,14 +27,14 @@ InverseDynamicsController::InverseDynamicsController(
   const int num_actuators = robot_plant.num_actuators();
   const int state_size = num_positions + num_velocities;
 
-  const auto& sim_params = hsr_sim_flags();
+  const auto& sim_params = hsr::parameters::hsr_sim_flags();
   VectorX<double> Kp = sim_params.kp * VectorX<double>::Ones(num_actuators);
   VectorX<double> Ki = sim_params.ki * VectorX<double>::Ones(num_actuators);
   VectorX<double> Kd = sim_params.kd * VectorX<double>::Ones(num_actuators);
   LoadPidGainsFromRobotParameters(parameters, welded_robot_plant, &Kp, &Ki,
                                   &Kd);
 
-  DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
   // Create a default inverse dynamics controller.
   auto& inverse_dynamics_controller = *builder.template AddSystem<
       systems::controllers::InverseDynamicsController<double>>(
@@ -101,7 +99,7 @@ InverseDynamicsController::InverseDynamicsController(
 }
 
 void InverseDynamicsController::LoadPidGainsFromRobotParameters(
-    const RobotParameters<double>& parameters,
+    const hsr::parameters::RobotParameters<double>& parameters,
     const multibody::MultibodyPlant<double>& welded_robot_plant,
     VectorX<double>* kp, VectorX<double>* kd, VectorX<double>* ki) {
   // Confirm the passed in plant is fully actuated.
@@ -121,7 +119,7 @@ void InverseDynamicsController::LoadPidGainsFromRobotParameters(
   }
 }
 
-}  // namespace controller
+}  // namespace controllers
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake
