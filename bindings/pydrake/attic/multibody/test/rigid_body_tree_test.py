@@ -34,8 +34,8 @@ class TestRigidBodyTree(unittest.TestCase):
             "drake/examples/pendulum/Pendulum.urdf"))
         num_q = 7
         num_v = 7
-        self.assertEqual(tree.number_of_positions(), num_q)
-        self.assertEqual(tree.number_of_velocities(), num_v)
+        self.assertEqual(tree.get_num_positions(), num_q)
+        self.assertEqual(tree.get_num_velocities(), num_v)
         q = np.zeros(num_q)
         v = np.zeros(num_v)
 
@@ -121,8 +121,8 @@ class TestRigidBodyTree(unittest.TestCase):
             floating_base_type=FloatingBaseType.kQuaternion)
         num_q = 8
         num_v = 7
-        self.assertEqual(tree.number_of_positions(), num_q)
-        self.assertEqual(tree.number_of_velocities(), num_v)
+        self.assertEqual(tree.get_num_positions(), num_q)
+        self.assertEqual(tree.get_num_velocities(), num_v)
 
         q = tree.getZeroConfiguration()
         v = np.zeros(num_v)
@@ -460,8 +460,8 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(tree.get_num_actuators(), 30)
         # Sanity checks joint limits
         #  - Check sizes.
-        self.assertEqual(tree.joint_limit_min.size, tree.number_of_positions())
-        self.assertEqual(tree.joint_limit_max.size, tree.number_of_positions())
+        self.assertEqual(tree.joint_limit_min.size, tree.get_num_positions())
+        self.assertEqual(tree.joint_limit_max.size, tree.get_num_positions())
         #  - Check extremal values against values taken from URDF-file. Ignore
         #    the floating-base joints, as they are not present in the URDF.
         self.assertAlmostEqual(np.min(tree.joint_limit_min[6:]), -3.011)

@@ -213,37 +213,3 @@ extern const char* const kSetLogLevelHelpMessage;
 
 }  // namespace logging
 }  // namespace drake
-
-// TODO(jwnimmer-tri) Remove this deprecated function and macros on 2020-03-01.
-#ifndef DRAKE_DOXYGEN_CXX
-#ifdef HAVE_SPDLOG
-namespace drake {
-namespace logging {
-namespace internal {
-[[deprecated(
-"The DRAKE_SPDLOG_TRACE and DRAKE_SPDLOG_DEBUG macros are deprecated.\n"
-"Please use DRAKE_LOGGER_TRACE and DRAKE_LOGGER_DEBUG instead.\n"
-"The deprecated code will be removed from Drake on or after 2020-03-01.")]]
-inline void warn_deprecated_macro() {}
-}  // namespace internal
-}  // namespace logging
-}  // namespace drake
-#define DRAKE_SPDLOG_TRACE(logger, ...)                         \
-  do {                                                          \
-    ::drake::logging::internal::warn_deprecated_macro();        \
-    if (logger->level() <= spdlog::level::trace) {              \
-      SPDLOG_LOGGER_TRACE(logger, __VA_ARGS__);                 \
-    }                                                           \
-  } while (0)
-#define DRAKE_SPDLOG_DEBUG(logger, ...)                         \
-  do {                                                          \
-    ::drake::logging::internal::warn_deprecated_macro();        \
-    if (logger->level() <= spdlog::level::debug) {              \
-      SPDLOG_LOGGER_DEBUG(logger, __VA_ARGS__);                 \
-    }                                                           \
-  } while (0)
-#else  // HAVE_SPDLOG
-#define DRAKE_SPDLOG_TRACE(...)
-#define DRAKE_SPDLOG_DEBUG(...)
-#endif  // HAVE_SPDLOG
-#endif  // DRAKE_DOXYGEN_CXX

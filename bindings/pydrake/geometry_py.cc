@@ -546,31 +546,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
-        .def("get_radius",
-            [](Sphere* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around 2020-03-01. Use "
-                  "radius() instead.");
-              return self->radius();
-            })
         .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc)
-        .def("get_radius",
-            [](Cylinder* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around 2020-03-01. Use "
-                  "radius() instead.");
-              return self->radius();
-            })
-        .def("get_length",
-            [](Cylinder* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around 2020-03-01. Use "
-                  "length() instead.");
-              return self->length();
-            })
         .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
         .def("length", &Cylinder::length, doc.Cylinder.length.doc);
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)

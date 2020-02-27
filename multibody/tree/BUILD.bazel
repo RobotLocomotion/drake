@@ -19,7 +19,6 @@ drake_cc_package_library(
         ":multibody_element",
         ":multibody_tree_caches",
         ":multibody_tree_core",
-        ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
         ":rotational_inertia",
@@ -84,33 +83,6 @@ drake_cc_library(
     ],
     deps = [
         ":multibody_tree_topology",
-    ],
-)
-
-drake_cc_library(
-    name = "multibody_tree_element",
-    srcs = [],
-    hdrs = [
-        "multibody_tree_element.h",
-    ],
-    deprecation = "DRAKE DEPRECATED: The header drake/multibody/tree/multibody_tree_element.h is being removed on or after 2020-03-01. Please use drake/multibody/tree/multibody_element.h instead.",  # noqa
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        ":multibody_element",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_tree_element_test",
-    # Ignore #warning for deprecation via command-line, since "GCC diagnostic"
-    # does not suppress it.
-    copts = ["-Wno-cpp"],
-    deps = [
-        ":multibody_tree_core",
-        ":multibody_tree_element",
     ],
 )
 
