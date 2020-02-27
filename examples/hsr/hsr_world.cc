@@ -33,9 +33,10 @@ using drake::systems::State;
 using Eigen::VectorXd;
 
 namespace {
-// This class converts the generalized force output of the ID controller
-// (internally using a control plant with only the gripper) to the generalized
-// force input for the full simulation plant (containing gripper and object).
+// This class converts the generalized force output from the ID controller
+// to the generalized force input of the full simulation plant. Since the
+// generalized force corresponds to the generalized velocity, the function
+// SetVelocitiesInArray() is used for this purpose.
 class RobotToPlantForceConverter final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotToPlantForceConverter);
