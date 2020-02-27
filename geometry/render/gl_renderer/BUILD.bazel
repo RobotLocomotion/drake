@@ -34,7 +34,33 @@ drake_cc_library_gl_ubuntu_only(
         "opengl_includes.h",
     ],
     visibility = ["//visibility:private"],
-    deps = ["@opengl"],
+    deps = [
+        "@drake//common",
+        "@opengl",
+        "@x11",
+    ],
+)
+
+anzu_cc_library(
+    name = "load_mesh",
+    srcs = ["load_mesh.cc"],
+    hdrs = ["load_mesh.h"],
+    # NOTE: Required for compatibility with tinyobjloader.
+    linkstatic = 1,
+    deps = [
+        ":opengl_context",
+        "@drake//common:essential",
+        "@tinyobjloader",
+    ],
+)
+
+anzu_cc_library(
+    name = "opengl_geometry",
+    hdrs = ["opengl_geometry.h"],
+    deps = [
+        ":opengl_context",
+        "@drake//math:geometric_transform",
+    ],
 )
 
 # The pure OpenGL-based render engine implementation.
@@ -50,6 +76,7 @@ drake_cc_library(
     hdrs = select({
         "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
         "//conditions:default": [
+            "buffer_dim.h",
             "render_engine_gl.h",
             "render_engine_gl_factory.h",
         ],
@@ -57,10 +84,25 @@ drake_cc_library(
     deps = select({
         "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
         "//conditions:default": [
-            ":opengl_context",
-            "//geometry/render:render_engine",
+            ":load_mesh",
+            ":opengl_geometry",
+            ":shader_program",
+            "@drake//common:essential",
+            "@drake//geometry/render:render_engine",
+            "@drake//systems/sensors:image",
+            "@fmt",
         ],
     }),
+)
+
+anzu_cc_library(
+    name = "shader_program",
+    srcs = ["shader_program.cc"],
+    hdrs = ["shader_program.h"],
+    deps = [
+        ":opengl_context",
+        "@drake//common:essential",
+    ],
 )
 
 drake_cc_googletest(
@@ -69,8 +111,14 @@ drake_cc_googletest(
         "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
+    data = [
+        "@drake//systems/sensors:test_models",
+    ],
     deps = [
         ":render_engine_gl",
+        "@drake//common:find_resource",
+        "@drake//geometry/render:render_label",
+        "@drake//systems/sensors:color_palette",
     ],
 )
 
