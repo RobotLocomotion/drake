@@ -2067,12 +2067,13 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
     case ContactModel::kHydroelasticWithFallback:
       // Combine the point-penalty forces with the contact surface forces.
       CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
-      auto hydro_forces = EvalHydroelasticContactForces(context).F_BBo_W_array;
-      DRAKE_DEMAND(F_BBo_W_array->size() == hydro_forces.size());
-      for (int i = 0; i < static_cast<int>(hydro_forces.size()); ++i) {
+      const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
+          EvalHydroelasticContactForces(context).F_BBo_W_array;
+      DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
+      for (int i = 0; i < static_cast<int>(Fhydro_BBo_W_all.size()); ++i) {
         // Both sets of forces are applied to the body's origins and expressed
         // in frame W. They should simply sum.
-        (*F_BBo_W_array)[i] += hydro_forces[i];
+        (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
       }
       break;
   }
@@ -2392,6 +2393,10 @@ template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());
 
+  // TODO(amcastro-tri): Make the existence of the cache entry strictly depend
+  //  on the declared contact model type. This may require guards at various
+  //  call sites to account for the fact that the corresponding cache index
+  //  hasn't been set.
   auto& hydro_point_cache_entry = this->DeclareCacheEntry(
       std::string("Hydroelastic contact with point-pair fallback"),
       HydroelasticFallbackCacheData(),
@@ -2432,7 +2437,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {this->configuration_ticket()});
   cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
-
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(

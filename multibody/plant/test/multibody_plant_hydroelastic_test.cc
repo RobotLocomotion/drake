@@ -10,6 +10,8 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+using drake::geometry::FrameId;
+using drake::geometry::GeometryId;
 using drake::geometry::ProximityProperties;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
@@ -31,12 +33,6 @@ class MultibodyPlantTester {
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
     return plant.EvalHydroelasticContactForces(context).F_BBo_W_array;
-  }
-
-  static const ContactResults<double>& EvalContactResults(
-      const MultibodyPlant<double>& plant,
-      const systems::Context<double>& context) {
-    return plant.EvalContactResults(context);
   }
 
   static const std::vector<SpatialForce<double>>&
@@ -345,20 +341,29 @@ class ContactModelTest : public ::testing::Test {
   // Compute a set of spatial forces from the given contact results. The
   // translational component of the force acting on a body is defined to be
   // acting at the _origin_ of the body.
-  std::vector<SpatialForce<double>> SpatialForceFromContact(
+  std::vector<SpatialForce<double>> SpatialForceFromContactResults(
       const ContactResults<double>& contacts) {
     std::vector<SpatialForce<double>> F_BBo_W_array(
         plant_->num_bodies(),
         SpatialForce<double>{Vector3d::Zero(), Vector3d::Zero()});
 
+    const internal::PositionKinematicsCache<double>& pc =
+        plant_->EvalPositionKinematics(*plant_context_);
+
     for (int i = 0; i < contacts.num_point_pair_contacts(); ++i) {
       const auto& contact_info = contacts.point_pair_contact_info(i);
       const SpatialForce<double> F_Bc_W{Vector3d::Zero(),
                                         contact_info.contact_force()};
-      const Vector3d& p_BoBc_W = contact_info.contact_point();
-      const SpatialForce<double> F_Bo_W = F_Bc_W.Shift(p_BoBc_W);
-      F_BBo_W_array[contact_info.bodyB_index()] += F_Bo_W;
-      F_BBo_W_array[contact_info.bodyA_index()] -= F_Bo_W;
+      const Vector3d& p_WC = contact_info.contact_point();
+      const Vector3d& p_WAo =
+          pc.get_X_WB(first_ball_->node_index()).translation();
+      const Vector3d& p_CoAo_W = p_WAo - p_WC;
+      const Vector3d& p_WBo =
+          pc.get_X_WB(second_ball_->node_index()).translation();
+      const Vector3d& p_CoBo_W = p_WBo - p_WC;
+
+      F_BBo_W_array[contact_info.bodyB_index()] += F_Bc_W.Shift(p_CoBo_W);
+      F_BBo_W_array[contact_info.bodyA_index()] -= F_Bc_W.Shift(p_CoAo_W);
     }
 
     for (int i = 0; i < contacts.num_hydroelastic_contacts(); ++i) {
@@ -366,20 +371,26 @@ class ContactModelTest : public ::testing::Test {
       const auto& surface = contact_info.contact_surface();
       const auto& inspector = scene_graph_->model_inspector();
 
-      const geometry::GeometryId A_id = surface.id_M();
-      const geometry::FrameId fA_id = inspector.GetFrameId(A_id);
+      const GeometryId A_id = surface.id_M();
+      const FrameId fA_id = inspector.GetFrameId(A_id);
       const Body<double>& body_A = *plant_->GetBodyFromFrameId(fA_id);
-      const geometry::GeometryId B_id = surface.id_N();
-      const geometry::FrameId fB_id = inspector.GetFrameId(B_id);
+      const GeometryId B_id = surface.id_N();
+      const FrameId fB_id = inspector.GetFrameId(B_id);
       const Body<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
 
-      const Vector3d p_AoAc_W = surface.mesh_W().centroid();
-      const SpatialForce<double> F_Ao_W = contact_info.F_Ac_W().Shift(p_AoAc_W);
+      const Vector3d p_AcAo_W = -surface.mesh_W().centroid();
+      const SpatialForce<double> F_Ao_W = contact_info.F_Ac_W().Shift(p_AcAo_W);
       F_BBo_W_array[body_A.index()] += F_Ao_W;
       F_BBo_W_array[body_B.index()] -= F_Ao_W;
     }
 
     return F_BBo_W_array;
+  }
+
+  // Get the contact results from the plant (calculating them as necessary).
+  const ContactResults<double>& GetContactResults() const {
+    return plant_->get_contact_results_output_port()
+        .Eval<ContactResults<double>>(*plant_context_);
   }
 
   const double kFrictionCoefficient_{0.0};  // [-]
@@ -399,13 +410,12 @@ class ContactModelTest : public ::testing::Test {
 
 TEST_F(ContactModelTest, PointPairContact) {
   this->Configure(ContactModel::kPointContactOnly);
-  const ContactResults<double>& contact_results =
-      MultibodyPlantTester::EvalContactResults(*plant_, *plant_context_);
+  const ContactResults<double>& contact_results = GetContactResults();
   ASSERT_EQ(contact_results.num_point_pair_contacts(), 2);
   ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 0);
 
   std::vector<SpatialForce<double>> F_BBo_W_array_expected =
-      this->SpatialForceFromContact(contact_results);
+      this->SpatialForceFromContactResults(contact_results);
 
   const std::vector<SpatialForce<double>>& F_BBo_W_array =
       MultibodyPlantTester::EvalSpatialContactForcesContinuous(*plant_,
@@ -425,20 +435,18 @@ TEST_F(ContactModelTest, PointPairContact) {
 TEST_F(ContactModelTest, HydroelasticOnly) {
   this->Configure(ContactModel::kHydroelasticsOnly);
   // Rigid-rigid contact precludes successful evaluation.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MultibodyPlantTester::EvalContactResults(*plant_, *plant_context_),
-      std::logic_error, "Requested contact between two rigid objects .+");
+  DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(), std::logic_error,
+                              "Requested contact between two rigid objects .+");
 }
 
 TEST_F(ContactModelTest, HydroelasitcWithFallback) {
   this->Configure(ContactModel::kHydroelasticWithFallback);
-  const ContactResults<double>& contact_results =
-      MultibodyPlantTester::EvalContactResults(*plant_, *plant_context_);
+  const ContactResults<double>& contact_results = GetContactResults();
   EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
   EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
 
   std::vector<SpatialForce<double>> F_BBo_W_array_expected =
-      this->SpatialForceFromContact(contact_results);
+      this->SpatialForceFromContactResults(contact_results);
 
   const std::vector<SpatialForce<double>>& F_BBo_W_array =
       MultibodyPlantTester::EvalSpatialContactForcesContinuous(*plant_,

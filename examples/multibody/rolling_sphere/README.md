@@ -4,10 +4,10 @@ This directory contains an example for illustrating the difference between
 contact models. It consists of a rolling sphere on a horizontal ground surface.
 
 ```
-                                <─── ωʸ₀
+                                <─── wy
                                 ooooooo
                               o         o
-                             o     vˣ₀   o
+                             o     vx    o
                              o     ──>   o
                              o           o
                               o         o
@@ -17,8 +17,10 @@ contact models. It consists of a rolling sphere on a horizontal ground surface.
 ```
 __Figure 1, Default configuration:__ The example creates a sphere with initial
 translational velocity in the +Wx direction and an angular velocity around the
--Wy axis. The ball will begin sliding in the +Wx direction but eventually
-friction will cause the ball to slow and then accelerate in the -Wx direction.
+-Wy axis (illustrated by the two vectors labeled with the application's
+corresponding parameters vx and wy, respectively). The ball will begin sliding
+in the +Wx direction but eventually friction will cause the ball to slow and
+then accelerate in the -Wx direction.
 
 __Contact models__
 
@@ -55,10 +57,10 @@ configuration in various ways:
      ▒▒▒▒▒
      ▒▒▒▒▒
   w  ▒▒▒▒▒
-  a  ▒▒▒▒▒                       <─── ωʸ₀
+  a  ▒▒▒▒▒                       <─── wy
   l  ▒▒▒▒▒                       ooooooo
   l  ▒▒▒▒▒                     o         o
-     ▒▒▒▒▒                    o     vˣ₀   o
+     ▒▒▒▒▒                    o     vx    o
      ▒▒▒▒▒                    o     ──>   o
      ▒▒▒▒▒                    o           o
      ▒▒▒▒▒                     o         o

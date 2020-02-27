@@ -3546,20 +3546,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     }
   }
 
-  // Evaluates the "trick" cache entry to enable hydroelastic contact with
-  // a point pair fallback (see ContactModel for more about the "fallback").
-  // The trick is as follows:
-  //   - this invokes a custom query on geometry::QueryObject that handles the
-  //     specific callback logic but returns data in two heterogeneous types:
-  //       PenetrationAsPointPair and ContactSurface.
-  //   - After evaluating the query, it stores the results into the two cache
-  //     entries designed to store those quantities.
-  //   - In turn, the logic for calculating those cache entries are now aware
-  //     of the contact model; if they are in fallback mode, they simply
-  //     evaluate this cache entry and return. Otherwise, they proceed with
-  //     their normal query.
-  // This allows us to simply compute all forces dependent on each cache entry
-  // and sum them all up -- maximum code reuse.
+  // Data stored in the cache entry for the hydroelastic with fallback contact
+  // model.
   struct HydroelasticFallbackCacheData {
     std::vector<geometry::ContactSurface<T>> contact_surfaces;
     std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
