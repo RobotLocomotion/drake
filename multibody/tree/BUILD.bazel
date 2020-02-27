@@ -7,9 +7,15 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
 package(
     default_visibility = ["//visibility:public"],
+)
+
+drake_jupyter_py_binary(
+    name = "door_hinge_joint_inspector",
+    add_test_rule = 1,
 )
 
 drake_cc_package_library(
@@ -91,6 +97,7 @@ drake_cc_library(
     srcs = [
         "body.cc",
         "body_node_impl.cc",
+        "door_hinge.cc",
         "fixed_offset_frame.cc",
         "joint_actuator.cc",
         "linear_spring_damper.cc",
@@ -116,6 +123,7 @@ drake_cc_library(
         "body_node.h",
         "body_node_impl.h",
         "body_node_welded.h",
+        "door_hinge.h",
         "fixed_offset_frame.h",
         "force_element.h",
         "frame.h",
@@ -430,6 +438,18 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:context",
+    ],
+)
+
+drake_cc_googletest(
+    name = "door_hinge_test",
+    timeout = "moderate",
+    shard_count = 2,
+    deps = [
+        ":tree",
+        "//multibody/plant",
+        "//systems/analysis:initial_value_problem",
+        "//systems/analysis:simulator",
     ],
 )
 
