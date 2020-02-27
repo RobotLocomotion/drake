@@ -2,7 +2,6 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -31,6 +30,26 @@ drake_cc_library(
     deps = [
         ":inverse_dynamics_controller",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inverse_dynamics_controller_test",
+    data = [
+        "//examples/hsr/models",
+    ],
+    deps = [
+        ":inverse_dynamics_controller",
+    ],
+)
+
+drake_cc_googletest(
+    name = "main_controller_test",
+    data = [
+        "//examples/hsr/models",
+    ],
+    deps = [
+        ":main_controller",
     ],
 )
 
