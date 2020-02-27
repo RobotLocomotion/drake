@@ -11,6 +11,7 @@
 namespace drake {
 namespace examples {
 namespace hsr {
+namespace parameters {
 
 /// All these parameters should be able to be loaded from the configuration
 /// files.
@@ -75,6 +76,7 @@ struct RobotParameters {
   std::map<std::string, PartParameters> parts_parameters;
 };
 
+}  // namespace parameters
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake

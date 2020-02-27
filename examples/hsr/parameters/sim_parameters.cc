@@ -1,4 +1,4 @@
-#include "drake/examples/hsr/parameters/parameters.h"
+#include "drake/examples/hsr/parameters/sim_parameters.h"
 
 #include <limits>
 
@@ -44,10 +44,11 @@ DEFINE_double(ki, 2.0,
 namespace drake {
 namespace examples {
 namespace hsr {
+namespace parameters {
 
 namespace {
-Parameters CreateParameters() {
-  Parameters result;
+SimParameters CreateSimParameters() {
+  SimParameters result;
   result.simulation_time = FLAGS_simulation_time;
   result.time_step = FLAGS_time_step;
   result.gravity = FLAGS_gravity;
@@ -67,11 +68,13 @@ Parameters CreateParameters() {
 
 }  // namespace
 
-const Parameters& hsr_sim_flags() {
-  static const drake::never_destroyed<Parameters> global(CreateParameters());
+const SimParameters& hsr_sim_flags() {
+  static const drake::never_destroyed<SimParameters> global(
+      CreateSimParameters());
   return global.access();
 }
 
+}  // namespace parameters
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake

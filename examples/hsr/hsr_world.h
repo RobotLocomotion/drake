@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/hsr/common/model_instance_info.h"
-#include "drake/examples/hsr/common/robot_parameters.h"
+#include "drake/examples/hsr/parameters/robot_parameters.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -162,11 +162,10 @@ class HsrWorld : public systems::Diagram<T> {
   /// @param v The target velocity state of the corresponding model to be set.
   /// @param state The full state of the HsrWorld, must be the
   /// systems::State<T> object contained in `context`.
-  void SetModelVelocityState(
-      const drake::systems::Context<T>& context,
-      const drake::multibody::ModelInstanceIndex& model_index,
-      const Eigen::Ref<const drake::VectorX<T>>& v,
-      drake::systems::State<T>* state) const;
+  void SetModelVelocityState(const systems::Context<T>& context,
+                             const multibody::ModelInstanceIndex& model_index,
+                             const Eigen::Ref<const VectorX<T>>& v,
+                             systems::State<T>* state) const;
 
  private:
   /// Load all the models from the given configuration file. The return is a
@@ -177,15 +176,17 @@ class HsrWorld : public systems::Diagram<T> {
   /// urdfs one by one.
   /// TODO(huihua) Once the model directive feature is in Drake, finish the
   /// implementation of this function.
-  const std::vector<ModelInstanceInfo<T>> LoadModelsFromConfigurationFile();
+  const std::vector<hsr::common::ModelInstanceInfo<T>>
+  LoadModelsFromConfigurationFile();
 
-  const std::vector<ModelInstanceInfo<T>> LoadModelsFromUrdfs();
+  const std::vector<hsr::common::ModelInstanceInfo<T>> LoadModelsFromUrdfs();
 
-  const ModelInstanceInfo<T> AddDefaultHsr();
+  const hsr::common::ModelInstanceInfo<T> AddDefaultHsr();
 
   /// Post processing the loaded models such as setup the initial position of
   /// items
-  void SetupWorld(const std::vector<ModelInstanceInfo<T>>& loaded_models);
+  void SetupWorld(
+      const std::vector<hsr::common::ModelInstanceInfo<T>>& loaded_models);
 
   /// Registers a RGBD sensor into the parameters of a robot. Must be called
   /// before Finalize().
@@ -205,7 +206,7 @@ class HsrWorld : public systems::Diagram<T> {
       const math::RigidTransform<double>& X_PC,
       const geometry::render::CameraProperties& color_properties,
       const geometry::render::DepthCameraProperties& depth_properties,
-      RobotParameters<T>* robot_parameters);
+      hsr::parameters::RobotParameters<T>* robot_parameters);
 
   /// Registers an IMU sensor. Must be called before Finalize().
   /// @param name    Name of the joint where the IMU sensor is mounted. It
@@ -226,7 +227,7 @@ class HsrWorld : public systems::Diagram<T> {
   void RegisterImuSensor(const std::string& name,
                          const multibody::Frame<T>& parent_frame,
                          const math::RigidTransform<double>& X_PC,
-                         RobotParameters<T>* robot_parameters);
+                         hsr::parameters::RobotParameters<T>* robot_parameters);
 
   /// Registers a force sensor. Must be called before Finalize().
   /// @param name    Name of the joint where the force sensor is mounted. It
@@ -242,10 +243,10 @@ class HsrWorld : public systems::Diagram<T> {
   ///   registered.
   /// For every successfully registered force sensor joint,  a output port
   /// with name `[name]+_force_sensor_status` will be created.
-  void RegisterForceSensor(const std::string& name,
-                           const multibody::Frame<T>& parent_frame,
-                           const math::RigidTransform<double>& X_PC,
-                           RobotParameters<T>* robot_parameters);
+  void RegisterForceSensor(
+      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const math::RigidTransform<double>& X_PC,
+      hsr::parameters::RobotParameters<T>* robot_parameters);
 
   // Create two versions of plants for the controller purpose. One model with
   // floating base and one model with welded base. Assumes robots_instance_info_
@@ -262,10 +263,11 @@ class HsrWorld : public systems::Diagram<T> {
   multibody::MultibodyPlant<T>* plant_{};
   geometry::SceneGraph<T>* scene_graph_{};
 
-  std::map<std::string, RobotParameters<T>> robots_Parameters_;
+  std::map<std::string, hsr::parameters::RobotParameters<T>> robots_Parameters_;
 
-  std::map<std::string, ModelInstanceInfo<T>> robots_instance_info_;
-  std::map<std::string, ModelInstanceInfo<T>> items_instance_info_;
+  std::map<std::string, hsr::common::ModelInstanceInfo<T>>
+      robots_instance_info_;
+  std::map<std::string, hsr::common::ModelInstanceInfo<T>> items_instance_info_;
 
   /// Create internal plants for the robots.
   std::map<std::string, OwnedRobotControllerPlant> owned_robots_plant_;

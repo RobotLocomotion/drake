@@ -9,19 +9,19 @@
 namespace drake {
 namespace examples {
 namespace hsr {
-namespace controller {
+namespace controllers {
 
 MainController::MainController(
-    const drake::multibody::MultibodyPlant<double>& robot_plant,
-    const drake::multibody::MultibodyPlant<double>& welded_robot_plant,
-    const RobotParameters<double>& parameters)
+    const multibody::MultibodyPlant<double>& robot_plant,
+    const multibody::MultibodyPlant<double>& welded_robot_plant,
+    const hsr::parameters::RobotParameters<double>& parameters)
     : parameters_(parameters) {
   const int num_positions = robot_plant.num_positions();
   const int num_velocities = robot_plant.num_velocities();
   const int num_actuators = robot_plant.num_actuators();
   const int state_size = num_positions + num_velocities;
 
-  drake::systems::DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
 
   auto& inverse_dynamics_controller =
       *builder.AddSystem<InverseDynamicsController>(
@@ -31,8 +31,7 @@ MainController::MainController(
   // Currently, there is only one controller.
   {
     auto& desired_state_passthrough =
-        *builder.template AddSystem<drake::systems::PassThrough<double>>(
-            state_size);
+        *builder.template AddSystem<systems::PassThrough<double>>(state_size);
 
     builder.Connect(desired_state_passthrough.get_output_port(),
                     inverse_dynamics_controller.get_desired_state_input_port());
@@ -45,8 +44,7 @@ MainController::MainController(
   // Create an estimated state passthrough to connect to different controllers.
   {
     auto& estimated_state_passthrough =
-        *builder.template AddSystem<drake::systems::PassThrough<double>>(
-            state_size);
+        *builder.template AddSystem<systems::PassThrough<double>>(state_size);
 
     builder.Connect(
         estimated_state_passthrough.get_output_port(),
@@ -65,8 +63,8 @@ MainController::MainController(
       Eigen::MatrixXd::Identity(num_actuators, num_actuators);
 
   // Create systems for the selectors.
-  drake::systems::MatrixGain<double>& inverse_dynamics_selector_system =
-      *builder.template AddSystem<drake::systems::MatrixGain<double>>(
+  systems::MatrixGain<double>& inverse_dynamics_selector_system =
+      *builder.template AddSystem<systems::MatrixGain<double>>(
           inverse_dynamics_selector);
 
   // Expose the generalized force output port.
@@ -78,10 +76,10 @@ MainController::MainController(
 
   // Create a constant actuation source since this port is required by the
   // multibody plant.
-  drake::VectorX<double> constant_actuation_value =
-      drake::VectorX<double>::Zero(num_actuators);
+  VectorX<double> constant_actuation_value =
+      VectorX<double>::Zero(num_actuators);
   auto& actuation_constant_source =
-      *builder.template AddSystem<drake::systems::ConstantVectorSource<double>>(
+      *builder.template AddSystem<systems::ConstantVectorSource<double>>(
           constant_actuation_value);
 
   // Expose the constant actuation output port.
@@ -91,7 +89,7 @@ MainController::MainController(
   builder.BuildInto(this);
 }
 
-}  // namespace controller
+}  // namespace controllers
 }  // namespace hsr
 }  // namespace examples
 }  // namespace drake

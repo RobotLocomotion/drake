@@ -5,7 +5,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/hsr/controllers/main_controller.h"
-#include "drake/examples/hsr/parameters/parameters.h"
+#include "drake/examples/hsr/parameters/sim_parameters.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/parsing/parser.h"
@@ -33,9 +33,9 @@ using drake::systems::State;
 using Eigen::VectorXd;
 
 namespace {
-/// Converts the generalized force output of the ID controller (internally using
-/// a control plant with only the gripper) to the generalized force input for
-/// the full simulation plant (containing gripper and object).
+// This class converts the generalized force output of the ID controller
+// (internally using a control plant with only the gripper) to the generalized
+// force input for the full simulation plant (containing gripper and object).
 class RobotToPlantForceConverter final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotToPlantForceConverter);
@@ -67,8 +67,8 @@ class RobotToPlantForceConverter final : public systems::LeafSystem<double> {
 template <typename T>
 HsrWorld<T>::HsrWorld(const std::string& config_file)
     : config_file_(config_file),
-      owned_plant_(
-          std::make_unique<MultibodyPlant<T>>(hsr_sim_flags().time_step)),
+      owned_plant_(std::make_unique<MultibodyPlant<T>>(
+          hsr::parameters::hsr_sim_flags().time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()) {
   // This class holds the unique_ptrs explicitly for plant and scene_graph
   // until Finalize() is called (when they are moved into the Diagram). Grab
@@ -86,23 +86,25 @@ HsrWorld<T>::HsrWorld(const std::string& config_file)
   this->set_name("hsr_world");
 
   // Parse urdfs to get the models from the configuration parameters.
-  const std::vector<ModelInstanceInfo<T>> loaded_models = LoadModelsFromUrdfs();
+  const std::vector<hsr::common::ModelInstanceInfo<T>> loaded_models =
+      LoadModelsFromUrdfs();
   SetupWorld(loaded_models);
 
   // This function will finalize the plant and all the ports.
   Finalize();
 }
 
+// Place holder for now.
 template <typename T>
-const std::vector<ModelInstanceInfo<T>>
+const std::vector<hsr::common::ModelInstanceInfo<T>>
 HsrWorld<T>::LoadModelsFromConfigurationFile() {
-  std::vector<ModelInstanceInfo<T>> added_models;
+  std::vector<hsr::common::ModelInstanceInfo<T>> added_models;
   return added_models;
 }
 
 // Add default HSR.
 template <typename T>
-const ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
+const hsr::common::ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
   const std::string model_path = FindResourceOrThrow(
       "drake/examples/hsr/models/urdfs/hsrb4s_fix_free_joints.urdf");
   const std::string model_name = "hsr";
@@ -111,7 +113,7 @@ const ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
   const multibody::ModelInstanceIndex model_instance_index =
       parser.AddModelFromFile(model_path, model_name);
 
-  ModelInstanceInfo<T> robot_instace_info;
+  hsr::common::ModelInstanceInfo<T> robot_instace_info;
   robot_instace_info.model_name = model_name;
   robot_instace_info.model_path = model_path;
   robot_instace_info.parent_frame_name = "world_frame";
@@ -123,8 +125,9 @@ const ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
 }
 
 template <typename T>
-const std::vector<ModelInstanceInfo<T>> HsrWorld<T>::LoadModelsFromUrdfs() {
-  std::vector<ModelInstanceInfo<T>> added_models;
+const std::vector<hsr::common::ModelInstanceInfo<T>>
+HsrWorld<T>::LoadModelsFromUrdfs() {
+  std::vector<hsr::common::ModelInstanceInfo<T>> added_models;
 
   added_models.push_back(this->AddDefaultHsr());
 
@@ -152,8 +155,8 @@ void HsrWorld<T>::SetDefaultState(const Context<T>& context,
 
 template <typename T>
 void HsrWorld<T>::SetupWorld(
-    const std::vector<ModelInstanceInfo<T>>& added_models) {
-  const auto& sim_params = hsr_sim_flags();
+    const std::vector<hsr::common::ModelInstanceInfo<T>>& added_models) {
+  const auto& sim_params = hsr::parameters::hsr_sim_flags();
   // Add a ground plane.
   {
     const multibody::CoulombFriction<double> coef_friction_inclined_plane(
@@ -188,8 +191,8 @@ void HsrWorld<T>::RegisterRgbdSensor(
     const math::RigidTransform<double>& X_PC,
     const geometry::render::CameraProperties& color_properties,
     const geometry::render::DepthCameraProperties& depth_properties,
-    RobotParameters<T>* robot_parameters) {
-  CameraParameters<T> param;
+    hsr::parameters::RobotParameters<T>* robot_parameters) {
+  hsr::parameters::CameraParameters<T> param;
   param.location.parent_frame = &parent_frame;
   param.location.X_PC = X_PC;
   param.color_properties = color_properties;
@@ -203,11 +206,11 @@ void HsrWorld<T>::RegisterRgbdSensor(
 }
 
 template <typename T>
-void HsrWorld<T>::RegisterImuSensor(const std::string& name,
-                                    const Frame<T>& parent_frame,
-                                    const math::RigidTransform<double>& X_PC,
-                                    RobotParameters<T>* robot_parameters) {
-  SensorLocationParameters<T> imu_location;
+void HsrWorld<T>::RegisterImuSensor(
+    const std::string& name, const Frame<T>& parent_frame,
+    const math::RigidTransform<double>& X_PC,
+    hsr::parameters::RobotParameters<T>* robot_parameters) {
+  hsr::parameters::SensorLocationParameters<T> imu_location;
   imu_location.parent_frame = &parent_frame;
   imu_location.X_PC = X_PC;
 
@@ -220,11 +223,11 @@ void HsrWorld<T>::RegisterImuSensor(const std::string& name,
 }
 
 template <typename T>
-void HsrWorld<T>::RegisterForceSensor(const std::string& name,
-                                      const Frame<T>& parent_frame,
-                                      const math::RigidTransform<double>& X_PC,
-                                      RobotParameters<T>* robot_parameters) {
-  SensorLocationParameters<T> force_sensor_location;
+void HsrWorld<T>::RegisterForceSensor(
+    const std::string& name, const Frame<T>& parent_frame,
+    const math::RigidTransform<double>& X_PC,
+    hsr::parameters::RobotParameters<T>* robot_parameters) {
+  hsr::parameters::SensorLocationParameters<T> force_sensor_location;
   force_sensor_location.parent_frame = &parent_frame;
   force_sensor_location.X_PC = X_PC;
 
@@ -280,7 +283,8 @@ void HsrWorld<T>::MakeRobotControlPlants() {
   // floating robot model and the same model but with the base welded to
   // the ground.
   for (const auto& robot_instance_info : robots_instance_info_) {
-    OwnedRobotControllerPlant owned_plants(hsr_sim_flags().time_step);
+    OwnedRobotControllerPlant owned_plants(
+        hsr::parameters::hsr_sim_flags().time_step);
 
     Parser(owned_plants.float_plant.get())
         .AddModelFromFile(robot_instance_info.second.model_path);
@@ -324,7 +328,7 @@ void HsrWorld<T>::Finalize() {
   //   - cannot wire up the diagram until we have finalized the plant.
   plant_->Finalize();
 
-  const auto& sim_params = hsr_sim_flags();
+  const auto& sim_params = hsr::parameters::hsr_sim_flags();
   plant_->set_penetration_allowance(sim_params.penetration_allowance);
   plant_->set_stiction_tolerance(sim_params.v_stiction_tolerance);
 
@@ -359,7 +363,7 @@ void HsrWorld<T>::Finalize() {
   {
     const auto& hsr_owned_robots_plant = owned_robots_plant_.find("hsr");
     auto hsr_main_controller =
-        builder.template AddSystem<controller::MainController>(
+        builder.template AddSystem<hsr::controllers::MainController>(
             *(hsr_owned_robots_plant->second.float_plant),
             *(hsr_owned_robots_plant->second.welded_plant),
             robots_Parameters_["hsr"]);
