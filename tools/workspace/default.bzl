@@ -128,7 +128,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "dreal" not in excludes:
         dreal_repository(name = "dreal", mirrors = mirrors)
     if "eigen" not in excludes:
-        eigen_repository(name = "eigen", mirrors = mirrors)
+        eigen_repository(name = "eigen")
     if "expat" not in excludes:
         expat_repository(name = "expat")
     if "fcl" not in excludes:
