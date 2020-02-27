@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
@@ -89,6 +90,14 @@ struct SortedPair {
   T first_{};          // The first of the two objects, according to operator<.
   T second_{};         // The second of the two objects, according to operator<.
 };
+
+/// Support writing a SortedPair to a stream (conditional on the support of
+/// writing the underlying type T to a stream).
+template <typename T>
+inline std::ostream& operator<<(std::ostream& out, const SortedPair<T>& pair) {
+  out << "(" << pair.first() << ", " << pair.second() << ")";
+  return out;
+}
 
 /// Two pairs of the same type are equal iff their members are equal after
 /// sorting.
