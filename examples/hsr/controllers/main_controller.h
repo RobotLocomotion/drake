@@ -10,14 +10,16 @@ namespace examples {
 namespace hsr {
 namespace controllers {
 
-/// This class calculates the torque for all the actuators of the robot
-/// using different controllers for different parts. This class will be used
-/// to wrap different sub-controllers for different parts of the robot. A
-/// controller selector can be created to expose this option to the user.
+/// This class calculates the torque for all the actuators of the robot. It
+/// is designed to allow using different controllers for different parts.
+/// There is only one inverse dynamic controller for now. In case a different
+/// controller of a different part is added. A controller selector can be
+/// created to expose this option to the user.
+/// TODO(huihua) Add a PID controller for gripper as an example.
 ///
-/// This class takes three arguments: one is the multibody plant
-/// of the robot with floating base. The second argument is the same
-/// plant of the first argument but with the robot base welded to the ground.
+/// This class takes three arguments: one is the multibody plant of the robot
+/// with floating base. The second argument is the same plant of the first
+/// argument but with the robot base welded to the ground.
 /// Note that, only the robot base is fixed and the wheel joints are still free
 /// to rotate. Fixing the robot base link to the ground gives us a fully
 /// actuated robot model, which will be used for inverse dynamics controller
