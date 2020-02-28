@@ -23,7 +23,7 @@ namespace {
 //   - CalcMassMatrix(): uses the Composite Body Algorithm.
 //   - CalcMassMatrixViaInverseDynamics(): uses inverse dynamics to compute each
 //     column of the mass matrix at a time.
-GTEST_TEST(MultibodyPlantMassMatrix, Atlas) {
+GTEST_TEST(MultibodyPlantMassMatrix, IiwaRobot) {
   const std::string model_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
 
@@ -35,19 +35,23 @@ GTEST_TEST(MultibodyPlantMassMatrix, Atlas) {
   // We did not weld the arm to the world, therefore we expect it to be free.
   EXPECT_EQ(plant.num_velocities(), 13);
 
+  // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  const VectorX<double> q0 = VectorX<double>::LinSpaced(
+      plant.num_positions(), 1, plant.num_positions());
+  plant.SetPositions(context.get(), q0);
 
   // Compute mass matrix via the Composite Body Algorithm.
-  MatrixX<double> Hcba(plant.num_velocities(), plant.num_velocities());
-  plant.CalcMassMatrix(*context, &Hcba);
+  MatrixX<double> Mcba(plant.num_velocities(), plant.num_velocities());
+  plant.CalcMassMatrix(*context, &Mcba);
 
   // Compute mass matrix using inverse dynamics for each column.
-  MatrixX<double> Hid(plant.num_velocities(), plant.num_velocities());
-  plant.CalcMassMatrixViaInverseDynamics(*context, &Hid);
+  MatrixX<double> Mid(plant.num_velocities(), plant.num_velocities());
+  plant.CalcMassMatrixViaInverseDynamics(*context, &Mid);
 
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(
-      CompareMatrices(Hcba, Hid, kTolerance, MatrixCompareType::relative));
+      CompareMatrices(Mcba, Mid, kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

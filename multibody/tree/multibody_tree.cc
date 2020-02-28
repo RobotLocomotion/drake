@@ -870,10 +870,10 @@ void MultibodyTree<T>::MapVelocityToQDot(
 
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
-  DRAKE_DEMAND(H != nullptr);
-  DRAKE_DEMAND(H->rows() == num_velocities());
-  DRAKE_DEMAND(H->cols() == num_velocities());
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
 
   // Compute one column of the mass matrix via inverse dynamics at a time.
   const int nv = num_velocities();
@@ -893,16 +893,31 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     tau.setZero();
     CalcInverseDynamics(context, vdot, {}, VectorX<T>(), ignore_velocities,
                         &A_WB_array, &F_BMo_W_array, &tau);
-    H->col(j) = tau;
+    M->col(j) = tau;
   }
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
-                                      EigenPtr<MatrixX<T>> H) const {
-  DRAKE_DEMAND(H != nullptr);
-  DRAKE_DEMAND(H->rows() == num_velocities());
-  DRAKE_DEMAND(H->cols() == num_velocities());
+                                      EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
+
+  // This method implements algorithm 9.3 in [Jain 2010]. We use slightly
+  // different notation conventions:
+  // - Rigid shift operators A and Φ are implemented in SpatialInertia::Shift()
+  //   and SpatialForce::Shift(), respectively.
+  // - We use the symbol F instead of X, to hightlight the physical
+  //   interpretation of the algorithm in terms of composite bodies.
+  // - Even though we use H for the "hinge matrix" as in Jain's book, our hinge
+  //   matrix is the transpose of that used by Jain. Therefore our hinge matrix
+  //   is the across-mobilizer Jacobian such that we can write
+  //   V_PB_W = H_PB_W * v_B, with v_B the generalized velocities of body B's
+  //   mobilizer.
+  //
+  // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+  //               algorithms. Springer Science & Business Media, pp. 123-130.
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
@@ -915,8 +930,8 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
   Matrix6xUpTo6<T> Fm_CCo_W;
 
   // The algorithm below does not recurse zero entries and therefore these must
-  // be set a priory.
-  H->setZero();
+  // be set a priori.
+  M->setZero();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -924,12 +939,12 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
 
-      // This node's body spatial inertia.
+      // This node's spatial inertia.
       const SpatialInertia<T>& M_C_W =
           spatial_inertia_in_world_cache[composite_node_index];
 
-      // Compute the inertia of the composite body C corresponding to node with
-      // index composite_node_index.
+      // Compute the inertia of the composite body C corresponding to the node
+      // with index composite_node_index.
       SpatialInertia<T>& R_C_W = R_B_W_all[composite_node_index];
       composite_node.CalcCompositeBodyInertia_TipToBase(M_C_W, pc, R_B_W_all,
                                                         &R_C_W);
@@ -967,7 +982,7 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const int composite_nv = composite_node.get_num_mobilizer_velocities();
 
       // Diagonal block corresponding to current node (composite_node_index).
-      H->block(composite_start, composite_start, composite_nv, composite_nv) =
+      M->block(composite_start, composite_start, composite_nv, composite_nv) =
           H_CpC_W.transpose() * Fm_CCo_W;
 
       // We recurse the tree inwards from C all the way to the root. We define
@@ -980,26 +995,31 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const BodyNode<T>* body_node = child_node->parent_body_node();
       Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;
       while (body_node) {
-        const Vector3<T>& p_BBc_W = pc.get_p_PoBo_W(child_node->index());
-        // In place rigid shift of the spatial force in each column of Fm_CPo_W,
-        // from Bo to Po.
-        Fm_CBo_W.template topRows<3>() -=
-            Fm_CBo_W.template bottomRows<3>().colwise().cross(p_BBc_W);
+        const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
+        // In place rigid shift of the spatial force in each column of Fm_CBo_W,
+        // from Bc to Bo.
+        // Before this computation, Fm_CBo_W actually stores Fm_CBc_W from the
+        // previous recursion.
+        // At the end of this computation, Fm_CBo_W stores the spatial force on
+        // composite body C, shifted to Bo, and expressed in the world W.
+        // That is, we are doing Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
+        SpatialForce<T>::Shift(Fm_CBo_W, p_BcBo_W, &Fm_CBo_W);
 
+        // Across mobilizer Jacobian between body_node B and its parent P.
         Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
             body_node->GetJacobianFromArray(H_PB_W_cache);
 
         // Compute the corresponding block.
         const int body_start = body_node->velocity_start();
         const int body_nv = body_node->get_num_mobilizer_velocities();
-        H->block(body_start, composite_start, body_nv, composite_nv) =
+        M->block(body_start, composite_start, body_nv, composite_nv) =
             H_PB_W.transpose() * Fm_CBo_W;
 
         // And copy to its symmetric block.
         // Eigen incorrectly detects aliasing during transposition. We fix this
         // by creating a temporaty copy with .eval() below.
-        H->block(composite_start, body_start, composite_nv, body_nv) =
-            H->block(body_start, composite_start, body_nv, composite_nv)
+        M->block(composite_start, body_start, composite_nv, body_nv) =
+            M->block(body_start, composite_start, body_nv, composite_nv)
                 .transpose()
                 .eval();
 

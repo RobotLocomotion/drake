@@ -426,20 +426,27 @@ class SpatialInertia {
   }
 
   /// Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
-  /// as columns of input matrix `Vmatrix`. The top three rows of Vmatrix are
+  /// as columns of input matrix `Fmatrix`. The top three rows of Fmatrix are
   /// expected to store the rotational components while the bottom three rows
   /// are expected to store the translational components.
-  /// The output matrix is of the same size as `Vmatrix` and each j-th colum
+  /// The output matrix is of the same size as `Fmatrix` and each j-th column
   /// stores the spatial vector in F⁶ result of multiplying `this` spatial
-  /// inertia with the j-th column of `Vmatrix`.
-  Matrix6X<T> operator*(
-      const Eigen::Ref<const Matrix6X<T>>& Vmatrix) const {
-    const auto& Vrotational = Vmatrix.template topRows<3>();
-    const auto& Vtranslational = Vmatrix.template bottomRows<3>();
+  /// inertia with the j-th column of `Fmatrix`.
+  template <typename Derived>
+  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> operator*(
+      const Eigen::MatrixBase<Derived>& Fmatrix) const {
+    static_assert(is_eigen_scalar_same<Derived, T>::value,
+                  "Derived must be templated on the same scalar type as this "
+                  "spatial inertia.");
+    if (Fmatrix.rows() != 6) {
+      throw std::logic_error("Fmatrix must hold spatial vectors in F⁶.");
+    }
+    const auto& Vrotational = Fmatrix.template topRows<3>();
+    const auto& Vtranslational = Fmatrix.template bottomRows<3>();
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
     const Matrix3<T> I_SP_E = CalcRotationalInertia().CopyToFullMatrix3();
 
-    Matrix6X<T> F_Bo_E(6, Vmatrix.cols());
+    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> F_Bo_E(6, Fmatrix.cols());
 
     // Rotational component.
     F_Bo_E.template topRows<3>() =
