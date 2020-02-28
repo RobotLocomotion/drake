@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/implicit_integrator.h"
@@ -264,6 +265,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // This Jacobian is then defined as:
   //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
   //     Jₗ(y) = ∂l(y)/∂y                       (8)
+  // We use the Jacobian computation scheme from
+  // get_jacobian_computation_scheme, which is either a first-order forward
+  // difference, a second-order centered difference, or automatic
+  // differentiation. See math::ComputeNumericalGradient for more details on
+  // the first two methods.
   // @param t refers to tⁿ⁺¹, the time used in the definition of l(y)
   // @param h is the timestep size parameter, h, used in the definition of
   //        l(y)
@@ -278,56 +284,6 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   void CalcVelocityJacobian(const T& t, const T& h, const VectorX<T>& y,
                             const VectorX<T>& qk, const VectorX<T>& qn,
                             MatrixX<T>* Jy);
-
-  // Uses numerical differencing to compute the Jacobian, Jₗ(y), of
-  // the function l(y), used in this integrator's residual computation, with
-  // respect to y, where y = (v,z). This Jacobian is then defined as:
-  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
-  //     Jₗ(y) = ∂l(y)/∂y                       (8)
-  // In this method, we compute the Jacobian Jₗ(y) using either a first-order
-  // forward difference or a second-order centered difference.
-  // See math::ComputeNumericalGradient for more details.
-  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
-  // @param h is the timestep size parameter, h, used in the definition of
-  //        l(y).
-  // @param y is the generalized velocity and miscellaneous states around which
-  //        to evaluate Jₗ(y).
-  // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
-  // @param qn refers to qⁿ, the initial position used in l(y).
-  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
-  // @note The context's time will be set to t, and its continuous state will
-  //       be indeterminate on return.
-  void ComputeNumericalDiffVelocityJacobian(const T& t, const T& h,
-                                          const VectorX<T>& y,
-                                          const VectorX<T>& qk,
-                                          const VectorX<T>& qn,
-                                          MatrixX<T>* Jy);
-
-  // Uses second-order central differencing to compute the Jacobian, Jₗ(y), of
-  // the function l(y), used in this integrator's residual computation, with
-  // respect to y, where y = (v,z). This Jacobian is then defined as:
-  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
-  //     Jₗ(y) = ∂l(y)/∂y                       (8)
-  //
-  // In this method, we compute the Jacobian Jₗ(y) using automatic
-  // differentiation.
-  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
-  // @param h is the timestep size parameter, h, used in the definition of
-  //        l(y).
-  // @param y is the generalized velocity and miscellaneous states around which
-  //        to evaluate Jₗ(y).
-  // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
-  // @param qn refers to qⁿ, the initial position used in l(y).
-  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
-  // @note The context's time will be set to t, and its continuous state will
-  //       be indeterminate on return.
-  void ComputeAutoDiffVelocityJacobian(const T& t, const T& h,
-                                          const VectorX<T>& y,
-                                          const VectorX<T>& qk,
-                                          const VectorX<T>& qn,
-                                          MatrixX<T>* Jy);
 
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of

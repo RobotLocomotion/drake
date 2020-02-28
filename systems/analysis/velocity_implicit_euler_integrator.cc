@@ -4,8 +4,11 @@
 #include <limits>
 #include <stdexcept>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -70,38 +73,6 @@ void VelocityImplicitEulerIntegrator<T>::
 }
 
 template <class T>
-void VelocityImplicitEulerIntegrator<T>::ComputeForwardDiffVelocityJacobian(
-    const T& t, const T& h, const VectorX<T>& y, const VectorX<T>& qk,
-    const VectorX<T>& qn, MatrixX<T>* Jy) {
-  DRAKE_LOGGER_DEBUG(
-      "VelocityImplicitEulerIntegrator ComputeForwardDiffVelocityJacobian "
-      "{}-Jacobian t={}",
-      y.size(), t);
-  DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
-                     y.transpose());
-
-  BasicVector<T> qdot(qn.size());
-  // Define the lambda l_of_y to evaluate l(y).
-  std::function<void(const VectorX<T>&, VectorX<T>*)> l_of_y =
-      [&qk, &t, &qn, &h, &qdot, this](const VectorX<T>& y_state,
-                               VectorX<T>* l_result) {
-        *l_result = this->ComputeLOfY(t, y_state, qk, qn, h, &qdot);
-      };
-
-  // Compute Jy by passing l(y) to math::ComputeNumericalGradient.
-  // TODO(antequ): Right now we modify the context twice each time we call
-  // l(y): once when we calculate qⁿ + h N(qₖ) v (SetTimeAndContinuousState),
-  // and once when we calculate l(y) (get_mutable_generalized_position).
-  // However, this is only necessary for each y that modifies a velocity (v).
-  // For all but one of the miscellaneous states (z), we can reuse the position
-  // so that the context needs only one modification. Investigate how to
-  // refactor this logic to achieve this performance benefit while maintaining
-  // code readability.
-  *Jy = math::ComputeNumericalGradient(l_of_y, y,
-      math::NumericalGradientOption{math::NumericalGradientMethod::kForward});
-}
-
-template <class T>
 void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& t,
     const T& h, const VectorX<T>& y, const VectorX<T>& qk,
     const VectorX<T>& qn, MatrixX<T>* Jy) {
@@ -114,18 +85,43 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& t,
   int64_t existing_ODE_evals = this->get_num_derivative_evaluations();
 
   // Compute the Jacobian using the selected computation scheme.
-  switch (this->get_jacobian_computation_scheme()) {
-    case ImplicitIntegrator<T>::JacobianComputationScheme::kForwardDifference:
-      ComputeForwardDiffVelocityJacobian(t, h, y, qk, qn, Jy);
-      break;
-    case ImplicitIntegrator<T>::JacobianComputationScheme::kCentralDifference:
-      throw std::runtime_error("Central difference not supported yet!");
-      break;
-    case ImplicitIntegrator<T>::JacobianComputationScheme::kAutomatic:
-      throw std::runtime_error("AutoDiff'd Jacobian not supported yet!");
-      break;
-    default:
-      throw new std::logic_error("Invalid Jacobian computation scheme!");
+  if (this->get_jacobian_computation_scheme() ==
+      ImplicitIntegrator<T>::JacobianComputationScheme::kForwardDifference ||
+      this->get_jacobian_computation_scheme() ==
+      ImplicitIntegrator<T>::JacobianComputationScheme::kCentralDifference) {
+    // Compute the Jacobian using numerical differencing.
+    BasicVector<T> qdot(qn.size());
+    // Define the lambda l_of_y to evaluate l(y).
+    std::function<void(const VectorX<T>&, VectorX<T>*)> l_of_y =
+        [&qk, &t, &qn, &h, &qdot, this](const VectorX<T>& y_state,
+                                VectorX<T>* l_result) {
+          *l_result = this->ComputeLOfY(t, y_state, qk, qn, h, &qdot);
+        };
+
+    const math::NumericalGradientOption numerical_gradient_method(
+        (this->get_jacobian_computation_scheme() ==
+        ImplicitIntegrator<T>::JacobianComputationScheme::kCentralDifference) ?
+        math::NumericalGradientMethod::kCentral :
+        math::NumericalGradientMethod::kForward);
+
+    // Compute Jy by passing l(y) to math::ComputeNumericalGradient.
+    // TODO(antequ): Right now we modify the context twice each time we call
+    // l(y): once when we calculate qⁿ + h N(qₖ) v
+    // (SetTimeAndContinuousState), and once when we calculate l(y)
+    // (get_mutable_generalized_position). However, this is only necessary for
+    // each y that modifies a velocity (v). For all but one of the
+    // miscellaneous states (z), we can reuse the position so that the context
+    // needs only one modification. Investigate how to refactor this logic to
+    // achieve this performance benefit while maintaining code readability.
+    *Jy = math::ComputeNumericalGradient(l_of_y, y, numerical_gradient_method);
+  } else if (
+      this->get_jacobian_computation_scheme() ==
+      ImplicitIntegrator<T>::JacobianComputationScheme::kAutomatic) {
+    // Compute the Jacobian using automatic differentiation.
+    throw std::logic_error("AutoDiff Jacobians are not supported yet for"
+        " VelocityImplicitEulerIntegrator!");
+  } else {
+    throw new std::logic_error("Invalid Jacobian computation scheme!");
   }
 
   // Use the new number of ODE evaluations to determine the number of ODE
@@ -245,6 +241,7 @@ template <class T>
 VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(const T& t,
     const VectorX<T>& y, const VectorX<T>& qk, const VectorX<T>& qn,
     const T& h, BasicVector<T>* qdot) {
+  DRAKE_DEMAND(qdot != nullptr);
   Context<T>* context = this->get_mutable_context();
   int nq = qn.size();
   int ny = y.size();
@@ -276,6 +273,7 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(const T& t,
 }
 
 
+
 template <class T>
 bool VelocityImplicitEulerIntegrator<T>::StepVelocityImplicitEuler(
     const T& t0, const T& h, const VectorX<T>& xn,
@@ -283,6 +281,8 @@ bool VelocityImplicitEulerIntegrator<T>::StepVelocityImplicitEuler(
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
     MatrixX<T>* Jy, int trial) {
   using std::abs;
+
+  DRAKE_DEMAND(xtplus != nullptr);
 
   // Verify the trial number is valid.
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
@@ -490,8 +490,8 @@ bool VelocityImplicitEulerIntegrator<T>::AttemptStepPaired(
     "VelocityImplicitEulerIntegrator::AttemptStepPaired(h={}, "
     "t={})", h, t0);
   using std::abs;
-  DRAKE_ASSERT(xtplus_vie);
-  DRAKE_ASSERT(xtplus_hvie);
+  DRAKE_ASSERT(xtplus_vie != nullptr);
+  DRAKE_ASSERT(xtplus_hvie != nullptr);
 
   // Use the current state as the candidate value for the next state.
   // [Hairer 1996] validates this choice (p. 120).
