@@ -84,12 +84,12 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   // @param[in] w_AC_A frame C's angular velocity in frame A, expressed in A.
   // @param[in] v_ACo_A point Cₒ's velocity in frame A, expressed in frame A.
   // @param[in] f_C_C_expected_simple Expected net force from the bushing on
-  //   frame C expressed in frame C -- or nullptr (not for comparison).
+  //   frame C expressed in frame C -- or nullptr (no comparison).
   // @param[in] t_Co_C_expected_simple Expected net moment from the bushing on
-  //   frame C about Co expressed in frame C -- or nullptr (not for comparison).
+  //   frame C about Co expressed in frame C -- or nullptr (no comparison).
   // @note: In some situations, it is relatively easy to calculate expected
   //   results that can be passed to this method as a non nullptr and used as a
-  //   secondary check on the Drake and MotionGenesis results.
+  //   secondary check on the Drake results.
   void CompareToMotionGenesisResult(
       const math::RollPitchYaw<double>& rpy,
       const Vector3<double>& p_AoCo_A,
@@ -113,24 +113,15 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     mobilizer_->set_angular_velocity(&context, w_AC_A);
     mobilizer_->set_translational_velocity(&context, v_ACo_A);
 
-    // ---------- Start of by-hand and/or MotionGenesis calculations ---------
-    // TODO(Mitiguy) clarify which calculations have been done by-hand or by
-    //  MotionGenesis before merging this PR.
-    // Get the bushing's configuration and motion.
+    // ---------- Start of alternate calculations ---------
+    // Get the roll-pitch-yaw angles relating orientation of frames A and C.
     const double q0 = rpy.roll_angle();    // rad
     const double q1 = rpy.pitch_angle();   // rad
     const double q2 = rpy.yaw_angle();     // rad
-    const double wx = w_AC_A(0);           // rad/s
-    const double wy = w_AC_A(1);           // rad/s
-    const double wz = w_AC_A(2);           // rad/s
 
-    // Form kinematical ODEs that relate q̇₀, q̇₁, q̇₂ to wx, wy, wz.
-    const double c1 = std::cos(q1), s1 = std::sin(q1);
-    const double c2 = std::cos(q2), s2 = std::sin(q2);
-    const double oneOverc1 = 1.0/c1, tan1 = s1 * oneOverc1;
-    const double q0Dt = c2 * oneOverc1 * wx + s2 * oneOverc1 * wy;
-    const double q1Dt = -s2 * wx + c2 * wy;
-    const double q2Dt = c2 * tan1 * wx + s2 * tan1 * wy + wz;
+    // Form kinematical ODEs that relate [q̇₀ q̇₁ q̇₂] to W_AC_A.
+    const Vector3<double> qDt =
+        rpy.CalcRpyDtFromAngularVelocityInParent(w_AC_A);
 
     // Frame B is oriented "half-way" between frames A and C.
     // One way to determine B's orientation relative to A is to first determine
@@ -174,64 +165,66 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double k0 = k012(0), k1 = k012(1), k2 = k012(2);  // N*m/rad
     const double kx = kxyz(0), ky = kxyz(1), kz = kxyz(2);  // N/m
 
-    // Form net force fx*Bx + fy*By + fz*Bz on frameC from the bushing.
-    const double fx = -(kx * x + bx * xDt);
-    const double fy = -(ky * y + by * yDt);
-    const double fz = -(kz * z + bz * zDt);
-    const Vector3<double> f_A_B_expected(-fx, -fy, -fz);
-    const Vector3<double> f_C_B_expected(fx, fy, fz);
+    // Form net force f = fᴋ + fʙ on frameC from the bushing.
+    const Vector3<double> fK(-kx * x, -ky * y, -kz * z);        // Stiffness
+    const Vector3<double> fB(-bx * xDt, -by * yDt, -bz * zDt);  // Damping
+    const Vector3<double> f = fK + fB;
+    const Vector3<double> f_A_B_expected = -f;
+    const Vector3<double> f_C_B_expected = f;
 
     // Re-express the net force on frame A in frame A.
     // Re-express the net force on frame C in frame C.
     const Vector3<double> f_A_A_expected = R_AB * f_A_B_expected;
     const Vector3<double> f_C_C_expected = R_CB * f_C_B_expected;
 
-    // Form torques T0, T1, T2 associated with roll-pitch-yaw rotation sequence.
-    const double T0 = -(k0 * q0 + b0 * q0Dt);
-    const double T1 = -(k1 * q1 + b1 * q1Dt);
-    const double T2 = -(k2 * q2 + b2 * q2Dt);
+    // Form "gimbal torques τ₀, τ₁, τ₂ associated with roll-pitch-yaw rotations.
+    const Vector3<double> tau(-(k0 * q0 + b0 * qDt(0)),
+                              -(k1 * q1 + b1 * qDt(1)),
+                              -(k2 * q2 + b2 * qDt(2)));
 
-    // Calculate the torque T = Tx*Ax + Ty*Ay + Tz*Az on C which produces the
-    // same power as the spring-damper "gimbal" torques T0, T1, T2.
-    const double Tx = c2 * oneOverc1 * T0 - s2 * T1 + c2 * tan1 * T2;
-    const double Ty = s2 * oneOverc1 * T0 + c2 * T1 + s2 * tan1 * T2;
-    const double Tz = T2;
+    // Form `Txyz = Tx Ax + Ty Ay + Tz Az` which is the torque required when the
+    // bushing forces on C have their resultant force f applied at Cp (not Co).
+    // T is the torque on C which produces the same power as the spring-damper
+    // "gimbal" torques T0, T1, T2.
+    const Matrix3<double> N =
+        rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
+    const Vector3<double> Txyz = N.transpose() * tau;
 
     // Calculate the moment on frame A about Ao, expressed in A.
     const Vector3<double> p_AoBo_B = 0.5 * p_AoCo_B;
-    const Vector3<double> t_Ao_A_expected = Vector3<double>(-Tx, -Ty, -Tz) +
+    const Vector3<double> t_Ao_A_expected = -Txyz +
                                          R_AB * p_AoBo_B.cross(f_A_B_expected);
 
     // Calculate the moment on frame C about Co, expressed in A.
     const Vector3<double> p_CoBo_B = -p_AoBo_B;
-    const Vector3<double> t_Co_C_expected = R_CA * Vector3<double>(Tx, Ty, Tz)
+    const Vector3<double> t_Co_C_expected = R_CA * Txyz
                                        + R_CB * p_CoBo_B.cross(f_C_B_expected);
 
-    // Contributions to potential energy.
+    // Contributions to analytical potential energy Uᴀ.
     using std::pow;
-    const double potential_translation = 0.5 * kx * pow(x, 2)
-                                       + 0.5 * ky * pow(y, 2)
-                                       + 0.5 * kz * pow(z, 2);
-    const double potential_rotation = 0.5 * k0 * pow(q0, 2)
-                                    + 0.5 * k1 * pow(q1, 2)
-                                    + 0.5 * k2 * pow(q2, 2);
-    const double potential_energy_MG = potential_rotation
-                                     + potential_translation;
+    const double UA_translation = 0.5 * kx * pow(x, 2)
+                                + 0.5 * ky * pow(y, 2)
+                                + 0.5 * kz * pow(z, 2);
+    const double UA_rotation = 0.5 * k0 * pow(q0, 2)
+                             + 0.5 * k1 * pow(q1, 2)
+                             + 0.5 * k2 * pow(q2, 2);
+    const double UA_expected = UA_translation + UA_rotation;
 
-    // Contributions to power.
-    const double power_conservative_MG = -k0 * q0 * q0Dt - kx * x * xDt
-                                        - k1 * q1 * q1Dt - ky * y * yDt
-                                        - k2 * q2 * q2Dt - kz * z * zDt;
-    const double power_dissipation_MG = -b0 * pow(q0Dt, 2) - bx * pow(xDt, 2)
-                                       - b1 * pow(q1Dt, 2) - by * pow(yDt, 2)
-                                       - b2 * pow(q2Dt, 2) - bz * pow(zDt, 2);
-    const Vector3<double> rCrossF_B(fz*y - fy*z,  /* Bx measure of r.cross(F) */
-                                    fx*z - fz*x,  /* By measure of r.cross(F) */
-                                    fy*x - fx*y); /* Bz measure of r.cross(F) */
+    // Power is resolved into three terms as `P = Pcᴀ + Pcɪ + Pɴᴄ`.
+    // Conservative power Pcᴀ has an analytical potential energy Uᴀ (Pcᴀ = −U̇ᴀ).
+    // Conservative power Pcɪ is numerically integrated to calculate Uɪ.
+    // Nonconservative power Pɴᴄ is the part of power P without an associated
+    // potential energy (power due to damping forces and damping torques).
     const Vector3<double> w_AC_B = R_BA * w_AC_A;
-    const double power_extra_MG = w_AC_B.dot(rCrossF_B);
-    double power_nonconservative_MG = power_dissipation_MG + power_extra_MG;
-    // ---------- End of by-hand and/or MotionGenesis calculations ---------
+    const double PcA = -k0 * q0 * qDt(0) - kx * x * xDt
+                      - k1 * q1 * qDt(1) - ky * y * yDt
+                      - k2 * q2 * qDt(2) - kz * z * zDt;
+    const double PcI = w_AC_B.dot(p_AoCo_B.cross(fK));
+    const double Pnc = -b0 * pow(qDt(0), 2) - bx * pow(xDt, 2)
+                      - b1 * pow(qDt(1), 2) - by * pow(yDt, 2)
+                      - b2 * pow(qDt(2), 2) - bz * pow(zDt, 2)
+                      + w_AC_B.dot(p_AoCo_B.cross(fB));
+    // ------------ End of alternate calculations ---------
 
     // Verify F_A_A,, the bushing's spatial force calculation on frame A.
     double torque_epsilon = 32 * kEpsilon * t_Ao_A_expected.norm();
@@ -264,35 +257,36 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     }
 
     // TODO(Mitiguy) Fix CalcPotentialEnergy(), CalcConservativePower(), etc.
-    //  to avoid the need to form pc and vc.
+    //  to avoid the need to form pc and vc (see issue #12035).
     const MultibodyTree<double>& mbt = GetInternalTree(*mbtree_system_);
     const PositionKinematicsCache<double>& pc =
         mbt.EvalPositionKinematics(context);
     const VelocityKinematicsCache<double>& vc =
         mbt.EvalVelocityKinematics(context);
 
-    // Verify the bushing's potential energy calculation.
+    // Verify the bushing's analytical potential energy calculation.
     const ForceElement<double>* bushing_force_element = bushing_;
     const double potential_energy =
         bushing_force_element->CalcPotentialEnergy(context, pc);
-    double scaled_epsilon = std::abs(potential_energy_MG) * 32 * kEpsilon;
-    EXPECT_NEAR(potential_energy, potential_energy_MG, scaled_epsilon);
+    double scaled_epsilon = std::abs(UA_expected) * 32 * kEpsilon;
+    EXPECT_NEAR(potential_energy, UA_expected, scaled_epsilon);
 
-    // Verify the bushing's conservative power calculation.
+    // Verify the bushing's analytical conservative power calculation.
     const double conservative_power =
         bushing_force_element->CalcConservativePower(context, pc, vc);
-    scaled_epsilon = std::abs(power_conservative_MG) * 32 * kEpsilon;
-    EXPECT_NEAR(conservative_power, power_conservative_MG, scaled_epsilon);
+    scaled_epsilon = std::abs(PcA) * 32 * kEpsilon;
+    EXPECT_NEAR(conservative_power, PcA, scaled_epsilon);
 
     // Verify the bushing's nonconservative power calculation.
     // Note: The LinearBushingRollPitchYaw class documentation describes the
     // calculation of power (conservative/nonconservative) and potential energy.
+    // TODO(Mitiguy) Per issue #12752, change the test below to use Pnc, not
+    //  Pnc + PcI, and add test for CalcConservativePowerNumerical().
     // ----------------------------------------------------------------------
     const double non_conservative_power =
         bushing_force_element->CalcNonConservativePower(context, pc, vc);
-    scaled_epsilon = std::abs(power_dissipation_MG) * 32 * kEpsilon;
-    EXPECT_NEAR(non_conservative_power, power_nonconservative_MG,
-                scaled_epsilon);
+    scaled_epsilon = std::abs(Pnc + PcI) * 32 * kEpsilon;
+    EXPECT_NEAR(non_conservative_power, Pnc + PcI, scaled_epsilon);
   }
 
   // Calculates "reasonable" torque and force stiffness/damping constants,
@@ -345,11 +339,10 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double kx = mC_ * wnX * wnX;                           // N/m
     const double ky = mC_ * wnY * wnY;                           // N/m
     const double kz = mC_ * wnZ * wnZ;                           // N/m
-    const double bx = 2 * zeta * std::sqrt(mC_ * kx);            // N*s/m
-    const double by = 2 * zeta * std::sqrt(mC_ * ky);            // N*s/m
-    const double bz = 2 * zeta * std::sqrt(mC_ * kz);            // N*s/m
+    const Vector3<double> Kxyz(kx, ky, kz);
+    const Vector3<double> Bxyz = 2 * zeta * (mC_ * Kxyz).cwiseSqrt();
     *force_stiffness_constants = Vector3<double>(kx, ky, kz);
-    *force_damping_constants = Vector3<double>(bx, by, bz);
+    *force_damping_constants = Vector3<double>(Bxyz);
   }
 
  protected:
@@ -383,7 +376,6 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 };
 
 TEST_F(LinearBushingRollPitchYawTester, ConstructionAndAccessors) {
-  // TODO(Mitiguy) add remaining accessors before merging this PR.
   EXPECT_EQ(bushing_->link0().index(), bodyA_->index());
   EXPECT_EQ(bushing_->link1().index(), bodyC_->index());
   EXPECT_EQ(bushing_->frameA().body().index(), bodyA_->index());

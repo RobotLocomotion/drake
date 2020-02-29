@@ -96,7 +96,7 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
   const T torque_potential_energy =
       0.5 * (torque_stiffness_constants().dot(q012Squared));
 
-  // Use the force stiffness constants [kx, ky, kz] and `p_AₒCₒ_B = [x, y, z]`
+  // Use the force stiffness constants [kx, ky, kz] and `p_AₒCₒ_B = [x y z]ʙ`
   // (the position vector from Aₒ to Bₒ expressed in frame B) to form the
   // analytical part of the force potential energy 0.5*(kx*x² + ky*y² + kz*z²).
   const Vector3<T> xyz = CalcBushing_xyz(context);
@@ -108,6 +108,40 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
 }
 
 template <typename T>
+T LinearBushingRollPitchYaw<T>::CalcConservativePowerAnalytical(
+    const systems::Context<T>& context) const {
+  // ----------------------------------------------------------------------
+  // Analytical conservative power Pcᴀ is related to analytical potential energy
+  // Uᴀ by `Pcᴀ = −U̇ᴀ`.
+  // Uᴀ  = 1/2 (k₀ q₀² + k₁ q₁² + k₂ q₂²  +  kx x² + ky y² + kz z²)
+  // Pcᴀ = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂  +  kx x ẋ + ky y ẏ + kz z ż)
+  // ----------------------------------------------------------------------
+  // Calculate Pcᴀ_torque = τᴋ ⋅ q̇ = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂).
+  const Vector3<T> kQ = TorqueStiffnessConstantsTimesAngles(context);
+  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
+  const T PcA_torque = -(kQ.dot(q012Dt));
+
+  // Calculate Pcᴀ_force = fᴋ ⋅ Ẋ = −(kx x ẋ + ky y ẏ + kz z ż).
+  const Vector3<T> kX = ForceStiffnessConstantsTimesDisplacement(context);
+  const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
+  const T PcA_force = -(kX.dot(xyzDt));
+
+  return PcA_torque + PcA_force;
+}
+
+template <typename T>
+T LinearBushingRollPitchYaw<T>::CalcConservativePowerNumerical(
+    const systems::Context<T>& context) const {
+  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × fᴋ),
+  // where Pcɪ is the part of conservative power that is numerically integrated
+  // to calculate Uɪ (the non-analytical part of potential energy).
+  const Vector3<T> spring_force_B =
+      -ForceStiffnessConstantsTimesDisplacement(context);
+  const T PcI = CalcPowerHelperMethod(context, spring_force_B);
+  return PcI;
+}
+
+template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcConservativePower(
     const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>& /* pc */,
@@ -116,22 +150,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
   // calculation of power (conservative/nonconservative) and potential energy.
   // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
   //  values and LinearBushingRollPitchYaw class documentation.
-  // ----------------------------------------------------------------------
-  // Conservative power Pc is related to potential energy Uᴄ by Pᴄ = −U̇ᴄ.
-  // Uᴄ = 1/2 (k₀ q₀² + k₁ q₁² + k₂ q₂²  +  kx x² + ky y² + kz z²)
-  // Pc = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂  +  kx x ẋ + ky y ẏ + kz z ż)
-  // ----------------------------------------------------------------------
-  // Calculate Pc_torque = τᴋ ⋅ q̇ = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂).
-  const Vector3<T> kQ = TorqueStiffnessConstantsTimesAngles(context);
-  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
-  const T Pc_torque = -(kQ.dot(q012Dt));
-
-  // Calculate Pc_force = fᴋ ⋅ Ẋ = −(kx x ẋ + ky y ẏ + kz z ż).
-  const Vector3<T> kX = ForceStiffnessConstantsTimesDisplacement(context);
-  const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
-  const T Pc_force = -(kX.dot(xyzDt));
-
-  return Pc_torque + Pc_force;
+  return CalcConservativePowerAnalytical(context);
 }
 
 template <typename T>
@@ -145,28 +164,40 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   //  values and LinearBushingRollPitchYaw class documentation.
   // ----------------------------------------------------------------------
   // Calculate the part of nonconservative power due to torque damping.
-  // Pn_torque = τʙ ⋅ q̇ = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
+  // Pɴᴄ_torque = τʙ ⋅ q̇ = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
   const Vector3<T> bQDt = TorqueDampingConstantsTimesAngleRates(context);
   const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
-  const T Pn_torque = -(bQDt.dot(q012Dt));
+  const T Pnc_torque = -(bQDt.dot(q012Dt));
 
   // Calculate a part of nonconservative power that is due to force damping.
-  // Pn_force = fʙ ⋅ X = −(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
+  // Pɴᴄ_force = fʙ ⋅ X = −(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
   const Vector3<T> bXDt = ForceDampingConstantsTimesDisplacementRate(context);
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
-  const T Pn_force0 = -(bXDt.dot(xyzDt));
+  const T Pnc_force0 = -(bXDt.dot(xyzDt));
 
-  // Calculate the part of nonconservative power that is due to additional terms
-  // in the calculation of power which is w_CA ⋅ (p_AoCo × f).
+  // Calculate the part of nonconservative power due to w_CA ⋅ (p_AoCo × fʙ).
+  const Vector3<T> damping_force_B =
+      -ForceDampingConstantsTimesDisplacementRate(context);
+  const T Pnc_force_extra = CalcPowerHelperMethod(context, damping_force_B);
+
+  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × fᴋ),
+  const T PcI = CalcConservativePowerNumerical(context);
+
+  return Pnc_torque + Pnc_force0 + Pnc_force_extra + PcI;
+}
+
+template <typename T>
+T LinearBushingRollPitchYaw<T>::CalcPowerHelperMethod(
+    const systems::Context<T>& context, const Vector3<T>& force_B) const {
+  // Helper method to calculate a part of power due to w_CA ⋅ (p_AoCo × fʙ).
+  // @param[in] context The state of the multibody system.
   const Vector3<T> p_AoCo_B = Calcp_AoCo_B(context);
-  const Vector3<T> force_B = CalcBushingNetForceOnCExpressedInB(context);
   const Vector3<T> pCrossf_B = p_AoCo_B.cross(force_B);
   const Vector3<T> w_AC_A = Calcw_AC_A(context);
   const math::RotationMatrix<T> R_BA = CalcR_AB(context).inverse();
   const Vector3<T> w_AC_B = R_BA * w_AC_A;
-  const T Pn_force_extra = w_AC_B.dot(pCrossf_B);
-
-  return Pn_torque + Pn_force0 + Pn_force_extra;
+  const T power_force_extra = w_AC_B.dot(pCrossf_B);
+  return power_force_extra;
 }
 
 template <typename T>

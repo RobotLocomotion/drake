@@ -600,8 +600,8 @@ class RollPitchYaw {
     const T sy_over_cp = sy * one_over_cp;
     Matrix3<T> M;
     // clang-format on
-    M <<      cy_over_cp,       sy_over_cp,  T(0),
-        -sy,               cy,  T(0),
+    M <<     cy_over_cp,       sy_over_cp,  T(0),
+                    -sy,               cy,  T(0),
         cy_over_cp * sp,  sy_over_cp * sp,  T(1);
     // clang-format off
     return M;
