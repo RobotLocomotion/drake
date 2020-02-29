@@ -58,7 +58,24 @@
 
 /// @addtogroup sensor_systems
 /// @{
-/// Models of sensors that operate as Systems in a block diagram.
+/// Drake provides a variety of capabilies for sensor modeling. Some sensors are
+/// offered as Systems in a block diagram. These sensors are listed in the
+/// following section as classes. On the other hand, Drake has some internal
+/// functionalities, which can be used to model a sensor. The
+/// **Force/Torque Sensor** falls into this catergory.
+///
+/// A **Force/Torque Sensor** measures nothing but the reaction force/torque
+/// of a @ref drake::multibody::WeldJoint "WeldJoint". The
+/// @ref drake::multibody::MultibodyPlant "MultibodyPlant" class provides the
+/// @ref drake::multibody::MultibodyPlant::get_reaction_forces_output_port()
+/// "get_reaction_forces_output_port()" that returns the reaction
+/// @ref drake::multibody::SpatialForce "SpatialForce" of all the joints.
+/// The users only need to extract the joints they are interested. To simulate a
+/// Force/Torque sensor, the users need to either a) define a fixed joint for
+/// the force/torque sensor in the model file or b) add a
+/// @ref drake::multibody::WeldJoint "WeldJoint" between two bodies.
+/// This joint will then serve as the Force/Torque sensor. The users can also
+/// refer to *planar_gripper* for example.
 /// @}
 
 /// @addtogroup manipulation_systems
