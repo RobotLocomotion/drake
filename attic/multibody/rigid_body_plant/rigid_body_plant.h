@@ -409,11 +409,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   // exception if at least one of the ports is not connected.
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
 
-  // LeafSystem<T> overrides.
-
-  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
-  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const override;
-
   // System<T> overrides.
 
   void DoCalcTimeDerivatives(const Context<T>& context,

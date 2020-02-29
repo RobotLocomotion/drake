@@ -282,9 +282,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
   /// @endcond
 
-  /// Aggregates the time derivatives from each subsystem into a
-  /// DiagramContinuousState.
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const final {
     std::vector<std::unique_ptr<ContinuousState<T>>> sub_derivatives;
     for (const auto& system : registered_systems_) {
       sub_derivatives.push_back(system->AllocateTimeDerivatives());
@@ -293,10 +291,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         std::move(sub_derivatives));
   }
 
-  /// Aggregates the discrete update variables from each subsystem into a
-  /// DiagramDiscreteVariables.
-  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
-      const override {
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final {
     std::vector<std::unique_ptr<DiscreteValues<T>>> sub_discretes;
     for (const auto& system : registered_systems_) {
       sub_discretes.push_back(system->AllocateDiscreteVariables());

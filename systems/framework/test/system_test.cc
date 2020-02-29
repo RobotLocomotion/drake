@@ -54,6 +54,11 @@ class TestSystem : public System<double> {
     return std::make_unique<ContinuousState<double>>();
   }
 
+  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteVariables()
+      const override {
+    return std::make_unique<DiscreteValues<double>>();
+  }
+
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
@@ -587,6 +592,11 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return std::make_unique<ContinuousState<T>>();
+  }
+
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const
+      override {
+    return std::make_unique<DiscreteValues<T>>();
   }
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final {

@@ -501,8 +501,6 @@ class Rod2D : public systems::LeafSystem<T> {
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   int get_k(const systems::Context<T>& context) const;
-  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
-      const override;
   void CopyStateOut(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const;
   void CopyPoseOut(const systems::Context<T>& context,

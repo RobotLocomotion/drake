@@ -42,6 +42,8 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
     // variables.
     this->DeclareContinuousState(Rod2dStateVector<T>(), 3, 3, 0);  // q, v, z
   }
+  // TODO(edrumwri): When type is SystemType::kPiecewiseDAE, allocate the
+  // abstract mode variables.
 
   this->DeclareInputPort(systems::kVectorValued, 3);
   state_output_port_ = &this->DeclareVectorOutputPort(
@@ -1029,19 +1031,6 @@ void Rod2D<T>::DoCalcTimeDerivatives(
     // TODO(edrumwri): Implement the piecewise DAE approach.
     throw std::domain_error(
         "Rod2D<T>::DoCalcTimeDerivatives: piecewise DAE isn't implemented yet");
-  }
-}
-
-/// Allocates the abstract state (for piecewise DAE systems).
-template <typename T>
-std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
-    const {
-  if (system_type_ == SystemType::kPiecewiseDAE) {
-    // TODO(edrumwri): Allocate the abstract mode variables.
-    return std::make_unique<systems::AbstractValues>();
-  } else {
-    // Discretized and continuous approaches need no abstract variables.
-    return std::make_unique<systems::AbstractValues>();
   }
 }
 

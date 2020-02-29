@@ -102,24 +102,14 @@ RobotPlanInterpolator::RobotPlanInterpolator(
               &RobotPlanInterpolator::OutputAccel)
           .get_index();
 
+  this->DeclareAbstractState(std::make_unique<Value<PlanData>>());
+  // Flag indicating whether RobotPlanInterpolator::Initialize has been called.
+  this->DeclareAbstractState(std::make_unique<Value<bool>>(false));
+
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
 RobotPlanInterpolator::~RobotPlanInterpolator() {}
-
-std::unique_ptr<systems::AbstractValues>
-RobotPlanInterpolator::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<AbstractValue>> abstract_vals(2);
-  const PlanData default_plan;
-  // Actual plan.
-  abstract_vals[kAbsStateIdxPlan] =
-      AbstractValue::Make<PlanData>(default_plan);
-  // Flag indicating whether RobotPlanInterpolator::Initialize() has
-  // been called.
-  abstract_vals[kAbsStateIdxInitFlag] =
-      AbstractValue::Make<bool>(false);
-  return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
-}
 
 void RobotPlanInterpolator::SetDefaultState(
     const systems::Context<double>&,

@@ -31,6 +31,8 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
           this->DeclareVectorOutputPort(
               BasicVector<double>(1),
               &SchunkWsgTrajectoryGenerator::OutputForce).get_index()) {
+  this->DeclareDiscreteState(
+      SchunkWsgTrajectoryGeneratorStateVector<double>());
   // The update period below matches the polling rate from
   // drake-schunk-driver.
   this->DeclarePeriodicDiscreteUpdate(0.05);
@@ -97,12 +99,6 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     new_traj_state->set_trajectory_start_time(
         last_traj_state->trajectory_start_time());
   }
-}
-
-std::unique_ptr<DiscreteValues<double>>
-SchunkWsgTrajectoryGenerator::AllocateDiscreteState() const {
-  return std::make_unique<DiscreteValues<double>>(
-      std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
 }
 
 void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
