@@ -16,8 +16,8 @@ namespace multibody {
 template <typename T> class Body;
 
 /// This ForceElement models a massless flexible bushing that connects a frame
-/// A of a link L0 to a frame C of a link L1.  Th bushing can apply a torque and
-/// force due to stiffness (spring) and dissipation (damper) properties.
+/// A of a link L0 to a frame C of a link L1.  The bushing can apply a torque
+/// and force due to stiffness (spring) and dissipation (damper) properties.
 /// Frame A is regarded as welded to link (body) L0.
 /// Frame C is regarded as welded to link (body) L1.
 /// Frame B is the bushing frame whose origin Bo is halfway between Ao (A's
@@ -49,8 +49,8 @@ template <typename T> class Body;
 /// ⌊ τ₂ ⌋     ⌊ 0    0   k₂⌋ ⌊ q₂ ⌋     ⌊ 0    0   b₂⌋ ⌊ q̇₂ ⌋
 /// </pre>
 /// where k₀, k₁, k₂ and b₀, b₁, b₂ are torque stiffness and damping constants.
-/// Note: As discussed in the Advanced section below, T is not τ `(T ≠ τ)`.
-/// <br>Note: This is a "linear" bushing model as the torque τ varies linearly
+/// @note As discussed in the Advanced section below, T is not τ `(T ≠ τ)`.
+/// @note This is a "linear" bushing model as the torque τ varies linearly
 /// with q and q̇ as τ = τᴋ + τʙ where τᴋ = −K₀₁₂ q and τʙ = −B₀₁₂ q̇.
 ///
 /// The symmetric bushing model for f depends on X = [x y z]ᵀ, which is defined
@@ -62,36 +62,25 @@ template <typename T> class Body;
 /// ⌊ fz ⌋ʙ     ⌊ 0    0   kz⌋ ⌊ z ⌋ʙ    ⌊ 0    0   bz⌋ ⌊ ż ⌋ʙ
 /// </pre>
 /// where kx, ky, kz and bx, by, bz are force stiffness and damping constants.
-/// <br>Note: This is a "linear" bushing model as the force f varies linearly
+/// @note This is a "linear" bushing model as the force f varies linearly
 /// with X and Ẋ as f = fᴋ + fʙ where fᴋ = −Kxyz X and fʙ = −Bxyz Ẋ.
 ///
 /// This bushing's constructor sets the torque stiffness/damping constants
 /// `[k₀ k₁ k₂]` and `[b₀ b₁ b₂]` and the force stiffness/damping constants
 /// `[kx ky kz]` and `[bx by bz]`.  The examples below demonstrate how to model
-/// various joints that have a flexible (e.g., rubber) mount.  It is OK to have
-/// a bushing with only damping (no stiffness), or only stiffness, or a combo.
+/// various joints that have a flexible (e.g., rubber) mount.  The damping
+/// values below represented by ? may be 0 or a reasonable positive number.
 ///
 /// Bushing type                    | torque constants    | force constants
 /// --------------------------------|:--------------------|:------------------
 /// z-axis revolute joint           | K₀₁₂ = `[k₀ k₁ 0]`  | Kxyz = `[kx ky kz]`
-/// ^                               | B₀₁₂ = `[b₀ b₁ 0]`  | Bxyz = `[bx by bz]`
+/// ^                               | B₀₁₂ = `[b₀ b₁ ?]`  | Bxyz = `[bx by bz]`
 /// x-axis prismatic joint          | K₀₁₂ = `[k₀ k₁ k₂]` | Kxyz = `[0 ky kz]`
-/// ^                               | B₀₁₂ = `[b₀ b₁ b₂]` | Bxyz = `[0 by bz]`
+/// ^                               | B₀₁₂ = `[b₀ b₁ b₂]` | Bxyz = `[? by bz]`
 /// Ball and socket joint           | K₀₁₂ = `[0  0  0]`  | Kxyz = `[kx ky kz]`
-/// ^                               | B₀₁₂ = `[0  0  0]`  | Bxyz = `[bx by bz]`
+/// ^                               | B₀₁₂ = `[?  ?  ?]`  | Bxyz = `[bx by bz]`
 /// Weld/rigid joint                | K₀₁₂ = `[k₀ k₁ k₂]` | Kxyz = `[kx ky kz]`
 /// ^                               | B₀₁₂ = `[b₀ b₁ b₂]` | Bxyz = `[bx by bz]`
-///
-/// <b>Advanced:</b> The torque model uses spring-damper "gimbal" torques
-/// `τ₀ Cx`, `τ₁ Py`, `τ₂ Az`, where each of Cx, Py, Az are associated with a
-/// frame in the roll-pitch-yaw rotation sequence and `Py` denotes a unit vector
-/// of the "pitch" intermediate frame.  As shown in code documentation, the
-/// torque `T = Tx Ax + Ty Ay + Tz Az` was found by equating its power to the
-/// gimbal torque power as T ⋅ w_AC = τ ⋅ q̇, which leads to <pre>
-/// ⌈ Tx ⌉       ⌈ τ₀ ⌉             ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉
-/// | Ty |  = Nᵀ | τ₁ |   where N = |   −sin(q2)            cos(q2)      0 |
-/// ⌊ Tz ⌋ᴀ      ⌊ τ₂ ⌋             ⌊ cos(q₂)*tan(q₁)   sin(q₂)*tan(q₁)  1 ⌋
-/// </pre>
 ///
 /// Angles q₀, q₁, q₂ are calculated from frame C's orientation relative to
 /// frame A, with `[−π < q₀ <= π, −π/2 <= q₁ <= π/2, −π < q₂ <= π]`,
@@ -102,6 +91,18 @@ template <typename T> class Body;
 /// Torque T can also be discontinuous if one of q̇₀, q̇₁, q̇₂ is discontinuous and
 /// its associated torque damper constant is nonzero.  For example, this occurs
 /// if `b₀ ≠ 0` and q̇₀ is undefined (which occurs when `pitch = q₁ = π/2`).
+///
+/// ### Advanced
+/// The torque model uses spring-damper "gimbal" torques
+/// `τ₀ Cx`, `τ₁ Py`, `τ₂ Az`, where each of Cx, Py, Az are associated with a
+/// frame in the roll-pitch-yaw rotation sequence and `Py` denotes a unit vector
+/// of the "pitch" intermediate frame.  As shown in code documentation, the
+/// torque `T = Tx Ax + Ty Ay + Tz Az` was found by equating its power to the
+/// gimbal torque power as T ⋅ w_AC = τ ⋅ q̇, which leads to <pre>
+/// ⌈ Tx ⌉       ⌈ τ₀ ⌉             ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉
+/// | Ty |  = Nᵀ | τ₁ |   where N = |   −sin(q2)            cos(q2)      0 |
+/// ⌊ Tz ⌋ᴀ      ⌊ τ₂ ⌋             ⌊ cos(q₂)*tan(q₁)   sin(q₂)*tan(q₁)  1 ⌋
+/// </pre>
 ///
 /// The power due to bushing forces on A and C is P = T ⋅ w_AC + f ⋅ v_CpAp
 /// where v_CpAp is the relative velocity between Cp and Ap in <b>any</b> frame
