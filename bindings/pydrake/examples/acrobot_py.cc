@@ -37,10 +37,6 @@ PYBIND11_MODULE(acrobot, m) {
   py::class_<AcrobotPlant<T>, LeafSystem<T>>(
       m, "AcrobotPlant", doc.AcrobotPlant.doc)
       .def(py::init<>(), doc.AcrobotPlant.ctor.doc)
-      .def("CalcPotentialEnergy", &AcrobotPlant<T>::CalcPotentialEnergy,
-          doc.AcrobotPlant.DoCalcPotentialEnergy.doc)
-      .def("CalcKineticEnergy", &AcrobotPlant<T>::CalcKineticEnergy,
-          doc.AcrobotPlant.DoCalcKineticEnergy.doc)
       .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
           doc.AcrobotPlant.DynamicsBiasTerm.doc)
       .def("SetMITAcrobotParameters", &AcrobotPlant<T>::SetMITAcrobotParameters,

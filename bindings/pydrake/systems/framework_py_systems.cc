@@ -425,6 +425,10 @@ Note: The above is for the C++ documentation. For Python, use
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
             py_reference_internal, doc.System.EvalTimeDerivatives.doc)
+        .def("EvalPotentialEnergy", &System<T>::EvalPotentialEnergy,
+            py::arg("context"), doc.System.EvalPotentialEnergy.doc)
+        .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
+            py::arg("context"), doc.System.EvalKineticEnergy.doc)
         // Scalar types.
         .def("ToAutoDiffXd",
             [](const System<T>& self) { return self.ToAutoDiffXd(); },

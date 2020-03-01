@@ -89,6 +89,10 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const final;
+
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
+
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
 };
 
 }  // namespace pendulum

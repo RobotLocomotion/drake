@@ -172,6 +172,8 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(context.get_time(), 0.3)
         np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), 2*x)
+        self.assertNotEqual(pendulum.EvalPotentialEnergy(context=context), 0)
+        self.assertNotEqual(pendulum.EvalKineticEnergy(context=context), 0)
 
         # RimlessWheel has a single discrete variable and a bool abstract
         # variable.
