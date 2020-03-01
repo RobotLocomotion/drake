@@ -87,15 +87,15 @@ class TestAcrobot(unittest.TestCase):
 
         self.assertTrue(acrobot.DynamicsBiasTerm(context).shape == (2,))
         self.assertTrue(acrobot.MassMatrix(context).shape == (2, 2))
-        initial_total_energy = acrobot.CalcPotentialEnergy(context) + \
-            acrobot.CalcKineticEnergy(context)
+        initial_total_energy = acrobot.EvalPotentialEnergy(context) + \
+            acrobot.EvalKineticEnergy(context)
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
         simulator.AdvanceTo(1.0)
 
-        self.assertLessEqual(acrobot.CalcPotentialEnergy(context) +
-                             acrobot.CalcKineticEnergy(context),
+        self.assertLessEqual(acrobot.EvalPotentialEnergy(context) +
+                             acrobot.EvalKineticEnergy(context),
                              initial_total_energy)
 
 
