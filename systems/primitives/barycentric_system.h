@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <utility>
-
+#include "drake/common/default_scalars.h"
 #include "drake/math/barycentric.h"
 #include "drake/systems/framework/vector_system.h"
 
@@ -34,13 +32,7 @@ class BarycentricMeshSystem final : public VectorSystem<T> {
   /// mesh.MeshValuesFrom(function) is one useful tool for creating it.
   ///
   BarycentricMeshSystem(math::BarycentricMesh<T> mesh,
-                        const Eigen::Ref<const MatrixX<T>>& output_values)
-      : VectorSystem<T>(mesh.get_input_size(), output_values.rows()),
-        mesh_(std::move(mesh)),
-        output_values_(output_values) {
-    DRAKE_DEMAND(output_values_.rows() > 0);
-    DRAKE_DEMAND(output_values_.cols() == mesh_.get_num_mesh_points());
-  }
+                        const Eigen::Ref<const MatrixX<T>>& output_values);
 
   /// Returns a reference to the mesh.
   const math::BarycentricMesh<T>& get_mesh() const { return mesh_; }
@@ -50,14 +42,11 @@ class BarycentricMeshSystem final : public VectorSystem<T> {
 
  private:
   // Evaluates the BarycentricMesh at the input and writes it to the output.
-  virtual void DoCalcVectorOutput(
+  void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const {
-    unused(context, state);
-    mesh_.Eval(output_values_, input, output);
-  }
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const math::BarycentricMesh<T> mesh_;
   const MatrixX<T> output_values_;
@@ -65,3 +54,6 @@ class BarycentricMeshSystem final : public VectorSystem<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::BarycentricMeshSystem)
