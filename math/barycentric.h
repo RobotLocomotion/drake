@@ -180,3 +180,5 @@ class BarycentricMesh {
 
 }  // namespace math
 }  // namespace drake
+
+extern template class ::drake::math::BarycentricMesh<double>;
