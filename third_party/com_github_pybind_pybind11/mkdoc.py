@@ -15,9 +15,16 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import drake.tools.workspace.pybind11.generate_pybind_coverage as \
+        generate_pybind_coverage
 
+from xml.dom import minidom
+import xml.etree.ElementTree as ET
 from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
+
+from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
+
 
 CLASS_KINDS = [
     CursorKind.CLASS_DECL,
@@ -69,6 +76,7 @@ SKIP_RECURSE_NAMES = [
     'DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE',
     'Eigen',
     'detail',
+    'dev',
     'google',
     'internal',
     'std',
@@ -96,7 +104,7 @@ def utf8(s):
     return s.decode('utf8')
 
 
-class Symbol(object):
+class Symbol:
     """
     Contains a cursor and additional processed metadata.
     """
@@ -114,6 +122,11 @@ class Symbol(object):
 
 def eprint(*args):
     print(*args, file=sys.stderr)
+
+
+def ignore_file_for_coverage(file_name):
+    return int(
+            file_name.startswith(generate_pybind_coverage.ignore_directories))
 
 
 def is_accepted_cursor(cursor, name_chain):
@@ -211,7 +224,7 @@ def extract_comment(cursor, deprecations):
 
     # Append the deprecation text.
     result += (
-        " (Deprecated.) \deprecated {} " +
+        r" (Deprecated.) \deprecated {} " +
         "This will be removed from Drake on or after {}.").format(
             message, removal_date)
 
@@ -663,7 +676,7 @@ def get_name_chain(cursor):
     return tuple(name_chain)
 
 
-class SymbolTree(object):
+class SymbolTree:
     """
     Contains symbols that (a) may have 0 or more pieces of documentation and
     (b) may have child objects.
@@ -682,7 +695,7 @@ class SymbolTree(object):
             node = node.get_child(piece)
         return node
 
-    class Node(object):
+    class Node:
         """Node for a given name chain."""
 
         def __init__(self):
@@ -924,7 +937,9 @@ def choose_doc_var_names(symbols):
     return failure_result
 
 
-def print_symbols(f, name, node, level=0):
+# TODO(m-chaturvedi): Refactor this to not use stack
+def print_symbols(f, name, node, level=0, *, tree_parser_doc,
+                  tree_parser_xpath, ignore_dirs_for_coverage):
     """
     Prints C++ code for relevant documentation.
     """
@@ -953,9 +968,19 @@ def print_symbols(f, name, node, level=0):
     if level == 0:
         modifier = "constexpr "
     iprint('{}struct /* {} */ {{'.format(modifier, name_var))
+
+    root = tree_parser_xpath[-1]
+    kind = node.first_symbol.cursor.kind if node.first_symbol else None
+
+    tree_parser_doc.append(name_var)
+
+    new_ele = None
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
     doc_vars = choose_doc_var_names(symbol_iter)
+    #  New element in the XML tree.
+    new_ele = None
+
     for symbol, doc_var in zip(symbol_iter, doc_vars):
         if doc_var is None:
             continue
@@ -969,15 +994,50 @@ def print_symbols(f, name, node, level=0):
         iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
         iprint('  const char* {} ={}R"""({})""";'.format(
             doc_var, delim, comment.strip()))
+
+        tree_doc_var = ".".join(tree_parser_doc + [doc_var])
+
+        ignore_xpath = False
+        if ignore_dirs_for_coverage:
+            ignore_xpath = symbol.include.startswith(ignore_dirs_for_coverage)
+
+        new_ele = ET.SubElement(root, "Node", {
+            "kind": str(kind),
+            "name": name_var,
+            "full_name": full_name,
+            "ignore": str(int(ignore_xpath)),
+            "doc_var": tree_doc_var,
+            "file_name": symbol.include,
+            })
+    # If the node has no doc_var's
+    if new_ele is None:
+        new_ele = ET.SubElement(root, "Node", {
+            "kind": str(kind),
+            "name": name_var,
+            "full_name": full_name,
+            "ignore": "",
+            "doc_var": "",
+            "file_name": "",
+            })
+
+    tree_parser_xpath.append(new_ele)
     # Recurse into child elements.
     keys = sorted(node.children_map.keys())
     for key in keys:
         child = node.children_map[key]
-        print_symbols(f, key, child, level=level + 1)
+        tree_parser_args = {
+                "tree_parser_doc": tree_parser_doc,
+                "tree_parser_xpath": tree_parser_xpath,
+                "ignore_dirs_for_coverage": ignore_dirs_for_coverage
+            }
+        print_symbols(f, key, child, level=level + 1, **tree_parser_args)
     iprint('}} {};'.format(name_var))
 
+    tree_parser_doc.pop()
+    tree_parser_xpath.pop()
 
-class FileDict(object):
+
+class FileDict:
     """
     Provides a dictionary that hashes based on a file's true path.
     """
@@ -1003,46 +1063,41 @@ class FileDict(object):
         self._d[key] = value
 
 
+def prettify(elem):
+    """Return a pretty-printed XML string for the Element.
+    """
+    rough_string = ET.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="  ")
+
+
 def main():
     parameters = ['-x', 'c++', '-D__MKDOC_PY__']
+    add_library_paths(parameters)
     filenames = []
-
-    library_file = None
-    if platform.system() == 'Darwin':
-        completed_process = subprocess.run(['xcrun', '--find', 'clang'],
-                                           stdout=subprocess.PIPE,
-                                           encoding='utf-8')
-        if completed_process.returncode == 0:
-            toolchain_dir = os.path.dirname(os.path.dirname(
-                completed_process.stdout.strip()))
-            library_file = os.path.join(
-                toolchain_dir, 'lib', 'libclang.dylib')
-        completed_process = subprocess.run(['xcrun', '--show-sdk-path'],
-                                           stdout=subprocess.PIPE,
-                                           encoding='utf-8')
-        if completed_process.returncode == 0:
-            sdkroot = completed_process.stdout.strip()
-            if os.path.exists(sdkroot):
-                parameters.append('-isysroot')
-                parameters.append(sdkroot)
-    elif platform.system() == 'Linux':
-        library_file = '/usr/lib/llvm-6.0/lib/libclang.so'
-    if library_file and os.path.exists(library_file):
-        cindex.Config.set_library_path(os.path.dirname(library_file))
 
     quiet = False
     std = '-std=c++11'
     root_name = 'mkdoc_doc'
     ignore_patterns = []
     output_filename = None
+    output_filename_xml = None
 
+    # TODO(m-chaturvedi): Consider using argparse.
     for item in sys.argv[1:]:
         if item == '-quiet':
             quiet = True
         elif item.startswith('-output='):
             output_filename = item[len('-output='):]
+        elif item.startswith('-output_xml='):
+            output_filename_xml = item[len('-output_xml='):]
         elif item.startswith('-std='):
             std = item
+        elif item.startswith('-ignore-dirs-for-coverage='):
+            ignore_dir_str = item[len('-ignore-dirs-for-coverage='):]
+            ignore_dirs_for_coverage = None
+            if ignore_dir_str:
+                ignore_dirs_for_coverage = tuple(ignore_dir_str.split(','))
         elif item.startswith('-root-name='):
             root_name = item[len('-root-name='):]
         elif item.startswith('-exclude-hdr-patterns='):
@@ -1060,6 +1115,10 @@ def main():
         sys.exit(1)
 
     f = open(output_filename, 'w', encoding='utf-8')
+    f_xml = None
+    if output_filename_xml is not None:
+        f_xml = open(output_filename_xml, 'w')
+
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
     f.write('''#pragma once
@@ -1141,7 +1200,11 @@ def main():
     if not quiet:
         eprint("Writing header file...")
     try:
-        print_symbols(f, root_name, symbol_tree.root)
+        tree_parser = {"tree_parser_doc": [],
+                       "tree_parser_xpath": [ET.Element("Root")],
+                       "ignore_dirs_for_coverage": ignore_dirs_for_coverage}
+
+        print_symbols(f, root_name, symbol_tree.root, **tree_parser)
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print("""
@@ -1157,6 +1220,8 @@ If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
 #pragma GCC diagnostic pop
 #endif
 ''')
+    if f_xml is not None:
+        f_xml.write(prettify(tree_parser["tree_parser_xpath"][0]))
 
 
 if __name__ == '__main__':
