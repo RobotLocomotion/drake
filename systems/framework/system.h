@@ -634,6 +634,49 @@ class System : public SystemBase {
     DoCalcTimeDerivatives(context, derivatives);
   }
 
+  /// Returns the number of equations in the mass matrix form of the
+  /// continuous time dynamics.  @see CalcTimeDerivativesMatrixForm().
+  virtual int num_time_derivative_mass_matrix_equations() const {
+    return num_continuous_states();
+  }
+
+  /// Calculates an implicit form of time derivatives `xcdot` of the
+  /// continuous state `xc` for systems given by differential algebraic
+  /// equations in the "mass matrix form":  M(context)*xcdot = F(context).
+  /// The number of equations, represented by the number of rows in the
+  /// matrix M and vector F, are given by
+  /// num_time_derivative_mass_matrix_equations().
+  ///
+  /// This representation can be very useful for algorithms that can avoid
+  /// inverting the mass matrix; for instance many algorithms can be symbolic
+  /// in mass matrix form, even when we do not support the symbolic rational
+  /// form given by CalcTimeDerivatives.
+  ///
+  /// LeafSystems that wish to take advantage of this form should implement
+  /// DoCalcTimeDerivativesMassMatrixForm.  For all other systems, the default
+  /// implementation where M is the identity matrix is provided.
+  ///
+  /// @param context The Context whose contents will be used to evaluate the
+  ///                mass_matrix and right_hand_side.
+  /// @param mass_matrix The mass matrix, M.  It must be non-null, and will be
+  ///                    resized (if necessary) to have
+  ///                    num_time_derivative_mass_matrix_equations() rows and
+  ///                    num_continuous_states() columns.
+  /// @param right_hand_side The right-hand side of the equations, F.  It
+  ///                        must be non-null, and will be resized (if
+  ///                        necessary) to have
+  ///                        num_time_derivative_mass_matrix_equations() rows.
+  void CalcTimeDerivativesMassMatrixForm(const Context<T>& context,
+                                         MatrixX<T>* mass_matrix,
+                                         VectorX<T>* right_hand_side) const {
+    DRAKE_DEMAND(mass_matrix != nullptr);
+    mass_matrix->resize(num_time_derivative_mass_matrix_equations(),
+                        num_continuous_states());
+    right_hand_side->resize(num_time_derivative_mass_matrix_equations());
+    ValidateContext(context);
+    DoCalcTimeDerivativesMassMatrixForm(context, mass_matrix, right_hand_side);
+  }
+
   /// This method is the public entry point for dispatching all discrete
   /// variable update event handlers. Using all the discrete update handlers in
   /// @p events, the method calculates the update `xd(n+1)` to discrete
@@ -1933,6 +1976,23 @@ class System : public SystemBase {
     // state. Other Systems must override this method!
     unused(context);
     DRAKE_DEMAND(derivatives->size() == 0);
+  }
+
+  /// Override this if...
+  /// @see CalcTimeDerivativesMassMatrixForm().
+  ///
+  /// The default implementation...
+  virtual void DoCalcTimeDerivativesMassMatrixForm(
+      const Context<T>& context, MatrixX<T>* mass_matrix,
+      VectorX<T>* right_hand_side) const {
+    unused(context);
+    DRAKE_DEMAND(num_time_derivative_mass_matrix_equations() ==
+                 num_continuous_states());
+    *mass_matrix = MatrixX<T>::Identity(num_continuous_states(),
+                                               num_continuous_states());
+
+    const ContinuousState<T>& derivatives = EvalTimeDerivatives(context);
+    *right_hand_side = derivatives.CopyToVector();
   }
 
   /// Computes the next time at which this System must perform a discrete

@@ -124,6 +124,22 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
+void AcrobotPlant<T>::DoCalcTimeDerivativesMassMatrixForm(
+    const systems::Context<T>& context, MatrixX<T>* mass_matrix,
+    VectorX<T>* right_hand_side) const {
+  const T& tau = get_tau(context);
+
+  Vector2<T> B(0, 1);  // input matrix
+
+  *mass_matrix = Matrix4<T>::Identity();
+  mass_matrix->template block<2, 2>(2, 2) = MassMatrix(context);
+  *right_hand_side << context.get_continuous_state()
+                          .get_generalized_velocity()
+                          .CopyToVector(),
+      B*tau - DynamicsBiasTerm(context);
+}
+
+template <typename T>
 T AcrobotPlant<T>::DoCalcKineticEnergy(
     const systems::Context<T>& context) const {
   const AcrobotState<T>& state = dynamic_cast<const AcrobotState<T>&>(
