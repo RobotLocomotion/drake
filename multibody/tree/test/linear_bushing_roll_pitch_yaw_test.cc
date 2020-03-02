@@ -119,7 +119,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double q1 = rpy.pitch_angle();   // rad
     const double q2 = rpy.yaw_angle();     // rad
 
-    // Form kinematical ODEs that relate [q̇₀ q̇₁ q̇₂] to W_AC_A.
+    // Form kinematical ODEs that relate [q̇₀ q̇₁ q̇₂] to w_AC_A.
     const Vector3<double> qDt =
         rpy.CalcRpyDtFromAngularVelocityInParent(w_AC_A);
 
