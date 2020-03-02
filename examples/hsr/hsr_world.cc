@@ -95,17 +95,17 @@ HsrWorld<T>::HsrWorld(const std::string& config_file)
   Finalize();
 }
 
-// Place holder for now.
+// TODO(huihua) Place holder for now.
 template <typename T>
 const std::vector<hsr::common::ModelInstanceInfo<T>>
-HsrWorld<T>::LoadModelsFromConfigurationFile() {
+HsrWorld<T>::LoadModelsFromConfigurationFile() const {
   std::vector<hsr::common::ModelInstanceInfo<T>> added_models;
   return added_models;
 }
 
 // Add default HSR.
 template <typename T>
-const hsr::common::ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
+const hsr::common::ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() const {
   const std::string model_path = FindResourceOrThrow(
       "drake/examples/hsr/models/urdfs/hsrb4s_fix_free_joints.urdf");
   const std::string model_name = "hsr";
@@ -127,12 +127,22 @@ const hsr::common::ModelInstanceInfo<T> HsrWorld<T>::AddDefaultHsr() {
 
 template <typename T>
 const std::vector<hsr::common::ModelInstanceInfo<T>>
-HsrWorld<T>::LoadModelsFromUrdfs() {
+HsrWorld<T>::LoadModelsFromUrdfs() const {
   std::vector<hsr::common::ModelInstanceInfo<T>> added_models;
 
   added_models.push_back(this->AddDefaultHsr());
 
   return added_models;
+}
+
+// TODO(huihua) Place holder for now. Add actual implementation later.
+template <typename T>
+const hsr::parameters::RobotParameters<T> HsrWorld<T>::LoadRobotParameters(
+    const std::string& robot_name) const {
+  hsr::parameters::RobotParameters<T> robot_parameters;
+  robot_parameters.name = robot_name;
+
+  return robot_parameters;
 }
 
 template <typename T>
@@ -141,17 +151,16 @@ void HsrWorld<T>::SetDefaultState(const Context<T>& context,
   // Call the base class method, to initialize all systems in this diagram.
   Diagram<T>::SetDefaultState(context, state);
 
-  // Use initial position of the HSR robot.
-  const auto& default_hsr_info = robots_instance_info_.find("hsr");
-  // HsrWorld should at least have one default HSR robot.
-  DRAKE_DEMAND(robots_instance_info_.find("hsr") !=
-               robots_instance_info_.end());
-
-  const auto& hsr_instance = default_hsr_info->second.index;
-  SetModelPositionState(context, hsr_instance,
-                        GetModelPositionState(context, hsr_instance), state);
-  SetModelVelocityState(context, hsr_instance,
-                        GetModelVelocityState(context, hsr_instance), state);
+  for (const auto& [robot_name, robot_instace_info] : robots_instance_info_) {
+    drake::log()->info("Setting initial position of robot: " + robot_name);
+    const auto& robot_instance = robot_instace_info.index;
+    SetModelPositionState(context, robot_instance,
+                          GetModelPositionState(context, robot_instance),
+                          state);
+    SetModelVelocityState(context, robot_instance,
+                          GetModelVelocityState(context, robot_instance),
+                          state);
+  }
 }
 
 template <typename T>
@@ -174,6 +183,8 @@ void HsrWorld<T>::SetupWorld(
     for (const auto& model_info : added_models) {
       if (model_info.model_name.find("hsr") != std::string::npos) {
         robots_instance_info_.insert({model_info.model_name, model_info});
+        robots_parameters_.insert({model_info.model_name,
+                                   LoadRobotParameters(model_info.model_name)});
         continue;
       } else {
         items_instance_info_.insert({model_info.model_name, model_info});
@@ -315,7 +326,7 @@ void HsrWorld<T>::MakeRobotControlPlants() {
     owned_plants.welded_plant->set_name("welded_" + robot_instance_info.first);
     owned_plants.welded_plant->Finalize();
 
-    owned_robots_plant_.insert(
+    owned_robots_plants_.insert(
         {robot_instance_info.first, std::move(owned_plants)});
   }
 }
@@ -343,62 +354,69 @@ void HsrWorld<T>::Finalize() {
   builder.Connect(scene_graph_->get_query_output_port(),
                   plant_->get_geometry_query_input_port());
 
-  const auto& hsr_instance = robots_instance_info_["hsr"].index;
-  const int num_hsr_positions = plant_->num_positions(hsr_instance);
-  const int num_hsr_velocities = plant_->num_velocities(hsr_instance);
+  for (const auto& [robot_name, robot_instace_info] : robots_instance_info_) {
+    const auto& robot_instance = robot_instace_info.index;
+    const int num_hsr_positions = plant_->num_positions(robot_instance);
+    const int num_hsr_velocities = plant_->num_velocities(robot_instance);
 
-  // Export HSR "state" outputs.
-  {
-    auto demux = builder.template AddSystem<systems::Demultiplexer>(
-        std::vector<int>{num_hsr_positions, num_hsr_velocities});
-    builder.Connect(plant_->get_state_output_port(hsr_instance),
-                    demux->get_input_port(0));
-    builder.ExportOutput(demux->get_output_port(0), "hsr_position_measured");
-    builder.ExportOutput(demux->get_output_port(1), "hsr_velocity_estimated");
-    builder.ExportOutput(plant_->get_state_output_port(hsr_instance),
-                         "hsr_state_estimated");
-  }
+    // Export Robot "state" outputs.
+    {
+      auto demux = builder.template AddSystem<systems::Demultiplexer>(
+          std::vector<int>{num_hsr_positions, num_hsr_velocities});
+      builder.Connect(plant_->get_state_output_port(robot_instance),
+                      demux->get_input_port(0));
+      builder.ExportOutput(demux->get_output_port(0),
+                           robot_name + "_position_measured");
+      builder.ExportOutput(demux->get_output_port(1),
+                           robot_name + "_velocity_estimated");
+      builder.ExportOutput(plant_->get_state_output_port(robot_instance),
+                           robot_name + "_state_estimated");
+    }
 
-  // Connect the states with controllers.
-  // TODO(huihua) We currently assume that there is only one default hsr robot.
-  {
-    const auto& hsr_owned_robots_plant = owned_robots_plant_.find("hsr");
-    auto hsr_main_controller =
-        builder.template AddSystem<hsr::controllers::MainController>(
-            *(hsr_owned_robots_plant->second.float_plant),
-            *(hsr_owned_robots_plant->second.welded_plant),
-            robots_Parameters_["hsr"]);
+    // Connect the states with controllers.
+    {
+      const auto& owned_robot_plants = owned_robots_plants_.find(robot_name);
+      DRAKE_DEMAND(owned_robot_plants != owned_robots_plants_.end());
+      const auto& robot_parameters = robots_parameters_.find(robot_name);
+      DRAKE_DEMAND(robot_parameters != robots_parameters_.end());
+      auto robot_main_controller =
+          builder.template AddSystem<hsr::controllers::MainController>(
+              *(owned_robot_plants->second.float_plant),
+              *(owned_robot_plants->second.welded_plant),
+              robot_parameters->second);
 
-    builder.ExportInput(hsr_main_controller->get_desired_state_input_port(),
-                        "hsr_desired_state");
+      builder.ExportInput(robot_main_controller->get_desired_state_input_port(),
+                          robot_name + "_desired_state");
 
-    builder.Connect(plant_->get_state_output_port(hsr_instance),
-                    hsr_main_controller->get_estimated_state_input_port());
+      builder.Connect(plant_->get_state_output_port(robot_instance),
+                      robot_main_controller->get_estimated_state_input_port());
 
-    // The hsr main controller internally uses the "hsr plant",
-    // which contains the hsr model *only* (i.e., no object). Therefore,
-    // its output must be re-mapped to the input of the full "simulation
-    // plant", which contains both hsr and other objects. The system
-    // hsrToSimPlantForceConverter fills this role.
-    // Generalized force is calculated for the upper body.
-    auto generalized_force_map =
-        builder.template AddSystem<RobotToPlantForceConverter>(*plant_,
-                                                               hsr_instance);
+      // The hsr main controller internally uses the "hsr plant",
+      // which contains the hsr model *only* (i.e., no object). Therefore,
+      // its output must be re-mapped to the input of the full "simulation
+      // plant", which contains both hsr and other objects. The system
+      // hsrToSimPlantForceConverter fills this role.
+      // Generalized force is calculated for the upper body.
+      auto generalized_force_map =
+          builder.template AddSystem<RobotToPlantForceConverter>(
+              *plant_, robot_instance);
 
-    builder.Connect(hsr_main_controller->get_generalized_force_output_port(),
-                    generalized_force_map->get_input_port(0));
-    builder.Connect(generalized_force_map->get_output_port(0),
-                    plant_->get_applied_generalized_force_input_port());
+      builder.Connect(
+          robot_main_controller->get_generalized_force_output_port(),
+          generalized_force_map->get_input_port(0));
+      builder.Connect(generalized_force_map->get_output_port(0),
+                      plant_->get_applied_generalized_force_input_port());
 
-    builder.ExportOutput(
-        hsr_main_controller->get_generalized_force_output_port(),
-        "hsr_generalized_force");
+      builder.ExportOutput(
+          robot_main_controller->get_generalized_force_output_port(),
+          robot_name + "_generalized_force");
 
-    builder.Connect(hsr_main_controller->get_actuation_output_port(),
-                    plant_->get_actuation_input_port(hsr_instance));
+      builder.Connect(robot_main_controller->get_actuation_output_port(),
+                      plant_->get_actuation_input_port(robot_instance));
 
-    builder.ExportOutput(hsr_main_controller->get_actuation_output_port(),
-                         "hsr_actuation_commanded");
+      builder.ExportOutput(robot_main_controller->get_actuation_output_port(),
+                           robot_name + "_actuation_commanded");
+    }
   }
 
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),

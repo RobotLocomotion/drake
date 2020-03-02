@@ -24,14 +24,14 @@ namespace hsr {
 /// bottle are added as the extra objects.
 ///
 /// @system{HsrWorld,
-///   @input_port{hsr_[name]_desired_state}
-///   @output_port{hsr_[name]_commanded_position}
-///   @output_port{hsr_[name]_measured_position}
-///   @output_port{hsr_[name]_estimated_velocity}
-///   @output_port{hsr_[name]_estimated_state}
-///   @output_port{hsr_[name]_torque_external}
-///   @output_port{hsr_[name]_generalized_force}
-///   @output_port{hsr_[name]_actuation_commanded}
+///   @input_port{[name]_desired_state}
+///   @output_port{[name]_commanded_position}
+///   @output_port{[name]_measured_position}
+///   @output_port{[name]_estimated_velocity}
+///   @output_port{[name]_estimated_state}
+///   @output_port{[name]_torque_external}
+///   @output_port{[name]_generalized_force}
+///   @output_port{[name]_actuation_commanded}
 ///   @output_port{pose_bundle}
 ///   @output_port{contact_results}
 ///   @output_port{plant_continuous_state}
@@ -104,8 +104,8 @@ class HsrWorld : public systems::Diagram<T> {
   /// exist, it will throw.
   const multibody::MultibodyPlant<T>& get_hsr_plant(
       const std::string& hsr_name) const {
-    const auto& hsr_owned_plant = owned_robots_plant_.find(hsr_name);
-    DRAKE_DEMAND(hsr_owned_plant != owned_robots_plant_.end());
+    const auto& hsr_owned_plant = owned_robots_plants_.find(hsr_name);
+    DRAKE_DEMAND(hsr_owned_plant != owned_robots_plants_.end());
     return *(hsr_owned_plant->second.float_plant);
   }
 
@@ -177,11 +177,18 @@ class HsrWorld : public systems::Diagram<T> {
   /// TODO(huihua) Once the model directive feature is in Drake, finish the
   /// implementation of this function.
   const std::vector<hsr::common::ModelInstanceInfo<T>>
-  LoadModelsFromConfigurationFile();
+  LoadModelsFromConfigurationFile() const;
 
-  const std::vector<hsr::common::ModelInstanceInfo<T>> LoadModelsFromUrdfs();
+  const std::vector<hsr::common::ModelInstanceInfo<T>> LoadModelsFromUrdfs()
+      const;
 
-  const hsr::common::ModelInstanceInfo<T> AddDefaultHsr();
+  /// Load the robot parameters with a given @p`robot_name`.
+  /// @throw std::exception if the robot parameter file of the given robot name
+  /// does not exists.
+  const hsr::parameters::RobotParameters<T> LoadRobotParameters(
+      const std::string& robot_name) const;
+
+  const hsr::common::ModelInstanceInfo<T> AddDefaultHsr() const;
 
   /// Post processing the loaded models such as setup the initial position of
   /// items
@@ -263,14 +270,14 @@ class HsrWorld : public systems::Diagram<T> {
   multibody::MultibodyPlant<T>* plant_{};
   geometry::SceneGraph<T>* scene_graph_{};
 
-  std::map<std::string, hsr::parameters::RobotParameters<T>> robots_Parameters_;
+  std::map<std::string, hsr::parameters::RobotParameters<T>> robots_parameters_;
 
   std::map<std::string, hsr::common::ModelInstanceInfo<T>>
       robots_instance_info_;
   std::map<std::string, hsr::common::ModelInstanceInfo<T>> items_instance_info_;
 
   /// Create internal plants for the robots.
-  std::map<std::string, OwnedRobotControllerPlant> owned_robots_plant_;
+  std::map<std::string, OwnedRobotControllerPlant> owned_robots_plants_;
 };
 
 }  // namespace hsr
