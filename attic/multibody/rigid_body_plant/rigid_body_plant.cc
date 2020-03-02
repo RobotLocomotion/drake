@@ -66,6 +66,17 @@ RigidBodyPlant<T>::RigidBodyPlant(const RigidBodyPlant<U>& other)
 template <typename T>
 void RigidBodyPlant<T>::initialize() {
   DRAKE_DEMAND(tree_ != nullptr);
+  if (is_state_discrete()) {
+    // Configuration and velocity.
+    this->DeclareDiscreteState(get_num_states());
+    // The last time that the state was (discretely) updated.
+    this->DeclareDiscreteState(1);
+  } else {
+    // TODO(amcastro-tri): add z state to track energy conservation.
+    this->DeclareContinuousState(
+        get_num_positions() /* num_q */, get_num_velocities() /* num_v */,
+        0 /* num_z */);
+  }
   state_output_port_index_ =
       this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
                                     &RigidBodyPlant::CopyStateToOutput,
@@ -412,41 +423,6 @@ RigidBodyPlant<T>::model_instance_torque_output_port(
 }
 
 template <typename T>
-std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
-    const {
-  if (is_state_discrete()) {
-    // Return an empty continuous state if the plant state is discrete.
-    return std::make_unique<ContinuousState<T>>();
-  }
-
-  // TODO(amcastro-tri): add z state to track energy conservation.
-  return make_unique<ContinuousState<T>>(
-      make_unique<BasicVector<T>>(get_num_states()),
-      get_num_positions() /* num_q */, get_num_velocities() /* num_v */,
-      0 /* num_z */);
-}
-
-template <typename T>
-std::unique_ptr<DiscreteValues<T>> RigidBodyPlant<T>::AllocateDiscreteState()
-    const {
-  if (!is_state_discrete()) {
-    // State of the plant is continuous- return an empty discrete state.
-    return std::make_unique<DiscreteValues<T>>();
-  }
-  std::vector<std::unique_ptr<BasicVector<T>>> discrete_state_vector;
-
-  // Configuration and velocity.
-  discrete_state_vector.push_back(
-      make_unique<BasicVector<T>>(get_num_states()));
-
-  // The last time that the state was (discretely) updated.
-  discrete_state_vector.push_back(
-      make_unique<BasicVector<T>>(1));
-
-  return make_unique<DiscreteValues<T>>(std::move(discrete_state_vector));
-}
-
-template <typename T>
 bool RigidBodyPlant<T>::model_instance_has_actuators(
     int model_instance_id) const {
   DRAKE_ASSERT(static_cast<int>(input_map_.size()) ==
@@ -496,9 +472,8 @@ template <typename T>
 void RigidBodyPlant<T>::CalcStateDerivativeOutput(
     const Context<T>& context,
     BasicVector<T>* output) const {
-  unique_ptr<ContinuousState<T>> derivatives = this->AllocateTimeDerivatives();
-  this->CalcTimeDerivatives(context, derivatives.get());
-  output->SetFrom(derivatives->get_vector());
+  const ContinuousState<T>& derivatives = this->EvalTimeDerivatives(context);
+  output->SetFrom(derivatives.get_vector());
 }
 
 // Updates one model-instance-centric state output port.

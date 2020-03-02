@@ -30,6 +30,7 @@ class TestVectorSystem : public VectorSystem<double> {
   TestVectorSystem() : VectorSystem<double>(kSize, kSize) {}
 
   // Let test code abuse these by making them public.
+  using VectorSystem<double>::DeclareAbstractState;
   using VectorSystem<double>::DeclareContinuousState;
   using VectorSystem<double>::DeclareDiscreteState;
   using VectorSystem<double>::DeclareAbstractInputPort;
@@ -87,38 +88,6 @@ class TestVectorSystem : public VectorSystem<double> {
     }
   }
 
-  // LeafSystem override.
-  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()
-      const override {
-    return prototype_discrete_state_->Clone();
-  }
-
-  // LeafSystem override.
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
-    return prototype_abstract_state_->Clone();
-  }
-
-  // Use the given number of discrete state groups for AllocateDiscreteState;
-  // when this has not been called, there will be no discrete state.
-  void set_prototype_discrete_state_count(int count) {
-    std::vector<std::unique_ptr<BasicVector<double>>> vec;
-    for (int i = 0; i < count; ++i) {
-      vec.emplace_back(std::make_unique<BasicVector<double>>(kSize));
-    }
-    prototype_discrete_state_ =
-        std::make_unique<DiscreteValues<double>>(std::move(vec));
-  }
-
-  // Use a single Value<S>(value) for AllocateAbstractState; when this has not
-  // been called, there will be no abstract state.
-  template <typename S>
-  void set_prototype_abstract_state(const S& value) {
-    std::vector<std::unique_ptr<AbstractValue>> vec;
-    vec.emplace_back(std::move(std::make_unique<Value<S>>(value)));
-    prototype_abstract_state_ =
-        std::make_unique<AbstractValues>(std::move(vec));
-  }
-
   // Testing accessors.
   const Context<double>* get_last_context() const { return last_context_; }
   int get_output_count() const { return output_count_; }
@@ -128,10 +97,6 @@ class TestVectorSystem : public VectorSystem<double> {
   }
 
  private:
-  std::unique_ptr<DiscreteValues<double>> prototype_discrete_state_{
-      std::make_unique<DiscreteValues<double>>()};
-  std::unique_ptr<AbstractValues> prototype_abstract_state_{
-      std::make_unique<AbstractValues>()};
   mutable const Context<double>* last_context_{nullptr};
   mutable int output_count_{0};
   mutable int time_derivatives_count_{0};
@@ -198,15 +163,15 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     // code and tests to support it.
     TestVectorSystem dut;
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.set_prototype_abstract_state<double>(1.0);
+    dut.DeclareAbstractState(std::make_unique<Value<double>>(1.0));
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
   {  // More than one discrete state group.
     TestVectorSystem dut;
-    dut.set_prototype_discrete_state_count(1);
+    dut.DeclareDiscreteState(TestVectorSystem::kSize);
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.set_prototype_discrete_state_count(2);
+    dut.DeclareDiscreteState(TestVectorSystem::kSize);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
@@ -214,7 +179,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     TestVectorSystem dut;
     dut.DeclareContinuousState(1);
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.set_prototype_discrete_state_count(1);
+    dut.DeclareDiscreteState(TestVectorSystem::kSize);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 }
@@ -263,7 +228,7 @@ TEST_F(VectorSystemTest, OutputContinuous) {
 // Forwarding of CalcOutput with discrete state.
 TEST_F(VectorSystemTest, OutputDiscrete) {
   TestVectorSystem dut;
-  dut.set_prototype_discrete_state_count(1);
+  dut.DeclareDiscreteState(TestVectorSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   context->FixInputPort(0, {1.0, 2.0});
@@ -327,7 +292,7 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
 
   // Now we have state, so the VectorSystem base should call our DUT.
-  dut.set_prototype_discrete_state_count(1);
+  dut.DeclareDiscreteState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
   context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_discrete_state(0).SetFromVector(

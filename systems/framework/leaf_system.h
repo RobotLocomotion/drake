@@ -196,11 +196,7 @@ class LeafSystem : public System<T> {
     this->ValidateContext(context);
     DRAKE_DEMAND(state != nullptr);
     ContinuousState<T>& xc = state->get_mutable_continuous_state();
-    if (model_continuous_state_vector_ != nullptr) {
-      xc.SetFromVector(model_continuous_state_vector_->get_value());
-    } else {
-      xc.SetFromVector(VectorX<T>::Zero(xc.size()));
-    }
+    xc.SetFromVector(model_continuous_state_vector_->get_value());
 
     DiscreteValues<T>& xd = state->get_mutable_discrete_state();
 
@@ -246,14 +242,11 @@ class LeafSystem : public System<T> {
     }
   }
 
-  /// Returns the AllocateContinuousState value, which must not be nullptr.
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const final {
     return AllocateContinuousState();
   }
 
-  /// Returns the AllocateDiscreteState value, which must not be nullptr.
-  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
-      const override {
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final {
     return AllocateDiscreteState();
   }
 
@@ -516,50 +509,35 @@ class LeafSystem : public System<T> {
   }
 
   // =========================================================================
-  // New methods for subclasses to override
+  // Allocation helper utilities.
 
-  /// Returns a ContinuousState used to implement both CreateDefaultContext and
-  /// AllocateTimeDerivatives. Allocates the state configured with
-  /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override (not recommended), but must ensure the
-  /// ContinuousState vector is a subclass of BasicVector.
-  virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
-    if (model_continuous_state_vector_ != nullptr) {
-      DRAKE_DEMAND(model_continuous_state_vector_->size() ==
-                   this->num_continuous_states());
-      const SystemBase::ContextSizes& sizes = this->get_context_sizes();
-      return std::make_unique<ContinuousState<T>>(
-          model_continuous_state_vector_->Clone(),
-          sizes.num_generalized_positions, sizes.num_generalized_velocities,
-          sizes.num_misc_continuous_states);
-    }
-    DRAKE_DEMAND(this->num_continuous_states() == 0);
-    return std::make_unique<ContinuousState<T>>();
+  /// Returns a copy of the state declared in the most recent
+  /// DeclareContinuousState() call, or else a zero-sized state if that method
+  /// has never been called.
+  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
+    DRAKE_DEMAND(model_continuous_state_vector_->size() ==
+                 this->num_continuous_states());
+    const SystemBase::ContextSizes& sizes = this->get_context_sizes();
+    return std::make_unique<ContinuousState<T>>(
+        model_continuous_state_vector_->Clone(),
+        sizes.num_generalized_positions, sizes.num_generalized_velocities,
+        sizes.num_misc_continuous_states);
   }
 
-  /// Reserves the discrete state as required by CreateDefaultContext. By
-  /// default, clones the model values as provided in DeclareDiscreteState()
-  /// calls. Alternatively, systems with discrete state can override this
-  /// method (not recommended).
-  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const {
+  /// Returns a copy of the states declared in DeclareDiscreteState() calls.
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const {
     return model_discrete_state_.Clone();
   }
 
-  /// Reserves the abstract state as required by CreateDefaultContext. By
-  /// default, it clones the abstract states declared through
-  /// DeclareAbstractState() calls. Derived systems may override for
-  /// different behaviors (not recommended).
-  virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
+  /// Returns a copy of the states declared in DeclareAbstractState() calls.
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const {
     return std::make_unique<AbstractValues>(
         std::move(model_abstract_states_.CloneAllModels()));
   }
 
-  /// Reserves the parameters as required by CreateDefaultContext.  The default
-  /// implementation in this class clones the model_vector for all parameters
-  /// declared via DeclareNumericParameter(), as well as the model value for all
-  /// parameters declared via DeclareAbstractParameter().  Subclasses can
-  /// override this method if the default behavior is not sufficient.
-  virtual std::unique_ptr<Parameters<T>> AllocateParameters() const {
+  /// Returns a copy of the parameters declared in DeclareNumericParameter()
+  /// and DeclareAbstractParameter() calls.
+  std::unique_ptr<Parameters<T>> AllocateParameters() const {
     std::vector<std::unique_ptr<BasicVector<T>>> numeric_params;
     numeric_params.reserve(model_numeric_parameters_.size());
     for (int i = 0; i < model_numeric_parameters_.size(); ++i) {
@@ -581,13 +559,11 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // New methods for subclasses to use
 
-  /// Declares a numeric parameter using the given @p model_vector.  This is
-  /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
-  /// default implementation of AllocateParameters uses model_vector.Clone(),
-  /// and the default implementation of SetDefaultParameters() will reset
+  /// Declares a numeric parameter using the given @p model_vector.
+  /// LeafSystem's default implementation of SetDefaultParameters() will reset
   /// parameters to their model vectors.  If the @p model_vector declares any
-  /// VectorBase::GetElementBounds() constraints, they will be
-  /// re-declared as inequality constraints on this system (see
+  /// VectorBase::GetElementBounds() constraints, they will be re-declared as
+  /// inequality constraints on this system (see
   /// DeclareInequalityConstraint()).  Returns the index of the new parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
     const NumericParameterIndex index(model_numeric_parameters_.size());
@@ -634,11 +610,10 @@ class LeafSystem : public System<T> {
     return *params;
   }
 
-  /// Declares an abstract parameter using the given @p model_value.  This is
-  /// the best way to declare LeafSystem abstract parameters.  LeafSystem's
-  /// default implementation of AllocateParameters uses model_value.Clone(), and
-  /// the default implementation of SetDefaultParameters() will reset parameters
-  /// to their model values.  Returns the index of the new parameter.
+  /// Declares an abstract parameter using the given @p model_value.
+  /// LeafSystem's default implementation of SetDefaultParameters() will reset
+  /// parameters to their model values.  Returns the index of the new
+  /// parameter.
   int DeclareAbstractParameter(const AbstractValue& model_value) {
     const AbstractParameterIndex index(model_abstract_parameters_.size());
     model_abstract_parameters_.AddModel(index, model_value.Clone());
@@ -1453,8 +1428,7 @@ class LeafSystem : public System<T> {
   /// than zero.
   ///
   /// If multiple calls are made to DeclareContinuousState() methods, only the
-  /// last call has any effect. Also, these methods have no effect if
-  /// AllocateContinuousState() is overridden (not recommended).
+  /// last call has any effect.
   //@{
 
   /// Declares that this System should reserve continuous state with
@@ -1521,8 +1495,7 @@ class LeafSystem : public System<T> {
   /// these variables in a default Context to be something other than zero.
   ///
   /// Each call to a DeclareDiscreteState() method produces another
-  /// discrete state group, and the group index is returned. These methods have
-  /// no effect if AllocateDiscreteState() is overridden (not recommended).
+  /// discrete state group, and the group index is returned.
   //@{
 
   /// Declares a discrete state group with @p model_vector.size() state
@@ -1563,8 +1536,7 @@ class LeafSystem : public System<T> {
   /// Abstract state consists of any number of arbitrarily-typed variables, each
   /// represented by an AbstractValue. Each call to the DeclareAbstractState()
   /// method produces another abstract state variable, and the abstract state
-  /// variable index is returned. This method has no effect if
-  /// AllocateAbstractState() is overridden (not recommended).
+  /// variable index is returned.
   //@{
 
   /// Declares an abstract state.
@@ -2770,7 +2742,8 @@ class LeafSystem : public System<T> {
   LeafCompositeEventCollection<T> initialization_events_;
 
   // A model continuous state to be used during Context allocation.
-  std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
+  std::unique_ptr<BasicVector<T>> model_continuous_state_vector_{
+      std::make_unique<BasicVector<T>>(0)};
 
   // A model discrete state to be used during Context allocation.
   DiscreteValues<T> model_discrete_state_;
