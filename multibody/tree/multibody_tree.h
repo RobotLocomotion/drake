@@ -1966,6 +1966,26 @@ class MultibodyTree {
     const ArticulatedBodyForceCache<T>& aba_force_cache,
     AccelerationKinematicsCache<T>* ac) const;
 
+  /// For a body B, computes the spatial acceleration bias term `Ab_WB` as it
+  /// appears in the acceleration level motion constraint imposed by body B's
+  /// mobilizer `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`, with `Aplus_WB =
+  /// Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
+  /// body P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
+  /// mobilities, respectively. See @ref abi_computing_accelerations for further
+  /// details. On output `Ab_WB_cache[body_node_index]`
+  /// contains `Ab_WB` for the body with node index `body_node_index`.
+  void CalcSpatialAccelerationBiasCache(
+      const systems::Context<T>& context,
+      std::vector<SpatialAcceleration<T>>* Ab_WB_cache)
+      const;
+
+  /// Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
+  /// for each articulated body B. On output `Zb_Bo_W_cache[body_node_index]`
+  /// contains `Zb_Bo_W` for the body B with node index `body_node_index`.
+  void CalcArticulatedBodyForceBiasCache(
+      const systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* Zb_Bo_W_cache) const;
+
   /// @}
 
   /// @}
@@ -2508,6 +2528,20 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalDynamicBiasCache(context);
+  }
+
+  // See CalcSpatialAccelerationBiasCache() for details.
+  const std::vector<SpatialAcceleration<T>>& EvalSpatialAccelerationBiasCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalSpatialAccelerationBiasCache(context);
+  }
+
+  // See CalcArticulatedBodyForceBiasCache() for details.
+  const std::vector<SpatialForce<T>>& EvalArticulatedBodyVelocityBiasCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalArticulatedBodyVelocityBiasCache(context);
   }
 
   // Given the state of this model in `context` and a known vector
