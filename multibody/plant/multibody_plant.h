@@ -470,6 +470,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// body C (Joint::child_body()), at the joint's child frame `Jc`
   /// (Joint::frame_on_child()) and expressed in frame `Jc`.
   ///
+  /// This output port can be used to model a **Force/Torque Sensor**, which
+  /// measures nothing but the reaction force/torque
+  /// of a @ref drake::multibody::WeldJoint "WeldJoint". You
+  /// only need to extract the entries for the joints in which you are
+  /// interested. To simulate a Force/Torque sensor, you need to either a)
+  /// define a fixed joint for the force/torque sensor in the SDF/URDF model
+  /// file or b) add a @ref drake::multibody::WeldJoint "WeldJoint" between two
+  /// bodies. This joint will then serve as the Force/Torque sensor.
+  ///
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_reaction_forces_output_port() const;
 
