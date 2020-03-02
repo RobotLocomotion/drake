@@ -15,6 +15,7 @@
 namespace drake {
 namespace pydrake {
 
+#ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
 
 template <typename T, typename = void>
@@ -43,6 +44,7 @@ struct wrap_callback<std::function<Signature>>
     : public wrap_callback<const std::function<Signature>&> {};
 
 }  // namespace internal
+#endif  // DRAKE_DOXYGEN_CXX
 
 /// Ensures that any `std::function<>` arguments are wrapped such that any `T&`
 /// (which can infer for `T = const U`) is wrapped as `U*` (and conversely

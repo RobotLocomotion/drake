@@ -9,6 +9,7 @@
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
+namespace examples {
 namespace bouncing_ball {
 namespace {
 
@@ -221,4 +222,5 @@ TEST_F(BouncingBallTest, Simulate) {
 
 }  // namespace
 }  // namespace bouncing_ball
+}  // namespace examples
 }  // namespace drake

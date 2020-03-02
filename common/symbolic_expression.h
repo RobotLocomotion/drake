@@ -797,7 +797,7 @@ struct equal_to<drake::symbolic::Expression> {
 /* Provides std::numeric_limits<drake::symbolic::Expression>. */
 template <>
 struct numeric_limits<drake::symbolic::Expression>
-    : public numeric_limits<double> {};
+    : public std::numeric_limits<double> {};
 
 /// Provides std::uniform_real_distribution, U(a, b), for symbolic expressions.
 ///

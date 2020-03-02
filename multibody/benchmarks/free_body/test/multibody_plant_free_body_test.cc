@@ -23,6 +23,7 @@
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
+namespace multibody {
 namespace benchmarks {
 namespace free_body {
 namespace {
@@ -483,4 +484,5 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testKaneExactSolution) {
 }  // namespace
 }  // namespace free_body
 }  // namespace benchmarks
+}  // namespace multibody
 }  // namespace drake

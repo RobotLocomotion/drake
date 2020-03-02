@@ -122,12 +122,7 @@ WARN_LOGFILE           = "@WARN_LOGFILE@"
 #---------------------------------------------------------------------------
 INPUT                  = "@INPUT_ROOT@"
 INPUT_ENCODING         = UTF-8
-FILE_PATTERNS          = *.c \
-                         *.cc \
-                         *.cxx \
-                         *.cpp \
-                         *.c++ \
-                         *.h \
+FILE_PATTERNS          = *.h \
                          *.hh \
                          *.hxx \
                          *.hpp \
@@ -135,8 +130,18 @@ FILE_PATTERNS          = *.c \
 RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*" "@INPUT_ROOT@/drake/attic/*"
-EXCLUDE_SYMBOLS        =
+EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*" \
+                         "@INPUT_ROOT@/*/test/*" \
+                         "@INPUT_ROOT@/*/MG/*" \
+                         "@INPUT_ROOT@/drake/attic/*"
+EXCLUDE_SYMBOLS        = "*::internal" "pybind11"
+# Sometimes using-statements confuse Doxygen and end up placing forward
+# declarations into a namespace that lacks the intiial "drake::" prefix.
+# Tell Doxygen to fully omit some top-level namespaces that will never
+# have any real documentation inside them.
+EXCLUDE_SYMBOLS        += "internal" "lcm" "manipulation"
+# Don't document our (obvious) Eigen overloads like "isinf", etc.
+EXCLUDE_SYMBOLS        += "Eigen"
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
