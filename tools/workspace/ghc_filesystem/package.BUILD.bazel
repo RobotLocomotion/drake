@@ -5,7 +5,7 @@ load(
     "install",
 )
 
-licenses(["notice"])  # BSD-3-Clause
+licenses(["notice"])  # MIT
 
 package(default_visibility = ["//visibility:public"])
 
