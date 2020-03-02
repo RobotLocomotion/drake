@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -180,3 +181,6 @@ class BarycentricMesh {
 
 }  // namespace math
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::math::BarycentricMesh)
