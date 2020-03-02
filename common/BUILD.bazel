@@ -127,7 +127,6 @@ drake_cc_library(
         "autodiff.h",
         "autodiff_overloads.h",
         "autodiffxd.h",
-        "eigen_autodiff_limits.h",
         "eigen_autodiff_types.h",
     ],
     deps = [
