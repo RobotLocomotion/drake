@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools/skylark:py.bzl", "py_binary", "py_test")
+load("@drake//tools/skylark:py.bzl", "py_binary")
 
 licenses(["notice"])  # BSD-3-Clause
 
@@ -21,12 +21,12 @@ alias(
     actual = ":cpplint_binary",
 )
 
-py_test(
+py_binary(
     name = "cpplint_unittest",
-    size = "small",
     srcs = ["cpplint/cpplint_unittest.py"],
-    data = ["cpplint/cpplint_test_header.h"],
-    deps = [
-        ":cpplint_py",
+    data = [
+        "cpplint/cpplint_test_header.h",
     ],
+    deps = ["cpplint_binary"],
+    visibility = ["//visibility:public"],
 )
