@@ -10,6 +10,7 @@
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
+namespace multibody {
 namespace benchmarks {
 namespace free_body {
 
@@ -244,4 +245,5 @@ class FreeBody {
 
 }  // namespace free_body
 }  // namespace benchmarks
+}  // namespace multibody
 }  // namespace drake

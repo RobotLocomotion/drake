@@ -8,6 +8,7 @@
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
+namespace examples {
 namespace bouncing_ball {
 
 /// Dynamical representation of the idealized hybrid dynamics
@@ -151,4 +152,5 @@ class BouncingBall final : public systems::LeafSystem<T> {
 };
 
 }  // namespace bouncing_ball
+}  // namespace examples
 }  // namespace drake

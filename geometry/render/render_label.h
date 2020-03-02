@@ -103,6 +103,14 @@ class RenderLabel {
     return value_ < other.value_;
   }
 
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const RenderLabel& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.value_);
+  }
+
   /** @name  The reserved render labels
 
    See class documentation on
@@ -171,6 +179,6 @@ namespace std {
  @relates RenderLabel  */
 template <>
 struct hash<drake::geometry::render::RenderLabel>
- : public hash<drake::geometry::render::RenderLabel::ValueType> {};
+  : public drake::DefaultHash {};
 
 }  // namespace std
