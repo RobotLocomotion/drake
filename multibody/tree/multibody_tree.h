@@ -1332,12 +1332,13 @@ class MultibodyTree {
       const Frame<T>& frame_E) const;
 
   /// See MultibodyPlant method.
-  void CalcJacobianSpatialVelocity(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Jw_ABp_E) const;
+  void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
+                                   JacobianWrtVariable with_respect_to,
+                                   const Frame<T>& frame_B,
+                                   const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
+                                   const Frame<T>& frame_A,
+                                   const Frame<T>& frame_E,
+                                   EigenPtr<MatrixX<T>> Js_V_ABi_E) const;
 
   /// See MultibodyPlant method.
   void CalcJacobianAngularVelocity(const systems::Context<T>& context,

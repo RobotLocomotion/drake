@@ -1180,68 +1180,92 @@ VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
   return Abias_WFp_array;
 }
 
+
+  /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
+  /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
+  /// <pre>
+  ///      J𝑠_V_ABi = [ ∂(V_ABi)/∂𝑠₁,  ...  ∂(V_ABi)/∂𝑠ₙ ]    (n is j or k)
+  /// </pre>
+  /// `V_ABi` is Bi's spatial velocity in frame A and "speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  ///
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABi` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
+  /// position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
+  /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
+  /// because Bi's velocity in A is defined as the derivative in frame A of
+  /// Bi's position vector from _any_ point fixed on A.
+  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
+  /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
+
 template <typename T>
 void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context,
     const JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_B,
-    const Eigen::Ref<const Vector3<T>>& p_BP,
+    const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
     const Frame<T>& frame_A,
     const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Jw_V_ABp_E) const {
-  DRAKE_THROW_UNLESS(Jw_V_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(Jw_V_ABp_E->rows() == 6);
+    EigenPtr<MatrixX<T>> Js_V_ABi_E) const {
+  DRAKE_THROW_UNLESS(Js_V_ABi_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_V_ABi_E->rows() == 6);
 
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
                            num_positions() : num_velocities();
-  DRAKE_THROW_UNLESS(Jw_V_ABp_E->cols() == num_columns);
+  DRAKE_THROW_UNLESS(Js_V_ABi_E->cols() == num_columns);
 
-  // The spatial velocity V_WBp can be obtained by composing the spatial
-  // velocities V_WAp and V_ABp. Expressed in the world frame W this composition
-  // is V_WBp_W = V_WAp_W + V_ABp_W
-  // Therefore, V_ABp_W = (Jw_WBp - Jw_WAp)⋅w.
-  //
-  // If with_respect_to = JacobianWrtVariable::kQDot, w = q̇ and
-  // Jw_W{Ap,Bp} = Jq_W{Ap,Bp},
-  // If with_respect_to == JacobianWrtVariable::kV,  w = v and
-  // Jw_W{Ap,Bp} = Jv_W{Ap,Bp}.
-  //
-  // Expressed in frame E, this becomes
-  //   V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp)⋅w.
-  // Thus, Jw_V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp).
+  // Bi's spatial velocity Jacobian in A for s, expressed in frame E is
+  // Js_V_ABi_E = R_EW * (Js_V_WBi_W - Js_V_WAi_W), where
+  // R_EW is the rotation matrix relating frames E and W.
+  // Js_V_WBi_W is Bi's spatial velocity Jacobian in W for s, expressed in W.
+  // Js_V_WAi_W is Ai's spatial velocity Jacobian in W for s, expressed in W,
+  // (Ai is the point of A coincident with Bi).
+  // If 𝑠 = q̇ (time-derivatives of generalized positions), then
+  // with_respect_to = JacobianWrtVariable::kQDot, whereas
+  // if 𝑠 = v (generalized velocities), then
+  // with_respect_to = JcobianWrtVariable::kV.
+  // Note: V_ABi_E = Js_V_ABi_E ⋅ s
 
   Vector3<T> p_WP;
-  CalcPointsPositions(context, frame_B, p_BP, /* From frame B */
+  CalcPointsPositions(context, frame_B, p_BoBi_B, /* From frame B */
                       world_frame(), &p_WP);  /* To world frame W */
 
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  Matrix6X<T> Jw_WAp(6, num_columns);
-  auto Jr_WAp = Jw_WAp.template topRows<3>();     // rotational part.
-  auto Jt_WAp = Jw_WAp.template bottomRows<3>();  // translational part.
+  Matrix6X<T> Js_V_WAi_W(6, num_columns);
+  auto Js_w_WA_W = Js_V_WAi_W.template topRows<3>();      // rotational part.
+  auto Js_v_WAi_W = Js_V_WAi_W.template bottomRows<3>();  // translational part.
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-      with_respect_to, frame_A,  p_WP,  &Jr_WAp, &Jt_WAp);
+      with_respect_to, frame_A,  p_WP,  &Js_w_WA_W, &Js_v_WAi_W);
 
-  Matrix6X<T> Jw_WBp(6, num_columns);
-  auto Jr_WBp = Jw_WBp.template topRows<3>();     // rotational part.
-  auto Jt_WBp = Jw_WBp.template bottomRows<3>();  // translational part.
+  Matrix6X<T> Js_V_WBi_W(6, num_columns);
+  auto Js_w_WB_W = Js_V_WBi_W.template topRows<3>();      // rotational part.
+  auto Js_v_WBi_W = Js_V_WBi_W.template bottomRows<3>();  // translational part.
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-      with_respect_to, frame_B,  p_WP,  &Jr_WBp, &Jt_WBp);
+      with_respect_to, frame_B,  p_WP,  &Js_w_WB_W, &Js_v_WBi_W);
 
-  // Jacobian Jw_ABp_W when E is the world frame W.
-  Jw_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
-  Jw_V_ABp_E->template bottomRows<3>() = Jt_WBp - Jt_WAp;
+  // Form Jacobian J𝑠_V_ABi_E when E is the world frame W.
+  Js_V_ABi_E->template topRows<3>() = Js_w_WB_W - Js_w_WA_W;
+  Js_V_ABi_E->template bottomRows<3>() = Js_v_WBi_W - Js_v_WAi_W;
 
-  // If the expressed-in frame E is not the world frame, we need to perform
-  // an additional operation.
+  // Multiply by rotation matrix R_EW if the expressed-in frame E is not W.
   if (frame_E.index() != world_frame().index()) {
     const RotationMatrix<T> R_EW =
         CalcRelativeRotationMatrix(context, frame_E, world_frame());
-    Jw_V_ABp_E->template topRows<3>() =
-        R_EW * Jw_V_ABp_E->template topRows<3>();
-    Jw_V_ABp_E->template bottomRows<3>() =
-        R_EW * Jw_V_ABp_E->template bottomRows<3>();
+    Js_V_ABi_E->template topRows<3>() =
+        R_EW * Js_V_ABi_E->template topRows<3>();
+    Js_V_ABi_E->template bottomRows<3>() =
+        R_EW * Js_V_ABi_E->template bottomRows<3>();
   }
 }
 

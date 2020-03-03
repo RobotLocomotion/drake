@@ -2530,10 +2530,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
-                                   EigenPtr<MatrixX<T>> Jw_ABp_E) const {
+                                   EigenPtr<MatrixX<T>> Js_V_ABi_E) const {
     internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
                                                 frame_B, p_BoBi_B, frame_A,
-                                                frame_E, Jw_ABp_E);
+                                                frame_E, Js_V_ABi_E);
   }
 
   /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A

@@ -225,7 +225,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
                               MatrixCompareType::relative));
 }
 
-TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
+TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalAndSpatialVelocity) {
   // Form two position vectors, one for each point Ei (i = 1, 2).
   // Each point is regarded as fixed/welded to the end effector frame E.
   const int kNumPoints = 2;
@@ -233,8 +233,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   p_EoEi_E.col(0) << 0.1, -0.05, 0.02;  // Position from Eo to first point.
   p_EoEi_E.col(1) << 0.2, 0.3, -0.15;   // Position from Eo to second point.
 
-  // Make space for stacked Jacobians with respect to generalized coordinates.
-  // Jq_v_WEi_W stores points Ei's translational velocity Jacobian in W (world).
+  // Make space for Jq_v_WEi_W, points Ei's translational velocity Jacobian in
+  // world W with respect to q̇ expressed in W (q̇ denotes time-derivatives of
+  // generalized coordinates, e.g., q̇₁, ... q̇ₙ where n = plant_>num_positions).
   const int num_positions = plant_->num_positions();
   MatrixX<double> Jq_v_WEi_W(3 * kNumPoints, num_positions);
 
@@ -242,7 +243,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   SetArbitraryConfiguration();
 
   // Calculate the 6xn matrix Jq_v_WEi_W that stores each of the two points Ei's
-  // translational velocity Jacobian in world W, with respect to q̇.
+  // translational velocity Jacobian in W with respect to q̇, expressed in W.
   const Frame<double>& frame_E = end_effector_link_->body_frame();
   const Frame<double>& frame_W = plant_->world_frame();
   plant_->CalcJacobianTranslationalVelocity(*context_,
@@ -275,6 +276,45 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEi_W, p_WoEi_W_deriv_wrt_q,
                               kTolerance, MatrixCompareType::relative));
+
+#if 0
+  // Make space for and then calculate the 12xn matrix Jq_V_WEi_W that stores
+  // each of the two points Ei's spatial velocity Jacobians in world W with
+  // respect to q̇ expressed in W.
+  MatrixX<double> Jq_V_WEi_W(6 * kNumPoints, num_positions);
+  plant_->CalcJacobianSpatialVelocity(*context_,
+                                      JacobianWrtVariable::kQDot,
+                                      frame_E,
+                                      p_EoEi_E,
+                                      frame_W,
+                                      frame_W,
+                                      &Jq_v_WEi_W);
+#endif
+#if 0
+  // Make space for and then calculate the 3xn matrix Jq_w_WE_W that stores
+  // frame E's angular velocity Jacobian in W with respect to q̇, expressed in W.
+  Matrix3X<double> Jq_w_WE_W(3, num_positions);
+  plant_->CalcJacobianAngularVelocity(*context_,
+                                      JacobianWrtVariable::kQDot,
+                                      frame_E,
+                                      frame_W,
+                                      frame_W,
+                                      &Jq_w_WE_W);
+
+  // Verify the rotational part of the spatial velocity Jacobian matches
+  // Jq_w_WE_W.
+  MatrixX<double> Jq_V_WEi_W_rotational(3 * kNumPoints, num_positions);
+  Jq_V_WEi_W_rotational = Jq_V_WEi_W.topRows(3);
+  EXPECT_TRUE(CompareMatrices(Jq_V_WEi_W_rotational, Jq_w_WE_W,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify the translational part of the spatial velocity Jacobian matches the
+  // translational velocity Jacobian.
+  MatrixX<double> Jq_V_WEi_W_translational(3 * kNumPoints, num_positions);
+  Jq_V_WEi_W_translational = Jq_V_WEi_W.bottomRows(3 * kNumPoints);
+  EXPECT_TRUE(CompareMatrices(Jq_V_WEi_W_translational, Jq_v_WEi_W,
+                              kTolerance, MatrixCompareType::relative));
+#endif
 }
 
 }  // namespace
