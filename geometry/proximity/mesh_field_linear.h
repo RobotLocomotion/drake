@@ -171,10 +171,9 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
       if (values_.at(i) != field_linear->values_.at(i))
         return false;
     }
-    for (typename MeshType::ElementIndex i(0); i < this->mesh().num_elements();
-         ++i) {
-      if (gradients_.at(i) != field_linear->gradients_.at(i)) return false;
-    }
+    // Check gradient vectors.
+    if (gradients_ != field_linear->gradients_) return false;
+
     // All checks passed.
     return true;
   }
