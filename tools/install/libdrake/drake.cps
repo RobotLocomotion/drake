@@ -12,8 +12,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "Eigen3": {
-      "Version": "3.3.3",
-      "Hints": ["@prefix@/lib/cmake/eigen3"],
+      "Version": "3.3.4",
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "fmt": {
