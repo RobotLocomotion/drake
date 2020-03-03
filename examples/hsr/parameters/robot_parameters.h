@@ -4,9 +4,10 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/frame.h"
 
 namespace drake {
 namespace examples {
@@ -17,11 +18,10 @@ namespace parameters {
 /// files.
 template <typename T>
 struct SensorLocationParameters {
-  const multibody::Frame<T>* parent_frame{};  ///< Frame where the sensor will
-                                              ///< be "mounted" on.
-  math::RigidTransform<T> X_PC;               ///< Offset of the mounting
-                                              ///< position w.r.t the parent
-                                              ///< frame.
+  std::string parent_frame_name;  ///< Name of the frame where the sensor
+                                  ///< will be "mounted" on.
+  math::RigidTransform<T> X_PC;   ///< Offset of the mounting position
+                                  ///< w.r.t the parent frame.
 };
 
 /// Both the extrinsic and intrinsic parameters of a render camera.
@@ -32,16 +32,29 @@ struct CameraParameters {
   geometry::render::DepthCameraProperties depth_properties{0, 0, 0, "", 0, 0};
 };
 
-/// A simple struct to store PID gains for one joint.
+/// A simple struct to store PID gains for one joint. Serialize the members so
+/// that the struct can be loaded from yaml files using the YamlReadArchive.
+/// Please refer to "examples/hsr/parameters/robot_parameters_loader.h" for
+/// details.
 struct PidGains {
   double kp{0.0};
   double ki{0.0};
   double kd{0.0};
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(kp));
+    a->Visit(DRAKE_NVP(ki));
+    a->Visit(DRAKE_NVP(kd));
+  }
 };
 
 /// A struct stores the necessary parameters to control a single joint.
+/// Serialize the members so that the struct can be loaded from yaml files
+/// using the YamlReadArchive.
 struct JointParameters {
-  explicit JointParameters(const std::string& joint_name) : name(joint_name) {}
+  explicit JointParameters(const std::string& joint_name = "")
+      : name(joint_name) {}
   std::string name;
   double position_offset{0.0};       ///< [rad] Offset from the nominal zero
                                      ///< position.
@@ -53,6 +66,16 @@ struct JointParameters {
                                      ///< linear joint. Absolute value of the
                                      ///< torque limit.
   PidGains pid_gains;                ///< PID gains configured for the joint.
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(name));
+    a->Visit(DRAKE_NVP(position_offset));
+    a->Visit(DRAKE_NVP(position_limit_lower));
+    a->Visit(DRAKE_NVP(position_limit_upper));
+    a->Visit(DRAKE_NVP(velocity_limit));
+    a->Visit(DRAKE_NVP(torque_limit));
+    a->Visit(DRAKE_NVP(pid_gains));
+  }
 };
 
 /// Parameters of the parts that assemble a robot. Parts are defined as the
@@ -70,9 +93,9 @@ struct PartParameters {
 template <typename T>
 struct RobotParameters {
   std::string name;
-  std::map<std::string, CameraParameters<T>> camera_parameters;
-  std::map<std::string, SensorLocationParameters<T>> force_sensor_parameters;
-  std::map<std::string, SensorLocationParameters<T>> imu_parameters;
+  std::map<std::string, CameraParameters<T>> cameras_parameters;
+  std::map<std::string, SensorLocationParameters<T>> force_sensors_parameters;
+  std::map<std::string, SensorLocationParameters<T>> imus_parameters;
   std::map<std::string, PartParameters> parts_parameters;
 };
 

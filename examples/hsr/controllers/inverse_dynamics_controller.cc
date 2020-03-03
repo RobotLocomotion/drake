@@ -1,6 +1,5 @@
 #include "drake/examples/hsr/controllers/inverse_dynamics_controller.h"
 
-#include "drake/examples/hsr/parameters/sim_parameters.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
@@ -27,10 +26,9 @@ InverseDynamicsController::InverseDynamicsController(
   const int num_actuators = robot_plant.num_actuators();
   const int state_size = num_positions + num_velocities;
 
-  const auto& sim_params = hsr::parameters::hsr_sim_flags();
-  VectorX<double> Kp = sim_params.kp * VectorX<double>::Ones(num_actuators);
-  VectorX<double> Ki = sim_params.ki * VectorX<double>::Ones(num_actuators);
-  VectorX<double> Kd = sim_params.kd * VectorX<double>::Ones(num_actuators);
+  VectorX<double> Kp = VectorX<double>::Zero(num_actuators);
+  VectorX<double> Ki = VectorX<double>::Zero(num_actuators);
+  VectorX<double> Kd = VectorX<double>::Zero(num_actuators);
   LoadPidGainsFromRobotParameters(parameters, welded_robot_plant, &Kp, &Ki,
                                   &Kd);
 
@@ -101,22 +99,27 @@ InverseDynamicsController::InverseDynamicsController(
 void InverseDynamicsController::LoadPidGainsFromRobotParameters(
     const hsr::parameters::RobotParameters<double>& parameters,
     const multibody::MultibodyPlant<double>& welded_robot_plant,
-    VectorX<double>* kp, VectorX<double>* kd, VectorX<double>* ki) {
+    VectorX<double>* kp, VectorX<double>* ki, VectorX<double>* kd) {
   // Confirm the passed in plant is fully actuated.
   DRAKE_DEMAND(welded_robot_plant.num_actuators() ==
                welded_robot_plant.num_velocities());
+  int num_updated_joint = 0;
   for (auto const& [part_name, part_parameters] : parameters.parts_parameters) {
     drake::log()->info(
         "Loading PID gains for Inverse Dynamics Controllers from: " +
         part_name);
     for (const auto& joint_parameters : part_parameters.joints_parameters) {
-      const int joint_index =
-          welded_robot_plant.GetJointByName(joint_parameters.name).index();
-      (*kp)[joint_index] = joint_parameters.pid_gains.kp;
-      (*kd)[joint_index] = joint_parameters.pid_gains.kd;
-      (*ki)[joint_index] = joint_parameters.pid_gains.ki;
+      const int joint_actuator_index =
+          welded_robot_plant
+              .GetJointActuatorByName(joint_parameters.name + "_actuator")
+              .index();
+      (*kp)[joint_actuator_index] = joint_parameters.pid_gains.kp;
+      (*kd)[joint_actuator_index] = joint_parameters.pid_gains.kd;
+      (*ki)[joint_actuator_index] = joint_parameters.pid_gains.ki;
+      ++num_updated_joint;
     }
   }
+  DRAKE_DEMAND(num_updated_joint == welded_robot_plant.num_actuators());
 }
 
 }  // namespace controllers

@@ -5,6 +5,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/hsr/controllers/main_controller.h"
+#include "drake/examples/hsr/parameters/robot_parameters_loader.h"
 #include "drake/examples/hsr/parameters/sim_parameters.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
@@ -141,7 +142,9 @@ const hsr::parameters::RobotParameters<T> HsrWorld<T>::LoadRobotParameters(
     const std::string& robot_name) const {
   hsr::parameters::RobotParameters<T> robot_parameters;
   robot_parameters.name = robot_name;
-
+  const std::string filepath_prefix = "drake/examples/hsr/models/config/";
+  DRAKE_DEMAND(hsr::parameters::ReadParametersFromFile(
+      robot_name, filepath_prefix, &robot_parameters));
   return robot_parameters;
 }
 
@@ -199,18 +202,18 @@ void HsrWorld<T>::SetupWorld(
 
 template <typename T>
 void HsrWorld<T>::RegisterRgbdSensor(
-    const std::string& name, const Frame<T>& parent_frame,
+    const std::string& name, const std::string& parent_frame_name,
     const math::RigidTransform<double>& X_PC,
     const geometry::render::CameraProperties& color_properties,
     const geometry::render::DepthCameraProperties& depth_properties,
     hsr::parameters::RobotParameters<T>* robot_parameters) {
   hsr::parameters::CameraParameters<T> param;
-  param.location.parent_frame = &parent_frame;
+  param.location.parent_frame_name = parent_frame_name;
   param.location.X_PC = X_PC;
   param.color_properties = color_properties;
   param.depth_properties = depth_properties;
 
-  const auto res = robot_parameters->camera_parameters.insert({name, param});
+  const auto res = robot_parameters->cameras_parameters.insert({name, param});
   if (!res.second) {
     drake::log()->warn("The camera: " + name +
                        " already registered. Skip adding this one");
@@ -219,15 +222,15 @@ void HsrWorld<T>::RegisterRgbdSensor(
 
 template <typename T>
 void HsrWorld<T>::RegisterImuSensor(
-    const std::string& name, const Frame<T>& parent_frame,
+    const std::string& name, const std::string& parent_frame_name,
     const math::RigidTransform<double>& X_PC,
     hsr::parameters::RobotParameters<T>* robot_parameters) {
   hsr::parameters::SensorLocationParameters<T> imu_location;
-  imu_location.parent_frame = &parent_frame;
+  imu_location.parent_frame_name = parent_frame_name;
   imu_location.X_PC = X_PC;
 
   const auto res =
-      robot_parameters->imu_parameters.insert({name, imu_location});
+      robot_parameters->imus_parameters.insert({name, imu_location});
   if (!res.second) {
     drake::log()->warn("The imu: " + name +
                        " already registered. Skip adding this one");
@@ -236,14 +239,14 @@ void HsrWorld<T>::RegisterImuSensor(
 
 template <typename T>
 void HsrWorld<T>::RegisterForceSensor(
-    const std::string& name, const Frame<T>& parent_frame,
+    const std::string& name, const std::string& parent_frame_name,
     const math::RigidTransform<double>& X_PC,
     hsr::parameters::RobotParameters<T>* robot_parameters) {
   hsr::parameters::SensorLocationParameters<T> force_sensor_location;
-  force_sensor_location.parent_frame = &parent_frame;
+  force_sensor_location.parent_frame_name = parent_frame_name;
   force_sensor_location.X_PC = X_PC;
 
-  const auto res = robot_parameters->force_sensor_parameters.insert(
+  const auto res = robot_parameters->force_sensors_parameters.insert(
       {name, force_sensor_location});
   if (!res.second) {
     drake::log()->warn("The force sensor: " + name +
