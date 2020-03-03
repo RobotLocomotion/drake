@@ -74,9 +74,9 @@ class TestSystem : public System<double> {
     return this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
   }
 
-  const LeafOutputPort<double>& AddAbstractOutputPort() {
+  LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with dummy alloc and calc.
-    const CacheEntry& cache_entry = this->DeclareCacheEntry(
+    CacheEntry& cache_entry = this->DeclareCacheEntry(
         "null output port",
         [] { return Value<int>::Make(0); },
         [](const ContextBase&, AbstractValue*) {});

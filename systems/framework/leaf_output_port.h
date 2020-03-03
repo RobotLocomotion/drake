@@ -65,6 +65,15 @@ class LeafOutputPort final : public OutputPort<T> {
     return *cache_entry_;
   }
 
+  /** (Debugging) Specifies that caching should be disabled for this output
+  port when a Context is first allocated. This is useful if you have observed
+  different behavior with caching on or off and would like to determine if
+  the problem is caused by this port.
+  @see CacheEntry::disable_caching_by_default() */
+  void disable_caching_by_default() {
+    cache_entry_->disable_caching_by_default();
+  }
+
  private:
   friend class internal::FrameworkFactory;
 
@@ -73,7 +82,7 @@ class LeafOutputPort final : public OutputPort<T> {
   LeafOutputPort(const System<T>* system, SystemBase* system_base,
                  std::string name, OutputPortIndex index,
                  DependencyTicket ticket, PortDataType data_type, int size,
-                 const CacheEntry* cache_entry)
+                 CacheEntry* cache_entry)
       : OutputPort<T>(system, system_base, std::move(name), index, ticket,
                       data_type, size),
         cache_entry_(cache_entry) {
@@ -100,7 +109,7 @@ class LeafOutputPort final : public OutputPort<T> {
     return {std::nullopt, cache_entry().ticket()};
   };
 
-  const CacheEntry* const cache_entry_;
+  CacheEntry* const cache_entry_;
 };
 
 }  // namespace systems

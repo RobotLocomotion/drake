@@ -1836,7 +1836,7 @@ class System : public SystemBase {
   /// @pre @p name must not be empty.
   /// @throws std::logic_error for a duplicate port name.
   /// @returns the declared port.
-  const InputPort<T>& DeclareInputPort(
+  InputPort<T>& DeclareInputPort(
       std::variant<std::string, UseDefaultName> name, PortDataType type,
       int size, std::optional<RandomDistribution> random_type = std::nullopt) {
     const InputPortIndex port_index(num_input_ports());
@@ -1845,10 +1845,12 @@ class System : public SystemBase {
     auto eval = [this, port_index](const ContextBase& context_base) {
       return this->EvalAbstractInput(context_base, port_index);
     };
-    this->AddInputPort(internal::FrameworkFactory::Make<InputPort<T>>(
+    auto port = internal::FrameworkFactory::Make<InputPort<T>>(
         this, this, NextInputPortName(std::move(name)), port_index, port_ticket,
-        type, size, random_type, std::move(eval)));
-    return get_input_port(port_index);
+        type, size, random_type, std::move(eval));
+    InputPort<T>* port_ptr = port.get();
+    this->AddInputPort(std::move(port));
+    return *port_ptr;
   }
 
   //@}
@@ -1864,7 +1866,7 @@ class System : public SystemBase {
   /// See the nearly identical signature with an additional (first) argument
   /// specifying the port name.  This version will be deprecated as discussed
   /// in #9447.
-  const InputPort<T>& DeclareInputPort(
+  InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
       std::optional<RandomDistribution> random_type = std::nullopt) {
     return DeclareInputPort(kUseDefaultName, type, size, random_type);

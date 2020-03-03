@@ -234,6 +234,25 @@ void AbstractPortCheck(const Context<double>& context,
       "OutputPort::Eval().*wrong value type int.*actual type.*std::string.*");
 }
 
+TEST_F(LeafOutputPortTest, DisableByDefaultWorks) {
+  absport_general_.disable_caching_by_default();
+  const CacheEntry& abs_entry = absport_general_.cache_entry();
+  const CacheEntry& vec_entry = vecport_general_.cache_entry();
+  EXPECT_TRUE(abs_entry.is_disabled_by_default());
+  EXPECT_FALSE(vec_entry.is_disabled_by_default());
+
+  // Find the cache entry values in a created context and verify that
+  // the right one is disabled.
+  auto my_context = dummy_.CreateDefaultContext();
+  const CacheEntryValue& abs_value =
+      my_context->get_cache().get_cache_entry_value(abs_entry.cache_index());
+  const CacheEntryValue& vec_value =
+      my_context->get_cache().get_cache_entry_value(vec_entry.cache_index());
+
+  EXPECT_TRUE(abs_value.is_cache_entry_disabled());
+  EXPECT_FALSE(vec_value.is_cache_entry_disabled());
+}
+
 // Check for proper construction and functioning of abstract LeafOutputPorts.
 TEST_F(LeafOutputPortTest, AbstractPorts) {
   // Check abstract port with explicit function allocator.

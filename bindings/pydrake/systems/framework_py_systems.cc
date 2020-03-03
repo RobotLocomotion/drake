@@ -293,7 +293,7 @@ struct Impl {
         .def("GetOutputPort", &System<T>::GetOutputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("DeclareInputPort",
-            overload_cast_explicit<const InputPort<T>&,
+            overload_cast_explicit<InputPort<T>&,
                 std::variant<std::string, UseDefaultName>, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
@@ -301,7 +301,7 @@ struct Impl {
             doc.System.DeclareInputPort.doc_4args)
         .def("DeclareInputPort",
             overload_cast_explicit<  // BR
-                const InputPort<T>&, PortDataType, int,
+                InputPort<T>&, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("type"), py::arg("size"),
             py::arg("random_type") = std::nullopt)
@@ -480,8 +480,7 @@ Note: The above is for the C++ documentation. For Python, use
             py_reference_internal, py::arg("name"), py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractInputPort.doc_2args)
         .def("DeclareAbstractInputPort",
-            [](PyLeafSystem* self,
-                const std::string& name) -> const InputPort<T>& {
+            [](PyLeafSystem* self, const std::string& name) -> InputPort<T>& {
               WarnDeprecated(
                   "`DeclareAbstractInputPort(self, name)` is deprecated. "
                   "Please use `(self, name, model_value)` instead.");
@@ -520,7 +519,7 @@ Note: The above is for the C++ documentation. For Python, use
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
                 std::optional<RandomDistribution> random_type)
-                -> const InputPort<T>& {
+                -> InputPort<T>& {
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
