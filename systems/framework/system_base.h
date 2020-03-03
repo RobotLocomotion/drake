@@ -308,8 +308,13 @@ class SystemBase : public internal::SystemMessageInterface {
   @ref drake::systems::ContextBase::DisableCaching "DisableCaching()"
   method, which causes cache values to be recalculated unconditionally. You
   should get identical results with caching enabled or disabled, with speed
-  being the only difference.
-  @see drake::systems::ContextBase::DisableCaching()
+  being the only difference. You can also disable caching for individual
+  cache entries in a Context, or specify that individual cache entries should
+  be disabled by default when they are first allocated.
+  @see ContextBase::DisableCaching()
+  @see CacheEntry::disable_caching()
+  @see CacheEntry::disable_caching_by_default()
+  @see LeafOutputPort::disable_caching_by_default()
 
   <h4>Which signature to use?</h4>
 
@@ -362,12 +367,12 @@ class SystemBase : public internal::SystemMessageInterface {
     Defaults to `{all_sources_ticket()}` if unspecified. If the cache value
     is truly independent of the Context (rare!) say so explicitly by providing
     the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
-  @returns a const reference to the newly-created %CacheEntry.
+  @returns a reference to the newly-created %CacheEntry.
   @throws std::logic_error if given an explicitly empty prerequisite list. */
   // Arguments to these methods are moved from internally. Taking them by value
   // rather than reference avoids a copy when the original argument is
   // an rvalue.
-  const CacheEntry& DeclareCacheEntry(
+  CacheEntry& DeclareCacheEntry(
       std::string description, CacheEntry::AllocCallback alloc_function,
       CacheEntry::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -386,7 +391,7 @@ class SystemBase : public internal::SystemMessageInterface {
   for more information about the parameters and behavior.
   @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
-  const CacheEntry& DeclareCacheEntry(
+  CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*make)() const,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
@@ -407,7 +412,7 @@ class SystemBase : public internal::SystemMessageInterface {
   above for more information about the parameters and behavior.
   @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
-  const CacheEntry& DeclareCacheEntry(
+  CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -422,7 +427,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
   please look there for more information. */
   template <class MySystem, class MyContext, typename ValueType>
-  const CacheEntry& DeclareCacheEntry(
+  CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
       ValueType (MySystem::*calc)(const MyContext&) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -451,7 +456,7 @@ class SystemBase : public internal::SystemMessageInterface {
   the `ValueType` default constructor each time it is called.
   @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
-  const CacheEntry& DeclareCacheEntry(
+  CacheEntry& DeclareCacheEntry(
       std::string description,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -466,7 +471,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @ref DeclareCacheEntry_calc_only "calculator-only signature";
   please look there for more information. */
   template <class MySystem, class MyContext, typename ValueType>
-  const CacheEntry& DeclareCacheEntry(
+  CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*calc)(const MyContext&) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -751,6 +756,7 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(0 <= index && index < num_output_ports());
     return output_ports_[index]->ticket();
   }
+  //@}
 
   /** Returns the number of declared continuous state variables. */
   int num_continuous_states() const {
@@ -780,7 +786,6 @@ class SystemBase : public internal::SystemMessageInterface {
   int num_abstract_parameters() const {
     return context_sizes_.num_abstract_parameters;
   }
-  //@}
 
   /** Checks whether the given context was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
@@ -939,7 +944,7 @@ class SystemBase : public internal::SystemMessageInterface {
   tickets, for example the cache entry for time derivatives. See the public API
   for the most-general DeclareCacheEntry() signature for the meanings of the
   other parameters here. */
-  const CacheEntry& DeclareCacheEntryWithKnownTicket(
+  CacheEntry& DeclareCacheEntryWithKnownTicket(
       DependencyTicket known_ticket,
       std::string description, CacheEntry::AllocCallback alloc_function,
       CacheEntry::CalcCallback calc_function,
@@ -1200,7 +1205,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
 // Takes make() and calc() member functions.
 template <class MySystem, class MyContext, typename ValueType>
-const CacheEntry& SystemBase::DeclareCacheEntry(
+CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     ValueType (MySystem::*make)() const,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
@@ -1230,7 +1235,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 // Takes an initial value and calc() member function that has an output
 // argument.
 template <class MySystem, class MyContext, typename ValueType>
-const CacheEntry& SystemBase::DeclareCacheEntry(
+CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
@@ -1268,7 +1273,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 // TODO(sherm1) Consider whether common code in this and the previous method
 // can be factored out and shared rather than repeated.
 template <class MySystem, class MyContext, typename ValueType>
-const CacheEntry& SystemBase::DeclareCacheEntry(
+CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
     ValueType (MySystem::*calc)(const MyContext&) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
@@ -1298,7 +1303,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 // Takes just a calc() member function with an output argument, and
 // value-initializes the entry.
 template <class MySystem, class MyContext, typename ValueType>
-const CacheEntry& SystemBase::DeclareCacheEntry(
+CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
@@ -1315,7 +1320,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 // Takes just a value-returning calc() member function, and
 // value-initializes the entry. See previous method for more information.
 template <class MySystem, class MyContext, typename ValueType>
-const CacheEntry& SystemBase::DeclareCacheEntry(
+CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     ValueType (MySystem::*calc)(const MyContext&) const,
     std::set<DependencyTicket> prerequisites_of_calc) {

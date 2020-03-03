@@ -71,7 +71,7 @@ class CacheEntry {
   the cache entry. Instead allocation is deferred until the allocator can be
   provided with a complete Context, which cannot occur until the full Diagram
   containing this subsystem has been completed. That way the initial type, size,
-  or value can Context-dependent. The supplied prerequisite tickets are
+  or value can be Context-dependent. The supplied prerequisite tickets are
   interpreted as belonging to the same subsystem that owns this %CacheEntry.
 
   The list of prerequisites cannot be empty -- a cache entry that really has
@@ -211,29 +211,43 @@ class CacheEntry {
   }
 
   /** (Debugging) Returns `true` if caching has been disabled for this cache
-  entry. That means Eval() will recalculate even if the entry is marked up
-  to date. */
+  entry in the given `context`. That means Eval() will recalculate even if the
+  entry is marked up to date. */
   bool is_cache_entry_disabled(const ContextBase& context) const {
     return get_cache_entry_value(context).is_cache_entry_disabled();
   }
 
-  /** (Debugging) Disables caching for this cache entry. Eval() will recompute
-  the cached value every time it is invoked, regardless of the state of the
-  out_of_date flag. That should have no effect on any computed results, other
-  than speed. See class documentation for ideas as to what might be wrong if you
-  see a change. Note that the `context` is `const` here; cache entry values
-  are mutable. */
+  /** (Debugging) Disables caching for this cache entry in the given `context`.
+  Eval() will recompute the cached value every time it is invoked, regardless
+  of the state of the out_of_date flag. That should have no effect on any
+  computed results, other than speed. See class documentation for ideas as to
+  what might be wrong if you see a change. Note that the `context` is `const`
+  here; cache entry values are mutable. */
   void disable_caching(const ContextBase& context) const {
     CacheEntryValue& value = get_mutable_cache_entry_value(context);
     value.disable_caching();
   }
 
-  /** (Debugging) Enables caching for this cache entry if it was previously
-  disabled. */
+  /** (Debugging) Enables caching for this cache entry in the given `context`
+  if it was previously disabled. */
   void enable_caching(const ContextBase& context) const {
     CacheEntryValue& value = get_mutable_cache_entry_value(context);
     value.enable_caching();
   }
+
+  /** (Debugging) Marks this cache entry so that the corresponding
+  CacheEntryValue object in any allocated Context is created with its
+  `disabled` flag initially set. This can be useful for debugging when you have
+  observed a difference between cached and non-cached behavior that can't be
+  diagnosed with the runtime disable_caching() method.
+  @see disable_caching() */
+  void disable_caching_by_default() {
+    is_disabled_by_default_ = true;
+  }
+
+  /** (Debugging) Returns the current value of this flag. It is `false` unless
+  a call to `disable_caching_by_default()` has previously been made. */
+  bool is_disabled_by_default() const { return is_disabled_by_default_; }
 
   /** Return the human-readable description for this %CacheEntry. */
   const std::string& description() const { return description_; }
@@ -333,6 +347,8 @@ class CacheEntry {
   // prerequisites are internal to the containing subsystem, so the ticket
   // alone is a unique specification of a prerequisite.
   std::set<DependencyTicket> prerequisites_of_calc_;
+
+  bool is_disabled_by_default_{false};
 };
 
 }  // namespace systems
