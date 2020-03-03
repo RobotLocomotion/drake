@@ -12,8 +12,8 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/AutoDiff>
 
-static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 3),
-              "Drake requires Eigen >= v3.3.3.");
+static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 4),
+              "Drake requires Eigen >= v3.3.4.");
 
 // Do not alpha-sort the following block of hard-coded #includes, which is
 // protected by `clang-format on/off`.
@@ -26,7 +26,6 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 3),
 // order-of-specialization-includes-changed mistakes.
 //
 // clang-format off
-#include "drake/common/eigen_autodiff_limits.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/autodiffxd.h"
 #include "drake/common/autodiff_overloads.h"

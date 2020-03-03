@@ -42,8 +42,6 @@ _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3",
     "pybind11",
-    # N.B. See #5785; do your best not to bump this to a newer commit.
-    "eigen",
     # Our "find something new" heuristics get confused by these repositories.
     "github3_py",
     "pycodestyle",

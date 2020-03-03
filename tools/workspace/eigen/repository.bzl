@@ -1,17 +1,30 @@
 # -*- python -*-
 
-load("@drake//tools/workspace:bitbucket.bzl", "bitbucket_archive")
+load(
+    "@drake//tools/workspace:pkg_config.bzl",
+    "pkg_config_repository",
+)
 
 def eigen_repository(
         name,
-        mirrors = None):
-    bitbucket_archive(
+        licenses = [
+            "notice",  # BSD-3-Clause
+            "reciprocal",  # MPL-2.0
+            "unencumbered",  # Public-Domain
+        ],
+        modname = "eigen3",
+        atleast_version = "3.3.4",
+        extra_defines = ["EIGEN_MPL2_ONLY"],
+        pkg_config_paths = ["/usr/local/opt/eigen/share/pkgconfig"],
+        mirrors = None,
+        **kwargs):
+    if mirrors != None:
+        print("DRAKE DEPRECATED: The @eigen external no longer accepts a mirrors= parameter, because Drake no longer downloads Eigen; this warning will turn into an error or after 2020-06-01.")  # noqa
+    pkg_config_repository(
         name = name,
-        repository = "eigen/eigen",
-        # N.B. See #5785; do your best not to bump this to a newer commit.
-        commit = "3.3.3",
-        sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",  # noqa
-        strip_prefix = "eigen-eigen-67e894c6cd8f",
-        build_file = "@drake//tools/workspace/eigen:package.BUILD.bazel",
-        mirrors = mirrors,
+        licenses = licenses,
+        modname = modname,
+        extra_defines = extra_defines,
+        pkg_config_paths = pkg_config_paths,
+        **kwargs
     )
