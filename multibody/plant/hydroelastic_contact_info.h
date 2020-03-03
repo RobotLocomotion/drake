@@ -39,10 +39,23 @@ class HydroelasticContactInfo {
   /**
    Constructs this structure using the given contact surface, traction field,
    and slip field. This constructor does not own the ContactSurface; it points
-   to a ContactSurface that another owns.
-   @see contact_surface()
-   @see traction_A_W()
-   @see vslip_AB_W()
+   to a ContactSurface that another owns, @see contact_surface().
+
+   @note `contact_surface` associates geometries M and N with `this`
+   %HydroelasticContactInfo. These are obtainable via `contact_surface().id_M()`
+   and `contact_surface().id_N()`. In turn, Geometries M and N are attached to
+   bodies A and B, respectively. It is the responsability of user code to
+   provide `F_Ac_W` as applied on body A and `quadrature_point_data` that
+   consistently adheres to this convention, see HydroelasticQuadraturePointData.
+
+   @param[in] contact_surface Contact surface between two geometries M and N,
+     see geometry::ContactSurface::id_M() and geometry::ContactSurface::id_N(),
+   @param[in] F_Ac_W Spatial force applied on body A, at contact surface
+     centroid C, and expressed in the world frame W.
+   @param[in] quadrature_point_data Hydroelastic field data at each quadrature
+     point. Data must be provided in accordance to the convention that geometry
+     M and N are attached to bodies A and B, respectively. Refer to
+     HydroelasticQuadraturePointData for further details.
    */
   HydroelasticContactInfo(
       const geometry::ContactSurface<T>* contact_surface,
@@ -56,8 +69,24 @@ class HydroelasticContactInfo {
 
   /**
    Constructs this structure using the given contact surface, traction field,
-   and slip field.  This constructor takes ownership of the ContactSurface.
-   @see contact_surface()
+   and slip field.  This constructor takes ownership of the ContactSurface, @see
+   contact_surface().
+
+   @note `contact_surface` associates geometries M and N with `this`
+   %HydroelasticContactInfo. These are obtainable via `contact_surface().id_M()`
+   and `contact_surface().id_N()`. In turn, Geometries M and N are attached to
+   bodies A and B, respectively. It is the responsability of user code to
+   provide `F_Ac_W` as applied on body A and `quadrature_point_data` that
+   consistently adheres to this convention, see HydroelasticQuadraturePointData.
+
+   @param[in] contact_surface Contact surface between two geometries M and N,
+     see geometry::ContactSurface::id_M() and geometry::ContactSurface::id_N(),
+   @param[in] F_Ac_W Spatial force applied on body A, at contact surface
+     centroid C, and expressed in the world frame W.
+   @param[in] quadrature_point_data Hydroelastic field data at each quadrature
+     point. Data must be provided in accordance to the convention that geometry
+     M and N are attached to bodies A and B, respectively. Refer to
+     HydroelasticQuadraturePointData for further details.
    */
   HydroelasticContactInfo(
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
@@ -119,8 +148,10 @@ class HydroelasticContactInfo {
     return quadrature_point_data_;
   }
 
-  /// Gets the spatial force applied at the centroid (Point C) of the surface
-  /// mesh (C can be obtained through `contact_surface().mesh_W().`).
+  /// Gets the spatial force applied on body A, at the centroid point C of the
+  /// surface mesh M and, expressed in the world frame W. The position `p_WC` of
+  /// the centroid point C in the world frame W can be obtained with
+  /// `contact_surface().mesh_W().centroid()`.
   const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
 
  private:
