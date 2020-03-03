@@ -160,11 +160,11 @@ struct SystemWithInputPorts final : public LeafSystem<double> {
             DeclareAbstractInputPort("double_port", Value<double>(1.25))},
         string_port{DeclareAbstractInputPort("string_port",
                                              Value<std::string>("hello"))} {}
-  const InputPort<double>& basic_vec_port;
-  const InputPort<double>& derived_vec_port;
-  const InputPort<double>& int_port;
-  const InputPort<double>& double_port;
-  const InputPort<double>& string_port;
+  InputPort<double>& basic_vec_port;
+  InputPort<double>& derived_vec_port;
+  InputPort<double>& int_port;
+  InputPort<double>& double_port;
+  InputPort<double>& string_port;
 };
 
 // Test the FixValue() method. Note that the conversion of its value argument

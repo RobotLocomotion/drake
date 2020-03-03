@@ -124,8 +124,15 @@ class MySystemBase final : public SystemBase {
                               &MySystemBase::CalcMyVector3,
                               {xc_ticket(), string_entry_.ticket()})) {
     set_name("cache_entry_test_system");
+
+    // We'll make entry4 disabled by default; everything else is enabled.
+    entry4_.disable_caching_by_default();
+
     EXPECT_EQ(num_cache_entries(), 8);
     EXPECT_EQ(GetSystemName(), "cache_entry_test_system");
+
+    EXPECT_FALSE(entry3_.is_disabled_by_default());
+    EXPECT_TRUE(entry4_.is_disabled_by_default());
   }
 
   const CacheEntry& entry0() const { return entry0_; }
@@ -169,14 +176,14 @@ class MySystemBase final : public SystemBase {
     throw std::logic_error("GetDirectFeedthroughs is not implemented");
   }
 
-  const CacheEntry& entry0_;
-  const CacheEntry& entry1_;
-  const CacheEntry& entry2_;
-  const CacheEntry& entry3_;
-  const CacheEntry& entry4_;
-  const CacheEntry& entry5_;
-  const CacheEntry& string_entry_;
-  const CacheEntry& vector_entry_;
+  CacheEntry& entry0_;
+  CacheEntry& entry1_;
+  CacheEntry& entry2_;
+  CacheEntry& entry3_;
+  CacheEntry& entry4_;
+  CacheEntry& entry5_;
+  CacheEntry& string_entry_;
+  CacheEntry& vector_entry_;
 };
 
 // An allocator is not permitted to return null. That should be caught when
@@ -232,6 +239,16 @@ class CacheEntryTest : public ::testing::Test {
     EXPECT_EQ(entry0_tracker.prerequisites().size(), 1);
     EXPECT_EQ(entry0_tracker.prerequisites()[0],
               &context_.get_tracker(system_.all_sources_ticket()));
+
+    // Only entry4 should have been created disabled.
+    EXPECT_FALSE(entry0().is_cache_entry_disabled(context_));
+    EXPECT_FALSE(entry1().is_cache_entry_disabled(context_));
+    EXPECT_FALSE(entry2().is_cache_entry_disabled(context_));
+    EXPECT_FALSE(entry3().is_cache_entry_disabled(context_));
+    EXPECT_TRUE(entry4().is_cache_entry_disabled(context_));
+    EXPECT_FALSE(entry5().is_cache_entry_disabled(context_));
+    EXPECT_FALSE(string_entry().is_cache_entry_disabled(context_));
+    EXPECT_FALSE(vector_entry().is_cache_entry_disabled(context_));
 
     EXPECT_TRUE(entry0().is_out_of_date(context_));
     EXPECT_TRUE(entry1().is_out_of_date(context_));
