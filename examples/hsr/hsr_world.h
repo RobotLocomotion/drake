@@ -198,7 +198,7 @@ class HsrWorld : public systems::Diagram<T> {
   /// Registers a RGBD sensor into the parameters of a robot. Must be called
   /// before Finalize().
   /// @param name Name for the camera.
-  /// @param parent_frame The parent frame (frame P). The body that
+  /// @param parent_frame_name The parent frame name (frame P). The body that
   ///   `parent_frame` is attached to must have a corresponding
   ///   geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
   /// @param X_PC Transformation between frame P and the camera body.
@@ -209,7 +209,7 @@ class HsrWorld : public systems::Diagram<T> {
   /// @param robot_parameters The target robot where the RGBD sensor will be
   ///   registered.
   void RegisterRgbdSensor(
-      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const std::string& name, const std::string& parent_frame_name,
       const math::RigidTransform<double>& X_PC,
       const geometry::render::CameraProperties& color_properties,
       const geometry::render::DepthCameraProperties& depth_properties,
@@ -221,7 +221,7 @@ class HsrWorld : public systems::Diagram<T> {
   ///   system will throw. The name should also be unique compared to the
   ///   already registered IMU sensors. If not, a warning will be
   ///   shown and the IMU sensor won't be added.
-  /// @param parent_frame The parent frame (frame P). The body that
+  /// @param parent_frame_name The parent frame name (frame P). The body that
   ///   `parent_frame` is attached to must have a corresponding
   ///   geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
   /// @param X_PC Transformation between parent frame P and the IMU sensor.
@@ -232,7 +232,7 @@ class HsrWorld : public systems::Diagram<T> {
   /// For every successfully registered IMU sensor joint,  a output port
   /// with name `[name]+_imu_status` will be created.
   void RegisterImuSensor(const std::string& name,
-                         const multibody::Frame<T>& parent_frame,
+                         const std::string& parent_frame_name,
                          const math::RigidTransform<double>& X_PC,
                          hsr::parameters::RobotParameters<T>* robot_parameters);
 
@@ -242,7 +242,7 @@ class HsrWorld : public systems::Diagram<T> {
   ///   system will throw. The name should also be unique compared to the
   ///   already registered joint force sensors. If not, a warning will be
   ///   shown and the force sensor won't be added.
-  /// @param parent_frame The parent frame (frame P). The body that
+  /// @param parent_frame_name The parent frame name (frame P). The body that
   ///   `parent_frame` is attached to must have a corresponding
   ///   geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
   /// @param X_PC Transformation between parent frame P and the force sensor.
@@ -251,7 +251,7 @@ class HsrWorld : public systems::Diagram<T> {
   /// For every successfully registered force sensor joint,  a output port
   /// with name `[name]+_force_sensor_status` will be created.
   void RegisterForceSensor(
-      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const std::string& name, const std::string& parent_frame_name,
       const math::RigidTransform<double>& X_PC,
       hsr::parameters::RobotParameters<T>* robot_parameters);
 

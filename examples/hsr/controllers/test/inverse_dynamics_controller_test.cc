@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/examples/hsr/parameters/robot_parameters_loader.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 
@@ -19,6 +20,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
   InverseDynamicsControllerTest() {
     LoadPlant();
 
+    LoadRobotParameters();
+
     PopulateTestingStatesValue();
   }
 
@@ -28,6 +31,10 @@ class InverseDynamicsControllerTest : public ::testing::Test {
   const multibody::MultibodyPlant<double>& plant() { return plant_; }
   const multibody::MultibodyPlant<double>& welded_plant() {
     return welded_plant_;
+  }
+
+  const parameters::RobotParameters<double>& robot_parameters() {
+    return robot_parameters_;
   }
 
   void LoadPlant() {
@@ -55,6 +62,13 @@ class InverseDynamicsControllerTest : public ::testing::Test {
     welded_plant_.Finalize();
   }
 
+  void LoadRobotParameters() {
+    robot_parameters_.name = robot_name_;
+    const bool load_successful = hsr::parameters::ReadParametersFromFile(
+        robot_name_, filepath_prefix_, &robot_parameters_);
+    DRAKE_DEMAND(load_successful);
+  }
+
   void PopulateTestingStatesValue() {
     const int num_positions = plant_.num_positions();
     const int num_velocities = plant_.num_velocities();
@@ -72,19 +86,22 @@ class InverseDynamicsControllerTest : public ::testing::Test {
   }
 
  private:
+  const std::string robot_name_ = "hsr";
+  const std::string filepath_prefix_ = "drake/examples/hsr/models/config/";
   const std::string model_path_ =
       "drake/examples/hsr/models/urdfs/hsrb4s_fix_free_joints.urdf";
   multibody::MultibodyPlant<double> plant_{kMaxTimeStep};
   multibody::MultibodyPlant<double> welded_plant_{kMaxTimeStep};
+
+  parameters::RobotParameters<double> robot_parameters_;
 
   Eigen::VectorXd estimated_state_;
   Eigen::VectorXd desired_state_;
 };
 
 TEST_F(InverseDynamicsControllerTest, ConstructionTest) {
-  parameters::RobotParameters<double> robot_parameters;
   InverseDynamicsController controller_test(plant(), welded_plant(),
-                                            robot_parameters);
+                                            robot_parameters());
 
   std::unique_ptr<systems::Context<double>> context =
       controller_test.CreateDefaultContext();

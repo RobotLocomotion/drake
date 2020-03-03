@@ -1,0 +1,151 @@
+name: hsr
+file: examples/hsr/models/urdfs/hsr4bs.obj.urdf
+parts_parameters:
+  chassis:
+    - name: base_r_drive_wheel_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: base_l_drive_wheel_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: base_roll_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+  arms:
+    - name: arm_lift_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: arm_roll_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: arm_flex_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: wrist_flex_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: wrist_roll_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+  head:
+    - name: head_pan_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: head_tilt_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+  hands:
+    - name: hand_motor_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: hand_l_spring_proximal_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+    - name: hand_r_spring_proximal_joint
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+cameras_parameters:

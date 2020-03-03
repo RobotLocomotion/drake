@@ -1,0 +1,30 @@
+name: test_robot
+file:
+parts_parameters:
+  part1:
+    - name: joint1
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+  part2:
+    - name: joint2
+      position_offset: 0.0
+      position_limit_lower: -10.0
+      position_limit_upper: 10.0
+      velocity_limit: 10.0
+      torque_limit: 100.0
+      pid_gains:
+        kp: 200.0
+        ki: 2.0
+        kd: 40.0
+
+cameras_parameters:
+  hand_camera:
+    parent_frame_name: hand
