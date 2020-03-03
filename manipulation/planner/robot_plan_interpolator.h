@@ -76,9 +76,6 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void SetDefaultState(const systems::Context<double>& context,
                        systems::State<double>* state) const override;
 
-  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
-      const override;
-
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
             const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
             systems::State<double>* state) const override;
@@ -101,6 +98,8 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   const int plan_input_port_{};
   int state_output_port_{-1};
   int acceleration_output_port_{-1};
+  systems::AbstractStateIndex plan_index_;
+  systems::AbstractStateIndex init_flag_index_;
   multibody::MultibodyPlant<double> plant_{0.0};
   const InterpolatorType interp_type_;
 };

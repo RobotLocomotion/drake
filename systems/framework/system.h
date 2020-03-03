@@ -137,21 +137,14 @@ class System : public SystemBase {
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
   /// as the output argument to EvalTimeDerivatives.
-  ///
-  /// By default, allocates no derivatives. Systems with continuous state
-  /// variables should override.
-  virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const {
-    return nullptr;
-  }
+  virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const
+      = 0;
 
   /// Returns a DiscreteState of the same dimensions as the discrete_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
   /// as the output argument to Update.
-  /// By default, allocates nothing. Systems with discrete state variables
-  /// should override.
-  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const {
-    return nullptr;
-  }
+  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const
+      = 0;
 
   /// This convenience method allocates a context using AllocateContext() and
   /// sets its default values using SetDefaultContext().

@@ -1620,7 +1620,11 @@ class SecondOrderStateVector : public BasicVector<double> {
 // A minimal system that has second-order state.
 class SecondOrderStateSystem : public LeafSystem<double> {
  public:
-  SecondOrderStateSystem() { DeclareInputPort(kVectorValued, 1); }
+  SecondOrderStateSystem() {
+    DeclareInputPort(kVectorValued, 1);
+    DeclareContinuousState(SecondOrderStateVector{},
+                           1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
+  }
 
   SecondOrderStateVector* x(Context<double>* context) const {
     return dynamic_cast<SecondOrderStateVector*>(
@@ -1628,13 +1632,6 @@ class SecondOrderStateSystem : public LeafSystem<double> {
   }
 
  protected:
-  std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
-      const override {
-    return std::make_unique<ContinuousState<double>>(
-        std::make_unique<SecondOrderStateVector>(), 1 /* num_q */,
-        1 /* num_v */, 0 /* num_z */);
-  }
-
   // qdot = 2 * v.
   void DoMapVelocityToQDot(
       const Context<double>& context,
