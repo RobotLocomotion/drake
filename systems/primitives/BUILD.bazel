@@ -65,7 +65,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "barycentric_system",
-    srcs = ["barycentric_system.cc"],
+    srcs = ["barycentric_system.old.cc"],
     hdrs = ["barycentric_system.h"],
     deps = [
         "//math:barycentric",
@@ -75,7 +75,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "constant_value_source",
-    srcs = ["constant_value_source.cc"],
+    srcs = ["constant_value_source.old.cc"],
     hdrs = ["constant_value_source.h"],
     deps = [
         "//systems/framework",
@@ -139,7 +139,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "gain",
-    srcs = ["gain.cc"],
+    srcs = ["gain.old.cc"],
     hdrs = ["gain.h"],
     deps = [
         "//common:unused",
@@ -193,7 +193,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "pass_through",
-    srcs = ["pass_through.cc"],
+    srcs = ["pass_through.old.cc"],
     hdrs = ["pass_through.h"],
     deps = [
         "//systems/framework",
@@ -265,7 +265,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "trajectory_affine_system",
-    srcs = ["trajectory_affine_system.cc"],
+    srcs = ["trajectory_affine_system.old.cc"],
     hdrs = ["trajectory_affine_system.h"],
     deps = [
         ":affine_system",
@@ -278,7 +278,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "trajectory_linear_system",
-    srcs = ["trajectory_linear_system.cc"],
+    srcs = ["trajectory_linear_system.old.cc"],
     hdrs = ["trajectory_linear_system.h"],
     deps = [
         ":linear_system",
@@ -311,7 +311,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "zero_order_hold",
-    srcs = ["zero_order_hold.cc"],
+    srcs = ["zero_order_hold.old.cc"],
     hdrs = ["zero_order_hold.h"],
     deps = [
         "//systems/framework",
@@ -320,7 +320,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "sine",
-    srcs = ["sine.cc"],
+    srcs = ["sine.old.cc"],
     hdrs = ["sine.h"],
     deps = [
         "//systems/framework",
