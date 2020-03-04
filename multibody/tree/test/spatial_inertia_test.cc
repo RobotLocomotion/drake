@@ -443,6 +443,50 @@ GTEST_TEST(SpatialInertia, SymbolicConstant) {
   ASSERT_TRUE(M.IsPhysicallyValid());
 }
 
+// The composition of spatial inertias for two massless bodies is not well
+// defined. However we do support this operation in Drake in the limit to zero
+// mass when the two bodies have equal mass. In this case, the center of mass
+// position vector and the unit inertia of the resulting composite body equals
+// the arithmetic average of the center of mass and unit inertia respectively of
+// the original two massless bodies.
+GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
+  // To create physically valid unit inertias about an arbitrary point P, we
+  // shift from the center of mass a valid unit inertia about the center of
+  // mass.
+
+  // Massless body 1.
+  const Vector3<double> p_PB1cm_E(1.0, 2.0, 3.0);
+  const UnitInertia<double> G_B1Bcm_E =
+      UnitInertia<double>::TriaxiallySymmetric(1.0);
+  const UnitInertia<double> G_B1P_E =
+      G_B1Bcm_E.ShiftFromCenterOfMass(-p_PB1cm_E);
+  const SpatialInertia<double> M_B1P_E(0.0, p_PB1cm_E, G_B1P_E);
+
+  // Massless body 2.
+  const Vector3<double> p_PB2cm_E(3.0, 2.0, 1.0);
+  const UnitInertia<double> G_B2Bcm_E =
+      UnitInertia<double>::TriaxiallySymmetric(3.0);
+  const UnitInertia<double> G_B2P_E =
+      G_B2Bcm_E.ShiftFromCenterOfMass(-p_PB2cm_E);
+  const SpatialInertia<double> M_B2P_E(0.0, p_PB2cm_E, G_B2P_E);
+
+  // Compose the spatial inertias of the two massless bodies.
+  const SpatialInertia<double> M_BcP_E = SpatialInertia<double>(M_B1P_E) +=
+      M_B2P_E;
+
+  // The result should still be the spatial inertia for a massless body.
+  EXPECT_EQ(M_BcP_E.get_mass(), 0.0);
+
+  // Verify we get the arithmetic mean.
+  const Vector3<double> p_PCcm_E =
+      0.5 * (M_B1P_E.get_com() + M_B2P_E.get_com());
+  const Matrix3<double> G_CP_E =
+      0.5 * (M_B1P_E.get_unit_inertia().CopyToFullMatrix3() +
+             M_B2P_E.get_unit_inertia().CopyToFullMatrix3());
+  EXPECT_EQ(M_BcP_E.get_com(), p_PCcm_E);
+  EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_CP_E);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
