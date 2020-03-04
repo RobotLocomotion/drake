@@ -871,28 +871,41 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
 
   DeclaredModelPortsSystem() {
-    this->DeclareInputPort("input", kVectorValued, 1);
-    this->DeclareVectorInputPort("vector_input", MyVector2d());
-    this->DeclareAbstractInputPort("abstract_input", Value<int>(22));
-    this->DeclareVectorInputPort("uniform", MyVector2d(),
-                                 RandomDistribution::kUniform);
-    this->DeclareVectorInputPort("gaussian", MyVector2d(),
-                                 RandomDistribution::kGaussian);
+    // Use these to validate the expected return type from each method.
+    InputPort<double>* in_port{nullptr};
+    LeafOutputPort<double>* out_port{nullptr};
+
+    in_port = &DeclareInputPort("input", kVectorValued, 1);
+    unused(in_port);
+    in_port = &DeclareVectorInputPort("vector_input", MyVector2d());
+    unused(in_port);
+    in_port = &DeclareAbstractInputPort("abstract_input", Value<int>(22));
+    unused(in_port);
+    in_port = &DeclareVectorInputPort("uniform", MyVector2d(),
+                                      RandomDistribution::kUniform);
+    unused(in_port);
+    in_port = &DeclareVectorInputPort("gaussian", MyVector2d(),
+                                      RandomDistribution::kGaussian);
+    unused(in_port);
 
     // Output port 0 uses a BasicVector base class model.
-    this->DeclareVectorOutputPort("basic_vector", BasicVector<double>(3),
-                                  &DeclaredModelPortsSystem::CalcBasicVector3);
+    out_port =
+        &DeclareVectorOutputPort("basic_vector", BasicVector<double>(3),
+                                 &DeclaredModelPortsSystem::CalcBasicVector3);
+    unused(out_port);
     // Output port 1 uses a class derived from BasicVector.
-    this->DeclareVectorOutputPort("my_vector", MyVector4d(),
-                                  &DeclaredModelPortsSystem::CalcMyVector4d);
+    out_port = &DeclareVectorOutputPort(
+        "my_vector", MyVector4d(), &DeclaredModelPortsSystem::CalcMyVector4d);
+    unused(out_port);
 
     // Output port 2 uses a concrete string model.
-    this->DeclareAbstractOutputPort("string", std::string("45"),
-                                    &DeclaredModelPortsSystem::CalcString);
+    out_port = &DeclareAbstractOutputPort(
+        "string", std::string("45"), &DeclaredModelPortsSystem::CalcString);
+    unused(out_port);
 
     // Output port 3 uses the "Advanced" methods that take a model
     // and a general calc function rather than a calc method.
-    this->DeclareVectorOutputPort(
+    out_port = &DeclareVectorOutputPort(
         "advanced", BasicVector<double>(2),
         [](const Context<double>&, BasicVector<double>* out) {
           ASSERT_NE(out, nullptr);
@@ -900,8 +913,9 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
           out->SetAtIndex(0, 10.);
           out->SetAtIndex(1, 20.);
         });
+    unused(out_port);
 
-    this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
+    DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }
 
   const BasicVector<double>& expected_basic() const { return expected_basic_; }
@@ -1371,15 +1385,22 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredNonModelOutputSystem);
 
   DeclaredNonModelOutputSystem() {
+    // Use this to validate the expected return type from each method.
+    LeafOutputPort<double>* port{nullptr};
+
     // Output port 0 default-constructs a class derived from BasicVector as
     // its allocator.
-    this->DeclareVectorOutputPort(&DeclaredNonModelOutputSystem::CalcDummyVec2);
+    port =
+        &DeclareVectorOutputPort(&DeclaredNonModelOutputSystem::CalcDummyVec2);
+    unused(port);
     // Output port 1 default-constructs a string as its allocator.
-    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
+    port =
+        &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
+    unused(port);
 
     // Output port 2 uses the "Advanced" method for abstract ports, providing
     // explicit non-member functors for allocator and calculator.
-    this->DeclareAbstractOutputPort(
+    port = &DeclareAbstractOutputPort(
         []() { return AbstractValue::Make<int>(-2); },
         [](const Context<double>&, AbstractValue* out) {
           ASSERT_NE(out, nullptr);
@@ -1387,15 +1408,19 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
           DRAKE_EXPECT_NO_THROW(int_out = &out->get_mutable_value<int>());
           *int_out = 321;
         });
+    unused(port);
 
     // Output port 3 is declared with a commonly-used signature taking
     // methods for both allocator and calculator for an abstract port.
-    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::MakeString,
-                                    &DeclaredNonModelOutputSystem::CalcString);
+    port =
+        &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::MakeString,
+                                   &DeclaredNonModelOutputSystem::CalcString);
+    unused(port);
 
     // Output port 4 uses a default-constructed bare struct which should be
     // value-initialized.
-    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
+    port = &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
+    unused(port);
   }
 
   int calc_dummy_vec2_calls() const { return count_calc_dummy_vec2_; }
@@ -1545,13 +1570,13 @@ GTEST_TEST(ZeroSizeSystemTest, AcceptanceTest) {
   TestSystem<double> dut;
 
   // Input.
-  const auto& in0 = dut.DeclareVectorInputPort(
+  auto& in0 = dut.DeclareVectorInputPort(
       kUseDefaultName, BasicVector<double>(0));
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in0.size(), 0);
 
   // Output.
-  const auto& out0 = dut.DeclareVectorOutputPort(
+  auto& out0 = dut.DeclareVectorOutputPort(
       kUseDefaultName, BasicVector<double>(0),
       [](const Context<double>&, BasicVector<double>*) {});
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
