@@ -624,6 +624,7 @@ class System : public SystemBase {
                            ContinuousState<T>* derivatives) const {
     DRAKE_DEMAND(derivatives != nullptr);
     ValidateContext(context);
+    ValidateChildOfContext(derivatives);
     DoCalcTimeDerivatives(context, derivatives);
   }
 
@@ -2192,6 +2193,25 @@ class System : public SystemBase {
   void set_forced_unrestricted_update_events(
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> forced) {
     forced_unrestricted_update_events_ = std::move(forced);
+  }
+
+  /** Checks whether the given object was created for this system.
+  @note This method is sufficiently fast for performance sensitive code. */
+  template <template <typename> class Clazz>
+  void ValidateChildOfContext(const Clazz<T>* object) const {
+    DRAKE_THROW_UNLESS(object != nullptr);
+    if (!object->get_system_id().is_valid()) {
+      throw std::logic_error(fmt::format(
+          "{} lacks a system_id so was not created for {} system {}",
+          NiceTypeName::Get<Clazz<T>>(), this->GetSystemType(),
+          this->GetSystemPathname()));
+    }
+    if (object->get_system_id() != this->get_system_id()) {
+      throw std::logic_error(fmt::format(
+          "{} was not created for {} system {}",
+          NiceTypeName::Get<Clazz<T>>(), this->GetSystemType(),
+          this->GetSystemPathname()));
+    }
   }
 
  private:

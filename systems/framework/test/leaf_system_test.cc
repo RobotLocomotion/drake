@@ -837,6 +837,30 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
+TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
+  // Successfully calc using a storage that was created by the system.
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      system_.AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      system_.CalcTimeDerivatives(context_, derivatives.get()));
+
+  // Successfully calc using storage that was indirectly created by the system.
+  auto temp_context = system_.AllocateContext();
+  ContinuousState<double>& temp_xc =
+      temp_context->get_mutable_continuous_state();
+  DRAKE_EXPECT_NO_THROW(
+      system_.CalcTimeDerivatives(context_, &temp_xc));
+
+  // Cannot ask other_system to calc into storage that was created by the
+  // original system.
+  TestSystem<double> other_system;
+  auto other_context = other_system.AllocateContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      other_system.CalcTimeDerivatives(*other_context, derivatives.get()),
+      std::logic_error,
+      ".*::ContinuousState<double> was not created for.*::TestSystem.*");
+}
+
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 

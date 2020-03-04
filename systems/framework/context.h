@@ -773,7 +773,9 @@ class Context : public ContextBase {
 
   /// Returns a deep copy of this Context's State.
   std::unique_ptr<State<T>> CloneState() const {
-    return DoCloneState();
+    auto result = DoCloneState();
+    result->get_mutable_continuous_state().set_system_id(this->get_system_id());
+    return result;
   }
 
   /// Returns a partial textual description of the Context, intended to be
@@ -852,7 +854,8 @@ class Context : public ContextBase {
   virtual State<T>& do_access_mutable_state() = 0;
 
   /// Returns the appropriate concrete State object to be returned by
-  /// CloneState().
+  /// CloneState().  The implementation should not set_system_id on the result,
+  /// the caller will set an id on the state after this method returns.
   virtual std::unique_ptr<State<T>> DoCloneState() const = 0;
 
   /// Returns a partial textual description of the Context, intended to be

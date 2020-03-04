@@ -287,8 +287,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (const auto& system : registered_systems_) {
       sub_derivatives.push_back(system->AllocateTimeDerivatives());
     }
-    return std::make_unique<DiagramContinuousState<T>>(
+    auto result = std::make_unique<DiagramContinuousState<T>>(
         std::move(sub_derivatives));
+    result->set_system_id(this->get_system_id());
+    return result;
   }
 
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final {

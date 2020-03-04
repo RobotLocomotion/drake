@@ -12,6 +12,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/vector_base.h"
@@ -140,7 +141,9 @@ class ContinuousState {
   /// underlying each leaf ContinuousState is preserved. See the class comments
   /// above for more information.
   std::unique_ptr<ContinuousState<T>> Clone() const {
-    return std::unique_ptr<ContinuousState<T>>(DoClone());
+    auto result = DoClone();
+    result->set_system_id(this->get_system_id());
+    return result;
   }
 
   /// Returns the size of the entire continuous state vector, which is
@@ -228,6 +231,12 @@ class ContinuousState {
 
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
   VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
+
+  /** (Internal) Gets the id of the subsystem that created this state. */
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  /** (Internal) Records the id of the subsystem that created this state. */
+  void set_system_id(internal::SystemId id) { system_id_ = id; }
 
  protected:
   /// Constructs a continuous state that exposes second-order structure, with
@@ -329,6 +338,9 @@ class ContinuousState {
   // multibody system motion.  Conventionally denoted `z`.
   // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<VectorBase<T>> misc_continuous_state_;
+
+  // Unique id of the subsystem that created this state.
+  internal::SystemId system_id_;
 };
 
 }  // namespace systems
