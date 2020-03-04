@@ -9,30 +9,36 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-/** Definition of a half space. It is defined by the implicit equation
- `H(x⃗) = n̂⋅x⃗ - d <= 0`. A particular instance is defined by a boundary plane in
- a particular frame F with its normal pointing out of the half space such that
- `H(p_QF) > 0` if the point Q (measured and expressed in F) is outside the
- half space.
+/** Definition of a plane. It is defined by the implicit equation
+ `P(x⃗) = n̂⋅x⃗ + d = 0`. A particular instance is measured and expressed in a
+ particular frame, such that only points measured and expressed in that same
+ frame can be meaningfully compared to the plane. E.g.,
+
+ ```
+ const Vector3<T> nhat_F = ...;
+ const Vector3<T> p_FP = ...;  // P is a point on the plane.
+ const Plane<T> plane_F(nhat_F, p_FP);  // A plane in frame F.
+ const double distance_Q = plane_F.CalcSignedDistance(p_FQ);  // valid!
+ const double distance_R = plane_F.CalcSignedDistance(p_GR);  // invalid!
+ ```
  */
 template <typename T>
 class Plane {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Plane)
 
-  /** Constructs a Plane in frame F.
+  /** Constructs a Plane in frame F from a normal and a point on the plane.
    @param nhat_F
-       A unit-length vector perpendicular to the half space's planar boundary
-       expressed in frame F (the `n̂` in the implicit equation).
-   @param displacement
-       The signed distance from F's origin to the half space boundary (the `d`
-       term in the implicit equation). E.g., for a point p_FP on the plane,
-       `displacement = nhat_F.dot(p_FP)`.
+       A unit-length vector perpendicular to the plane expressed in Frame F
+       (the `n̂` in the implicit equation).
+   @param p_FP
+       A point on the plane measured and expressed in Frame F. The `d` in the
+       implicit equation is derived from this quantity.
    @pre
        ‖nhat_F‖₂ = 1.
    */
-  Plane(const Vector3<T>& nhat_F, const T& displacement)
-      : nhat_F_(nhat_F), displacement_(displacement) {
+  Plane(const Vector3<T>& nhat_F, const Vector3<T>& p_FP)
+      : nhat_F_(nhat_F), displacement_(nhat_F.dot(p_FP)) {
     using std::abs;
     // Note: This may *seem* like a very tight threshold for determining if a
     // vector is unit length. However, empirical evidence suggests that in
@@ -45,25 +51,17 @@ class Plane {
   }
 
   /** Computes the signed distance to the point Q (measured and expressed in
-   frame F). The point is strictly inside, on the boundary, or outside based on
-   the return value being negative, zero, or positive, respectively.
+   Frame F). A positive signed distance implies that the point lies on the side
+   of the plane in the normal direction. A zero implies Q lies on the plane.
+   A negative signed distance lies on the opposite side of the plane (away from
+   the normal direction).
    */
   T CalcSignedDistance(const Vector3<T>& p_FQ) const {
     return nhat_F_.dot(p_FQ) - displacement_;
   }
 
-  /** Reports true if the point Q (measured and expressed in frame F),
-   strictly lies outside this half space.
-   */
-  bool PointIsOutside(const Vector3<T>& p_FQ) const {
-    return CalcSignedDistance(p_FQ) > 0;
-  }
-
   /** Gets the normal expressed in frame F. */
   const Vector3<T>& normal() const { return nhat_F_; }
-
-  /** Gets the displacement constant. */
-  const T& displacement() const { return displacement_; }
 
  private:
   Vector3<T> nhat_F_;

@@ -164,8 +164,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = polygon_vertices_F[i];
     const Vector3<T>& previous = polygon_vertices_F[(i - 1 + size) % size];
-    const bool current_contained = !H_F.PointIsOutside(current);
-    const bool previous_contained = !H_F.PointIsOutside(previous);
+    const bool current_contained = H_F.CalcSignedDistance(current) <= 0;
+    const bool previous_contained = H_F.CalcSignedDistance(previous) <= 0;
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where
@@ -324,8 +324,7 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     const Vector3<T>& p_MB = p_MVs[face_vertex[1]];
     const Vector3<T>& p_MC = p_MVs[face_vertex[2]];
     const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA).normalized();
-    T height = normal_M.dot(p_MA);
-    Plane<T> half_space_M(normal_M, height);
+    Plane<T> half_space_M(normal_M, p_MA);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     polygon_M = ClipPolygonByHalfSpace(polygon_M, half_space_M);

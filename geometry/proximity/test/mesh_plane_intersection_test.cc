@@ -492,20 +492,22 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
 
     // Case: Tet lies completely above the plane.
     CallSliceTestWithPlane(
-        Plane<double>{Mz_F, plane_offset + kMeshZExtent + kEps}, X_FM);
+        Plane<double>{Mz_F, (plane_offset + kMeshZExtent + kEps) * Mz_F}, X_FM);
     EXPECT_TRUE(HasNFaces(0u));
 
     // Case: Tet lies _almost_ completely above the plane.
     CallSliceTestWithPlane(
-        Plane<double>{Mz_F, plane_offset + kMeshZExtent - kEps}, X_FM);
+        Plane<double>{Mz_F, (plane_offset + kMeshZExtent - kEps) * Mz_F}, X_FM);
     EXPECT_TRUE(HasNFaces(3u));
 
     // Case: Tet lies completely below the plane.
-    CallSliceTestWithPlane(Plane<double>{Mz_F, plane_offset - kEps}, X_FM);
+    CallSliceTestWithPlane(Plane<double>{Mz_F, (plane_offset - kEps) * Mz_F},
+                           X_FM);
     EXPECT_TRUE(HasNFaces(0u));
 
     // Case: Tet lies _almost_ completely below the plane.
-    CallSliceTestWithPlane(Plane<double>{Mz_F, plane_offset + kEps}, X_FM);
+    CallSliceTestWithPlane(Plane<double>{Mz_F, (plane_offset + kEps) * Mz_F},
+                           X_FM);
     EXPECT_TRUE(HasNFaces(3u));
 
     // Tests in which the plane normal is _not_ the Mz axis. We'll align it so
@@ -519,11 +521,13 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
         normal_F.dot(mesh_F.vertex(VolumeVertexIndex(1)).r_MV());
 
     // Case: Plane is just beyond the v1, v2, v3, plane.
-    CallSliceTestWithPlane(Plane<double>{normal_F, extent + kEps}, X_FM);
+    CallSliceTestWithPlane(Plane<double>{normal_F, (extent + kEps) * normal_F},
+                           X_FM);
     EXPECT_TRUE(HasNFaces(0u));
 
     // Case: Plane is just inside the v1, v2, v3, plane.
-    CallSliceTestWithPlane(Plane<double>{normal_F, extent - kEps}, X_FM);
+    CallSliceTestWithPlane(Plane<double>{normal_F, (extent - kEps) * normal_F},
+                           X_FM);
     EXPECT_TRUE(HasNFaces(3u));
   }
 }
@@ -573,14 +577,12 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
       // Define a point halfway between isolated vertex Vi and centroid; the
       // plane will pass through this point. Measure and express it in frame F.
       const Vector3d p_FP = p_FC + 0.5 * p_CVi_F;
-      const double plane_displacement = nhat_F.dot(p_FP);
 
       // We consider both cases for this plane -- where we reverse the
       // definition of the  plane so that once the isolated vertex has a
       // negative signed distance, and once a positive distance.
       for (const auto plane_sign : {1.0, -1.0}) {
-        Plane<double> plane_F{plane_sign * nhat_F,
-                              plane_sign * plane_displacement};
+        Plane<double> plane_F{plane_sign * nhat_F, p_FP};
 
         // Confirm configuration.
         // The isolated vertex is on the side of the plane expected.
@@ -665,14 +667,12 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
       // Define a point halfway between isolated vertex Vi and centroid; the
       // plane will pass through this point. Measure and express it in frame F.
       const Vector3d p_FP = p_FC + 0.5 * p_CE_F;
-      const double plane_displacement = nhat_F.dot(p_FP);
 
       // We consider both cases for this plane -- where we reverse the
       // definition of the  plane so that once the isolated vertex has a
       // negative signed distance, and once a positive distance.
       for (const auto plane_sign : {-1.0, 1.0}) {
-        Plane<double> plane_F{plane_sign * nhat_F,
-                              plane_sign * plane_displacement};
+        Plane<double> plane_F{plane_sign * nhat_F, p_FP};
 
         ASSERT_TRUE(
             CallSliceTestWithPlane(plane_F, X_FM, true /* do_analysis */));
@@ -727,7 +727,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
       dupe_cut_edges;
 
   // The common slicing plane.
-  Plane<double> plane_F{Vector3d::UnitX(), 0.5};
+  Plane<double> plane_F{Vector3d::UnitX(), Vector3d{0.5, 0, 0}};
 
   for (VolumeElementIndex i{0}; i < 2; ++i) {
     SliceTetWithPlane(i, min_field_F, plane_F, X_WF_, &min_faces,
