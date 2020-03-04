@@ -1,12 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <utility>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -43,22 +40,11 @@ class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
                          const trajectories::Trajectory<double>& B,
                          const trajectories::Trajectory<double>& C,
                          const trajectories::Trajectory<double>& D,
-                         double time_period = 0.)
-      : TimeVaryingLinearSystem<T>(
-            SystemTypeTag<TrajectoryLinearSystem>{}, A.rows(),
-            B.cols(), C.rows(), time_period),
-        A_(A.Clone()),
-        B_(B.Clone()),
-        C_(C.Clone()),
-        D_(D.Clone()) {}
+                         double time_period = 0.);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit TrajectoryLinearSystem(const TrajectoryLinearSystem<U>& other)
-      : TrajectoryLinearSystem<T>(*other.A_, *other.B_, *other.C_, *other.D_,
-                                  other.time_period()) {
-    this->ConfigureDefaultAndRandomStateFrom(other);
-  }
+  explicit TrajectoryLinearSystem(const TrajectoryLinearSystem<U>& other);
 
   /// @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
   /// methods.
