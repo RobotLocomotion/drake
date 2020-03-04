@@ -47,7 +47,14 @@ enum class ContactModel {
 
   /// Contact forces are computed using a point contact model, see @ref
   /// point_contact_approximation "Numerical Approximation of Point Contact".
-  kPointContactOnly
+  kPointContactOnly,
+
+  /// Contact forces are computed using the hydroelastic model, where possible.
+  /// For most other unsupported colliding pairs, the point model from
+  /// kPointContactOnly is used. See
+  /// geometry::QueryObject:ComputeContactSurfacesWithFallback for more
+  /// details.
+  kHydroelasticWithFallback
 };
 
 /// @cond
@@ -1982,9 +1989,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::PenetrationAsPointPair<T>>&
   EvalPointPairPenetrations(const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return this->get_cache_entry(cache_indexes_.point_pairs)
-        .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
+    switch (contact_model_) {
+      case ContactModel::kPointContactOnly:
+        return this->get_cache_entry(cache_indexes_.point_pairs)
+            .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
+      case ContactModel::kHydroelasticWithFallback: {
+        const HydroelasticFallbackCacheData& data =
+            this->get_cache_entry(cache_indexes_.hydro_fallback)
+                .template Eval<HydroelasticFallbackCacheData>(context);
+        return data.point_pairs;
+      }
+      default:
+        throw std::logic_error(
+            "Attempting to evaluate point pair contact for contact model that "
+            "doesn't use it");
+    }
   }
 
   /// Calculates the rigid transform (pose) `X_FG` relating frame F and frame G.
@@ -3321,6 +3341,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
+    systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex tamsi_solver_results;
@@ -3508,10 +3529,34 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval version of the method CalcContactSurfaces().
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const {
-    return this
-        ->get_cache_entry(cache_indexes_.contact_surfaces)
-        .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
+    switch (contact_model_) {
+      case ContactModel::kHydroelasticWithFallback: {
+        const HydroelasticFallbackCacheData& data =
+            this->get_cache_entry(cache_indexes_.hydro_fallback)
+                .template Eval<HydroelasticFallbackCacheData>(context);
+        return data.contact_surfaces;
+      }
+      case ContactModel::kHydroelasticsOnly:
+        return this->get_cache_entry(cache_indexes_.contact_surfaces)
+            .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
+      default:
+        throw std::logic_error(
+            "Attempting to evaluate contact surface for contact model that "
+            "doesn't use it");
+    }
   }
+
+  // Data stored in the cache entry for the hydroelastic with fallback contact
+  // model.
+  struct HydroelasticFallbackCacheData {
+    std::vector<geometry::ContactSurface<T>> contact_surfaces;
+    std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
+  };
+
+  // Computes the hydroelastic fallback method -- all contacts are partitioned
+  // between ContactSurfaces and point pair contacts.
+  void CalcHydroelasticWithFallback(const drake::systems::Context<T>& context,
+                                    HydroelasticFallbackCacheData* data) const;
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
@@ -4185,6 +4230,9 @@ template <>
 void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     const systems::Context<symbolic::Expression>&,
     std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
+template <>
+void MultibodyPlant<double>::CalcHydroelasticWithFallback(
+    const systems::Context<double>&, HydroelasticFallbackCacheData*) const;
 #endif
 
 }  // namespace multibody
