@@ -1,0 +1,147 @@
+*************
+Drake v0.16.0
+*************
+
+Announcements
+-------------
+
+TBD
+
+Breaking changes since v0.15.0
+------------------------------
+
+These are breaking changes that did not undergo a deprecation period:
+
+TBD
+
+Changes since v0.15.0:
+----------------------
+
+Dynamical Systems
+~~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Mathematical Program
+~~~~~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Multibody Dynamics
+~~~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Miscellaneous features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+pydrake bindings
+~~~~~~~~~~~~~~~~
+
+TBD
+
+Build system and dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+Newly-deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+Removal of deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+Commits to be categorized
+-------------------------
+
+Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
+Current newest_commit f3a09803a8a95f8f6eacccb2fba4ea2b5ca8c996 (inclusive).
+
+* acrobot: Remove spurious deps from BUILD (`#12721`_)
+* examples: Remove double_pendulum (`#12725`_)  # This demonstration was a stepping stone showing how to use libsdformat to parse SDFs into a simulation.  In the years since this was added, we've introduced a multibody::Parser targeting MultibodyPlant that uses libsdformat for all of its *.sdf parsing. Since this demo is one of the sole reamining uses of RigidBodyTree, it seems time to retire it and point users to multibody::Parser instead.
+* pendulum: Update urdf_dynamics_test to use MultibodyPlant (`#12723`_)
+* examples: Remove pr2_passive_simulation (`#12708`_)  # Absent an owner for this incomplete demo based on RigidBodyTree, we are removing it until someone wishes to resurrect it for MultibodyPlant. We keep the model files intact, because they are installed, used elsewhere in the tree, and porting the unit test is easy. The unit test shows that the MbP URDF parser is more strict; so we also repair the URDF to be valid. Co-authored-by: Sam Creasey <sam.creasey@tri.global>
+* Caches shift vector p_PoBo_W (`#12724`_)
+* Gets rid of accidental heap allocation within CalcArticulatedBodyForceBiasCache() (`#12728`_)  # * Gets rid of accidental heap allocaiton within CalcArticulatedBodyForceBiasCache(). For a large model like Atlas (73 dofs), this impacts performance by about 5%. More importantly, profilers get very distracted by this massive amount of allocations.
+* Release notes v0.15.0 (`#12704`_)  # * Release notes for v0.15.0
+* pydrake: Minor pybind11 fixes for code coverage (`#12718`_)  # We correct two doc related typos. And adhere to the alias convention for the doc variables used at other places.
+* mkdoc: Warn about unused ignore patterns (`#12727`_)
+* mkdoc: Separate and add attic related target (`#12727`_)  # Co-authored-by: Eric Cousineau <eric.cousineau@tri.global>
+* quadrotor: Split plant unit test into its own file (`#12731`_)  # For clarity, we should not mix unit tests with acceptance tests.
+* Add missing load of py_library rule in drake_bazel_installed (`#12605`_)
+* Update minimum and recommended Bazel versions to 2.0 and 2.1 respectively (`#12729`_)
+* Remove extern template work-arounds for GCC pre-6.3 (`#12735`_)  # Deprecate its two support macros DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN and DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T.
+* examples: Rename inl.h's cc files to make room for a pending rename (`#12710`_)
+* examples: Remove uses of inl.h pattern (`#12710`_)  # We no longer use the inl pattern in Drake, and anyway it serves no purpose for standalone (non-library) examples.
+* allegro_hand: Use correct timestep and add regression test (`#12734`_)
+* add pybind11/eigen.h to pydrake/solvers (`#12737`_)
+* Velocity-Implicit Euler Fixed Step - Second PR of #12528 (`#12543`_)  # * Velocity-Implicit Euler Fixed Steps. Simplified code and added descriptions. This PR adds a fixed-step implementation of the new first-order Velocity-Implicit Euler Integrator (Issue #12528). This is the second PR out of four. The documentation is based on the equations listed here: https://docs.google.com/document/d/118J6rkR9ghh2_3WY0O5EDXhfkgMOXXqTQ2usrhICv30/edit
+* Remove -inl patterns in systems/analysis and move implementations to cc files (`#12657`_)
+* Add Rick, Damrong, Bel, and me to the Credits (`#12741`_)
+* Add the capability to visualize collisions in geometry_inspector (`#12736`_)
+* [geometry] SceneGraph given a new query: hydroelastic with (point pair) fallback (`#12699`_)  # Introduces new query that attempts to compute hydroelastic contact surfaces. However, if, for whatever reason, a geometry pair doesn't suport hydroelastic contact, it computes the penetration as point pair for that pair. The refactor of callbacks led to a significant respelling of the unit test; we went from testing one function to three with similar requirements on the underlying infrastructure. Updates the simple vis contact to exercise this new query.
+* geometry_visualization: Add Python test of publishing (`#12733`_)
+* Move Velocity-Implicit Euler Integrator Implementation from H to CC file and enable it in simulator_gflags (`#12740`_)
+* Re-order geometry/proximity/BUILD (`#12748`_)  # This alphabetizes the build targets (libraries first, tests second). It had fallen out of order incurring technical debt for every additional target.
+* Benchmark mesh intersection without vs with BVH (`#12597`_)
+* compute the time derivative of signed distance between a pair of geometries (`#12720`_)  # Adds a function to MultibodyPlant<double> to compute the signed distance and its time derivative between a pair of geometries. We used some trick to compute the time derivative without using AutoDiffXd. In the future when SceneGraph context stores generalized velocity, this function should be moved to SceneGraph query.
+* Add a MultibodyPlant version of ConstraintRelaxingIk (`#12732`_)  # Switch move_iiwa_ee to the mbp version of ConstraintRelaxingIk Deprecate the RBT implementation which now has no users.
+* Remove remaining usage of RigidBodyTree and deprecate the remaining functions (`#12732`_)
+* [geometry] Quarantine FCL's haphazard use of const in broadpha… (`#12746`_)  # Isolate the const_cast'ing required by FCL's interface.
+* render riccati equation properly in CARE doc (`#12761`_)
+* lint: Remove unused *.imp file (`#12743`_)
+* Fix catastrophic cancellation in point mass unit inertias (`#12758`_)
+* Refactors MBT::CalcArticulatedBodyForceBiasCache() (`#12750`_)  # * Refactors CalcArticulatedBodyForceBiasCache --> CalcArticulatedBodyForceCache
+* Add plane-BVH intersection (`#12751`_)  # This ultimately provides the support for rigid half space-soft mesh queries. In this case, the rigid half space is simply a plane. To that end: 1. Refactor the plane definition in mesh_intersection.h into a more general internal location. 2. Expand Aabb and BVH functionality to support culling queries with general shapes. (This PR only includes the plane, but will be immediately followed up with HalfSpace). 3. Unit tests.
+* quadrotor: Port dynamics demo to MultibodyPlant (`#12726`_)  # Also port the dynamic unit test to MultibodyPlant, including removing some directly-tested conditions (e.g., EvalTimeDerivatives).  In the rewrite, we only inspect the final pose after falling.  This is MUCH simpler given the differing generalized coordinates, but should still be sufficient coverage to discover any errors in the velocities or accelerations.
+* styleguide: Update sha to use cpplint changes (`#12765`_)
+* A better way to get declared context sizes (`#12701`_)
+* [geometry] Changing how polygons get split for contact surfaces (`#12763`_)  # Every triangle/polygon found in ContactSurfaces needs to be split into a triangle fan. A new vertex is calculated on the interior of the face and the fan is defined around that vertex. Previously, the centroid vertex was the average vertex position. This, however is not stable. As a quad becomes a triangle, it causes the vertex location to jump. Instead of the average vertex position, we use the polygon's center of mass. This changes continuously, regardless of the exact distribution of vertices.
+* Add notes about lack of support for meshcat-visualizer on Binder (`#12774`_)
+* Link to nightly release jupyter notebooks rather than those on master (`#12774`_)
+* multibody: Improve error message for invalid spatial inertia (`#12766`_)
+* IWYU: Include initializer_list when it's used (`#12768`_)
+* Upgrade Drake's FCL to v0.6.1 (`#12762`_)
+* setup: Add eigen as a binary dependency (`#12784`_)  # In a future commit, this will be used by tools/workspace/eigen.
+* Add bindings for DiscreteDerivative (`#12770`_)  # Also for StateInterpolatorWithDiscreteDerivative
+* Add a tutorial on nonlinear programming (`#12744`_)  # Adds a tutorial on nonlinear programming.
+* Remove deprecated 2020-03-01 (`#12781`_)
+* Bind kinetic and potential energy system method in python (`#12794`_)  # Make pendulum/acrobot examples use that API. Newly bound: pydrake.systems.framework.System.EvalPotentialEnergy pydrake.systems.framework.System.EvalKineticEnergy Removed without deprecation: pydrake.examples.AcrobotPlant.CalcPotentialEnergy pydrake.examples.AcrobotPlant.CalcKineticEnergy
+* doc: Remove attic classes from Doxygen (`#12795`_)  # When attic modules are shown in the C++ documentation, there is noting that highlights them as legacy or to-be-deprecated so it is too easy for users to stumble into misleading information. (Note that for pydrake, attic code lives in the attic module so at least the information is segregated.)
+* Clean up Doxygen to prune junk from overview pages (`#12796`_)  # Only parse headers, not cc files. Exclude all unit tests. Exclude all internal namespaces. Exclude MG (autogenerated MotionGenesis sources). Exclude top-level namespaces other than drake (Eigen, pybind11, false positives from using-statements, etc.) Use correct bouncing_ball namespace in code. Use correct free_body namespace in code. Use correct pose_aggregator_internal namespace in code. Use correct spelling for RenderLabel hashing. Hide csdp namespace in code.
+* Stream sorted pair (`#12801`_)  # This gives the SortedPair type to be written to an output stream, contingent on the underlying types being writable. A convenient piece of functionality for tests.
+* workspace: Upgrade styleguide latest commit (`#12800`_)
+* Add doc about the availability of force/torque sensor (`#12791`_)
+* workspace: Upgrade ghc_filesystem to latest release 1.3.0 (`#12799`_)
+* framework: Remove the ability to override allocation methods (`#12792`_)  # Subclasses should use the model vector (or model value) APIs to declare state, parameters, etc. instead of overriding these virtual methods.
+* workspace: Use system Eigen, not downloaded bitbucket tag (`#12780`_)
+* primitives: Rename old cc files out of the way (`#12797`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
+* primitives: Copy h files to cc files to preserve history (`#12797`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit is technically a rename (move), but once combined with a future merge commit will behave like a copy instead.
+* primitives: Restore h files to unmodified status (`#12797`_)
+* primitives: Rework header code into cc files (`#12797`_)
+* Caches spatial acceleration bias Ab_WB and ABA bias Zb_Bo_W to improve performance of O(n) forward dynamics (`#12716`_)
+* Allow specific cache entries to be initially disabled (`#12803`_)
