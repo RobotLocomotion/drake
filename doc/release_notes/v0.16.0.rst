@@ -50,6 +50,11 @@ Fixes
 
 TBD
 
+Examples
+--------
+
+* Removed double_pendulum (`#12725`_)
+
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -63,7 +68,7 @@ TBD
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+* Removed spurious dependencies on acrobot (`#12721`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +86,6 @@ Commits to be categorized
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit f3a09803a8a95f8f6eacccb2fba4ea2b5ca8c996 (inclusive).
 
-* acrobot: Remove spurious deps from BUILD (`#12721`_)
 * examples: Remove double_pendulum (`#12725`_)  # This demonstration was a stepping stone showing how to use libsdformat to parse SDFs into a simulation.  In the years since this was added, we've introduced a multibody::Parser targeting MultibodyPlant that uses libsdformat for all of its *.sdf parsing. Since this demo is one of the sole reamining uses of RigidBodyTree, it seems time to retire it and point users to multibody::Parser instead.
 * pendulum: Update urdf_dynamics_test to use MultibodyPlant (`#12723`_)
 * examples: Remove pr2_passive_simulation (`#12708`_)  # Absent an owner for this incomplete demo based on RigidBodyTree, we are removing it until someone wishes to resurrect it for MultibodyPlant. We keep the model files intact, because they are installed, used elsewhere in the tree, and porting the unit test is easy. The unit test shows that the MbP URDF parser is more strict; so we also repair the URDF to be valid. Co-authored-by: Sam Creasey <sam.creasey@tri.global>
