@@ -15,8 +15,6 @@ import shutil
 import subprocess
 import sys
 import textwrap
-import drake.tools.workspace.pybind11.generate_pybind_coverage as \
-        generate_pybind_coverage
 
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
@@ -122,11 +120,6 @@ class Symbol:
 
 def eprint(*args):
     print(*args, file=sys.stderr)
-
-
-def ignore_file_for_coverage(file_name):
-    return int(
-            file_name.startswith(generate_pybind_coverage.ignore_directories))
 
 
 def is_accepted_cursor(cursor, name_chain):
