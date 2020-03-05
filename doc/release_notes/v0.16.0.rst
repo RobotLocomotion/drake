@@ -5,7 +5,9 @@ Drake v0.16.0
 Announcements
 -------------
 
-TBD
+* New tutorial on nonlinear programming (`#12744`_)
+  
+* The C++ Doxygen pages are somewhat less cluttered now (`#12795`_, `#12796`_)
 
 Breaking changes since v0.15.0
 ------------------------------
@@ -80,15 +82,12 @@ Fixes
 * Quarantined FCL's haphazard use of const in broadphase (`#12746`_)
 * Fixed catastrophic cancellation in point mass unit inertias (`#12758`_)
 
-Examples
---------
-
-TBD
-
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+* Add the capability to visualize collisions in geometry_inspector (`#12736`_)
+* Add operator<< to sorted_pair (`#12801`_)
+* Fix allegro_hand discrete update period (`#12734`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -156,20 +155,4 @@ Commits to be categorized
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit f3a09803a8a95f8f6eacccb2fba4ea2b5ca8c996 (inclusive).
 
-pybind
 * add pybind11/eigen.h to pydrake/solvers (`#12737`_)
-* Add notes about lack of support for meshcat-visualizer on Binder (`#12774`_)
-* Link to nightly release jupyter notebooks rather than those on master (`#12774`_)
-
-example
-* allegro_hand: Use correct timestep (`#12734`_)
-
-Miscellaneous
-* Add the capability to visualize collisions in geometry_inspector (`#12736`_)
-* Add operator<< to sorted_pair (`#12801`_)
-
-doc/tutorial
-* render riccati equation properly in CARE doc (`#12761`_)
-* Add a tutorial on nonlinear programming (`#12744`_)  # Adds a tutorial on nonlinear programming.
-* doc: Remove attic classes from Doxygen (`#12795`_)
-* Clean up Doxygen to prune junk from overview pages (`#12796`_)
