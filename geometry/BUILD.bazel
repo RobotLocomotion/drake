@@ -63,6 +63,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "collision_remover",
+    srcs = ["collision_remover.cc"],
+    hdrs = ["collision_remover.h"],
+    deps = [
+        "//multibody/inverse_kinematics",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//systems/framework:diagram_builder",
+        "//systems/optimization",
+    ],
+)
+
+drake_cc_library(
     name = "frame_kinematics",
     srcs = [
         "frame_kinematics_vector.cc",
