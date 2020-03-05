@@ -13,6 +13,14 @@ Breaking changes since v0.15.0
 These are breaking changes that did not undergo a deprecation period:
 
 * Drake no longer supports user-defined scalar types (`#12657`_, `#12797`_, `#12814`_)
+
+  * TBD Explanatory text
+
+* Removed the ability to override LeafSystem allocation methods (`#12792`_)
+
+  * Subclasses should use the model vector (or model value) APIs to declare
+    state, parameters, etc. instead of overriding these virtual methods.
+
 * Removed pydrake.examples.AcrobotPlant.CalcPotentialEnergy (`#12794`_)
 * Removed pydrake.examples.AcrobotPlant.CalcKineticEnergy (`#12794`_)
 
@@ -24,11 +32,12 @@ Dynamical Systems
 
 New features
 
-TBD
+* Allow specific cache entries to be initially disabled (`#12803`_)
 
 Fixes
 
-TBD
+* Diagrams now report correct state counts (`#12701`_)
+
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -136,11 +145,6 @@ example
 Miscellaneous
 * Add the capability to visualize collisions in geometry_inspector (`#12736`_)
 * Add operator<< to sorted_pair (`#12801`_)
-
-dynamical systems
-* A better way to get declared context sizes (`#12701`_)
-* framework: Remove the ability to override allocation methods (`#12792`_)  # Subclasses should use the model vector (or model value) APIs to declare state, parameters, etc. instead of overriding these virtual methods.
-* Allow specific cache entries to be initially disabled (`#12803`_)
 
 doc/tutorial
 * render riccati equation properly in CARE doc (`#12761`_)
