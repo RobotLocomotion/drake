@@ -12,7 +12,7 @@ Breaking changes since v0.15.0
 
 These are breaking changes that did not undergo a deprecation period:
 
-* Drake no longer supports user-defined scalar types (`#12657`_, `#12814`_)
+* Drake no longer supports user-defined scalar types (`#12657`_, `#12797`_, `#12814`_)
 * Removed pydrake.examples.AcrobotPlant.CalcPotentialEnergy (`#12794`_)
 * Removed pydrake.examples.AcrobotPlant.CalcKineticEnergy (`#12794`_)
 
@@ -150,9 +150,3 @@ doc/tutorial
 * Add a tutorial on nonlinear programming (`#12744`_)  # Adds a tutorial on nonlinear programming.
 * doc: Remove attic classes from Doxygen (`#12795`_)
 * Clean up Doxygen to prune junk from overview pages (`#12796`_)
-
-???
-* primitives: Rename old cc files out of the way (`#12797`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
-* primitives: Copy h files to cc files to preserve history (`#12797`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit is technically a rename (move), but once combined with a future merge commit will behave like a copy instead.
-* primitives: Restore h files to unmodified status (`#12797`_)
-* primitives: Rework header code into cc files (`#12797`_)
