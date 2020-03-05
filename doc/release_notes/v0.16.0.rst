@@ -130,15 +130,11 @@ pybind
 * Add bindings for DiscreteDerivative (`#12770`_)  # Also for StateInterpolatorWithDiscreteDerivative
 
 example
-* allegro_hand: Use correct timestep and add regression test (`#12734`_)
-* quadrotor: Port dynamics demo to MultibodyPlant (`#12726`_)  # Also port the dynamic unit test to MultibodyPlant, including removing some directly-tested conditions (e.g., EvalTimeDerivatives).  In the rewrite, we only inspect the final pose after falling.  This is MUCH simpler given the differing generalized coordinates, but should still be sufficient coverage to discover any errors in the velocities or accelerations.
-
-multibody
+* allegro_hand: Use correct timestep (`#12734`_)
 
 Miscellaneous
 * Add the capability to visualize collisions in geometry_inspector (`#12736`_)
-* geometry_visualization: Add Python test of publishing (`#12733`_)
-* Stream sorted pair (`#12801`_)  # This gives the SortedPair type to be written to an output stream, contingent on the underlying types being writable. A convenient piece of functionality for tests.
+* Add operator<< to sorted_pair (`#12801`_)
 
 dynamical systems
 * A better way to get declared context sizes (`#12701`_)
