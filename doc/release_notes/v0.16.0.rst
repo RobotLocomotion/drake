@@ -82,10 +82,10 @@ TBD
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
-* Fixed minor issues related to doc-referencing practices (`#12718`_)
-* Separated and added attic related targets (`#12727`_)
-* pydrake.systems.framework.System.EvalPotentialEnergy (`#12794`_) 
 * pydrake.systems.framework.System.EvalKineticEnergy (`#12794`_) 
+* pydrake.systems.framework.System.EvalPotentialEnergy (`#12794`_) 
+* pydrake.systems.primitives.DiscreteDerivative (`#12770`_)
+* pydrake.systems.primitives.StateInterpolatorWithDiscreteDerivative (`#12770`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,7 +127,6 @@ pybind
 * add pybind11/eigen.h to pydrake/solvers (`#12737`_)
 * Add notes about lack of support for meshcat-visualizer on Binder (`#12774`_)
 * Link to nightly release jupyter notebooks rather than those on master (`#12774`_)
-* Add bindings for DiscreteDerivative (`#12770`_)  # Also for StateInterpolatorWithDiscreteDerivative
 
 example
 * allegro_hand: Use correct timestep (`#12734`_)
