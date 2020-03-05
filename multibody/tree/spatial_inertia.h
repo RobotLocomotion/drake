@@ -263,9 +263,14 @@ class SpatialInertia {
   /// @returns A reference to `this` spatial inertia, which has been updated
   ///          to include the given spatial inertia `M_BP_E`.
   ///
-  /// @note This operation aborts if the mass of the resulting spatial inertia
-  ///       is zero since in that case the position vector from the about point
-  ///       to the center of mass is not well defined.
+  /// @note Given that the composition of spatial inertias is not well defined
+  /// for massless bodies, this composition of the spatial inertias performs the
+  /// arithmetic average of the center of mass position vector (get_com()) and
+  /// unit inertia (get_unit_inertia()) when the two spatial inertias have zero
+  /// mass (get_mass()). This is only valid in the limit to zero mass for two
+  /// bodies with the same mass. This special case allows the composition of
+  /// spatial inertias in the common case of a kinematic chain of massless
+  /// bodies.
   ///
   /// @warning This operation is only valid if both spatial inertias are
   /// computed about the same point P and expressed in the same frame E.
@@ -275,10 +280,18 @@ class SpatialInertia {
   /// point P; B's inertia is then included in S.
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
     const T total_mass = get_mass() + M_BP_E.get_mass();
-    DRAKE_ASSERT(total_mass != 0);
-    p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
-    G_SP_E_.SetFromRotationalInertia(
-        CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
+    if (total_mass != 0) {
+      p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
+      G_SP_E_.SetFromRotationalInertia(
+          CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
+    } else {
+      // Compose the spatial inertias of two massless bodies in the limit when
+      // the two bodies have the same mass. In this limit, p_PScm_E_ and G_SP_E_
+      // are the arithmetic mean of the constituent COMs and unit inertias.
+      p_PScm_E_ = 0.5 * (get_com() + M_BP_E.get_com());
+      G_SP_E_.SetFromRotationalInertia(
+          get_unit_inertia() + M_BP_E.get_unit_inertia(), 2.0);
+    }
     mass_ = total_mass;
     return *this;
   }
