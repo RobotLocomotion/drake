@@ -2336,9 +2336,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().
   ///
+  /// Use CalcMassMatrix() for a faster implementation using the Composite Body
+  /// Algorithm.
+  ///
   /// @param[in] context
   ///   The context containing the state of the model.
-  /// @param[out] H
+  /// @param[out] M
   ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
   ///   number of generalized velocities (num_velocities()) of the model.
   ///   This method aborts if H is nullptr or if it does not have the proper
@@ -2355,16 +2358,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// dynamics with an acceleration vector `v̇ = eᵢ`, with `eᵢ` the standard
   /// (or natural) basis of `ℛⁿ` with n the number of generalized velocities.
   /// We write this as: <pre>
-  ///   H.ᵢ(q) = M(q) * e_i
+  ///   M.ᵢ(q) = M(q) * e_i
   /// </pre>
-  /// where `H.ᵢ(q)` (notice the dot for the rows index) denotes the `i-th`
+  /// where `M.ᵢ(q)` (notice the dot for the rows index) denotes the `i-th`
   /// column in M(q).
   ///
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
   void CalcMassMatrixViaInverseDynamics(
-      const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
-    internal_tree().CalcMassMatrixViaInverseDynamics(context, H);
+      const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+    internal_tree().CalcMassMatrixViaInverseDynamics(context, M);
+  }
+
+  /// Performs the computation of the mass matrix `M(q)` of the model, as a
+  /// function of the generalized positions q stored in `context`.
+  /// This method employs the Composite Body Algorithm, which is known to be the
+  /// fastest O(n²) algorithm to compute the mass matrix of a multibody system.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  /// @param[out] M
+  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
+  ///   number of generalized velocities (num_velocities()) of the model.
+  ///   This method aborts if M is nullptr or if it does not have the proper
+  ///   size.
+  ///
+  /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
+  /// mass matrix whenever possible.
+  void CalcMassMatrix(const systems::Context<T>& context,
+                      EigenPtr<MatrixX<T>> M) const {
+    internal_tree().CalcMassMatrix(context, M);
   }
 
   /// Computes the bias term `C(q, v)v` containing Coriolis, centripetal, and

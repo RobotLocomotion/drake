@@ -27,6 +27,24 @@ using std::numeric_limits;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+// Makes a spatial inertia with arbitrary numerical values.
+SpatialInertia<double> MakeArbitrarySpatialInertia() {
+  // Parameters for a cylindrical body of a given mass, length and radius.
+  const double mass = 1.2;
+  const double radius = 0.05, length = 1.5;
+
+  // Axis for a cylinder arbitrarily oriented, expressed in world W.
+  const Vector3<double> axis_W = Vector3<double>(1, 2, 3).normalized();
+  // Create rotational inertia for the cylinder:
+  const RotationalInertia<double> I_Bcm_W =
+      mass * UnitInertia<double>::SolidCylinder(radius, length, axis_W);
+
+  // Create the spatial inertia of body B about an arbitrary point P.
+  const Vector3<double> p_BcmP_W(1, -2, 5);
+  return SpatialInertia<double>::MakeFromCentralInertia(mass, -p_BcmP_W,
+                                                        I_Bcm_W);
+}
+
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of uninitialized values.
 GTEST_TEST(SpatialInertia, DefaultConstructor) {
@@ -407,6 +425,28 @@ GTEST_TEST(SpatialInertia, KineticEnergy) {
       0.5 * mass * v_WBcm.squaredNorm();
 
   EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
+}
+
+GTEST_TEST(SpatialInertia, MultiplyByEigenMatrix) {
+  // Make an arbitrary spatial inertia.
+  const SpatialInertia<double> M = MakeArbitrarySpatialInertia();
+
+  // Make an arbitrary set of spatial accelerations.
+  Eigen::Matrix<double, 6, 4> Amatrix;
+  // "view" as a column vector of size 24 so that we can use setLinSpaced.
+  Eigen::Map<Vector<double, 24>>(Amatrix.data()).setLinSpaced(1, 24);
+
+  // Compute the result in matrix form:
+  Eigen::Matrix<double, 6, 4> Fmatrix = M * Amatrix;
+
+  // Verify against the computation performed with spatial accelerations.
+  Eigen::Matrix<double, 6, 4> Fmatrix_expected;
+  for (int i = 0; i < Amatrix.cols(); ++i) {
+    const SpatialAcceleration<double> A(Amatrix.col(i));
+    const SpatialForce<double> F = M * A;
+    Fmatrix_expected.col(i) = F.get_coeffs();
+  }
+  EXPECT_TRUE(Fmatrix.isApprox(Fmatrix_expected, kEpsilon));
 }
 
 GTEST_TEST(SpatialInertia, SymbolicNan) {
