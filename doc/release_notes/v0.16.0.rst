@@ -151,12 +151,6 @@ doc/tutorial
 * doc: Remove attic classes from Doxygen (`#12795`_)
 * Clean up Doxygen to prune junk from overview pages (`#12796`_)
 
-PRs to omit from release notes
-* pendulum: Update urdf_dynamics_test to use MultibodyPlant (`#12723`_)
-* Release notes v0.15.0 (`#12704`_)  # * Release notes for v0.15.0
-* quadrotor: Split plant unit test into its own file (`#12731`_)  # For clarity, we should not mix unit tests with acceptance tests.
-* Add Rick, Damrong, Bel, and me to the Credits (`#12741`_)
-
 ???
 * primitives: Rename old cc files out of the way (`#12797`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
 * primitives: Copy h files to cc files to preserve history (`#12797`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit is technically a rename (move), but once combined with a future merge commit will behave like a copy instead.
