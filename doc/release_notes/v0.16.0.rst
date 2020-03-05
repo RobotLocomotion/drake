@@ -86,13 +86,11 @@ pydrake bindings
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Removed spurious dependencies on acrobot (`#12721`_)
-* Updated minimum and recommended Bazel versions to 2.0 and 2.1 respectively (`#12729`_)
-* Upgraded Drake's FCL to latest release (`#12762`_)
-* Added eigen as a binary dependency (`#12784`_)
-* Upgraded styleguide to latest commit (includes cpplint changes) (`#12765`_, `#12800`_)
+* Use system Eigen >= 3.3.4, not downloaded bitbucket tag (`#12784`_, `#12780`_)
+* Upgrade bazel minimum and recommended versions to 2.0 and 2.1 respectively (`#12729`_)
+* Upgrade fcl to latest release (`#12762`_)
 * Upgrade ghc_filesystem to latest release 1.3.0 (`#12799`_)
-* Configured to use system Eigen, not downloaded bitbucket tag (`#12780`_)
+* Upgrade styleguide to latest commit (includes cpplint changes) (`#12765`_, `#12800`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
