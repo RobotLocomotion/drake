@@ -518,10 +518,12 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(model_continuous_state_vector_->size() ==
                  this->num_continuous_states());
     const SystemBase::ContextSizes& sizes = this->get_context_sizes();
-    return std::make_unique<ContinuousState<T>>(
+    auto result = std::make_unique<ContinuousState<T>>(
         model_continuous_state_vector_->Clone(),
         sizes.num_generalized_positions, sizes.num_generalized_velocities,
         sizes.num_misc_continuous_states);
+    result->set_system_id(this->get_system_id());
+    return result;
   }
 
   /// Returns a copy of the states declared in DeclareDiscreteState() calls.

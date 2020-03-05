@@ -1124,6 +1124,10 @@ class SystemBase : public internal::SystemMessageInterface {
   // removed, also remove this function.
   virtual void DoCheckValidContext(const ContextBase&) const {}
 
+  /** (Internal) Gets the id used to tag context data as being created by this
+  system. */
+  internal::SystemId get_system_id() const { return system_id_; }
+
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
@@ -1191,7 +1195,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // Name of this system.
   std::string name_;
 
-  // Unique ID of this system.
+  // Unique id of this system.
   const internal::SystemId system_id_{get_next_id()};
 
   // Records the total sizes of Context resources as they will appear

@@ -125,7 +125,7 @@ class ContextBase : public internal::ContextMessageInterface {
                                 : system_name_;
   }
 
-  /** (Internal) Gets the id of the subsystem that created this Context. */
+  /** (Internal) Gets the id of the subsystem that created this context. */
   internal::SystemId get_system_id() const { return system_id_; }
 
   /** Returns the full pathname of the subsystem for which this is the Context.
@@ -661,7 +661,7 @@ class ContextBase : public internal::ContextMessageInterface {
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;
 
-  // Unique ID of the subsystem whose subcontext this is.
+  // Unique id of the subsystem whose subcontext this is.
   internal::SystemId system_id_;
 
   // Used to validate that System-derived classes didn't forget to invoke the

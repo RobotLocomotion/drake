@@ -867,6 +867,32 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   EXPECT_EQ(27, integrator1_xcdot.get_vector()[2]);
 }
 
+TEST_F(DiagramTest, ContinuousStateBelongsWithSystem) {
+  AttachInputs();
+
+  // Successfully calc using storage that was created by the system.
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      diagram_->AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      diagram_->CalcTimeDerivatives(*context_, derivatives.get()));
+
+  // Successfully calc using storage that was indirectly created by the system.
+  auto temp_context = diagram_->AllocateContext();
+  ContinuousState<double>& temp_xc =
+      temp_context->get_mutable_continuous_state();
+  DRAKE_EXPECT_NO_THROW(
+      diagram_->CalcTimeDerivatives(*context_, &temp_xc));
+
+  // Cannot ask the other_diagram to calc into storage that was created by the
+  // original diagram.
+  const ExampleDiagram other_diagram(kSize);
+  auto other_context = other_diagram.AllocateContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      other_diagram.CalcTimeDerivatives(*other_context, derivatives.get()),
+      std::logic_error,
+      ".*::ContinuousState<double> was not created for.*::ExampleDiagram.*");
+}
+
 // Tests the AllocateInput logic.
 TEST_F(DiagramTest, AllocateInputs) {
   auto context = diagram_->CreateDefaultContext();

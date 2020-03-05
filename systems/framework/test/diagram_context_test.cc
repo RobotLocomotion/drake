@@ -510,10 +510,6 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   auto clone = context_->Clone();
   ASSERT_TRUE(clone != nullptr);
 
-  // Verify that the system id was copied.
-  EXPECT_TRUE(context_->get_system_id().is_valid());
-  EXPECT_EQ(context_->get_system_id(), clone->get_system_id());
-
   // Make sure clone's values are different from context's. These numbers are
   // arbitrary as long as they don't match the default context_ values.
   const double new_time = context_->get_time() + 1.;
@@ -712,6 +708,13 @@ TEST_F(DiagramContextTest, Clone) {
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());
 
+  // Verify that the system id was copied.
+  EXPECT_TRUE(clone->get_system_id().is_valid());
+  EXPECT_EQ(clone->get_system_id(), context_->get_system_id());
+  const ContinuousState<double>& xc = clone->get_continuous_state();
+  EXPECT_TRUE(xc.get_system_id().is_valid());
+  EXPECT_EQ(xc.get_system_id(), context_->get_system_id());
+
   // Verify that the state has the same value.
   VerifyClonedState(clone->get_state());
   // Verify that the parameters have the same value.
@@ -741,9 +744,13 @@ TEST_F(DiagramContextTest, CloneState) {
   VerifyClonedState(*state);
   // Verify that the underlying type was preserved.
   EXPECT_NE(nullptr, dynamic_cast<DiagramState<double>*>(state.get()));
+  ContinuousState<double>& xc = state->get_mutable_continuous_state();
+  // Verify that the system id was copied.
+  EXPECT_TRUE(xc.get_system_id().is_valid());
+  EXPECT_EQ(xc.get_system_id(), context_->get_system_id());
   // Verify that changes to the state do not write through to the original
   // context.
-  state->get_mutable_continuous_state()[1] = 1024.0;
+  xc[1] = 1024.0;
   EXPECT_EQ(1024.0, state->get_continuous_state()[1]);
   EXPECT_EQ(43.0, context_->get_continuous_state()[1]);
 }

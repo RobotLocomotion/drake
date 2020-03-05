@@ -67,7 +67,8 @@ class DiagramContinuousState final: public ContinuousState<T> {
   std::unique_ptr<DiagramContinuousState> Clone() const {
     // Note that DoClone() below cannot be overridden so we can count on the
     // concrete type being DiagramContinuousState.
-    return static_pointer_cast<DiagramContinuousState>(DoClone());
+    return static_pointer_cast<DiagramContinuousState>(
+        ContinuousState<T>::Clone());
   }
 
   int num_substates() const { return static_cast<int>(substates_.size()); }
