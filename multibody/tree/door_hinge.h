@@ -38,33 +38,6 @@ T hinge_stored_energy(T angle, T angular_velocity,
                       const DoorHingeConfig& config);
 }  // namespace internal
 
-/// This %ForceElement models a revolute door hinge joint that could exhibits
-/// different force/torque characterisitcs at different states due to the
-/// existence of different type of torques on the joint. This class implements
-/// a "christmas tree" accumulation of these different torques in an empirical
-/// and unprincipled way. Specifically, different curves are assigned to
-/// different torques to mimic their evolution based on the joint state.
-/// Torques considered in this implementation include:
-///   * torsional spring torque -- position dependent
-///   * dynamic friction torque -- velocity dependent
-///   * static friction torque  -- velocity dependent
-///   * viscous friction torque -- velocity dependent
-///  total_torque = spring_constant * (θ - spring_zero_angle_rad)
-///               - dynamic_friction_torque * sigmoid()
-///               - static_friction_torque * doublet()
-///               - viscous_friction *
-///               - catch_torque * doublet()
-/// The users could change the values of these different elements to obtain
-/// different characterisitcs for the door hinge joint the users want to
-/// model. For example, a common dishwasher door has a frictional torque
-/// sufficient for it to rest motionless at any angle, a catch at the top to
-/// hold it in place, a dashpot (viscous friction source) to prevent it from
-/// swinging too fast, and a spring to counteract some of its mass.
-///
-/// The door is assumed to be closed at θ=0, opening in the positive-θ
-/// direction.  This class applies all hinge-originating forces, so it can be
-/// used instead of / interchangeably with SDF viscous damping.
-
 /// Configuration structure for the door hinge.
 struct DoorHingeConfig {
   double spring_zero_angle_rad;    //< radians (outward from closed)
@@ -95,6 +68,54 @@ struct DoorHingeConfig {
         catch_torque(15),
         motion_threshold(0.001) {}
 };
+
+/// This %ForceElement models a revolute door hinge joint that could exhibits
+/// different force/torque characterisitcs at different states due to the
+/// existence of different type of torques on the joint. This class implements
+/// a "christmas tree" accumulation of these different torques in an empirical
+/// and unprincipled way. Specifically, different curves are assigned to
+/// different torques to mimic their evolution based on the joint state and
+/// some prespecified parameters.
+///
+/// Torques considered in this implementation include:
+///   * torsional spring torque -- position dependent
+///   * dynamic friction torque -- velocity dependent
+///   * static friction torque  -- velocity dependent
+///   * viscous friction torque -- velocity dependent
+///   * catch torque -- position dependent
+///
+///  total_external_torque = spring_constant * (q `-` spring_zero_angle_rad)
+///               `-` dynamic_friction_torque * sigmoid(q̇, motion_threshold)
+///               `-` static_friction_torque * doublet(q̇, motion_threhold)
+///               `-` viscous_friction * q̇
+///               `-` catch_torque * doublet(q `-` catch_width, catch_width)
+///
+/// The door is assumed to be closed at q=0, opening in the positive-q
+/// direction. This class applies all hinge-originating forces, so it can be
+/// used instead of the SDF viscous damping. The users could change the values
+/// of these different elements to obtain different characterisitcs for the
+/// door hinge joint that the users want to model.
+///
+/// For example, a common dishwasher door has a frictional torque
+/// sufficient for it to rest motionless at any angle, a catch at the top to
+/// hold it in place, a dashpot (viscous friction source) to prevent it from
+/// swinging too fast, and a spring to counteract some of its mass. The
+/// following two figures illustrate the dishwasher door hinge torque with the
+/// given default parameters. Figure 1 shows the static characteristic of the
+/// dishwasher door. At q = 0, there exists a negative catch torque to prevent
+/// the door from moving. After that, the torsional spring torque will dominate
+/// to compensate part of the door gravity. Figure 2 shows the dynamic feature
+/// of the dishwasher door at q = 30 deg. Whenever the door tries to move,
+/// there will be a counter torque to prevent that movement, which therefore
+/// keeps the door at rest. Note that, due to the gravity, the dishwasher door
+/// will be fully open eventually. However, this process can be really slow
+/// because of the default `motion_threshold` is set to be very small.
+/// You can change the `motion_threshold` parameter to adjust the time.
+/// @image html multibody/tree/images/torque_vs_angle.svg "Figure 1: Illustration of total external torque on the door angle."
+/// @image html multibody/tree/images/torque_vs_velocity.svg "Figure 2: Illustration of total external torque on the door angular velocity."
+/// A jupytor notebook tool is also provided to help the users visualize the
+/// curves and design parameters.
+/// TODO(huihua) Add a link to the jupytor notebook.
 
 template <typename T>
 class DoorHinge : public ForceElement<T> {
