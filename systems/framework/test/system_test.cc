@@ -912,8 +912,10 @@ class ComputationTestSystem final : public System<double> {
   // One q, one v, one z.
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const final {
-    return std::make_unique<ContinuousState<double>>(
+    auto result = std::make_unique<ContinuousState<double>>(
         std::make_unique<BasicVector<double>>(3), 1, 1, 1);  // q, v, z
+    result->set_system_id(this->get_system_id());
+    return result;
   }
 
   // Verify that the number of calls is as expected.

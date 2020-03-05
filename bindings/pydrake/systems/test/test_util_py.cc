@@ -141,9 +141,8 @@ PYBIND11_MODULE(test_util, m) {
     }
     {
       // Call `CalcTimeDerivatives` to test `DoCalcTimeDerivatives`
-      auto& state = context->get_mutable_continuous_state();
-      ContinuousState<T> state_copy(clone_vector(state.get_vector()));
-      system.CalcTimeDerivatives(*context, &state_copy);
+      auto state_dot = system.AllocateTimeDerivatives();
+      system.CalcTimeDerivatives(*context, state_dot.get());
     }
     {
       // Call `CalcDiscreteVariableUpdates` to test
@@ -174,13 +173,10 @@ PYBIND11_MODULE(test_util, m) {
           state.SetFrom(state_copy);
         } else {
           auto& state = context->get_mutable_continuous_state();
-          ContinuousState<T> state_dot(clone_vector(state.get_vector()),
-              state.get_generalized_position().size(),
-              state.get_generalized_velocity().size(),
-              state.get_misc_continuous_state().size());
-          system.CalcTimeDerivatives(*context, &state_dot);
+          auto state_dot = system.AllocateTimeDerivatives();
+          system.CalcTimeDerivatives(*context, state_dot.get());
           state.SetFromVector(
-              state.CopyToVector() + dt * state_dot.CopyToVector());
+              state.CopyToVector() + dt * state_dot->CopyToVector());
         }
         // Calculate output.
         auto output = system.AllocateOutput();
