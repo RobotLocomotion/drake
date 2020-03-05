@@ -19,6 +19,7 @@ drake_cc_package_library(
     name = "util",
     deps = [
         ":bot_core_lcm_encode_decode",
+        ":collision_remover",
         ":moving_average_filter",
         ":trajectory_utils",
     ],
@@ -32,6 +33,20 @@ drake_cc_library(
         "//math:geometric_transform",
         "@eigen",
         "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_remover",
+    srcs = ["collision_remover.cc"],
+    hdrs = ["collision_remover.h"],
+    deps = [
+        "//multibody/inverse_kinematics",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//systems/framework:diagram_builder",
+        "//systems/optimization",
     ],
 )
 
