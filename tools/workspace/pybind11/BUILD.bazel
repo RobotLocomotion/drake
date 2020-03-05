@@ -1,10 +1,9 @@
 # -*- python -*-
 
-load("//tools/skylark:py.bzl", "py_binary", "py_library")
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
-    "generate_pybind_coverage",
     "generate_pybind_documentation_header",
 )
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
@@ -19,35 +18,13 @@ exports_files(
     visibility = ["@pybind11//:__pkg__"],
 )
 
-py_library(
-    name = "module_py",
-    srcs = ["__init__.py"],
-    deps = ["//tools/workspace:module_py"],
-)
-
-py_library(
-    name = "libclang_setup_py",
-    srcs = ["libclang_setup.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":module_py",
-        "@clang_cindex_python3//:clang",
-    ],
-)
-
 py_binary(
     name = "mkdoc",
-    srcs = ["//third_party:com_github_pybind_pybind11/mkdoc.py"],
-    data = [
-        "generate_pybind_coverage.py",
-        "pybind_coverage_libclang_parser.py",
-        "pybind_coverage_xml_parser.py",
+    srcs = [
+        "//third_party:com_github_pybind_pybind11/mkdoc.py",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        ":libclang_setup_py",
-        "@clang_cindex_python3//:clang",
-    ],
+    deps = ["@clang_cindex_python3//:clang"],
 )
 
 drake_py_unittest(
@@ -63,6 +40,16 @@ drake_cc_library(
     hdrs = ["test/sample_header.h"],
     deps = [
         "//common",
+    ],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_sample_header",
+    testonly = 1,
+    out = "test/sample_header_documentation.h",
+    root_name = "sample_header_doc",
+    targets = [
+        ":sample_header",
     ],
 )
 
@@ -85,79 +72,6 @@ drake_py_unittest(
     data = [
         "test/sample_header_documentation.expected.h",
         "test/sample_header_documentation.h",
-    ],
-)
-
-py_library(
-    name = "pybind_coverage_py",
-    srcs = [
-        "pybind_coverage_libclang_parser.py",
-        "pybind_coverage_xml_parser.py",
-    ],
-    deps = [
-        ":libclang_setup_py",
-        "@clang_cindex_python3//:clang",
-    ],
-)
-
-py_binary(
-    name = "generate_pybind_coverage",
-    srcs = ["generate_pybind_coverage.py"],
-    visibility = ["//visibility:public"],
-    deps = [":pybind_coverage_py"],
-)
-
-generate_pybind_documentation_header(
-    name = "generate_sample_header",
-    testonly = 1,
-    out = "test/sample_header_documentation.h",
-    out_xml = "sample_header_documentation_test.xml",
-    root_name = "sample_header_doc",
-    targets = [
-        ":sample_header",
-    ],
-)
-
-filegroup(
-    name = "pybind_coverage_data",
-    srcs = glob(["test/*.cc"]),
-)
-
-generate_pybind_coverage(
-    name = "generate_pybind_coverage_example",
-    class_coverage = "class_coverage_test.csv",
-    doc_variable_name = "sample_header_doc",
-    file_coverage = "file_coverage_test.csv",
-    pybind_coverage_data = [":pybind_coverage_data"],
-    xml_docstrings = "sample_header_documentation_test.xml",
-)
-
-filegroup(
-    name = "pybind_coverage_test_expected_data",
-    testonly = 1,
-    data = [
-        "test/sample_header_class_coverage_expected.csv",
-        "test/sample_header_documentation_pybind_expected.xml",
-        "test/sample_header_file_coverage_expected.csv",
-    ],
-)
-
-filegroup(
-    name = "pybind_coverage_test_actual_data",
-    testonly = 1,
-    data = [
-        ":class_coverage_test.csv",
-        ":file_coverage_test.csv",
-        ":sample_header_documentation_test.xml",
-    ],
-)
-
-drake_py_unittest(
-    name = "generate_pybind_coverage_test",
-    data = [
-        "test/sample_header_py.cc",
-        ":pybind_coverage_test_actual_data",
-        ":pybind_coverage_test_expected_data",
     ],
 )
 
