@@ -5,11 +5,19 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace geometry {
 namespace {
+
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using Eigen::Vector3d;
 
 template <typename T>
 std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
@@ -101,6 +109,64 @@ GTEST_TEST(MeshFieldLinearTest, TestEqual) {
   auto field2 = MeshFieldLinear<double, SurfaceMesh<double>>(
       "e", std::move(alt_e_values), mesh.get());
   EXPECT_FALSE(mesh_field->Equal(field2));
+}
+
+// EvaluateGradient() only looks up the std::vector<Vector3<>> gradients_;.
+// The actual gradient calculation is in VolumeMesh and SurfaceMesh, and
+// we test the calculation there.
+GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradient) {
+  auto mesh = GenerateMesh<double>();
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e", std::move(e_values), mesh.get());
+
+  Vector3d gradient = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+
+  Vector3d expect_gradient(1., 1., 0.);
+  EXPECT_TRUE(CompareMatrices(expect_gradient, gradient, 1e-14));
+}
+
+// Tests that EvaluateGradient() `throw` if the gradient vector was not
+// calculated.
+GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradientThrow) {
+  auto mesh = GenerateMesh<double>();
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  const bool calculate_gradient = false;
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e", std::move(e_values), mesh.get(), calculate_gradient);
+
+  EXPECT_THROW(mesh_field->EvaluateGradient(SurfaceFaceIndex(0)),
+               std::runtime_error);
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
+  // Create mesh and field. Both mesh vertices and field gradient are expressed
+  // in frame M.
+  auto mesh = GenerateMesh<double>();
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e", std::move(e_values), mesh.get());
+
+  // We will not check all gradient vectors. Instead we will use the gradient
+  // vector of the first triangle as a representative.
+  Vector3d gradient_M = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+
+  // Confirm the gradient vector before rigid transform.
+  Vector3d expect_gradient_M(1., 1., 0.);
+  ASSERT_TRUE(CompareMatrices(expect_gradient_M, gradient_M, 1e-14));
+
+  RigidTransformd X_MN(RollPitchYawd(M_PI_2, M_PI_4, M_PI / 6.),
+                       Vector3d(1.2, 1.3, -4.3));
+  mesh->TransformVertices(X_MN);
+  mesh_field->TransformGradients(X_MN);
+
+  Vector3d gradient_N = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
+
+  EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
 }
 
 }  // namespace

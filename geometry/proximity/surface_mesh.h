@@ -103,6 +103,10 @@ class SurfaceFace {
   std::array<SurfaceVertexIndex, 3> vertex_;
 };
 
+// Forward declaration of SurfaceMeshTester<T>. SurfaceMesh<T> will
+// grant friend access to SurfaceMeshTester<T>.
+template <typename T> class SurfaceMeshTester;
+
 // TODO(DamrongGuoy): mention interesting properties of the mesh, e.g., open
 //  meshes, meshes with holes, non-manifold surface.
 /** %SurfaceMesh represents a triangulated surface.
@@ -123,10 +127,21 @@ class SurfaceMesh {
    */
   //@{
 
+  using ScalarType = T;
+
+  // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
+  //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
+  //  bounding_volume_hierarchy. Issue #12756.
+
   /**
    A surface mesh has the intrinsic dimension 2.  It is embedded in 3-d space.
    */
   static constexpr int kDim = 2;
+
+  /**
+   Number of vertices per element. A triangle has 3 vertices.
+   */
+  static constexpr int kVertexPerElement = 3;
 
   /**
    Index for identifying a vertex.
@@ -389,6 +404,8 @@ class SurfaceMesh {
    @returns `true` if the given mesh is equal.
    */
   bool Equal(const SurfaceMesh<T>& mesh) const {
+    if (this == &mesh) return true;
+
     if (this->num_faces() != mesh.num_faces()) return false;
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
@@ -409,10 +426,30 @@ class SurfaceMesh {
     return true;
   }
 
+  /** Calculates the gradient ∇u of a linear field u on the triangle `f`.
+   Field u is defined by the three field values `field_value[i]` at the i-th
+   vertex of the triangle. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  Vector3<FieldValue> CalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 3>& field_value, SurfaceFaceIndex f) const {
+    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(f, 0);
+    gradu_M += field_value[1] * CalcGradBarycentric(f, 1);
+    gradu_M += field_value[2] * CalcGradBarycentric(f, 2);
+    return gradu_M;
+  }
+
  private:
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
   void CalcAreasNormalsAndCentroid();
+
+  // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
+  // function bᵢ of the i-th vertex of the triangle `f`. The gradient
+  // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
+  // @pre  0 ≤ i < 3.
+  Vector3<T> CalcGradBarycentric(SurfaceFaceIndex f, int i) const;
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
@@ -431,6 +468,8 @@ class SurfaceMesh {
   // Area-weighted geometric centroid Sc of the surface mesh as an offset vector
   // from the origin of Frame M to point Sc, expressed in Frame M.
   Vector3<T> p_MSc_;
+
+  friend class SurfaceMeshTester<T>;
 };
 
 template <class T>
@@ -467,6 +506,68 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   // Finalize centroid.
   if (total_area_ != T(0.))
     p_MSc_ /= (3. * total_area_);
+}
+
+template <typename T>
+Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
+                                               int i) const {
+  DRAKE_DEMAND(0 <= i && i < 3);
+  // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
+  // indexed by `f`. A and B are the other two vertices of the triangle.
+  // Positions of the vertices are expressed in frame M of the mesh.
+  const Vector3<T>& p_MV = vertices_[faces_[f].vertex(i)].r_MV();
+  const Vector3<T>& p_MA = vertices_[faces_[f].vertex((i + 1) % 3)].r_MV();
+  const Vector3<T>& p_MB = vertices_[faces_[f].vertex((i + 2) % 3)].r_MV();
+
+  // TODO(DamrongGuoy): Provide a mechanism for users to set the gradient
+  //  vector in SurfaceMeshFieldLinear since this calculation is not reliable
+  //  for zero- or almost-zero-area triangles. For example, the code that
+  //  creates ContactSurface by triangle-tetrahedron intersection can set the
+  //  pressure gradient along a contact polygon by projecting the soft
+  //  tetrahedron's pressure gradient onto the plane of the rigid triangle.
+
+  // Let bᵥ be the barycentric coordinate function corresponding to vertex V.
+  // bᵥ is a linear function of the points in the triangle.
+  // bᵥ = 0 on the line through AB.
+  // bᵥ = 1 on the line through V parallel to AB.
+  // Therefore, bᵥ changes fastest in the direction perpendicular to AB
+  // towards V with the rate of change 1/h, where h is the height of vertex V
+  // from the base AB.
+  //
+  //    ──────────────V────────────── bᵥ = 1
+  //                 ╱↑╲       ┊
+  //                ╱ ┊ ╲      ┊
+  //               ╱  ┊  ╲     ┊ h
+  //              ╱   ┊H  ╲    ┊
+  //             ╱    ┊    ╲   ┊
+  //    ────────A━━━━━━━━━━━B──────── bᵥ = 0
+  //
+  // Let H be the height vector from the base AB to the vertex V, i.e., the
+  // vector perpendicular to the line AB that starts from a point on the
+  // line and ends at V. The length of H is h. The gradient vector ∇bᵥ is
+  // along the unit vector H/h. Along that direction, bᵥ changes at the rate
+  // of 1/h per unit distance. Therefore,
+  //
+  //       ∇bᵥ = H/h².
+  //
+  // We can calculate H from AV by subtracting its component along AB:
+  //
+  //       H = AV - (AV⋅AB)AB/|AB|²
+  //
+  const Vector3<T> p_AB_M = p_MB - p_MA;
+  const T ab2 = p_AB_M.squaredNorm();
+  const Vector3<T> p_AV_M = p_MV - p_MA;
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  constexpr double kEps2 = kEps * kEps;
+  // For a skinny triangle with the edge AB that has zero or almost-zero
+  // length, we set the vector H to be AV.
+  const Vector3<T> H_M =
+      (ab2 <= kEps2) ? p_AV_M : p_AV_M - (p_AV_M.dot(p_AB_M)) * p_AB_M / ab2;
+  const T h2 = H_M.squaredNorm();
+  if (h2 <= kEps2) {
+    throw std::runtime_error("Bad triangle. Cannot compute gradient.");
+  }
+  return H_M / h2;
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
