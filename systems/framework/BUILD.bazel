@@ -701,9 +701,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:pack_value",
         "//systems/primitives:adder",
-        "//systems/primitives:constant_vector_source",
         "//systems/primitives:integrator",
-        "//systems/primitives:zero_order_hold",
     ],
 )
 

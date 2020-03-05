@@ -45,18 +45,23 @@ class ContinuousStateTest : public ::testing::Test {
   }
 
   template <typename T>
-  static std::unique_ptr<ContinuousState<T>> MakeSomeState() {
-    return std::make_unique<ContinuousState<T>>(
+  std::unique_ptr<ContinuousState<T>> MakeSomeState() {
+    auto result = std::make_unique<ContinuousState<T>>(
         MakeSomeVector<T>(), kPositionLength, kVelocityLength, kMiscLength);
+    result->set_system_id(system_id_);
+    return result;
   }
 
   template <typename T>
-  static std::unique_ptr<ContinuousState<T>> MakeNanState() {
-    return std::make_unique<ContinuousState<T>>(
+  std::unique_ptr<ContinuousState<T>> MakeNanState() {
+    auto result = std::make_unique<ContinuousState<T>>(
         std::make_unique<BasicVector<T>>(kLength),
         kPositionLength, kVelocityLength, kMiscLength);
+    result->set_system_id(system_id_);
+    return result;
   }
 
+  const internal::SystemId system_id_ = internal::SystemId::get_new_id();
   std::unique_ptr<ContinuousState<double>> continuous_state_;
 };
 
@@ -200,6 +205,7 @@ TEST_F(ContinuousStateTest, SetFromException) {
 TEST_F(ContinuousStateTest, Clone) {
   auto clone_ptr = continuous_state_->Clone();
   const ContinuousState<double>& clone = *clone_ptr;
+  EXPECT_EQ(clone.get_system_id(), system_id_);
 
   EXPECT_EQ(1, clone[0]);
   EXPECT_EQ(2, clone[1]);
@@ -250,6 +256,11 @@ class DiagramContinuousStateTest : public ::testing::Test {
     state3_.reset(new ContinuousState<double>(
         BasicVector<double>::Make(-1, -2, -3, -4), 2, 1, 1));
 
+    state0_->set_system_id(internal::SystemId::get_new_id());
+    state1_->set_system_id(internal::SystemId::get_new_id());
+    state2_->set_system_id(internal::SystemId::get_new_id());
+    state3_->set_system_id(internal::SystemId::get_new_id());
+
     // Expected contents, with expected number of q/v/z variables.
     // unowned 3q 2v 5z
     //   state0 q v z           1       2     3
@@ -257,6 +268,7 @@ class DiagramContinuousStateTest : public ::testing::Test {
     //   state2 2z                            10,11
     unowned_.reset(new DiagramContinuousState<double>(
         {&*state0_, &*state1_, &*state2_}));
+    unowned_->set_system_id(internal::SystemId::get_new_id());
 
     // root_unowned 5q 3v 6z
     //   state3 2q v z         -1,-2    -3    -4
@@ -266,6 +278,7 @@ class DiagramContinuousStateTest : public ::testing::Test {
     //     state2
     root_unowned_.reset(
         new DiagramContinuousState<double>({&*state3_, &*unowned_}));
+    root_unowned_->set_system_id(internal::SystemId::get_new_id());
 
     std::vector<std::unique_ptr<ContinuousState<double>>> copies;
     copies.emplace_back(state3_->Clone());
@@ -280,6 +293,7 @@ class DiagramContinuousStateTest : public ::testing::Test {
     //     state2 (copy)
     //   state1 (copy) 2q v 2z        4,5       6     7,8
     root_owned_.reset(new DiagramContinuousState<double>(std::move(copies)));
+    root_owned_->set_system_id(internal::SystemId::get_new_id());
   }
 
   std::unique_ptr<ContinuousState<double>> state0_, state1_, state2_, state3_;
@@ -420,6 +434,26 @@ TEST_F(DiagramContinuousStateTest, Clone) {
   EXPECT_EQ((*clone_of_unowned)[1], 2);
   EXPECT_EQ((*root_unowned_)[5], 99);
   EXPECT_EQ((*clone_of_root_unowned)[5], 2);
+}
+
+// Check that Clone() preserves the system_id markers.
+TEST_F(DiagramContinuousStateTest, CloneSystemId) {
+  auto clone_of_unowned = unowned_->Clone();
+  auto clone_of_root_unowned = root_unowned_->Clone();
+
+  EXPECT_EQ(clone_of_unowned->get_system_id(),
+            unowned_->get_system_id());
+  for (int i = 0; i < unowned_->num_substates(); ++i) {
+    EXPECT_EQ(clone_of_unowned->get_substate(i).get_system_id(),
+              unowned_->get_substate(i).get_system_id());
+  }
+
+  EXPECT_EQ(clone_of_root_unowned->get_system_id(),
+            root_unowned_->get_system_id());
+  for (int i = 0; i < root_unowned_->num_substates(); ++i) {
+    EXPECT_EQ(clone_of_root_unowned->get_substate(i).get_system_id(),
+              root_unowned_->get_substate(i).get_system_id());
+  }
 }
 
 }  // namespace
