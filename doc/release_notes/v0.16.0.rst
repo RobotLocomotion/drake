@@ -24,7 +24,7 @@ Dynamical Systems
 
 New features
 
-* Added doc about the availability of force/torque sensor (`#12791`_)
+TBD
 
 Fixes
 
@@ -61,6 +61,8 @@ New features
   * Still only experimental
   * Improve performance
   * Improve architecture
+
+* Added doc about the availability of force/torque sensor (`#12791`_)
 
 Fixes
 
