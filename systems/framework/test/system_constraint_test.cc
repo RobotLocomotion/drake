@@ -7,6 +7,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {

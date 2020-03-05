@@ -78,14 +78,14 @@ static T GetNextSampleTime(
 /// A superclass template that extends System with some convenience utilities
 /// that are not applicable to Diagrams.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam T The scalar type, which must be one of the @ref default_scalars.
 template <typename T>
 class LeafSystem : public System<T> {
  public:
   // LeafSystem objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem)
 
-  ~LeafSystem() override {}
+  ~LeafSystem() override;
 
   /// Allocates a CompositeEventCollection object for this system.
   /// @sa System::AllocateCompositeEventCollection().
