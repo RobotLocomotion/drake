@@ -113,20 +113,42 @@ Newly-deprecated APIs
 
 * APIs:
 
-  * DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN macro  (`#12735`_)
-  * DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T macro (`#12735`_)
+  * DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN (`#12735`_)
+  * DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T (`#12735`_)
   * TBD Remove remaining usage of RigidBodyTree and deprecate the remaining functions (`#12732`_)
   * TBD Deprecate the RBT implementation which now has no users (`#12732`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* APIs
+
+  * drake::geometry::Capsule::get_length (`#12781`_)
+  * drake::geometry::Capsule::get_radius (`#12781`_)
+  * drake::geometry::Cylinder::get_length (`#12781`_)
+  * drake::geometry::Cylinder::get_radius (`#12781`_)
+  * drake::geometry::Ellipsoid::get_a (`#12781`_)
+  * drake::geometry::Ellipsoid::get_b (`#12781`_)
+  * drake::geometry::Ellipsoid::get_c (`#12781`_)
+  * drake::geometry::Sphere::get_radius (`#12781`_)
+  * pydrake.attic.multibody.rigid_body_tree.RigidBodyTree.number_of_positions (`#12781`_)
+  * pydrake.attic.multibody.rigid_body_tree.RigidBodyTree.number_of_velocities (`#12781`_)
+  * pydrake.geometry.Capsule.get_length (`#12781`_)
+  * pydrake.geometry.Capsule.get_radius (`#12781`_)
+  * pydrake.geometry.Cylinder.get_length (`#12781`_)
+  * pydrake.geometry.Cylinder.get_radius (`#12781`_)
+  * pydrake.geometry.Ellipsoid.get_a (`#12781`_)
+  * pydrake.geometry.Ellipsoid.get_b (`#12781`_)
+  * pydrake.geometry.Ellipsoid.get_c (`#12781`_)
+  * pydrake.geometry.Sphere.get_radius (`#12781`_)
+  * DRAKE_SPDLOG_TRACE (`#12781`_)
+  * DRAKE_SPDLOG_DEBUG (`#12781`_)
+  * drake/multibody/tree/multibody_tree_element.h header (`#12781`_)
+    
 * Examples:
 
   * Double pendulum (`#12725`_)
   * PR2 Passive Simulation (`#12708`_)
-
-* TBD Remove deprecated 2020-03-01 (`#12781`_)
 
 Commits to be categorized
 -------------------------
