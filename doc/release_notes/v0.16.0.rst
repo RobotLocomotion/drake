@@ -91,11 +91,15 @@ Build system and dependencies
 * Upgrade fcl to latest release (`#12762`_)
 * Upgrade ghc_filesystem to latest release 1.3.0 (`#12799`_)
 * Upgrade styleguide to latest commit (includes cpplint changes) (`#12765`_, `#12800`_)
+* Fix missing load() in drake_bazel_installed support (`#12605`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+* APIs:
+
+  * DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN macro  (`#12735`_)
+  * DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T macro (`#12735`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,8 +116,6 @@ Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit f3a09803a8a95f8f6eacccb2fba4ea2b5ca8c996 (inclusive).
 
 pybind
-* mkdoc: Warn about unused ignore patterns (`#12727`_)
-* Add missing load of py_library rule in drake_bazel_installed (`#12605`_)
 * add pybind11/eigen.h to pydrake/solvers (`#12737`_)
 * Add notes about lack of support for meshcat-visualizer on Binder (`#12774`_)
 * Link to nightly release jupyter notebooks rather than those on master (`#12774`_)
@@ -121,9 +123,6 @@ pybind
 * Bind kinetic and potential energy system method in python (`#12794`_)  # Make pendulum/acrobot examples use that API. Newly bound: pydrake.systems.framework.System.EvalPotentialEnergy pydrake.systems.framework.System.EvalKineticEnergy Removed without deprecation: pydrake.examples.AcrobotPlant.CalcPotentialEnergy pydrake.examples.AcrobotPlant.CalcKineticEnergy
 
 build
-* Remove extern template work-arounds for GCC pre-6.3 (`#12735`_)  # Deprecate its two support macros DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN and DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T.
-* examples: Rename inl.h's cc files to make room for a pending rename (`#12710`_)
-* examples: Remove uses of inl.h pattern (`#12710`_)  # We no longer use the inl pattern in Drake, and anyway it serves no purpose for standalone (non-library) examples.
 * Remove -inl patterns in systems/analysis and move implementations to cc files (`#12657`_)
 * lint: Remove unused *.imp file (`#12743`_)
 * IWYU: Include initializer_list when it's used (`#12768`_)
