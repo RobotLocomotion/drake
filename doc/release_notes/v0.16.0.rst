@@ -16,7 +16,7 @@ These are breaking changes that did not undergo a deprecation period:
 
 * Drake no longer supports user-defined scalar types (`#12657`_, `#12797`_, `#12814`_)
 
-  * TBD Explanatory text
+  * TODO(jwnimmer-tri) Explanatory text
 
 * Removed the ability to override LeafSystem allocation methods (`#12792`_)
 
@@ -25,6 +25,9 @@ These are breaking changes that did not undergo a deprecation period:
 
 * Removed pydrake.examples.AcrobotPlant.CalcPotentialEnergy (`#12794`_)
 * Removed pydrake.examples.AcrobotPlant.CalcKineticEnergy (`#12794`_)
+* Renamed RigidBodyTree-based implementation of
+  drake::manipulation::planner::ConstraintRelaxingIk to
+  drake::manipulation::planner::ConstraintRelaxingIkRbt (`#12732`_)
 
 Changes since v0.15.0:
 ----------------------
@@ -112,10 +115,12 @@ Newly-deprecated APIs
 
 * APIs:
 
+  * drake::examples::kuka_iiwa_arm::EncodeKeyFrames (`#12732`_)
+  * drake::examples::kuka_iiwa_arm::IiwaContactResultsToExternalTorque (`#12732`_)
+  * drake::examples::kuka_iiwa_arm::VerifyIiwaTree (`#12732`_)
+  * drake::manipulation::planner::ConstraintRelaxingIkRbt (`#12732`_)
   * DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN (`#12735`_)
   * DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T (`#12735`_)
-  * TBD Remove remaining usage of RigidBodyTree and deprecate the remaining functions (`#12732`_)
-  * TBD Deprecate the RBT implementation which now has no users (`#12732`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
