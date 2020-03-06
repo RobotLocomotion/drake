@@ -45,8 +45,6 @@ _IGNORED_REPOSITORIES = [
     # Our "find something new" heuristics get confused by these repositories.
     "github3_py",
     "pycodestyle",
-    # Until Drake has real uses of godotengine, we don't want to mess with it.
-    "godotengine",
 ]
 
 
