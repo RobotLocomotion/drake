@@ -4,7 +4,28 @@
 #include "drake/common/symbolic.h"
 
 // N.B. `CommonScalarPack` in `systems_pybind.h` should be kept in sync
-// with this.
+// with this file.
+
+/// @defgroup default_scalars Default Scalars
+/// @ingroup technical_notes
+/// @{
+/// Similar to the Eigen library, many classes in Drake use a template argument
+/// to specify the numeric scalar type to use for computation.  We typically
+/// name that template argument <b>`<T>`</b>.  For an example, see the class
+/// drake::math::RigidTransform.
+///
+/// Most scalar-templated classes in Drake only support a small, fixed set of
+/// scalar types:
+/// - `double` (always)
+/// - drake::AutoDiffXd (almost always)
+/// - drake::symbolic::Expression (sometimes)
+///
+/// When Drake documentation refers to "default scalars", it means all three
+/// of the types above.
+///
+/// Alternatively, reference to "default nonsymbolic scalars" means all except
+/// `drake::symbolic::Expression`.
+
 /// A macro that defines explicit class template instantiations for Drake's
 /// default set of supported scalar types.  This macro should only be used in
 /// .cc files, never in .h files.
@@ -83,3 +104,5 @@ extern template SomeType<::drake::symbolic::Expression>;
       SomeType) \
 extern template SomeType<double>; \
 extern template SomeType<::drake::AutoDiffXd>;
+
+/// @}

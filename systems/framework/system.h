@@ -70,14 +70,14 @@ class SystemImpl {
 /// Base class for all System functionality that is dependent on the templatized
 /// scalar type T for input, state, parameters, and outputs.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam T The scalar type, which must be one of the @ref default_scalars.
 template <typename T>
 class System : public SystemBase {
  public:
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
-  ~System() override = default;
+  ~System() override;
 
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization

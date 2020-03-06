@@ -28,6 +28,9 @@ std::string SystemImpl::GetMemoryObjectName(
   return result.str();
 }
 
+template <typename T>
+System<T>::~System() {}
+
 }  // namespace systems
 }  // namespace drake
 
