@@ -439,6 +439,39 @@ class SpatialInertia {
         w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
   }
 
+  /// Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
+  /// as columns of input matrix `Mmatrix`. The top three rows of Mmatrix are
+  /// expected to store the rotational components while the bottom three rows
+  /// are expected to store the translational components.
+  /// The output matrix is of the same size as `Mmatrix` and each j-th column
+  /// stores the spatial vector in F⁶ result of multiplying `this` spatial
+  /// inertia with the j-th column of `Mmatrix`.
+  template <typename Derived>
+  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> operator*(
+      const Eigen::MatrixBase<Derived>& Mmatrix) const {
+    static_assert(is_eigen_scalar_same<Derived, T>::value,
+                  "Derived must be templated on the same scalar type as this "
+                  "spatial inertia.");
+    if (Mmatrix.rows() != 6) {
+      throw std::logic_error("Mmatrix must hold spatial vectors in M⁶.");
+    }
+    const auto& Vrotational = Mmatrix.template topRows<3>();
+    const auto& Vtranslational = Mmatrix.template bottomRows<3>();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+    const Matrix3<T> I_SP_E = CalcRotationalInertia().CopyToFullMatrix3();
+
+    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> F_Bo_E(6, Mmatrix.cols());
+
+    // Rotational component.
+    F_Bo_E.template topRows<3>() =
+        I_SP_E * Vrotational - Vtranslational.colwise().cross(mp_BoBcm_E);
+
+    // Translational component.
+    F_Bo_E.template bottomRows<3>() =
+        Vrotational.colwise().cross(mp_BoBcm_E) + get_mass() * Vtranslational;
+    return F_Bo_E;
+  }
+
  private:
   // Helper method for NaN initialization.
   static constexpr T nan() {

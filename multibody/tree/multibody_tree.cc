@@ -917,10 +917,10 @@ void MultibodyTree<T>::MapVelocityToQDot(
 
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
-  DRAKE_DEMAND(H != nullptr);
-  DRAKE_DEMAND(H->rows() == num_velocities());
-  DRAKE_DEMAND(H->cols() == num_velocities());
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
 
   // Compute one column of the mass matrix via inverse dynamics at a time.
   const int nv = num_velocities();
@@ -940,7 +940,144 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     tau.setZero();
     CalcInverseDynamics(context, vdot, {}, VectorX<T>(), ignore_velocities,
                         &A_WB_array, &F_BMo_W_array, &tau);
-    H->col(j) = tau;
+    M->col(j) = tau;
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
+                                      EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
+
+  // This method implements algorithm 9.3 in [Jain 2010]. We use slightly
+  // different notation conventions:
+  // - Rigid shift operators A and Φ are implemented in SpatialInertia::Shift()
+  //   and SpatialForce::Shift(), respectively.
+  // - We use the symbol F instead of X, to highlight the physical
+  //   interpretation of the algorithm in terms of composite bodies.
+  // - Even though we use H for the "hinge matrix" as in Jain's book, our hinge
+  //   matrix is the transpose of that used by Jain. Therefore our hinge matrix
+  //   is the across-mobilizer Jacobian such that we can write
+  //   V_PB_W = H_PB_W * v_B, with v_B the generalized velocities of body B's
+  //   mobilizer.
+  // - In code we use the monogram notation R_C_W to denote the spatial inertia
+  //   of composite body C, about it's frame origin Co, and expressed in the
+  //   world frame W.
+  //
+  // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+  //               algorithms. Springer Science & Business Media, pp. 123-130.
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
+      EvalSpatialInertiaInWorldCache(context);
+
+  // Temporary storage.
+  std::vector<SpatialInertia<T>> R_B_W_all(num_bodies());
+  Matrix6xUpTo6<T> Fm_CCo_W;
+
+  // The algorithm below does not recurse zero entries and therefore these must
+  // be set a priori.
+  M->setZero();
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (int depth = tree_height() - 1; depth > 0; --depth) {
+    for (BodyNodeIndex composite_node_index : body_node_levels_[depth]) {
+      // Node corresponding to the composite body C.
+      const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
+
+      // This node's spatial inertia.
+      const SpatialInertia<T>& M_C_W =
+          spatial_inertia_in_world_cache[composite_node_index];
+
+      // Compute the spatial inertia R_C_W of the composite body C corresponding
+      // to the node with index composite_node_index. Computed about C's origin
+      // Co and expressed in the world frame W.
+      SpatialInertia<T>& R_C_W = R_B_W_all[composite_node_index];
+      composite_node.CalcCompositeBodyInertia_TipToBase(M_C_W, pc, R_B_W_all,
+                                                        &R_C_W);
+
+      // Across-mobilizer hinge matrix, from C's parent Cp to C.
+      Eigen::Map<const MatrixUpTo6<T>> H_CpC_W =
+          composite_node.GetJacobianFromArray(H_PB_W_cache);
+
+      // The composite body algorithm considers the system at rest, when
+      // generalized velocities are zero.
+      // Now if we consider this node's generalized accelerations as the matrix
+      // vm_dot = Iₘ, the identity matrix in ℝᵐˣᵐ, the spatial acceleration A_WC
+      // is in ℝ⁶ˣᵐ. That is, we are considering each case in which all
+      // generalized accelerations are zero but the m-th generalized
+      // acceleration for this node equals one.
+      // This node's spatial acceleration can be written as:
+      //   A_WC = Φᵀ(p_CpC) * A_WCp + Ac_WC + Ab_CpC_W + H_CpC_W * vm_dot
+      // where A_WCp is the spatial acceleration of the parent node's body Cp,
+      // Ac_WC include the centrifugal and Coriolis terms, and Ab_CpC_W is the
+      // spatial acceleration bias of the hinge Jacobian matrix H_CpC_W.
+      // Now, since all generalized accelerations but vm_dot are zero, then
+      // A_WCp is zero.  Since the system is at rest, Ac_WC and Ab_CpC_W are
+      // zero.
+      // Therefore, for vm_dot = Iₘ, we have that A_WC = H_CpC_W.
+      const auto& A_WC = H_CpC_W;
+
+      // If we consider the closed system composed of the composite body held by
+      // its mobilizer, the Newton-Euler equations state:
+      //   Fm_CCo_W = R_C_W * A_WC + Fb_C_W
+      // where Fm_CCo_W is the spatial force at this node's mobilizer.
+      // Since the system is at rest, we have Fb_C_W = 0 and thus:
+      Fm_CCo_W = R_C_W * A_WC;
+
+      const int composite_start = composite_node.velocity_start();
+      const int composite_nv = composite_node.get_num_mobilizer_velocities();
+
+      // Diagonal block corresponding to current node (composite_node_index).
+      M->block(composite_start, composite_start, composite_nv, composite_nv) =
+          H_CpC_W.transpose() * Fm_CCo_W;
+
+      // We recurse the tree inwards from C all the way to the root. We define
+      // the frames:
+      //  - B:  the frame for the current node, body_node.
+      //  - Bc: B's child node frame, child_node.
+      //  - P:  B's parent node frame.
+      const BodyNode<T>* child_node =
+          &composite_node;  // Child starts at frame C.
+      const BodyNode<T>* body_node = child_node->parent_body_node();
+      Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;
+      while (body_node) {
+        const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
+        // In place rigid shift of the spatial force in each column of Fm_CBo_W,
+        // from Bc to Bo.
+        // Before this computation, Fm_CBo_W actually stores Fm_CBc_W from the
+        // previous recursion.
+        // At the end of this computation, Fm_CBo_W stores the spatial force on
+        // composite body C, shifted to Bo, and expressed in the world W.
+        // That is, we are doing Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
+        SpatialForce<T>::Shift(Fm_CBo_W, p_BcBo_W, &Fm_CBo_W);
+
+        // Across mobilizer Jacobian between body_node B and its parent P.
+        Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+            body_node->GetJacobianFromArray(H_PB_W_cache);
+
+        // Compute the corresponding block.
+        const int body_start = body_node->velocity_start();
+        const int body_nv = body_node->get_num_mobilizer_velocities();
+        M->block(body_start, composite_start, body_nv, composite_nv) =
+            H_PB_W.transpose() * Fm_CBo_W;
+
+        // And copy to its symmetric block.
+        // Eigen incorrectly detects aliasing during transposition. We fix this
+        // by creating a temporaty copy with .eval() below.
+        M->block(composite_start, body_start, composite_nv, body_nv) =
+            M->block(body_start, composite_start, body_nv, composite_nv)
+                .transpose()
+                .eval();
+
+        child_node = body_node;                      // Update child node Bc.
+        body_node = child_node->parent_body_node();  // Update node B.
+      }
+    }
   }
 }
 
