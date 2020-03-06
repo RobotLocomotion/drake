@@ -51,8 +51,8 @@ DEFINE_double(simulator_accuracy, kDefaultSimulatorAccuracy,
               "[Integrator flag] Sets the simulation accuracy for variable "
               "step size integrators with error control.");
 
-DEFINE_bool(simulator_uses_error_control, true,
-            "[Integrator flag] If 'true', the simulator's integrator uses "
+DEFINE_bool(simulator_use_error_control, true,
+            "[Integrator flag] If 'true', the simulator's integrator will use "
             "error control if it supports it. Otherwise, the simulator "
             "attempts to use fixed steps.");
 
@@ -96,9 +96,9 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
   IntegratorBase<double>& integrator = simulator->get_mutable_integrator();
   integrator.set_maximum_step_size(FLAGS_simulator_max_time_step);
   // For integrators that support error control, turn on or off error control
-  // based on the simulator_uses_error_control flag.
+  // based on the simulator_use_error_control flag.
   if (integrator.supports_error_estimation()) {
-    integrator.set_fixed_step_mode(!FLAGS_simulator_uses_error_control);
+    integrator.set_fixed_step_mode(!FLAGS_simulator_use_error_control);
   }
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(FLAGS_simulator_accuracy);

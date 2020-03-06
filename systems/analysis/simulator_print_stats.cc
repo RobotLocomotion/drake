@@ -34,6 +34,10 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
   fmt::print("Number of \"unrestricted\" updates = {:d}\n",
       simulator.get_num_unrestricted_updates());
 
+  if (integrator.get_num_steps_taken() == 0) {
+    fmt::print("\nNote: the following integrator took zero steps. The "
+               "simulator exclusively used the discrete solver.\n");
+  }
   fmt::print(
       "\nStats for integrator {} with {}:\n", integrator_scheme_name,
       integrator.get_fixed_step_mode() ? "fixed steps" : "error control");
@@ -74,7 +78,7 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
       // details. For each statistic, the first value, for just the
       // "integrator", is computed by subtracting the error estimator's value
       // from the total. The other two values are grabbed directly from the
-      // integrator's statistics. Note: Even if the integrator was ran in
+      // integrator's statistics. Note: Even if the integrator was run in
       // fixed-step mode, they still run the error estimator (but don't use
       // the results), which is why we still output the error estimator
       // statistics.
@@ -82,7 +86,7 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
         // Warn the user that integrators that support error estimation will
         // run the error estimator even in fixed-step mode.
         fmt::print(
-            "Note: This implicit integrator was ran in fixed-step mode, but "
+            "Note: This implicit integrator was run in fixed-step mode, but "
             "it supports error estimation, so the error estimator is "
             "expected to have nonzero values in the following statistics.\n");
       }
@@ -90,7 +94,7 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
           "Implicit Integrator Statistics (integrator, error estimator, "
           "total):\n");
       fmt::print(
-          "Number of Derivative Evaluations = {:d}, {:d}, {:d} \n",
+          "Number of Derivative Evaluations = {:d}, {:d}, {:d}\n",
           implicit_integrator->get_num_derivative_evaluations() -
               implicit_integrator
               ->get_num_error_estimator_derivative_evaluations(),
@@ -98,14 +102,14 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
               ->get_num_error_estimator_derivative_evaluations(),
           implicit_integrator->get_num_derivative_evaluations());
       fmt::print(
-          "Number of Jacobian Computations = {:d}, {:d}, {:d} \n",
+          "Number of Jacobian Computations = {:d}, {:d}, {:d}\n",
           implicit_integrator->get_num_jacobian_evaluations() -
               implicit_integrator
                   ->get_num_error_estimator_jacobian_evaluations(),
           implicit_integrator->get_num_error_estimator_jacobian_evaluations(),
           implicit_integrator->get_num_jacobian_evaluations());
       fmt::print(
-          "Number of Derivative Evaluations for Jacobians = {:d}, {:d}, {:d} "
+          "Number of Derivative Evaluations for Jacobians = {:d}, {:d}, {:d}"
           "\n",
           implicit_integrator->get_num_derivative_evaluations_for_jacobian() -
               implicit_integrator
@@ -114,14 +118,14 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
               ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
           implicit_integrator->get_num_derivative_evaluations_for_jacobian());
       fmt::print(
-          "Number of Iteration Matrix Factorizations = {:d}, {:d}, {:d} \n",
+          "Number of Iteration Matrix Factorizations = {:d}, {:d}, {:d}\n",
           implicit_integrator->get_num_iteration_matrix_factorizations() -
               implicit_integrator
                   ->get_num_error_estimator_iteration_matrix_factorizations(),
           implicit_integrator
               ->get_num_error_estimator_iteration_matrix_factorizations(),
           implicit_integrator->get_num_iteration_matrix_factorizations());
-      fmt::print("Number of Newton-Raphson Iterations = {:d}, {:d}, {:d} \n",
+      fmt::print("Number of Newton-Raphson Iterations = {:d}, {:d}, {:d}\n",
                  implicit_integrator->get_num_newton_raphson_iterations() -
                      implicit_integrator
                      ->get_num_error_estimator_newton_raphson_iterations(),
@@ -137,12 +141,12 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
       fmt::print("Number of Jacobian Computations = {:d}\n",
                  implicit_integrator->get_num_jacobian_evaluations());
       fmt::print(
-          "Number of Derivative Evaluations for Jacobians = {:d} \n",
+          "Number of Derivative Evaluations for Jacobians = {:d}\n",
           implicit_integrator->get_num_derivative_evaluations_for_jacobian());
       fmt::print(
-          "Number of Iteration Matrix Factorizations = {:d} \n",
+          "Number of Iteration Matrix Factorizations = {:d}\n",
           implicit_integrator->get_num_iteration_matrix_factorizations());
-      fmt::print("Number of Newton-Raphson Iterations = {:d} \n",
+      fmt::print("Number of Newton-Raphson Iterations = {:d}\n",
                  implicit_integrator->get_num_newton_raphson_iterations());
     }
   }
