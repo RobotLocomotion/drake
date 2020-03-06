@@ -9,11 +9,11 @@ namespace internal {
 using Eigen::Vector3d;
 
 bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
-                      const math::RigidTransform<double>& X_AB) {
+                      const math::RigidTransformd& X_AB) {
   // We need to split the transform into the position and rotation components,
   // `p_AB` and `R_AB`. For the purposes of streamlining the math below, they
   // will henceforth be named `t` and `r` respectively.
-  const Vector3<double> t = X_AB * b.center() - a.center();
+  const Vector3d t = X_AB * b.center() - a.center();
   const Matrix3<double> r = X_AB.rotation().matrix();
 
   // Compute some common subexpressions and add epsilon to counteract
@@ -106,7 +106,7 @@ void Aabb::PadBoundary() {
   const double scale = std::max(max_position, max_half_width);
   const double incr =
       std::max(scale * std::numeric_limits<double>::epsilon(), kTolerance);
-  half_width_ += Vector3<double>::Constant(incr);
+  half_width_ += Vector3d::Constant(incr);
 }
 
 template <class MeshType>
@@ -162,7 +162,7 @@ Aabb BoundingVolumeHierarchy<MeshType>::ComputeBoundingVolume(
     const typename std::vector<CentroidPair>::iterator& start,
     const typename std::vector<CentroidPair>::iterator& end) {
   // Keep track of the min/max bounds to create the bounding box.
-  Vector3<double> max_bounds, min_bounds;
+  Vector3d max_bounds, min_bounds;
   max_bounds.setConstant(std::numeric_limits<double>::lowest());
   min_bounds.setConstant(std::numeric_limits<double>::max());
 
@@ -177,15 +177,15 @@ Aabb BoundingVolumeHierarchy<MeshType>::ComputeBoundingVolume(
       max_bounds = max_bounds.cwiseMax(vertex);
     }
   }
-  const Vector3<double> center = (min_bounds + max_bounds) / 2;
-  const Vector3<double> half_width = max_bounds - center;
+  const Vector3d center = (min_bounds + max_bounds) / 2;
+  const Vector3d half_width = max_bounds - center;
   return Aabb(center, half_width);
 }
 
 template <class MeshType>
-Vector3<double> BoundingVolumeHierarchy<MeshType>::ComputeCentroid(
+Vector3d BoundingVolumeHierarchy<MeshType>::ComputeCentroid(
     const MeshType& mesh, const IndexType i) {
-  Vector3<double> centroid{0, 0, 0};
+  Vector3d centroid{0, 0, 0};
   const auto& element = mesh.element(i);
   // Calculate average from all vertices.
   for (int v = 0; v < kElementVertexCount; ++v) {

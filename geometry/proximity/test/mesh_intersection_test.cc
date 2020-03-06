@@ -674,8 +674,6 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
   EXPECT_TRUE(CompareConvexPolygon(expect_heptagon_M, polygon_M));
 }
 
-// TODO(DamrongGuoy): Add unit tests for AddPolygonToMeshData().
-
 GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
   // It is ok to use the trivial mesh and trivial mesh field in this test.
   // The function under test asks for the gradient values and operates on it.

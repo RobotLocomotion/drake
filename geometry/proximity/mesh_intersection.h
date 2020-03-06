@@ -592,7 +592,7 @@ void SampleVolumeFieldOnSurface(
 
     // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
     //  positions. Specifically, each vertex will be transformed M times (once
-    //  per tetrahedron. Even with broadphase culling, this vertex will get
+    //  per tetrahedron). Even with broadphase culling, this vertex will get
     //  transformed once for each tet-tri pair where the tri is incidental
     //  to the vertex and the tet-tri pair can't be conservatively culled.
     //  This is O(mn), where m is the number of faces incident to the vertex
