@@ -25,7 +25,7 @@ namespace systems {
 /// - DiscreteState   `xd`
 /// - AbstractState   `xa`
 ///
-/// @tparam T A mathematical type compatible with Eigen's Scalar.
+/// @tparam_default_scalar
 template <typename T>
 class State {
  public:

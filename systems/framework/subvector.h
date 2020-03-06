@@ -16,7 +16,7 @@ namespace systems {
 /// Subvector is a concrete class template that implements
 /// VectorBase by providing a sliced view of a VectorBase.
 ///
-/// @tparam T A mathematical type compatible with Eigen's Scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Subvector : public VectorBase<T> {
  public:

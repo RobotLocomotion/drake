@@ -16,8 +16,7 @@ namespace rendering {
 ///
 /// The exact order of elements is `{ωx, ωy, ωz, vx, vy, vz}`.
 ///
-/// @tparam T The Eigen scalar type. Supported scalar types are double,
-///         AutoDiffXd, and symbolic::Expression.
+/// @tparam_default_scalar
 template <typename T>
 class FrameVelocity final : public BasicVector<T> {
  public:

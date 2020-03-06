@@ -107,7 +107,7 @@ namespace systems {
                      Equations II (Stiff and Differential-Algebraic Problems).
                      Springer, 1996.
 
- @tparam T The vector element type, which must be a valid Eigen scalar.
+ @tparam_nonsymbolic_scalar
  */
 template <class T>
 class IntegratorBase {

@@ -17,12 +17,6 @@ namespace systems {
 ///
 /// The input to this system directly feeds through to its output.
 ///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
 /// Note that @f$ u_{min} @f$, and @f$ u_{max} @f$, and @f$ u @f$ are all
 /// vectors of same dimension, and the following condition holds elementwise in
 /// runtime.
@@ -38,6 +32,7 @@ namespace systems {
 /// In this "variable" configuration, at least one of the input ports must be
 /// connected.
 ///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class Saturation final : public LeafSystem<T> {

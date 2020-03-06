@@ -36,7 +36,7 @@ class JointImplementationBuilder;
 /// @tparam ElementType The type of the specific multibody element, for
 ///     instance, a body or a mobilizer. It must be a template class that can
 ///     be templatized by scalar type T.
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 /// @tparam ElementIndexType The type-safe index used for this element type.
 ///
 /// As an example of usage, consider the definition of a `ForceElement` class

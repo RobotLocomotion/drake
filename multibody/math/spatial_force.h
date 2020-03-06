@@ -35,7 +35,7 @@ template <typename T> class SpatialVelocity;
 /// For a more detailed introduction on spatial vectors and the monogram
 /// notation please refer to section @ref multibody_spatial_vectors.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class SpatialForce : public SpatialVector<SpatialForce, T> {
   // We need the fully qualified class name below for the clang compiler to

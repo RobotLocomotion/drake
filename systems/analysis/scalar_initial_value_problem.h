@@ -46,12 +46,7 @@ namespace systems {
 ///   and assuming an initial stored charge Q₀ at time t₀, x ≜ Q, 𝐤 ≜ [Rs, Cs],
 ///   x₀ ≜ Q₀, dx/dt = f(t, x; 𝐤) = (E(t) - x / 𝐤₂) / 𝐤₁.
 ///
-/// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
-///
-/// @note
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class ScalarInitialValueProblem {
  public:

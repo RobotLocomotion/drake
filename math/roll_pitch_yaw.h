@@ -52,13 +52,7 @@ class RotationMatrix;
 /// @note This class does not store the frames associated with this rotation
 /// sequence.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
+/// @tparam_default_scalar
 template <typename T>
 class RollPitchYaw {
  public:

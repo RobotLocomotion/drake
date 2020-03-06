@@ -139,15 +139,7 @@ using SystemConstraintCalc =
 ///
 /// @see LeafSystem<T>::DeclareEqualityConstraint and
 ///      LeafSystem<T>::DeclareInequalityConstraint for use cases.
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class SystemConstraint final {
  public:
@@ -339,7 +331,7 @@ class ExternalSystemConstraint final {
   /// constraint.  The result may be a default-constructed (missing) function,
   /// if the scalar type T is not supported by this constraint instance.
   ///
-  /// @tparam T denotes the vector element type of the System<T>.
+  /// @tparam T denotes the scalar type of the System<T>.
   template <typename T>
   const SystemConstraintCalc<T>& get_calc() const {
     return do_get_calc<T>();

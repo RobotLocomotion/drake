@@ -18,10 +18,8 @@ namespace bouncing_ball {
 /** A model of a bouncing ball with Hunt-Crossley compliant contact model.
  The model supports 1D motion in a 3D world.
 
- @tparam T The vector element type, which must be a valid Eigen scalar.
-
- Instantiated templates for the following kinds of T's are provided:
- - double */
+ @tparam_double_only
+*/
 template <typename T>
 class BouncingBallPlant : public systems::LeafSystem<T> {
  public:

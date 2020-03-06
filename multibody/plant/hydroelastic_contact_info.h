@@ -31,7 +31,7 @@ namespace multibody {
  `contact_surface().id_M()` and `contact_surface().id_N()`) are attached to
  bodies A and B, respectively.
 
- @tparam T Must be one of drake's default scalar types.
+ @tparam_default_scalar
  */
 template <typename T>
 class HydroelasticContactInfo {

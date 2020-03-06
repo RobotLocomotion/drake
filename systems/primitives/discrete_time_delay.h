@@ -18,7 +18,6 @@ namespace systems {
 /// vector of zeros for vector-valued or a given value for abstract-valued
 /// until the delay time has passed.
 ///
-/// @ingroup primitive_systems
 /// @system{DiscreteTimeDelay, @input_port{u}, @output_port{delayed_u}}
 ///
 /// Let t,z ∈ ℕ be the number of delay time steps and the input vector size.
@@ -41,7 +40,8 @@ namespace systems {
 /// @note While the output port can be sampled at any continuous time, this
 ///       system does not interpolate.
 ///
-/// @tparam T Must be one of drake's default scalar types.
+/// @tparam_default_scalar
+/// @ingroup primitive_systems
 template <typename T>
 class DiscreteTimeDelay final : public LeafSystem<T> {
  public:

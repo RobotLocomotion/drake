@@ -18,12 +18,7 @@ namespace benchmarks {
 /// parameterized by angle theta1 and Link 2 is connected to Link 1 by an
 /// "elbow" revolute joint parameterized by angle theta2.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class Acrobot {
  public:

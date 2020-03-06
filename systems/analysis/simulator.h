@@ -206,14 +206,7 @@ and periodic or timed publish events that trigger at t₀, followed by a call
 to the monitor() function if one has been defined (a monitor is semantically
 identical to a per-step publish).
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided and
-available to link against in the containing library:
- - double
- - AutoDiffXd
-
-Other instantiations are permitted but take longer to compile.
+@tparam_nonsymbolic_scalar
 */
 template <typename T>
 class Simulator {

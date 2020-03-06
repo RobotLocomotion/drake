@@ -28,14 +28,7 @@ namespace acrobot {
 ///   @input_port{elbow_torque},
 ///   @output_port{acrobot_state} }
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - drake::AutoDiffXd
-/// - symbolic::Expression
-///
+/// @tparam_default_scalar
 /// @ingroup acrobot_systems
 template <typename T>
 class AcrobotPlant : public systems::LeafSystem<T> {

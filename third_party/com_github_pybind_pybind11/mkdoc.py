@@ -378,6 +378,11 @@ def process_comment(comment):
 
     # Drake-specific Doxygen aliases.
     s = re.sub(r'[@\\]default\s+', r'\n$*Default:* ', s)
+    # Omit tparam scalar type boilerplate; the python documentation already
+    # presents this information in a more useful manner.
+    s = re.sub(r'[@\\]tparam_default_scalar\s+', r'', s)
+    s = re.sub(r'[@\\]tparam_nonsymbolic_scalar\s+', r'', s)
+    s = re.sub(r'[@\\]tparam_double_only\s+', r'', s)
 
     # Remove these commands that take no argument. Ordering is significant for
     # command names with a common prefix.

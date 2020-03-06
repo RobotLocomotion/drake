@@ -40,14 +40,10 @@ namespace controllers {
  * nor actuator forces applied at loop constraints. Use on such systems is not
  * recommended.
  *
- * @tparam T The vector element type, which must be a valid Eigen scalar.
  * @see InverseDynamics for an accounting of all forces incorporated into the
  *      inverse dynamics computation.
  *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- *
+ * @tparam_double_only
  * @ingroup control_systems
  */
 template <typename T>

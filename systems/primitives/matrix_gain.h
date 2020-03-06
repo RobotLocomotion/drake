@@ -15,17 +15,7 @@ namespace systems {
 ///   y = D u
 /// @f]
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 ///
 /// @see AffineSystem

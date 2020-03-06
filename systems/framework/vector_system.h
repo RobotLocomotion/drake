@@ -27,7 +27,7 @@ namespace systems {
 /// optionally declare continuous or discrete state, but not both; subclasses
 /// may not declare abstract state.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class VectorSystem : public LeafSystem<T> {
  public:

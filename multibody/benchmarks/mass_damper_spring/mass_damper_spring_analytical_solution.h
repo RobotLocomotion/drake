@@ -19,15 +19,11 @@ namespace benchmarks {
 /// constant.  The damper force on Q is -b*ẋ*Nx where b is a damper constant
 /// and ẋ is the time-derivative of x.
 ///
-/// Instantiated templates for the following kinds of T's are provided and
-/// available to link against in the containing library:
-///
-/// - double
-/// - AutoDiffXd
-///
 /// @note All units must be self-consistent (e.g., standard SI with MKS units).
 ///       The solution provided herein is also applicable to a rotating system,
 ///       e.g., having rigid-body inertia, rotational damper, rotational spring.
+///
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class MassDamperSpringAnalyticalSolution {
  public:

@@ -28,15 +28,7 @@ namespace internal {
 /// - LDLT factorization `ldlt_D_B` of the articulated body hinge inertia.
 /// - The Kalman gain `g_PB_W = P_B_W * H_PB_W * D_B⁻¹`.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template<typename T>
 class ArticulatedBodyInertiaCache {
  public:

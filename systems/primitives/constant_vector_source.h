@@ -12,17 +12,9 @@ namespace systems {
 
 /// A source block with a constant output port at all times. The value of the
 /// output port is a parameter of the system (see Parameters).
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
 template <typename T>
 class ConstantVectorSource final : public SingleOutputVectorSource<T> {
  public:

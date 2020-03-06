@@ -1,6 +1,6 @@
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 
@@ -249,9 +249,9 @@ T Acrobot<T>::CalcPotentialEnergy(const T& theta1, const T& theta2) const {
   return (m1_ * p_WL1cm.y() + m2_ * p_WL2cm.y()) * g_;
 }
 
-template class Acrobot<double>;
-template class Acrobot<AutoDiffXd>;
-
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::benchmarks::Acrobot)

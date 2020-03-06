@@ -26,7 +26,7 @@ namespace systems {
 /// be contiguous in memory. Contiguous subclasses should typically
 /// inherit from BasicVector, not from VectorBase directly.
 ///
-/// @tparam T Must be a Scalar compatible with Eigen.
+/// @tparam_default_scalar
 template <typename T>
 class VectorBase {
  public:

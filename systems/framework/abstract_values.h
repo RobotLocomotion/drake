@@ -14,8 +14,6 @@ namespace systems {
 /// AbstractValues is a container for non-numerical state and parameters.
 /// It may or may not own the underlying data, and therefore is suitable
 /// for both leaf Systems and diagrams.
-///
-/// @tparam T A mathematical type compatible with Eigen's Scalar.
 class AbstractValues {
  public:
   // AbstractState is not copyable or moveable.

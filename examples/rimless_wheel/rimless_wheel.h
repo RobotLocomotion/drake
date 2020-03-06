@@ -36,12 +36,7 @@ namespace rimless_wheel {
 /// Parameters: mass, length, number of spokes, etc, are all set as Context
 ///   parameters using RimlessWheelParams.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class RimlessWheel final : public systems::LeafSystem<T> {
  public:

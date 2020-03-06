@@ -21,7 +21,7 @@ namespace multibody {
  is expensive when `num_hydroelastic_contacts() > 0` because a deep copy is
  performed.
 
- @tparam T Must be one of drake's default scalar types.
+ @tparam_default_scalar
  */
 template <typename T>
 class ContactResults {

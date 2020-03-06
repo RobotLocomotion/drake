@@ -28,13 +28,7 @@ namespace systems {
 ///
 /// @system{ DiscreteDerivative, @input_port{u}, @output_port{dudt} }
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <class T>
 class DiscreteDerivative final : public LeafSystem<T> {
@@ -122,13 +116,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 ///          @output_port{state}
 /// }
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {

@@ -25,12 +25,7 @@ namespace rendering {
  * state vector is provided only for convenience -- only the position values
  * will affect the outputs.
  *
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- *
+ * @tparam_double_only
  * @ingroup visualization
  */
 template <typename T>

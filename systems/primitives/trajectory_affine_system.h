@@ -14,18 +14,8 @@ namespace systems {
 /// A continuous- or discrete-time Affine Time-Varying system with system
 /// matrices described by trajectories.
 ///
-/// @tparam T The scalar element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_nonsymbolic_scalar
 /// @ingroup primitive_systems
-///
 template <typename T>
 class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
  public:

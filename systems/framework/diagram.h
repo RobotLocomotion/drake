@@ -73,7 +73,7 @@ class DiagramBuilder;
 ///
 /// Each System in the Diagram must have a unique, non-empty name.
 ///
-/// @tparam T The mathematical scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Diagram : public System<T>, internal::SystemParentServiceInterface {
  public:

@@ -13,12 +13,6 @@ namespace systems {
 /**
  A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
  with a fourth order error estimate.
- @tparam T A double or autodiff type.
-
- Instantiated templates for the following kinds of T's are provided:
-
- - double
- - AutoDiffXd
 
  For a discussion of this Runge-Kutta method, see [Hairer, 1993]. The
  embedded error estimate was derived using the method mentioned in
@@ -44,6 +38,8 @@ namespace systems {
    1980, 6(1): 19–26.
  - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
    rev. ed. Springer, 1993. p. 166.
+
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 class RungeKutta5Integrator final : public IntegratorBase<T> {

@@ -33,7 +33,7 @@ namespace internal {
 /// Users should not need to interact with this class directly unless they need
 /// to implement a custom Mobilizer class.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T,
     int compile_time_num_positions, int compile_time_num_velocities>
 class MobilizerImpl : public Mobilizer<T> {

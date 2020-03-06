@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -104,10 +104,9 @@ Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutputImpl(
   return output;
 }
 
-template class MassDamperSpringAnalyticalSolution<double>;
-template class MassDamperSpringAnalyticalSolution<AutoDiffXd>;
-
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
 
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::benchmarks::MassDamperSpringAnalyticalSolution)

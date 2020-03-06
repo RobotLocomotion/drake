@@ -21,15 +21,7 @@ namespace test {
 /// analytical solution which we have implemented in
 /// drake::multibody::benchmarks::free_body::FreeBody.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_nonsymbolic_scalar
 template<typename T>
 class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
  public:

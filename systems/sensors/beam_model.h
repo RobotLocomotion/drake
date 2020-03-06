@@ -42,11 +42,7 @@ namespace sensors {
 /// have here that builds the output out of simple (non-truncated) random
 /// variable inputs.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
+/// @tparam_nonsymbolic_scalar
 /// @ingroup sensor_systems
 template <typename T>
 class BeamModel final : public LeafSystem<T> {

@@ -38,14 +38,7 @@ namespace controllers {
  * typical use case for non-identity `P_x` and `P_y` is to select a subset of
  * state for feedback.
  *
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- * - AutoDiffXd
- * - symbolic::Expression
- *
+ * @tparam_default_scalar
  * @ingroup control_systems
  */
 template <typename T>

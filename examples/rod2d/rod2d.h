@@ -129,14 +129,6 @@ Coulomb friction. The problem is well known to correspond to an
 *inconsistent rigid contact configuration*, where impulsive forces are
 necessary to resolve the problem.
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following scalar types @p T are provided:
-
-- double
-
-They are already available to link against in the containing library.
-
 Inputs: planar force (two-dimensional) and torque (scalar), which are
         arbitrary "external" forces (expressed in the world frame) applied
         at the center-of-mass of the rod.
@@ -152,7 +144,10 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
          frame.
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-                   Impact". SIAM Rev., 42(1), 3-39, 2000. */
+                   Impact". SIAM Rev., 42(1), 3-39, 2000.
+
+@tparam_double_only
+*/
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:

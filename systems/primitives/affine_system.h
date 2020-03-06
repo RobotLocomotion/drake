@@ -15,8 +15,6 @@ namespace systems {
  * Base class for a discrete- or continuous-time, time-varying affine
  * system, with potentially time-varying coefficients.
  *
- * @ingroup primitive_systems
- *
  * @system{TimeVaryingAffineSystem,
  *    @input_port{u(t)},
  *    @output_port{y(t)}
@@ -33,8 +31,9 @@ namespace systems {
  *   @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f]
  * where `y` denotes the output vector.
  *
- * @tparam T The scalar element type, which must be a valid Eigen scalar.
- *
+ * @tparam_default_scalar
+ * @ingroup primitive_systems
+ * *
  * @see AffineSystem
  */
 template <typename T>
@@ -176,16 +175,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 /// In both cases, the system will have the output:
 ///   @f[y = C x + D u + y_0, @f]
 ///
-/// @tparam T The scalar element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 ///
 /// @ingroup primitive_systems
 ///

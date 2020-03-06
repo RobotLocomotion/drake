@@ -26,7 +26,8 @@ it has captured.
 A `SystemOutput<T>` object can only be obtained using
 `System<T>::AllocateOutput()` or by copying an existing %SystemOutput object.
 
-@tparam T The type of the output data. Must be a valid Eigen scalar. */
+@tparam_default_scalar
+*/
 template <typename T>
 class SystemOutput {
  public:

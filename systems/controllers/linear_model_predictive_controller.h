@@ -27,10 +27,7 @@ namespace controllers {
 /// implementation solves the QP in whole at every time step, discarding any
 /// information between steps.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-///
+/// @tparam_double_only
 /// @ingroup control_systems
 template <typename T>
 class LinearModelPredictiveController : public LeafSystem<T> {

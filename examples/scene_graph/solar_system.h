@@ -86,11 +86,7 @@ X_OₑOₗ→├───┘       │  S  │         X_OₘOₚ → ├──�
  The frame of orbit's origin lies at the circle's center and it's z-axis is
  perpendicular to the plane of the circle.
 
- @tparam T The vector element type, which must be a valid Eigen scalar.
-
- Instantiated templates for the following kinds of T's are provided:
-
- - double
+ @tparam_double_only
 */
 template <typename T>
 class SolarSystem : public systems::LeafSystem<T> {

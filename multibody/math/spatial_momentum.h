@@ -59,7 +59,7 @@ template <typename T> class SpatialVelocity;
 /// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
 ///                       algorithms. Springer.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   // We need the fully qualified class name below for the clang compiler to

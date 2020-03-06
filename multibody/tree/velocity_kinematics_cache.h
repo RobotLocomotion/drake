@@ -28,16 +28,7 @@ namespace internal {
 ///   expressed in W. Mb is an "offset" frame rigidly fixed to M, whose axes are
 ///   parallel to M but whose origin is at Bo rather than Mo.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class VelocityKinematicsCache {
  public:

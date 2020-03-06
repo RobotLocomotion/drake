@@ -22,7 +22,7 @@ namespace systems {
 ///
 /// The Parameters include both vector-valued and abstract-valued elements.
 ///
-/// @tparam T A mathematical type compatible with Eigen's Scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Parameters {
  public:

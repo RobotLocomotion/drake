@@ -19,20 +19,7 @@ namespace systems {
 /// an input port for the time source. Otherwise, the system is created with
 /// zero input ports.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to https://drake.mit.edu/cxx_inl.html.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-///
-/// To use other specific scalar types see sine-inl.h.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class Sine final : public LeafSystem<T> {

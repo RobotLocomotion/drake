@@ -47,7 +47,7 @@ namespace multibody {
 ///
 /// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   // We need the fully qualified class name below for the clang compiler to

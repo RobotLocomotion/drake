@@ -353,8 +353,7 @@ enum class ContactModel {
 ///     Minimal formulation of joint motion for biomechanisms.
 ///     Nonlinear dynamics, 62(1), pp.291-303.
 ///
-/// @tparam T Must be one of drake's default scalar types.
-///
+/// @tparam_default_scalar
 /// @ingroup systems
 template <typename T>
 class MultibodyPlant : public internal::MultibodyTreeSystem<T> {

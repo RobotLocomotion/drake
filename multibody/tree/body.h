@@ -61,7 +61,7 @@ template<typename T> class Body;
 /// define other frames on the body and to attach other multibody elements
 /// to it.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class BodyFrame final : public Frame<T> {
  public:
@@ -178,7 +178,7 @@ class BodyAttorney {
 /// A %Body contains a unique BodyFrame; see BodyFrame class documentation for
 /// more information.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Body : public MultibodyElement<Body, T, BodyIndex> {
  public:

@@ -89,15 +89,7 @@ namespace multibody {
 ///     Robot and multibody dynamics: analysis and algorithms.
 ///     Springer Science & Business Media.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template<typename T>
 class ArticulatedBodyInertia {
  public:

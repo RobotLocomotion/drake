@@ -27,17 +27,7 @@ namespace systems {
 /// where `u` denotes the input vector, `x` denotes the state vector, and
 /// `y` denotes the output vector.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 ///
 /// @see AffineSystem
@@ -105,19 +95,8 @@ class LinearSystem : public AffineSystem<T> {
 /// both with the output:
 ///   @f[ y(t) = C(t) x(t) + D(t) u(t). @f]
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
-///
 template <typename T>
 class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
  public:

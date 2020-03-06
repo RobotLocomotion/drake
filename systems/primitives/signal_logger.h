@@ -46,14 +46,7 @@ namespace systems {
 ///
 /// @system{ SignalLogger, @input_port{data}, }
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class SignalLogger final : public LeafSystem<T> {

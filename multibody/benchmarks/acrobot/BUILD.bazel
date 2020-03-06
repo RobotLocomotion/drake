@@ -23,7 +23,7 @@ drake_cc_library(
     srcs = ["acrobot.cc"],
     hdrs = ["acrobot.h"],
     deps = [
-        "//common:autodiff",
+        "//common:default_scalars",
         "//common:extract_double",
         "//math:geometric_transform",
     ],

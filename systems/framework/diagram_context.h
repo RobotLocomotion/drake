@@ -115,8 +115,7 @@ class DiagramState : public State<T> {
 /// In general, users should not need to interact with a DiagramContext
 /// directly. Use the accessors on Diagram instead.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+/// @tparam_default_scalar
 template <typename T>
 class DiagramContext final : public Context<T> {
  public:

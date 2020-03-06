@@ -81,8 +81,8 @@ class FixedInputPortValue {
   %FixedInputPortValue has been accessed since the last time this method
   was called.
 
-  @tparam T Element type of the input port's vector value. Must be a valid
-            Eigen scalar. */
+  @tparam T Scalar type of the input port's vector value. Must match the type
+            associated with this port. */
   template <typename T>
   BasicVector<T>* GetMutableVectorData() {
     return &GetMutableData()->get_mutable_value<BasicVector<T>>();

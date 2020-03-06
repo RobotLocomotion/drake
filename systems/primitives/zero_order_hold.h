@@ -37,6 +37,7 @@ namespace systems {
 /// @note For an abstract-valued ZeroOrderHold, scalar-type conversion is not
 ///       supported since AbstractValue does not support it.
 ///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class ZeroOrderHold final : public LeafSystem<T> {

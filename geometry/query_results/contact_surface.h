@@ -124,7 +124,7 @@ namespace geometry {
 
   We use the barycentric coordinates to evaluate the field values.
 
-  @tparam T the underlying scalar type. Must be a valid Eigen scalar.
+  @tparam_nonsymbolic_scalar
  */
 template <typename T>
 class ContactSurface {

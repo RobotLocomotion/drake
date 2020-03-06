@@ -223,7 +223,8 @@ internal class is intended to be invoked by different user-visible APIs so
 provides for the API name to be included in any generated runtime error
 messages.
 
-@tparam T The scalar type in use for vector objects. */
+@tparam_default_scalar
+*/
 template <typename T>
 class ValueToVectorValue {
  public:

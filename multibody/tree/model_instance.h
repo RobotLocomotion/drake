@@ -53,13 +53,7 @@ namespace multibody {
 
 namespace internal {
 
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
+/// @tparam_default_scalar
 template <typename T>
 class ModelInstance :
       public MultibodyElement<ModelInstance, T, ModelInstanceIndex> {

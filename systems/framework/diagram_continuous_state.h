@@ -28,7 +28,7 @@ namespace systems {
 /// structure, but which owns the referenced ContinuousState objects, regardless
 /// of whether the original had ownership.
 ///
-/// @tparam T The type of the output data. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class DiagramContinuousState final: public ContinuousState<T> {
  public:

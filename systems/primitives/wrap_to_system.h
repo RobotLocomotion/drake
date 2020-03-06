@@ -17,12 +17,7 @@ namespace systems {
 /// for the unique integer value `kᵢ` that lands the output in the desired
 /// interval.
 ///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class WrapToSystem final : public LeafSystem<T> {

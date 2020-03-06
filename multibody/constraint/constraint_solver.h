@@ -64,13 +64,7 @@ namespace constraint {
 ///                   Algorithm and its extension to deal with upper and lower
 ///                   bounds. Mathematical Programming Study, 7, 1978.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-///
-/// They are already available to link against in the containing library.
+/// @tparam_double_only
 template <typename T>
 class ConstraintSolver {
  public:
