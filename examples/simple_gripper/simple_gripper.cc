@@ -16,12 +16,9 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
+#include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/sine.h"
 
@@ -37,8 +34,8 @@ using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::Body;
-using multibody::CoulombFriction;
 using multibody::ConnectContactResultsToDrakeVisualizer;
+using multibody::CoulombFriction;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
@@ -54,43 +51,52 @@ DEFINE_double(grip_width, 0.095,
 
 DEFINE_double(
     mbp_discrete_update_period, 1.0E-3,
-    "The fixed-time step period (in seconds) of discrete updates for the "
-    "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model.");
+    "If this value is positive, the multibody plant is modeled as a discrete "
+    "system, and the value specifies the fixed-time step period of discrete "
+    "updates for the plant. If this value is zero, the plant is modeled as a "
+    "continuous system. [s].");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
               "Penetration allowance. [m]. "
               "See MultibodyPlant::set_penetration_allowance().");
 DEFINE_double(v_stiction_tolerance, 1.0e-2,
-              "The maximum slipping speed allowed during stiction. [m/s]");
+              "The maximum slipping speed allowed during stiction. [m/s].");
 
 // Pads parameters
 DEFINE_int32(ring_samples, 8,
              "The number of spheres used to sample the pad ring");
 DEFINE_double(ring_orient, 0, "Rotation of the pads around x-axis. [degrees]");
-DEFINE_double(ring_static_friction, 1.0, "The coefficient of static friction "
+DEFINE_double(ring_static_friction, 1.0,
+              "The coefficient of static friction "
               "for the ring pad.");
-DEFINE_double(ring_dynamic_friction, 0.5, "The coefficient of dynamic friction "
+DEFINE_double(ring_dynamic_friction, 0.5,
+              "The coefficient of dynamic friction "
               "for the ring pad.");
 
 // Parameters for rotating the mug.
-DEFINE_double(rx, 0, "The x-rotation of the mug around its origin - the center "
+DEFINE_double(rx, 0,
+              "The x-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
-DEFINE_double(ry, 0, "The y-rotation of the mug around its origin - the center "
+DEFINE_double(ry, 0,
+              "The y-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
-DEFINE_double(rz, 0, "The z-rotation of the mug around its origin - the center "
+DEFINE_double(rz, 0,
+              "The z-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
 
 // Gripping force.
-DEFINE_double(gripper_force, 10, "The force to be applied by the gripper. [N]. "
+DEFINE_double(gripper_force, 10,
+              "The force to be applied by the gripper. [N]. "
               "A value of 0 indicates a fixed grip width as set with option "
               "grip_width.");
 
 // Parameters for shaking the mug.
-DEFINE_double(amplitude, 0.15, "The amplitude of the harmonic oscillations "
+DEFINE_double(amplitude, 0.15,
+              "The amplitude of the harmonic oscillations "
               "carried out by the gripper. [m].");
-DEFINE_double(frequency, 2.0, "The frequency of the harmonic oscillations "
+DEFINE_double(frequency, 2.0,
+              "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
 
 // The pad was measured as a torus with the following major and minor radii.
@@ -106,8 +112,8 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
 // @param[in] finger the Body representing the finger
-void AddGripperPads(MultibodyPlant<double>* plant,
-                    const double pad_offset, const Body<double>& finger) {
+void AddGripperPads(MultibodyPlant<double>* plant, const double pad_offset,
+                    const Body<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
   const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
   const double d_theta = 2 * M_PI / sample_count;
@@ -122,16 +128,15 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     // The y-offset of the center of the torus in the finger frame F.
     const double torus_center_y_position_F = 0.0265;
     p_FSo(0) = pad_offset;  // Offset from the center of the gripper.
-    p_FSo(1) =
-        std::cos(d_theta * i + sample_rotation) * kPadMajorRadius +
-            torus_center_y_position_F;
+    p_FSo(1) = std::cos(d_theta * i + sample_rotation) * kPadMajorRadius +
+               torus_center_y_position_F;
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the finger frame F.
     const RigidTransformd X_FS(p_FSo);
 
-    CoulombFriction<double> friction(
-        FLAGS_ring_static_friction, FLAGS_ring_static_friction);
+    CoulombFriction<double> friction(FLAGS_ring_static_friction,
+                                     FLAGS_ring_static_friction);
 
     plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                      "collision" + std::to_string(i), friction);
@@ -149,6 +154,7 @@ int do_main() {
   scene_graph.set_name("scene_graph");
 
   DRAKE_DEMAND(FLAGS_simulator_max_time_step > 0);
+  DRAKE_DEMAND(FLAGS_mbp_discrete_update_period >= 0);
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
@@ -194,8 +200,7 @@ int do_main() {
     // "free" with no applied forces (thus we see it not moving).
     const double finger_width = 0.007;  // From the visual in the SDF file.
     AddGripperPads(&plant, -pad_offset, right_finger);
-    AddGripperPads(&plant,
-                   -(FLAGS_grip_width + finger_width) + pad_offset,
+    AddGripperPads(&plant, -(FLAGS_grip_width + finger_width) + pad_offset,
                    right_finger);
   } else {
     AddGripperPads(&plant, -pad_offset, right_finger);
@@ -215,8 +220,9 @@ int do_main() {
   // least 30 time steps. Usually this is a good starting point for fixed step
   // size integrators to be stable.
   const double max_time_step =
-      FLAGS_simulator_max_time_step > 0 ? FLAGS_simulator_max_time_step :
-      plant.get_contact_penalty_method_time_scale() / 30;
+      FLAGS_simulator_max_time_step > 0
+          ? FLAGS_simulator_max_time_step
+          : plant.get_contact_penalty_method_time_scale() / 30;
 
   // Print maximum time step and the time scale introduced by the compliance in
   // the contact model as a reference to the user.
@@ -257,12 +263,12 @@ int do_main() {
 
   // The mass of the gripper in simple_gripper.sdf.
   // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
-  const double mass = 1.0890;  // kg.
+  const double mass = 1.0890;                       // kg.
   const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
-  const double x0 = FLAGS_amplitude;  // meters.
+  const double x0 = FLAGS_amplitude;                // meters.
   const double v0 = -x0 * omega;  // Velocity amplitude, initial velocity, m/s.
   const double a0 = omega * omega * x0;  // Acceleration amplitude, m/s².
-  const double f0 = mass * a0;  // Force amplitude, Newton.
+  const double f0 = mass * a0;           // Force amplitude, Newton.
   fmt::print("Acceleration amplitude = {:8.4f} m/s²\n", a0);
 
   // Notice we are using the same Sine source to:
@@ -273,8 +279,8 @@ int do_main() {
   const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
   const Vector2<double> frequencies(omega, 0.0);
   const Vector2<double> phases(0.0, M_PI_2);
-  const auto& harmonic_force = *builder.AddSystem<Sine>(
-      amplitudes, frequencies, phases);
+  const auto& harmonic_force =
+      *builder.AddSystem<Sine>(amplitudes, frequencies, phases);
 
   builder.Connect(harmonic_force.get_output_port(0),
                   plant.get_actuation_input_port());
@@ -300,10 +306,10 @@ int do_main() {
   const Body<double>& mug = plant.GetBodyByName("main_body");
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  const Vector3d& p_WBr = plant.EvalBodyPoseInWorld(
-      plant_context, right_finger).translation();
-  const Vector3d& p_WBl = plant.EvalBodyPoseInWorld(
-      plant_context, left_finger).translation();
+  const Vector3d& p_WBr =
+      plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
+  const Vector3d& p_WBl =
+      plant.EvalBodyPoseInWorld(plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
   RigidTransformd X_WM(
@@ -324,26 +330,10 @@ int do_main() {
 
   simulator->AdvanceTo(FLAGS_simulation_time);
 
-  if (plant.is_discrete()) {
-    fmt::print("Used time stepping with dt={}\n", plant.time_step());
-  }
+  // Add a line break before simulator statistics.
+  fmt::print("\n");
 
-  const systems::IntegratorBase<double>& integrator =
-      simulator->get_integrator();
-  fmt::print("Stats for integrator {}:\n", FLAGS_simulator_integration_scheme);
-  fmt::print("Number of time steps taken = {:d}\n",
-             integrator.get_num_steps_taken());
-  if (!integrator.get_fixed_step_mode()) {
-    fmt::print("Initial time step taken = {:10.6g} s\n",
-               integrator.get_actual_initial_step_size_taken());
-    fmt::print("Largest time step taken = {:10.6g} s\n",
-               integrator.get_largest_step_size_taken());
-    fmt::print("Smallest adapted step size = {:10.6g} s\n",
-               integrator.get_smallest_adapted_step_size_taken());
-    fmt::print("Number of steps shrunk due to error control = {:d}\n",
-               integrator.get_num_step_shrinkages_from_error_control());
-  }
-
+  systems::PrintSimulatorStatistics(*simulator);
   return 0;
 }
 
