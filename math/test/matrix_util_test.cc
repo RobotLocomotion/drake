@@ -64,6 +64,24 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
   EXPECT_TRUE(
       CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2), X2));
 }
+
+GTEST_TEST(TestMatrixUtil, IsPositiveDefiniteTest) {
+  Eigen::Matrix3d A;
+  A << 1, 2, 4, 2, 3, 5, 4, 5, 6;
+  EXPECT_FALSE(IsPositiveDefinite(A, 1e-8));
+
+  EXPECT_TRUE(IsPositiveDefinite(A * A.transpose(), 1e-8));
+
+  // A is full rank and all its eigen values >= 0
+  // However A is not symmetric, thus not PSD
+  A << 3, 2, 1, 2, 3, 1, 1, 2, 3;
+  EXPECT_FALSE(IsPositiveDefinite(A, 1e-8));
+
+  // Generate a PSD matrix.
+  EXPECT_FALSE(IsPositiveDefinite(
+      A * Eigen::Vector3d(1., 0., 1.).asDiagonal() * A.transpose(), 1e-8));
+}
+
 }  // namespace test
 }  // namespace math
 }  // namespace drake
