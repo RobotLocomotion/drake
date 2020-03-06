@@ -584,6 +584,19 @@ TYPED_TEST(ElementsInF6Test, ShiftOperation) {
   // Verify the result.
   SpatialQuantity expected_F_Bo_E(Vector3<T>(2.0, -1.0, -3.0), f_Ao_E);
   EXPECT_TRUE(F_Bo_E.IsApprox(expected_F_Bo_E));
+
+  // We perform the shift operation on a Matrix storing a spatial force in each
+  // column.
+  constexpr int num_forces = 3;
+  const Matrix6X<T> Fmatrix_Ao_E =
+      F_Ao_E.get_coeffs().rowwise().replicate(num_forces);
+  Eigen::Matrix<T, 6, num_forces> Fmatrix_Bo_E;
+  // TODO(amcastro-tri): Implement this version of Shift() for SpatialMomentum.
+  SpatialForce<T>::Shift(Fmatrix_Ao_E, p_AB_E, &Fmatrix_Bo_E);
+  for (int j = 0; j < num_forces; ++j) {
+    SpatialQuantity Fj_Bo_E(Fmatrix_Bo_E.col(j));
+    EXPECT_TRUE(Fj_Bo_E.IsApprox(expected_F_Bo_E));
+  }
 }
 
 // Tests operator+().

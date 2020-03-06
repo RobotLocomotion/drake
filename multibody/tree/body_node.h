@@ -153,6 +153,12 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
+  /// Returns a const pointer to the parent (inboard) body node or nullptr if
+  /// `this` is the world node, which has no inboard parent node.
+  const BodyNode<T>* parent_body_node() const {
+    return parent_node_;
+  }
+
   /// Returns a constant reference to the mobilizer associated with this node.
   /// Aborts if called on the root node corresponding to the _world_ body, for
   /// which there is no mobilizer.
@@ -175,6 +181,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   int get_num_mobilizer_velocities() const {
     return topology_.num_mobilizer_velocities;
   }
+
+  /// Returns the index to the first generalized velocity for this node
+  /// within the vector v of generalized velocities for the full multibody
+  /// system.
+  int velocity_start() const {
+    return topology_.mobilizer_velocities_start_in_v;
+  }
+
   //@}
 
 
@@ -1239,6 +1253,47 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Update with vmdot term the spatial acceleration of the current body.
       A_WB += SpatialAcceleration<T>(H_PB_W * vmdot);
+    }
+  }
+
+  /// This method is used by MultibodyTree within a tip-to-base loop to compute
+  /// the composite body inertia of each body in the system.
+  ///
+  /// @param[in] M_B_W Spatial inertia for the body B associated with this node.
+  /// About B's origin Bo and expressed in the world frame W.
+  /// @param[in] pc Position kinematics cache.
+  /// @param[in] R_B_W_all Vector storing the composite body inertia for all
+  /// bodies in the multibody system. It must contain already up-to-date
+  /// composite body inertias for all the children of `this` node.
+  /// @param[out] R_B_W The composite body inertia for `this` node. It must be
+  /// non-nullptr.
+  /// @pre CalcCompositeBodyInertia_TipToBase() must have already been called
+  /// for the children nodes (and, by recursive precondition, all outboard nodes
+  /// in the tree.)
+  void CalcCompositeBodyInertia_TipToBase(
+      const SpatialInertia<T>& M_B_W,
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialInertia<T>>& R_B_W_all,
+      SpatialInertia<T>* R_B_W) const {
+    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(R_B_W != nullptr);
+
+    // Composite body inertia R_B_W for this node B, about its frame's origin
+    // Bo, and expressed in the world frame W. Here we adopt the notation used
+    // in Jain's book.
+    *R_B_W = M_B_W;
+    // Add composite body inertia contributions from all children.
+    for (const BodyNode<T>* child : children_) {
+      // Shift vector p_CoBo_W.
+      const Vector3<T>& p_BoCo_W = child->get_p_PoBo_W(pc);
+      const Vector3<T> p_CoBo_W = -p_BoCo_W;
+
+      // Composite body inertia for outboard child body C, about Co, expressed
+      // in W.
+      const SpatialInertia<T>& R_CCo_W = R_B_W_all[child->index()];
+
+      // Shift to Bo and add it to the composite body inertia of B.
+      *R_B_W += R_CCo_W.Shift(p_CoBo_W);
     }
   }
 
