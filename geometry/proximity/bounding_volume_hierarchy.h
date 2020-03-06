@@ -24,16 +24,38 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** Axis-aligned bounding box used in BoundingVolumeHierarchy.  */
+/** Axis-aligned bounding box used in BoundingVolumeHierarchy. The box is
+ defined in a canonical frame B such that it is centered on Bo and its extents
+ are aligned with B's axes. However, the box is posed in a hierarchical frame
+ H. Because this is an _axis-aligned_ bounding box, `Bx = Hx`, `By = Hy`, and
+ `Bz = Hz`. Therefore the pose of the box is completely captured with p_HoBo_H
+ (see center()).
+
+ Because of this, an instance of Aabb is a frame-dependent quantity and should
+ be expressed that way. For example, for a mesh measured and expressed in frame
+ M, the bounding boxes on its triangles will likely be measured and expressed
+ in the same frame.
+
+ ```
+ auto mesh_M = ...;
+ Aabb bv_M = ...;  // A bounding volume for mesh_M in the same frame.
+ ```
+ */
 class Aabb {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Aabb)
 
-  /**
+  /** Constructs an axis-aligned bounding box measured and expressed in frame H.
+
+   @param p_HoBo_H      The position vector from the hierarchy frame's origin to
+                        the box's canonical origin, expressed in frame H. The
+                        box is centered on Bo and aligned with Bx, By, and Bz.
+   @param half_width    The _half_ measures of the box in each of the Bx, By,
+                        and Bz directions.
    @pre half_width.x(), half_width.y(), half_width.z() are not negative.
   */
-  Aabb(Vector3<double> center, Vector3<double> half_width)
-      : center_(std::move(center)), half_width_(std::move(half_width)) {
+  Aabb(Vector3<double> p_HoBoH, Vector3<double> half_width)
+      : center_(std::move(p_HoBoH)), half_width_(std::move(half_width)) {
     DRAKE_DEMAND(half_width.x() >= 0.0);
     DRAKE_DEMAND(half_width.y() >= 0.0);
     DRAKE_DEMAND(half_width.z() >= 0.0);
@@ -41,16 +63,17 @@ class Aabb {
     PadBoundary();
   }
 
-  /** Returns the center. */
+  /** Returns the center of the box -- equivalent to the position vector from
+   the hierarchy frame's origin Ho to `this` box's origin Bo: `p_HoBo_H`. */
   const Vector3<double>& center() const { return center_; }
 
   /** Returns the half_width. */
   const Vector3<double>& half_width() const { return half_width_; }
 
-  /** Returns the upper bounding point. */
+  /** Returns the upper bounding point: p_HoU_H. */
   Vector3<double> upper() const { return center_ + half_width_; }
 
-  /** Returns the lower bounding point. */
+  /** Returns the lower bounding point: p_HoL_H. */
   Vector3<double> lower() const { return center_ - half_width_; }
 
   /** @return Volume of the bounding box.  */
@@ -84,6 +107,23 @@ class Aabb {
    @returns `true` if the plane cuts through the box.   */
   static bool HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
+
+  /** Checks whether bounding volume `bv` intersects the given half space. The
+   bounding volume is centered on its canonical frame B and B is posed in the
+   corresponding hierarchy frame H; by construction B is aligned with H. The
+   half space is defined in its canonical frame C (such that the boundary plane
+   of the half space is perpindicular to Cz and Co lies on the boundary plane).
+
+   @param bv        The bounding box to test.
+   @param hs_C      The half space to test against the `bv`. The half space is
+                    expressed in Frame C, therefore, to evaluate the signed
+                    distance of a point with respect to it, that point must be
+                    measured and expressed in C.
+   @param X_CH      The relative pose between the hierarchy frame H and the
+                    half space canonical frame C.
+   @returns `true` if the half space intersects the box.   */
+  static bool HasOverlap(const Aabb& bv, const HalfSpace& hs_C,
+                         const math::RigidTransformd& X_CH);
 
  private:
   friend class AabbTester;
@@ -207,7 +247,8 @@ using BvttCallback = std::function<BvttCallbackResult(
  particular region of interest. It serves as a basis for culling objects that
  are trivially far from the region, reducing the number of "narrow-phase"
  calculations. The underlying structure is a binary tree of axis-aligned
- bounding boxes (Aabb) that encompass one or more mesh elements. Leaf nodes
+ bounding boxes (Aabb) that encompass one or more mesh elements. The bounding
+ volumes are all measured and expressed in this hierarchy's frame H. Leaf nodes
  contain a single element index into elements of the mesh. The BVH needs a
  reference to the mesh in order to build the tree, but does not own the mesh.
  @pre    Assumes that the mesh is not mutable. Modifications to the mesh after
@@ -277,29 +318,29 @@ class BoundingVolumeHierarchy {
     }
   }
 
-  /** Culls the nodes of the BVH based on the node's bounding volume's
-   relationship with a primitive object. What makes this unique is that if
-   a node is found to be overlapping the primitive, it searches down _just_ that
-   node's children (contrast that with general BVTT where there are two nodes
-   and four new node pairs to test).
+  /** Culls the nodes of the BVH based on the nodes' bounding volumes'
+   relationships with a primitive object. This is different from the BVH-BVH
+   Collide() method in that when a node is found to be overlapping the
+   primitive, it triggers two new tests, one for each of the node's children;
+   the BVH-BVH collision spawns four new tests.
 
    The callback function consumes only a single index -- the index of the leaf
    element whose box overlaps with the primitive; it is assumed that the
    provider for the primitive has perfect knowledge of that primitive.
 
-   This BVH is defined in frame A and the primitive is defined in frame P.
+   This BVH is defined in Frame H and the primitive is defined in frame P.
 
-   @param primitive_P   The primitive defined in frame P.
-   @param X_PA          The relative pose between frames P and A.
-   @param callback      For each element in `this` BVH's corresponding mesh, its
-                        index will be passed to the provided callback.
+   @param primitive_P   The primitive defined in Frame P.
+   @param X_PH          The relative pose between Frames P and H.
+   @param callback      Function to process the elements in `this` BVH's
+                        corresponding mesh whose bounding volumes intersect
+                        the primitive.
 
    @note This method can be only used for a primitive type that has an overload
-   for Aabb::HasOverlap() defined.
-   */
+   for Aabb::HasOverlap() defined.   */
   template <typename PrimitiveType>
   void Collide(
-      const PrimitiveType& primitive_P, const math::RigidTransformd& X_PA,
+      const PrimitiveType& primitive_P, const math::RigidTransformd& X_PH,
       std::function<BvttCallbackResult(typename MeshType::ElementIndex)>
           callback) const {
     std::stack<const BvNode<MeshType>*> nodes;
@@ -308,7 +349,7 @@ class BoundingVolumeHierarchy {
       const auto node = nodes.top();
       nodes.pop();
 
-      if (!Aabb::HasOverlap(node->aabb(), primitive_P, X_PA)) {
+      if (!Aabb::HasOverlap(node->aabb(), primitive_P, X_PH)) {
         continue;
       }
       // Run the call back if `node` is a leaf.
