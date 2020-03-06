@@ -63,7 +63,7 @@ class Aabb {
   /** Checks whether the two bounding volumes overlap by applying the transform
    between the two boxes and using Gottschalk's OBB overlap test.  */
   static bool HasOverlap(const Aabb& a, const Aabb& b,
-                         const math::RigidTransform<double>& X_AB);
+                         const math::RigidTransformd& X_AB);
 
   /** Checks whether bounding volume `bv` intersects the plane `plane_P`.
    The bounding volume is centered on its canonical frame B and B is posed
@@ -240,7 +240,7 @@ class BoundingVolumeHierarchy {
    mesh elements and runs the callback for each unculled pair.  */
   template <class OtherMeshType>
   void Collide(const BoundingVolumeHierarchy<OtherMeshType>& bvh,
-               const math::RigidTransform<double>& X_AB,
+               const math::RigidTransformd& X_AB,
                BvttCallback<MeshType, OtherMeshType> callback) const {
     using NodePair =
         std::pair<const BvNode<MeshType>&, const BvNode<OtherMeshType>&>;
@@ -329,7 +329,7 @@ class BoundingVolumeHierarchy {
   template <class OtherMeshType>
   std::vector<std::pair<IndexType, typename OtherMeshType::ElementIndex>>
   GetCollisionCandidates(const BoundingVolumeHierarchy<OtherMeshType>& bvh,
-                         const math::RigidTransform<double>& X_AB) const {
+                         const math::RigidTransformd& X_AB) const {
     std::vector<std::pair<IndexType, typename OtherMeshType::ElementIndex>>
         result;
     auto callback =
