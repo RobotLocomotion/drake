@@ -45,6 +45,17 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "yaml_performance_test",
+    deps = [
+        ":yaml_read_archive",
+        ":yaml_write_archive",
+        "//common:autodiff",
+        "//common:name_value",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
     name = "yaml_read_archive_test",
     deps = [
         ":yaml_read_archive",
