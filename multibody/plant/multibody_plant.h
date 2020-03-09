@@ -2125,6 +2125,44 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
+  /// This method computes the center of mass position p_WCcm of all bodies in
+  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
+  /// considered as a single composite body C, whose center of mass
+  /// `composite_mass` is located at Ccm. The world_body() is ignored.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @retval p_WCcm
+  ///   The output position of center of mass in the world frame W.
+  ///
+  /// @throws std::runtime_error if `MultibodyPlant` has no body except
+  ///   `world_body()`.
+  /// @throws std::runtime_error unless `composite_mass > 0`.
+  Matrix3X<T> CalcCenterOfMassJacobian(
+      const systems::Context<T>& context) const {
+    return internal_tree().CalcCenterOfMassJacobian(context);
+  }
+
+  /// This method computes the center of mass position p_WCcm of all bodies in
+  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
+  /// considered as a single composite body C, whose center of mass
+  /// `composite_mass` is located at Ccm. The world_body() is ignored.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @retval p_WCcm
+  ///   The output position of center of mass in the world frame W.
+  ///
+  /// @throws std::runtime_error if `MultibodyPlant` has no body except
+  ///   `world_body()`.
+  /// @throws std::runtime_error unless `composite_mass > 0`.
+  Vector3<T> CalcCenterOfMassJacobianDotTimesV(
+      const systems::Context<T>& context) const {
+    return internal_tree().CalcCenterOfMassJacobianDotTimesV(context);
+  }
+
   /// Given the state of this model in `context` and a known vector
   /// of generalized accelerations `known_vdot`, this method computes the
   /// spatial acceleration `A_WB` for each body as measured and expressed in the
