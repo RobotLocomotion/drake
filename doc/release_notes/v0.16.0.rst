@@ -161,9 +161,14 @@ Commits to be categorized
 -------------------------
 
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
-Current newest_commit f65ba636b40cf576d105231783c2a44b149c4498 (inclusive).
+Current newest_commit 20364232efd9b27486f83fbc0ecabd0cda5179e2 (inclusive).
 
 * add pybind11/eigen.h to pydrake/solvers (`#12737`_)
 * Generate pybind coverage stats (`#12040`_)  # Co-Authored-By: Eric Cousineau <eric.cousineau@tri.global>
 * Remove dead code from mkdoc.py (`#12818`_)
 * Add no_kcov to cpplint_unittest (`#12822`_)
+* adds math::IsPositiveDefinite (`#12813`_)
+* workspace: Remove godotengine (`#12826`_)  # This was a dependency of placeholder rendering work that has stalled. We have an upgraded version and build changes within TRI; at the point where we are publishing that rendered, we'll add back this external.
+* Improve the simple_gripper example to make it possible to test more integrators (`#12742`_)  # Improve the simple gripper example to make it possible to test more integrators This change improves the simple_gripper example so that: 1.  In continuous mode, the user can explicitly set a flag, simulator_uses_error_control, to turn on or off error control. 2.  More statistics are printed for both error-controlled and fixed-step integrators, as well as both explicit and implicit integration. This will make it more helpful in developing new integrators or fixing bugs in existing ones. I've found it very helpful to use simple_gripper to test integrator behavior and look at their statistics, and I'm hoping these changes can make it into master so that they can be easily used for future development.
+* framework: Remove support for user-defined scalars (`#12823`_)  # (Also add a missing IWYU #include that will become a compilation error in a future leaf_system commit.)
+* Removes stereographic projection derivation; fix Doxygen nits (`#12834`_)  # The derivation now exists in underactuated. Also and fixes punctuation on MathematicalProgram doxygen.
