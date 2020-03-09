@@ -1821,7 +1821,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
 
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
-  internal_tree().CalcMassMatrixViaInverseDynamics(context0, &M0);
+  internal_tree().CalcMassMatrix(context0, &M0);
   auto M0_ldlt = M0.ldlt();
 
   // Forces at the previous time step.
