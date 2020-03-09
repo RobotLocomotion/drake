@@ -18,6 +18,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/manipulation/util/robot_plan_utils.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -63,26 +64,7 @@ class MoveDemoRunner {
     lcm_.subscribe(FLAGS_lcm_status_channel,
                    &MoveDemoRunner::HandleStatus, this);
 
-    // TODO(sammy-tri) Move this code somewhere more generic if we get a
-    // second example which wants to encode robot plans.
-    std::map<int, std::string> position_names;
-    const int num_positions = plant_.num_positions();
-    for (int i = 0; i < plant_.num_joints(); ++i) {
-      const multibody::Joint<double>& joint =
-          plant_.get_joint(multibody::JointIndex(i));
-      if (joint.num_positions() == 0) {
-        continue;
-      }
-      DRAKE_DEMAND(joint.num_positions() == 1);
-      DRAKE_DEMAND(joint.position_start() < num_positions);
-
-      position_names[joint.position_start()] = joint.name();
-    }
-
-    DRAKE_DEMAND(static_cast<int>(position_names.size()) == num_positions);
-    for (int i = 0; i < num_positions; ++i) {
-      joint_names_.push_back(position_names[i]);
-    }
+    joint_names_ = manipulation::util::GetJointNames(plant_);
   }
 
   void Run() {
@@ -148,20 +130,12 @@ class MoveDemoRunner {
         std::vector<double> times{0, 2};
         DRAKE_DEMAND(q_sol.size() == times.size());
 
-        // Convert the resulting waypoints into the format expected by
-        // ApplyJointVelocityLimits and EncodeKeyFrames.
-        MatrixX<double> q_mat(q_sol.front().size(), q_sol.size());
-        for (size_t i = 0; i < q_sol.size(); ++i) {
-          q_mat.col(i) = q_sol[i];
-        }
-
-        // Ensure that the planned motion would not exceed the joint
-        // velocity limits.  This function will scale the supplied
-        // times if needed.
-        ApplyJointVelocityLimits(q_mat, &times);
+        manipulation::util::ApplyJointVelocityLimits(
+            q_sol, get_iiwa_max_joint_velocities() * 0.9, &times);
         std::vector<int> info{1, 1};
         robotlocomotion::robot_plan_t plan =
-            EncodeKeyFrames(joint_names_, times, info, q_mat);
+            manipulation::util::EncodeKeyFrames(
+                joint_names_, times, info, q_sol);
         lcm_.publish(FLAGS_lcm_plan_channel, &plan);
       }
     }

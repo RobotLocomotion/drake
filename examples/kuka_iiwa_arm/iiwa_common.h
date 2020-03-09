@@ -64,6 +64,8 @@ void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
 /// The number of columns in @p keyframes must match the size of @p time.  Times
 /// must be in strictly increasing order.
 /// @see get_iiwa_max_joint_velocities
+DRAKE_DEPRECATED("2020-07-01",
+                 "This function is being moved to manipulation::util.")
 void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time);
 
@@ -79,6 +81,8 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
 /// keyframes must match the size of @p joint_names.  The number of columns in
 /// @p keyframes must match the size of @p time.  Times must be in strictly
 /// increasing order.
+DRAKE_DEPRECATED("2020-07-01",
+                 "This function is being moved to manipulation::util.")
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const std::vector<std::string>& joint_names,
     const std::vector<double>& time, const std::vector<int>& info,

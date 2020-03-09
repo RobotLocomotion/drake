@@ -11,6 +11,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/manipulation/util/robot_plan_utils.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -197,42 +198,13 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
     const std::vector<double>& time,
     const std::vector<int>& info,
     const MatrixX<double>& keyframes) {
-
-  DRAKE_DEMAND(info.size() == time.size());
-  DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
-  DRAKE_DEMAND(keyframes.rows() == static_cast<int>(joint_names.size()));
-
-  const int num_time_steps = keyframes.cols();
-
-  robotlocomotion::robot_plan_t plan{};
-  plan.utime = 0;  // I (sam.creasey) don't think this is used?
-  plan.robot_name = "iiwa";  // Arbitrary, probably ignored
-  plan.num_states = num_time_steps;
-  const bot_core::robot_state_t default_robot_state{};
-  plan.plan.resize(num_time_steps, default_robot_state);
-  plan.plan_info.resize(num_time_steps, 0);
-  /// Encode the q_sol returned for each timestep into the vector of
-  /// robot states.
-  for (int i = 0; i < num_time_steps; i++) {
-    bot_core::robot_state_t& step = plan.plan[i];
-    step.utime = time[i] * 1e6;
-    step.num_joints = keyframes.rows();
-    for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(joint_names[j]);
-      step.joint_position.push_back(keyframes(j, i));
-      step.joint_velocity.push_back(0);
-      step.joint_effort.push_back(0);
-    }
-    plan.plan_info[i] = info[i];
+  std::vector<Eigen::VectorXd> waypoints;
+  for (int i = 0; i < keyframes.cols(); ++i) {
+    waypoints.push_back(keyframes.col(i));
   }
-  plan.num_grasp_transitions = 0;
-  plan.left_arm_control_type = plan.POSITION;
-  plan.right_arm_control_type = plan.NONE;
-  plan.left_leg_control_type = plan.NONE;
-  plan.right_leg_control_type = plan.NONE;
-  plan.num_bytes = 0;
 
-  return plan;
+  return manipulation::util::EncodeKeyFrames(
+      joint_names, time, info, waypoints);
 }
 
 }  // namespace kuka_iiwa_arm

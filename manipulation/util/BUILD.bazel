@@ -20,6 +20,7 @@ drake_cc_package_library(
     deps = [
         ":bot_core_lcm_encode_decode",
         ":moving_average_filter",
+        ":robot_plan_utils",
         ":trajectory_utils",
     ],
 )
@@ -48,6 +49,20 @@ drake_py_unittest(
     data = [
         ":geometry_inspector",
         "//multibody/benchmarks/acrobot:models",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_utils",
+    srcs = [
+        "robot_plan_utils.cc",
+    ],
+    hdrs = [
+        "robot_plan_utils.h",
+    ],
+    deps = [
+        "//multibody/plant",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -92,6 +107,17 @@ drake_cc_googletest(
     deps = [
         ":bot_core_lcm_encode_decode",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_plan_utils_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":robot_plan_utils",
+        "//multibody/parsing",
     ],
 )
 
