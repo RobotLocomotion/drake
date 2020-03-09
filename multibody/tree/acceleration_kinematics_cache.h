@@ -25,14 +25,7 @@ namespace internal {
 ///   expressed in the world frame W.
 /// - Generalized accelerations `vdot` for the entire model.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class AccelerationKinematicsCache {
  public:

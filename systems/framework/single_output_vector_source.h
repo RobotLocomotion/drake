@@ -20,7 +20,7 @@ namespace systems {
 /// void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
 /// @endcode
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class SingleOutputVectorSource : public LeafSystem<T> {
  public:

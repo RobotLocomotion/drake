@@ -21,7 +21,7 @@ namespace multibody {
 ///
 /// @tparam SV The type of the more specialized spatial vector class.
 ///            It must be a template on the scalar type T.
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <template <typename> class SV, typename T>
 class SpatialVector {
  public:

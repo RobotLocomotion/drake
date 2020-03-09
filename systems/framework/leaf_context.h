@@ -22,8 +22,8 @@ namespace systems {
 the results of computations performed by the associated LeafSystem.
 @see Context for more information.
 
-@tparam T The mathematical type of the context, which must be a valid Eigen
-          scalar. */
+@tparam_default_scalar
+*/
 template <typename T>
 class LeafContext : public Context<T> {
  public:

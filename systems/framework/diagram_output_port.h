@@ -22,15 +22,8 @@ determining the port's value are supplied by the LeafOutputPort that ultimately
 underlies the source port, although that may be any number of levels down.
 This is intended for internal use in implementing Diagram.
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided:
-
-- double
-- AutoDiffXd
-- symbolic::Expression
-
-They are already available to link against in the containing library. */
+@tparam_default_scalar
+*/
 template <typename T>
 class DiagramOutputPort final : public OutputPort<T> {
  public:

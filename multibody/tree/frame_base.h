@@ -41,7 +41,7 @@ namespace multibody {
 /// of frames, most importantly whether a frame is associated with a material
 /// point of a body.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class FrameBase : public MultibodyElement<FrameBase, T, FrameIndex> {
   // TODO(amcastro-tri): Provide a method with the signature:

@@ -12,15 +12,6 @@ namespace systems {
 
 /**
  * A first-order, fully implicit integrator with second order error estimation.
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
- * this class, please refer to https://drake.mit.edu/cxx_inl.html.
- *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- * - AutoDiffXd
  *
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))
@@ -67,6 +58,8 @@ namespace systems {
  *       process. See IntegratorBase::set_target_accuracy() for more info.
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
+ *
+ * @tparam_nonsymbolic_scalar
  */
 template <class T>
 class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {

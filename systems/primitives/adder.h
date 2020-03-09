@@ -9,23 +9,14 @@ namespace drake {
 namespace systems {
 
 /// An adder for arbitrarily many inputs of equal size.
-/// @ingroup primitive_systems
 ///
 /// @system{Adder,
 ///    @input_port{input(0)} @input_port{...} @input_port{input(N-1)},
 ///    @output_port{sum}
 /// }
 ///
-/// @tparam T The type of mathematical object being added.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
+/// @ingroup primitive_systems
 template <typename T>
 class Adder final : public LeafSystem<T> {
  public:

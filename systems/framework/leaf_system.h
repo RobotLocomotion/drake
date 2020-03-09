@@ -78,7 +78,7 @@ static T GetNextSampleTime(
 /// A superclass template that extends System with some convenience utilities
 /// that are not applicable to Diagrams.
 ///
-/// @tparam T The scalar type, which must be one of the @ref default_scalars.
+/// @tparam_default_scalar
 template <typename T>
 class LeafSystem : public System<T> {
  public:

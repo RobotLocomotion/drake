@@ -93,7 +93,7 @@ namespace internal {
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
  public:

@@ -39,7 +39,7 @@ template<typename T> class Body;
 /// extracting frame-associated values (such as the %Frame object's kinematics)
 /// from a given Context.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Frame : public FrameBase<T> {
  public:

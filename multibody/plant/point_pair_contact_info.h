@@ -23,7 +23,7 @@ namespace multibody {
     - Separation speed.
     - Slip speed.
 
- @tparam T Must be one of drake's default scalar types.
+ @tparam_default_scalar
  */
 template <typename T>
 class PointPairContactInfo {

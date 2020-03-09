@@ -26,8 +26,7 @@ namespace trajectories {
  * Another intuitive way to think about this is that consecutive quaternions
  * have the shortest geodesic distance on the unit sphere.
  *
- * @tparam T, double.
- *
+ * @tparam_double_only
  */
 template<typename T>
 class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {

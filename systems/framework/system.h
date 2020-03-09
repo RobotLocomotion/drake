@@ -70,7 +70,7 @@ class SystemImpl {
 /// Base class for all System functionality that is dependent on the templatized
 /// scalar type T for input, state, parameters, and outputs.
 ///
-/// @tparam T The scalar type, which must be one of the @ref default_scalars.
+/// @tparam_default_scalar
 template <typename T>
 class System : public SystemBase {
  public:
