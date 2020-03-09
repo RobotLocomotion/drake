@@ -1296,11 +1296,12 @@ class MultibodyTree {
   Vector3<T> CalcCenterOfMassPosition(
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
-  
+
+  /// See MultibodyPlant method.
   Matrix3X<T> CalcCenterOfMassJacobian(
       const systems::Context<T>& context) const;
 
-
+  /// See MultibodyPlant method.
   VectorX<T> CalcCenterOfMassJacobianDotTimesV(
       const systems::Context<T>& context) const;
 

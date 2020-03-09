@@ -2125,16 +2125,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
-  /// This method computes the center of mass position p_WCcm of all bodies in
-  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
-  /// considered as a single composite body C, whose center of mass
-  /// `composite_mass` is located at Ccm. The world_body() is ignored.
+  /// This method computes the center of mass spatial velocity Jacobian Jv_WCcm
+  /// of all bodies in `MultibodyPlant` measured and expressed in world frame W.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q of the model.
-  /// @retval p_WCcm
-  ///   The output position of center of mass in the world frame W.
+  /// @retval Jv_WCcm
+  ///   The output center of mass Jacobian in the world frame W.
   ///
   /// @throws std::runtime_error if `MultibodyPlant` has no body except
   ///   `world_body()`.
@@ -2144,16 +2142,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassJacobian(context);
   }
 
-  /// This method computes the center of mass position p_WCcm of all bodies in
-  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
-  /// considered as a single composite body C, whose center of mass
-  /// `composite_mass` is located at Ccm. The world_body() is ignored.
+  /// This method computes `Jdot_WCcm * v`, where `J_WCcm` is the Jacobian of
+  /// the spatial velocity of all bodies in `MultibodyPlant` measured and
+  /// expressed in world frame W.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q of the model.
-  /// @retval p_WCcm
-  ///   The output position of center of mass in the world frame W.
+  /// @retval JdotV_WCcm
+  ///   The output center of mass Jdot * v in the world frame W.
   ///
   /// @throws std::runtime_error if `MultibodyPlant` has no body except
   ///   `world_body()`.
