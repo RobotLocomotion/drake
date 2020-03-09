@@ -140,7 +140,8 @@ std::unique_ptr<ContextBase> LeafSystem<T>::DoAllocateContext() const {
 }
 
 template <typename T>
-void LeafSystem<T>::SetDefaultState(const Context<T>& context, State<T>* state) const {
+void LeafSystem<T>::SetDefaultState(
+    const Context<T>& context, State<T>* state) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(state != nullptr);
   ContinuousState<T>& xc = state->get_mutable_continuous_state();
@@ -167,7 +168,8 @@ void LeafSystem<T>::SetDefaultState(const Context<T>& context, State<T>* state) 
 }
 
 template <typename T>
-void LeafSystem<T>::SetDefaultParameters(const Context<T>& context, Parameters<T>* parameters) const {
+void LeafSystem<T>::SetDefaultParameters(
+    const Context<T>& context, Parameters<T>* parameters) const {
   this->ValidateContext(context);
   for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
     BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
@@ -186,20 +188,22 @@ void LeafSystem<T>::SetDefaultParameters(const Context<T>& context, Parameters<T
 }
 
 template <typename T>
-std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateTimeDerivatives() const {
+std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateTimeDerivatives()
+    const {
   return AllocateContinuousState();
 }
 
 template <typename T>
-std::unique_ptr<DiscreteValues<T>> LeafSystem<T>::AllocateDiscreteVariables() const {
+std::unique_ptr<DiscreteValues<T>> LeafSystem<T>::AllocateDiscreteVariables()
+    const {
   return AllocateDiscreteState();
 }
-
 
 namespace {
 
 template <typename T>
-std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector(const System<T>& system) {
+std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector(
+    const System<T>& system) {
   using symbolic::Expression;
   // We use different implementations when T = Expression or not.
   if constexpr (std::is_same<T, Expression>::value) {
@@ -291,7 +295,7 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   }
 
   return result;
-};
+}
 
 template <typename T>
 LeafSystem<T>::LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
@@ -313,7 +317,8 @@ std::unique_ptr<LeafContext<T>> LeafSystem<T>::DoMakeLeafContext() const {
 }
 
 template <typename T>
-T LeafSystem<T>::DoCalcWitnessValue(const Context<T>& context, const WitnessFunction<T>& witness_func) const {
+T LeafSystem<T>::DoCalcWitnessValue(
+    const Context<T>& context, const WitnessFunction<T>& witness_func) const {
   DRAKE_DEMAND(this == &witness_func.get_system());
   return witness_func.CalcWitnessValue(context);
 }
@@ -331,7 +336,9 @@ void LeafSystem<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
 }
 
 template <typename T>
-void LeafSystem<T>::DoCalcNextUpdateTime(const Context<T>& context, CompositeEventCollection<T>* events, T* time) const {
+void LeafSystem<T>::DoCalcNextUpdateTime(
+    const Context<T>& context,
+    CompositeEventCollection<T>* events, T* time) const {
   T min_time = std::numeric_limits<double>::infinity();
 
   if (periodic_events_.empty()) {
@@ -362,7 +369,8 @@ void LeafSystem<T>::DoCalcNextUpdateTime(const Context<T>& context, CompositeEve
 }
 
 template <typename T>
-void LeafSystem<T>::GetGraphvizFragment(int max_depth, std::stringstream* dot) const {
+void LeafSystem<T>::GetGraphvizFragment(
+    int max_depth, std::stringstream* dot) const {
   unused(max_depth);
 
   // Use the this pointer as a unique ID for the node in the dotfile.
@@ -396,21 +404,24 @@ void LeafSystem<T>::GetGraphvizFragment(int max_depth, std::stringstream* dot) c
 }
 
 template <typename T>
-void LeafSystem<T>::GetGraphvizInputPortToken(const InputPort<T>& port, int max_depth, std::stringstream *dot) const {
+void LeafSystem<T>::GetGraphvizInputPortToken(
+    const InputPort<T>& port, int max_depth, std::stringstream* dot) const {
   unused(max_depth);
   DRAKE_DEMAND(&port.get_system() == this);
   *dot << this->GetGraphvizId() << ":u" << port.get_index();
 }
 
 template <typename T>
-void LeafSystem<T>::GetGraphvizOutputPortToken(const OutputPort<T>& port, int max_depth, std::stringstream *dot) const {
+void LeafSystem<T>::GetGraphvizOutputPortToken(
+    const OutputPort<T>& port, int max_depth, std::stringstream* dot) const {
   unused(max_depth);
   DRAKE_DEMAND(&port.get_system() == this);
   *dot << this->GetGraphvizId() << ":y" << port.get_index();
 }
 
 template <typename T>
-std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateContinuousState() const {
+std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateContinuousState()
+    const {
   DRAKE_DEMAND(model_continuous_state_vector_->size() ==
                this->num_continuous_states());
   const SystemBase::ContextSizes& sizes = this->get_context_sizes();
@@ -423,7 +434,8 @@ std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateContinuousState() con
 }
 
 template <typename T>
-std::unique_ptr<DiscreteValues<T>> LeafSystem<T>::AllocateDiscreteState() const {
+std::unique_ptr<DiscreteValues<T>> LeafSystem<T>::AllocateDiscreteState()
+    const {
   return model_discrete_state_.Clone();
 }
 
@@ -476,17 +488,20 @@ int LeafSystem<T>::DeclareAbstractParameter(const AbstractValue& model_value) {
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicPublish(double period_sec, double offset_sec) {
+void LeafSystem<T>::DeclarePeriodicPublish(
+    double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
+void LeafSystem<T>::DeclarePeriodicDiscreteUpdate(
+    double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, DiscreteUpdateEvent<T>());
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
+void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdate(
+    double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, UnrestrictedUpdateEvent<T>());
 }
 
@@ -511,7 +526,8 @@ void LeafSystem<T>::DeclareContinuousState(const BasicVector<T>& model_vector) {
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(const BasicVector<T>& model_vector, int num_q, int num_v, int num_z) {
+void LeafSystem<T>::DeclareContinuousState(
+    const BasicVector<T>& model_vector, int num_q, int num_v, int num_z) {
   DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
   model_continuous_state_vector_ = model_vector.Clone();
 
@@ -532,7 +548,8 @@ void LeafSystem<T>::DeclareContinuousState(const BasicVector<T>& model_vector, i
 }
 
 template <typename T>
-DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(const BasicVector<T>& model_vector) {
+DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(
+    const BasicVector<T>& model_vector) {
   const DiscreteStateIndex index(model_discrete_state_.num_groups());
   model_discrete_state_.AppendGroup(model_vector.Clone());
   this->AddDiscreteStateGroup(index);
@@ -552,7 +569,8 @@ DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(
 }
 
 template <typename T>
-DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(int num_state_variables) {
+DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(
+    int num_state_variables) {
   DRAKE_DEMAND(num_state_variables >= 0);
   return DeclareDiscreteState(VectorX<T>::Zero(num_state_variables));
 }

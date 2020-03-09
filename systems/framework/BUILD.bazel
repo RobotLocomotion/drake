@@ -487,7 +487,6 @@ drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
-    tags = ["nolint"],
     deps = [
         ":leaf_context",
         ":leaf_output_port",
