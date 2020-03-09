@@ -297,6 +297,15 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "hsr",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_hsr_sim_command.lcm",
+        "lcmt_hsr_sim_status.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "schunk",
     lcm_package = "drake",
     lcm_srcs = [
@@ -357,6 +366,7 @@ LCMTYPES_CC = [
     ":desired_centroidal_momentum_dot",
     ":desired_dof_motions",
     ":drake_signal",
+    ":hsr",
     ":hydroelastic_contact_surface_for_viz",
     ":hydroelastic_contact_surface_tri_for_viz",
     ":iiwa",

@@ -1,0 +1,38 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = 1,
+    deps = [
+        ":sim_lcm_test_configs",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_lcm_test_configs",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["sim_lcm_test_configs.h"],
+    data = [
+        "//examples/hsr/models",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:find_resource",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+add_lint_tests()
