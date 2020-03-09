@@ -236,6 +236,11 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
       indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
 }
 
+symbolic::Polynomial MathematicalProgram::MakePolynomial(
+    const symbolic::Expression& e) const {
+  return symbolic::Polynomial{e, symbolic::Variables{indeterminates()}};
+}
+
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     int rows, int cols, const vector<string>& names) {
   MatrixXIndeterminate indeterminates_matrix(rows, cols);

@@ -427,6 +427,24 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
+    def test_make_polynomial(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")[0]
+        a = prog.NewContinuousVariables(1, "a")[0]
+        # e = (a + 1)x² + 2ax + 3a.
+        e = (a + 1) * (x * x) + (2 * a) * x + 3 * a
+
+        # We create a polynomial of `e` via MakePolynomial.
+        p = prog.MakePolynomial(e)
+        # Check its indeterminates and decision variables are correctly set,
+        self.assertEqual(p.indeterminates().size(), 1)
+        self.assertTrue(p.indeterminates().include(x))
+        self.assertEqual(p.decision_variables().size(), 1)
+        self.assertTrue(p.decision_variables().include(a))
+        # Check if it holds the same expression when converted back to
+        # symbolic expression.
+        self.assertTrue(p.ToExpression().EqualTo(e))
+
     def test_equality_between_polynomials(self):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")

@@ -589,6 +589,29 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
 
 }  // namespace
 
+GTEST_TEST(TestMathematicalProgram, TestMakePolynomial) {
+  MathematicalProgram prog;
+  const auto x = prog.NewIndeterminates<2>("x");
+  const auto a = prog.NewContinuousVariables<2>("a");
+
+  // e = a₀x₀ + a₁x₀x₁ + a₁.
+  const Expression e{a(0) * x(0) + a(1) * x(0) * x(1) + a(1)};
+  const symbolic::Polynomial p{prog.MakePolynomial(e)};
+
+  // We check the constructed polynomial has the following internal mapping.
+  //   x₀ ↦ a₀
+  //   x₀x₁ ↦ a₁
+  //   1 ↦ a₁
+  const auto& coeff_map = p.monomial_to_coefficient_map();
+  EXPECT_EQ(coeff_map.size(), 3);
+  const symbolic::Monomial x0{x(0)};
+  const symbolic::Monomial x0x1{{{x(0), 1}, {x(1), 1}}};
+  const symbolic::Monomial one;
+  EXPECT_PRED2(ExprEqual, coeff_map.at(x0), a(0));
+  EXPECT_PRED2(ExprEqual, coeff_map.at(x0x1), a(1));
+  EXPECT_PRED2(ExprEqual, coeff_map.at(one), a(1));
+}
+
 GTEST_TEST(TestMathematicalProgram, TestBadBindingVariable) {
   // Attempt to add a binding that does not have a valid decision variable.
   MathematicalProgram prog;
