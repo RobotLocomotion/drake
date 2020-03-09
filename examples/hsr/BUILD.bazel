@@ -38,6 +38,54 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sim_command_receiver",
+    srcs = ["sim_command_receiver.cc"],
+    hdrs = ["sim_command_receiver.h"],
+    deps = [
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_command_sender",
+    srcs = ["sim_command_sender.cc"],
+    hdrs = ["sim_command_sender.h"],
+    deps = [
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_status_receiver",
+    srcs = ["sim_status_receiver.cc"],
+    hdrs = ["sim_status_receiver.h"],
+    deps = [
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_status_sender",
+    srcs = ["sim_status_sender.cc"],
+    hdrs = ["sim_status_sender.h"],
+    deps = [
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_binary(
     name = "sim_runner",
     srcs = [
@@ -61,6 +109,38 @@ drake_cc_googletest(
     name = "hsr_world_test",
     deps = [
         ":hsr_world",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_command_receiver_test",
+    deps = [
+        ":sim_command_receiver",
+        "//examples/hsr/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_command_sender_test",
+    deps = [
+        ":sim_command_sender",
+        "//examples/hsr/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_status_receiver_test",
+    deps = [
+        ":sim_status_receiver",
+        "//examples/hsr/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_status_sender_test",
+    deps = [
+        ":sim_status_sender",
+        "//examples/hsr/test_utilities",
     ],
 )
 

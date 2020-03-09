@@ -1,0 +1,16 @@
+package drake;
+
+// The current status of a HSR robot.  All angular
+// positions/velocities are expressed in radians and radians/second.
+// The timestamp utime is in microseconds.
+struct lcmt_hsr_sim_status
+{
+  int64_t utime;
+
+  int32_t num_joints;
+
+  string joint_name[num_joints];
+  double joint_position[num_joints];
+  double joint_velocity[num_joints];
+  double joint_torque[num_joints];
+}

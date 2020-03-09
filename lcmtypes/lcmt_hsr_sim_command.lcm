@@ -1,0 +1,13 @@
+package drake;
+
+// Commands a single set of joint states for the HSR.  All angular
+// positions/velocities are expressed in radians and radians/second.
+// The timestamp utime is in microseconds.
+struct lcmt_hsr_sim_command {
+  int64_t utime;
+
+  int32_t num_joints;
+  string joint_name[num_joints];
+  double joint_position[num_joints];
+  double joint_velocity[num_joints];
+}
