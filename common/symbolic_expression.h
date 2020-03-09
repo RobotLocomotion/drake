@@ -1307,14 +1307,16 @@ auto operator*(
 /// @throws std::runtime_error if NaN is detected during evaluation.
 /// @throws std::runtime_error if @p m includes unassigned random variables but
 ///                               @p random_generator is `nullptr`.
+/// @pydrake_mkdoc_identifier{expression}
 template <typename Derived>
-Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
-              Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>
+std::enable_if_t<
+    std::is_same<typename Derived::Scalar, Expression>::value,
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
+                  Derived::MaxColsAtCompileTime>>
 Evaluate(const Eigen::MatrixBase<Derived>& m,
          const Environment& env = Environment{},
          RandomGenerator* random_generator = nullptr) {
-  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
-                "Evaluate only accepts a symbolic matrix.");
   // Note that the return type is written out explicitly to help gcc 5 (on
   // ubuntu).  Previously the implementation used `auto`, and placed  an `
   // .eval()` at the end to prevent lazy evaluation.
@@ -1400,6 +1402,7 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
 ///
 /// @pre {@p vars is non-empty}.
+/// @pydrake_mkdoc_identifier{expression}
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
 
