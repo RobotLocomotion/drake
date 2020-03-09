@@ -16,7 +16,7 @@ These are breaking changes that did not undergo a deprecation period:
 
 * Drake no longer supports user-defined scalar types (`#12657`_, `#12797`_, `#12823`_)
 
-  * TODO(jwnimmer-tri) Explanatory text related to issue (`#12814`_).
+  * See issue (`#12814`_) for more details.
 
 * Removed the ability to override LeafSystem allocation methods (`#12792`_)
 
@@ -53,11 +53,11 @@ Mathematical Program
 
 New features
 
-TBD
+* None
 
 Fixes
 
-TBD
+* None
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
