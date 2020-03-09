@@ -473,11 +473,103 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialPolynomial2) {
   EXPECT_EQ(product_map_expected, (p1 * p2).monomial_to_coefficient_map());
 }
 
+TEST_F(SymbolicPolynomialTest, BinaryOperationBetweenPolynomialAndVariable) {
+  // p = 2a²x² + 3ax + 7.
+  const Polynomial p{2 * pow(a_, 2) * pow(x_, 2) + 3 * a_ * x_ + 7, {var_x_}};
+  const Monomial m_x_cube{var_x_, 3};
+  const Monomial m_x_sq{var_x_, 2};
+  const Monomial m_x{var_x_, 1};
+  const Monomial m_one;
+
+  // Checks addition.
+  {
+    const Polynomial result1{p + var_a_};
+    const Polynomial result2{var_a_ + p};
+    // result1 = 2a²x² + 3ax + (7 + a).
+    EXPECT_TRUE(result1.EqualTo(result2));
+    EXPECT_EQ(result1.monomial_to_coefficient_map().size(), 3);
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_PRED2(ExprEqual, result1.monomial_to_coefficient_map().at(m_one),
+                 7 + a_);
+
+    const Polynomial result3{p + var_x_};
+    const Polynomial result4{var_x_ + p};
+    // result3 = 2a²x² + (3a + 1)x + 7.
+    EXPECT_TRUE(result3.EqualTo(result4));
+    EXPECT_EQ(result3.monomial_to_coefficient_map().size(), 3);
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_PRED2(ExprEqual, result3.monomial_to_coefficient_map().at(m_x),
+                 3 * a_ + 1);
+  }
+
+  // Checks subtraction.
+  {
+    const Polynomial result1{p - var_a_};
+    // result1 = 2a²x² + 3ax + (7 - a).
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result1.monomial_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result1.monomial_to_coefficient_map().at(m_one),
+                 7 - a_);
+
+    const Polynomial result2{var_a_ - p};
+    EXPECT_TRUE((-result2).EqualTo(result1));
+
+    const Polynomial result3{p - var_x_};
+    // result3 = 2a²x² + (3a - 1)x + 7.
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result3.monomial_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result3.monomial_to_coefficient_map().at(m_x),
+                 3 * a_ - 1);
+
+    const Polynomial result4{var_x_ - p};
+    EXPECT_TRUE((-result4).EqualTo(result3));
+  }
+
+  // Checks multiplication.
+  {
+    const Polynomial result1{p * var_a_};
+    // result1 = 2a³x² + 3a²x + 7a.
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result1.monomial_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result1.monomial_to_coefficient_map().at(m_x_sq),
+                 2 * pow(a_, 3));
+    EXPECT_PRED2(ExprEqual, result1.monomial_to_coefficient_map().at(m_x),
+                 3 * pow(a_, 2));
+    EXPECT_PRED2(ExprEqual, result1.monomial_to_coefficient_map().at(m_one),
+                 7 * a_);
+
+    const Polynomial result2{var_a_ * p};
+    EXPECT_TRUE(result2.EqualTo(result1));
+
+    const Polynomial result3{p * var_x_};
+    // result3 = 2a²x³ + 3ax² + 7x.
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result3.monomial_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result3.monomial_to_coefficient_map().at(m_x_cube),
+                 2 * pow(a_, 2));
+    EXPECT_PRED2(ExprEqual, result3.monomial_to_coefficient_map().at(m_x_sq),
+                 3 * a_);
+    EXPECT_PRED2(ExprEqual, result3.monomial_to_coefficient_map().at(m_x), 7);
+
+    const Polynomial result4{var_x_ * p};
+    EXPECT_TRUE(result4.EqualTo(result3));
+  }
+}
+
 TEST_F(SymbolicPolynomialTest, Pow) {
   for (int n = 2; n <= 5; ++n) {
     for (const Expression& e : exprs_) {
       Polynomial p{pow(Polynomial{e}, n)};  // p = pow(e, n)
       EXPECT_PRED2(ExprEqual, p.ToExpression(), pow(e, n).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, DivideByConstant) {
+  for (double v = -5.5; v <= 5.5; v += 1.0) {
+    for (const Expression& e : exprs_) {
+      EXPECT_PRED2(ExprEqual, (Polynomial(e) / v).ToExpression(),
+                   Polynomial(e / v).ToExpression());
     }
   }
 }

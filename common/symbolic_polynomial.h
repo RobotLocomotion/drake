@@ -177,14 +177,17 @@ class Polynomial {
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
+  Polynomial& operator+=(const Variable& v);
 
   Polynomial& operator-=(const Polynomial& p);
   Polynomial& operator-=(const Monomial& m);
   Polynomial& operator-=(double c);
+  Polynomial& operator-=(const Variable& v);
 
   Polynomial& operator*=(const Polynomial& p);
   Polynomial& operator*=(const Monomial& m);
   Polynomial& operator*=(double c);
+  Polynomial& operator*=(const Variable& v);
 
   /// Returns true if this polynomial and @p p are structurally equal.
   bool EqualTo(const Polynomial& p) const;
@@ -211,6 +214,7 @@ class Polynomial {
       hash_append(hasher, p.second);
     }
   }
+  friend Polynomial operator/(Polynomial p, double v);
 
  private:
   // Throws std::runtime_error if there is a variable appeared in both of
@@ -223,7 +227,7 @@ class Polynomial {
 };
 
 /// Unary minus operation for polynomial.
-Polynomial operator-(Polynomial p);
+Polynomial operator-(const Polynomial& p);
 
 Polynomial operator+(Polynomial p1, const Polynomial& p2);
 Polynomial operator+(Polynomial p, const Monomial& m);
@@ -233,6 +237,8 @@ Polynomial operator+(const Monomial& m1, const Monomial& m2);
 Polynomial operator+(const Monomial& m, double c);
 Polynomial operator+(double c, Polynomial p);
 Polynomial operator+(double c, const Monomial& m);
+Polynomial operator+(Polynomial p, const Variable& v);
+Polynomial operator+(const Variable& v, Polynomial p);
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2);
 Polynomial operator-(Polynomial p, const Monomial& m);
@@ -242,6 +248,8 @@ Polynomial operator-(const Monomial& m1, const Monomial& m2);
 Polynomial operator-(const Monomial& m, double c);
 Polynomial operator-(double c, Polynomial p);
 Polynomial operator-(double c, const Monomial& m);
+Polynomial operator-(Polynomial p, const Variable& v);
+Polynomial operator-(const Variable& v, const Polynomial& p);
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
@@ -252,6 +260,11 @@ Polynomial operator*(const Monomial& m, Polynomial p);
 Polynomial operator*(const Monomial& m, double c);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(double c, const Monomial& m);
+Polynomial operator*(Polynomial p, const Variable& v);
+Polynomial operator*(const Variable& v, Polynomial p);
+
+/// Returns `p / v`.
+Polynomial operator/(Polynomial p, double v);
 
 /// Returns polynomial @p rasied to @p n.
 Polynomial pow(const Polynomial& p, int n);
@@ -306,6 +319,7 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
 #endif
+
 }  // namespace symbolic
 }  // namespace drake
 
@@ -414,3 +428,31 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+/// Evaluates a matrix `m` of symbolic polynomials using `env`.
+///
+/// @returns a matrix of double whose size is the size of @p m.
+/// @throws std::runtime_error if NaN is detected during evaluation.
+/// @pydrake_mkdoc_identifier{polynomial}
+template <typename Derived>
+std::enable_if_t<
+    std::is_same<typename Derived::Scalar, Polynomial>::value,
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
+                  Derived::MaxColsAtCompileTime>>
+Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
+}
+
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
+///
+/// @pre {@p vars is non-empty}.
+/// @pydrake_mkdoc_identifier{polynomial}
+MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
+                             const Eigen::Ref<const VectorX<Variable>>& vars);
+
+}  // namespace symbolic
+}  // namespace drake
