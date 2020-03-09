@@ -108,8 +108,8 @@ pydrake bindings
 * pydrake.systems.framework.System.EvalPotentialEnergy (`#12794`_) 
 * pydrake.systems.primitives.DiscreteDerivative (`#12770`_)
 * pydrake.systems.primitives.StateInterpolatorWithDiscreteDerivative (`#12770`_)
-* Added ability to generate pybind coverage stats (`#12040`_)
-* Removed dead code from mkdoc.py (`#12818`_)
+* Fix pydrake.solvers.ScsSolverDetails numpy-typed fields (`#12737`_)
+* Fix pydrake.solvers.SnoptSolverDetails numpy-typed fields (`#12737`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -172,4 +172,3 @@ Commits to be categorized
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit 20364232efd9b27486f83fbc0ecabd0cda5179e2 (inclusive).
 
-* add pybind11/eigen.h to pydrake/solvers (`#12737`_)  # Co-Authored-By: Eric Cousineau <eric.cousineau@tri.global>
