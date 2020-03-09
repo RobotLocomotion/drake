@@ -1,0 +1,9 @@
+This folder contains a file (`pydrake_sphinx_extension.py`) that uses some code
+from Sphinx 1.6.7.
+
+https://github.com/sphinx-doc/sphinx/blob/v1.6.7/sphinx/ext/autodoc.py#L996-L1057
+
+The original license for these files is given in the link below and copied into
+file sphinx.LICENSE.txt.
+
+https://github.com/sphinx-doc/sphinx/blob/v1.6.7/LICENSE

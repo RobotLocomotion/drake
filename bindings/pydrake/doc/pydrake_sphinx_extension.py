@@ -14,6 +14,7 @@ For guidance, see:
 from collections import namedtuple
 import re
 import warnings
+from typing import Any, Tuple
 
 from sphinx.locale import _
 import sphinx.domains.python as pydoc
@@ -250,14 +251,19 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     return None
 
 
-def document_members_patch(original, self, all_members=False):
+def patch_document_members(original, self, all_members=False):
     # type: (bool) -> None
-    """(This function is, for the most part, a copy-pasta of the method used in
-    Sphinx 1.6.7 installed via `apt`.)
-    Generate reST for member documentation.
+    """Generate reST for member documentation.
 
     If *all_members* is True, do all members, else those given by
     *self.options.members*.
+
+    Note: This function is a patched version for Drake to add the functionality
+    of sorting the documented members using a custom key function.
+    The original code is from Sphinx 1.6.7 installed via `apt`.
+    Ubuntu patches the upstream version, but this piece of code is not patched.
+    https://github.com/sphinx-doc/sphinx/blob/v1.6.7/sphinx/ext/autodoc.py#L996-L1057
+    Our upstream PR: https://github.com/sphinx-doc/sphinx/pull/7177
     """
     # set current namespace for finding members
     self.env.temp_data['autodoc:module'] = self.modname
@@ -306,22 +312,18 @@ def document_members_patch(original, self, all_members=False):
             fullname = entry[0].name.split('::')[1]
             return tagorder.get(fullname, len(tagorder))
         memberdocumenters.sort(key=keyfunc)
-    ###########################################################################
-    # Patch starts here.
-    # The remaining method is the same.
+    # N.B. Patch for Drake starts here.
     elif member_order == 'bycustomfunction':
-        from typing import Any, Tuple
 
         def custom_key(entry: Tuple[autodoc.Documenter, bool]) -> Any:
             result = self.env.app.emit_firstresult(
                 'autodoc-member-order-custom-function', entry[0])
             if result is None:
-                raise RuntimeError("autodoc-member-order-custom-function is "
-                                   "not implemented")
+                raise RuntimeError("autodoc-member-order-custom-function "
+                                   "has not been specified by user")
             return result
         memberdocumenters.sort(key=custom_key)
     # Patch ends here.
-    ###########################################################################
 
     for documenter, isattr in memberdocumenters:
         documenter.generate(
@@ -333,8 +335,8 @@ def document_members_patch(original, self, all_members=False):
     self.env.temp_data['autodoc:class'] = None
 
 
-# Let's sort the member names by lower-case.
 def autodoc_member_order_function(app, documenter):
+    """Let's sort the member full-names (`Class.member_name`) by lower-case."""
     fullname = documenter.name.split('::')[1]
     return fullname.lower()
 
@@ -365,5 +367,5 @@ def setup(app):
     pydoc.py_sig_re = IrregularExpression(extended=False)
     patch(autodoc.ClassLevelDocumenter, 'resolve_name', patch_resolve_name)
     patch(autodoc.ModuleLevelDocumenter, 'resolve_name', patch_resolve_name)
-    patch(autodoc.Documenter, 'document_members', document_members_patch)
+    patch(autodoc.Documenter, 'document_members', patch_document_members)
     return dict(parallel_read_safe=True)
