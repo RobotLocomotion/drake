@@ -496,7 +496,7 @@ term exactly as needed in Eq. (16).
   Making a meaningful impact: modelling simultaneous frictional collisions
   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.   
 
-@tparam T Must be one of drake's default scalar types.
+@tparam_default_scalar
 
 @authors Alejandro Castro (2018) Original author.
 @authors Michael Sherman, Evan Drumwright (2018) Original PR #8925 reviewers.

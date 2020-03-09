@@ -72,15 +72,7 @@ struct PoseVelocityInputPorts {
 /// Systems that need to ingest every pose in the universe, such as renderers
 /// or sensor models, can simply depend on the output.
 ///
-/// This class is explicitly instantiated for the following scalar types. No
-/// other scalar types are supported.
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///           Only double and AutoDiffXd are supported.
+/// @tparam_default_scalar
 template <typename T>
 class PoseAggregator : public LeafSystem<T> {
  public:

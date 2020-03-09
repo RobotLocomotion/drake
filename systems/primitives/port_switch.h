@@ -32,12 +32,8 @@ output ports could be evaluated via other connections.
  @output_port{value}
 }
 
-Instantiated templates for the following scalar types @p T are provided:
-
- - double
- - AutoDiffXd
- - symbolic::Expression
-  */
+@tparam_default_scalar
+*/
 template <typename T>
 class PortSwitch final : public LeafSystem<T> {
  public:
@@ -131,7 +127,6 @@ template <>
 const AbstractValue& PortSwitch<AutoDiffXd>::get_model_value() const;
 template <>
 const AbstractValue& PortSwitch<symbolic::Expression>::get_model_value() const;
-
 
 }  // namespace systems
 }  // namespace drake

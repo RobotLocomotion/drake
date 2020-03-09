@@ -208,7 +208,7 @@ template<typename T> class BodyNode;
 /// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
 ///                       algorithms. Springer.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
  public:

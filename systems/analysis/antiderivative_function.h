@@ -46,12 +46,7 @@ namespace systems {
 ///   and G'ᵧ(y; l) = gᵧ(y; l). Therefore, defining f(x; 𝐤) ≜ gᵧ(x; k₀) with
 ///   𝐤 ≜ [l] and evaluating F(u; 𝐤) at u = N yields the result.
 ///
-/// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
-///
-/// @note
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class AntiderivativeFunction {
  public:

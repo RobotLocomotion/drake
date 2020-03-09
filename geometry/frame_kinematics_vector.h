@@ -159,16 +159,7 @@ class FrameKinematicsVector {
 /** Class for communicating _pose_ information to SceneGraph for registered
  frames.
 
- @tparam T The scalar type. Must be a valid Eigen scalar.
-
- Instantiated templates for the following kinds of T's are provided:
-
- - double
- - AutoDiffXd
- - Expression
-
- They are already available to link against in the containing library.
- No other values for T are currently supported.
+ @tparam_default_scalar
  */
 template <typename T>
 using FramePoseVector = FrameKinematicsVector<math::RigidTransform<T>>;

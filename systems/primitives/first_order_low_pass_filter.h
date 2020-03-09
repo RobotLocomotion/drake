@@ -28,17 +28,7 @@ namespace systems {
 /// The Bode plot in phase exhibits a -90 degrees shift (lag) for frequencies
 /// much larger than the cutoff frequency and a zero shift for low frequencies.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class FirstOrderLowPassFilter final : public VectorSystem<T> {

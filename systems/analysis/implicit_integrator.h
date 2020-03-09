@@ -17,7 +17,7 @@ namespace systems {
 
 /**
  * An abstract class providing methods shared by implicit integrators.
- * @tparam T The vector element type, which must be a valid Eigen scalar.
+ * @tparam_nonsymbolic_scalar
  */
 template <class T>
 class ImplicitIntegrator : public IntegratorBase<T> {

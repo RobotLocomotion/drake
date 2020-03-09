@@ -7,15 +7,7 @@ type into an identical System that is templatized by a different scalar type.
 For example, a `MySystem<double>` could be cloned to create a
 `MySystem<AutoDiffXd>` in order to compute the partial numerical derivatives.
 
-Common scalar types include:
-- `double`
-- drake::AutoDiffXd, an automatic differentation scalar providing partial
-  derivatives of any numerical result of the System with respect to any of the
-  numerical values that can be contained in a Context (time, inputs,
-  parameters, and state).
-- drake::symbolic::Expression, a symbolic scalar providing the symbolic form of
-  arithmetic expressions.
-
+See the @ref default_scalars "default scalars" for list of supported types.
 
 <h2>Example use of system scalar conversion</h2>
 

@@ -16,14 +16,7 @@ namespace systems {
 /// The output is vector values, and may vary with the time (as reflected in
 /// the context) at which the output is evaluated.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_double_only
 /// @ingroup primitive_systems
 template <typename T>
 class TrajectorySource final : public SingleOutputVectorSource<T> {

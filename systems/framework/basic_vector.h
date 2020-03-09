@@ -21,7 +21,7 @@ namespace systems {
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
 /// satisfies VectorBase. Once constructed, its size is fixed.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class BasicVector : public VectorBase<T> {
  public:

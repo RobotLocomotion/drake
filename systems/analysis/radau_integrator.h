@@ -15,10 +15,11 @@ namespace systems {
 /**
  * A selectable order (third- or first-order), fully implicit integrator with
  * error estimation.
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- * @tparam num_stages the number of stages used in this integrator. Set this to
- *         1 for the integrator to be implicit Euler and 2 for it to
- *         Radau3 (default). Other values are invalid.
+ *
+ * @tparam_nonsymbolic_scalar
+ * @tparam num_stages The number of stages used in this integrator, which must
+ *         be either 1 or 2. Set this to 1 for the integrator to be implicit
+ *         Euler and 2 for it to Radau3 (default).
  *
  * A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
  * propagating the state forward, by default. The state can also be propagated

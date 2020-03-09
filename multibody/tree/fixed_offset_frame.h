@@ -29,7 +29,7 @@ template <class T> class RigidBody;
 /// @ref multibody_spatial_pose. <!-- https://drake.mit.edu/doxygen_cxx/
 ///                                   group__multibody__spatial__pose.html -->
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class FixedOffsetFrame final : public Frame<T> {
  public:

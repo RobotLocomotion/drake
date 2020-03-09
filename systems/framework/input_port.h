@@ -31,8 +31,7 @@ input port data; that is always contained in a Context. The actual value will
 be either the value of an OutputPort to which this is connected, or a fixed
 value set in a Context.
 
-@tparam T The mathematical type of the context, which must be a valid Eigen
-          scalar.
+@tparam_default_scalar
 */
 template <typename T>
 class InputPort final : public InputPortBase {

@@ -40,13 +40,7 @@ namespace compass_gait {
 /// Discrete State: stance toe position.<br/>
 /// Abstract State: left support indicator.<br/>
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
+/// @tparam_default_scalar
 template <typename T>
 class CompassGait final : public systems::LeafSystem<T> {
  public:

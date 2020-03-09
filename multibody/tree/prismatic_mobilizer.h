@@ -29,16 +29,7 @@ namespace internal {
 /// are coincident. The translation distance is defined to be positive in the
 /// direction of `axis_F`.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 template <typename T>
 class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
