@@ -101,6 +101,8 @@ Miscellaneous features and fixes
 * Add operator<< to sorted_pair (`#12801`_)
 * Fix allegro_hand discrete update period (`#12734`_)
 * Improve the simple_gripper example to make it possible to test more integrators (`#12742`_)
+* Added more methods to symbolic::Polynomial (`#12835`_)
+* Fixed accidental quadratic parsing of Yaml (`#12830`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -174,6 +176,3 @@ Commits to be categorized
 
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit 0aea3a58eaca0500d4346d01fe05d5352193c4a0 (inclusive).
-
-* Add more methods to symbolic::Polynomial (`#12835`_)
-* yaml: Fix accidentally quadratic parsing (`#12830`_)  # * yaml: Remove accidentally quadratic explosion during reading
