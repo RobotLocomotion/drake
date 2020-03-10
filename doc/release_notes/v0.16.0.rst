@@ -83,6 +83,8 @@ New features
 
 * Added support for derivative of signed distance between a pair of geometries (`#12720`_)
 * Added build system skeleton for forthcoming OpenGL render engine (`#12623`_)
+* Implemented Composite Body Algorithm to compute the mass matrix (`#12764`_)
+* Updated to use CBA in MBP::CalcTamsiResults() (`#12838`_)
 
 Fixes
 
@@ -90,6 +92,7 @@ Fixes
 * Alphabetized targets in geometry/proximity/BUILD (`#12748`_)
 * Quarantined FCL's haphazard use of const in broadphase (`#12746`_)
 * Fixed catastrophic cancellation in point mass unit inertias (`#12758`_)
+* Some minor cosmetic clean up (`#12829`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,9 +174,6 @@ Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit 0aea3a58eaca0500d4346d01fe05d5352193c4a0 (inclusive).
 
 * workspace: Add new_release reporting for some missed items (`#12837`_)  # Dependencies only used by BUILD files (and not actual targets) were being overlooked.  For now at least, we'll list them out manually instead of fixing the query.
-* Implements Composite Body Algorithm to compute the mass matrix (`#12764`_)
-* Update to use CBA in MBP::CalcTamsiResults() (`#12838`_)
-* [geometry] Some cosmetic clean up (`#12829`_)  # I noted some aberrations/inconveniences in code style and decided to clean them up in an isolated commit. This includes: - BVH replaces  TransformMatrix<double> and Vector3<double> with the Quantityd variant. - Fix typo in comments. - Remove redundant paths in dependency list. - Removed outdated TODO.
 * doc: Use doxygen macro for tparam scalartype boilerplate (`#12825`_)
 * leaf_system: Rename old cc files out of the way (`#12816`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
 * leaf_system: Move h files to cc files to preserve history (`#12816`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
