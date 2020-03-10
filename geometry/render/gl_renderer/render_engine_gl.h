@@ -114,6 +114,10 @@ class RenderEngineGl final : public RenderEngine {
   OpenGlGeometry SetupVAO(const VertexBuffer& vertices,
                           const IndexBuffer& indices);
 
+  // Updates the window for displaying render results.
+  void UpdateWindow(const CameraProperties& camera, bool show_window,
+                    const RenderTarget& target) const;
+
   // The cached value transformation between camera and world frame.
   mutable math::RigidTransformd X_CW_;
 

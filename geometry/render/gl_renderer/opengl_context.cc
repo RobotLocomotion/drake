@@ -51,15 +51,57 @@ class OpenGlContext::Impl {
     // https://sidvind.com/index.php?title=Opengl/windowless
 
     // Get framebuffer configs.
-    const int kVisualAttribs[] = {None};
+    const int kVisualAttribs[] = {GLX_X_RENDERABLE,
+                                  True,
+                                  GLX_DRAWABLE_TYPE,
+                                  GLX_WINDOW_BIT,
+                                  GLX_RENDER_TYPE,
+                                  GLX_RGBA_BIT,
+                                  GLX_X_VISUAL_TYPE,
+                                  GLX_TRUE_COLOR,
+                                  GLX_RED_SIZE,
+                                  8,
+                                  GLX_GREEN_SIZE,
+                                  8,
+                                  GLX_BLUE_SIZE,
+                                  8,
+                                  GLX_ALPHA_SIZE,
+                                  8,
+                                  GLX_DEPTH_SIZE,
+                                  24,
+                                  GLX_STENCIL_SIZE,
+                                  8,
+                                  GLX_DOUBLEBUFFER,
+                                  True,
+                                  None};
     int fb_count = 0;
+    int screen_id = DefaultScreen(display());
     GLXFBConfig* fb_configs = glXChooseFBConfig(
-        display(), DefaultScreen(display()), kVisualAttribs, &fb_count);
+        display(), screen_id, kVisualAttribs, &fb_count);
     if (fb_configs == nullptr) {
       throw std::runtime_error(
           "Error initializing OpenGL Context for RenderEngineGL; no suitable "
           "frame buffer configuration found.");
     }
+
+    XVisualInfo* visual = glXGetVisualFromFBConfig(display(), fb_configs[0]);
+    if (visual == nullptr) {
+      throw std::runtime_error("Fail to create visual.");
+    }
+
+    // Set up window for displaying render results.
+    XSetWindowAttributes window_attribs;
+    window_attribs.border_pixel = BlackPixel(display(), screen_id);
+    window_attribs.background_pixel = WhitePixel(display(), screen_id);
+    window_attribs.override_redirect = True;
+    window_attribs.colormap = XCreateColormap(
+        display(), RootWindow(display(), screen_id), visual->visual, AllocNone);
+    window_attribs.event_mask = ExposureMask;
+    window_ =
+        XCreateWindow(display(), RootWindow(display(), screen_id), 0, 0, 320,
+                      240, 0, visual->depth, InputOutput, visual->visual,
+                      CWBackPixel | CWColormap | CWBorderPixel | CWEventMask,
+                      &window_attribs);
 
     // Create an OpenGL context.
     const int kContextAttribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
@@ -79,6 +121,7 @@ class OpenGlContext::Impl {
     }
 
     XFree(fb_configs);
+    XFree(visual);
     XSync(display(), False);
 
     // Make it the current context.
@@ -97,13 +140,27 @@ class OpenGlContext::Impl {
     if (context_ != nullptr && is_owned_) {
       glXDestroyContext(display(), context_);
     }
+    if (window_) {
+      XWindowAttributes window_attribs;
+      XGetWindowAttributes(display(), window_, &window_attribs);
+      XFreeColormap(display(), window_attribs.colormap);
+      XDestroyWindow(display(), window_);
+    }
   }
 
   void make_current() const {
     if (glXGetCurrentContext() != context_ &&
-        !glXMakeCurrent(display(), None, context_)) {
+        !glXMakeCurrent(display(), window_, context_)) {
       throw std::runtime_error("Cannot make context current");
     }
+  }
+
+  void display_window(const int width, const int height) const {
+    XMapRaised(display(), window_);
+    XResizeWindow(display(), window_, width, height);
+    XSync(display(), false);
+    XClearWindow(display(), window_);
+    glXSwapBuffers(display(), window_);
   }
 
   bool is_initialized() const { return context_ != nullptr; }
@@ -139,6 +196,7 @@ class OpenGlContext::Impl {
 
   bool is_owned_{true};
   GLXContext context_{nullptr};
+  Window window_;
 };
 
 OpenGlContext::OpenGlContext(bool debug)
@@ -147,6 +205,10 @@ OpenGlContext::OpenGlContext(bool debug)
 OpenGlContext::~OpenGlContext() = default;
 
 void OpenGlContext::make_current() const { impl_->make_current(); }
+
+void OpenGlContext::display_window(const int width, const int height) const {
+  impl_->display_window(width, height);
+}
 
 bool OpenGlContext::is_initialized() const { return impl_->is_initialized(); }
 

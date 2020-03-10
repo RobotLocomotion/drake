@@ -304,6 +304,22 @@ void RenderEngineGl::GetDepthImage(ImageDepth32F* depth_image_out,
   }
 }
 
+void RenderEngineGl::UpdateWindow(const CameraProperties& camera,
+                                  bool show_window,
+                                  const RenderTarget& target) const {
+  if (show_window) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, target.frame_buffer);
+    glNamedFramebufferTexture(target.frame_buffer, GL_COLOR_ATTACHMENT0,
+                              target.texture, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, camera.width, camera.height, 0, 0, camera.width,
+                      camera.height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    opengl_context_->display_window(camera.width, camera.height);
+    glNamedFramebufferTexture(target.frame_buffer, GL_COLOR_ATTACHMENT0, 0, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+}
+
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
