@@ -38,7 +38,9 @@ class RenderEngineGl final : public RenderEngine {
   /** Inherits RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
-  /** Inherits RenderEngine::RenderColorImage().  */
+  /** Inherits RenderEngine::RenderColorImage(). Note that the display window
+   triggered by `show_window` is shared with RenderLabelImage, and only the
+   last color or label image rendered will be visible in the window.  */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const override;
@@ -48,7 +50,9 @@ class RenderEngineGl final : public RenderEngine {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const override;
 
-  /** Inherits RenderEngine::RenderLabelImage().  */
+  /** Inherits RenderEngine::RenderLabelImage(). Note that the display window
+   triggered by `show_window` is shared with RenderColorImage, and only the
+   last color or label image rendered will be visible in the window. */
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const override;
@@ -113,6 +117,12 @@ class RenderEngineGl final : public RenderEngine {
   // Configure the vertex array object for a triangle mesh.
   OpenGlGeometry SetupVAO(const VertexBuffer& vertices,
                           const IndexBuffer& indices);
+
+  // Updates the shared window for displaying render results. If show_window is
+  // False then there is simply no change.
+  // @pre RenderTarget's BufferDim is the same as the size reported by `camera`.
+  void UpdateVisibleWindow(const CameraProperties& camera, bool show_window,
+                           const RenderTarget& target) const;
 
   // The cached value transformation between camera and world frame.
   mutable math::RigidTransformd X_CW_;

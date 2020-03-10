@@ -30,6 +30,9 @@ class OpenGlContext {
   /** Makes this context current or throws.  */
   void make_current() const;
 
+  /** Display the render result in a window with the given dimensions.  */
+  void display_window(const int width, const int height);
+
   bool is_initialized() const;
 
   /** Returns the specified values for the current OpenGL context.
