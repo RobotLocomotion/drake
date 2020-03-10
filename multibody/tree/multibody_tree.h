@@ -1298,14 +1298,6 @@ class MultibodyTree {
       const std::vector<BodyIndex>& body_indexes) const;
 
   /// See MultibodyPlant method.
-  Matrix3X<T> CalcCenterOfMassJacobian(
-      const systems::Context<T>& context) const;
-
-  /// See MultibodyPlant method.
-  VectorX<T> CalcCenterOfMassJacobianDotTimesV(
-      const systems::Context<T>& context) const;
-
-  /// See MultibodyPlant method.
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
@@ -1399,6 +1391,17 @@ class MultibodyTree {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
+
+  /// See MultibodyPlant method.
+  void CalcJacobianCenterOfMassVelocityInWorld(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      EigenPtr<Matrix3X<T>> Js_v_WCcm) const;
+
+  /// See MultibodyPlant method.
+  VectorX<T> CalcBiasForJacobianCenterOfMassVelocityInWorld(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to) const;
 
   /// @}
   // End of multibody Jacobian methods section.
