@@ -22,6 +22,8 @@ struct SimParameters {
   double inclined_plane_coef_kinetic_friction{};
   double simulation_time{};
   double time_step{};
+
+  bool use_constant_desired_state{};
 };
 
 /// @return a constref to the singleton `SimParameters` instance.

@@ -24,17 +24,20 @@ void SimCommandReceiver::CalcDesiredStateOutput(
     systems::BasicVector<double>* output) const {
   const auto& command =
       this->get_sim_command_input_port().Eval<lcmt_hsr_sim_command>(context);
+  if (command.utime != 0) {
+    const int joint_command_size = command.num_joints;
+    DRAKE_DEMAND(joint_command_size == robot_plant_->num_actuators());
 
-  const int joint_command_size = command.num_joints;
-  DRAKE_DEMAND(joint_command_size == robot_plant_->num_actuators());
-
-  const int num_positions = robot_plant_->num_positions();
-  for (int i = 0; i < joint_command_size; ++i) {
-    const auto& joint_name = command.joint_name[i];
-    const auto& joint_it = robot_plant_->GetJointByName(joint_name);
-    (*output)[joint_it.position_start()] = command.joint_position[i];
-    (*output)[num_positions + joint_it.velocity_start()] =
-        command.joint_velocity[i];
+    const int num_positions = robot_plant_->num_positions();
+    for (int i = 0; i < joint_command_size; ++i) {
+      const auto& joint_name = command.joint_name[i];
+      const auto& joint_it = robot_plant_->GetJointByName(joint_name);
+      (*output)[joint_it.position_start()] = command.joint_position[i];
+      (*output)[num_positions + joint_it.velocity_start()] =
+          command.joint_velocity[i];
+    }
+  } else {
+    output->SetZero();
   }
 }
 

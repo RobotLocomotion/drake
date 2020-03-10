@@ -41,6 +41,10 @@ DEFINE_double(kd, 40.0,
 DEFINE_double(ki, 2.0,
               "The constant default i gain for the inverse dynamic controller");
 
+DEFINE_bool(use_constant_desired_state, false,
+            "If false, the HsrWorld will listen to the lcm for desired state."
+            "Otherwise, it will use a constant source.");
+
 namespace drake {
 namespace examples {
 namespace hsr {
@@ -63,6 +67,7 @@ SimParameters CreateSimParameters() {
   result.kp = FLAGS_kp;
   result.kd = FLAGS_kd;
   result.ki = FLAGS_ki;
+  result.use_constant_desired_state = FLAGS_use_constant_desired_state;
   return result;
 }
 

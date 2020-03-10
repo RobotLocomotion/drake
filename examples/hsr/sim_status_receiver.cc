@@ -47,15 +47,19 @@ void SimStatusReceiver::CalcTorqueOutput(
     systems::BasicVector<double>* output) const {
   const auto& status =
       this->get_sim_status_input_port().Eval<lcmt_hsr_sim_status>(context);
+  if (status.utime != 0) {
+    const int joint_status_size = status.num_joints;
+    DRAKE_DEMAND(joint_status_size == robot_plant_->num_actuators());
 
-  const int joint_status_size = status.num_joints;
-  DRAKE_DEMAND(joint_status_size == robot_plant_->num_actuators());
-
-  for (int i = 0; i < joint_status_size; ++i) {
-    const auto& joint_actuator_name = status.joint_name[i] + "_actuator";
-    const auto& joint_actuator =
-        robot_plant_->GetJointActuatorByName(joint_actuator_name);
-    (*output)[joint_actuator.index()] = status.joint_torque[i];
+    for (int i = 0; i < joint_status_size; ++i) {
+      const auto& joint_actuator_name = status.joint_name[i] + "_actuator";
+      const auto& joint_actuator =
+          robot_plant_->GetJointActuatorByName(joint_actuator_name);
+      (*output)[joint_actuator.index()] = status.joint_torque[i];
+    }
+  } else {
+    output->SetZero();
+    (*output)[0] = 1.0;  // To make a valid quaternion representation.
   }
 }
 
