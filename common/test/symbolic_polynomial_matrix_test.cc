@@ -337,6 +337,47 @@ TEST_F(SymbolicPolynomialMatrixTest, doubleMonomial) {
   EXPECT_TRUE(CheckMultiplication(M_double_static_, M_monomial_static_));
   EXPECT_TRUE(CheckDotProduct(v_double_static_, v_monomial_static_));
 }
+
+TEST_F(SymbolicPolynomialMatrixTest, EvaluateMatrix) {
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
+
+  EXPECT_EQ(Evaluate(M_poly_dynamic_, env),
+            Evaluate(M_poly_dynamic_.cast<Expression>(), env));
+
+  EXPECT_EQ(Evaluate(M_poly_static_, env),
+            Evaluate(M_poly_static_.cast<Expression>(), env));
+
+  EXPECT_EQ(Evaluate(v_poly_dynamic_, env),
+            Evaluate(v_poly_dynamic_.cast<Expression>(), env));
+
+  EXPECT_EQ(Evaluate(v_poly_static_, env),
+            Evaluate(v_poly_static_.cast<Expression>(), env));
+}
+
+TEST_F(SymbolicPolynomialMatrixTest, Jacobian) {
+  const Vector3<Variable> vars{var_x_, var_y_, var_z_};
+  {
+    const MatrixX<Polynomial> result{Jacobian(v_poly_dynamic_, vars)};
+    for (int i = 0; i < v_poly_dynamic_.size(); ++i) {
+      for (int j = 0; j < vars.size(); ++j) {
+        const Polynomial p1{v_poly_dynamic_(i).Differentiate(vars(j))};
+        const Polynomial& p2{result(i, j)};
+        EXPECT_TRUE(p1.EqualTo(p2));
+      }
+    }
+  }
+  {
+    const MatrixX<Polynomial> result{Jacobian(v_poly_static_, vars)};
+    for (int i = 0; i < v_poly_static_.size(); ++i) {
+      for (int j = 0; j < vars.size(); ++j) {
+        const Polynomial p1{v_poly_static_(i).Differentiate(vars(j))};
+        const Polynomial& p2{result(i, j)};
+        EXPECT_TRUE(p1.EqualTo(p2));
+      }
+    }
+  }
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
