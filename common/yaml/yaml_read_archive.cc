@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include <fmt/ostream.h>
 
@@ -9,9 +10,30 @@
 namespace drake {
 namespace yaml {
 
+bool YamlReadArchive::has_root() const {
+  if (mapish_item_key_ != nullptr) {
+    return true;
+  }
+  DRAKE_DEMAND(root_ != nullptr);
+  return !(root_->IsNull());
+}
+
+YAML::Node YamlReadArchive::MaybeGetSubNode(const char* name) const {
+  DRAKE_DEMAND(name != nullptr);
+  if (mapish_item_key_ != nullptr) {
+    DRAKE_DEMAND(mapish_item_value_ != nullptr);
+    if (std::strcmp(mapish_item_key_, name) == 0) {
+      return *mapish_item_value_;
+    }
+    return {};
+  }
+  DRAKE_DEMAND(root_ != nullptr);
+  return (*root_)[name];
+}
+
 YAML::Node YamlReadArchive::GetSubNode(
     const char* name, YAML::NodeType::value expected_type) const {
-  const YAML::Node result = root_[name];
+  const YAML::Node result = MaybeGetSubNode(name);
   if (!result) {
     ReportMissingYaml("is missing");
     return {};
@@ -43,8 +65,16 @@ void YamlReadArchive::ReportMissingYaml(const std::string& note) const {
 }
 
 void YamlReadArchive::PrintNodeSummary(std::ostream& s) const {
-  fmt::print(s, "YAML node of type {}", to_string(root_.Type()));
-  switch (root_.Type()) {
+  YAML::Node to_print;
+  if (mapish_item_key_ != nullptr) {
+    DRAKE_DEMAND(mapish_item_value_ != nullptr);
+    to_print[mapish_item_key_] = *mapish_item_value_;
+  } else {
+    DRAKE_DEMAND(root_ != nullptr);
+    to_print = *root_;
+  }
+  fmt::print(s, "YAML node of type {}", to_string(to_print.Type()));
+  switch (to_print.Type()) {
     case YAML::NodeType::Undefined:
     case YAML::NodeType::Null:
     case YAML::NodeType::Scalar:
@@ -53,12 +83,12 @@ void YamlReadArchive::PrintNodeSummary(std::ostream& s) const {
       break;
     }
     case YAML::NodeType::Map: {
-      const size_t size = root_.size();
+      const size_t size = to_print.size();
       fmt::print(s, " (with size {} and keys {{", size);
       // Sort the keys so that our error message is deterministic.
       std::vector<std::string> keys;
       keys.reserve(size);
-      for (const auto& map_pair : root_) {
+      for (const auto& map_pair : to_print) {
         keys.emplace_back(map_pair.first.as<std::string>());
       }
       std::sort(keys.begin(), keys.end());
