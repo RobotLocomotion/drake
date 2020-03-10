@@ -125,7 +125,7 @@ Build system and dependencies
 * Upgrade styleguide to latest commit (includes cpplint changes) (`#12765`_, `#12800`_, `#12776`_)
 * Fix missing load() in drake_bazel_installed support (`#12605`_)
 * Added new_release reporting for some missed items (`#12837`_)
-* Updated buildifier to latest release 2.0.0 (`#12836`_)
+* Upgrade buildifier to latest release 2.0.0 (`#12836`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
