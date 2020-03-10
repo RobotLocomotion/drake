@@ -11,6 +11,7 @@
 #ifndef __clang__
 // N.B. Without this, GCC 7.4.0 on Ubuntu complains about
 // `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
+// We have not tested whether GCC 7.5.0 still complains.
 // TODO(eric.cousineau):  #11566 Figure out why?
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
