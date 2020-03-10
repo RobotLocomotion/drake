@@ -8,6 +8,7 @@ namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using math::RotationMatrixd;
 
 bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
                       const math::RigidTransformd& X_AB) {
@@ -99,6 +100,73 @@ bool Aabb::HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
   const double max_distance = plane_P.CalcSignedDistance(p_PoCmax_P);
   const double min_distance = plane_P.CalcSignedDistance(p_PoCmin_P);
   return min_distance <= 0 && 0 <= max_distance;
+}
+
+bool Aabb::HasOverlap(const Aabb& bv, const HalfSpace&,
+                      const math::RigidTransformd& X_CH) {
+  /*
+                                              Hy           Hx
+                                                ╲        ╱
+                        By  ╱╲       Bx          ╲      ╱
+                          ╲╱  ╲    ╱              ╲    ╱
+                          ╱╲   ╲  ╱                ╲  ╱
+                         ╱  ╲   ╲╱                  ╲╱
+                         ╲   ╲  ╱╲   bv               Ho
+                          ╲   ╲╱  ╲
+                           ╲   Bo  ╲
+                            ╲       ╲
+                             ╲      ╱
+                              ╲    ╱
+                               ╲  ╱        Cz
+                                ╲╱         ^
+                                L          ┃  Cx
+              ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┺━━━>┄┄┄┄┄┄┄┄┄┄┄┄┄
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Half space
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+    If any point in the bounding volume has a signed distance φ that is less
+    than or equal to zero, we consider the box to be overlapping the half space.
+    We could simply, yet inefficiently, determine this by iterating over all
+    eight vertices and evaluating the signed distance for each vertex.
+
+    However, to provide value as a culling algorithm, we need to be cheaper. So,
+    if the lowest corner (marked `L`) has a signed distance less than or equal
+    to zero, the overlapping condition is met.
+
+    The point L = Bₒ + ∑ sᵢ * dᵢ * Bᵢ, where:
+      - i ∈ {x, y, z}.
+      - dᵢ is the _half_ measure of the box's dimension along axis i.
+      - sᵢ ∈ {1, -1}, such that sᵢBᵢ ⋅ Cz ≤ 0.
+
+    Since, φ(p_CL) = p_CL ⋅ Cz. If p_CL is expressed in C, then the z-component
+    of p_CL (p_CL_z), is equal to φ(p_CL). So, if p_CL_z ≤ 0, they overlap.
+   */
+
+  // The z-component of the position vector from box center (Bo) to the lowest
+  // corner of the box (L) expressed in the half space's canonical frame C.
+  const auto& R_CH = X_CH.rotation().matrix();
+  double p_BL_C_z = 0.0;
+  for (int i = 0; i < 3; ++i) {
+    // R_CH(2, i) is Hi_C(2) --> the z-component of Hi_C.
+    const double Hi_C_z = R_CH(2, i);
+    const double s_i = Hi_C_z > 0 ? -1 : 1;
+    p_BL_C_z += s_i * bv.half_width()(i) * Hi_C_z;
+  }
+  // Now we compute the z-component of the position vector from Co to L,
+  // expressed in Frame C.
+  //  p_CL_C = p_CB_C                   + p_BL_C
+  //         = p_CH_C + p_HB_C          + p_BL_C
+  //         = p_CH_C + (R_CH * p_HB_H) + p_BL_C
+  // In all of these calculations, we only need the z-component. So, that means
+  // we can get the z-component of p_HB_C without the full
+  // R_CH * p_HB_H calculation; we can simply do Cz_H ⋅ p_HB_H.
+  const Vector3d& p_HB_H = bv.center();
+  const Vector3d& Cz_H = R_CH.row(2);
+  const double p_HB_C_z = Cz_H.dot(p_HB_H);
+  const double p_CH_C_z = X_CH.translation()(2);
+  const double p_CB_C_z = p_CH_C_z + p_HB_C_z;
+  const double p_CL_C_z = p_CB_C_z + p_BL_C_z;
+  return p_CL_C_z <= 0;
 }
 
 void Aabb::PadBoundary() {

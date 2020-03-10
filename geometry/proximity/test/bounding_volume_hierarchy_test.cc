@@ -650,6 +650,110 @@ GTEST_TEST(AabbTest, PlaneOverlap) {
   }
 }
 
+
+// Tests the determination of an Aabb intersects a half space.
+GTEST_TEST(AabbTest, HalfSpaceOverlap) {
+  // We'll rely on the pose to reposition the box.
+  const Vector3d p_HoBo_H = Vector3d{0.25, -0.5, 0.75};
+  const Vector3d half_width{1, 2, 3};
+  Aabb aabb_H{p_HoBo_H, half_width};
+
+  // Find the "lowest" corner of the aabb relative to the half space. That means
+  // the corner that has the smallest "z" value when expressed in Frame C.
+  // We return the corner measured in the H frame and expressed in the C frame.
+  // We use a brute force method to distinguish from the "cleverness" in the
+  // Aabb algorithm.
+  auto lowest_corner = [&half_width, &p_HoBo_H](const RotationMatrixd& R_CH) {
+    Vector3d p_HoVmin_C =
+        Vector3d::Constant(std::numeric_limits<double>::infinity());
+    for (const double x_sign : {-1.0, 1.0}) {
+      for (const double y_sign : {-1.0, 1.0}) {
+        for (const double z_sign : {-1.0, 1.0}) {
+          const Vector3d signs{x_sign, y_sign, z_sign};
+          const Vector3d p_BoV_H = half_width.cwiseProduct(signs);
+          const Vector3d p_HoV_H = p_HoBo_H + p_BoV_H;
+          const Vector3d p_HoV_C = R_CH * p_HoV_H;
+          if (p_HoV_C(2) < p_HoVmin_C(2)) {
+            p_HoVmin_C = p_HoV_C;
+          }
+        }
+      }
+    }
+    return p_HoVmin_C;
+  };
+
+  const double kEps = 100 * std::numeric_limits<double>::epsilon();
+  // An arbitrary collection of orientations.
+  std::vector<AngleAxisd> R_CHs{
+      AngleAxisd{0, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitZ()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      AngleAxisd{7 * M_PI / 6, Vector3d{-1, 2, -3}.normalized()},
+      AngleAxisd{12 * M_PI / 7, Vector3d{1, -2, 3}.normalized()}
+  };
+  const HalfSpace hs_C;
+
+  for (const auto& angle_axis_CH : R_CHs) {
+    const RotationMatrixd R_CH{angle_axis_CH};
+    const Vector3d p_HoVmin_C = lowest_corner(R_CH);
+    // We position Ho such that Vmin lies on the Cz = 0 plane. Given we
+    // know p_HoVmin_C, we know its current z-value. To put it at zero, we
+    // must displace it in the negative of that z value. The x- and y-values
+    // don't matter, so we pick values we know not to be zero.
+    {
+      // Place the minimum corner just "outside" the half space.
+      // Note: It's unclear why this particular test requires an epsilon twice
+      // as large (compared to the other tests) to work across all
+      // configurations of R_CH.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmin_C(2) + 2 * kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_FALSE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+    {
+      // Place the minimum corner just "below" the plane.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmin_C(2) - kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+
+    // As soon as the box penetrates the half space, no amount of movement
+    // against the surface normal direction will ever report a non-overlapping
+    // state. We sample from that sub-domain by pushing the maximum corner
+    // (Vmax) near the boundary and then push the whole box deep into the
+    // half space.
+    //
+    // Vmax is the reflection of Vmin over Bo (the origin of the box). We'll
+    // express all vectors in the C frame so we can place that corner just above
+    // and below the Cz = 0  plane using the same trick as documented above.
+    const Vector3d p_HoBo_C = R_CH * p_HoBo_H;
+    const Vector3d p_HoVmax_C = p_HoVmin_C + 2 * (p_HoBo_C - p_HoVmin_C);
+    {
+      // Put the maximum corner just above the Cz = 0 plane.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) + kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+
+    {
+      // Put the maximum corner just below the Cz = 0 plane.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+
+    {
+      // Bury the box deep in the half space.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - 1e8}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
