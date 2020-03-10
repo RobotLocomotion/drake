@@ -65,6 +65,7 @@ class SimLcmTestConfig final {
  private:
   const lcmt_hsr_sim_status CreateSimStatusMessage() const {
     lcmt_hsr_sim_status message;
+    message.utime = 1;
     message.num_joints = robot_plant_.num_actuators();
     for (multibody::JointActuatorIndex i(0); i < robot_plant_.num_actuators();
          ++i) {
@@ -79,6 +80,7 @@ class SimLcmTestConfig final {
 
   const lcmt_hsr_sim_command CreateSimCommandMessage() const {
     lcmt_hsr_sim_command message;
+    message.utime = 1;
     message.num_joints = robot_plant_.num_actuators();
     for (multibody::JointActuatorIndex i(0); i < robot_plant_.num_actuators();
          ++i) {
