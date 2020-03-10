@@ -122,6 +122,8 @@ Build system and dependencies
 * Upgrade ghc_filesystem to latest release 1.3.0 (`#12799`_)
 * Upgrade styleguide to latest commit (includes cpplint changes) (`#12765`_, `#12800`_, `#12776`_)
 * Fix missing load() in drake_bazel_installed support (`#12605`_)
+* Added new_release reporting for some missed items (`#12837`_)
+* Updated buildifier to latest release 2.0.0 (`#12836`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -173,8 +175,5 @@ Commits to be categorized
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit 0aea3a58eaca0500d4346d01fe05d5352193c4a0 (inclusive).
 
-* workspace: Add new_release reporting for some missed items (`#12837`_)  # Dependencies only used by BUILD files (and not actual targets) were being overlooked.  For now at least, we'll list them out manually instead of fixing the query.
 * Add more methods to symbolic::Polynomial (`#12835`_)
 * yaml: Fix accidentally quadratic parsing (`#12830`_)  # * yaml: Remove accidentally quadratic explosion during reading
-* workspace: Update buildifier to latest release 2.0.0 (`#12836`_)
-
