@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
+#include "drake/systems/analysis/region_of_attraction.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -135,39 +136,53 @@ PYBIND11_MODULE(analysis, m) {
 
   // Monte Carlo Testing
   {
+    // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+    using namespace drake::systems::analysis;
     constexpr auto& doc = pydrake_doc.drake.systems.analysis;
 
     m.def("RandomSimulation",
-        WrapCallbacks(
-            [](const analysis::SimulatorFactory make_simulator,
-                const analysis::ScalarSystemFunction& output, double final_time,
-                RandomGenerator* generator) -> double {
-              return analysis::RandomSimulation(
-                  make_simulator, output, final_time, generator);
-            }),
+        WrapCallbacks([](const SimulatorFactory make_simulator,
+                          const ScalarSystemFunction& output, double final_time,
+                          RandomGenerator* generator) -> double {
+          return RandomSimulation(
+              make_simulator, output, final_time, generator);
+        }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("generator"), doc.RandomSimulation.doc);
 
-    py::class_<analysis::RandomSimulationResult>(
+    py::class_<RandomSimulationResult>(
         m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
-        .def_readwrite("output", &analysis::RandomSimulationResult::output,
+        .def_readwrite("output", &RandomSimulationResult::output,
             doc.RandomSimulationResult.output.doc)
         .def_readonly("generator_snapshot",
-            &analysis::RandomSimulationResult::generator_snapshot,
+            &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
     m.def("MonteCarloSimulation",
-        WrapCallbacks(
-            [](const analysis::SimulatorFactory make_simulator,
-                const analysis::ScalarSystemFunction& output, double final_time,
-                int num_samples, RandomGenerator* generator)
-                -> std::vector<analysis::RandomSimulationResult> {
-              return analysis::MonteCarloSimulation(
-                  make_simulator, output, final_time, num_samples, generator);
-            }),
+        WrapCallbacks([](const SimulatorFactory make_simulator,
+                          const ScalarSystemFunction& output, double final_time,
+                          int num_samples, RandomGenerator* generator)
+                          -> std::vector<RandomSimulationResult> {
+          return MonteCarloSimulation(
+              make_simulator, output, final_time, num_samples, generator);
+        }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("num_samples"), py::arg("generator"),
         doc.MonteCarloSimulation.doc);
+
+    py::class_<RegionOfAttractionOptions>(
+        m, "RegionOfAttractionOptions", doc.RegionOfAttractionOptions.doc)
+        .def(py::init<>(), doc.RegionOfAttractionOptions.ctor.doc)
+        .def_readwrite("lyapunov_candidate",
+            &RegionOfAttractionOptions::lyapunov_candidate,
+            doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
+        .def_readwrite("state_variables",
+            &RegionOfAttractionOptions::state_variables,
+            doc.RegionOfAttractionOptions.state_variables.doc);
+
+    m.def("RegionOfAttraction", &RegionOfAttraction, py::arg("system"),
+        py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),
+        doc.RegionOfAttraction.doc);
   }
 }
 
