@@ -605,7 +605,7 @@ GTEST_TEST(AabbTest, PlaneOverlap) {
     for (const auto& X_QP : X_QPs) {
       // Define the plane in the query frame Q.
       const Vector3d& Pz_Q = X_QP.rotation().col(2);
-      Plane<double> plane_Q{Pz_Q, Pz_Q.dot(X_QP.translation())};
+      Plane<double> plane_Q{Pz_Q, X_QP.translation()};
 
       // We position Ho such that Cmin lies on the Pz = 0 plane. Given we
       // know p_HoCmin_P, we know its current z-value. To put it at zero, we
