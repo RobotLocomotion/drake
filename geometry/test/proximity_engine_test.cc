@@ -156,13 +156,13 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kUndefined);
   }
 
-  // Case: rigid half_space (unsupported).
+  // Case: rigid half_space.
   {
     HalfSpace half_space;
     const GeometryId half_space_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(half_space, half_space_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(half_space_id, engine),
-              HydroelasticType::kUndefined);
+              HydroelasticType::kRigid);
   }
 
   // Case: rigid box.

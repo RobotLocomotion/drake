@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -39,9 +40,20 @@ GTEST_TEST(PlaneTest, Construction) {
   }
 
   {
-    // Case: Unnormalized vector forced to be used is preserved.
-    const Planed plane_F{0.5 * nhat_F, p_FP, true /* already_normalized */};
-    EXPECT_TRUE(CompareMatrices(plane_F.normal(), 0.5 * nhat_F));
+    // Case: Declaring the vector already normalized.
+    if (kDrakeAssertIsArmed) {
+      // With assertions armed, it must be sufficiently unit length.
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          Planed(nhat_F * 0.99999, p_FP, true), std::runtime_error,
+          "Plane constructed with a normal vector that was declared normalized;"
+          " the vector is not unit length.*");
+      // Within a tolerance it is accepted.
+      EXPECT_NO_THROW(Planed(nhat_F * (1 - 10 * kEps), p_FP, true));
+    } else {
+      // In release, it is simply used.
+      const Planed plane_F{0.5 * nhat_F, p_FP, true /* already_normalized */};
+      EXPECT_TRUE(CompareMatrices(plane_F.normal(), 0.5 * nhat_F));
+    }
   }
 
   {
@@ -54,7 +66,7 @@ GTEST_TEST(PlaneTest, Construction) {
 }
 
 // Confirms that height behaves as expected.
-GTEST_TEST(PlnaeTest, CalcHeight) {
+GTEST_TEST(PlaneTest, CalcHeight) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
   // Normal in arbitrary direction.
   const Vector3d nhat_F = Vector3d{-1, 0.25, 1.3}.normalized();
@@ -77,20 +89,6 @@ GTEST_TEST(PlnaeTest, CalcHeight) {
     Planed plane_F{-nhat_F, p_FB};
     for (int i = 0; i < 2; ++i) {
       EXPECT_NEAR(plane_F.CalcHeight(p_FQs[i]), -h_Qs[i], kEps);
-    }
-  }
-
-  {
-    // If the normal vector is not unit length and the constructor is told to
-    // think it is normalized, it is documented that the height values will not
-    // be actual height; confirm that.
-    const double scale = 0.5;
-    Planed plane_F{scale * nhat_F, p_FB, true /* already_normalized */};
-    for (int i = 0; i < 2; ++i) {
-      // In this case, although not documented, we know the reported height is
-      // the scaled height. We use that knowledge to show that the reported
-      // height is _not_ the actual height.
-      EXPECT_NEAR(plane_F.CalcHeight(p_FQs[i]), scale * h_Qs[i], kEps);
     }
   }
 }
