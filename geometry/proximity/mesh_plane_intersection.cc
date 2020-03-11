@@ -74,7 +74,7 @@ void SliceTetWithPlane(
   int intersection_code = 0;
   for (int i = 0; i < 4; ++i) {
     const VolumeVertexIndex v = mesh_M.element(tet_index).vertex(i);
-    distance[i] = plane_M.CalcSignedDistance(mesh_M.vertex(v).r_MV());
+    distance[i] = plane_M.CalcHeight(mesh_M.vertex(v).r_MV());
     if (distance[i] > T(0)) intersection_code |= 1 << i;
   }
 

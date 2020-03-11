@@ -26,35 +26,6 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using std::unique_ptr;
 
-// TODO(SeanCurtis-TRI): Unit test HalfSpace's signed_distance() and
-//  point_is_outside() methods.
-
-// This simply tests arbitrary normals to make sure they satisfy the
-// normalization test. They hypothesis is that *any* Vector3 normalized must
-// have a magnitude that is less than 1 epsilon away from 1 (except for the
-// zero vector, obviously).
-GTEST_TEST(HalfSpace, Construction) {
-  const double kEps = std::numeric_limits<double>::epsilon();
-  std::vector<Vector3d> dirs{
-      {1., kEps, kEps},
-      {1., std::sqrt(kEps), std::sqrt(kEps)},
-      {1., 2 * std::sqrt(kEps), 2 * std::sqrt(kEps)},
-      {1.123412345, 10.1231231235, -200.23298298374}
-  };
-  for (const Vector3d& dir : dirs) {
-    // This would abort for normal vectors that aren't unit length (see the
-    // death test below).
-    Plane<double>(dir.normalized(), 0.25);
-  }
-}
-
-// Confirms that a plane normal that is *insufficiently* unit length aborts.
-GTEST_TEST(HalfSpaceTest, Unnormalized) {
-  const double kDelta = 4 * std::sqrt(std::numeric_limits<double>::epsilon());
-  EXPECT_THROW(Plane<double>(Vector3d{1, kDelta, kDelta}, 0.25),
-               std::exception);
-}
-
 // TODO(SeanCurtis-TRI): Robustly confirm that epsilon of 1e-14 is correct for
 //  determining that the intersection is valid. One would suppose that it will
 //  depend on the magnitude of the values in play.
@@ -64,10 +35,11 @@ GTEST_TEST(MeshIntersectionTest, CalcIntersection) {
   const double kEps = std::numeric_limits<double>::epsilon();
   // TODO(SeanCurtis-TRI): This test has too many zeros in it (the normal is
   //  [1, 0, 0] -- that is not a robust test. Pick a more arbitrary normal.
-  // Halfspace {(x,y,z) : x <= 2.0}
+  // Half space {(x,y,z) : x <= 2.0}
   const Vector3d unit_normal_H = Vector3d::UnitX();
   const double plane_offset = 2.0;
-  const Plane<double> half_space_H(unit_normal_H, plane_offset);
+  const PosedHalfSpace<double> half_space_H(unit_normal_H,
+                                            plane_offset * unit_normal_H);
 
   // The line AB intersects the plane of the half space.
   {
@@ -109,10 +81,11 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
   //  The normal is [1, 0, 0] which kills most of the multiplication. Pick a
   //  more arbitrarily oriented normal and an offset that is not perfectly
   //  represented as a power of two.
-  // Halfspace {(x,y,z) : x <= 2.0}
-  const Vector3d unit_normal = Vector3d::UnitX();
+  // Half space {(x,y,z) : x <= 2.0}
+  const Vector3d unit_normal_H = Vector3d::UnitX();
   const double offset = 2.0;
-  const Plane<double> half_space(unit_normal, offset);
+  const PosedHalfSpace<double> half_space_H(unit_normal_H,
+                                            offset * unit_normal_H);
 
   // The input polygon is half inside the half space and half outside the
   // half space. Expect the output polygon to be half of the input polygon.
@@ -136,7 +109,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Also, by construction, the winding matches, so we will also not be
     // explicitly testing that.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space);
+        ClipPolygonByHalfSpace(input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // The input polygon is on the plane X=0, which is parallel to the plane of
@@ -154,7 +127,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Because we expect the output polygon to *be* the input polygon, we don't
     // need to explicitly test planarity or winding.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space);
+        ClipPolygonByHalfSpace(input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // The input polygon is on the plane X=3, which is parallel to the plane of
@@ -171,7 +144,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // clang-format on
     // Empty polygons have no winding and no planarity.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space);
+        ClipPolygonByHalfSpace(input_polygon, half_space_H);
     const std::vector<Vector3d> empty_polygon;
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, output_polygon));
   }
@@ -189,7 +162,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Because we expect the output polygon to *be* the input polygon, we don't
     // need to explicitly test planarity or winding.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space);
+        ClipPolygonByHalfSpace(input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // The input polygon is outside the half space, but it has one edge on the
@@ -213,7 +186,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // By construction, expected output is planar (z = 0 for all vertices). It
     // has no area, so winding is immaterial.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space);
+        ClipPolygonByHalfSpace(input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // The input polygon is outside the half space, but it has one vertex on the
@@ -235,7 +208,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // By construction, expected output is planar (z = 0 for all vertices). It
     // has no area, so winding is immaterial.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space);
+        ClipPolygonByHalfSpace(input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // TODO(SeanCurtis-TRI): Clip a triangle into a quad. Clip a triangle into a
