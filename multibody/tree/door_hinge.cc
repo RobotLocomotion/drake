@@ -72,8 +72,8 @@ T DoorHinge<T>::CalcHingeFrictionalTorque(T angular_velocity,
         CalcApproximationCurves(T(config.motion_threshold), angular_velocity);
     drake::unused(singlet);
     return -(config.dynamic_friction_torque * s +
-           config.static_friction_torque * doublet +
-           config.viscous_friction * angular_velocity);
+             config.static_friction_torque * doublet +
+             config.viscous_friction * angular_velocity);
   }
 }
 
@@ -113,25 +113,40 @@ T DoorHinge<T>::CalcHingeNonConservativePower(
 }
 
 // Stored energy consists two parts. One is from the spring and another one is
-// from the catch torque. Since we assume linear torsional spring, the spring
-// torque energy is E_{spring_torque} = 0.5 * k_ts * (x - qs₀)². The catch
-// torque energy is the integration of the torque over the angle that the
-// torque is in effective, i.e. E_{catch_torque} = k_c * ∫doublet(t, x))dx,
-// and it's easy to see ∫doublet(t, x))dx = 1/t * singlet(t, x).
+// from the catch torque. The potential energy of the spring is derived as:
+// E_{spring_torque} = -∫τ_ts dq = -k_ts∫(q − qs₀)dq = 0.5 * k_ts * (q − qs₀)²
+// − 0.5 * k_ts * (q₀ − qs₀)² with q₀ = 0 as defined.
+// Similarly, the catch torque can be viewed as a nonlinear virtual spring, the
+// potential energy is the integration of the torque over the angle that the
+// torque is in effective, i.e. q ∈ [0, qc₀]. Therefore, the energy is:
+// E_{catch_torque} = -∫τ_cdx = -k_c∫doublet(qc₀/2, q − qc₀/2))dq =
+// k_c * qc₀ * (singlet(qc₀/2, q − qc₀/2) - singlet(qc₀/2, -qc₀/2)).
 template <typename T>
 T DoorHinge<T>::CalcHingeStoredEnergy(T angle,
                                       const DoorHingeConfig& config) const {
   T energy = 0.;
+  // Compute spring torque energy.
+  const T spring_offset = (angle - config.spring_zero_angle_rad);
+  const T spring_offset_init = (0. - config.spring_zero_angle_rad);
+  energy +=
+      0.5 * config.spring_constant *
+      (spring_offset * spring_offset - spring_offset_init * spring_offset_init);
+
+  // Compute catch torque energy.
   if (config.catch_width != 0) {
     const T catch_center = config.catch_width / 2;
-    const auto [s, singlet, doublet] =
+    const auto [s_q, singlet_q, doublet_q] =
         CalcApproximationCurves(catch_center, angle - catch_center);
-    drake::unused(s);
-    drake::unused(doublet);
-    energy += config.catch_torque * singlet / config.catch_width;
+    drake::unused(s_q);
+    drake::unused(doublet_q);
+
+    const auto [s_0, singlet_0, doublet_0] =
+        CalcApproximationCurves(catch_center, -catch_center);
+    drake::unused(s_0);
+    drake::unused(doublet_0);
+    energy +=
+        config.catch_torque * config.catch_width * (singlet_q - singlet_0);
   }
-  const T spring_offset = (angle - config.spring_zero_angle_rad);
-  energy += 0.5 * spring_offset * spring_offset * config.spring_constant;
   return energy;
 }
 
