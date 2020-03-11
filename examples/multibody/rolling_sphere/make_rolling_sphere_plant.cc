@@ -38,21 +38,16 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
   if (scene_graph != nullptr) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
 
-    // TODO(SeanCurtis-TRI): Once SceneGraph supports hydroelastic contact
-    //  between rigid half space and soft sphere, replace this box with the
-    //  equivalent half space.
-    const double size = 5;
-    RigidTransformd X_WG{Vector3<double>(0, 0, -size / 2)};
-    ProximityProperties box_props;
-    AddRigidHydroelasticProperties(size, &box_props);
-    AddContactMaterial({}, {}, surface_friction, &box_props);
+    const RigidTransformd X_WG;  // identity.
+    ProximityProperties ground_props;
+    AddRigidHydroelasticProperties(&ground_props);
+    AddContactMaterial({}, {}, surface_friction, &ground_props);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG,
-                                     geometry::Box(size, size, size),
-                                     "collision", std::move(box_props));
-
+                                     geometry::HalfSpace{}, "collision",
+                                     std::move(ground_props));
     // Add visual for the ground.
     plant->RegisterVisualGeometry(plant->world_body(), X_WG,
-                                  geometry::Box(size, size, size), "visual");
+                                  geometry::HalfSpace{}, "visual");
 
     // Add sphere geometry for the ball.
     // Pose of sphere geometry S in body frame B.

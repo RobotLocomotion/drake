@@ -10,6 +10,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -24,6 +25,7 @@ using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using std::make_unique;
 using std::pair;
 using std::set;
 using std::unique_ptr;
@@ -529,7 +531,7 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
                           8 * M_PI / 7, Vector3d{1, 2, 3}.normalized()}},
                       Vector3d{-2.3, -4.2, 3.7}}};
   for (const auto& X_FM : X_FMs) {
-    const Vector3d& Mz_F = X_FM.rotation().matrix().col(2);
+    const Vector3d& Mz_F = X_FM.rotation().col(2);
     // The minimum and maximum points of the tet in frame F.
     const Vector3d p_FMax = X_FM * p_MMax;
     const Vector3d p_FMin = X_FM * p_MMin;
@@ -709,12 +711,9 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
     // iterate through all six permutations. For example, we don't list the pair
     // (1, 2) because it is the "complement" of (0, 3). Same argument applies
     // to every other unique pair being a complement of one of those three.
-    for (const pair<int, int>& vertex_pair :
-         vector<pair<int, int>>{{0, 1}, {0, 2}, {0, 3}}) {
-      const Vector3d& p_FV0 =
-          mesh_F.vertex(tet.vertex(vertex_pair.first)).r_MV();
-      const Vector3d& p_FV1 =
-          mesh_F.vertex(tet.vertex(vertex_pair.second)).r_MV();
+    for (const auto [v0, v1] : vector<pair<int, int>>{{0, 1}, {0, 2}, {0, 3}}) {
+      const Vector3d& p_FV0 = mesh_F.vertex(tet.vertex(v0)).r_MV();
+      const Vector3d& p_FV1 = mesh_F.vertex(tet.vertex(v1)).r_MV();
       // Position on edge E nearest the centroid.
       const Vector3d p_FE = nearest_point_to_edge(p_FC, p_FV0, p_FV1);
       const Vector3d p_CE_F = p_FE - p_FC;
@@ -733,7 +732,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
         // of the plane.
         for (int i = 0; i < 4; ++i) {
           const Vector3d& p_FVi = mesh_F.vertex(tet.vertex(i)).r_MV();
-          if (i == vertex_pair.first || i == vertex_pair.second) {
+          if (i == v0 || i == v1) {
             EXPECT_GT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
           } else {
             EXPECT_LT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
@@ -828,7 +827,6 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   ASSERT_EQ(vertex_indices.size(), dupe_vertices_F.size());
 }
 
-
 /* This confirms that the structure of the query precludes "double counting". If
  the slicing plane is co-planar with a face shared by two tets, only
  intersection with _one_ of those tets will produce a result. */
@@ -871,6 +869,381 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
                       &surface_pressure, &cut_edges);
     EXPECT_EQ(faces.size(), 0);
   }
+}
+
+/* Test of ComputeContactSurface(). Most of the hard-core math is contained in
+ SliceTetWithPlane (and is covered by its unit tests). This function has the
+ following unique responsibilities:
+  1. No intersection returns nullptr.
+  2. The resulting contact surface is a function of the tets provided; they
+     are all considered and only those that actually intersect contribute to
+     to the final output.
+  3. Duplicates handled correctly; if the input mesh has no duplicates, the
+     result has none. Alternatively, if the input has duplicates, the output
+     does as well.
+  4. Confirm that the surface mesh field references the surface mesh in the
+     resultant ContactSurface.
+  5. Mesh normals point out of plane and into soft mesh.
+ These tests are done in a single, non-trivial frame F. The robustness of the
+ numerics is covered in the SliceTetWithPlaneTest and this just needs to
+ account for data tracking. */
+class ComputeContactSurfaceTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    X_WF_ = RigidTransformd{
+        RotationMatrixd{AngleAxisd{M_PI / 2, Vector3d::UnitX()}},
+        Vector3d{1.25, 2.5, -3.75}};
+    X_FM_ = RigidTransformd{RotationMatrixd{AngleAxisd{
+                                9 * M_PI / 7, Vector3d{1, 2, 3}.normalized()}},
+                            Vector3d{-2.3, -4.2, 3.7}};
+
+    // NOTE: all tests assume the minimum number of vertices in the mesh; no
+    // duplicates.
+    mesh_F_ = make_unique<VolumeMesh<double>>(
+        TrivialVolumeMesh(X_FM_, true /* minimum_vertices */));
+    field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
+        "pressure", vector<double>{0, 0, 0, 1, -1}, mesh_F_.get());
+    mesh_id_ = GeometryId::get_new_id();
+    plane_id_ = GeometryId::get_new_id();
+  }
+
+  // The soft mesh and the pressure field on that mesh.
+  unique_ptr<VolumeMesh<double>> mesh_F_;
+  unique_ptr<VolumeMeshFieldLinear<double, double>> field_F_;
+  GeometryId mesh_id_;
+  GeometryId plane_id_;
+
+  // Vectors of tet indices; to facilitate calls to ComputeContactSurface.
+  using VIndex = VolumeElementIndex;
+  const vector<VIndex> both_tets_{VIndex(0), VIndex(1)};
+  const vector<VIndex> only_tet_0_{VIndex(0)};
+  const vector<VIndex> only_tet_1_{VIndex(1)};
+
+  // Three frames:
+  //   - the query frame F
+  //   - the mesh frame M
+  //   - the world frame W.
+  // The poses X_FM and X_WF are arbitrary non-identity transforms. The full
+  // robustness of the math based on these transforms is captured in the tests
+  // for SliceTetWithPlane().
+  RigidTransformd X_FM_;
+  RigidTransformd X_WF_;
+};
+
+/* Tests responsibility 1 (listed above): if there is no intersection, nullptr
+ is returned. This is tested in several ways:
+   1. A scenario in which there is literally no intersection.
+   2. A scenario in which there is no intersection with the tets actually
+      provided. */
+TEST_F(ComputeContactSurfaceTest, NoIntersectionReturnsNullPtr) {
+  const Vector3d& Mz_F = X_FM_.rotation().col(2);
+  {
+    // Case: plane slices through *nothing*; but we'll test all tets.
+    const Vector3d p_FB = X_FM_.translation() + 1.5 * Mz_F;
+    const Plane<double> plane_F{Mz_F, p_FB};
+    EXPECT_EQ(ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_,
+                                            plane_F, both_tets_, X_WF_),
+              nullptr);
+  }
+
+  {
+    // Case: plane slices through tet 0, but we omit tet 0 from the test case
+    // therefore no intersection is detected and nullptr is returned.
+    const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
+    const Plane<double> plane_F{Mz_F, p_FB};
+    EXPECT_EQ(ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_,
+                                            plane_F, only_tet_1_, X_WF_),
+              nullptr);
+  }
+}
+
+/* Tests responsibility 2 (listed above): all tets are considered. This is
+ tested by configuring a plane that intersects with both tets and show that
+ calls which enumerate one tet, the other, or both, produce unique results. */
+TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
+  const Vector3d& Mx_F = X_FM_.rotation().col(0);
+  // The plane's normal aligns with Mx; slices through both tets.
+  const Vector3d p_FB = X_FM_.translation() + 0.5 * Mx_F;
+  const Plane<double> plane_F{Mx_F, p_FB};
+
+  // Passing in all tet indices produces the full intersection: 6 triangles.
+  unique_ptr<ContactSurface<double>> contact_surface =
+      ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                    both_tets_, X_WF_);
+  ASSERT_NE(contact_surface, nullptr);
+  EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+  EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+
+  // Passing just one or the other produces only one tet's worth of triangles.
+  auto contact_surface_0 =
+      ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                    only_tet_0_, X_WF_);
+  ASSERT_NE(contact_surface_0, nullptr);
+  EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 3);
+  EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 4);
+  const RigidTransformd X_MW = X_FM_.inverse() * X_WF_.inverse();
+  const SurfaceVertexIndex last_vertex{3};
+  {
+    // For tet 0, the z-value of the last vertex should be > 0.
+    const Vector3d& p_WV =
+        contact_surface_0->mesh_W().vertex(last_vertex).r_MV();
+    const Vector3d& p_MV = X_MW * p_WV;
+    EXPECT_GT(p_MV(2), 0);
+  }
+
+  auto contact_surface_1 =
+      ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                    only_tet_1_, X_WF_);
+  ASSERT_NE(contact_surface_1, nullptr);
+  EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 3);
+  EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 4);
+  {
+    // For tet 1, the z-value of the last vertex should be < 0.
+    const Vector3d& p_WV =
+        contact_surface_1->mesh_W().vertex(last_vertex).r_MV();
+    const Vector3d& p_MV = X_MW * p_WV;
+    EXPECT_LT(p_MV(2), 0);
+  }
+}
+
+/* Tests responsibility 3: no duplicates are introduced. While this is implied
+ by the *counts* of vertices observed in other tests, this one explicitly
+ compares vertex values to make sure they are reasonably distant. */
+TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
+  const Vector3d& Mx_F = X_FM_.rotation().col(0);
+  // The plane's normal aligns with Mx; slices through both tets.
+  const Vector3d p_FB = X_FM_.translation() + 0.5 * Mx_F;
+  const Plane<double> plane_F{Mx_F, p_FB};
+
+  /* Contact surface would look like this:
+
+          z
+          ┆
+          ○
+          ┃╲                 The two triangles are formed by the slicing plane.
+          ┃ ╲                They are subdivided into three triangles each using
+          ┃○ ╲               each triangle's centroid. The two vertices on the
+          ┃   ╲              y axis (marked with ●) are shared when the input
+   ┄┄┄┄┄┄┄●┄┄┄┄●┄┄┄ y        mesh has no duplicates, and are duplicated when
+          ┃   ╱              the input mesh has duplicates, leading to an
+          ┃○ ╱               expected 6 or 8 vertices, respectively.
+          ┃ ╱
+          ┃╱
+          ○
+          ┆
+  */
+  {
+    // Case 1: we operate on a mesh without duplicates; we get a contact surface
+    // without duplicates.
+
+    // Passing in all tet indices produces the full intersection: 6 triangles.
+    unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                      both_tets_, X_WF_);
+    ASSERT_NE(contact_surface, nullptr);
+    const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+    EXPECT_EQ(contact_mesh_W.num_elements(), 6);
+    EXPECT_EQ(contact_mesh_W.num_vertices(), 6);
+
+    // O(N^2) test comparing all vertex distances; report the minimum distance.
+    double min_distance = std::numeric_limits<double>::infinity();
+    for (SurfaceVertexIndex i{0}; i < 5; ++i) {
+      const Vector3d& p_WVi = contact_mesh_W.vertex(i).r_MV();
+      for (SurfaceVertexIndex j{i + 1}; j < 6; ++j) {
+        const Vector3d& p_WVj = contact_mesh_W.vertex(j).r_MV();
+        min_distance = std::min(min_distance, (p_WVj - p_WVi).norm());
+      }
+    }
+    // We pick an arbitrary number related to the scale of the tetrahedra and
+    // where the plane slices through the mesh; the point is that it is much,
+    // much larger than "zero".
+    EXPECT_GT(min_distance, 0.1);
+  }
+
+  {
+    // Case 2: we operate on a mesh _with_ duplicates; we get a contact surface
+    // with duplicates.
+    const VolumeMesh<double> dupe_mesh_F = TrivialVolumeMesh(X_FM_, false);
+    VolumeMeshFieldLinear<double, double> dupe_field_F{
+        "pressure", vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
+
+    // Passing in all tet indices produces the full intersection: 6 triangles.
+    unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(mesh_id_, dupe_field_F, plane_id_,
+                                      plane_F, both_tets_, X_WF_);
+    ASSERT_NE(contact_surface, nullptr);
+    const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+    EXPECT_EQ(contact_mesh_W.num_elements(), 6);
+    EXPECT_EQ(contact_mesh_W.num_vertices(), 8);
+
+    // We'll count the number of duplicates (based on distance between
+    // vertices). We expect two vertices to be duplicated.
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    int duplicate_count = 0;
+    for (SurfaceVertexIndex i{0}; i < 5; ++i) {
+      const Vector3d& p_WVi = contact_mesh_W.vertex(i).r_MV();
+      for (SurfaceVertexIndex j{i + 1}; j < 6; ++j) {
+        const Vector3d& p_WVj = contact_mesh_W.vertex(j).r_MV();
+        if ((p_WVj - p_WVi).norm() < kEps) ++duplicate_count;
+      }
+    }
+    EXPECT_EQ(duplicate_count, 2);
+  }
+}
+
+/* Tests responsibility 4: the returned contact surface has a pressure field
+ that references its own mesh. */
+TEST_F(ComputeContactSurfaceTest, ContactSurfaceFieldReferencesMesh) {
+  // The plane slices through tet 0 creating a single triangle (decomposed into
+  // three in the output).
+  const Vector3d& Mz_F = X_FM_.rotation().col(2);
+  const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
+  const Plane<double> plane_F{Mz_F, p_FB};
+  unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_);
+  const auto& mesh_W = contact->mesh_W();
+  const auto& field_W = contact->e_MN();
+  EXPECT_EQ(&mesh_W, &field_W.mesh());
+}
+
+/* Tests responsibility 5: the normals point out of the plane and into the
+ volume mesh. */
+TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
+  // The plane slices through tet 0 creating a single triangle (decomposed into
+  // three in the output).
+  const Vector3d& Mz_F = X_FM_.rotation().col(2);
+  const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
+  const Plane<double> plane_F{Mz_F, p_FB};
+
+  // We'll evaluate it with two id configurations. We want to make sure that
+  // the normals are correct, regardless of relationship between ids.
+  vector<pair<GeometryId, GeometryId>> ids{{mesh_id_, plane_id_},
+                                           {plane_id_, mesh_id_}};
+  for (const auto [id_A, id_B] : ids) {
+    unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
+        id_A, *field_F_, id_B, plane_F, both_tets_, X_WF_);
+
+    const double normal_sign = contact->id_N() == id_B ? 1.0 : -1.0;
+    const Vector3d nhat_W = X_WF_.rotation() * (normal_sign * Mz_F);
+    // NOTE: When we set the normals directly from the plane, this precision
+    // will improve.
+    constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
+    const SurfaceMesh<double>& mesh_W = contact->mesh_W();
+    for (SurfaceFaceIndex f{0}; f < mesh_W.num_faces(); ++f) {
+      EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
+    }
+  }
+}
+
+/* Test of ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(). This function
+ has the following unique responsibilities:
+
+  1. Simply that all of the values contribute to the output (poses, ids, etc.)
+  2. Autodiff-valued transforms throw. */
+GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  // Create mesh and volume mesh.
+  const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
+  const VolumeMeshFieldLinear<double, double> field_F{
+      "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
+  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_F(mesh_F);
+
+  // We'll pose the plane in the soft mesh's frame S and then transform the
+  // whole system.
+  const RigidTransformd X_WS{
+      RotationMatrixd{AngleAxisd{M_PI / 3, Vector3d{-1, 1, 1}.normalized()}},
+      Vector3d{1.25, 2.5, -3.75}};
+
+  // We want the plane to cut through both tets simultaneously. So, orient its
+  // normal Rz in the Sx (via rotation around Sy). We then position it 0.5 units
+  // in the Sx direction (displacement in the Sy and Sz directions have no
+  // affect on the final answer as it is displacement on the plane).
+  const RigidTransformd X_SR{
+      RotationMatrixd{AngleAxisd{M_PI / 2, Vector3d::UnitY()}},
+      Vector3d{0.5, 2.25, -1.25}};
+  const RigidTransformd X_WR = X_WS * X_SR;
+
+  constexpr double kEps = 16 * std::numeric_limits<double>::epsilon();
+
+  {
+    // Case 1: in initial configuration, we get a contact surface with
+    // appropriate contact info. We won't exhaustively test the data, relying
+    // on previous tests to prove correctness. We're just looking for positive
+    // indicators.
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS, id_B, X_WR);
+    ASSERT_NE(contact_surface, nullptr);
+    // We exploit the knowledge that id_M < id_N and id_A < id_B.
+    ASSERT_LT(id_A, id_B);
+    EXPECT_EQ(contact_surface->id_M(), id_A);
+    EXPECT_EQ(contact_surface->id_N(), id_B);
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    // Sample the face normals.
+    const Vector3d& norm_W =
+        contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
+    const Vector3d& Sx_W = X_WS.rotation().col(0);
+    EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
+    // Sample the vertex positions: in the S frame they should all have x = 0.5.
+    const Vector3d& p_WV =
+        contact_surface->mesh_W().vertex(SurfaceVertexIndex{0}).r_MV();
+    const Vector3d p_SV = X_WS.inverse() * p_WV;
+    EXPECT_NEAR(p_SV(0), 0.5, kEps);
+  }
+
+  // Subsequent tests will not test all the properties of the resulting contact
+  // surface. We assume that the initial test indicates the values come through.
+
+  {
+    // Case 2: Move the mesh out of intersection.
+    const RigidTransformd X_SM{Vector3d{-0.51, 0, 0}};
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR);
+    ASSERT_EQ(contact_surface, nullptr);
+  }
+
+  {
+    // Case 3: Move the plane out of intersection.
+    const RigidTransformd X_SR2{X_SR.rotation(), Vector3d{1.01, 0, 0}};
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2);
+    ASSERT_EQ(contact_surface, nullptr);
+  }
+
+  {
+    // Case 4: Reverse GeometryIds.
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_B, field_F, bvh_F, X_WS, id_A, X_WR);
+    ASSERT_NE(contact_surface, nullptr);
+    EXPECT_EQ(contact_surface->id_M(), id_A);
+    EXPECT_EQ(contact_surface->id_N(), id_B);
+    // The effect of reversing the labels reverses the normals, so repeat the
+    // normal test, but in the opposite direction.
+    const Vector3d& norm_W =
+        contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
+    const Vector3d& Sx_W = X_WS.rotation().col(0);
+    EXPECT_TRUE(CompareMatrices(norm_W, -Sx_W, kEps));
+  }
+}
+
+GTEST_TEST(MeshPlaneIntersectionTest, AutoDiffThrows) {
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  // Create mesh and volume mesh.
+  const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
+  const VolumeMeshFieldLinear<double, double> field_F{
+      "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
+  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_F(mesh_F);
+
+  const RigidTransform<AutoDiffXd> X_WS;
+  const RigidTransform<AutoDiffXd> X_WR;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(id_A, field_F, bvh_F,
+                                                        X_WS, id_B, X_WR),
+      std::logic_error,
+      "AutoDiff-valued ContactSurface calculations are not currently "
+      "supported");
 }
 
 }  // namespace

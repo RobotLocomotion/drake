@@ -5,7 +5,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace geometry {
@@ -25,7 +28,21 @@ GTEST_TEST(PosedHalfSpaceTest, Construction) {
   EXPECT_NO_THROW(PosedHalfSpace<double>(nhat_F, p_FP));
   EXPECT_THROW(PosedHalfSpace<double>(5e-11 * nhat_F, p_FP),
                std::exception);
-  EXPECT_NO_THROW(PosedHalfSpace<double>(0.5 * nhat_F, p_FP, true));
+
+  // Case: Declaring the vector already normalized.
+  if (kDrakeAssertIsArmed) {
+    // With assertions armed, it must be sufficiently unit length.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        PosedHalfSpace<double>(nhat_F * 0.99999, p_FP, true),
+        std::runtime_error,
+        "Plane constructed with a normal vector that was declared normalized;"
+        " the vector is not unit length.*");
+  } else {
+    // In release, it is simply used.
+    PosedHalfSpace<double> hs_F{0.5 * nhat_F, p_FP,
+                                true /* already_normalized */};
+    EXPECT_TRUE(CompareMatrices(hs_F.normal(), 0.5 * nhat_F));
+  }
 }
 
 // Confirms that the signed distance behaves as expected.
