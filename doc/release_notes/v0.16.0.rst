@@ -42,6 +42,7 @@ New features
 * Allow specific cache entries to be initially disabled (`#12803`_)
 * Systems reject ContinuousState that they did not create (`#12630`_)
 * Added math::IsPositiveDefinite (`#12813`_)
+* Added first implementation of general region of attraction code (`#12827`_)
 
 Fixes
 
@@ -75,7 +76,7 @@ New features
 * Added doc about the availability of force/torque sensor (`#12791`_)
 
 * New hydroelastic contact model in progress (`#12597`_, `#12699`_, `#12751`_,
-  `#12763`_, `#12745`_, `#12730`_)
+  `#12763`_, `#12745`_, `#12730`_, `#12840`_)
 
   * Still only experimental
   * Improve performance
@@ -103,6 +104,7 @@ Miscellaneous features and fixes
 * Improve the simple_gripper example to make it possible to test more integrators (`#12742`_)
 * Added more methods to symbolic::Polynomial (`#12835`_)
 * Fixed accidental quadratic parsing of Yaml (`#12830`_)
+* Noted that GCC 7.5 is now Ubuntu's default compiler (`#12845`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -176,7 +178,3 @@ Commits to be categorized
 
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit 0aea3a58eaca0500d4346d01fe05d5352193c4a0 (inclusive).
-
-* First implementation of general region of attraction code (`#12827`_)  # Implements the convex formulation of searching for a maximal level set of a Lyapunov candidate. Working towards #10863
-* [geometry] Add half space-BVH collision support (`#12840`_)  # A BVH can now be collided against a half space.
-* doc: Note that GCC 7.5 is now Ubuntu's default compiler (`#12845`_)
