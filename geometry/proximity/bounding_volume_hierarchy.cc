@@ -72,15 +72,15 @@ bool Aabb::HasOverlap(const Aabb& a, const Aabb& b,
 bool Aabb::HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
                       const math::RigidTransformd& X_PH) {
   // We want the two corners of the box that lie at the most extreme extents in
-  // the plane's normal direction. Then we can determine their signed distance
-  // -- if the interval of signed distance includes _zero_, the box overlaps.
+  // the plane's normal direction. Then we can determine their heights
+  // -- if the interval of heights includes _zero_, the box overlaps.
 
   // The box's canonical frame B is aligned with H; R_BH = I which implies
   // R_PH = R_PB. However, p_HoBo is not necessarily zero.
   const auto& R_PH = X_PH.rotation().matrix();
-  // The corner of the box that will have the *greatest* signed distance value
-  // w.r.t. the plane. Measured from the box's frame's origin (Bo) but
-  // expressed in the plane's frame.
+  // The corner of the box that will have the *greatest* height value w.r.t.
+  // the plane measured from the box's frame's origin (Bo) but expressed in the
+  // plane's frame.
   Vector3d p_BoCmax_P = Vector3d::Zero();
   // We want to compute the vectors Hᴹᵢ  ∈ {Hᵢ, -Hᵢ}, such that Hᴹᵢ ⋅ n̂ₚ is
   // positive. The maximum box corner is a combination of those Hᴹᵢ vectors.
@@ -97,9 +97,9 @@ bool Aabb::HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
   const Vector3d p_PoCmax_P = p_PoBo_P + p_BoCmax_P;
   const Vector3d p_PoCmin_P = p_PoBo_P - p_BoCmax_P;
 
-  const double max_distance = plane_P.CalcSignedDistance(p_PoCmax_P);
-  const double min_distance = plane_P.CalcSignedDistance(p_PoCmin_P);
-  return min_distance <= 0 && 0 <= max_distance;
+  const double max_height = plane_P.CalcHeight(p_PoCmax_P);
+  const double min_height = plane_P.CalcHeight(p_PoCmin_P);
+  return min_height <= 0 && 0 <= max_height;
 }
 
 bool Aabb::HasOverlap(const Aabb& bv, const HalfSpace&,

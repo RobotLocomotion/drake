@@ -64,9 +64,10 @@ class ContactSurfaceUtilityTest : public ::testing::Test {
 // This test confirms all of those cases, and then _pokes_ at the case where the
 // centroid _isn't_ the average vertex position as a representative sample.
 //
-// In frame M, we construct a set of vertex locations on the Mz = 0 plane. This
-// will make the Mz vector normal to the triangle. We construct various polygons
-// from the set of vertices with corresponding expected outcomes.
+// In frame M, we construct a set of vertex locations on the z = 0 plane in
+// Frame M. This will make the Mz vector normal to the triangle. We construct
+// various polygons from the set of vertices with corresponding expected
+// outcomes.
 //
 //                                   y
 //
