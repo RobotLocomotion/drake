@@ -173,8 +173,21 @@ Removal of deprecated items
   * Double pendulum (`#12725`_)
   * PR2 Passive Simulation (`#12708`_)
 
-Commits to be categorized
--------------------------
+Notes
+-----
+
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.16.0>`__ named
+``drake-202003111-{bionic|mac}.tar.gz``. See
+https://drake.mit.edu/from_binary.html#nightly-releases for instructions on
+how to use them
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
 
 Current oldest_commit 65e58dfe7ef972ac524c8ab683db490548ac4c42 (inclusive).
 Current newest_commit 0aea3a58eaca0500d4346d01fe05d5352193c4a0 (inclusive).
