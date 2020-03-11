@@ -1,14 +1,11 @@
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <optional>
-#include <string>
 #include <unordered_map>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
@@ -95,10 +92,17 @@ struct RigidMesh {
             *mesh)) {}
 };
 
-/** The base representation of rigid geometries. A rigid geometry is represented
- with a RigidMesh.  */
+/** The base representation of rigid geometries. Generally, a rigid geometry
+ is represented with a SurfaceMesh. However, half spaces do not get tessellated
+ and are treated as primitives. This class contains either representation.  */
 class RigidGeometry {
  public:
+  /** Constructs a rigid half space representation -- the half space, like its
+   specification HalfSpace, is defined in its canonical frame H with the
+   boundary plane at z = 0 and its outward normal pointing in the Hz direction.
+   */
+  RigidGeometry() = default;
+
   /** Constructs a rigid representation from the given surface mesh.  */
   explicit RigidGeometry(std::unique_ptr<SurfaceMesh<double>> mesh)
       : geometry_(RigidMesh(std::move(mesh))) {}
@@ -108,16 +112,31 @@ class RigidGeometry {
   RigidGeometry(RigidGeometry&&) = default;
   RigidGeometry& operator=(RigidGeometry&&) = default;
 
-  /** Returns a reference to the surface mesh.  */
-  const SurfaceMesh<double>& mesh() const { return *geometry_.mesh; }
+  /** Returns true if this RigidGeometry is a half space.  */
+  bool is_half_space() const { return !geometry_.has_value(); }
 
-  /** Returns a reference to the bounding volume hierarchy.  */
+  /** Returns a reference to the surface mesh -- calling this will throw unless
+   is_half_space() returns false.  */
+  const SurfaceMesh<double>& mesh() const {
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "RigidGeometry::mesh() cannot be invoked for rigid half space");
+    }
+    return *(geometry_->mesh); }
+
+  /** Returns a reference to the bounding volume hierarchy -- calling this will
+   throw unless is_half_space() returns false.  */
   const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh() const {
-    return *geometry_.bvh;
+    if (is_half_space()) {
+      throw std::runtime_error(
+          "RigidGeometry::bvh() cannot be invoked for rigid half space");
+    }
+    return *(geometry_->bvh);
   }
 
  private:
-  RigidMesh geometry_;
+  // If the mesh isn't defined, then this is implicitly a rigid half space.
+  std::optional<RigidMesh> geometry_{std::nullopt};
 };
 
 /** This class stores all instantiated hydroelastic representations of declared
@@ -273,6 +292,10 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 /** Rigid mesh support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
      const Mesh& mesh, const ProximityProperties& props);
+
+/** Rigid half space support.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const HalfSpace& half_space, const ProximityProperties& props);
 
 /** Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
