@@ -68,6 +68,10 @@ New features
 * SpatialInertia support for massless bodies (`#12809`_)
 * Velocity-implicit Euler integrator in progress (`#12543`_, `#12740`_)
 * Added doc about the availability of force/torque sensor (`#12791`_)
+* Added support for derivative of signed distance between a pair of geometries (`#12720`_)
+* Added build system skeleton for forthcoming OpenGL render engine (`#12623`_)
+* Implemented Composite Body Algorithm to compute the mass matrix (`#12764`_)
+* Updated to use Composite Body Algorithm (CBA) in MultibodyPlant::CalcTamsiResults() (`#12838`_)
 
 * New hydroelastic contact model in progress (`#12597`_, `#12699`_, `#12751`_,
   `#12763`_, `#12745`_, `#12730`_, `#12840`_)
@@ -76,18 +80,12 @@ New features
   * Improve performance
   * Improve architecture
 
-* Added support for derivative of signed distance between a pair of geometries (`#12720`_)
-* Added build system skeleton for forthcoming OpenGL render engine (`#12623`_)
-* Implemented Composite Body Algorithm to compute the mass matrix (`#12764`_)
-* Updated to use CBA in MBP::CalcTamsiResults() (`#12838`_)
-
 Fixes
 
 * Got rid of accidental heap allocation within CalcArticulatedBodyForceBiasCache() (`#12728`_)
 * Alphabetized targets in geometry/proximity/BUILD (`#12748`_)
 * Quarantined FCL's haphazard use of const in broadphase (`#12746`_)
 * Fixed catastrophic cancellation in point mass unit inertias (`#12758`_)
-* Some minor cosmetic clean up (`#12829`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -239,7 +237,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#12825: https://github.com/RobotLocomotion/drake/pull/12825
 .. _#12826: https://github.com/RobotLocomotion/drake/pull/12826
 .. _#12827: https://github.com/RobotLocomotion/drake/pull/12827
-.. _#12829: https://github.com/RobotLocomotion/drake/pull/12829
 .. _#12830: https://github.com/RobotLocomotion/drake/pull/12830
 .. _#12835: https://github.com/RobotLocomotion/drake/pull/12835
 .. _#12836: https://github.com/RobotLocomotion/drake/pull/12836
