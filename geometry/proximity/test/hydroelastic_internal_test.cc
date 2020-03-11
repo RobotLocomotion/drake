@@ -122,11 +122,28 @@ TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
 
   EXPECT_EQ(MakeRigidRepresentation(Capsule(1, 1), props), std::nullopt);
 
-  EXPECT_EQ(MakeRigidRepresentation(HalfSpace(), props), std::nullopt);
-
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
   EXPECT_EQ(MakeRigidRepresentation(Convex(obj, 1.0), props), std::nullopt);
+}
+
+// Confirm support for a rigid half space. Tests that a hydroelastic
+// representation is made, and samples the representation to look for evidence
+// of it being the *right* representation.
+TEST_F(HydroelasticRigidGeometryTest, HalfSpace) {
+  ProximityProperties props = rigid_properties();
+
+  std::optional<RigidGeometry> half_space =
+      MakeRigidRepresentation(HalfSpace(), props);
+  EXPECT_NE(half_space, std::nullopt);
+  EXPECT_TRUE(half_space->is_half_space());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      half_space->mesh(), std::runtime_error,
+      "RigidGeometry::mesh.* cannot be invoked .* half space");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      half_space->bvh(), std::runtime_error,
+      "RigidGeometry::bvh.* cannot be invoked .* half space");
 }
 
 // Confirm support for a rigid Sphere. Tests that a hydroelastic representation
@@ -140,6 +157,7 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
   std::optional<RigidGeometry> sphere =
       MakeRigidRepresentation(sphere_spec, props);
   EXPECT_NE(sphere, std::nullopt);
+  ASSERT_FALSE(sphere->is_half_space());
 
   const SurfaceMesh<double>& mesh = sphere->mesh();
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
@@ -161,6 +179,7 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   std::optional<RigidGeometry> box =
       MakeRigidRepresentation(Box(edge_len, edge_len, edge_len), props);
   EXPECT_NE(box, std::nullopt);
+  ASSERT_FALSE(box->is_half_space());
 
   const SurfaceMesh<double>& mesh = box->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
@@ -190,6 +209,7 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   std::optional<RigidGeometry> cylinder =
       MakeRigidRepresentation(Cylinder(radius, length), props);
   EXPECT_NE(cylinder, std::nullopt);
+  ASSERT_FALSE(cylinder->is_half_space());
 
   // Smoke test the surface mesh.
   const SurfaceMesh<double>& mesh = cylinder->mesh();
@@ -223,6 +243,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   std::optional<RigidGeometry> ellipsoid =
       MakeRigidRepresentation(Ellipsoid(a, b, c), props);
   EXPECT_NE(ellipsoid, std::nullopt);
+  ASSERT_FALSE(ellipsoid->is_half_space());
 
   // Smoke test the surface mesh.
   const SurfaceMesh<double>& mesh = ellipsoid->mesh();
@@ -246,6 +267,7 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
   std::optional<RigidGeometry> mesh_rigid_geometry =
       MakeRigidRepresentation(Mesh(file, scale), props);
   EXPECT_NE(mesh_rigid_geometry, std::nullopt);
+  ASSERT_FALSE(mesh_rigid_geometry->is_half_space());
 
   // We only check that the obj file was read by verifying the number of
   // vertices and triangles, which depend on the specific content of
