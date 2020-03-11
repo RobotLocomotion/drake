@@ -556,7 +556,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "diagram",
-    srcs = ["diagram.cc"],
+    srcs = ["diagram.old.cc"],
     hdrs = ["diagram.h"],
     deps = [
         ":diagram_context",
