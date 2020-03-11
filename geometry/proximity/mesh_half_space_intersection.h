@@ -145,7 +145,7 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const std::vector<SurfaceVertex<T>>& vertices_F,
-    const SurfaceFace& triangle, const Plane<T>& half_space_F,
+    const SurfaceFace& triangle, const PosedHalfSpace<T>& half_space_F,
     std::vector<SurfaceVertex<T>>* new_vertices_F,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
@@ -298,7 +298,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<T>& input_mesh_F,
-    const internal::Plane<T>& half_space_F) {
+    const internal::PosedHalfSpace<T>& half_space_F) {
   std::vector<SurfaceVertex<T>> new_vertices_F;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>

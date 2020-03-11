@@ -540,9 +540,9 @@ GTEST_TEST(AABBTest, TestObbOverlap) {
 //   Q: the frame the query is performed in.
 //
 // For simplicity, we'll define the plane with a normal in the Pz direction
-// and at Pz = 0. We'll pose the box relative to the plane (so we can easily
-// reason about whether it penetrates or not). But then express the plane in the
-// query frame Q (and the pose of B in Q).
+// passing through Po. We'll pose the box relative to the plane (so we can
+// easily reason about whether it penetrates or not). But then express the plane
+// in the query frame Q (and the pose of B in Q).
 GTEST_TEST(AabbTest, PlaneOverlap) {
   // The aabb is *not* defined at the origin of the hierarchy frame.
   const Vector3d p_HoBo_H = Vector3d{0.5, 0.25, -0.75};
@@ -605,10 +605,10 @@ GTEST_TEST(AabbTest, PlaneOverlap) {
     for (const auto& X_QP : X_QPs) {
       // Define the plane in the query frame Q.
       const Vector3d& Pz_Q = X_QP.rotation().col(2);
-      Plane<double> plane_Q{Pz_Q, Pz_Q.dot(X_QP.translation())};
+      Plane<double> plane_Q{Pz_Q, X_QP.translation()};
 
-      // We position Ho such that Cmin lies on the Pz = 0 plane. Given we
-      // know p_HoCmin_P, we know its current z-value. To put it at zero, we
+      // We position Ho such that Cmin lies on the z = 0 plane in Frame P. Given
+      // we know p_HoCmin_P, we know its current z-value. To put it at zero, we
       // must displace it in the negative of that z value. The x- and y-values
       // don't matter, so we pick values we know not to be zero.
       {
@@ -631,17 +631,17 @@ GTEST_TEST(AabbTest, PlaneOverlap) {
       const Vector3d p_HoBo_P = R_PH * p_HoBo_H;
       const Vector3d p_HoCmax_P = p_HoCmin_P + 2 * (p_HoBo_P - p_HoCmin_P);
       {
-        // Put the maximum corner *on* the Pz = 0 plane. The bulk of the box
-        // now extends *below* the plane; so bump it up epsilon to guarantee
-        // intersection.
+        // Put the maximum corner *on* the z = 0 plane in Frame P. The bulk of
+        // the box now extends *below* the plane; so bump it up epsilon to
+        // guarantee intersection.
         const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmax_P(2) + kEps}};
         RigidTransformd X_PH{R_PH, p_PoHo_P};
         EXPECT_TRUE(Aabb::HasOverlap(aabb_H, plane_Q, X_QP * X_PH));
       }
       {
-        // Put the maximum corner *on* the Pz = 0 plane. The bulk of the box
-        // now extends *below* the plane; so bump it down epsilon to guarantee
-        // _no_ intersection.
+        // Put the maximum corner *on* the z = 0 plane in Frame P. The bulk of
+        // the box now extends *below* the plane; so bump it down epsilon to
+        // guarantee _no_ intersection.
         const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmax_P(2) - kEps}};
         RigidTransformd X_PH{R_PH, p_PoHo_P};
         EXPECT_FALSE(Aabb::HasOverlap(aabb_H, plane_Q, X_QP * X_PH));
@@ -700,8 +700,8 @@ GTEST_TEST(AabbTest, HalfSpaceOverlap) {
   for (const auto& angle_axis_CH : R_CHs) {
     const RotationMatrixd R_CH{angle_axis_CH};
     const Vector3d p_HoVmin_C = lowest_corner(R_CH);
-    // We position Ho such that Vmin lies on the Cz = 0 plane. Given we
-    // know p_HoVmin_C, we know its current z-value. To put it at zero, we
+    // We position Ho such that Vmin lies on the z = 0 plane in Frame C. Given
+    // we know p_HoVmin_C, we know its current z-value. To put it at zero, we
     // must displace it in the negative of that z value. The x- and y-values
     // don't matter, so we pick values we know not to be zero.
     {
@@ -728,18 +728,19 @@ GTEST_TEST(AabbTest, HalfSpaceOverlap) {
     //
     // Vmax is the reflection of Vmin over Bo (the origin of the box). We'll
     // express all vectors in the C frame so we can place that corner just above
-    // and below the Cz = 0  plane using the same trick as documented above.
+    // and below the z = 0 plane in Frame C using the same trick as documented
+    // above.
     const Vector3d p_HoBo_C = R_CH * p_HoBo_H;
     const Vector3d p_HoVmax_C = p_HoVmin_C + 2 * (p_HoBo_C - p_HoVmin_C);
     {
-      // Put the maximum corner just above the Cz = 0 plane.
+      // Put the maximum corner just above the z = 0 plane in Frame C.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) + kEps}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
       EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
     }
 
     {
-      // Put the maximum corner just below the Cz = 0 plane.
+      // Put the maximum corner just below the z = 0 plane in Frame C.
       const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - kEps}};
       RigidTransformd X_CH{R_CH, p_CoHo_C};
       EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));

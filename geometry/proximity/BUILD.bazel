@@ -39,6 +39,7 @@ drake_cc_package_library(
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":plane",
+        ":posed_half_space",
         ":proximity_utilities",
         ":sorted_triplet",
         ":surface_mesh",
@@ -52,7 +53,7 @@ drake_cc_library(
     srcs = ["bounding_volume_hierarchy.cc"],
     hdrs = ["bounding_volume_hierarchy.h"],
     deps = [
-        ":plane",
+        ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
         "//common",
@@ -320,7 +321,7 @@ drake_cc_library(
         ":bounding_volume_hierarchy",
         ":contact_surface_utility",
         ":mesh_field",
-        ":plane",
+        ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
         "//common",
@@ -382,7 +383,14 @@ drake_cc_library(
 drake_cc_library(
     name = "plane",
     hdrs = ["plane.h"],
+    deps = ["//common:essential"],
+)
+
+drake_cc_library(
+    name = "posed_half_space",
+    hdrs = ["posed_half_space.h"],
     deps = [
+        ":plane",
         "//common:essential",
     ],
 )
@@ -693,6 +701,20 @@ drake_cc_googletest(
         ":penetration_as_point_pair_callback",
         "//common/test_utilities:eigen_matrix_compare",
     ],
+)
+
+drake_cc_googletest(
+    name = "plane_test",
+    deps = [
+        ":plane",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "posed_half_space_test",
+    deps = [":posed_half_space"],
 )
 
 drake_cc_googletest(
