@@ -36,7 +36,7 @@ std::multimap<int, int> Diagram<T>::GetDirectFeedthroughs() const {
     }
   }
   return pairs;
-};
+}
 
 template <typename T>
 std::unique_ptr<CompositeEventCollection<T>>
@@ -140,7 +140,8 @@ void Diagram<T>::SetRandomState(const Context<T>& context, State<T>* state,
 }
 
 template <typename T>
-void Diagram<T>::SetRandomParameters(const Context<T>& context, Parameters<T>* params,
+void Diagram<T>::SetRandomParameters(const Context<T>& context,
+                                     Parameters<T>* params,
                                      RandomGenerator* generator) const {
   this->ValidateContext(context);
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -211,7 +212,8 @@ Diagram<T>::AllocateForcedUnrestrictedUpdateEventCollection() const {
 }
 
 template <typename T>
-std::unique_ptr<ContinuousState<T>> Diagram<T>::AllocateTimeDerivatives() const {
+std::unique_ptr<ContinuousState<T>> Diagram<T>::AllocateTimeDerivatives()
+    const {
   std::vector<std::unique_ptr<ContinuousState<T>>> sub_derivatives;
   for (const auto& system : registered_systems_) {
     sub_derivatives.push_back(system->AllocateTimeDerivatives());
@@ -223,7 +225,8 @@ std::unique_ptr<ContinuousState<T>> Diagram<T>::AllocateTimeDerivatives() const 
 }
 
 template <typename T>
-std::unique_ptr<DiscreteValues<T>> Diagram<T>::AllocateDiscreteVariables() const {
+std::unique_ptr<DiscreteValues<T>> Diagram<T>::AllocateDiscreteVariables()
+    const {
   std::vector<std::unique_ptr<DiscreteValues<T>>> sub_discretes;
   for (const auto& system : registered_systems_) {
     sub_discretes.push_back(system->AllocateDiscreteVariables());
@@ -264,7 +267,8 @@ const System<T>& Diagram<T>::GetSubsystemByName(const std::string& name) const {
 }
 
 template <typename T>
-const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(const System<T>& subsystem,
+const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
+    const System<T>& subsystem,
     const ContinuousState<T>& derivatives) const {
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
@@ -294,7 +298,8 @@ Diagram<T>::GetSubsystemCompositeEventCollection(const System<T>& subsystem,
 }
 
 template <typename T>
-CompositeEventCollection<T>& Diagram<T>::GetMutableSubsystemCompositeEventCollection(
+CompositeEventCollection<T>&
+Diagram<T>::GetMutableSubsystemCompositeEventCollection(
     const System<T>& subsystem, CompositeEventCollection<T>* events) const {
   auto ret = DoGetMutableTargetSystemCompositeEventCollection(
       subsystem, events);
@@ -907,7 +912,8 @@ const SystemBase& Diagram<T>::GetRootSystemBase() const {
 }
 
 template <typename T>
-bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port) const {
+bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
+    const {
   DRAKE_ASSERT(input_port >= 0);
   DRAKE_ASSERT(input_port < this->num_input_ports());
   DRAKE_ASSERT(output_port >= 0);
@@ -952,7 +958,8 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port) co
 
 template <typename T>
 template <typename EventType>
-std::unique_ptr<EventCollection<EventType>> Diagram<T>::AllocateForcedEventCollection(
+std::unique_ptr<EventCollection<EventType>>
+Diagram<T>::AllocateForcedEventCollection(
     std::function<
         std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
         allocator_func) const {
@@ -1139,7 +1146,8 @@ BaseStuff* Diagram<T>::GetSubsystemStuff(
 
 template <typename T>
 template <typename NewType>
-std::unique_ptr<typename Diagram<NewType>::Blueprint> Diagram<T>::ConvertScalarType() const {
+std::unique_ptr<typename Diagram<NewType>::Blueprint>
+Diagram<T>::ConvertScalarType() const {
   internal::OwnedSystems<NewType> new_systems;
   // Recursively convert all the subsystems.
   std::map<const System<T>*, const System<NewType>*> old_to_new_map;
@@ -1388,7 +1396,8 @@ const AbstractValue& Diagram<T>::EvalSubsystemOutputPort(
 
 template <typename T>
 typename DiagramContext<T>::InputPortIdentifier
-Diagram<T>::ConvertToContextPortIdentifier(const InputPortLocator& locator) const {
+Diagram<T>::ConvertToContextPortIdentifier(const InputPortLocator& locator)
+    const {
   typename DiagramContext<T>::InputPortIdentifier identifier;
   identifier.first = GetSystemIndexOrAbort(locator.first);
   identifier.second = locator.second;
@@ -1397,7 +1406,8 @@ Diagram<T>::ConvertToContextPortIdentifier(const InputPortLocator& locator) cons
 
 template <typename T>
 typename DiagramContext<T>::OutputPortIdentifier
-Diagram<T>::ConvertToContextPortIdentifier(const OutputPortLocator& locator) const {
+Diagram<T>::ConvertToContextPortIdentifier(const OutputPortLocator& locator)
+    const {
   typename DiagramContext<T>::OutputPortIdentifier identifier;
   identifier.first = GetSystemIndexOrAbort(locator.first);
   identifier.second = locator.second;
