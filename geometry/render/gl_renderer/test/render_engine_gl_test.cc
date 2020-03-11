@@ -88,6 +88,7 @@ class RenderEngineGlTest : public ::testing::Test {
     const DepthCameraProperties& camera = camera_in ? *camera_in : camera_;
     ImageDepth32F* depth = depth_in ? depth_in : &depth_;
     EXPECT_NO_THROW(renderer->RenderDepthImage(camera, depth));
+    sleep(1);
   }
 
   // Confirms that all pixels in the member depth image have the same value.
