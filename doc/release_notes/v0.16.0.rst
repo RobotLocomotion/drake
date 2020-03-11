@@ -6,7 +6,7 @@ Announcements
 -------------
 
 * New tutorial on nonlinear programming (`#12744`_)
-  
+
 * The C++ Doxygen pages are somewhat less cluttered now (`#12795`_, `#12796`_)
 
 Breaking changes since v0.15.0
@@ -71,7 +71,8 @@ New features
 * Added support for derivative of signed distance between a pair of geometries (`#12720`_)
 * Added build system skeleton for forthcoming OpenGL render engine (`#12623`_)
 * Implemented Composite Body Algorithm to compute the mass matrix (`#12764`_)
-* Updated to use Composite Body Algorithm (CBA) in MultibodyPlant::CalcTamsiResults() (`#12838`_)
+* Discrete-mode MultibodyPlant is faster, particularly in cases with branched
+  kinematics, due to incorporation of Composite Body Algorithm in the discrete solver (`#12838`_)
 
 * New hydroelastic contact model in progress (`#12597`_, `#12699`_, `#12751`_,
   `#12763`_, `#12745`_, `#12730`_, `#12840`_)
