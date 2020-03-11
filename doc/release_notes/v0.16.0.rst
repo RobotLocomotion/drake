@@ -98,7 +98,6 @@ Miscellaneous features and fixes
 * Improve the simple_gripper example to make it possible to test more integrators (`#12742`_)
 * Added more methods to symbolic::Polynomial (`#12835`_)
 * Fixed accidental quadratic parsing of Yaml (`#12830`_)
-* Noted that GCC 7.5 is now Ubuntu's default compiler (`#12845`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -113,15 +112,15 @@ pydrake bindings
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* GCC 7.5 is now Ubuntu's default compiler (`#12845`_)
 * Add new dependency on OpenGL on Ubuntu only (`#12623`_)
 * Use system Eigen >= 3.3.4, not downloaded bitbucket tag (`#12784`_, `#12780`_)
 * Upgrade bazel minimum and recommended versions to 2.0 and 2.1 respectively (`#12729`_)
+* Upgrade buildifier to latest release 2.0.0 (`#12836`_)
 * Upgrade fcl to latest release (`#12762`_)
 * Upgrade ghc_filesystem to latest release 1.3.0 (`#12799`_)
 * Upgrade styleguide to latest commit (includes cpplint changes) (`#12765`_, `#12800`_, `#12776`_)
 * Fix missing load() in drake_bazel_installed support (`#12605`_)
-* Added new_release reporting for some missed items (`#12837`_)
-* Upgrade buildifier to latest release 2.0.0 (`#12836`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -172,7 +171,7 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.16.0>`__ named
-``drake-202003111-{bionic|mac}.tar.gz``. See
+``drake-20200311-{bionic|mac}.tar.gz``. See
 https://drake.mit.edu/from_binary.html#nightly-releases for instructions on
 how to use them
 
@@ -244,7 +243,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#12830: https://github.com/RobotLocomotion/drake/pull/12830
 .. _#12835: https://github.com/RobotLocomotion/drake/pull/12835
 .. _#12836: https://github.com/RobotLocomotion/drake/pull/12836
-.. _#12837: https://github.com/RobotLocomotion/drake/pull/12837
 .. _#12838: https://github.com/RobotLocomotion/drake/pull/12838
 .. _#12840: https://github.com/RobotLocomotion/drake/pull/12840
 .. _#12845: https://github.com/RobotLocomotion/drake/pull/12845
