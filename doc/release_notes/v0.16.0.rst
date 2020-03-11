@@ -136,7 +136,7 @@ Newly-deprecated APIs
   * DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T (`#12735`_)
 
 Removal of deprecated items
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * APIs
 
