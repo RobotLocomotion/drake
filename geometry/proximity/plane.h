@@ -26,7 +26,8 @@ class Plane {
        expressed in frame F (the `n̂` in the implicit equation).
    @param displacement
        The signed distance from F's origin to the half space boundary (the `d`
-       term in the implicit equation).
+       term in the implicit equation). E.g., for a point p_FP on the plane,
+       `displacement = nhat_F.dot(p_FP)`.
    @pre
        ‖nhat_F‖₂ = 1.
    */

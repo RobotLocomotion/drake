@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":mesh_field",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
+        ":mesh_plane_intersection",
         ":mesh_to_vtk",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
@@ -323,6 +324,20 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "//common",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_plane_intersection",
+    srcs = ["mesh_plane_intersection.cc"],
+    hdrs = ["mesh_plane_intersection.h"],
+    deps = [
+        ":contact_surface_utility",
+        ":mesh_field",
+        ":plane",
+        ":volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],
@@ -632,6 +647,16 @@ drake_cc_googletest(
     name = "mesh_intersection_test",
     deps = [
         ":mesh_intersection",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_plane_intersection_test",
+    deps = [
+        ":contact_surface_utility",
+        ":mesh_plane_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
