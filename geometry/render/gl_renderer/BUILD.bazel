@@ -34,7 +34,11 @@ drake_cc_library_gl_ubuntu_only(
         "opengl_includes.h",
     ],
     visibility = ["//visibility:private"],
-    deps = ["@opengl"],
+    deps = [
+        "//common:essential",
+        "@opengl",
+        "@x11",
+    ],
 )
 
 # The pure OpenGL-based render engine implementation.
@@ -61,6 +65,17 @@ drake_cc_library(
             "//geometry/render:render_engine",
         ],
     }),
+)
+
+drake_cc_googletest(
+    name = "opengl_context_test",
+    args = select({
+        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":opengl_context",
+    ],
 )
 
 drake_cc_googletest(
