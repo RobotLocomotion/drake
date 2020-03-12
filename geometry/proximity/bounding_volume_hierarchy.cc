@@ -208,11 +208,17 @@ BoundingVolumeHierarchy<MeshType>::BuildBVTree(
     return std::make_unique<BvNode<MeshType>>(aabb, start->first);
 
   } else {
-    // Sort by centroid along the axis of greatest spread.
+    // Sort the elements by centroid along the axis of greatest spread.
+    // Note that an alternate heuristic based on the volume was investigated,
+    // however it was found to be less performant. Cost was calculated by
+    // summing the volumes of the two children at every interval along the x, y,
+    // and z axes, and the split with the minimal cost was chosen. Our analysis
+    // showed that the alignment of the elements caused further overlap not
+    // accounted for in the cost metric. In addition, the uniformity of our
+    // tetrahedra and symmetric nature of our primitives lends itself to the
+    // success of the median split.
     int axis{};
     aabb.half_width().maxCoeff(&axis);
-    // TODO(tehbelinda): Use a better heuristic for splitting into branches,
-    // e.g. surface area.
     std::sort(start, end, [axis](const CentroidPair& a, const CentroidPair& b) {
       return a.second[axis] < b.second[axis];
     });
