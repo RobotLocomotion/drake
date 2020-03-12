@@ -2664,56 +2664,67 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ABi_E);
   }
 
-  /// This method computes J𝑠_v_WCcm, the translational velocity Jacobian with
+  /// This method computes J𝑠_v_ACcm_E, the translational velocity Jacobian with
   /// respect to "speeds" 𝑠 of the composite center of mass position of all
-  /// bodies in the 'MultibodyPlant' system measured and expressed in the world
-  /// frame W.
+  /// bodies in the 'MultibodyPlant' system measured in frame A and expressed in
+  /// frame E.
   ///
   /// @param[in] context
   /// The context containing the state of the model. It stores the
   /// generalized positions q of the model.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_WCcm` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[out] J𝑠_v_WCcm the translational velocity Jacobian of the
-  /// composite center of mass position in the world frame W.
+  /// @param[in] frame_A The frame that the composite center of mass velocity is
+  /// measured in.
+  /// @param[in] frame_E The frame that the output Jacobian J𝑠_v_ACcm is
+  /// expressed in.
+  /// @param[out] J𝑠_v_ACcm_E the translational velocity Jacobian of the
+  /// composite center of mass position expressed in the frame E.
   ///
   /// @throws std::runtime_error if `MultibodyPlant` has no body except
   ///   `world_body()`.
   /// @throws std::runtime_error unless `composite_mass > 0`.
-  void CalcJacobianCenterOfMassVelocityInWorld(
+  void CalcJacobianCenterOfMassVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
-      EigenPtr<Matrix3X<T>> Js_v_WCcm) const {
-    internal_tree().CalcJacobianCenterOfMassVelocityInWorld(
-        context, with_respect_to, Js_v_WCcm);
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    internal_tree().CalcJacobianCenterOfMassVelocity(
+        context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
   }
 
-  /// For WCcm, the composite center of mass of all bodies in the
-  /// 'MultibodyPlant' expressed in the world frame, this calculates WCcm's
-  /// translational "bias" term `J̇𝑠_v_WCcm * s` in the world frame with
-  /// respect to "speeds" 𝑠.
+  /// For ACcm, the composite center of mass of all bodies in the
+  /// 'MultibodyPlant' with respect to frame A, this calculates ACcm's
+  /// translational "bias" term `abias_ACcm = J̇𝑠_v_ACcm * s` expressed in
+  /// frame E with respect to "speeds" 𝑠.
   ///
   /// @param[in] context
   /// The context containing the state of the model. It stores the
   /// generalized positions q of the model.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J̇𝑠_v_WCcm` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `abias_ACcm` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @retval J̇𝑠_v_WCcm * s
+  /// @param[in] frame_A The frame that measures abias_ACcm.
+  /// @param[in] frame_E The frame that the output abias_ACcm is expressed in.
+  /// @retval abias_ACcm_E
   ///   The output translational "bias" term of the composite center of mass of
-  ///   all bodies J̇𝑠_v_WCcm * s in the world frame W.
+  ///   all bodies abias_ACcm expressed in frame E.
   ///
   /// @throws std::runtime_error if `MultibodyPlant` has no body except
   ///   `world_body()`.
   /// @throws std::runtime_error unless `composite_mass > 0`.
-  Vector3<T> CalcBiasForJacobianCenterOfMassVelocityInWorld(
+  /// @throws std::exception if frame_A is not the world frame.
+  Vector3<T> CalcBiasForJacobianCenterOfMassVelocity(
       const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to) const {
-    return internal_tree().CalcBiasForJacobianCenterOfMassVelocityInWorld(
-        context, with_respect_to);
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    return internal_tree().CalcBiasForJacobianCenterOfMassVelocity(
+        context, with_respect_to, frame_A, frame_E);
   }
 
   /// This method allows users to map the state of `this` model, x, into a
