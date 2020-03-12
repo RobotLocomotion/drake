@@ -162,6 +162,17 @@ cc_library(
     }),
 )
 
+# Depend on glut iff on Ubuntu and not MacOS.
+cc_library(
+    name = "glut_deps",
+    deps = select({
+        "//conditions:default": [
+            "@glut",
+        ],
+        "//tools/cc_toolchain:apple": [],
+    }),
+)
+
 # Depend on Gurobi's shared library iff Gurobi is enabled.
 cc_library(
     name = "gurobi_deps",
@@ -241,6 +252,7 @@ cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
         ":dreal_deps",
+        ":glut_deps",
         ":gurobi_deps",
         ":ipopt_deps",
         ":mosek_deps",

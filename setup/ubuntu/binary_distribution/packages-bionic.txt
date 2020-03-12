@@ -2,6 +2,7 @@ coinor-libclp1
 coinor-libcoinutils3v5
 coinor-libipopt1v5
 default-jre
+freeglut3
 graphviz
 jupyter-notebook
 libamd2
@@ -12,6 +13,7 @@ libexpat1
 libgflags2.2
 libgfortran4
 libgl1-mesa-glx
+libglew2.0
 libglib2.0-0
 libhdf5-100
 libjpeg8

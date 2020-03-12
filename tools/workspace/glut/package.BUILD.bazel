@@ -1,0 +1,23 @@
+# -*- python -*-
+
+load(":vars.bzl", "LIBDIR")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "glut",
+    hdrs = [
+        "include/freeglut.h",
+        "include/freeglut_ext.h",
+        "include/freeglut_std.h",
+        "include/glut.h",
+    ],
+    includes = [
+        "include",
+    ],
+    linkopts = [
+        "-L" + LIBDIR,
+        "-lglut",
+    ],
+    licenses = ["notice"],  # X-Consortium.
+)
