@@ -196,6 +196,11 @@ class Polynomial {
   /// coefficients.
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
+  /// Returns true if this polynomial and @p are almost equal (the difference
+  /// in the corresponding coefficients are all less than @p tol), after
+  /// expanding the coefficients.
+  bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
+
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.
   Formula operator==(const Polynomial& p) const;

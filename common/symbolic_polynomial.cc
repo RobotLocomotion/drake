@@ -673,6 +673,12 @@ bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
   return PolynomialEqual(*this, p, true);
 }
 
+bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
+                                         double tol) const {
+  return PolynomialEqual((*this - p).RemoveTermsWithSmallCoefficients(tol),
+                         Polynomial(0), true);
+}
+
 Formula Polynomial::operator==(const Polynomial& p) const {
   // 1) Let diff = p - (this polynomial).
   // 2) Extract the condition where diff is zero.

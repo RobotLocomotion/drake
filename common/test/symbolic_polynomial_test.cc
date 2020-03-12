@@ -882,6 +882,30 @@ TEST_F(SymbolicPolynomialTest, Hash) {
   EXPECT_NE(h(p1), h(p2));
 }
 
+TEST_F(SymbolicPolynomialTest, CoefficientsAlmostEqual) {
+  Polynomial p1{x_ * x_};
+  // Two polynomials with the same number of terms.
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(Polynomial{x_ * x_}, 1e-6));
+  EXPECT_TRUE(
+      p1.CoefficientsAlmostEqual(Polynomial{(1 + 1e-7) * x_ * x_}, 1e-6));
+  EXPECT_FALSE(p1.CoefficientsAlmostEqual(Polynomial{2 * x_ * x_}, 1e-6));
+  // Another polynomial with an additional small constant term.
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(Polynomial{x_ * x_ + 1e-7}, 1e-6));
+  EXPECT_FALSE(p1.CoefficientsAlmostEqual(Polynomial{x_ * x_ + 2e-6}, 1e-6));
+  // Another polynomial with small difference on coefficients.
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(
+      Polynomial{(1. - 1e-7) * x_ * x_ + 1e-7}, 1e-6));
+  EXPECT_FALSE(p1.CoefficientsAlmostEqual(
+      Polynomial{(1. + 2e-6) * x_ * x_ + 1e-7}, 1e-6));
+
+  // Another polynomial with decision variables in the coefficient.
+  const symbolic::Polynomial p2(a_ * x_ * x_, {indeterminates_});
+  EXPECT_TRUE(p2.CoefficientsAlmostEqual(
+      Polynomial{(a_ + 1e-7) * x_ * x_, {indeterminates_}}, 1e-6));
+  EXPECT_FALSE(p2.CoefficientsAlmostEqual(
+      Polynomial{(a_ + 1e-7) * x_ * x_, {indeterminates_}}, 1e-8));
+}
+
 TEST_F(SymbolicPolynomialTest, RemoveTermsWithSmallCoefficients) {
   // Single term.
   Polynomial p1{1e-5 * x_ * x_};
