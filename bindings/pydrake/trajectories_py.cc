@@ -49,7 +49,9 @@ PYBIND11_MODULE(trajectories, m) {
       .def("get_segment_index", &PiecewiseTrajectory<T>::get_segment_index,
           py::arg("t"), doc.PiecewiseTrajectory.get_segment_index.doc)
       .def("get_segment_times", &PiecewiseTrajectory<T>::get_segment_times,
-          doc.PiecewiseTrajectory.get_segment_times.doc);
+          doc.PiecewiseTrajectory.get_segment_times.doc)
+      .def("vector_values", &PiecewiseTrajectory<T>::vector_values,
+          doc.Trajectory.vector_values.doc);
 
   py::class_<PiecewisePolynomial<T>, PiecewiseTrajectory<T>>(
       m, "PiecewisePolynomial", doc.PiecewisePolynomial.doc)

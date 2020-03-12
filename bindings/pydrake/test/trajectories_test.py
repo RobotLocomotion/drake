@@ -91,3 +91,8 @@ class TestTrajectories(unittest.TestCase):
         self.assertTrue(pp1.isApprox(other=pp1, tol=1e-14))
         pp1.ConcatenateInTime(other=pp2)
         self.assertEqual(pp1.end_time(), 4.)
+
+    def test_vector_values(self):
+        pp = PiecewisePolynomial([1, 2, 3])
+        v = pp.vector_values([0, 4])
+        self.assertEqual(v.shape, (3, 2))
