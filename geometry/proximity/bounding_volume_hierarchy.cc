@@ -208,11 +208,37 @@ BoundingVolumeHierarchy<MeshType>::BuildBVTree(
     return std::make_unique<BvNode<MeshType>>(aabb, start->first);
 
   } else {
-    // Sort by centroid along the axis of greatest spread.
+    // Sort the elements by centroid along the axis of greatest spread.
+    // Note: We tried an alternative strategy for building the BVH using a
+    // volume-based metric.
+    // - Given a parent BV P, we would partition all of its contents into a left
+    //   BV, L, and a right BV, R, such that we wanted to minimize (V(L) + V(R))
+    //   / V(P). (V(X) is the volume measure of the bounding volume X).
+    // - We didn't explore all possible partitions (there are an exponential
+    //   number of such possible partitions).
+    // - Instead, we ordered the mesh elements along an axis and then would
+    //   consider partitions split between two adjacent elements in the sorted
+    //   set. This was repeated for each of the axes and the partition with the
+    //   minimum value was taken.
+    // - We did explore several ordering options, including sorting by centroid,
+    //   min, max, and a combination of them when the element overlapped the
+    //   partition boundary.
+    // This tentative partitioning strategy produced more BV-BV tests in some
+    // simple examples than the simple bisection shown below and was abandoned.
+    // Some possible reasons for this:
+    // - Sorting by an alternate criteria might be a better way to order them.
+    // - Only considering split points based on adjacent elements may be
+    //   problematic.
+    // - The elements individual extents are such they are not typically
+    //   axis-aligned so, partitioning between two elements would often produce
+    //   child BVs that have non-trivial overlap.
+    // Finally, the primitive meshes we are producing are relatively regular and
+    // are probably nicely compatible with the median split strategy. If we need
+    // to do irregular distribution of elements, a more sophisticated strategy
+    // may help. But proceed with caution -- there's no guarantee such a
+    // strategy will yield performance benefits.
     int axis{};
     aabb.half_width().maxCoeff(&axis);
-    // TODO(tehbelinda): Use a better heuristic for splitting into branches,
-    // e.g. surface area.
     std::sort(start, end, [axis](const CentroidPair& a, const CentroidPair& b) {
       return a.second[axis] < b.second[axis];
     });
