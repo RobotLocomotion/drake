@@ -28,7 +28,7 @@ class TestMatplotlibUtil(unittest.TestCase):
 
         self.assertEqual(polys[0].get_facecolor(), facecolor)
 
-    def test_plot_sublevelset_expression(self):
+    def test_plot_sublevelset_expression_degree_two(self):
         fig, ax = plt.subplots()
 
         x = np.array([Variable("x0"), Variable("x1")])
@@ -48,3 +48,17 @@ class TestMatplotlibUtil(unittest.TestCase):
             np.testing.assert_almost_equal(val, 1.)
 
         self.assertEqual(polys[0].get_facecolor(), facecolor)
+
+    def test_plot_sublevelset_expression(self):
+        x = np.array([Variable("x"), Variable("y")]).reshape((2,))
+        # Construct a non-convex 2D level set.
+        A1 = np.array([[1, 2], [3, 4]])
+        A2 = A1 @ np.array([[-1, 0], [0, 1]])  # mirror about y-axis
+        V = (x.T @ A1.T @ A1 @ x) * (x.T @ A2.T @ A2 @ x)
+
+        fig, ax = plt.subplots()
+        polys = mut.plot_sublevelset_expression(ax, V, 11)
+        xys = polys[0].get_xy()
+        for i in range(np.size(xys, 0)):
+            env = {x[0]: xys[i, 0], x[1]: xys[i, 1]}
+            np.testing.assert_almost_equal(V.Evaluate(env), 1., 1e-5)

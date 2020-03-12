@@ -35,6 +35,7 @@ drake_py_library(
     deps = [
         ":module_py",
         "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
