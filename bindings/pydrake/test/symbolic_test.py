@@ -109,6 +109,10 @@ class TestSymbolicVariable(unittest.TestCase):
         self.assertTrue(x.EqualTo(x))
         self.assertFalse(x.EqualTo(y))
 
+    def test_is_polynomial(self):
+        self.assertTrue((x*y).is_polynomial())
+        self.assertFalse((x/y).is_polynomial())
+
     def test_logical(self):
         numpy_compare.assert_equal(
             sym.logical_not(x == 0), "!((x == 0))")
