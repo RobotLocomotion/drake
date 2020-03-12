@@ -443,6 +443,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "geometry_render_engine_gl_test",
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
