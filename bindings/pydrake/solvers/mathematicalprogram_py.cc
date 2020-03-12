@@ -520,6 +520,13 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddConstraint),
           py::arg("constraint"), py::arg("vars"),
           doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
+      .def("AddConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<Formula>>& formulas) {
+            return self->AddConstraint(formulas);
+          },
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddConstraint.doc_matrix_formula)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,

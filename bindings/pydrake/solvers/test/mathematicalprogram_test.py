@@ -562,6 +562,14 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
 
+    def test_addconstraint_matrix(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        prog.AddConstraint(np.array([[x[0] <= 2], [x[0] >= -2]]))
+        result = mp.Solve(prog)
+        self.assertTrue(result.GetSolution(x)[0] <= 2)
+        self.assertTrue(result.GetSolution(x)[0] >= -2)
+
     def test_initial_guess(self):
         prog = mp.MathematicalProgram()
         count = 6

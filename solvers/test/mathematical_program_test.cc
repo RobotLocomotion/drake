@@ -2954,6 +2954,48 @@ GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
   EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  Eigen::Matrix<symbolic::Formula, 2, 2> formulas;
+  // clang-format off
+  formulas << (x(0) >= 0.0), (x(0) + x(1) <= 3.0),
+              (x(1) == 2.0), (x(0) + x(1) >= -1.0);
+  // clang-format on
+  prog.AddConstraint(formulas);
+
+  ASSERT_EQ(prog.GetAllConstraints().size(), 1);
+  ASSERT_EQ(prog.GetAllLinearConstraints().size(), 1);
+  const auto binding = prog.GetAllLinearConstraints()[0];
+
+  Eigen::Matrix<double, 4, 2> A_expected;
+  Eigen::Matrix<double, 4, 1> lower_bound_expected;
+  Eigen::Matrix<double, 4, 1> upper_bound_expected;
+  const double inf{numeric_limits<double>::infinity()};
+  // clang-format off
+  A_expected << 1, 0,           // x0 >= 0
+                0, 1,           //      x1 == 2
+                1, 1,           // x0 + x1 <= 3
+                1, 1;           // x0 + x1 >= -1.0
+
+  lower_bound_expected << 0,    // x0 >= 0
+                          2,    //      x1 == 2
+                       -inf,    // x0 + x1 <= 3
+                         -1;    // x0 + x1 >= -1.0
+
+  upper_bound_expected << inf,  // x0 >= 0
+                            2,  //      x1 == 2
+                            3,  // x0 + x1 <= 3
+                          inf;  // x0 + x1 >= -1.0
+  // clang-format on
+
+  ASSERT_TRUE(binding.evaluator());
+  EXPECT_EQ(binding.evaluator()->A(), A_expected);
+  EXPECT_EQ(binding.evaluator()->lower_bound(), lower_bound_expected);
+  EXPECT_EQ(binding.evaluator()->upper_bound(), upper_bound_expected);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
