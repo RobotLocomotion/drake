@@ -1118,6 +1118,31 @@ class MathematicalProgram {
   }
 
   /**
+   * Add a constraint represented by an Eigen::Matrix<symbolic::Formula>
+   * to the program.
+   *
+   * A formula in @p formulas can be of the following forms:
+   *
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
+   *
+   * It throws an exception if AddConstraint(const symbolic::Formula& f)
+   * throws an exception for any f ∈ formulas.
+   *
+   * @tparam Derived An Eigen Matrix type of Formula.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
+      Binding<Constraint>>::type
+  AddConstraint(const Eigen::MatrixBase<Derived>& formulas) {
+    return AddConstraint(formulas.array());
+  }
+
+  /**
    * Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
