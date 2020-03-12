@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -32,6 +33,33 @@ class Trajectory {
    * @return The matrix of evaluated values.
    */
   virtual MatrixX<T> value(double t) const = 0;
+
+  /**
+  * If cols()==1, then evaluates the trajectory at each time @p t, and returns
+  * the results as a Matrix with the ith column corresponding to the ith time.
+  * Otherwise, if rows()==1, then evaluates the trajectory at each time @p t,
+  * and returns the results as a Matrix with the ith row corresponding to
+  * the ith time.
+  * @throws std::runtime_error if both cols and rows are not equal to 1.
+  */
+  MatrixX<T> vector_values(const std::vector<double>& t) const {
+    if (cols() != 1 && rows() != 1) {
+      throw std::runtime_error(
+          "This method only supports vector-valued trajectories.");
+    }
+    if (cols() == 1) {
+      MatrixX<T> values(rows(), t.size());
+      for (int i = 0; i < static_cast<int>(t.size()); i++) {
+        values.col(i) = value(t[i]);
+      }
+      return values;
+    }
+    MatrixX<T> values(t.size(), cols());
+    for (int i = 0; i < static_cast<int>(t.size()); i++) {
+      values.row(i) = value(t[i]);
+    }
+    return values;
+  }
 
   /**
    * Takes the derivative of this Trajectory.
