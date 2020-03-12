@@ -46,7 +46,7 @@ Defines a URDF model with various types of joints.
     <parent link="link2"/>
     <child link="link3"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <limit effort="100" lower="-2" upper="1" velocity="5"/>
+    <limit effort="0" lower="-2" upper="1" velocity="5"/>
   </joint>
 
   <joint name="revolute_joint_no_limits" type="revolute">
@@ -55,4 +55,42 @@ Defines a URDF model with various types of joints.
     <child link="link4"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
+
+  <!-- Normal transmission/joint, should be created with appropriate
+  effort limit. -->
+  <transmission>
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="revolute_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="revolute_actuator">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <!-- Joint defined with zero effort, actuator should be skipped. -->
+ <transmission>
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="prismatic_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="prismatic_actuator">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <!-- Joint defined with no effort limit, actuator should be created
+       with default limit (infinity). -->
+  <transmission>
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="revolute_joint_no_limits">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="revolute_actuator_no_limits">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
 </robot>
