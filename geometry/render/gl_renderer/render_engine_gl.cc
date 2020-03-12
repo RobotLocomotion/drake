@@ -87,6 +87,7 @@ void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
       const_cast<RenderEngineGl*>(this)->SetCameraProperties(camera);
 
   RenderAt(X_CW_.GetAsMatrix4().matrix().cast<float>());
+  UpdateVisibleWindow(camera, true, target);
   GetDepthImage(depth_image_out, target);
 }
 
