@@ -558,7 +558,6 @@ drake_cc_library(
     name = "diagram",
     srcs = ["diagram.cc"],
     hdrs = ["diagram.h"],
-    tags = ["nolint"],
     deps = [
         ":diagram_context",
         ":diagram_output_port",
