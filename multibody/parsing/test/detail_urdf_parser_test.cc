@@ -98,6 +98,12 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
 
   EXPECT_EQ(plant.num_positions(), 37);
   EXPECT_EQ(plant.num_velocities(), 36);
+
+  // Verify that joint actuator limits are set correctly.
+  ASSERT_TRUE(plant.HasJointActuatorNamed("back_bkz_motor"));
+  const JointActuator<double>& actuator =
+      plant.GetJointActuatorByName("back_bkz_motor");
+  EXPECT_EQ(actuator.effort_limit(), 106);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {

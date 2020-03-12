@@ -283,16 +283,18 @@ void ParseJointKeyParams(XMLElement* node,
 }
 
 void ParseJointLimits(XMLElement* node, double* lower, double* upper,
-                      double* velocity) {
+                      double* velocity, double* effort) {
   *lower = -std::numeric_limits<double>::infinity();
   *upper = std::numeric_limits<double>::infinity();
   *velocity = std::numeric_limits<double>::infinity();
+  *effort = std::numeric_limits<double>::infinity();
 
   XMLElement* limit_node = node->FirstChildElement("limit");
   if (limit_node) {
     ParseScalarAttribute(limit_node, "lower", lower);
     ParseScalarAttribute(limit_node, "upper", upper);
     ParseScalarAttribute(limit_node, "velocity", velocity);
+    ParseScalarAttribute(limit_node, "effort", effort);
   }
 }
 
@@ -338,6 +340,7 @@ const Body<double>& GetBodyForElement(
 }
 
 void ParseJoint(ModelInstanceIndex model_instance,
+                std::map<std::string, double>* joint_effort_limits,
                 XMLElement* node,
                 MultibodyPlant<double>* plant) {
   std::string drake_ignore;
@@ -374,13 +377,14 @@ void ParseJoint(ModelInstanceIndex model_instance,
   }
 
   // These are only used by some joint types.
-  double upper = 0;
-  double lower = 0;
+  double upper = std::numeric_limits<double>::infinity();
+  double lower = -std::numeric_limits<double>::infinity();
   double damping = 0;
-  double velocity = 0;
+  double velocity = std::numeric_limits<double>::infinity();
+  double effort = std::numeric_limits<double>::infinity();
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    ParseJointLimits(node, &lower, &upper, &velocity);
+    ParseJointLimits(node, &lower, &upper, &velocity, &effort);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<RevoluteJoint>(
         name, parent_body, X_PJ,
@@ -392,7 +396,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
                                child_body, std::nullopt,
                                RigidTransformd::Identity());
   } else if (type.compare("prismatic") == 0) {
-    ParseJointLimits(node, &lower, &upper, &velocity);
+    ParseJointLimits(node, &lower, &upper, &velocity, &effort);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<PrismaticJoint>(
         name, parent_body, X_PJ,
@@ -412,11 +416,15 @@ void ParseJoint(ModelInstanceIndex model_instance,
     throw std::runtime_error(
         "ERROR: Joint " + name + " has unrecognized type: " + type);
   }
+
+  joint_effort_limits->emplace(name, effort);
 }
 
-void ParseTransmission(ModelInstanceIndex model_instance,
-                       XMLElement* node,
-                       MultibodyPlant<double>* plant) {
+void ParseTransmission(
+    ModelInstanceIndex model_instance,
+    const std::map<std::string, double>& joint_effort_limits,
+    XMLElement* node,
+    MultibodyPlant<double>* plant) {
   // Determines the transmission type.
   std::string type;
   XMLElement* type_node = node->FirstChildElement("type");
@@ -484,7 +492,10 @@ void ParseTransmission(ModelInstanceIndex model_instance,
     return;
   }
 
-  plant->AddJointActuator(actuator_name, joint);
+  const auto effort = joint_effort_limits.find(joint_name);
+  DRAKE_DEMAND(effort != joint_effort_limits.end());
+
+  plant->AddJointActuator(actuator_name, joint, effort->second);
 }
 
 void ParseFrame(ModelInstanceIndex model_instance,
@@ -555,10 +566,14 @@ ModelInstanceIndex ParseUrdf(
     ParseCollisionFilterGroup(node, plant);
   }
 
+  // Joint effort limits are stored with joints, but used when creating the
+  // actuator (which is done when parsing the transmission).
+  std::map<std::string, double> joint_effort_limits;
+
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint")) {
-    ParseJoint(model_instance, joint_node, plant);
+    ParseJoint(model_instance, &joint_effort_limits, joint_node, plant);
   }
 
   // Parses the model's transmission elements.
@@ -566,7 +581,8 @@ ModelInstanceIndex ParseUrdf(
        transmission_node;
        transmission_node =
            transmission_node->NextSiblingElement("transmission")) {
-    ParseTransmission(model_instance, transmission_node, plant);
+    ParseTransmission(model_instance, joint_effort_limits,
+                      transmission_node, plant);
   }
 
   if (node->FirstChildElement("loop_joint")) {

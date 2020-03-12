@@ -142,6 +142,11 @@ TEST_P(AcrobotModelTests, ModelBasics) {
   EXPECT_EQ(elbow_joint.parent_body().name(), parameters_.link1_name());
   EXPECT_EQ(elbow_joint.child_body().name(), parameters_.link2_name());
 
+  // Get actuators by name.
+  const JointActuator<double>& elbow_actuator =
+      plant_->GetJointActuatorByName("ElbowJoint");
+  EXPECT_TRUE(std::isinf(elbow_actuator.effort_limit()));
+
   // Get frames by name.
   const Frame<double>& link1_frame = plant_->GetFrameByName("Link1");
   EXPECT_EQ(link1_frame.name(), "Link1");
