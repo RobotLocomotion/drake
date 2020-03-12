@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib as mpl
 
 from pydrake.symbolic import Evaluate, Jacobian, Polynomial
+from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve
 
 
 def plot_sublevelset_quadratic(ax, A, b=[0, 0], c=0, vertices=51, **kwargs):
@@ -59,9 +60,7 @@ def plot_sublevelset_quadratic(ax, A, b=[0, 0], c=0, vertices=51, **kwargs):
 
 def plot_sublevelset_expression(ax, e, vertices=51, **kwargs):
     """
-    Plots the 2D sub-level set e(x) <= 1.
-    This method currently only supports quadratic forms, but our intention is
-    to generalize it.
+    Plots the 2D sub-level set e(x) <= 1, which must contain the origin.
 
     Args:
         ax:       the matplotlib axis to receive the plot
@@ -73,16 +72,51 @@ def plot_sublevelset_expression(ax, e, vertices=51, **kwargs):
         the return values from matplotlib's fill command.
     """
 
-    # TODO(russt): implement the more general case.
-    p = Polynomial(e)
-    assert p.TotalDegree() == 2
-
     x = list(e.GetVariables())
-    env = {a: 0 for a in x}
-    c = e.Evaluate(env)
-    e1 = e.Jacobian(x)
-    b = Evaluate(e1, env)
-    e2 = Jacobian(e1, x)
-    A = 0.5*Evaluate(e2, env)
+    assert len(x) == 2, "e must be an expression in two variables"
 
-    return plot_sublevelset_quadratic(ax, A, b, c, vertices, **kwargs)
+    # Handle the special case where e is a degree 2 polynomial.
+    if e.is_polynomial():
+        p = Polynomial(e)
+        if p.TotalDegree() == 2:
+            env = {a: 0 for a in x}
+            c = e.Evaluate(env)
+            e1 = e.Jacobian(x)
+            b = Evaluate(e1, env)
+            e2 = Jacobian(e1, x)
+            A = 0.5*Evaluate(e2, env)
+            return plot_sublevelset_quadratic(ax, A, b, c, vertices, **kwargs)
+
+    # Find the level-set in polar coordinates, by sampling theta and
+    # root-finding (on the scalar expression) to find a rplus and rminus.
+
+    Xplus = np.empty((2, vertices))
+    Xminus = np.empty((2, vertices))
+    i = 0
+    for theta in np.linspace(0, np.pi, vertices):
+        prog = MathematicalProgram()
+        r = prog.NewContinuousVariables(1, "r")[0]
+        env = {x[0]: r*np.cos(theta), x[1]: r*np.sin(theta)}
+        scalar = e.Substitute(env)
+        b = prog.AddBoundingBoxConstraint(0, np.inf, r)
+        prog.AddConstraint(scalar == 1)
+        prog.AddQuadraticCost([1], [0], [r])
+        prog.SetInitialGuess(r, 0.1)  # or anything non-zero.
+        result = Solve(prog)
+        assert result.is_success(), "Failed to find the level set"
+        rplus = result.GetSolution(r)
+        Xplus[0, i] = rplus*np.cos(theta)
+        Xplus[1, i] = rplus*np.sin(theta)
+        b.evaluator().UpdateLowerBound([-np.inf])
+        b.evaluator().UpdateUpperBound([0])
+        prog.SetInitialGuess(r, -0.1)  # or anything non-zero.
+        result = Solve(prog)
+        assert result.is_success(), "Failed to find the level set"
+        rminus = result.GetSolution(r)
+        Xminus[0, i] = rminus*np.cos(theta)
+        Xminus[1, i] = rminus*np.sin(theta)
+        i = i + 1
+
+    return ax.fill(np.hstack((Xplus[0, :], Xminus[0, :])),
+                   np.hstack((Xplus[1, :], Xminus[1, :])),
+                   **kwargs)

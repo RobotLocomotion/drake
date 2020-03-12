@@ -248,6 +248,8 @@ PYBIND11_MODULE(symbolic, m) {
           },
           doc.Expression.Substitute.doc_1args)
       .def("EqualTo", &Expression::EqualTo, doc.Expression.EqualTo.doc)
+      .def("is_polynomial", &Expression::is_polynomial,
+          doc.Expression.is_polynomial.doc)
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
