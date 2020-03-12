@@ -28,6 +28,7 @@ load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_re
 load("@drake//tools/workspace/github3_py:repository.bzl", "github3_py_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
+load("@drake//tools/workspace/glut:repository.bzl", "glut_repository")
 load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
@@ -149,6 +150,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         glew_repository(name = "glew")
     if "glib" not in excludes:
         glib_repository(name = "glib")
+    if "glut" not in excludes:
+        glut_repository(name = "glut")
     if "googlebenchmark" not in excludes:
         googlebenchmark_repository(name = "googlebenchmark", mirrors = mirrors)
     if "gtest" not in excludes:

@@ -9,6 +9,7 @@ doxygen
 file
 fonts-dejavu-core
 fonts-dejavu-extra
+freeglut3-dev
 gdb
 gfortran
 git
@@ -20,6 +21,7 @@ libclang-6.0-dev
 libexpat1-dev
 libfreetype6-dev
 libgflags-dev
+libglew-dev
 libglib2.0-dev
 libglu1-mesa-dev
 libhdf5-dev
