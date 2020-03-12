@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/region_of_attraction.h"
 
+#include <algorithm>
+
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
@@ -21,21 +23,23 @@ using symbolic::Variables;
 
 namespace {
 
-// Assumes V positive semi-definite and the Hessian of Vdot is negative
-// definite at the origin (negative definiteness of Vdot is required to use
-// Vdot = 0 instead of Vdot >=0 in the form below).
-// Use Vdot = 0 => V >= rho (or x=0) via
+// Assumes V positive semi-definite at the origin.
+// If the Hessian of Vdot is negative definite at the origin, then we use
+// Vdot = 0 => V >= rho (or x=0) via
 //   maximize   rho
 //   subject to (V-rho)*x'*x - Lambda*Vdot is SOS.
+// If we cannot confirm negative definiteness, then we must ask instead for
+// Vdot >=0 => V >= rho (or x=0).
 Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
                                const Polynomial& V, const Polynomial& Vdot) {
   MathematicalProgram prog;
   prog.AddIndeterminates(x);
 
-  // TODO(russt): Add this as an argument once I have an example that needs it.
-  // This is a reasonable guess.
   const int V_degree = V.TotalDegree();
   const int Vdot_degree = Vdot.TotalDegree();
+
+  // TODO(russt): Add this as an argument once I have an example that needs it.
+  // This is a reasonable guess.
   const int lambda_degree = Vdot_degree;
   const auto lambda = prog.NewFreePolynomial(Variables(x), lambda_degree);
 
@@ -47,6 +51,32 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   prog.AddSosConstraint(
       ((V - rho) * Polynomial(pow((x.transpose() * x)[0], d)) - lambda * Vdot)
           .ToExpression());
+
+  // Check if the Hessian of Vdot is negative definite.
+  Environment env;
+  for (int i = 0; i < x.size(); i++) {
+    env.insert(x(i), 0.0);
+  }
+  const Eigen::MatrixXd H = symbolic::Evaluate(
+      symbolic::Jacobian(Vdot.Jacobian(x), x), env);
+  // Eigen's recommended way of getting the Eigenvalues.
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(H);
+  DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
+
+  // A positive max eigenvalue indicates the system is locally unstable.
+  const double max_eigenvalue = eigensolver.eigenvalues().maxCoeff();
+  // According to the Lapack manual, the absolute accuracy of eigenvalues is
+  // eps*max(|eigenvalues|), so I will write my thresholds relative to that.
+  // Anderson et al., Lapack User's Guide, 3rd ed. section 4.7, 1999.
+  const double max_abs_eigenvalue =
+      eigensolver.eigenvalues().cwiseAbs().maxCoeff();
+  DRAKE_THROW_UNLESS(max_eigenvalue <= 1e-8 * std::max(1., max_abs_eigenvalue));
+  // If the max eigenvalue is zero, then the linearization does not inform us
+  // on the local stability.  Add lambda is SOS to force prog to confirm
+  // this local stability.
+  if (max_eigenvalue >= -1e-8 * std::max(1., max_abs_eigenvalue)) {
+    prog.AddSosConstraint(lambda);
+  }
 
   prog.AddCost(-rho);
   const auto result = Solve(prog);
@@ -136,13 +166,6 @@ Expression RegionOfAttraction(const System<double>& system,
   }
 
   const Expression Vdot = V.Jacobian(x_bar).dot(f);
-
-  if (user_provided_lyapunov_candidate) {
-    // Check that the Hessian of Vdot is negative definite.
-    const Eigen::MatrixXd H = symbolic::Evaluate(
-        symbolic::Jacobian(Vdot.Jacobian(x_bar), x_bar), x0env);
-    DRAKE_THROW_UNLESS(math::IsPositiveDefinite(-H, 1e-8));
-  }
 
   // TODO(russt): implement numerical "balancing" from matlab version.
   // https://github.com/RobotLocomotion/drake/blob

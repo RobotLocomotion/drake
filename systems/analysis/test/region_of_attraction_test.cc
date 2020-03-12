@@ -29,10 +29,8 @@ GTEST_TEST(RegionOfAttractionTest, CubicPolynomialTest) {
   // V does not use my original variable (unless I pass it in through the
   // options, but I want to test this case).
   x = *V.GetVariables().begin();
-  const Expression V_expected{x * x};
-  EXPECT_TRUE(Polynomial(V - V_expected)
-                  .RemoveTermsWithSmallCoefficients(1e-6)
-                  .EqualToAfterExpansion(Polynomial(Expression::Zero())));
+  const Polynomial V_expected{x * x};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
 // Cubic again, but shifted to a non-zero equilibrium.
@@ -50,10 +48,8 @@ GTEST_TEST(RegionOfAttractionTest, ShiftedCubicPolynomialTest) {
 
   // V does not use my original Variable.
   x = *V.GetVariables().begin();
-  const Expression V_expected{(x - x0) * (x - x0)};
-  EXPECT_TRUE(Polynomial(V - V_expected)
-                  .RemoveTermsWithSmallCoefficients(1e-6)
-                  .EqualToAfterExpansion(Polynomial(Expression::Zero())));
+  const Polynomial V_expected{(x - x0) * (x - x0)};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
 // A multivariate polynomial with a non-trivial but known floating-point
@@ -83,11 +79,26 @@ GTEST_TEST(RegionOfAttractionTest, ParriloExample) {
   // Level-set reported in the thesis:
   const double gamma = std::pow(2.66673, 2);
 
-  const Expression V_expected{(x * x + y * y) / gamma};
+  const Polynomial V_expected{(x * x + y * y) / gamma};
 
-  EXPECT_TRUE(Polynomial(V - V_expected)
-                  .RemoveTermsWithSmallCoefficients(1e-6)
-                  .EqualToAfterExpansion(Polynomial(Expression::Zero())));
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+}
+
+// The cubic polynomial again, but this time with V=x^4.  Tests the case
+// where the Hessian of Vdot is negative definite at the origin.
+GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
+  Variable x("x");
+  const auto system =
+      SymbolicVectorSystemBuilder().state(x).dynamics(-x + pow(x, 3)).Build();
+  const auto context = system->CreateDefaultContext();
+
+  RegionOfAttractionOptions options;
+  options.lyapunov_candidate = 3 * pow(x, 4);
+  options.state_variables = Vector1<Variable>(x);
+
+  const Expression V = RegionOfAttraction(*system, *context, options);
+  const Polynomial V_expected{pow(x, 4)};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
 }  // namespace
