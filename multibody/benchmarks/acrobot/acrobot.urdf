@@ -69,7 +69,6 @@
     <child link="Link2"/>
     <axis xyz="0 1 0"/>
     <origin xyz="0 0.15 -1"/>
-    <limit effort="0"/>
     <dynamics damping="0.1"/>
   </joint>
 
