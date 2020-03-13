@@ -668,7 +668,7 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
                                                  tol=1e-4)
-        self.assertEquals(len(infeasible), 0)
+        self.assertEqual(len(infeasible), 0)
 
     def test_add_indeterminates_and_decision_variables(self):
         prog = mp.MathematicalProgram()
@@ -714,3 +714,6 @@ class TestSolverInterface(unittest.TestCase):
         self.assertTrue("Dummy solver cannot solve" in str(context.exception))
         self.assertIsInstance(result, mp.MathematicalProgramResult)
         self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
+        with self.assertRaises(Exception) as context:
+            result2 = solver.Solve(prog)
+            self.assertIsInstance(result2, mp.MathematicalProgramResult)

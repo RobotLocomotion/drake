@@ -254,8 +254,8 @@ top-level documentation for :py:mod:`pydrake.math`.
             self.Solve(prog, initial_guess, solver_options, &result);
             return result;
           },
-          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
-          doc.SolverBase.Solve.doc)
+          py::arg("prog"), py::arg("initial_guess") = std::nullopt,
+          py::arg("solver_options") = std::nullopt, doc.SolverBase.Solve.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
           [](const SolverInterface& self) {
