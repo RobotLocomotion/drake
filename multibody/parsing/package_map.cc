@@ -20,7 +20,6 @@
 namespace drake {
 namespace multibody {
 
-using std::cerr;
 using std::endl;
 using std::getenv;
 using std::istringstream;
@@ -169,11 +168,12 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   }
   const string model_dir = filesystem::path(model_file).parent_path();
 
-  // Bail out if the model file is not part of Drake.
+  // Bail out if we can't determine the drake root.
   const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
   if (!maybe_drake_path) {
     return;
   }
+  // Bail out if the model file is not part of Drake.
   const string& drake_path = *maybe_drake_path;
   auto iter = std::mismatch(drake_path.begin(), drake_path.end(),
                             model_dir.begin());
@@ -204,7 +204,6 @@ void PackageMap::CrawlForPackages(const string& path) {
   while (getline(iss, token, pathsep)) {
     tinydir_dir dir;
     if (tinydir_open(&dir, token.c_str()) < 0) {
-      cerr << "Unable to open directory: " << token << endl;
       continue;
     }
 
