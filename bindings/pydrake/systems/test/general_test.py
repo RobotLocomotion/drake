@@ -167,6 +167,8 @@ class TestGeneral(unittest.TestCase):
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(
+            context.get_continuous_state().CopyToVector(), x)
+        np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), x)
         context.SetTimeAndContinuousState(0.3, 2*x)
         np.testing.assert_equal(context.get_time(), 0.3)
