@@ -496,6 +496,37 @@ class MathematicalProgram {
       const symbolic::Variables& indeterminates, int degree);
 
   /**
+   * Creates a symbolic polynomial from the given expression `e`. It uses this
+   * MathematicalProgram's `indeterminates()` in constructing the polynomial.
+   *
+   * This method helps a user create a polynomial with the right set of
+   * indeterminates which are declared in this MathematicalProgram. We recommend
+   * users to use this method over an explicit call to Polynomial constructors
+   * to avoid a possible mismatch between this MathematicalProgram's
+   * indeterminates and the user-specified indeterminates (or unspecified, which
+   * then includes all symbolic variables in the expression `e`). Consider the
+   * following example.
+   *
+   *   e = ax + bx + c
+   *
+   *   MP.indeterminates()     = {x}
+   *   MP.decision_variables() = {a, b}
+   *
+   * - `MP.MakePolynomial(e)` create a polynomial, `(a + b)x + c`.  Here only
+   *   `x` is an indeterminate of this polynomial.
+   *
+   * - In contrast, `symbolic::Polynomial(e)` returns `ax + bx + c` where all
+   *   variables `{a, b, x}` are indeterminates. Note that this is problematic
+   *   as its indeterminates, `{a, b, x}` and the MathematicalProgram's decision
+   *   variables, `{a, b}` overlap.
+   *
+   * @note This function does not require that the decision variables in `e` is
+   * a subset of the decision variables in MathematicalProgram.
+   */
+  [[nodiscard]] symbolic::Polynomial MakePolynomial(
+      const symbolic::Expression& e) const;
+
+  /**
    * Adds indeterminates, appending them to an internal vector of any
    * existing indeterminates.
    * @tparam rows  The number of rows in the new indeterminates.
