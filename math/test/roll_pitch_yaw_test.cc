@@ -187,8 +187,10 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const double y = rpy.yaw_angle();
   using std::cos;
   using std::sin;
-  // clang-format off
+
+  // Calculate N_inv, the matrix inverse of N (not the pseudo inverse).
   Matrix3<double> N_inv;
+  // clang-format off
   N_inv << cos(p) * cos(y),  -sin(y),    0,
            sin(y) * cos(p),   cos(y),    0,
                    -sin(p),        0,    1;

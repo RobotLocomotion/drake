@@ -157,17 +157,17 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // Get the bushing's torque and force stiffness/damping constants.
     const Vector3<double>& k012 = K012();
-    const Vector3<double>& b012 = B012();
+    const Vector3<double>& d012 = D012();
     const Vector3<double>& kxyz = Kxyz();
-    const Vector3<double>& bxyz = Bxyz();
-    const double b0 = b012(0), b1 = b012(1), b2 = b012(2);  // N*m*s/rad
-    const double bx = bxyz(0), by = bxyz(1), bz = bxyz(2);  // N*s/m
+    const Vector3<double>& dxyz = Dxyz();
+    const double d0 = d012(0), d1 = d012(1), d2 = d012(2);  // N*m*s/rad
+    const double dx = dxyz(0), dy = dxyz(1), dz = dxyz(2);  // N*s/m
     const double k0 = k012(0), k1 = k012(1), k2 = k012(2);  // N*m/rad
     const double kx = kxyz(0), ky = kxyz(1), kz = kxyz(2);  // N/m
 
-    // Form net force f = fᴋ + fʙ on frameC from the bushing.
+    // Form net force 𝐟 = 𝐟ᴋ + 𝐟ᴅ on frameC from the bushing.
     const Vector3<double> fK(-kx * x, -ky * y, -kz * z);        // Stiffness
-    const Vector3<double> fB(-bx * xDt, -by * yDt, -bz * zDt);  // Damping
+    const Vector3<double> fB(-dx * xDt, -dy * yDt, -dz * zDt);  // Damping
     const Vector3<double> f = fK + fB;
     const Vector3<double> f_A_B_expected = -f;
     const Vector3<double> f_C_B_expected = f;
@@ -178,26 +178,26 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const Vector3<double> f_C_C_expected = R_CB * f_C_B_expected;
 
     // Form "gimbal torques τ₀, τ₁, τ₂ associated with roll-pitch-yaw rotations.
-    const Vector3<double> tau(-(k0 * q0 + b0 * qDt(0)),
-                              -(k1 * q1 + b1 * qDt(1)),
-                              -(k2 * q2 + b2 * qDt(2)));
+    const Vector3<double> tau(-(k0 * q0 + d0 * qDt(0)),
+                              -(k1 * q1 + d1 * qDt(1)),
+                              -(k2 * q2 + d2 * qDt(2)));
 
-    // Form `Txyz = Tx Ax + Ty Ay + Tz Az` which is the torque required when the
+    // Form `txyz = tx Ax + ty Ay + tz Az` which is the torque required when the
     // bushing forces on C have their resultant force f applied at Cp (not Co).
-    // T is the torque on C which produces the same power as the spring-damper
-    // "gimbal" torques T0, T1, T2.
+    // 𝐭 is the torque on C which produces the same power as the spring-damper
+    // "gimbal" torques τ₀, τ₁, τ₂.
     const Matrix3<double> N =
         rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
-    const Vector3<double> Txyz = N.transpose() * tau;
+    const Vector3<double> txyz = N.transpose() * tau;
 
     // Calculate the moment on frame A about Ao, expressed in A.
     const Vector3<double> p_AoBo_B = 0.5 * p_AoCo_B;
-    const Vector3<double> t_Ao_A_expected = -Txyz +
+    const Vector3<double> t_Ao_A_expected = -txyz +
                                          R_AB * p_AoBo_B.cross(f_A_B_expected);
 
     // Calculate the moment on frame C about Co, expressed in A.
     const Vector3<double> p_CoBo_B = -p_AoBo_B;
-    const Vector3<double> t_Co_C_expected = R_CA * Txyz
+    const Vector3<double> t_Co_C_expected = R_CA * txyz
                                        + R_CB * p_CoBo_B.cross(f_C_B_expected);
 
     // Contributions to analytical potential energy Uᴀ.
@@ -220,9 +220,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
                       - k1 * q1 * qDt(1) - ky * y * yDt
                       - k2 * q2 * qDt(2) - kz * z * zDt;
     const double PcI = w_AC_B.dot(p_AoCo_B.cross(fK));
-    const double Pnc = -b0 * pow(qDt(0), 2) - bx * pow(xDt, 2)
-                      - b1 * pow(qDt(1), 2) - by * pow(yDt, 2)
-                      - b2 * pow(qDt(2), 2) - bz * pow(zDt, 2)
+    const double Pnc = -d0 * pow(qDt(0), 2) - dx * pow(xDt, 2)
+                      - d1 * pow(qDt(1), 2) - dy * pow(yDt, 2)
+                      - d2 * pow(qDt(2), 2) - dz * pow(zDt, 2)
                       + w_AC_B.dot(p_AoCo_B.cross(fB));
     // ------------ End of alternate calculations ---------
 
@@ -295,9 +295,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   // arguments, which are defined in the LinearBushingRollPitchYaw constructor.
   void CalcReasonableStiffnessAndDampingConstants(
       Vector3<double>* torque_stiffness_constants,         /* [k₀, k₁, k₂] */
-      Vector3<double>* torque_damping_constants,           /* [b₀, b₁, b₂] */
+      Vector3<double>* torque_damping_constants,           /* [d₀, d₁, d₂] */
       Vector3<double>* force_stiffness_constants,          /* [kx, ky, kz] */
-      Vector3<double>* force_damping_constants) const {    /* [bx, by, bz] */
+      Vector3<double>* force_damping_constants) const {    /* [dx, dy, dz] */
     DRAKE_ASSERT(torque_stiffness_constants != nullptr);
     DRAKE_ASSERT(torque_damping_constants != nullptr);
     DRAKE_ASSERT(force_stiffness_constants != nullptr);
@@ -322,11 +322,11 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double k0 = Ixx_ * wn_rotate * wn_rotate;              // N*m/rad
     const double k1 = Iyy_ * wn_rotate * wn_rotate;              // N*m/rad
     const double k2 = Izz_ * wn_rotate * wn_rotate;              // N*m/rad
-    const double b0 = 2 * zeta * std::sqrt(Ixx_ * k0);           // N*m*s/rad
-    const double b1 = 2 * zeta * std::sqrt(Iyy_ * k1);           // N*m*s/rad
-    const double b2 = 2 * zeta * std::sqrt(Izz_ * k2);           // N*m*s/rad
+    const double d0 = 2 * zeta * std::sqrt(Ixx_ * k0);           // N*m*s/rad
+    const double d1 = 2 * zeta * std::sqrt(Iyy_ * k1);           // N*m*s/rad
+    const double d2 = 2 * zeta * std::sqrt(Izz_ * k2);           // N*m*s/rad
     *torque_stiffness_constants = Vector3<double>(k0, k1, k2);
-    *torque_damping_constants = Vector3<double>(b0, b1, b2);
+    *torque_damping_constants = Vector3<double>(d0, d1, d2);
 
     // ------------ Calculate force stiffness/damping constants ---------------
     const double tauX = 2, tauY = 3, tauZ = 3;                   // seconds
@@ -340,9 +340,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double ky = mC_ * wnY * wnY;                           // N/m
     const double kz = mC_ * wnZ * wnZ;                           // N/m
     const Vector3<double> Kxyz(kx, ky, kz);
-    const Vector3<double> Bxyz = 2 * zeta * (mC_ * Kxyz).cwiseSqrt();
+    const Vector3<double> Dxyz = 2 * zeta * (mC_ * Kxyz).cwiseSqrt();
     *force_stiffness_constants = Vector3<double>(kx, ky, kz);
-    *force_damping_constants = Vector3<double>(Bxyz);
+    *force_damping_constants = Vector3<double>(Dxyz);
   }
 
  protected:
@@ -364,13 +364,13 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   const Vector3<double>& K012() const {
     return bushing_->torque_stiffness_constants();
   }
-  const Vector3<double>& B012() const {
+  const Vector3<double>& D012() const {
     return bushing_->torque_damping_constants();
   }
   const Vector3<double>& Kxyz() const {
     return bushing_->force_stiffness_constants();
   }
-  const Vector3<double>& Bxyz() const {
+  const Vector3<double>& Dxyz() const {
     return bushing_->force_damping_constants();
   }
 };
@@ -556,9 +556,9 @@ TEST_F(LinearBushingRollPitchYawTester, IdentityPoseVariousRotationRates) {
   const double roll_rate = 2.0;
   const double pitch_rate = 3.0;
   const double yaw_rate = 4.0;
-  const double b0_roll = -B012()(0) * roll_rate;
-  const double b1_pitch = -B012()(1) * pitch_rate;
-  const double b2_yaw = -B012()(2) * yaw_rate;
+  const double d0_roll_rate = -D012()(0) * roll_rate;
+  const double d1_pitch_rate = -D012()(1) * pitch_rate;
+  const double d2_yaw_rate = -D012()(2) * yaw_rate;
 
   // Test zero angular velocity.
   Vector3<double> w_AC_A(0, 0, 0);
@@ -569,19 +569,19 @@ TEST_F(LinearBushingRollPitchYawTester, IdentityPoseVariousRotationRates) {
 
   // Test simple angular velocity (x-direction).
   w_AC_A = Vector3<double>(roll_rate, 0, 0);
-  t_Co_C_expected = Vector3<double>(b0_roll, 0, 0);
+  t_Co_C_expected = Vector3<double>(d0_roll_rate, 0, 0);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_AC_A, v_zero,
                                &f_C_C_expected, &t_Co_C_expected);
 
   // Test simple angular velocity (y-direction).
   w_AC_A = Vector3<double>(0, pitch_rate, 0);
-  t_Co_C_expected = Vector3<double>(0, b1_pitch, 0);
+  t_Co_C_expected = Vector3<double>(0, d1_pitch_rate, 0);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_AC_A, v_zero,
                                &f_C_C_expected, &t_Co_C_expected);
 
   // Test simple angular velocity (z-direction).
   w_AC_A = Vector3<double>(0, 0, yaw_rate);
-  t_Co_C_expected = Vector3<double>(0, 0, b2_yaw);
+  t_Co_C_expected = Vector3<double>(0, 0, d2_yaw_rate);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_AC_A, v_zero,
                                &f_C_C_expected, &t_Co_C_expected);
 
@@ -601,9 +601,9 @@ TEST_F(LinearBushingRollPitchYawTester, IdentityPoseWithTranslationalRates) {
   const double xDt = 4.0;
   const double yDt = 5.0;
   const double zDt = 6.0;
-  const double bx_xDt = -Bxyz()(0) * xDt;
-  const double by_yDt = -Bxyz()(1) * yDt;
-  const double bz_zDt = -Bxyz()(2) * zDt;
+  const double dx_xDt = -Dxyz()(0) * xDt;
+  const double dy_yDt = -Dxyz()(1) * yDt;
+  const double dz_zDt = -Dxyz()(2) * zDt;
 
   // Test no translation.
   Vector3<double> v_ACo_A(0, 0, 0);
@@ -614,25 +614,25 @@ TEST_F(LinearBushingRollPitchYawTester, IdentityPoseWithTranslationalRates) {
 
   // Test simple translation (x-direction).
   v_ACo_A = Vector3<double>(xDt, 0, 0);
-  f_C_C_expected = Vector3<double>(bx_xDt, 0, 0);
+  f_C_C_expected = Vector3<double>(dx_xDt, 0, 0);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_zero, v_ACo_A,
                                &f_C_C_expected, &t_Co_C_expected);
 
   // Test simple translation (y-direction).
   v_ACo_A = Vector3<double>(0, yDt, 0);
-  f_C_C_expected = Vector3<double>(0, by_yDt, 0);
+  f_C_C_expected = Vector3<double>(0, dy_yDt, 0);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_zero, v_ACo_A,
                                &f_C_C_expected, &t_Co_C_expected);
 
   // Test simple translation (z-direction).
   v_ACo_A = Vector3<double>(0, 0, zDt);
-  f_C_C_expected = Vector3<double>(0, 0, bz_zDt);
+  f_C_C_expected = Vector3<double>(0, 0, dz_zDt);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_zero, v_ACo_A,
                                &f_C_C_expected, &t_Co_C_expected);
 
   // Test non-simple translation.
   v_ACo_A = Vector3<double>(xDt, yDt, zDt);
-  f_C_C_expected = Vector3<double>(bx_xDt, by_yDt, bz_zDt);
+  f_C_C_expected = Vector3<double>(dx_xDt, dy_yDt, dz_zDt);
   CompareToMotionGenesisResult(rpy_zero, p_zero, w_zero, v_ACo_A,
                                &f_C_C_expected, &t_Co_C_expected);
 }

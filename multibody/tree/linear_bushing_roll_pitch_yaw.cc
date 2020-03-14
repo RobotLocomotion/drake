@@ -73,8 +73,8 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
   std::vector<SpatialForce<T>>& F_BodyOrigin_W_array =
       forces->mutable_body_forces();
 
-  // Apply a torque to link L0 and apply the force −f to L0ₒ.
-  // Apply a torque to link L1 and apply the force +f to L1ₒ.
+  // Apply a torque to link L0 and apply the force −𝐟 to L0ₒ.
+  // Apply a torque to link L1 and apply the force +𝐟 to L1ₒ.
   F_BodyOrigin_W_array[link0().node_index()] += F_L0_W;
   F_BodyOrigin_W_array[link1().node_index()] += F_L1_W;
 }
@@ -121,7 +121,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePowerAnalytical(
   const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
   const T PcA_torque = -(kQ.dot(q012Dt));
 
-  // Calculate Pcᴀ_force = fᴋ ⋅ Ẋ = −(kx x ẋ + ky y ẏ + kz z ż).
+  // Calculate Pcᴀ_force = 𝐟ᴋ ⋅ Ẋ = −(kx x ẋ + ky y ẏ + kz z ż).
   const Vector3<T> kX = ForceStiffnessConstantsTimesDisplacement(context);
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
   const T PcA_force = -(kX.dot(xyzDt));
@@ -132,7 +132,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePowerAnalytical(
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcConservativePowerNumerical(
     const systems::Context<T>& context) const {
-  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × fᴋ),
+  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × 𝐟ᴋ),
   // where Pcɪ is the part of conservative power that is numerically integrated
   // to calculate Uɪ (the non-analytical part of potential energy).
   const Vector3<T> spring_force_B =
@@ -164,23 +164,23 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   //  values and LinearBushingRollPitchYaw class documentation.
   // ----------------------------------------------------------------------
   // Calculate the part of nonconservative power due to torque damping.
-  // Pɴᴄ_torque = τʙ ⋅ q̇ = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
+  // Pɴᴄ_torque = τᴅ ⋅ q̇ = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
   const Vector3<T> bQDt = TorqueDampingConstantsTimesAngleRates(context);
   const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
   const T Pnc_torque = -(bQDt.dot(q012Dt));
 
   // Calculate a part of nonconservative power that is due to force damping.
-  // Pɴᴄ_force = fʙ ⋅ X = −(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
+  // Pɴᴄ_force = 𝐟ᴅ ⋅ X = −(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
   const Vector3<T> bXDt = ForceDampingConstantsTimesDisplacementRate(context);
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
   const T Pnc_force0 = -(bXDt.dot(xyzDt));
 
-  // Calculate the part of nonconservative power due to w_CA ⋅ (p_AoCo × fʙ).
+  // Calculate the part of nonconservative power due to w_CA ⋅ (p_AoCo × 𝐟ᴅ).
   const Vector3<T> damping_force_B =
       -ForceDampingConstantsTimesDisplacementRate(context);
   const T Pnc_force_extra = CalcPowerHelperMethod(context, damping_force_B);
 
-  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × fᴋ),
+  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × 𝐟ᴋ),
   const T PcI = CalcConservativePowerNumerical(context);
 
   return Pnc_torque + Pnc_force0 + Pnc_force_extra + PcI;
@@ -189,7 +189,7 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcPowerHelperMethod(
     const systems::Context<T>& context, const Vector3<T>& force_B) const {
-  // Helper method to calculate a part of power due to w_CA ⋅ (p_AoCo × fʙ).
+  // Helper method to calculate a part of power due to w_CA ⋅ (p_AoCo × 𝐟ᴅ).
   // @param[in] context The state of the multibody system.
   const Vector3<T> p_AoCo_B = Calcp_AoCo_B(context);
   const Vector3<T> pCrossf_B = p_AoCo_B.cross(force_B);
@@ -208,14 +208,14 @@ LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
   const Frame<ToScalar>& frameA_clone = tree_clone.get_variant(frameA());
   const Frame<ToScalar>& frameC_clone = tree_clone.get_variant(frameC());
   const Vector3<double>& k012 = torque_stiffness_constants();
-  const Vector3<double>& b012 = torque_damping_constants();
+  const Vector3<double>& d012 = torque_damping_constants();
   const Vector3<double>& kxyz = force_stiffness_constants();
-  const Vector3<double>& bxyz = force_damping_constants();
+  const Vector3<double>& dxyz = force_damping_constants();
 
   // Make the LinearBushingRollPitchYaw<T> clone.
   auto bushing_clone =
       std::make_unique<LinearBushingRollPitchYaw<ToScalar>>(
-          frameA_clone, frameC_clone, k012, b012, kxyz, bxyz);
+          frameA_clone, frameC_clone, k012, d012, kxyz, dxyz);
 
   return bushing_clone;
 }
