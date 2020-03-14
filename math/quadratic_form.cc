@@ -3,6 +3,8 @@
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
 
+#include "drake/math/matrix_util.h"
+
 namespace drake {
 namespace math {
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
@@ -62,5 +64,25 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
   Eigen::VectorXd d = A.col(Q.cols());
   return std::make_pair(R, d);
 }
+
+Eigen::MatrixXd BalanceQuadraticForms(
+    const Eigen::Ref<const Eigen::MatrixXd>& S,
+    const Eigen::Ref<const Eigen::MatrixXd>& P) {
+  DRAKE_THROW_UNLESS(IsPositiveDefinite(S, 1e-8));
+  DRAKE_THROW_UNLESS(IsPositiveDefinite(P, 1e-8));
+  DRAKE_THROW_UNLESS(S.rows() == P.rows());
+
+  const int n = S.rows();
+  const Eigen::MatrixXd R =
+      S.llt().matrixL().solve(Eigen::MatrixXd::Identity(n, n));
+
+  const Eigen::JacobiSVD<Eigen::MatrixXd> svd(R * P * R.transpose(),
+                                              Eigen::ComputeThinU);
+
+  const Eigen::VectorXd sigmaRootN4 =
+      svd.singularValues().array().pow(-0.25).matrix();
+  return R.transpose() * svd.matrixU() * sigmaRootN4.asDiagonal();
+}
+
 }  // namespace math
 }  // namespace drake

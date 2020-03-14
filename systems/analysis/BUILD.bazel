@@ -502,6 +502,7 @@ drake_cc_googletest(
     name = "region_of_attraction_test",
     deps = [
         ":region_of_attraction",
+        "//solvers:mosek_solver",
         "//systems/primitives:symbolic_vector_system",
     ],
 )
