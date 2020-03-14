@@ -318,6 +318,16 @@ class TestMath(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.det(R), 1.0)
         self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
 
+    def test_matrix_util(self):
+        A = np.array([[1, 2], [3, 4]])
+
+        self.assertFalse(mut.IsSymmetric(matrix=A))
+        self.assertFalse(mut.IsSymmetric(matrix=A, precision=0))
+        self.assertTrue(mut.IsSymmetric(np.eye(3), 0.))
+
+        self.assertFalse(mut.IsPositiveDefinite(matrix=A, tolerance=0))
+        self.assertTrue(mut.IsPositiveDefinite(A.dot(A.T)))
+
     def test_quadratic_form(self):
         Q = np.diag([1., 2., 3.])
         X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)
@@ -328,6 +338,8 @@ class TestMath(unittest.TestCase):
         self.assertEqual(np.size(R, 0), 4)
         self.assertEqual(np.size(R, 1), 3)
         self.assertEqual(len(d), 4)
+        T = mut.BalanceQuadraticForms(S=np.eye(3), P=np.eye(3))
+        np.testing.assert_array_almost_equal(T, np.eye(3))
 
     def test_riccati_lyapunov(self):
         A = 0.1*np.eye(2)

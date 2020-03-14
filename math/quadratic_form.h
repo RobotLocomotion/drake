@@ -63,5 +63,33 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
 DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
                                const Eigen::Ref<const Eigen::VectorXd>& b,
                                double c, double tol = 0);
+
+/** Given two positive quadratic forms, x'Sx > 0 and x'Px > 0, Finds a change
+ * of variables x = Ty, which tries to improve the conditioning of the
+ * problem by "balancing" S and P (as inspired by "balanced truncation" in
+ * model-order reduction [1]).
+ *
+ * To understand it, consider first the scalar case: we have two quadratic
+ * functions, sx² and px², with s>0, p>0.  We'd like to choose x=Ty so that
+ * sT²y² and pT²y² are "balanced" (we'd like them both to be close to y²).
+ * We'll choose T=p^{-1/4}s^{-1/4}, which gives sx² = sqrt(s/p)y², and
+ * px² = sqrt(p/s)y².  If s=p, then we have perfect balance!
+ *
+ * In the vector case, we have x'Sx > 0 and x'Px > 0, and we find x=Ty such
+ * that T'ST = D and T'PT = D⁻¹, where D is diagonal.  The recipe is:
+ * - Factorize S = LL', and choose R=L⁻¹.
+ * - Take svd(RPR') = UΣV', and note that U=V for positive definite matrices,
+ * - Choose T = R'U Σ^{-1/4}, where the matrix exponent can be taken
+ *   elementwise because Σ is diagonal.
+ * This gives T'ST = Σ^{-1/2} (by using U'U=I), and T'PT = Σ^{1/2}.
+ *
+ * [1] B. Moore, “Principal component analysis in linear systems:
+ * Controllability, observability, and model reduction,” IEEE Trans. Automat.
+ * Contr., vol. 26, no. 1, pp. 17–32, Feb. 1981.
+ */
+Eigen::MatrixXd BalanceQuadraticForms(
+    const Eigen::Ref<const Eigen::MatrixXd>& S,
+    const Eigen::Ref<const Eigen::MatrixXd>& P);
+
 }  // namespace math
 }  // namespace drake
