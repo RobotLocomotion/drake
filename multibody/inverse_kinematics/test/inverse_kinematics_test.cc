@@ -65,42 +65,56 @@ class TwoFreeBodiesTest : public ::testing::Test {
 
 GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   // Constructs an inverse kinematics problem for IIWA robot, make sure that
-  // the joint limits are imposed.
+  // the joint limits are imposed when with_joint_limits=true, and the joint
+  // limits are ignored when with_joint_limits=false.
   auto plant = ConstructIiwaPlant(
       FindResourceOrThrow(
           "drake/manipulation/models/iiwa_description/sdf/"
           "iiwa14_no_collision.sdf"),
       0.01);
 
-  InverseKinematics ik(*plant);
+  InverseKinematics ik_with_joint_limits(*plant);
+  InverseKinematics ik_without_joint_limits(*plant, false);
   // Now check the joint limits.
-  VectorX<double> lower_limits(7);
-  // The lower and upper joint limits are copied from the SDF file. Please make
-  // sure the values are in sync with the SDF file.
-  lower_limits << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944,
-      -3.05433;
-  VectorX<double> upper_limits(7);
-  upper_limits = -lower_limits;
+  const VectorX<double> lower_limits = plant->GetPositionLowerLimits();
+  const VectorX<double> upper_limits = plant->GetPositionUpperLimits();
   // Check if q_test will satisfy the joint limit constraint imposed from the
   // IK constructor.
-  auto q_test_bound = ik.get_mutable_prog()->AddBoundingBoxConstraint(
-      Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), ik.q());
-  auto check_q_test = [&ik, &q_test_bound](const Eigen::VectorXd& q_test) {
-    q_test_bound.evaluator()->UpdateLowerBound(q_test);
-    q_test_bound.evaluator()->UpdateUpperBound(q_test);
-    return Solve(ik.prog()).is_success();
+  auto q_test_bound1 =
+      ik_with_joint_limits.get_mutable_prog()->AddBoundingBoxConstraint(
+          Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7),
+          ik_with_joint_limits.q());
+  auto q_test_bound2 =
+      ik_without_joint_limits.get_mutable_prog()->AddBoundingBoxConstraint(
+          Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7),
+          ik_without_joint_limits.q());
+  auto check_q_test1 = [&ik_with_joint_limits,
+                        &q_test_bound1](const Eigen::VectorXd& q_test) {
+    q_test_bound1.evaluator()->UpdateLowerBound(q_test);
+    q_test_bound1.evaluator()->UpdateUpperBound(q_test);
+    return Solve(ik_with_joint_limits.prog()).is_success();
+  };
+  auto check_q_test2 = [&ik_without_joint_limits,
+                        &q_test_bound2](const Eigen::VectorXd& q_test) {
+    q_test_bound2.evaluator()->UpdateLowerBound(q_test);
+    q_test_bound2.evaluator()->UpdateUpperBound(q_test);
+    return Solve(ik_without_joint_limits.prog()).is_success();
   };
   for (int i = 0; i < 7; ++i) {
     Eigen::VectorXd q_good = Eigen::VectorXd::Zero(7);
     q_good(i) = lower_limits(i) * 0.01 + upper_limits(i) * 0.99;
-    EXPECT_TRUE(check_q_test(q_good));
+    EXPECT_TRUE(check_q_test1(q_good));
+    EXPECT_TRUE(check_q_test2(q_good));
     q_good(i) = lower_limits(i) * 0.99 + upper_limits(i) * 0.01;
-    EXPECT_TRUE(check_q_test(q_good));
+    EXPECT_TRUE(check_q_test1(q_good));
+    EXPECT_TRUE(check_q_test2(q_good));
     Eigen::VectorXd q_bad = q_good;
     q_bad(i) = -0.01 * lower_limits(i) + 1.01 * upper_limits(i);
-    EXPECT_FALSE(check_q_test(q_bad));
+    EXPECT_FALSE(check_q_test1(q_bad));
+    EXPECT_TRUE(check_q_test2(q_bad));
     q_bad(i) = 1.01 * lower_limits(i) - 0.01 * upper_limits(i);
-    EXPECT_FALSE(check_q_test(q_bad));
+    EXPECT_FALSE(check_q_test1(q_bad));
+    EXPECT_TRUE(check_q_test2(q_bad));
   }
 }
 

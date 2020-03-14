@@ -11,28 +11,34 @@
 
 namespace drake {
 namespace multibody {
-InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
+InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
+                                     bool with_joint_limits)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
       owned_context_(plant_.CreateDefaultContext()),
       context_(owned_context_.get()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
-  prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
-                                  plant.GetPositionUpperLimits(), q_);
+  if (with_joint_limits) {
+    prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
+                                    plant.GetPositionUpperLimits(), q_);
+  }
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.
 }
 
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
-                                     systems::Context<double>* plant_context)
+                                     systems::Context<double>* plant_context,
+                                     bool with_joint_limits)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
       owned_context_(nullptr),
       context_(plant_context),
       q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
   DRAKE_DEMAND(plant_context);
-  prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
-                                  plant.GetPositionUpperLimits(), q_);
+  if (with_joint_limits) {
+    prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
+                                    plant.GetPositionUpperLimits(), q_);
+  }
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.
 }
