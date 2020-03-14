@@ -234,6 +234,7 @@ drake_cc_library(
     srcs = ["quadratic_form.cc"],
     hdrs = ["quadratic_form.h"],
     deps = [
+        ":matrix_util",
         "//common:essential",
         "@eigen",
     ],

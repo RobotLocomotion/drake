@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/solvers/mosek_solver.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 
 namespace drake {
@@ -82,6 +83,15 @@ GTEST_TEST(RegionOfAttractionTest, ParriloExample) {
   const Polynomial V_expected{(x * x + y * y) / gamma};
 
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+
+  // Run it again with the lyapunov candidate scaled by a large number to
+  // test the "BalanceQuadraticForms" call (this failed on Mosek without
+  // balancing).
+  if (solvers::MosekSolver::is_available()) {
+    options.lyapunov_candidate = 1e8 * options.lyapunov_candidate;
+    const Expression scaled_V = RegionOfAttraction(*system, *context, options);
+    EXPECT_TRUE(Polynomial(scaled_V).CoefficientsAlmostEqual(V_expected, 1e-6));
+  }
 }
 
 // The cubic polynomial again, but this time with V=x^4.  Tests the case
