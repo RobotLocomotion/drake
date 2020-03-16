@@ -145,6 +145,38 @@ TEST_F(KukaIiwaModelForwardDynamicsTests, ForwardDynamicsTest) {
   CompareForwardDynamics(q, qdot);
 }
 
+// For complex articulated systems such as a humanoid robot, round-off errors
+// might accumulate leading to (close to, by machine epsilon) unphysical ABIs in
+// the Articulated Body Algorithm. See related issue #12640.
+// This test verifies this does not trigger a spurious exception.
+GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
+  MultibodyPlant<double> plant(0.0);
+  const std::string model_path =
+      FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
+  Parser parser(&plant);
+  auto atlas_instance = parser.AddModelFromFile(model_path);
+  plant.Finalize();
+
+  // Create a context and store an arbitrary configuration.
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  for (JointIndex joint_index(0); joint_index < plant.num_joints();
+       ++joint_index) {
+    const Joint<double>& joint = plant.get_joint(joint_index);
+    // This model only has weld and revolute joints. Weld joints have zero DOFs.
+    if (joint.num_velocities() != 0) {
+      const RevoluteJoint<double>& revolute_joint =
+          dynamic_cast<const RevoluteJoint<double>&>(joint);
+      // Arbitrary non-zero angle.
+      revolute_joint.set_angle(context.get(), 0.5 * joint_index);
+    }
+  }
+  const int num_actuators = plant.num_actuators();
+  plant.get_actuation_input_port(atlas_instance)
+      .FixValue(context.get(), VectorX<double>::Zero(num_actuators));
+  auto derivatives = plant.AllocateTimeDerivatives();
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
+}
+
 // TODO(amcastro-tri): Include test with non-zero actuation and external forces.
 
 }  // namespace
