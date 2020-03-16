@@ -85,10 +85,10 @@ GTEST_TEST(RegionOfAttractionTest, ParriloExample) {
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 
   // Run it again with the lyapunov candidate scaled by a large number to
-  // test the "BalanceQuadraticForms" call (this failed on Mosek without
-  // balancing).
+  // test the "BalanceQuadraticForms" call (this scaling is the smallest
+  // multiple of 10 that caused Mosek to fail without balancing).
   if (solvers::MosekSolver::is_available()) {
-    options.lyapunov_candidate = 1e8 * options.lyapunov_candidate;
+    options.lyapunov_candidate *= 1e8;
     const Expression scaled_V = RegionOfAttraction(*system, *context, options);
     EXPECT_TRUE(Polynomial(scaled_V).CoefficientsAlmostEqual(V_expected, 1e-6));
   }

@@ -48,14 +48,16 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   // A positive max eigenvalue indicates the system is locally unstable.
   const double max_eigenvalue = eigensolver.eigenvalues().maxCoeff();
   // According to the Lapack manual, the absolute accuracy of eigenvalues is
-  // eps*max(|eigenvalues|), so I will write my thresholds relative to that.
+  // eps*max(|eigenvalues|), so I will write my thresholds in those units.
   // Anderson et al., Lapack User's Guide, 3rd ed. section 4.7, 1999.
+  const double tolerance = 1e-8;
   const double max_abs_eigenvalue =
       eigensolver.eigenvalues().cwiseAbs().maxCoeff();
-  DRAKE_THROW_UNLESS(max_eigenvalue <= 1e-8 * std::max(1., max_abs_eigenvalue));
+  DRAKE_THROW_UNLESS(max_eigenvalue <=
+                     tolerance * std::max(1., max_abs_eigenvalue));
 
   bool Vdot_is_locally_negative_definite =
-      (max_eigenvalue <= -1e-8 * std::max(1., max_abs_eigenvalue));
+      (max_eigenvalue <= -tolerance * std::max(1., max_abs_eigenvalue));
 
   Polynomial V_balanced, Vdot_balanced;
   if (Vdot_is_locally_negative_definite) {
@@ -95,8 +97,7 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
           .ToExpression());
 
   // If Vdot is indefinite, then the linearization does not inform us about the
-  // local stability.  Add lambda is SOS to force prog to confirm this local
-  // stability.
+  // local stability.  Add "lambda(x) is SOS" to confirm this local stability.
   if (!Vdot_is_locally_negative_definite) {
     prog.AddSosConstraint(lambda);
   }
