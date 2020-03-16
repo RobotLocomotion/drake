@@ -116,7 +116,12 @@ if __name__ == '__main__':
             print("\n`unittest` specific arguments")
 
         # Delegate the rest to unittest.
-        unittest.main(module=test_name, argv=unittest_argv)
+        #
+        # Use `warnings=False` to tell unittest to keep its hands off of our
+        # warnings settings, exploting a loophole where it checks "if warnings
+        # is None" to check if the user passed a kwarg, but "if warning" to
+        # actually apply the user's kwarg.
+        unittest.main(module=test_name, argv=unittest_argv, warnings=False)
 
     if not args.nostdout_to_stderr:
         sys.stdout.flush()

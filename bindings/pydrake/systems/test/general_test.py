@@ -10,6 +10,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import Expression
@@ -418,7 +419,7 @@ class TestGeneral(unittest.TestCase):
         diagram.get_input_port(2).FixValue(context, input2)
 
         # Test __str__ methods.
-        self.assertRegexpMatches(str(context), "integrator")
+        self.assertRegex(str(context), "integrator")
         self.assertEqual(str(input2), "[0.003, 0.004, 0.005]")
 
         # Initialize integrator states.
@@ -506,19 +507,22 @@ class TestGeneral(unittest.TestCase):
             system=system, max_step_size=0.01)
         test_integrator = RungeKutta3Integrator(system=system)
 
-        # Test simulator's reset_integrator,
-        # and also the full constructors for
+        # Test simulator's reset_integrator, and also the full constructors for
         # all integrator types.
-        simulator.reset_integrator(
-            RungeKutta2Integrator(
-                system=system,
-                max_step_size=0.01,
-                context=simulator.get_mutable_context()))
+        rk2 = RungeKutta2Integrator(
+            system=system,
+            max_step_size=0.01,
+            context=simulator.get_mutable_context())
+        with catch_drake_warnings(expected_count=1):
+            # TODO(12873) We need an API for this that isn't deprecated.
+            simulator.reset_integrator(rk2)
 
-        simulator.reset_integrator(
-            RungeKutta3Integrator(
-                system=system,
-                context=simulator.get_mutable_context()))
+        rk3 = RungeKutta3Integrator(
+            system=system,
+            context=simulator.get_mutable_context())
+        with catch_drake_warnings(expected_count=1):
+            # TODO(12873) We need an API for this that isn't deprecated.
+            simulator.reset_integrator(rk3)
 
     def test_abstract_output_port_eval(self):
         model_value = AbstractValue.Make("Hello World")
