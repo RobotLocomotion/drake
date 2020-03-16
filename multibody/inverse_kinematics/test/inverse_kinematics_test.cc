@@ -80,41 +80,43 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   const VectorX<double> upper_limits = plant->GetPositionUpperLimits();
   // Check if q_test will satisfy the joint limit constraint imposed from the
   // IK constructor.
-  auto q_test_bound1 =
+  auto q_test_with_joint_limits =
       ik_with_joint_limits.get_mutable_prog()->AddBoundingBoxConstraint(
           Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7),
           ik_with_joint_limits.q());
-  auto q_test_bound2 =
+  auto q_test_without_joint_limits =
       ik_without_joint_limits.get_mutable_prog()->AddBoundingBoxConstraint(
           Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7),
           ik_without_joint_limits.q());
-  auto check_q_test1 = [&ik_with_joint_limits,
-                        &q_test_bound1](const Eigen::VectorXd& q_test) {
-    q_test_bound1.evaluator()->UpdateLowerBound(q_test);
-    q_test_bound1.evaluator()->UpdateUpperBound(q_test);
-    return Solve(ik_with_joint_limits.prog()).is_success();
-  };
-  auto check_q_test2 = [&ik_without_joint_limits,
-                        &q_test_bound2](const Eigen::VectorXd& q_test) {
-    q_test_bound2.evaluator()->UpdateLowerBound(q_test);
-    q_test_bound2.evaluator()->UpdateUpperBound(q_test);
-    return Solve(ik_without_joint_limits.prog()).is_success();
-  };
+  auto check_q_with_joint_limits =
+      [&ik_with_joint_limits,
+       &q_test_with_joint_limits](const Eigen::VectorXd& q_test) {
+        q_test_with_joint_limits.evaluator()->UpdateLowerBound(q_test);
+        q_test_with_joint_limits.evaluator()->UpdateUpperBound(q_test);
+        return Solve(ik_with_joint_limits.prog()).is_success();
+      };
+  auto check_q_without_joint_limits =
+      [&ik_without_joint_limits,
+       &q_test_without_joint_limits](const Eigen::VectorXd& q_test) {
+        q_test_without_joint_limits.evaluator()->UpdateLowerBound(q_test);
+        q_test_without_joint_limits.evaluator()->UpdateUpperBound(q_test);
+        return Solve(ik_without_joint_limits.prog()).is_success();
+      };
   for (int i = 0; i < 7; ++i) {
     Eigen::VectorXd q_good = Eigen::VectorXd::Zero(7);
     q_good(i) = lower_limits(i) * 0.01 + upper_limits(i) * 0.99;
-    EXPECT_TRUE(check_q_test1(q_good));
-    EXPECT_TRUE(check_q_test2(q_good));
+    EXPECT_TRUE(check_q_with_joint_limits(q_good));
+    EXPECT_TRUE(check_q_without_joint_limits(q_good));
     q_good(i) = lower_limits(i) * 0.99 + upper_limits(i) * 0.01;
-    EXPECT_TRUE(check_q_test1(q_good));
-    EXPECT_TRUE(check_q_test2(q_good));
+    EXPECT_TRUE(check_q_with_joint_limits(q_good));
+    EXPECT_TRUE(check_q_without_joint_limits(q_good));
     Eigen::VectorXd q_bad = q_good;
     q_bad(i) = -0.01 * lower_limits(i) + 1.01 * upper_limits(i);
-    EXPECT_FALSE(check_q_test1(q_bad));
-    EXPECT_TRUE(check_q_test2(q_bad));
+    EXPECT_FALSE(check_q_with_joint_limits(q_bad));
+    EXPECT_TRUE(check_q_without_joint_limits(q_bad));
     q_bad(i) = 1.01 * lower_limits(i) - 0.01 * upper_limits(i);
-    EXPECT_FALSE(check_q_test1(q_bad));
-    EXPECT_TRUE(check_q_test2(q_bad));
+    EXPECT_FALSE(check_q_with_joint_limits(q_bad));
+    EXPECT_TRUE(check_q_without_joint_limits(q_bad));
   }
 }
 
