@@ -27,13 +27,18 @@ class InverseKinematics {
    * This constructor will create and own a context for @param plant.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
+   * @param with_joint_limits If set to true, then the constructor
+   * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
+   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
+   * does not impose the joint limit constraints in the constructor.
    * @note The inverse kinematics problem constructed in this way doesn't permit
    * collision related constraint (such as calling
    * AddMinimumDistanceConstraint). To enable collision related constraint, call
    * InverseKinematics(const MultibodyPlant<double>& plant,
    * systems::Context<double>* plant_context);
    */
-  explicit InverseKinematics(const MultibodyPlant<double>& plant);
+  explicit InverseKinematics(const MultibodyPlant<double>& plant,
+                             bool with_joint_limits = true);
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant. If the user
@@ -58,9 +63,19 @@ class InverseKinematics {
    * // 5. Get the context for the plant.
    * auto plant_context = &(diagram->GetMutableSubsystemContext(items.plant,
    * diagram_context.get()));
-   */
+   * This context will be modified during calling ik.prog.Solve(...). When
+   * Solve() returns `result`, context will store the optimized posture, namely
+   * plant.GetPositions(*context) will be the same as in
+   * result.GetSolution(ik.q()). The user could then use this context to perform
+   * kinematic computation (like computing the position of the end-effector
+   * etc.).
+   * @param with_joint_limits If set to true, then the constructor
+   * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
+   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
+   * does not impose the joint limit constraints in the constructor.  */
   InverseKinematics(const MultibodyPlant<double>& plant,
-                    systems::Context<double>* plant_context);
+                    systems::Context<double>* plant_context,
+                    bool with_joint_limits = true);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=

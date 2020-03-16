@@ -45,6 +45,12 @@ class TestInverseKinematics(unittest.TestCase):
         self.prog = self.ik_two_bodies.get_mutable_prog()
         self.q = self.ik_two_bodies.q()
 
+        # Test constructor without joint limits
+        ik.InverseKinematics(plant=self.plant, with_joint_limits=False)
+        ik.InverseKinematics(
+            plant=self.plant, plant_context=plant_context,
+            with_joint_limits=False)
+
         def squaredNorm(x):
             return np.array([x[0] ** 2 + x[1] ** 2 + x[2] ** 2 + x[3] ** 2])
 
