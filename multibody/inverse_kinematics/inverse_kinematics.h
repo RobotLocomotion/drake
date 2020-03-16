@@ -29,7 +29,7 @@ class InverseKinematics {
    * solved.
    * @param with_joint_limits If set to true, then the constructor
    * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
-   * and plant.GetPositionUpperLimits(). If set to true, then the constructor
+   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
    * does not impose the joint limit constraints in the constructor.
    * @note The inverse kinematics problem constructed in this way doesn't permit
    * collision related constraint (such as calling
@@ -37,8 +37,8 @@ class InverseKinematics {
    * InverseKinematics(const MultibodyPlant<double>& plant,
    * systems::Context<double>* plant_context);
    */
-  InverseKinematics(const MultibodyPlant<double>& plant,
-                    bool with_joint_limits = true);
+  explicit InverseKinematics(const MultibodyPlant<double>& plant,
+                             bool with_joint_limits = true);
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant. If the user
@@ -66,12 +66,12 @@ class InverseKinematics {
    * This context will be modified during calling ik.prog.Solve(...). When
    * Solve() returns `result`, context will store the optimized posture, namely
    * plant.GetPositions(*context) will be the same as in
-   * result.GetResult(ik.q()). The user could then use this context to perform
+   * result.GetSolution(ik.q()). The user could then use this context to perform
    * kinematic computation (like computing the position of the end-effector
    * etc.).
    * @param with_joint_limits If set to true, then the constructor
    * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
-   * and plant.GetPositionUpperLimits(). If set to true, then the constructor
+   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
    * does not impose the joint limit constraints in the constructor.  */
   InverseKinematics(const MultibodyPlant<double>& plant,
                     systems::Context<double>* plant_context,
