@@ -64,15 +64,17 @@ DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
                                const Eigen::Ref<const Eigen::VectorXd>& b,
                                double c, double tol = 0);
 
-/** Given two positive quadratic forms, x'Sx > 0 and x'Px > 0, Finds a change
- * of variables x = Ty, which tries to improve the conditioning of the
- * problem by "balancing" S and P (as inspired by "balanced truncation" in
- * model-order reduction [1]).
+/** Given two quadratic forms, x'Sx > 0 and x'Px, (with P symmetric and full
+ * rank), finds a change of variables x = Ty, which tries to improve the
+ * conditioning of the forms by "balancing" S and P (as inspired by
+ * "balanced truncation" in model-order reduction [1]).  In this note, we use
+ * abs(M) to indicate the elementwise absolute value.
  *
  * Adapting from [1], we observe that there is a family coordinate systems
  * that can simultaneously diagonalize T'ST and T'PT.  We call the result
- * S-normal if T'ST = I and T'PT = D⁻², call it P-normal if T'ST = D² and
- * T'PT = I, and call it "balanced" if T'ST = D and T'PT = D⁻¹.
+ * S-normal if T'ST = I and abs(T'PT) = D⁻², call it P-normal if T'ST = D² and
+ * abs(T'PT) = I, and call it "balanced" if T'ST = D and abs(T'PT) = D⁻¹.
+ * Note that if P > 0, then T'PT = D⁻¹.
  *
  * To understand it, consider first the scalar case: we have two quadratic
  * functions, sx² and px², with s>0, p>0.  We'd like to choose x=Ty so that
@@ -80,13 +82,16 @@ DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
  * We'll choose T=p^{-1/4}s^{-1/4}, which gives sx² = sqrt(s/p)y², and
  * px² = sqrt(p/s)y².  If s=p, then we have perfect balance!
  *
- * In the vector case, we have x'Sx > 0 and x'Px > 0, and we find x=Ty such
- * that T'ST = D and T'PT = D⁻¹, where D is diagonal.  The recipe is:
+ * In the vector case, we find x=Ty such that T'ST = D and abs(T'PT) = D⁻¹,
+ * where D is diagonal.  The recipe is:
  * - Factorize S = LL', and choose R=L⁻¹.
- * - Take svd(RPR') = UΣV', and note that U=V for positive definite matrices,
+ * - Take svd(RPR') = UΣV', and note that U=V for positive definite
+ *     matrices, and V is U up to a sign flip of the singular vectors for all
+ *     symmetric matrices.
  * - Choose T = R'U Σ^{-1/4}, where the matrix exponent can be taken
  *   elementwise because Σ is diagonal.
- * This gives T'ST = Σ^{-1/2} (by using U'U=I), and T'PT = Σ^{1/2}.
+ * This gives T'ST = Σ^{-1/2} (by using U'U=I), and abs(T'PT) = Σ^{1/2}.  If
+ * P > 0, then T'PT = Σ^{1/2}.
  *
  * [1] B. Moore, “Principal component analysis in linear systems:
  * Controllability, observability, and model reduction,” IEEE Trans. Automat.
