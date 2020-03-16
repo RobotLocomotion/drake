@@ -75,6 +75,8 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
         "//math:gradient",
+        "//systems/analysis:explicit_euler_integrator",
+        "//systems/analysis:integrator_base",
         "//systems/framework",
         "//systems/primitives:linear_system",
     ],

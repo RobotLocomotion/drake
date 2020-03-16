@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -171,9 +172,10 @@ class DirectTranscription : public MultipleShooting {
 
   // AutoDiff versions of the System components (for the constraints).
   // These values are allocated iff the dynamic constraints are allocated
-  // as DiscreteTimeSystemConstraints, otherwise they are nullptr.
+  // as DirectTranscriptionConstraint, otherwise they are nullptr.
   std::unique_ptr<const System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
+  std::unique_ptr<IntegratorBase<AutoDiffXd>> integrator_;
   const InputPort<AutoDiffXd>* input_port_{nullptr};
   FixedInputPortValue* input_port_value_{nullptr};  // Owned by the context.
 
