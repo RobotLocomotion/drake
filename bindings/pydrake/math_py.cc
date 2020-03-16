@@ -18,6 +18,7 @@
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/discrete_algebraic_riccati_equation.h"
 #include "drake/math/discrete_lyapunov_equation.h"
+#include "drake/math/matrix_util.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/math/rigid_transform.h"
@@ -314,6 +315,26 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
           doc.BarycentricMesh.MeshValuesFrom.doc);
 
+  // Matrix Util.
+  m  // BR
+      .def("IsSymmetric",
+          [](const Eigen::Ref<const MatrixX<T>>& matrix) {
+            return IsSymmetric(matrix);
+          },
+          py::arg("matrix"), doc.IsSymmetric.doc_1args)
+      .def("IsSymmetric",
+          [](const Eigen::Ref<const MatrixX<T>>& matrix, const T& precision) {
+            return IsSymmetric(matrix, precision);
+          },
+          py::arg("matrix"), py::arg("precision"), doc.IsSymmetric.doc_2args)
+      .def("IsPositiveDefinite",
+          [](const Eigen::Ref<const Eigen::MatrixXd>& matrix,
+              double tolerance) {
+            return IsPositiveDefinite(matrix, tolerance);
+          },
+          py::arg("matrix"), py::arg("tolerance") = 0.0,
+          doc.IsPositiveDefinite.doc);
+
   // Quadratic Form.
   m  // BR
       .def("DecomposePSDmatrixIntoXtransposeTimesX",
@@ -321,7 +342,9 @@ void DoScalarIndependentDefinitions(py::module m) {
           py::arg("zero_tol"), doc.DecomposePSDmatrixIntoXtransposeTimesX.doc)
       .def("DecomposePositiveQuadraticForm", &DecomposePositiveQuadraticForm,
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("tol") = 0,
-          doc.DecomposePositiveQuadraticForm.doc);
+          doc.DecomposePositiveQuadraticForm.doc)
+      .def("BalanceQuadraticForms", &BalanceQuadraticForms, py::arg("S"),
+          py::arg("P"), doc.BalanceQuadraticForms.doc);
 
   // Riccati and Lyapunov Equations.
   m  // BR

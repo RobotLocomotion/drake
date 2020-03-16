@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #include "drake/math/continuous_lyapunov_equation.h"
-#include "drake/math/matrix_util.h"
+#include "drake/math/quadratic_form.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 
@@ -31,12 +31,55 @@ namespace {
 // If we cannot confirm negative definiteness, then we must ask instead for
 // Vdot >=0 => V >= rho (or x=0).
 Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
-                               const Polynomial& V, const Polynomial& Vdot) {
+                               const Expression& V, const Expression& Vdot) {
+  // Check if the Hessian of Vdot is negative definite.
+  Environment env;
+  for (int i = 0; i < x.size(); i++) {
+    env.insert(x(i), 0.0);
+  }
+  const Eigen::MatrixXd S =
+      symbolic::Evaluate(symbolic::Jacobian(V.Jacobian(x), x), env);
+  const Eigen::MatrixXd P =
+      symbolic::Evaluate(symbolic::Jacobian(Vdot.Jacobian(x), x), env);
+  // Eigen's recommended way of getting the Eigenvalues.
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(P);
+  DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
+
+  // A positive max eigenvalue indicates the system is locally unstable.
+  const double max_eigenvalue = eigensolver.eigenvalues().maxCoeff();
+  // According to the Lapack manual, the absolute accuracy of eigenvalues is
+  // eps*max(|eigenvalues|), so I will write my thresholds in those units.
+  // Anderson et al., Lapack User's Guide, 3rd ed. section 4.7, 1999.
+  const double tolerance = 1e-8;
+  const double max_abs_eigenvalue =
+      eigensolver.eigenvalues().cwiseAbs().maxCoeff();
+  DRAKE_THROW_UNLESS(max_eigenvalue <=
+                     tolerance * std::max(1., max_abs_eigenvalue));
+
+  bool Vdot_is_locally_negative_definite =
+      (max_eigenvalue <= -tolerance * std::max(1., max_abs_eigenvalue));
+
+  Polynomial V_balanced, Vdot_balanced;
+  if (Vdot_is_locally_negative_definite) {
+    // Then "balance" V and Vdot.
+    const Eigen::MatrixXd T = math::BalanceQuadraticForms(S, -P);
+    const VectorX<Expression> Tx = T*x;
+    Substitution subs;
+    for (int i=0; i<static_cast<int>(x.size()); i++) {
+      subs.emplace(x(i), Tx(i));
+    }
+    V_balanced = Polynomial(V.Substitute(subs));
+    Vdot_balanced = Polynomial(Vdot.Substitute(subs));
+  } else {
+    V_balanced = Polynomial(V);
+    Vdot_balanced = Polynomial(Vdot);
+  }
+
   MathematicalProgram prog;
   prog.AddIndeterminates(x);
 
-  const int V_degree = V.TotalDegree();
-  const int Vdot_degree = Vdot.TotalDegree();
+  const int V_degree = V_balanced.TotalDegree();
+  const int Vdot_degree = Vdot_balanced.TotalDegree();
 
   // TODO(russt): Add this as an argument once I have an example that needs it.
   // This is a reasonable guess.
@@ -49,32 +92,13 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   const int d = std::floor((lambda_degree + Vdot_degree - V_degree) / 2);
   // TODO(russt): Remove ToExpression below pending resolution of #12833.
   prog.AddSosConstraint(
-      ((V - rho) * Polynomial(pow((x.transpose() * x)[0], d)) - lambda * Vdot)
+      ((V_balanced - rho) * Polynomial(pow((x.transpose() * x)[0], d)) -
+       lambda * Vdot_balanced)
           .ToExpression());
 
-  // Check if the Hessian of Vdot is negative definite.
-  Environment env;
-  for (int i = 0; i < x.size(); i++) {
-    env.insert(x(i), 0.0);
-  }
-  const Eigen::MatrixXd H = symbolic::Evaluate(
-      symbolic::Jacobian(Vdot.Jacobian(x), x), env);
-  // Eigen's recommended way of getting the Eigenvalues.
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(H);
-  DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
-
-  // A positive max eigenvalue indicates the system is locally unstable.
-  const double max_eigenvalue = eigensolver.eigenvalues().maxCoeff();
-  // According to the Lapack manual, the absolute accuracy of eigenvalues is
-  // eps*max(|eigenvalues|), so I will write my thresholds relative to that.
-  // Anderson et al., Lapack User's Guide, 3rd ed. section 4.7, 1999.
-  const double max_abs_eigenvalue =
-      eigensolver.eigenvalues().cwiseAbs().maxCoeff();
-  DRAKE_THROW_UNLESS(max_eigenvalue <= 1e-8 * std::max(1., max_abs_eigenvalue));
-  // If the max eigenvalue is zero, then the linearization does not inform us
-  // on the local stability.  Add lambda is SOS to force prog to confirm
-  // this local stability.
-  if (max_eigenvalue >= -1e-8 * std::max(1., max_abs_eigenvalue)) {
+  // If Vdot is indefinite, then the linearization does not inform us about the
+  // local stability.  Add "lambda(x) is SOS" to confirm this local stability.
+  if (!Vdot_is_locally_negative_definite) {
     prog.AddSosConstraint(lambda);
   }
 
@@ -84,7 +108,7 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   DRAKE_THROW_UNLESS(result.is_success());
 
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
-  return V.ToExpression() / result.GetSolution(rho);
+  return V / result.GetSolution(rho);
 }
 
 }  // namespace
@@ -167,12 +191,7 @@ Expression RegionOfAttraction(const System<double>& system,
 
   const Expression Vdot = V.Jacobian(x_bar).dot(f);
 
-  // TODO(russt): implement numerical "balancing" from matlab version.
-  // https://github.com/RobotLocomotion/drake/blob
-  //        /last_sha_with_original_matlab/drake/matlab/systems
-  //        /%40PolynomialSystem/regionOfAttraction.m
-
-  V = FixedLyapunovConvex(x_bar, Polynomial(V), Polynomial(Vdot));
+  V = FixedLyapunovConvex(x_bar, V, Vdot);
 
   // Put V back into global coordinates.
   Substitution subs;
