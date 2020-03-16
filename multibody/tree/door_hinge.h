@@ -129,19 +129,11 @@ class DoorHinge : public ForceElement<T> {
   /// @throws std::exception if `config.viscous_friction` is negative.
   /// @throws std::exception if `config.catch_width` is negative.
   /// @throws std::exception if `config.motion_threshold` is negative or zero.
-  DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config)
-      : ForceElement<T>(joint.model_instance()),
-        joint_(joint),
-        config_(config) {
-    DRAKE_THROW_UNLESS(config_.spring_constant >= 0);
-    DRAKE_THROW_UNLESS(config_.dynamic_friction_torque >= 0);
-    DRAKE_THROW_UNLESS(config_.static_friction_torque >= 0);
-    DRAKE_THROW_UNLESS(config_.viscous_friction >= 0);
-    DRAKE_THROW_UNLESS(config_.catch_width >= 0);
-    DRAKE_THROW_UNLESS(config_.motion_threshold > 0);
-  }
+  DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config);
 
-  const RevoluteJoint<T>& joint() const { return joint_; }
+  const RevoluteJoint<T>& joint() const;
+
+  const DoorHingeConfig& config() const { return config_; }
 
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
@@ -171,11 +163,16 @@ class DoorHinge : public ForceElement<T> {
       const internal::MultibodyTree<AutoDiffXd>&) const override;
 
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
-      // NOLINTNEXTLINE(whitespace/line_length)
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
  private:
   friend class DoorHingeTester;
+
+  template <typename U>
+  friend class DoorHinge;
+
+  DoorHinge(ModelInstanceIndex model_instance, JointIndex joint_index,
+            const DoorHingeConfig& config);
 
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedClone(
@@ -198,9 +195,12 @@ class DoorHinge : public ForceElement<T> {
 
   T CalcHingeStoredEnergy(T angle, const DoorHingeConfig& config) const;
 
-  const RevoluteJoint<T>& joint_;
+  const JointIndex joint_index_;
   const DoorHingeConfig config_;
 };
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::DoorHinge)

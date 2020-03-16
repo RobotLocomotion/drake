@@ -439,6 +439,8 @@ drake_cc_googletest(
     name = "door_hinge_test",
     deps = [
         ":tree",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
     ],
 )
 
