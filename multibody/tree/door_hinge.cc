@@ -1,6 +1,7 @@
 #include "drake/multibody/tree/door_hinge.h"
 
 #include <tuple>
+#include <utility>
 
 using drake::AutoDiffXd;
 using drake::multibody::ForceElement;
@@ -29,9 +30,36 @@ std::tuple<T, T, T> CalcApproximationCurves(T t, T x) {
 }  // namespace
 
 template <typename T>
+DoorHinge<T>::DoorHinge(const RevoluteJoint<T>& joint,
+                        const DoorHingeConfig& config)
+    : DoorHinge(joint.model_instance(), joint.index(), config) {}
+
+template <typename T>
+DoorHinge<T>::DoorHinge(ModelInstanceIndex model_instance,
+                        JointIndex joint_index, const DoorHingeConfig& config)
+    : ForceElement<T>(model_instance),
+      joint_index_(joint_index),
+      config_(config) {
+  DRAKE_THROW_UNLESS(config_.spring_constant >= 0);
+  DRAKE_THROW_UNLESS(config_.dynamic_friction_torque >= 0);
+  DRAKE_THROW_UNLESS(config_.static_friction_torque >= 0);
+  DRAKE_THROW_UNLESS(config_.viscous_friction >= 0);
+  DRAKE_THROW_UNLESS(config_.catch_width >= 0);
+  DRAKE_THROW_UNLESS(config_.motion_threshold > 0);
+}
+
+template <typename T>
+const RevoluteJoint<T>& DoorHinge<T>::joint() const {
+  const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
+      &this->get_parent_tree().get_joint(joint_index_));
+  DRAKE_DEMAND(joint != nullptr);
+  return *joint;
+}
+
+template <typename T>
 T DoorHinge<T>::CalcPotentialEnergy(const Context<T>& context,
                                     const PositionKinematicsCache<T>&) const {
-  const T angle = joint_.GetOnePosition(context);
+  const T angle = joint().GetOnePosition(context);
   return CalcHingeStoredEnergy(angle, config_);
 }
 
@@ -39,8 +67,8 @@ template <typename T>
 T DoorHinge<T>::CalcConservativePower(const Context<T>& context,
                                       const PositionKinematicsCache<T>&,
                                       const VelocityKinematicsCache<T>&) const {
-  const T angle = joint_.GetOnePosition(context);
-  const T angular_velocity = joint_.GetOneVelocity(context);
+  const T angle = joint().GetOnePosition(context);
+  const T angular_velocity = joint().GetOneVelocity(context);
   return CalcHingeConservativePower(angle, angular_velocity, config_);
 }
 
@@ -48,7 +76,7 @@ template <typename T>
 T DoorHinge<T>::CalcNonConservativePower(
     const Context<T>& context, const PositionKinematicsCache<T>&,
     const VelocityKinematicsCache<T>&) const {
-  const T angular_velocity = joint_.GetOneVelocity(context);
+  const T angular_velocity = joint().GetOneVelocity(context);
   return CalcHingeNonConservativePower(angular_velocity, config_);
 }
 
@@ -56,10 +84,10 @@ template <typename T>
 void DoorHinge<T>::DoCalcAndAddForceContribution(
     const Context<T>& context, const PositionKinematicsCache<T>&,
     const VelocityKinematicsCache<T>&, MultibodyForces<T>* forces) const {
-  const T angle = joint_.GetOnePosition(context);
-  const T angular_velocity = joint_.GetOneVelocity(context);
+  const T angle = joint().GetOnePosition(context);
+  const T angular_velocity = joint().GetOneVelocity(context);
   const T torque = CalcHingeTorque(angle, angular_velocity, config_);
-  joint_.AddInTorque(context, torque, forces);
+  joint().AddInTorque(context, torque, forces);
 }
 
 template <typename T>
@@ -160,11 +188,15 @@ T DoorHinge<T>::CalcHingeStoredEnergy(T angle,
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>> DoorHinge<T>::TemplatedClone(
-    const MultibodyTree<ToScalar>& tree_clone) const {
-  const RevoluteJoint<ToScalar>& joint_clone =
-      dynamic_cast<const RevoluteJoint<ToScalar>&>(
-          tree_clone.get_joint(joint().index()));
-  return std::make_unique<DoorHinge<ToScalar>>(joint_clone, config_);
+    const MultibodyTree<ToScalar>&) const {
+  // N.B. We can't use std::make_unique here since this constructor is private
+  // to std::make_unique.
+  // N.B. We use the private constructor since it doesn't rely on a valid joint
+  // reference, which might not be available during cloning.
+  std::unique_ptr<DoorHinge<ToScalar>> door_hinge_clone(
+      new DoorHinge<ToScalar>(this->model_instance(), joint_index_, config()));
+
+  return std::move(door_hinge_clone);
 }
 
 template <typename T>
@@ -185,7 +217,8 @@ std::unique_ptr<ForceElement<Expression>> DoorHinge<T>::DoCloneToScalar(
   return TemplatedClone(tree_clone);
 }
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(class DoorHinge)
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::DoorHinge)
