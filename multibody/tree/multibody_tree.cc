@@ -1769,7 +1769,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcJacobianCenterOfMassVelocity(
+void MultibodyTree<T>::CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
     const systems::Context<T>& context,
     JacobianWrtVariable with_respect_to, 
     const Frame<T>& frame_A,
@@ -1780,10 +1780,11 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassVelocity(
                           num_positions() : num_velocities();
   DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
   DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
-  if (!(num_bodies() > 1)) {
+  if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
-        "world_body() so its center of mass is undefined.");
+        "CalcJacobianTranslationalVelocityOfSystemCenterOfMass(): this "
+        "MultibodyPlant contains only world_body() so its center of mass "
+        "is undefined.");
   }
 
   Js_v_ACcm_E->setZero();
@@ -1791,11 +1792,11 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassVelocity(
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
-    const T& body_mass = body.get_mass(context);
-    MatrixX<T> Jsi_v_ABcm_E(3, num_velocities());
+    MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
     CalcJacobianTranslationalVelocity(
         context, with_respect_to, body.body_frame(),
         body.body_frame(), pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
+    const T& body_mass = body.get_mass(context);
     *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
@@ -1803,35 +1804,35 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassVelocity(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcBiasForJacobianCenterOfMassVelocity(
-    const systems::Context<T>& context,
-    JacobianWrtVariable with_respect_to,
-    const Frame<T>& frame_A,
-    const Frame<T>& frame_E) const {
+Vector3<T>
+MultibodyTree<T>::CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
+    const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A, const Frame<T>& frame_E) const {
   DRAKE_THROW_UNLESS(&frame_A == &world_frame());
 
-  if (!(num_model_instances() > 1)) {
+  if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
-        "world_body() so its center of mass is undefined.");
+        "CalcBiasTranslationalAccelerationOfSystemCenterOfMass(): this "
+        "MultibodyPlant contains only world_body() so its center of mass "
+        "is undefined.");
   }
 
   T composite_mass = 0;
-  VectorX<T> Abias_WCcm_E = VectorX<T>::Zero(3);
+  Vector3<T> abias_ACcm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
-    const T& body_mass = body.get_mass(context);
-    VectorX<T> Abiasi_WCcm_E =
+    VectorX<T> abiasi_ACcm_E =
         CalcBiasForJacobianSpatialVelocity(
             context, with_respect_to,
             body.body_frame(), pi_BoBcm, frame_A, frame_E)
             .tail(3);
-    Abias_WCcm_E += body_mass * Abiasi_WCcm_E;
+    const T& body_mass = body.get_mass(context);
+    abias_ACcm_E += body_mass * abiasi_ACcm_E;
     composite_mass += body_mass;
   }
-  Abias_WCcm_E /= composite_mass;
-  return Abias_WCcm_E;
+  abias_ACcm_E /= composite_mass;
+  return abias_ACcm_E;
 }
 
 template <typename T>

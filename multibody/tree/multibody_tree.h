@@ -1393,15 +1393,15 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
 
   /// See MultibodyPlant method.
-  void CalcJacobianCenterOfMassVelocity(
+  void CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
-      EigenPtr<Matrix3X<T>> Js_v_WCcm) const;
+      EigenPtr<Matrix3X<T>> Js_v_ACcm) const;
 
   /// See MultibodyPlant method.
-  VectorX<T> CalcBiasForJacobianCenterOfMassVelocity(
+  Vector3<T> CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A,

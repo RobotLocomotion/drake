@@ -2664,67 +2664,66 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ABi_E);
   }
 
-  /// This method computes J𝑠_v_ACcm_E, the translational velocity Jacobian with
-  /// respect to "speeds" 𝑠 of the composite center of mass position of all
-  /// bodies in the 'MultibodyPlant' system measured in frame A and expressed in
-  /// frame E.
+  /// This method computes J𝑠_v_ACcm_E, point Ccm's translational velocity
+  /// Jacobian in frame A with respect to "speeds" 𝑠, expressed in frame E,
+  /// where point Ccm is the composite center of mass of the system of all
+  /// bodies in the MultibodyPlant (except world_body()).
   ///
-  /// @param[in] context
-  /// The context containing the state of the model. It stores the
-  /// generalized positions q of the model.
+  /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_A The frame that the composite center of mass velocity is
-  /// measured in.
-  /// @param[in] frame_E The frame that the output Jacobian J𝑠_v_ACcm is
-  /// expressed in.
-  /// @param[out] J𝑠_v_ACcm_E the translational velocity Jacobian of the
-  /// composite center of mass position expressed in the frame E.
-  ///
-  /// @throws std::runtime_error if `MultibodyPlant` has no body except
-  ///   `world_body()`.
-  /// @throws std::runtime_error unless `composite_mass > 0`.
-  void CalcJacobianCenterOfMassVelocity(
+  /// @param[in] frame_A The frame in which the translational velocity
+  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
+  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
+  /// expressed on output.
+  /// @param[out] J𝑠_v_ACcm_E Point Ccm's translational velocity Jacobian in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// @throws std::runtime_error if CCm does not exist, which occurs if there
+  /// are no massive bodies in MultibodyPlant (except world_body()).
+  /// @throws std::runtime_error unless composite_mass > 0, where composite_mass
+  /// is the total mass of all bodies except world_body() in MultibodyPlant.
+  void CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
-    internal_tree().CalcJacobianCenterOfMassVelocity(
+    internal_tree().CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
         context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
   }
 
   /// For ACcm, the composite center of mass of all bodies in the
   /// 'MultibodyPlant' with respect to frame A, this calculates ACcm's
-  /// translational "bias" term `abias_ACcm = J̇𝑠_v_ACcm * s` expressed in
+  /// translational "bias" term `abias_ACcm = J̇𝑠_v_ACcm * 𝑠` expressed in
   /// frame E with respect to "speeds" 𝑠.
   ///
-  /// @param[in] context
-  /// The context containing the state of the model. It stores the
-  /// generalized positions q of the model.
+  /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the Jacobian `abias_ACcm` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_A The frame that measures abias_ACcm.
-  /// @param[in] frame_E The frame that the output abias_ACcm is expressed in.
-  /// @retval abias_ACcm_E
-  ///   The output translational "bias" term of the composite center of mass of
-  ///   all bodies abias_ACcm expressed in frame E.
-  ///
-  /// @throws std::runtime_error if `MultibodyPlant` has no body except
-  ///   `world_body()`.
-  /// @throws std::runtime_error unless `composite_mass > 0`.
+  /// @param[in] frame_A The frame in which abias_ACcm is measured.
+  /// @param[in] frame_E The frame in which abias_ACcm is expressed on output.
+  /// @retval abias_ACcm_E Point Ccm's translational "bias" acceleration term
+  /// in frame A with respect to "speeds" 𝑠, expressed in frame E.
+  /// @throws std::runtime_error if Ccm does not exist, which occurs if there
+  /// are no massive bodies in MultibodyPlant (except world_body()).
+  /// @throws std::runtime_error unless composite_mass > 0, where composite_mass
+  /// is the total mass of all bodies except world_body() in MultibodyPlant.
   /// @throws std::exception if frame_A is not the world frame.
-  Vector3<T> CalcBiasForJacobianCenterOfMassVelocity(
+  Vector3<T> CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
-    return internal_tree().CalcBiasForJacobianCenterOfMassVelocity(
-        context, with_respect_to, frame_A, frame_E);
+    return internal_tree()
+        .CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
+            context, with_respect_to, frame_A, frame_E);
   }
 
   /// This method allows users to map the state of `this` model, x, into a
