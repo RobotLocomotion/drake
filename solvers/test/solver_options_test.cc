@@ -22,14 +22,18 @@ GTEST_TEST(SolverOptionsTest, ToString) {
   dut.SetOption(id2, "some_int", "3");
   dut.SetOption(id2, "some_string", "foo");
 
-  EXPECT_EQ(
-      to_string(dut),
-      "{SolverOptions,"
-      " id1:some_before=1.2,"
-      " id1:some_double=1.1,"
-      " id1:some_int=2,"
-      " id2:some_int=3,"
-      " id2:some_string=foo}");
+  dut.SetOption(DrakeSolverOption::kPrintFileName, "foo.txt");
+  dut.SetOption(DrakeSolverOption::kPrintToConsole, 0);
+
+  EXPECT_EQ(to_string(dut),
+            "{SolverOptions,"
+            " id1:some_before=1.2,"
+            " id1:some_double=1.1,"
+            " id1:some_int=2,"
+            " id2:some_int=3,"
+            " id2:some_string=foo,"
+            " print file name=foo.txt,"
+            " print to console=0}");
 }
 
 GTEST_TEST(SolverOptionsTest, Ids) {
@@ -82,6 +86,17 @@ GTEST_TEST(SolverOptionsTest, Merge) {
   foo.SetOption(id2, "key1", 1);
   dut.Merge(foo);
   dut_expected.SetOption(id2, "key1", 1);
+  EXPECT_EQ(dut, dut_expected);
+
+  // foo contains a non-empty drake_solver_option map
+  foo.SetOption(DrakeSolverOption::kPrintFileName, "bar.txt");
+  dut.Merge(foo);
+  dut_expected.SetOption(DrakeSolverOption::kPrintFileName, "bar.txt");
+  EXPECT_EQ(dut, dut_expected);
+
+  // Duplicate drake_solver_option map, no-op.
+  foo.SetOption(DrakeSolverOption::kPrintFileName, "bar_new.txt");
+  dut.Merge(foo);
   EXPECT_EQ(dut, dut_expected);
 }
 
