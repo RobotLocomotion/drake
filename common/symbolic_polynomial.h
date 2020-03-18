@@ -109,6 +109,9 @@ class Polynomial {
   /// Returns the decision variables of this polynomial.
   const Variables& decision_variables() const;
 
+  /// Sets the indeterminates to `new_indeterminates`.
+  void SetIndeterminates(const Variables& new_indeterminates);
+
   /// Returns the highest degree of this polynomial in a variable @p v.
   int Degree(const Variable& v) const;
 
