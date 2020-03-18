@@ -60,6 +60,7 @@ namespace systems {
  *                       Systems. Prentice Hall. New Jersey, 1988.
  * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and
  *                       Impact. SIAM Review, 42:1, 2000.
+ * @ingroup integrators
  */
 template <class T>
 class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {

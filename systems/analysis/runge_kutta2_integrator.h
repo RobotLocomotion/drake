@@ -10,6 +10,7 @@ namespace systems {
 
 /**
  * A second-order, explicit Runge Kutta integrator.
+ * @ingroup integrators
  */
 template <class T>
 class RungeKutta2Integrator final : public IntegratorBase<T> {

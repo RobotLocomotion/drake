@@ -108,6 +108,7 @@ namespace systems {
                      Springer, 1996.
 
  @tparam_nonsymbolic_scalar
+ @ingroup integrators
  */
 template <class T>
 class IntegratorBase {

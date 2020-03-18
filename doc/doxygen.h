@@ -70,6 +70,12 @@ only updated nightly.</p>
  @}
  */
 
+/** @addtogroup simulation
+ @{
+   @defgroup integrators Integrators
+ @}
+*/
+
 /** @addtogroup technical_notes
 
  @{

@@ -14,6 +14,7 @@ namespace systems {
  * <pre>
  * x(t+h) = x(t) + dx/dt * h
  * </pre>
+ * @ingroup integrators
  */
 template <class T>
 class ExplicitEulerIntegrator final : public IntegratorBase<T> {
