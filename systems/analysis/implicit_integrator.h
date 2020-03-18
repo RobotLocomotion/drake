@@ -18,6 +18,7 @@ namespace systems {
 /**
  * An abstract class providing methods shared by implicit integrators.
  * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class ImplicitIntegrator : public IntegratorBase<T> {

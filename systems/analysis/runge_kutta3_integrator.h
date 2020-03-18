@@ -48,6 +48,7 @@ namespace systems {
  *   rev. ed. Springer, 1993. p. 166.
  *
  * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class RungeKutta3Integrator final : public IntegratorBase<T> {

@@ -31,6 +31,7 @@ namespace systems {
    formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
 
  @tparam_nonsymbolic_scalar
+ @ingroup integrators
  */
 template <class T>
 class BogackiShampine3Integrator final : public IntegratorBase<T> {

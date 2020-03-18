@@ -60,6 +60,7 @@ namespace systems {
  *      integration methods in general.
  *
  * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
