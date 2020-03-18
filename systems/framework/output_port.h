@@ -107,7 +107,9 @@ class OutputPort : public OutputPortBase {
   template <typename ValueType, typename = std::enable_if_t<
       std::is_same<AbstractValue, ValueType>::value>>
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    // TODO(jwnimmer-tri) Once get_system_base() returns 'const SystemBase&',
+    // we should be able to enable this check even in Release builds.
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
     return DoEval(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
@@ -116,7 +118,9 @@ class OutputPort : public OutputPortBase {
         !std::is_base_of<BasicVector<T>, ValueType>::value ||
         std::is_same<BasicVector<T>, ValueType>::value)>>
   const ValueType& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    // TODO(jwnimmer-tri) Once get_system_base() returns 'const SystemBase&',
+    // we should be able to enable this check even in Release builds.
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
     return PortEvalCast<ValueType>(DoEval(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
@@ -155,7 +159,9 @@ class OutputPort : public OutputPortBase {
   the Allocate() method. */
   void Calc(const Context<T>& context, AbstractValue* value) const {
     DRAKE_DEMAND(value != nullptr);
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    // TODO(jwnimmer-tri) Once get_system_base() returns 'const SystemBase&',
+    // we should be able to enable this check even in Release builds.
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
     DRAKE_ASSERT_VOID(CheckValidOutputType(*value));
 
     DoCalc(context, value);

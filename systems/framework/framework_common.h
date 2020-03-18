@@ -158,13 +158,9 @@ class SystemMessageInterface {
   // namespace-decorated human-readable name as returned by NiceTypeName.
   virtual std::string GetSystemType() const = 0;
 
-  // Throws an std::logic_error if the given Context is incompatible with
-  // this System. This is likely to be _very_ expensive and should generally be
-  // done only in Debug builds, like this:
-  // @code
-  //    DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
-  // @endcode
-  virtual void ThrowIfContextNotCompatible(const ContextBase&) const = 0;
+  // Checks whether the given context was created for this system.
+  // See SystemBase::ValidateContext for full documentation.
+  virtual void ValidateContext(const ContextBase& context) const = 0;
 
   // Use this string as a stand-in name for an unnamed System. This is not
   // a default name, just an indicator that there is no name. This is a policy

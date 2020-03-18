@@ -59,7 +59,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     plant_->get_actuation_input_port().FixValue(context_.get(), tau);
 
     // Scalar-convert the model and create a default context for it.
-    plant_autodiff_ = std::make_unique<MultibodyPlant<AutoDiffXd>>(*plant_);
+    plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
 

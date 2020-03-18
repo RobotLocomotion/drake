@@ -525,7 +525,7 @@ class GeometryState {
   // (either in the initialization list or in the body). Failure to do so will
   // lead to errors in the converted GeometryState instance.
   template <typename U>
-  GeometryState(const GeometryState<U>& source)
+  explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
         source_root_frame_map_(source.source_root_frame_map_),

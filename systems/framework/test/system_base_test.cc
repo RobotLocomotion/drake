@@ -83,17 +83,28 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   EXPECT_EQ(system.GetSystemType(),
             "drake::systems::system_base_test_internal::MySystemBase");
 
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  auto context = system.AllocateContext();
+  DRAKE_EXPECT_NO_THROW(system.ValidateContext(*context));
+
+  MySystemBase other_system;
+  auto other_context = other_system.AllocateContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateContext(*other_context),
+                              std::exception,
+                              ".*Context.*was not created for.*");
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(SystemBaseTest, DeprecatedValidationTest) {
+  MySystemBase system;
   auto context = system.AllocateContext();
   DRAKE_EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
-
   MyContextBase bad_context(false);
   DRAKE_EXPECT_THROWS_MESSAGE(system.ThrowIfContextNotCompatible(bad_context),
                               std::logic_error,
                               ".*Context.*unacceptable.*");
-  #pragma GCC diagnostic pop
 }
+#pragma GCC diagnostic pop
 
 }  // namespace system_base_test_internal
 }  // namespace systems
