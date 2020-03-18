@@ -527,6 +527,12 @@ class MathematicalProgram {
       const symbolic::Expression& e) const;
 
   /**
+   * Reparses the polynomial `p` using this MathematicalProgram's
+   * indeterminates.
+   */
+  void Reparse(symbolic::Polynomial* p) const;
+
+  /**
    * Adds indeterminates, appending them to an internal vector of any
    * existing indeterminates.
    * @tparam rows  The number of rows in the new indeterminates.
