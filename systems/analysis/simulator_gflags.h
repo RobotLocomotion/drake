@@ -33,6 +33,7 @@ namespace systems {
 ///   this file.
 /// @returns  A reference to the the newly created integrator owned by
 /// `simulator`.
+/// @ingroup simulation
 IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
 
 /// Makes a new simulator according to the gflags declared in this file.
@@ -43,6 +44,7 @@ IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
 ///   The Context that will be used as the initial condition for the simulation;
 ///   otherwise the Simulator will obtain a default Context from `system`.
 /// @returns The newly created Simulator.
+/// @ingroup simulation
 std::unique_ptr<Simulator<double>> MakeSimulatorFromGflags(
     const System<double>& system,
     std::unique_ptr<Context<double>> context = nullptr);
