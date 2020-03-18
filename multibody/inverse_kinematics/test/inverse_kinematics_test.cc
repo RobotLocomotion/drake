@@ -226,6 +226,33 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   EXPECT_NEAR(angle, angle_lower, 1E-6);
 }
 
+TEST_F(TwoFreeBodiesTest, PointToPointDistanceConstraint) {
+  const Eigen::Vector3d p_B1P1(0.2, -0.4, 0.9);
+  const Eigen::Vector3d p_B2P2(1.4, -0.1, 1.8);
+
+  const double distance_lower{0.2};
+  const double distance_upper{0.25};
+
+  ik_.AddPointToPointDistanceConstraint(body1_frame_, p_B1P1, body2_frame_,
+                                        p_B2P2, distance_lower, distance_upper);
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
+
+  RetrieveSolution(result);
+
+  const Eigen::Vector3d p_WP1 =
+      body1_position_sol_ + body1_quaternion_sol_ * p_B1P1;
+  const Eigen::Vector3d p_WP2 =
+      body2_position_sol_ + body2_quaternion_sol_ * p_B2P2;
+  const double distance_sol = (p_WP1 - p_WP2).norm();
+  EXPECT_GE(distance_sol, distance_lower - 1e-6);
+  EXPECT_LE(distance_sol, distance_upper + 1e-6);
+}
+
 TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraintTest) {
   const double min_distance = 0.1;
 

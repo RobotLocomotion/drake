@@ -236,6 +236,24 @@ class InverseKinematics {
       const SortedPair<geometry::GeometryId>& geometry_pair,
       double distance_lower, double distance_upper);
 
+  /**
+   * Add a constraint that the distance between point P1 attached to frame 1 and
+   * point P2 attached to frame 2 is within the range [distance_lower,
+   * distance_upper].
+   * @param frame1 The frame to which P1 is attached.
+   * @param p_B1P1 The position of P1 measured and expressed in frame 1.
+   * @param frame2 The frame to which P2 is attached.
+   * @param p_B2P2 The position of P2 measured and expressed in frame 2.
+   * @param distance_lower The lower bound on the distance.
+   * @param distance_upper The upper bound on the distance.
+   */
+  solvers::Binding<solvers::Constraint> AddPointToPointDistanceConstraint(
+      const Frame<double>& frame1,
+      const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
+      const Frame<double>& frame2,
+      const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
+      double distance_upper);
+
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }

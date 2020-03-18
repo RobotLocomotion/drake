@@ -31,6 +31,7 @@ drake_cc_library(
         "kinematic_constraint_utilities.cc",
         "minimum_distance_constraint.cc",
         "orientation_constraint.cc",
+        "point_to_point_distance_constraint.cc",
         "position_constraint.cc",
     ],
     hdrs = [
@@ -41,6 +42,7 @@ drake_cc_library(
         "kinematic_constraint_utilities.h",
         "minimum_distance_constraint.h",
         "orientation_constraint.h",
+        "point_to_point_distance_constraint.h",
         "position_constraint.h",
     ],
     deps = [
@@ -136,6 +138,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "distance_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "point_to_point_distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
