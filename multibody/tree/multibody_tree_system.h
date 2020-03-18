@@ -220,6 +220,23 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const final {
+    return internal_tree().CalcPotentialEnergy(context);
+  }
+
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const final {
+    return internal_tree().CalcKineticEnergy(context);
+  }
+
+  T DoCalcConservativePower(const systems::Context<T>& context) const final {
+    return internal_tree().CalcConservativePower(context);
+  }
+
+  T DoCalcNonConservativePower(
+      const systems::Context<T>& context) const final {
+    return internal_tree().CalcNonConservativePower(context);
+  }
+
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U>

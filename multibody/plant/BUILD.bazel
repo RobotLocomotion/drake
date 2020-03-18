@@ -367,6 +367,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "energy_and_power_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities",
+    ],
+)
+
 drake_cc_library(
     name = "kuka_iiwa_model_tests",
     testonly = 1,
