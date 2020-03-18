@@ -1719,8 +1719,68 @@ class IntegratorBase {
   T req_initial_step_size_{nan()};  // means "unspecified, use default"
 };
 
+template <>
+class IntegratorBase<symbolic::Expression> {
+ public:
+  using T = symbolic::Expression;
+
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
+
+  explicit IntegratorBase(const System<T>& system,
+                          Context<T>* context = nullptr)
+      : system_(system), context_(context) {
+    initialization_done_ = false;
+  }
+
+  virtual ~IntegratorBase() = default;
+
+  virtual bool supports_error_estimation() const = 0;
+  virtual int get_error_estimate_order() const = 0;
+
+  void set_maximum_step_size(T max_step_size) {
+    max_step_size_ = max_step_size;
+  }
+
+  const T& get_maximum_step_size() const { return max_step_size_; }
+
+  bool IntegrateWithSingleFixedStepToTime(const T& t_target) {
+    const T h = t_target - context_->get_time();
+
+    if (!DoStep(h))
+      return false;
+
+    context_->SetTime(t_target);
+    return true;
+  }
+
+  void Initialize() {
+    if (!context_) throw std::logic_error("Context has not been set.");
+    DoInitialize();
+    initialization_done_ = true;
+  }
+
+  const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
+    return get_system().EvalTimeDerivatives(context);
+  }
+
+  const System<T>& get_system() const { return system_; }
+  const Context<T>& get_context() const { return *context_; }
+  Context<T>* get_mutable_context() { return context_; }
+
+ protected:
+  virtual bool DoStep(const T& h) = 0;
+  virtual void DoInitialize() {}
+
+ private:
+  const System<T>& system_;
+  Context<T>* context_{nullptr};
+
+  bool initialization_done_{false};
+  T max_step_size_{T::NaN()};
+};
+
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::IntegratorBase)
