@@ -857,6 +857,16 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertEqual(p.indeterminates(), indeterminates)
         self.assertEqual(p.decision_variables(), decision_vars)
 
+    def test_set_indeterminates(self):
+        e = a * x * x + b * y + c * z
+        indeterminates1 = sym.Variables([x, y, z])
+        p = sym.Polynomial(e, indeterminates1)
+        self.assertEqual(p.TotalDegree(), 2)
+
+        indeterminates2 = sym.Variables([a, b, c])
+        p.SetIndeterminates(indeterminates2)
+        self.assertEqual(p.TotalDegree(), 1)
+
     def test_degree_total_degree(self):
         e = a * (x ** 2) + b * (y ** 3) + c * z
         p = sym.Polynomial(e, [x, y, z])
