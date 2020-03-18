@@ -1772,14 +1772,6 @@ template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  return DoCalcPotentialEnergy(context, pc);
-}
-
-template <typename T>
-T MultibodyTree<T>::DoCalcPotentialEnergy(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc) const {
-
   T potential_energy = 0.0;
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
@@ -1789,19 +1781,29 @@ T MultibodyTree<T>::DoCalcPotentialEnergy(
 }
 
 template <typename T>
+T MultibodyTree<T>::CalcKineticEnergy(
+    const systems::Context<T>& context) const {
+  const std::vector<SpatialInertia<T>>& M_Bi_W =
+      EvalSpatialInertiaInWorldCache(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  T twice_kinetic_energy_W = 0.0;
+  // Add contributions from each body (except World).
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    const SpatialInertia<T>& M_B_W = M_Bi_W[node_index];
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(node_index);
+    const SpatialMomentum<T> L_WB = M_B_W * V_WB;
+
+    twice_kinetic_energy_W += L_WB.dot(V_WB);
+  }
+  return twice_kinetic_energy_W / 2.;
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcConservativePower(
     const systems::Context<T>& context) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  return DoCalcConservativePower(context, pc, vc);
-}
-
-template <typename T>
-T MultibodyTree<T>::DoCalcConservativePower(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc) const {
-
   T conservative_power = 0.0;
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
@@ -1809,6 +1811,25 @@ T MultibodyTree<T>::DoCalcConservativePower(
         force_element->CalcConservativePower(context, pc, vc);
   }
   return conservative_power;
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcNonConservativePower(
+    const systems::Context<T>& context) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  T non_conservative_power = 0.0;
+
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    non_conservative_power +=
+        force_element->CalcNonConservativePower(context, pc, vc);
+  }
+
+  // TODO(sherm1) Add contributions from joint dampers, joint actuators, force
+  //              input ports, contact forces, etc. as enumerated in #12942.
+
+  return non_conservative_power;
 }
 
 template <typename T>
