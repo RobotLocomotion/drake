@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
     "defs.bzl",
     "drake_cc_googletest_gl_ubuntu_only",
@@ -22,8 +23,24 @@ drake_cc_package_library_gl_per_os(
         ":render_engine_gl",
     ],
     ubuntu_deps = [
+        ":load_mesh",
         ":opengl_context",
+        ":opengl_geometry",
         ":render_engine_gl",
+        ":shader_program",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "load_mesh",
+    srcs = ["load_mesh.cc"],
+    hdrs = ["load_mesh.h"],
+    # NOTE: Required for compatibility with tinyobjloader.
+    linkstatic = 1,
+    deps = [
+        ":opengl_context",
+        "//common:essential",
+        "@tinyobjloader",
     ],
 )
 
@@ -43,6 +60,16 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
+drake_cc_library_gl_ubuntu_only(
+    name = "opengl_geometry",
+    hdrs = ["opengl_geometry.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":opengl_context",
+        "//math:geometric_transform",
+    ],
+)
+
 # The pure OpenGL-based render engine implementation.
 drake_cc_library(
     name = "render_engine_gl",
@@ -56,6 +83,7 @@ drake_cc_library(
     hdrs = select({
         "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
         "//conditions:default": [
+            "buffer_dim.h",
             "render_engine_gl.h",
             "render_engine_gl_factory.h",
         ],
@@ -63,10 +91,24 @@ drake_cc_library(
     deps = select({
         "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
         "//conditions:default": [
-            ":opengl_context",
+            ":load_mesh",
+            ":opengl_geometry",
+            ":shader_program",
+            "//common:essential",
             "//geometry/render:render_engine",
+            "//systems/sensors:image",
         ],
     }),
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "shader_program",
+    srcs = ["shader_program.cc"],
+    hdrs = ["shader_program.h"],
+    deps = [
+        ":opengl_context",
+        "//common:essential",
+    ],
 )
 
 drake_cc_googletest_gl_ubuntu_only(
@@ -77,27 +119,20 @@ drake_cc_googletest_gl_ubuntu_only(
 )
 
 drake_cc_googletest(
-    name = "opengl_context_test",
-    args = select({
-        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
-    deps = select({
-        "//tools/cc_toolchain:apple": [],
-        "//conditions:default": [
-            ":opengl_context",
-        ],
-    }),
-)
-
-drake_cc_googletest(
     name = "render_engine_gl_test",
     args = select({
         "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
+        "//common:find_resource",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
     ],
 )
 
