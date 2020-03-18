@@ -527,6 +527,8 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Polynomial.indeterminates.doc)
       .def("decision_variables", &Polynomial::decision_variables,
           doc.Polynomial.decision_variables.doc)
+      .def("SetIndeterminates", &Polynomial::SetIndeterminates,
+          doc.Polynomial.SetIndeterminates.doc)
       .def("Degree", &Polynomial::Degree, doc.Polynomial.Degree.doc)
       .def("TotalDegree", &Polynomial::TotalDegree,
           doc.Polynomial.TotalDegree.doc)
