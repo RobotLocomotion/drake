@@ -95,6 +95,7 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *      the "implicit Euler" integration method.
  *
  * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {

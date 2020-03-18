@@ -21,26 +21,23 @@
 namespace drake {
 namespace systems {
 
-/**
- An abstract class for an integrator for ODEs and DAEs as represented by a
- Drake System. Integrators solve initial value problems of the form:<pre>
- ẋ(t) = f(t, x(t)) with f : ℝ × ℝⁿ → ℝⁿ
- </pre>
- (i.e., `f()` is an ordinary differential equation) given initial conditions
- (t₀, x₀). Thus, integrators advance the continuous state of a dynamical
- system forward in time.
-  Apart from solving initial value problems, for which the integrator is a
+/** @addtogroup simulation
+ @{
+ @defgroup integrators Integrators
+
+ Apart from solving initial value problems, for which the integrator is a
  key component of a simulator, integrators can also be used to solve
  boundary value problems (via numerical methods like the Multiple Shooting
  Method) and trajectory optimization problems (via numerical methods like
- direct transcription). This class and its derivatives were developed
- primarily toward the former application (through IntegrateNoFurtherThanTime()
- and the Simulator class). However, the IntegratorBase architecture was
- developed to support these ancillary applications as well using the
- IntegrateWithMultipleStepsToTime() and IntegrateWithSingleFixedStepToTime()
- methods; the latter permits the caller to advance time using fixed steps in
- applications where variable stepping would be deleterious (e.g., direct
- transcription).
+ direct transcription). IntegratorBase and its derivatives were developed
+ primarily toward the former application (through
+ IntegratorBase::IntegrateNoFurtherThanTime() and the Simulator class).
+ However, the IntegratorBase architecture was developed to support these
+ ancillary applications as well using the
+ IntegratorBase::IntegrateWithMultipleStepsToTime() and
+ IntegratorBase::IntegrateWithSingleFixedStepToTime() methods; the latter
+ permits the caller to advance time using fixed steps in applications where
+ variable stepping would be deleterious (e.g., direct transcription).
 
  @section integrator-selection Integrator selection
  A natural question for a user to ask of an integrator is: Which scheme
@@ -77,15 +74,15 @@ namespace systems {
  @section settings Integrator settings
  IntegratorBase provides numerous settings and flags that can leverage
  problem-specific information to speed integration and/or improve integration
- accuracy. As an example, set_maximum_step_size() allows the user to prevent
- overly large integration steps (that integration error control alone might
- be insufficient to detect). As noted previously, IntegratorBase also collects
- a plethora of statistics that can be used to diagnose poor integration
- performance. For example, a large number of shrinkages due to @ref
- error-estimation-and-control "error control" could indicate that a system is
- computationally stiff. **Note that you might need to alter the default settings
- to obtain desired performance even though we have attempted to select
- reasonable defaults for many problems.**
+ accuracy. As an example, IntegratorBase::set_maximum_step_size() allows the
+ user to prevent overly large integration steps (that integration error
+ control alone might be insufficient to detect). As noted previously,
+ IntegratorBase also collects a plethora of statistics that can be used to
+ diagnose poor integration performance. For example, a large number of
+ shrinkages due to @ref error-estimation-and-control "error control" could
+ indicate that a system is computationally stiff. **Note that you might need
+ to alter the default settings to obtain desired performance even though we
+ have attempted to select reasonable defaults for many problems.**
 
  See settings for @ref integrator-accuracy,
  @ref integrator-maxstep "maximum step size",
@@ -98,17 +95,29 @@ namespace systems {
  For applications that require a more dense sampling of the system
  continuous state than what would be available through either fixed or
  error-controlled step integration (for a given accuracy), dense output
- support is available (through StartDenseIntegration() and
- StopDenseIntegration() methods). The accuracy and performance of these
- outputs may vary with each integration scheme implementation. Unless
+ support is available (through IntegratorBase::StartDenseIntegration() and
+ IntegratorBase::StopDenseIntegration() methods). The accuracy and performance
+ of these outputs may vary with each integration scheme implementation. Unless
  specified otherwise, an HermitianDenseOutput is provided by default.
 
  @section references References
   - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
                      Equations II (Stiff and Differential-Algebraic Problems).
                      Springer, 1996.
+ @}
+ */
+
+/**
+ An abstract class for an integrator for ODEs and DAEs as represented by a
+ Drake System. Integrators solve initial value problems of the form:<pre>
+ ẋ(t) = f(t, x(t)) with f : ℝ × ℝⁿ → ℝⁿ
+ </pre>
+ (i.e., `f()` is an ordinary differential equation) given initial conditions
+ (t₀, x₀). Thus, integrators advance the continuous state of a dynamical
+ system forward in time.
 
  @tparam_default_scalar
+ @ingroup integrators
  */
 template <class T>
 class IntegratorBase {

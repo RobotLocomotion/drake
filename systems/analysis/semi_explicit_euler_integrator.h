@@ -63,6 +63,7 @@ namespace systems {
  *                       Impact. SIAM Review, 42:1, 2000.
  *
  * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
