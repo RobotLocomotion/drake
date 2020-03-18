@@ -241,6 +241,10 @@ symbolic::Polynomial MathematicalProgram::MakePolynomial(
   return symbolic::Polynomial{e, symbolic::Variables{indeterminates()}};
 }
 
+void MathematicalProgram::Reparse(symbolic::Polynomial* const p) const {
+  p->SetIndeterminates(symbolic::Variables{indeterminates()});
+}
+
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     int rows, int cols, const vector<string>& names) {
   MatrixXIndeterminate indeterminates_matrix(rows, cols);
