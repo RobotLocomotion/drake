@@ -1651,11 +1651,17 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc,
       MultibodyForces<T>* forces) const;
 
-  /// See MultibodyPlant method.
+  /// See System method.
   T CalcPotentialEnergy(const systems::Context<T>& context) const;
 
-  /// See MultibodyPlant method.
+  /// See System method.
+  T CalcKineticEnergy(const systems::Context<T>& context) const;
+
+  /// See System method.
   T CalcConservativePower(const systems::Context<T>& context) const;
+
+  /// See System method.
+  T CalcNonConservativePower(const systems::Context<T>& context) const;
 
   /// See MultibodyPlant method.
   void CalcMassMatrixViaInverseDynamics(
@@ -2621,19 +2627,6 @@ class MultibodyTree {
   // than having to deal with damping in a special way.
   void AddJointDampingForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
-
-  // Implementation of CalcPotentialEnergy().
-  // It is assumed that the position kinematics cache pc is in sync with
-  // context.
-  T DoCalcPotentialEnergy(const systems::Context<T>& context,
-                          const PositionKinematicsCache<T>& pc) const;
-
-  // Implementation of CalcConservativePower().
-  // It is assumed that the position kinematics cache pc and the velocity
-  // kinematics cache vc are in sync with context.
-  T DoCalcConservativePower(const systems::Context<T>& context,
-                            const PositionKinematicsCache<T>& pc,
-                            const VelocityKinematicsCache<T>& vc) const;
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 

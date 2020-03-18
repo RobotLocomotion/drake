@@ -414,10 +414,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcForceElementsContribution",
             &Class::CalcForceElementsContribution, py::arg("context"),
             py::arg("forces"), cls_doc.CalcForceElementsContribution.doc)
-        .def("CalcPotentialEnergy", &Class::CalcPotentialEnergy,
-            py::arg("context"), cls_doc.CalcPotentialEnergy.doc)
-        .def("CalcConservativePower", &Class::CalcConservativePower,
-            py::arg("context"), cls_doc.CalcConservativePower.doc)
         .def("GetPositionLowerLimits", &Class::GetPositionLowerLimits,
             cls_doc.GetPositionLowerLimits.doc)
         .def("GetPositionUpperLimits", &Class::GetPositionUpperLimits,

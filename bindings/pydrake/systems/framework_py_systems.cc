@@ -362,6 +362,14 @@ struct Impl {
         // Computation.
         .def("CalcOutput", &System<T>::CalcOutput, py::arg("context"),
             py::arg("outputs"), doc.System.CalcOutput.doc)
+        .def("CalcPotentialEnergy", &System<T>::CalcPotentialEnergy,
+            py::arg("context"), doc.System.CalcPotentialEnergy.doc)
+        .def("CalcKineticEnergy", &System<T>::CalcKineticEnergy,
+            py::arg("context"), doc.System.CalcKineticEnergy.doc)
+        .def("CalcConservativePower", &System<T>::CalcConservativePower,
+            py::arg("context"), doc.System.CalcConservativePower.doc)
+        .def("CalcNonConservativePower", &System<T>::CalcNonConservativePower,
+            py::arg("context"), doc.System.CalcNonConservativePower.doc)
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)

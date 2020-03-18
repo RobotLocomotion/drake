@@ -16,6 +16,7 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/linear_spring_damper.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -37,6 +38,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RollPitchYaw;
+using math::RotationMatrix;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
@@ -1439,6 +1441,190 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
 
   EXPECT_TRUE(body_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
   EXPECT_TRUE(body_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
+}
+
+// Fixture for energy and power tests. MBTree calculates kinetic energy,
+// potential energy and power are just accumulated from force elements.
+// We'll use gravity and a linear spring/damper to supply potential energy
+// and power.
+class EnergyAndPowerTester : public ::testing::Test {
+ public:
+  void SetUp() override {
+    auto tree = std::make_unique<MultibodyTree<double>>();
+    tree_ = tree.get();
+
+    // Override default gravity so we can calculate locally.
+    tree->mutable_gravity_field().set_gravity_vector(gravity_);
+
+    // We want a free body with a general inertia matrix.
+    body_ = &tree->AddRigidBody(
+        "Lumpy",
+        SpatialInertia<double>(body_mass_, p_BBcm_, body_unit_inertia_));
+
+    spring_damper_ = &tree->AddForceElement<LinearSpringDamper>(
+        tree->world_body(), p_WP_, *body_, p_BQ_, free_length_, stiffness_,
+        damping_);
+
+    // We are done adding modeling elements. Transfer tree to system and get
+    // a Context.
+    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(tree));
+    context_ = system_->CreateDefaultContext();
+
+    // Set the pose and spatial velocity to something arbitrary and general.
+    SetGeneralPose();
+    SetGeneralVelocity();
+  }
+
+  // Put the body in a general pose (no zeroes).
+  void SetGeneralPose() {
+    const RigidTransform<double> X_WB(
+      RollPitchYaw<double>(.5, -.2, 1.2), Eigen::Vector3d(10., 20., -9.));
+    tree_->SetFreeBodyPoseOrThrow(*body_, X_WB, context_.get());
+  }
+
+  // Give the body a general velocity (no zeroes).
+  void SetGeneralVelocity() {
+    Vector6<double> V_WB;
+    V_WB << 7.,   8., -9.,  // ω
+            10., 11., 12.;  // v
+    tree_->SetFreeBodySpatialVelocityOrThrow(*body_,
+      SpatialVelocity<double>(V_WB), context_.get());
+  }
+
+  const RigidTransform<double>& get_X_WB() const {
+    const PositionKinematicsCache<double>& pc =
+        system_->EvalPositionKinematics(*context_);
+    return pc.get_X_WB(body_->node_index());
+  }
+
+  const SpatialVelocity<double>& get_V_WB() const {
+    const VelocityKinematicsCache<double>& vc =
+        system_->EvalVelocityKinematics(*context_);
+    return vc.get_V_WB(body_->node_index());
+  }
+
+  const SpatialInertia<double>& get_M_B_W() const {
+    const std::vector<SpatialInertia<double>>& M_Bi_W =
+        system_->EvalSpatialInertiaInWorldCache(*context_);
+    return M_Bi_W[body_->node_index()];
+  }
+
+  // Return an appropriate relative tolerance to be used in checking
+  // the given quantity.
+  double relative_tolerance(double quantity) const {
+    return kTolerance_ * std::max(1., std::abs(quantity));
+  }
+
+
+ protected:
+  const double kTolerance_{10 * std::numeric_limits<double>::epsilon()};
+
+  std::unique_ptr<MultibodyTreeSystem<double>> system_;
+  std::unique_ptr<Context<double>> context_;
+  const MultibodyTree<double>* tree_{};
+
+  const RigidBody<double>* body_{nullptr};
+  const LinearSpringDamper<double>* spring_damper_{nullptr};
+
+  // Some general values to avoid zeroes that could mask bugs.
+  const Vector3d gravity_{1., 2., 3.};  // Magnitude * direction.
+  const double body_mass_{2.};
+  const Vector3d p_BBcm_{.1, .3, -.2};  // Center of mass location.
+  const UnitInertia<double> body_unit_inertia_{1., 2., 2.5, .01, .02, .03};
+
+  // Parameters of the spring connecting point P on World to point Q on body.
+  const double free_length_ = 1.5;  // [m]
+  const double stiffness_ = 100.;   // [N/m]
+  const double damping_ = 3.;       // [Ns/m]
+  const Vector3d p_WP_{0., 0., 0.};
+  const Vector3d p_BQ_{0., 0., 0.};
+};
+
+// Position the body in some arbitrary pose with an arbitrary spatial velocity
+// V and verify that the kinetic energy (KE) is ½VᵀMV where M is the body's
+// spatial inertia expressed in the World frame.
+TEST_F(EnergyAndPowerTester, KineticEnergy) {
+  const Vector6<double> V_WB = get_V_WB().get_coeffs();
+  const Matrix6<double> M_B_W = get_M_B_W().CopyToFullMatrix6();
+
+  const double expected_KE = V_WB.dot(M_B_W * V_WB) / 2.;
+  EXPECT_NEAR(system_->EvalKineticEnergy(*context_), expected_KE,
+              relative_tolerance(expected_KE));
+}
+
+// Position the body in some arbitrary pose and verify that the system
+// potential energy is the sum of the spring and gravity potential energies.
+TEST_F(EnergyAndPowerTester, PotentialEnergy) {
+  const RigidTransform<double>& X_WB = get_X_WB();
+
+  // Get the body COM and spring attachment point in World.
+  const Vector3d p_WBcm = X_WB * p_BBcm_;
+  const Vector3d p_WQ = X_WB * p_BQ_;
+
+  // Gravity PE is mass * gravity_magnitude * height.
+  const double mgh = body_mass_ * p_WBcm.dot(-gravity_);
+
+  // Stretch of the spring, and spring PE (= ½kx²).
+  const double x = (p_WQ - p_WP_).norm() - free_length_;
+  const double spring_PE = stiffness_ * x * x / 2.;
+  const double energy = mgh + spring_PE;
+
+  EXPECT_NEAR(system_->EvalPotentialEnergy(*context_), energy,
+              relative_tolerance(energy));
+}
+
+// The only source of non-conservative power is the damping in the
+// spring/damper. That should be equal to the damping force times the
+// spring stretch velocity.
+TEST_F(EnergyAndPowerTester, NonConservativePower) {
+  const RigidTransform<double>& X_WB = get_X_WB();
+  const Vector3d& p_WB = X_WB.translation();
+  const RotationMatrix<double>& R_WB = X_WB.rotation();
+  const SpatialVelocity<double>& V_WB = get_V_WB();
+  const Vector3d p_BQ_W = R_WB * p_BQ_;
+  const Vector3d p_WQ = p_WB + p_BQ_W;
+  const Vector3d p_PQ_W = p_WQ - p_WP_;
+
+  // This is the unit vector along the spring stretch direction.
+  const Vector3d u_PQ_W = p_PQ_W.normalized();
+  const Vector3d v_WQ = V_WB.Shift(p_BQ_W).translational();
+  const double stretch_rate = v_WQ.dot(u_PQ_W);
+  const Vector3d damping_force = -(damping_ * stretch_rate) * u_PQ_W;
+  const double damping_power = damping_force.dot(v_WQ);
+
+  EXPECT_NEAR(system_->EvalNonConservativePower(*context_), damping_power,
+              relative_tolerance(damping_power));
+}
+
+// Conservative power is the rate at which potential energy is being
+// converted to kinetic energy. That's the gravitational force times the
+// body COM velocity, and the spring stiffness force times the stretch rate.
+TEST_F(EnergyAndPowerTester, ConservativePower) {
+  const RigidTransform<double>& X_WB = get_X_WB();
+  const Vector3d& p_WB = X_WB.translation();
+  const RotationMatrix<double>& R_WB = X_WB.rotation();
+  const SpatialVelocity<double>& V_WB = get_V_WB();
+  const Vector3d p_BBcm_W = R_WB * p_BBcm_;
+  const Vector3d p_BQ_W = R_WB * p_BQ_;
+  const Vector3d p_WQ = p_WB + p_BQ_W;
+  const Vector3d p_PQ_W = p_WQ - p_WP_;
+
+  const Vector3d gravity_force = body_mass_ * gravity_;
+  const Vector3d v_WBcm = V_WB.Shift(p_BBcm_W).translational();
+  const double gravity_power = gravity_force.dot(v_WBcm);
+
+  // Stretch of the spring and the resulting force.
+  const double x = p_PQ_W.norm() - free_length_;
+  // This is the unit vector along the spring stretch direction.
+  const Vector3d u_PQ_W = p_PQ_W.normalized();
+  const Vector3d stiffness_force = -(stiffness_ * x) * u_PQ_W;
+
+  const Vector3d v_WQ = V_WB.Shift(p_BQ_W).translational();
+  const double stiffness_power = stiffness_force.dot(v_WQ);
+  const double power = stiffness_power + gravity_power;
+
+  EXPECT_NEAR(system_->EvalConservativePower(*context_), power,
+              relative_tolerance(power));
 }
 
 }  // namespace
