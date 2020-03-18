@@ -52,6 +52,8 @@ using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;
 using drake::symbolic::test::ExprEqual;
+using drake::symbolic::test::PolyEqual;
+using drake::symbolic::test::PolyNotEqual;
 
 using std::all_of;
 using std::cref;
@@ -3014,6 +3016,63 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix) {
   EXPECT_EQ(binding.evaluator()->A(), A_expected);
   EXPECT_EQ(binding.evaluator()->lower_bound(), lower_bound_expected);
   EXPECT_EQ(binding.evaluator()->upper_bound(), upper_bound_expected);
+}
+
+GTEST_TEST(TestMathematicalProgram, ReparsePolynomial) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.GetVariableScaling().size(), 0);
+
+  const auto a = prog.NewContinuousVariables<2>("a");
+  const auto x = prog.NewIndeterminates<2>("x");
+
+  // Variable not declared in this MathematicalProgram.
+  const auto b = Variable{"b"};
+
+  // a₀x₀ + a₁x₀ + x₁ + a₀ + b
+  const Expression e = a(0) * x(0) + a(1) * x(0) + x(1) + a(0) + b;
+
+  // (a₀ + a₁)x₀ + x₁ + (a₀ + b).
+  const symbolic::Polynomial expected{prog.MakePolynomial(e)};
+
+  {
+    // (a₀x₀ + a₁x₀ + x₁ + a₀ + b , {x₀, x₁, a₀, a₁, b}).
+    symbolic::Polynomial p{e};
+    EXPECT_PRED2(PolyNotEqual, p, expected);
+    prog.Reparse(&p);
+    EXPECT_PRED2(PolyEqual, p, expected);
+  }
+
+  {
+    // (a₀x₀ + a₁x₀ + x₁ + a₀ + b , {x₀, x₁}).
+    symbolic::Polynomial p{e, {x(0), x(1)}};
+    EXPECT_PRED2(PolyEqual, p, expected);  // Note that p == expected already.
+    prog.Reparse(&p);
+    EXPECT_PRED2(PolyEqual, p, expected);
+  }
+
+  {
+    // (a₀x₀ + a₁x₀ + x₁ + a₀ + b , {x₀, a₀, b}).
+    symbolic::Polynomial p{e, {x(0), a(0), b}};
+    EXPECT_PRED2(PolyNotEqual, p, expected);
+    prog.Reparse(&p);
+    EXPECT_PRED2(PolyEqual, p, expected);
+  }
+
+  {
+    // (a₀x₀ + a₁x₀ + x₁ + a₀ + b , {a₀, a₁}.
+    symbolic::Polynomial p{e, {a(0), a(1)}};
+    EXPECT_PRED2(PolyNotEqual, p, expected);
+    prog.Reparse(&p);
+    EXPECT_PRED2(PolyEqual, p, expected);
+  }
+
+  {
+    // (a₀x₀ + a₁x₀ + x₁ + a₀ + b , {a₀, a₁, b}.
+    symbolic::Polynomial p{e, {a(0), a(1), b}};
+    EXPECT_PRED2(PolyNotEqual, p, expected);
+    prog.Reparse(&p);
+    EXPECT_PRED2(PolyEqual, p, expected);
+  }
 }
 
 }  // namespace test
