@@ -7,7 +7,7 @@ namespace geometry {
 namespace render {
 
 std::unique_ptr<RenderEngine> MakeRenderEngineGl() {
-  return std::make_unique<RenderEngineGl>();
+  return std::make_unique<internal::RenderEngineGl>();
 }
 
 }  // namespace render
