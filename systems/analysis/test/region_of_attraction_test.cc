@@ -115,6 +115,11 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
 // polynomial potential function, and xdot = (U-1)dUdx, which should have
 // U==1 as the true boundary of the RoA.
 GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
+  // This test is known to fail with Mosek as a solver (#12876).
+  if (solvers::MosekSolver::is_available()) {
+    return;
+  }
+
   const Vector2<Variable> x{Variable("x"), Variable("y")};
   Eigen::Matrix2d A1, A2;
   A1 << 1, 2, 3, 4;
@@ -140,12 +145,9 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   env[x(0)] = std::sqrt(rho);
   // Confirm that it is on the boundary of V.
   EXPECT_NEAR(V.Evaluate(env), 1.0, 1e-12);
-  // This test is known to fail with Mosek as a solver (#12876).
-  if (!solvers::MosekSolver::is_available()) {
-    // As an inner approximation of the ROA, It should be inside the boundary
-    // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
-    EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
-  }
+  // As an inner approximation of the ROA, It should be inside the boundary
+  // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
+  EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
 }
 
 }  // namespace
