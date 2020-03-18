@@ -509,8 +509,14 @@ class SliceTetWithPlaneTest : public ::testing::Test {
  the sensitivity between intersecting and not intersecting. The correctness of
  the values of those artifacts can be found in subsequent tests. */
 TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
-  // The known extent in the Mz direction of the TrivialVolumeMesh.
-  const double kMeshZExtent = 1.0;
+  // This uses a plane whose normal is aligned with the Mz axis. To assess the
+  // thresholds of detecting intersection and not, we need to know the extrema
+  // of the tet in that direction (its minimum and maximum points). We'll call
+  // those points Max and Min, respectively. By definition we know that
+  // the maximum point is at <0, 0, 1> (vertex 3) and the minimum point is any
+  // point on the bottom face (we'll pick <0, 0, 0>).
+  const Vector3d p_MMax{0, 0, 1};
+  const Vector3d p_MMin{0, 0, 0};
   constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
 
   // For these tests, we do not want to do analysis; just confirming the
@@ -524,28 +530,31 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
                       Vector3d{-2.3, -4.2, 3.7}}};
   for (const auto& X_FM : X_FMs) {
     const Vector3d& Mz_F = X_FM.rotation().matrix().col(2);
-    // The distance from Fo to the plane.
-    const double plane_offset = X_FM.translation().dot(Mz_F);
+    // The minimum and maximum points of the tet in frame F.
+    const Vector3d p_FMax = X_FM * p_MMax;
+    const Vector3d p_FMin = X_FM * p_MMin;
+    // A small offset in the normal direction, expressed in Frame F.
+    const Vector3d offset_F = kEps * Mz_F;
 
-    // Case: Plane lies completely above the tet.
-    CallSliceTetWithPlane(
-        Plane<double>{Mz_F, plane_offset + kMeshZExtent + kEps}, X_FM,
-        no_analysis);
+    // Case: Plane lies completely above the tet (just beyond V3)
+    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax + offset_F}, X_FM,
+                          no_analysis);
     EXPECT_TRUE(HasNFaces(0));
 
-    // Case: Plane lies _almost_ completely above the tet.
-    CallSliceTetWithPlane(
-        Plane<double>{Mz_F, plane_offset + kMeshZExtent - kEps}, X_FM,
-        no_analysis);
+    // Case: Plane lies _almost_ completely above the tet (V3 penetrates the
+    // plane).
+    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax - offset_F}, X_FM,
+                          no_analysis);
     EXPECT_TRUE(HasNFaces(3));
 
-    // Case: Plane lies completely below the tet.
-    CallSliceTetWithPlane(Plane<double>{Mz_F, plane_offset - kEps}, X_FM,
+    // Case: Plane lies completely below the tet (the bottom faces lies on the
+    // z = 0 plane in Frame M).
+    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin - offset_F}, X_FM,
                           no_analysis);
     EXPECT_TRUE(HasNFaces(0));
 
     // Case: Plane lies _almost_ completely below the tet.
-    CallSliceTetWithPlane(Plane<double>{Mz_F, plane_offset + kEps}, X_FM,
+    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin + offset_F}, X_FM,
                           no_analysis);
     EXPECT_TRUE(HasNFaces(3));
 
@@ -557,18 +566,18 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
     // We need to construct an instance of mesh_F so we can find out where
     // vertices v1, v2, v3 are so we know where to position the plane.
     VolumeMesh<double> mesh_F = TrivialVolumeMesh(X_FM);
-    // The distance from Fo to the v1, v2, v3 plane.
-    const double extent =
-        normal_F.dot(mesh_F.vertex(VolumeVertexIndex(1)).r_MV());
 
-    // Case: Plane is just beyond the v1, v2, v3, plane.
-    CallSliceTetWithPlane(Plane<double>{normal_F, extent + kEps}, X_FM,
-                          no_analysis);
+    // Case: Plane is just beyond the v1, v2, v3, plane; it passes through a
+    // point _near_ V3, but just offset in the normal direction.
+    CallSliceTetWithPlane(Plane<double>{normal_F, p_FMax + kEps * normal_F},
+                          X_FM, no_analysis);
     EXPECT_TRUE(HasNFaces(0));
 
-    // Case: Plane intersects the tet near the v1, v2, v3, plane.
-    CallSliceTetWithPlane(Plane<double>{normal_F, extent - kEps}, X_FM,
-                          no_analysis);
+    // Case: Plane intersects the tet near the v1, v2, v3, plane; it passes
+    // through a point _near_ V3, but offset in the _negative_ normal direction.
+    CallSliceTetWithPlane(
+        Plane<double>{normal_F, p_FMax - 4 * kEps * normal_F}, X_FM,
+        no_analysis);
     EXPECT_TRUE(HasNFaces(3));
   }
 }
@@ -617,23 +626,21 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
       // Define a point P halfway between isolated vertex Vi and centroid; the
       // plane will pass through this point. Measure and express it in frame F.
       const Vector3d p_FP = p_FC + 0.5 * p_CVi_F;
-      const double plane_displacement = nhat_F.dot(p_FP);
 
       // We consider both cases for this plane -- where we reverse the
       // definition of the plane so that once the isolated vertex has a
       // negative signed distance, and once a positive distance.
       for (const auto plane_sign : {1.0, -1.0}) {
-        Plane<double> plane_F{plane_sign * nhat_F,
-                              plane_sign * plane_displacement};
+        Plane<double> plane_F{plane_sign * nhat_F, p_FP};
 
         // Confirm configuration.
         // The isolated vertex is on the side of the plane expected.
-        EXPECT_GT(plane_sign * plane_F.CalcSignedDistance(p_FVi), 0.0);
+        EXPECT_GT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
         for (int j = 0; j < 4; ++j) {
           if (i != j) {
             const Vector3d& p_FVj = mesh_F.vertex(tet.vertex(j)).r_MV();
             // All other vertices are on the opposite side of the plane.
-            EXPECT_LT(plane_sign * plane_F.CalcSignedDistance(p_FVj), 0);
+            EXPECT_LT(plane_sign * plane_F.CalcHeight(p_FVj), 0);
           }
         }
         ASSERT_TRUE(
@@ -715,23 +722,21 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
       // Define a point halfway between isolated vertex Vi and centroid; the
       // plane will pass through this point. Measure and express it in frame F.
       const Vector3d p_FP = p_FC + 0.5 * p_CE_F;
-      const double plane_displacement = nhat_F.dot(p_FP);
 
       // We consider both cases for this plane -- where we reverse the
       // definition of the  plane so that once the isolated vertex has a
       // negative signed distance, and once a positive distance.
       for (const auto plane_sign : {-1.0, 1.0}) {
-        Plane<double> plane_F{plane_sign * nhat_F,
-                              plane_sign * plane_displacement};
+        Plane<double> plane_F{plane_sign * nhat_F, p_FP};
 
         // Confirm configuration; all four vertices are on the expected side
         // of the plane.
         for (int i = 0; i < 4; ++i) {
           const Vector3d& p_FVi = mesh_F.vertex(tet.vertex(i)).r_MV();
           if (i == vertex_pair.first || i == vertex_pair.second) {
-            EXPECT_GT(plane_sign * plane_F.CalcSignedDistance(p_FVi), 0.0);
+            EXPECT_GT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
           } else {
-            EXPECT_LT(plane_sign * plane_F.CalcSignedDistance(p_FVi), 0.0);
+            EXPECT_LT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
           }
         }
 
@@ -788,7 +793,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
       dupe_cut_edges;
 
   // The common slicing plane.
-  Plane<double> plane_F{Vector3d::UnitX(), 0.5};
+  Plane<double> plane_F{Vector3d::UnitX(), Vector3d{0.5, 0, 0}};
 
   for (VolumeElementIndex i{0}; i < 2; ++i) {
     SliceTetWithPlane(i, min_field_F, plane_F, X_WF_, &min_faces,
@@ -835,7 +840,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
    doing all of the computations in the mesh frame where the zeros and ones
    give us that perfect precision for free. */
 
-  const Plane<double> plane_M{Vector3d::UnitZ(), 0.0};
+  const Plane<double> plane_M{Vector3d::UnitZ(), Vector3d::Zero()};
   const RigidTransformd I;
   VolumeMesh<double> mesh_M = TrivialVolumeMesh(I);
   // Make an arbitrary mesh field with heterogeneous values.

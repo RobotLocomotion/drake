@@ -88,23 +88,22 @@ class Aabb {
   static bool HasOverlap(const Aabb& a, const Aabb& b,
                          const math::RigidTransformd& X_AB);
 
-  /** Checks whether bounding volume `bv` intersects the plane `plane_P`.
-   The bounding volume is centered on its canonical frame B and B is posed
-   in the corresponding hierarchy frame H; by construction B is aligned with H.
-   The plane is defined in frame P.
+  /** Checks whether bounding volume `bv` intersects the given plane. The
+   bounding volume is centered on its canonical frame B and B is posed in the
+   corresponding hierarchy frame H; by construction B is aligned with H. The
+   plane is defined in frame P.
 
-   This is distinct from testing overlap with a half space because the half
-   space is a _volume_. The plane is a surface. A bounding volume can lie
-   completely on either side of the plane and not overlap.
+   The box and plane intersect if _any_ point within the bounding volume has
+   zero height (see CalcHeight()).
 
    @param bv        The bounding box to test.
-   @param plane_P   The plane to test against whose definition is given in
-                    frame P. I.e., to evaluate the signed distance of a point
-                    with respect to the plane, that point must be measured and
+   @param plane_P   The plane to test against the `bv`. The plane is expressed
+                    in Frame P, therefore, to evaluate the height of a point
+                    with respect to it, that point must be measured and
                     expressed in P.
    @param X_PH      The relative pose between the hierarchy frame H and the
                     plane frame P.
-   @returns `true` if the plane cuts through the box.   */
+   @returns `true` if the plane intersects the box.   */
   static bool HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
 
@@ -112,7 +111,7 @@ class Aabb {
    bounding volume is centered on its canonical frame B and B is posed in the
    corresponding hierarchy frame H; by construction B is aligned with H. The
    half space is defined in its canonical frame C (such that the boundary plane
-   of the half space is perpindicular to Cz and Co lies on the boundary plane).
+   of the half space is perpendicular to Cz and Co lies on the boundary plane).
 
    @param bv        The bounding box to test.
    @param hs_C      The half space to test against the `bv`. The half space is

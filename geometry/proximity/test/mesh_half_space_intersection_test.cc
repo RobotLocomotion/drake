@@ -9,13 +9,13 @@ namespace drake {
 namespace geometry {
 namespace {
 
-using internal::Plane;
+using internal::PosedHalfSpace;
 
 template <typename T>
 class MeshHalfspaceIntersectionTest : public ::testing::Test {
  public:
-  /// Returns the half space with normal expressed in Frame H.
-  const Plane<T> half_space_H() const { return *half_space_H_; }
+  /// Returns the posed half space measured and expressed in Frame H.
+  const PosedHalfSpace<T> half_space_H() const { return *half_space_H_; }
 
   // Accessors for data structures used repeatedly.
   std::vector<SurfaceVertex<T>>& new_vertices() { return new_vertices_; }
@@ -165,8 +165,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
     // lying on the half space.
     Vector3<T> normal_H(0, 0, 1);
     const Vector3<T> point_H(0, 0, 2);
-    const T displacement = normal_H.dot(point_H);
-    half_space_H_ = std::make_unique<Plane<T>>(normal_H, displacement);
+    half_space_H_ = std::make_unique<PosedHalfSpace<T>>(normal_H, point_H);
   }
 
   std::vector<SurfaceVertex<T>> new_vertices_;
@@ -175,7 +174,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
       vertices_to_newly_created_vertices_;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices_;
-  std::unique_ptr<Plane<T>> half_space_H_;
+  std::unique_ptr<PosedHalfSpace<T>> half_space_H_;
 };  // namespace
 TYPED_TEST_SUITE_P(MeshHalfspaceIntersectionTest);
 
@@ -551,13 +550,12 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
 
   // Construct the half-space.
   const Vector3<T> half_space_normal_W = X_WF.rotation() * Vector3<T>(0, 0, 1);
-  const T half_space_displacement = half_space_normal_W.dot(X_WF.translation());
-  const Plane<T> half_space(half_space_normal_W, half_space_displacement);
+  const PosedHalfSpace<T> half_space_W(half_space_normal_W, X_WF.translation());
 
   // Compute the intersection.
   const SurfaceMesh<T> intersection_mesh =
       ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-          mesh, half_space);
+          mesh, half_space_W);
   ASSERT_EQ(intersection_mesh.num_vertices(), 8);
 
   // Note: The sides of the box facing the +/- X and +/- Y directions are each
