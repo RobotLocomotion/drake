@@ -111,43 +111,6 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
-// Another example from the underactuated lyapunov chapter.  U(x) is a
-// polynomial potential function, and xdot = (U-1)dUdx, which should have
-// U==1 as the true boundary of the RoA.
-GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
-  const Vector2<Variable> x{Variable("x"), Variable("y")};
-  Eigen::Matrix2d A1, A2;
-  A1 << 1, 2, 3, 4;
-  A2 << -1, 2, -3, 4;  // mirror about the y-axis
-  const Expression U{((A1*x).dot(A1*x))*((A2*x).dot(A2*x))};
-  const RowVector2<Expression> dUdx = U.Jacobian(x);
-  const auto system = SymbolicVectorSystemBuilder()
-      .state(x)
-      .dynamics((U - 1) * dUdx.transpose())
-      .Build();
-  const auto context = system->CreateDefaultContext();
-
-  RegionOfAttractionOptions options;
-  options.lyapunov_candidate = (x.transpose()*x)(0);
-  options.state_variables = x;
-
-  const Expression V = RegionOfAttraction(*system, *context, options);
-
-  // Leverage the quadratic form of V to find the boundary point on the
-  // positive x axis.
-  symbolic::Environment env{{x(0), 1}, {x(1), 0}};
-  const double rho = 1./V.Evaluate(env);
-  env[x(0)] = std::sqrt(rho);
-  // Confirm that it is on the boundary of V.
-  EXPECT_NEAR(V.Evaluate(env), 1.0, 1e-12);
-  // This test is known to fail with Mosek as a solver (#12876).
-  if (!solvers::MosekSolver::is_available()) {
-    // As an inner approximation of the ROA, It should be inside the boundary
-    // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
-    EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
-  }
-}
-
 }  // namespace
 }  // namespace analysis
 }  // namespace systems
