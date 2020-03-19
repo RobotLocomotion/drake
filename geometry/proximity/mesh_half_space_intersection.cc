@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "drake/geometry/proximity/contact_surface_utility.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -26,23 +28,23 @@ int sgn(const T& x) {
  crossing plane. The method creates the vertex if the edge hasn't previously
  been split.
 
- @pre s_a and s_b must not have the same sign (positive, negative, or zero) of
-      the plane.
+ @pre s_a and s_b must not have the same sign (positive, negative, or zero).
  */
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
     SurfaceVertexIndex a, SurfaceVertexIndex b, const T& s_a, const T& s_b,
-    const std::vector<SurfaceVertex<T>>& vertices_F,
+    const std::vector<SurfaceVertex<double>>& vertices_F,
+    const math::RigidTransform<T>& X_WF,
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices,
-    std::vector<SurfaceVertex<T>>* new_vertices_F) {
+    std::vector<SurfaceVertex<T>>* new_vertices_W) {
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
 
-  using std::abs;
   SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
   auto edge_a_b_intersection_iter =
       edges_to_newly_created_vertices->find(edge_a_b);
   if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
+    using std::abs;
     const T t = abs(s_a) / (abs(s_a) + abs(s_b));
     // We know that the magnitude of the denominator should always be at
     // least as large as the magnitude of the numerator (implying that t should
@@ -52,11 +54,12 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
     bool inserted;
     std::tie(edge_a_b_intersection_iter, inserted) =
         edges_to_newly_created_vertices->insert(
-            {edge_a_b, SurfaceVertexIndex(new_vertices_F->size())});
+            {edge_a_b, SurfaceVertexIndex(new_vertices_W->size())});
     DRAKE_DEMAND(inserted);
-    new_vertices_F->emplace_back(
-        vertices_F[a].r_MV() +
-        t * (vertices_F[b].r_MV() - vertices_F[a].r_MV()));
+    const Vector3<T> p_WV =
+        X_WF * (vertices_F[a].r_MV() +
+                t * (vertices_F[b].r_MV() - vertices_F[a].r_MV()));
+    new_vertices_W->emplace_back(p_WV);
   }
 
   return edge_a_b_intersection_iter->second;
@@ -64,42 +67,98 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
 
 /* Utility routine for getting the vertex index from the
  `vertices_to_newly_created_vertices` hashtable. Given a vertex `index` from the
- input mesh, returns the corresponding vertex index in `new_vertices_F`. The
- method creates the vertex in `new_vertices_F` if it hasn't already been added.
+ input mesh, returns the corresponding vertex index in `new_vertices_W`. The
+ method creates the vertex in `new_vertices_W` if it hasn't already been added.
  */
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
-    const std::vector<SurfaceVertex<T>>& vertices_F, SurfaceVertexIndex index,
+    const std::vector<SurfaceVertex<double>>& vertices_F,
+    SurfaceVertexIndex index, const math::RigidTransform<T>& X_WF,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
-    std::vector<SurfaceVertex<T>>* new_vertices_F) {
+    std::vector<SurfaceVertex<T>>* new_vertices_W) {
   auto v_to_new_v_iter = vertices_to_newly_created_vertices->find(index);
   if (v_to_new_v_iter == vertices_to_newly_created_vertices->end()) {
     bool inserted;
     std::tie(v_to_new_v_iter, inserted) =
         vertices_to_newly_created_vertices->insert(
-            {index, SurfaceVertexIndex(new_vertices_F->size())});
+            {index, SurfaceVertexIndex(new_vertices_W->size())});
     DRAKE_DEMAND(inserted);
-    new_vertices_F->emplace_back(vertices_F[index]);
+    // Note: although r_MV is *always* Vector3<double>, we don't support
+    // Vector3<AD> = RigidTransform<AD> * Vector3<double>. Therefore, we must
+    // cast the vector to T to account for when it is AutoDiffXd.
+    const Vector3<T> p_WV = X_WF * vertices_F[index].r_MV().cast<T>();
+    new_vertices_W->emplace_back(p_WV);
   }
-
   return v_to_new_v_iter->second;
 }
 
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const std::vector<SurfaceVertex<T>>& vertices_F,
-    const SurfaceFace& triangle, const PosedHalfSpace<T>& half_space_F,
-    std::vector<SurfaceVertex<T>>* new_vertices_F,
+    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
+    const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
+    std::vector<SurfaceVertex<T>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices) {
-  DRAKE_DEMAND(new_vertices_F);
+  DRAKE_DEMAND(new_vertices_W);
   DRAKE_DEMAND(new_faces);
   DRAKE_DEMAND(vertices_to_newly_created_vertices);
   DRAKE_DEMAND(edges_to_newly_created_vertices);
+
+  const std::vector<SurfaceVertex<double>>& vertices_F = mesh_F.vertices();
+  const SurfaceFace& triangle = mesh_F.element(tri_index);
+
+  // TODO(SeanCurtis-TRI): This code _might_ look cleaner if it used the same
+  //  pattern as plane-mesh intersection. I.e., use a bit-encoding of the sign
+  //  of each vertex's signed distance φ(v). There are three vertices so 8
+  //  possible outcomes, where 0 → φ(v) ≤ 0, 1 → φ(v) > 0. We assume that the
+  //  triangles winding is (v0, v1, v2). If we split an edge bridging vertices
+  //  vᵢ and vⱼ, it is split at the vertex eᵢⱼ.
+  //
+  //     v2 | v1 | v0 | outcome
+  //    -----------------------
+  //      0 | 0  | 0  | Whole triangle is contained in the half space.
+  //      0 | 0  | 1  | Quad: v₁ v₂ e₀₂ e₀₁
+  //      0 | 1  | 0  | Quad: v₀ e₀₁ e₁₂ v₂
+  //      0 | 1  | 1  | Tri: v₂ e₀₂ e₁₂
+  //      1 | 0  | 0  | Quad: v₀ v₁ e₁₂ e₀₂
+  //      1 | 0  | 1  | Tri: v₁ v₁₂ v₀₂
+  //      1 | 1  | 0  | Tri: v₀ e₀₁ e₀₂
+  //      1 | 1  | 1  | None
+  //
+  //  The outcome polygon is a sequence of split vertices that can be thought of
+  //  as coming from an "edge". In the case where a vertex is directly included
+  //  in the outcome polygon, we can say the edge consists of that vertex twice
+  //  leading to the following table:
+  //
+  //    split vertex | tri "edge" | "edge" index
+  //         v₀      |  (v₀, v₀)  |    0
+  //         v₁      |  (v₁, v₁)  |    1
+  //         v₂      |  (v₂, v₂)  |    2
+  //         e₀₁     |  (v₀, v₁)  |    3
+  //         e₀₂     |  (v₀, v₂)  |    4
+  //         e₁₂     |  (v₁, v₂)  |    5
+  //
+  //  In code, the first table would be encoded as follows, such that the lists
+  //  are indices into the "edges" table shown above. And the decoder of the
+  //  edges would know that the edge (i, i) simply refers to vertex i.
+  //
+  //     000 | (0, 1, 2)
+  //     001 | (1, 2, 4, 3)
+  //     010 | (0, 3, 5, 2)
+  //     011 | (2, 4, 5)
+  //     100 | (0, 1, 5, 4)
+  //     101 | (1, 5, 4)
+  //     110 | (0, 3, 5)
+  //     111 | ()
+  //
+  //  This alternative approach would unify the two mesh-"plane" intersection
+  //  algorithms into a common paradigm and simplify the code (i.e., the
+  //  variation of outcomes would be encoded in compile-time tables instead of
+  //  run-time code paths).
 
   // NOLINTNEXTLINE(whitespace/line_length)
   // This code was inspired from
@@ -124,48 +183,62 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     if (s[i] > 0) ++num_positive;
   }
 
+  if (num_positive == 3) return;
+
+  // Note: although the face normal is *always* Vector3<double>, we don't
+  // support Vector3<AD> = RotationMatrix<AD> * Vector3<double>. Therefore, we
+  // must cast the vector to T to account for AutoDiffXd.
+  const Vector3<T> nhat_W =
+      X_WF.rotation() * mesh_F.face_normal(tri_index).cast<T>();
+
   // Case 1: triangle lies completely within the half space. Preserve
   // the ordering of the triangle vertices.
   if (num_positive == 0) {
     const SurfaceVertexIndex v0_new_index = GetVertexAddIfNeeded(
-        vertices_F, triangle.vertex(0), vertices_to_newly_created_vertices,
-        new_vertices_F);
+        vertices_F, triangle.vertex(0), X_WF,
+        vertices_to_newly_created_vertices, new_vertices_W);
     const SurfaceVertexIndex v1_new_index = GetVertexAddIfNeeded(
-        vertices_F, triangle.vertex(1), vertices_to_newly_created_vertices,
-        new_vertices_F);
+        vertices_F, triangle.vertex(1), X_WF,
+        vertices_to_newly_created_vertices, new_vertices_W);
     const SurfaceVertexIndex v2_new_index = GetVertexAddIfNeeded(
-        vertices_F, triangle.vertex(2), vertices_to_newly_created_vertices,
-        new_vertices_F);
+        vertices_F, triangle.vertex(2), X_WF,
+        vertices_to_newly_created_vertices, new_vertices_W);
 
-    new_faces->emplace_back(v0_new_index, v1_new_index, v2_new_index);
+    AddPolygonToMeshData({v0_new_index, v1_new_index, v2_new_index},
+        nhat_W, new_faces, new_vertices_W);
     return;
   }
 
   // Case 2: The portion of the triangle in the half space is a quadrilateral.
   if (num_positive == 1) {
-    for (SurfaceVertexIndex i0(0); i0 < 3; ++i0) {
+    for (int i0 = 0; i0 < 3; ++i0) {
       if (s[i0] >= 0) {
-        const SurfaceVertexIndex i1((i0 + 1) % 3);
-        const SurfaceVertexIndex i2((i0 + 2) % 3);
+        const int i1 = (i0 + 1) % 3;
+        const int i2 = (i0 + 2) % 3;
+        const SurfaceVertexIndex v0 = triangle.vertex(i0);
+        const SurfaceVertexIndex v1 = triangle.vertex(i1);
+        const SurfaceVertexIndex v2 = triangle.vertex(i2);
 
         // Get the vertices that result from intersecting edge i0/i1 and
         // i0/i2.
-        SurfaceVertexIndex edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
-            i0, i1, s[i0], s[i1], vertices_F, edges_to_newly_created_vertices,
-            new_vertices_F);
-        const SurfaceVertexIndex edge_i0_i2_intersection_index =
-            GetVertexAddIfNeeded(i0, i2, s[i0], s[i2], vertices_F,
+        const SurfaceVertexIndex edge_i0_i1_intersection_index =
+            GetVertexAddIfNeeded(v0, v1, s[i0], s[i1], vertices_F, X_WF,
                                  edges_to_newly_created_vertices,
-                                 new_vertices_F);
+                                 new_vertices_W);
+        const SurfaceVertexIndex edge_i0_i2_intersection_index =
+            GetVertexAddIfNeeded(v0, v2, s[i0], s[i2], vertices_F, X_WF,
+                                 edges_to_newly_created_vertices,
+                                 new_vertices_W);
 
         // Get the indices of the new vertices, adding them if needed.
         const SurfaceVertexIndex i1_new_index = GetVertexAddIfNeeded(
-            vertices_F, i1, vertices_to_newly_created_vertices, new_vertices_F);
+            vertices_F, v1, X_WF, vertices_to_newly_created_vertices,
+            new_vertices_W);
         const SurfaceVertexIndex i2_new_index = GetVertexAddIfNeeded(
-            vertices_F, i2, vertices_to_newly_created_vertices, new_vertices_F);
+            vertices_F, v2, X_WF, vertices_to_newly_created_vertices,
+            new_vertices_W);
 
-        // Add faces, according to the nice ascii art below (thanks Sean
-        // Curtis!):
+        // Add the polygon (i1, i2, e02, e01)
         //
         //             i0
         //            ╱╲
@@ -175,14 +248,10 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         //        ╱________╲
         //      i1          i2
         //
-        // New triangles to cover the quad and maintain the winding.
-        //   (i1, i2, e01)
-        //   (i2, e02, e01)
-        //
-        new_faces->emplace_back(i1_new_index, i2_new_index,
-                                edge_i0_i1_intersection_index);
-        new_faces->emplace_back(i2_new_index, edge_i0_i2_intersection_index,
-                                edge_i0_i1_intersection_index);
+        AddPolygonToMeshData(
+            {i1_new_index, i2_new_index, edge_i0_i2_intersection_index,
+             edge_i0_i1_intersection_index},
+            nhat_W, new_faces, new_vertices_W);
         return;
       }
     }
@@ -192,65 +261,75 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 
   // Case 3: The portion of the triangle in the half space is a triangle.
   if (num_positive == 2) {
-    for (SurfaceVertexIndex i0(0); i0 < 3; ++i0) {
+    for (int i0 = 0; i0 < 3; ++i0) {
       if (s[i0] <= 0) {
-        const SurfaceVertexIndex i1((i0 + 1) % 3);
-        const SurfaceVertexIndex i2((i0 + 2) % 3);
+        const int i1 = (i0 + 1) % 3;
+        const int i2 = (i0 + 2) % 3;
+        const SurfaceVertexIndex v0 = triangle.vertex(i0);
+        const SurfaceVertexIndex v1 = triangle.vertex(i1);
+        const SurfaceVertexIndex v2 = triangle.vertex(i2);
 
         // Get the vertex that corresponds to i0.
         const SurfaceVertexIndex i0_new_index = GetVertexAddIfNeeded(
-            vertices_F, i0, vertices_to_newly_created_vertices, new_vertices_F);
+            vertices_F, v0, X_WF, vertices_to_newly_created_vertices,
+            new_vertices_W);
 
         // Get the vertex that results from intersecting edge i0/i1.
         const SurfaceVertexIndex edge_i0_i1_intersection_index =
-            GetVertexAddIfNeeded(i0, i1, s[i0], s[i1], vertices_F,
+            GetVertexAddIfNeeded(v0, v1, s[i0], s[i1], vertices_F, X_WF,
                                  edges_to_newly_created_vertices,
-                                 new_vertices_F);
+                                 new_vertices_W);
 
         // Get the vertex that results from intersecting edge i0/i2.
         const SurfaceVertexIndex edge_i0_i2_intersection_index =
-            GetVertexAddIfNeeded(i0, i2, s[i0], s[i2], vertices_F,
+            GetVertexAddIfNeeded(v0, v2, s[i0], s[i2], vertices_F, X_WF,
                                  edges_to_newly_created_vertices,
-                                 new_vertices_F);
+                                 new_vertices_W);
 
-        new_faces->emplace_back(i0_new_index, edge_i0_i1_intersection_index,
-                                edge_i0_i2_intersection_index);
+        AddPolygonToMeshData({i0_new_index, edge_i0_i1_intersection_index,
+                              edge_i0_i2_intersection_index},
+                             nhat_W, new_faces, new_vertices_W);
         return;
       }
     }
 
     DRAKE_UNREACHABLE();
   }
-
-  // Case 4: The triangle is outside the half space.
-  DRAKE_DEMAND(num_positive == 3);
-  return;
 }
 
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<T>& input_mesh_F, const PosedHalfSpace<T>& half_space_F) {
-  std::vector<SurfaceVertex<T>> new_vertices_F;
+    const SurfaceMesh<double>& input_mesh_F,
+    const PosedHalfSpace<T>& half_space_F,
+    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const math::RigidTransform<T>& X_WF) {
+  std::vector<SurfaceVertex<T>> new_vertices_W;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
 
-  for (const SurfaceFace& face : input_mesh_F.faces()) {
+  for (const auto tri_index : tri_indices) {
     ConstructTriangleHalfspaceIntersectionPolygon(
-        input_mesh_F.vertices(), face, half_space_F, &new_vertices_F,
+        input_mesh_F, tri_index, half_space_F, X_WF, &new_vertices_W,
         &new_faces, &vertices_to_newly_created_vertices,
         &edges_to_newly_created_vertices);
   }
 
-  return SurfaceMesh<T>(std::move(new_faces), std::move(new_vertices_F));
+  // TODO(SeanCurtis-TRI): This forces SurfaceMesh to recompute the normals for
+  //  every triangle in the set of faces. But we know that they should be the
+  //  normals drawn from the input mesh. We should accumulate the normals
+  //  during accumulation and explicitly provide them here (with a reasonable
+  //  check that the winding and the normals are consistent).
+  return SurfaceMesh<T>(std::move(new_faces), std::move(new_vertices_W));
 }
 
 template void ConstructTriangleHalfspaceIntersectionPolygon(
-    const std::vector<SurfaceVertex<double>>& vertices_F,
-    const SurfaceFace& triangle, const PosedHalfSpace<double>& half_space_F,
-    std::vector<SurfaceVertex<double>>* new_vertices_F,
+    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
+    const PosedHalfSpace<double>& half_space_F,
+    const math::RigidTransform<double>& X_WF,
+    std::vector<SurfaceVertex<double>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
@@ -258,9 +337,10 @@ template void ConstructTriangleHalfspaceIntersectionPolygon(
         edges_to_newly_created_vertices);
 
 template void ConstructTriangleHalfspaceIntersectionPolygon(
-    const std::vector<SurfaceVertex<AutoDiffXd>>& vertices_F,
-    const SurfaceFace& triangle, const PosedHalfSpace<AutoDiffXd>& half_space_F,
-    std::vector<SurfaceVertex<AutoDiffXd>>* new_vertices_F,
+    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
+    const PosedHalfSpace<AutoDiffXd>& half_space_F,
+    const math::RigidTransform<AutoDiffXd>& X_WF,
+    std::vector<SurfaceVertex<AutoDiffXd>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
@@ -269,12 +349,16 @@ template void ConstructTriangleHalfspaceIntersectionPolygon(
 
 template SurfaceMesh<double> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<double>& half_space_F);
+    const PosedHalfSpace<double>& half_space_F,
+    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const math::RigidTransform<double>& X_WF);
 
 template SurfaceMesh<AutoDiffXd>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<AutoDiffXd>& input_mesh_F,
-    const PosedHalfSpace<AutoDiffXd>& half_space_F);
+    const SurfaceMesh<double>& input_mesh_F,
+    const PosedHalfSpace<AutoDiffXd>& half_space_F,
+    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const math::RigidTransform<AutoDiffXd>& X_WF);
 
 }  // namespace internal
 }  // namespace geometry
