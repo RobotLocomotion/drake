@@ -109,6 +109,24 @@ class Polynomial {
   /// Returns the decision variables of this polynomial.
   const Variables& decision_variables() const;
 
+  /// Sets the indeterminates to `new_indeterminates`.
+  ///
+  /// Changing the indeterminates would change `monomial_to_coefficient_map()`,
+  /// and also potentially the degree of the polynomial. Here is an example.
+  ///
+  /// @code
+  /// // p is a quadratic polynomial with x being the indeterminates.
+  /// symbolic::Polynomial p(a * x * x + b * x + c, {x});
+  /// // p.monomial_to_coefficient_map() contains {1: c, x: b, x*x:a}.
+  /// std::cout << p.TotalDegree(); // prints 2.
+  /// // Now set (a, b, c) to the indeterminates. p becomes a linear
+  /// // polynomial of a, b, c.
+  /// p.SetIndeterminates({a, b, c});
+  /// // p.monomial_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
+  /// std::cout << p.TotalDegree(); // prints 1.
+  /// @endcode
+  void SetIndeterminates(const Variables& new_indeterminates);
+
   /// Returns the highest degree of this polynomial in a variable @p v.
   int Degree(const Variable& v) const;
 

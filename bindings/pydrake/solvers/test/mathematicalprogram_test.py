@@ -445,6 +445,20 @@ class TestMathematicalProgram(unittest.TestCase):
         # symbolic expression.
         self.assertTrue(p.ToExpression().EqualTo(e))
 
+    def test_reparse(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")[0]
+        a = prog.NewContinuousVariables(1, "a")[0]
+        e = (a + 1) * (x * x) + (2 * a) * x + 3 * a
+
+        # p = (x^2 + 2x + 3)a + x^2 with indeterminates {a}.
+        p = sym.Polynomial(e, [a])
+        self.assertEqual(p.TotalDegree(), 1)
+
+        # p = (a + 1)x² + 2ax + 3a with indeterminates {x}.
+        prog.Reparse(p)
+        self.assertEqual(p.TotalDegree(), 2)
+
     def test_equality_between_polynomials(self):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")

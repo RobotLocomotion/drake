@@ -474,6 +474,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.AddDecisionVariables.doc)
       .def("MakePolynomial", &MathematicalProgram::MakePolynomial, py::arg("e"),
           doc.MathematicalProgram.MakePolynomial.doc)
+      .def("Reparse", &MathematicalProgram::Reparse, py::arg("p"),
+          doc.MathematicalProgram.Reparse.doc)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&,

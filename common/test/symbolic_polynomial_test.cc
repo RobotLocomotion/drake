@@ -1023,6 +1023,53 @@ TEST_F(SymbolicPolynomialTest, DeterministicTraversal) {
     EXPECT_TRUE(e_1.EqualTo(e_2));
   }
 }
+
+TEST_F(SymbolicPolynomialTest, SetIndeterminates) {
+  // ax² + bx + c
+  const Expression e{a_ * x_ * x_ + b_ * x_ + c_};
+
+  {
+    // {x} -> {x, a}
+    Polynomial p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_a_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x} -> {x, y}, note that y ∉ variables(e).
+    Polynomial p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_y_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x, a} -> {x}
+    Polynomial p{e, {var_x_, var_a_}};
+    const Variables new_indeterminates{var_x_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x, a} -> {a}
+    Polynomial p{e, {var_x_, var_a_}};
+    const Variables new_indeterminates{var_a_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x, a, b, c} -> {x}
+    Polynomial p{e, {var_x_, var_a_, var_b_, var_c_}};
+    const Variables new_indeterminates{var_x_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+}
+
 }  // namespace
+
 }  // namespace symbolic
 }  // namespace drake

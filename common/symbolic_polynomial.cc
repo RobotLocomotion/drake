@@ -388,6 +388,16 @@ Polynomial::Polynomial(const Expression& e, Variables indeterminates)
 
 const Variables& Polynomial::indeterminates() const { return indeterminates_; }
 
+void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
+  if (new_indeterminates.IsSupersetOf(indeterminates_) &&
+      intersect(decision_variables_, new_indeterminates).empty()) {
+    indeterminates_ = new_indeterminates;
+  } else {
+    // TODO(soonho-tri): Optimize this part.
+    *this = Polynomial{ToExpression(), new_indeterminates};
+  }
+}
+
 const Variables& Polynomial::decision_variables() const {
   return decision_variables_;
 }
