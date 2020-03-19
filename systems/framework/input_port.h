@@ -76,7 +76,7 @@ class InputPort final : public InputPortBase {
   template <typename ValueType, typename = std::enable_if_t<
       std::is_same<AbstractValue, ValueType>::value>>
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return DoEvalRequired(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
@@ -85,7 +85,7 @@ class InputPort final : public InputPortBase {
         !std::is_base_of<BasicVector<T>, ValueType>::value ||
         std::is_same<BasicVector<T>, ValueType>::value)>>
   const ValueType& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return PortEvalCast<ValueType>(DoEvalRequired(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
@@ -139,7 +139,7 @@ class InputPort final : public InputPortBase {
   FixedInputPortValue& FixValue(Context<T>* context,
                                 const ValueType& value) const {
     DRAKE_DEMAND(context != nullptr);
-    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(*context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(*context));
     const bool is_vector_port = (get_data_type() == kVectorValued);
     std::unique_ptr<AbstractValue> abstract_value =
         is_vector_port
@@ -153,7 +153,7 @@ class InputPort final : public InputPortBase {
   operation, because the value is brought up-to-date as part of this
   operation. */
   bool HasValue(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return DoEvalOptional(context);
   }
 
@@ -177,19 +177,20 @@ class InputPort final : public InputPortBase {
   friend class internal::FrameworkFactory;
 
   // See InputPortBase for the meaning of these parameters. The additional
-  // `system` parameter must point to the same object as `system_base`.
+  // `system` parameter must point to the same object as `system_interface`.
   // (They're separate because System is forward-declared so we can't cast.)
   InputPort(
-      const System<T>* system, internal::SystemMessageInterface* system_base,
+      const System<T>* system,
+      internal::SystemMessageInterface* system_interface,
       std::string name, InputPortIndex index, DependencyTicket ticket,
       PortDataType data_type, int size,
       const std::optional<RandomDistribution>& random_type,
       EvalAbstractCallback eval)
-      : InputPortBase(system_base, std::move(name), index, ticket, data_type,
-                      size, random_type, std::move(eval)),
+      : InputPortBase(system_interface, std::move(name), index, ticket,
+                       data_type, size, random_type, std::move(eval)),
         system_(*system) {
     DRAKE_DEMAND(system != nullptr);
-    DRAKE_DEMAND(static_cast<const void*>(system) == system_base);
+    DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
   }
 
   const System<T>& system_;

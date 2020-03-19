@@ -45,10 +45,11 @@ class DummySystem : public LeafSystem<double> {
 // introduce errors.
 class MyOutputPort : public OutputPort<double> {
  public:
-  MyOutputPort(const System<double>* diagram, SystemBase* system_base,
+  MyOutputPort(const System<double>* diagram,
+               internal::SystemMessageInterface* system_interface,
                OutputPortIndex index, DependencyTicket ticket)
-      : OutputPort<double>(diagram, system_base, "my_output", index, ticket,
-                           kVectorValued, 2) {}
+      : OutputPort<double>(diagram, system_interface, "my_output", index,
+                            ticket, kVectorValued, 2) {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(

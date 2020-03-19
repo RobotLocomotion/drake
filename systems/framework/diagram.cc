@@ -865,7 +865,7 @@ const AbstractValue* Diagram<T>::EvalConnectedSubsystemInputPort(
   auto& diagram_context =
       dynamic_cast<const DiagramContext<T>&>(context_base);
   auto& system =
-      dynamic_cast<const System<T>&>(input_port_base.get_system_base());
+      dynamic_cast<const System<T>&>(input_port_base.get_system_interface());
   const InputPortLocator id{&system, input_port_base.get_index()};
 
   // Find if this input port is exported (connected to an input port of this
