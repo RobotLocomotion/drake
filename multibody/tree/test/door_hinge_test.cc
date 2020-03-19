@@ -9,6 +9,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/systems/analysis/initial_value_problem.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
@@ -172,18 +173,29 @@ void TestSpringTorqueOnlyPower(const DoorHingeTester& dut,
   EXPECT_EQ(non_conserv_power, 0.0);
 }
 
-// This function integrates the conservative power (P) to get the corresponding
-// energy (PE), i.e., PE = -∫Pdt. A simple explicit Euler integration method is
-// implemented here (not Drake related). The expected integration accuracy will
-// depend on the integration time step `kIntegrationTimeStep`. In particular,
-// this function assumes the hinge joint moves from zero (initial state) to the
-// current angle with a constant speed (current angular rate). It also assumes
-// that the initial potential energy is 0.
-double IntegrateConservativePower(const DoorHingeTester& dut,
-                                  const systems::Context<double>& context,
-                                  const MultibodyPlant<double>& plant) {
-  auto conserv_power = [&dut](double q, double v) {
-    return dut.CalcHingeSpringTorque(q, dut.door_hinge().config()) * v;
+// This function confirms the potential energy (PE) is computed correctly by
+// comparing it against the result from integrating the conservative power (P),
+// i.e. we should have PE = -∫Pdt. The `InitialValueProblem` class is used for
+// this purpose. The state is defined as `x = {PE, q, v}`, where `q` is the
+// angle and `v` is the angular rate. In particular, this function assumes the
+// hinge joint moves from zero (initial state) to the current angle qₜ with a
+// constant speed (current angular rate vₜ). It also assumes that the initial
+// potential energy is 0 and initial angle is 0. Correspondingly, the ODEs can
+// be defined as `ẋ[0] = P`, `ẋ[1] = v`, `ẋ[2] = 0` and the initial value is
+// `x₀ = {0, 0, vₜ}`. Since velocity is constant, the total simulation time
+// can be derived as t = qₜ / vₜ.
+void TestPotentialEnergyCalculation(const DoorHingeTester& dut,
+                                    const systems::Context<double>& context,
+                                    const MultibodyPlant<double>& plant) {
+  auto energy_ode = [&dut](const double& t, const VectorX<double> x,
+                           const VectorX<double>& k) -> VectorX<double> {
+    unused(t);
+    unused(k);
+    VectorX<double> ret(x.size());
+    ret[0] = -dut.CalcHingeSpringTorque(x[1], dut.door_hinge().config()) * x[2];
+    ret[1] = x[2];
+    ret[2] = 0.0;
+    return ret;
   };
 
   const double target_angle =
@@ -191,13 +203,25 @@ double IntegrateConservativePower(const DoorHingeTester& dut,
   const double angular_rate =
       plant.GetJointByName(kRevoluteJointName).GetOneVelocity(context);
 
-  double angle = 0.0;
-  double pe_integrated = 0.0;
-  while (angle < target_angle) {
-    pe_integrated -= conserv_power(angle, angular_rate) * kIntegrationTimeStep;
-    angle += angular_rate * kIntegrationTimeStep;
-  }
-  return pe_integrated;
+  const double kInitialTime = 0.0;
+  const VectorX<double> kInitialState =
+      (VectorX<double>(3) << 0.0, 0.0, angular_rate).finished();
+  const VectorX<double> kDefaultParameters = VectorX<double>::Zero(3);
+
+  const systems::InitialValueProblem<double>::SpecifiedValues kDefaultValues(
+      kInitialTime, kInitialState, kDefaultParameters);
+  const systems::InitialValueProblem<double> ivp(energy_ode, kDefaultValues);
+
+  DRAKE_THROW_UNLESS(angular_rate != 0);
+  const double kTotalTime = std::abs(target_angle / angular_rate);
+  const auto result = ivp.Solve(kTotalTime);
+  // Confirm the velocity is not changed.
+  DRAKE_THROW_UNLESS(result[2] == angular_rate);
+
+  const double potential_energy = dut.door_hinge().CalcPotentialEnergy(
+      context, plant.EvalPositionKinematics(context));
+
+  EXPECT_NEAR(potential_energy, result[0], 1e-3);
 }
 
 // Verify the torques and the energy should be zero when the config parameters
@@ -250,14 +274,8 @@ TEST_F(DoorHingeTest, SpringTest) {
 
   // Test potential energy at non-zero angle.
   SetHingeJointState(kAngle, kAngularRate);
-  const double integrated_potential_energy =
-      IntegrateConservativePower(dut, plant_context(), plant());
-  const double potential_energy = dut.door_hinge().CalcPotentialEnergy(
-      plant_context(), plant().EvalPositionKinematics(plant_context()));
-
-  const double kExpectedAccuracy = 10 * kIntegrationTimeStep;
-  EXPECT_NEAR(potential_energy, integrated_potential_energy, kExpectedAccuracy);
-
+  // Verify the potential energy are computed correctly.
+  TestPotentialEnergyCalculation(dut, plant_context(), plant());
   // Test the powers are computed correctly.
   TestSpringTorqueOnlyPower(dut, plant_context(), plant());
 }
@@ -294,13 +312,8 @@ TEST_F(DoorHingeTest, CatchTest) {
 
   // Test the energy from power integration.
   SetHingeJointState(kAngle, kAngularRate);
-  const double integrated_potential_energy =
-      IntegrateConservativePower(dut, plant_context(), plant());
-  const double potential_energy = dut.door_hinge().CalcPotentialEnergy(
-      plant_context(), plant().EvalPositionKinematics(plant_context()));
-  EXPECT_NEAR(potential_energy, integrated_potential_energy,
-              kIntegrationTimeStep);
-
+  // Verify the potential energy are computed correctly.
+  TestPotentialEnergyCalculation(dut, plant_context(), plant());
   // Verify the power terms are computed correctly.
   TestSpringTorqueOnlyPower(dut, plant_context(), plant());
 }
