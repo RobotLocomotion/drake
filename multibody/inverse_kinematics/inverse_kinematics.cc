@@ -7,6 +7,7 @@
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
 namespace drake {
@@ -103,6 +104,19 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddDistanceConstraint(
   auto constraint = std::make_shared<DistanceConstraint>(
       &plant_, geometry_pair, get_mutable_context(), distance_lower,
       distance_upper);
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint>
+InverseKinematics::AddPointToPointDistanceConstraint(
+    const Frame<double>& frame1,
+    const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
+    const Frame<double>& frame2,
+    const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
+    double distance_upper) {
+  auto constraint = std::make_shared<PointToPointDistanceConstraint>(
+      &plant_, frame1, p_B1P1, frame2, p_B2P2, distance_lower, distance_upper,
+      get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody

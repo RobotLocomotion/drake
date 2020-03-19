@@ -22,7 +22,7 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
       "drake/manipulation/models/iiwa_description/sdf/"
       "iiwa14_no_collision.sdf");
   systems::DiagramBuilder<double> builder{};
-  plant_ = builder.AddSystem<MultibodyPlant<double>>();
+  plant_ = builder.AddSystem<MultibodyPlant<double>>(0.1);
   plant_->RegisterAsSourceForSceneGraph(
       builder.AddSystem<SceneGraph<double>>());
   multibody::Parser parser{plant_};
@@ -36,8 +36,8 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   plant_context_ =
       &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
-  plant_autodiff_ =
-      systems::System<double>::ToAutoDiffXd(*ConstructIiwaPlant(iiwa_path, 0.));
+  plant_autodiff_ = systems::System<double>::ToAutoDiffXd(
+      *ConstructIiwaPlant(iiwa_path, 0.1));
   plant_context_autodiff_ = plant_autodiff_->CreateDefaultContext();
 }
 
@@ -69,7 +69,7 @@ void AddTwoFreeBodiesToPlant(MultibodyPlant<T>* model) {
 
 template <typename T>
 std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
-  auto model = std::make_unique<MultibodyPlant<T>>();
+  auto model = std::make_unique<MultibodyPlant<T>>(0.1);
   AddTwoFreeBodiesToPlant(model.get());
   model->Finalize();
   return model;
