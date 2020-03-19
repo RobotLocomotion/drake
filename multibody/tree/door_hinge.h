@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -12,33 +11,38 @@
 namespace drake {
 namespace multibody {
 
-/// Configuration structure for the door hinge.
+/// Configuration structure for the DoorHinge.
 struct DoorHingeConfig {
   /// qs₀ measured outward from the closed position [radian].
-  double spring_zero_angle_rad;
+  double spring_zero_angle_rad{};
   /// k_ts torsional spring constant measured toward the spring zero angle
-  /// [Nm/rad].
-  double spring_constant;
+  /// [Nm/rad]. It should be non-negative.
+  double spring_constant{};
   /// k_df maximum dynamic friction torque measured opposite direction of motion
-  /// [Nm].
-  double dynamic_friction_torque;
+  /// [Nm]. It should be non-negative.
+  double dynamic_friction_torque{};
   /// k_sf maximum static friction measured opposite direction of motion [Nm].
-  double static_friction_torque;
-  /// k_vf viscous friction measured opposite direction of motion [Nm].
-  double viscous_friction;
-  /// qc₀ measured from closed (q=0) position [radian].
-  double catch_width;
-  /// k_c maximum catch torque applied over `catch_width` [Nm].
-  double catch_torque;
+  /// It should be non-negative.
+  double static_friction_torque{};
+  /// k_vf viscous friction measured opposite direction of motion [Nm]. It
+  /// should be non-negative.
+  double viscous_friction{};
+  /// qc₀ measured from closed (q=0) position [radian]. It should be
+  /// non-negative.
+  double catch_width{};
+  /// k_c maximum catch torque applied over `catch_width` [Nm]. It should be
+  /// non-negative.
+  double catch_torque{};
 
-  /// k_q̇₀ motion threshold to  start to apply friction torques [rad/s].
-  /// Realistic frictional force is very stiff, reversing entirely over zero
-  /// change in position or velocity, which kills integrators.  We approximate
-  /// it with a continuous function.  This constant [rad/s] is the scaling
-  /// factor on that function -- very approximately the rad/s at which half
-  /// of the full frictional force is applied.  This number is nonphysical;
-  /// make it small but not so small that the simulation vibrates or explodes.
-  double motion_threshold;
+  /// k_q̇₀ motion threshold to start to apply friction torques [rad/s]. It
+  /// should be non-negative. Realistic frictional force is very stiff,
+  /// reversing entirely over zero change in position or velocity, which kills
+  /// integrators.  We approximate it with a continuous function.  This constant
+  /// [rad/s] is the scaling factor on that function -- very approximately the
+  /// rad/s at which half of the full frictional force is applied.  This number
+  /// is nonphysical; make it small but not so small that the simulation
+  /// vibrates or explodes.
+  double motion_threshold{};
 
   /// Initialize to empirically reasonable values measured approximately by
   /// banging on the door of a dishwasher with a force gauge.
@@ -53,7 +57,7 @@ struct DoorHingeConfig {
         motion_threshold(0.001) {}
 };
 
-/// This %ForceElement models a revolute door hinge joint that could exhibit
+/// This %ForceElement models a revolute DoorHinge joint that could exhibit
 /// different force/torque characteristics at different states due to the
 /// existence of different type of torques on the joint. This class implements
 /// a "christmas tree" accumulation of these different torques in an empirical
@@ -89,7 +93,7 @@ struct DoorHingeConfig {
 /// positive otherwise. This class applies all hinge-originating forces, so it
 /// can be used instead of the SDF viscous damping. The users could change the
 /// values of these different elements to obtain different characteristics for
-/// the door hinge joint that the users want to model. A jupyter notebook tool
+/// the DoorHinge joint that the users want to model. A jupyter notebook tool
 /// is also provided to help the users visualize the curves and design
 /// parameters.
 ///
@@ -97,7 +101,7 @@ struct DoorHingeConfig {
 /// sufficient for it to rest motionless at any angle, a catch at the top to
 /// hold it in place, a dashpot (viscous friction source) to prevent it from
 /// swinging too fast, and a spring to counteract some of its mass. The
-/// following two figures illustrate the dishwasher door hinge torque with the
+/// following two figures illustrate the dishwasher DoorHinge torque with the
 /// given default parameters. Figure 1 shows the static characteristic of the
 /// dishwasher door. At q = 0, there exists a negative catch torque to prevent
 /// the door from moving. After that, the torsional spring torque will dominate
@@ -112,15 +116,15 @@ struct DoorHingeConfig {
 /// adjust the time.
 /// @image html multibody/tree/images/torque_vs_angle.svg "Figure 1"
 /// @image html multibody/tree/images/torque_vs_velocity.svg "Figure 2"
+///
+/// @tparam_default_scalar
 template <typename T>
 class DoorHinge : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoorHinge)
 
-  /// Construct a hinge force element with parameters @p config applied to the
+  /// Constructs a hinge force element with parameters @p config applied to the
   /// specified @p joint.
-  /// The @p joint is aliased and must remain valid for the lifetime of this
-  /// object and its clones.
   ///
   /// Some minimal sanity checking is asserted on the supplied config.
   /// @throws std::exception if `config.spring_constant` is negative.
@@ -128,7 +132,7 @@ class DoorHinge : public ForceElement<T> {
   /// @throws std::exception if `config.static_friction_torque` is negative.
   /// @throws std::exception if `config.viscous_friction` is negative.
   /// @throws std::exception if `config.catch_width` is negative.
-  /// @throws std::exception if `config.motion_threshold` is negative or zero.
+  /// @throws std::exception if `config.motion_threshold` is negative.
   DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config);
 
   const RevoluteJoint<T>& joint() const;
@@ -179,21 +183,17 @@ class DoorHinge : public ForceElement<T> {
       const internal::MultibodyTree<ToScalar>&) const;
 
   // Convinient simple functions for cleaner math and easier testing.
-  T CalcHingeFrictionalTorque(T angular_velocity,
-                              const DoorHingeConfig& config) const;
+  T CalcHingeFrictionalTorque(const T& angular_velocity) const;
 
-  T CalcHingeSpringTorque(T angle, const DoorHingeConfig& config) const;
+  T CalcHingeSpringTorque(const T& angle) const;
 
-  T CalcHingeTorque(T angle, T angular_velocity,
-                    const DoorHingeConfig& config) const;
+  T CalcHingeTorque(const T& angle, const T& angular_velocity) const;
 
-  T CalcHingeConservativePower(T angle, T angular_velocity,
-                               const DoorHingeConfig& config) const;
+  T CalcHingeConservativePower(const T& angle, const T& angular_velocity) const;
 
-  T CalcHingeNonConservativePower(T angular_velocity,
-                                  const DoorHingeConfig& config) const;
+  T CalcHingeNonConservativePower(const T& angular_velocity) const;
 
-  T CalcHingeStoredEnergy(T angle, const DoorHingeConfig& config) const;
+  T CalcHingeStoredEnergy(const T& angle) const;
 
   const JointIndex joint_index_;
   const DoorHingeConfig config_;

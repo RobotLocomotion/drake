@@ -1,25 +1,21 @@
 #include "drake/multibody/tree/door_hinge.h"
 
+#include <cmath>
 #include <tuple>
-#include <utility>
-
-using drake::AutoDiffXd;
-using drake::multibody::ForceElement;
-using drake::multibody::Joint;
-using drake::multibody::MultibodyForces;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::internal::MultibodyTree;
-using drake::multibody::internal::PositionKinematicsCache;
-using drake::multibody::internal::VelocityKinematicsCache;
-using drake::symbolic::Expression;
-using drake::systems::Context;
 
 namespace drake {
 namespace multibody {
+
+using internal::MultibodyTree;
+using internal::PositionKinematicsCache;
+using internal::VelocityKinematicsCache;
+using symbolic::Expression;
+using systems::Context;
+
 namespace {
 // See class description for notation.
 template <typename T>
-std::tuple<T, T, T> CalcApproximationCurves(T t, T x) {
+std::tuple<T, T, T> CalcApproximationCurves(const T& t, const T& x) {
   DRAKE_THROW_UNLESS(t > 0);
   using std::tanh;
   const T s = tanh(x / t);
@@ -45,7 +41,7 @@ DoorHinge<T>::DoorHinge(ModelInstanceIndex model_instance,
   DRAKE_THROW_UNLESS(config_.static_friction_torque >= 0);
   DRAKE_THROW_UNLESS(config_.viscous_friction >= 0);
   DRAKE_THROW_UNLESS(config_.catch_width >= 0);
-  DRAKE_THROW_UNLESS(config_.motion_threshold > 0);
+  DRAKE_THROW_UNLESS(config_.motion_threshold >= 0);
 }
 
 template <typename T>
@@ -59,85 +55,82 @@ const RevoluteJoint<T>& DoorHinge<T>::joint() const {
 template <typename T>
 T DoorHinge<T>::CalcPotentialEnergy(const Context<T>& context,
                                     const PositionKinematicsCache<T>&) const {
-  const T angle = joint().get_angle(context);
-  return CalcHingeStoredEnergy(angle, config_);
+  const T& angle = joint().get_angle(context);
+  return CalcHingeStoredEnergy(angle);
 }
 
 template <typename T>
 T DoorHinge<T>::CalcConservativePower(const Context<T>& context,
                                       const PositionKinematicsCache<T>&,
                                       const VelocityKinematicsCache<T>&) const {
-  const T angle = joint().get_angle(context);
-  const T angular_velocity = joint().get_angular_rate(context);
-  return CalcHingeConservativePower(angle, angular_velocity, config_);
+  const T& angle = joint().get_angle(context);
+  const T& angular_velocity = joint().get_angular_rate(context);
+  return CalcHingeConservativePower(angle, angular_velocity);
 }
 
 template <typename T>
 T DoorHinge<T>::CalcNonConservativePower(
     const Context<T>& context, const PositionKinematicsCache<T>&,
     const VelocityKinematicsCache<T>&) const {
-  const T angular_velocity = joint().get_angular_rate(context);
-  return CalcHingeNonConservativePower(angular_velocity, config_);
+  const T& angular_velocity = joint().get_angular_rate(context);
+  return CalcHingeNonConservativePower(angular_velocity);
 }
 
 template <typename T>
 void DoorHinge<T>::DoCalcAndAddForceContribution(
     const Context<T>& context, const PositionKinematicsCache<T>&,
     const VelocityKinematicsCache<T>&, MultibodyForces<T>* forces) const {
-  const T angle = joint().get_angle(context);
-  const T angular_velocity = joint().get_angular_rate(context);
-  const T torque = CalcHingeTorque(angle, angular_velocity, config_);
+  const T& angle = joint().get_angle(context);
+  const T& angular_velocity = joint().get_angular_rate(context);
+  const T torque = CalcHingeTorque(angle, angular_velocity);
   joint().AddInTorque(context, torque, forces);
 }
 
 template <typename T>
-T DoorHinge<T>::CalcHingeFrictionalTorque(T angular_velocity,
-                                          const DoorHingeConfig& config) const {
-  if (config.motion_threshold == 0) {
-    return config.viscous_friction * angular_velocity;
+T DoorHinge<T>::CalcHingeFrictionalTorque(const T& angular_velocity) const {
+  if (config_.motion_threshold == 0) {
+    return config_.viscous_friction * angular_velocity;
   } else {
     const auto [s, singlet, doublet] =
-        CalcApproximationCurves(T(config.motion_threshold), angular_velocity);
+        CalcApproximationCurves(T(config_.motion_threshold), angular_velocity);
     drake::unused(singlet);
-    return -(config.dynamic_friction_torque * s +
-             config.static_friction_torque * doublet +
-             config.viscous_friction * angular_velocity);
+    return -(config_.dynamic_friction_torque * s +
+             config_.static_friction_torque * doublet +
+             config_.viscous_friction * angular_velocity);
   }
 }
 
 template <typename T>
-T DoorHinge<T>::CalcHingeSpringTorque(T angle,
-                                      const DoorHingeConfig& config) const {
-  if (config.catch_width == 0) {
-    return -config.spring_constant * (angle - config.spring_zero_angle_rad);
+T DoorHinge<T>::CalcHingeSpringTorque(const T& angle) const {
+  if (config_.catch_width == 0) {
+    return -config_.spring_constant * (angle - config_.spring_zero_angle_rad);
   } else {
-    const T catch_center = config.catch_width / 2;
+    const T catch_center = config_.catch_width / 2;
     const auto [s, singlet, doublet] =
         CalcApproximationCurves(catch_center, angle - catch_center);
     drake::unused(s);
     drake::unused(singlet);
-    return config.catch_torque * doublet -
-           config.spring_constant * (angle - config.spring_zero_angle_rad);
+    return config_.catch_torque * doublet -
+           config_.spring_constant * (angle - config_.spring_zero_angle_rad);
   }
 }
 
 template <typename T>
-T DoorHinge<T>::CalcHingeTorque(T angle, T angular_velocity,
-                                const DoorHingeConfig& config) const {
-  return CalcHingeFrictionalTorque(angular_velocity, config) +
-         CalcHingeSpringTorque(angle, config);
+T DoorHinge<T>::CalcHingeTorque(const T& angle,
+                                const T& angular_velocity) const {
+  return CalcHingeFrictionalTorque(angular_velocity) +
+         CalcHingeSpringTorque(angle);
 }
 
 template <typename T>
-T DoorHinge<T>::CalcHingeConservativePower(
-    T angle, T angular_velocity, const DoorHingeConfig& config) const {
-  return angular_velocity * CalcHingeSpringTorque(angle, config);
+T DoorHinge<T>::CalcHingeConservativePower(const T& angle,
+                                           const T& angular_velocity) const {
+  return angular_velocity * CalcHingeSpringTorque(angle);
 }
 
 template <typename T>
-T DoorHinge<T>::CalcHingeNonConservativePower(
-    T angular_velocity, const DoorHingeConfig& config) const {
-  return angular_velocity * CalcHingeFrictionalTorque(angular_velocity, config);
+T DoorHinge<T>::CalcHingeNonConservativePower(const T& angular_velocity) const {
+  return angular_velocity * CalcHingeFrictionalTorque(angular_velocity);
 }
 
 // Stored energy consists two parts. One is from the spring and another one is
@@ -157,19 +150,18 @@ T DoorHinge<T>::CalcHingeNonConservativePower(
 // Substituting x₀ = 0, t = qc₀/2, x = q - qc₀/2 and dx = dq, we have
 // E_{catch_torque} = k_c*qc₀/2*[f(qc₀/2, q-qc₀/2) - f(qc₀/2, -qc₀/2)].
 template <typename T>
-T DoorHinge<T>::CalcHingeStoredEnergy(T angle,
-                                      const DoorHingeConfig& config) const {
+T DoorHinge<T>::CalcHingeStoredEnergy(const T& angle) const {
   T energy = 0.;
   // Compute spring torque energy.
-  const T spring_offset = (angle - config.spring_zero_angle_rad);
-  const T spring_offset_init = (0. - config.spring_zero_angle_rad);
+  const T spring_offset = (angle - config_.spring_zero_angle_rad);
+  const T spring_offset_init = (0. - config_.spring_zero_angle_rad);
   energy +=
-      0.5 * config.spring_constant *
+      0.5 * config_.spring_constant *
       (spring_offset * spring_offset - spring_offset_init * spring_offset_init);
 
   // Compute catch torque energy.
-  if (config.catch_width != 0) {
-    const T catch_center = config.catch_width / 2;
+  if (config_.catch_width != 0) {
+    const T catch_center = config_.catch_width / 2;
     const auto [s_q, singlet_q, doublet_q] =
         CalcApproximationCurves(catch_center, angle - catch_center);
     drake::unused(s_q);
@@ -179,7 +171,7 @@ T DoorHinge<T>::CalcHingeStoredEnergy(T angle,
         CalcApproximationCurves(catch_center, -catch_center);
     drake::unused(s_0);
     drake::unused(doublet_0);
-    energy += config.catch_torque * catch_center * (singlet_q - singlet_0);
+    energy += config_.catch_torque * catch_center * (singlet_q - singlet_0);
   }
   return energy;
 }
@@ -194,7 +186,7 @@ std::unique_ptr<ForceElement<ToScalar>> DoorHinge<T>::TemplatedClone(
   // N.B. We use the private constructor since it doesn't rely on a valid joint
   // reference, which might not be available during cloning.
   std::unique_ptr<DoorHinge<ToScalar>> door_hinge_clone(
-      new DoorHinge<ToScalar>(this->model_instance(), joint_index_, config()));
+      new DoorHinge<ToScalar>(this->model_instance(), joint_index_, config_));
 
   return door_hinge_clone;
 }
