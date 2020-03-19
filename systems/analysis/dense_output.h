@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -179,3 +180,6 @@ class DenseOutput {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::DenseOutput)
