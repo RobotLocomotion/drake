@@ -212,4 +212,3 @@ class AntiderivativeFunction {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::AntiderivativeFunction)
-

@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -88,11 +90,11 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
-/// @tparam T A valid Eigen scalar type.
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HermitianDenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HermitianDenseOutput)
 
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
@@ -396,3 +398,6 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::HermitianDenseOutput)

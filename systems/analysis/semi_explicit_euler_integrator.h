@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -60,6 +61,8 @@ namespace systems {
  *                       Systems. Prentice Hall. New Jersey, 1988.
  * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and
  *                       Impact. SIAM Review, 42:1, 2000.
+ *
+ * @tparam_nonsymbolic_scalar
  */
 template <class T>
 class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
@@ -163,3 +166,5 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
 }  // namespace systems
 }  // namespace drake
 
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::SemiExplicitEulerIntegrator)
