@@ -34,7 +34,7 @@ class PortBase {
   // Returns a reference to the system that owns this port. Note that for a
   // diagram port this will be the diagram, not the leaf system whose port was
   // exported.
-  const internal::SystemMessageInterface& get_system_base() const {
+  const internal::SystemMessageInterface& get_system_interface() const {
     return owning_system_;
   }
 #endif
@@ -79,8 +79,8 @@ class PortBase {
   LeafSystem whose output port was forwarded. */
   int get_int_index() const { return index_; }
 
-  /** Returns get_system_base(), but without the const. */
-  internal::SystemMessageInterface& get_mutable_system_base() {
+  /** Returns get_system_interface(), but without the const. */
+  internal::SystemMessageInterface& get_mutable_system_interface() {
     return owning_system_;
   }
 

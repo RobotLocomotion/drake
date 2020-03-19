@@ -397,7 +397,6 @@ drake_cc_library(
     deps = [
         ":context",
         ":output_port_base",
-        ":system_base",
         "//common:default_scalars",
         "//common:essential",
         "//common:value",
@@ -440,6 +439,7 @@ drake_cc_library(
     srcs = ["leaf_output_port.cc"],
     hdrs = ["leaf_output_port.h"],
     deps = [
+        ":cache_entry",
         ":framework_common",
         ":output_port",
         ":vector",

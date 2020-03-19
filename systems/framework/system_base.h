@@ -819,7 +819,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // data type.
   void AddInputPort(std::unique_ptr<InputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(&port->get_system_interface() == this);
     DRAKE_DEMAND(port->get_index() == num_input_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
@@ -844,7 +844,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // data type.
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(&port->get_system_interface() == this);
     DRAKE_DEMAND(port->get_index() == num_output_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
