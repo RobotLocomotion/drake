@@ -115,8 +115,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
   const VectorX<double> q_double = plant_->GetPositions(*context_);
   MatrixX<double> p_WoEi_W_deriv_wrt_q(3 * kNumPoints, num_positions);
   CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
-      *plant_, context_autodiff_.get(), q_double, frame_E_autodiff, p_EoEi_E,
-      &p_WoEi_W_deriv_wrt_q);
+      *plant_autodiff_, context_autodiff_.get(), q_double, frame_E_autodiff,
+      p_EoEi_E, &p_WoEi_W_deriv_wrt_q);
 
   // Verify the Jacobian Jq_v_WEi_W matches the one from auto-differentiation.
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
@@ -264,8 +264,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   const VectorX<double> q_double = plant_->GetPositions(*context_);
   MatrixX<double> p_WoEi_W_deriv_wrt_q(3 * kNumPoints, num_positions);
   CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
-      *plant_, context_autodiff_.get(), q_double, frame_E_autodiff, p_EoEi_E,
-      &p_WoEi_W_deriv_wrt_q);
+      *plant_autodiff_, context_autodiff_.get(), q_double, frame_E_autodiff,
+      p_EoEi_E, &p_WoEi_W_deriv_wrt_q);
 
   // Ensure proper sizes for the matrix storing the partial derivatives.
   EXPECT_EQ(p_WoEi_W_deriv_wrt_q.rows(), 3 * kNumPoints);

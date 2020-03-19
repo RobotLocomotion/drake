@@ -76,7 +76,7 @@ class InputPort final : public InputPortBase {
   template <typename ValueType, typename = std::enable_if_t<
       std::is_same<AbstractValue, ValueType>::value>>
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
     return DoEvalRequired(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
@@ -85,7 +85,7 @@ class InputPort final : public InputPortBase {
         !std::is_base_of<BasicVector<T>, ValueType>::value ||
         std::is_same<BasicVector<T>, ValueType>::value)>>
   const ValueType& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
     return PortEvalCast<ValueType>(DoEvalRequired(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
@@ -139,7 +139,7 @@ class InputPort final : public InputPortBase {
   FixedInputPortValue& FixValue(Context<T>* context,
                                 const ValueType& value) const {
     DRAKE_DEMAND(context != nullptr);
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(*context));
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(*context));
     const bool is_vector_port = (get_data_type() == kVectorValued);
     std::unique_ptr<AbstractValue> abstract_value =
         is_vector_port
@@ -153,7 +153,7 @@ class InputPort final : public InputPortBase {
   operation, because the value is brought up-to-date as part of this
   operation. */
   bool HasValue(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    DRAKE_ASSERT_VOID(get_system_base().ValidateContext(context));
     return DoEvalOptional(context);
   }
 
