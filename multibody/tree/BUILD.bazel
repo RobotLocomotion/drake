@@ -440,6 +440,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//multibody/plant",
+        "//systems/analysis:initial_value_problem",
         "//systems/analysis:simulator",
     ],
 )
