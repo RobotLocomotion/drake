@@ -70,7 +70,7 @@ class DiagramOutputPort final : public OutputPort<T> {
   // to static_cast up to System<T> as is required by OutputPort. We expect
   // the caller to do that cast for us so take a System<T> here.
   DiagramOutputPort(const System<T>* diagram,
-                    SystemBase* system_base,
+                    internal::SystemMessageInterface* system_base,
                     std::string name,
                     OutputPortIndex index,
                     DependencyTicket ticket,

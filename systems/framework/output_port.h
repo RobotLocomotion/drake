@@ -19,7 +19,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port_base.h"
-#include "drake/systems/framework/system_base.h"
 
 namespace drake {
 namespace systems {
@@ -184,10 +183,11 @@ class OutputPort : public OutputPortBase {
   @pre The `name` must not be empty.
   @pre The `system` parameter must be the same object as the `system_base`
   parameter. */
-  // The System and SystemBase are provided separately since we don't have
+  // The system and system_base are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  OutputPort(const System<T>* system, SystemBase* system_base, std::string name,
-             OutputPortIndex index, DependencyTicket ticket,
+  OutputPort(const System<T>* system,
+             internal::SystemMessageInterface* system_base,
+             std::string name, OutputPortIndex index, DependencyTicket ticket,
              PortDataType data_type, int size)
       : OutputPortBase(system_base, std::move(name), index, ticket, data_type,
                        size),
