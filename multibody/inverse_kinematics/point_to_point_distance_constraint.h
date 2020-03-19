@@ -43,7 +43,7 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
 
   /**
    * Overloaded constructor. Same as the constructor with the double version
-   * (using MultibodyPlant<double> and Context<double>. Except the gradient of
+   * (using MultibodyPlant<double> and Context<double>), except the gradient of
    * the constraint is computed from autodiff.
    * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
    * Documentation string is manually recreated in Python.}
