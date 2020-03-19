@@ -2223,6 +2223,9 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns the coefficients matrix Q, which is positive
    * semidefinite.
+   *
+   * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
+   * indeterminates if necessary.
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Polynomial& p,
@@ -2233,6 +2236,9 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is a monomial
    * basis selected from the sparsity of @p p. It returns a pair of constraint
    * bindings expressing:
+   *
+   * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
+   * indeterminates if necessary.
    *
    *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The monomial basis m.
@@ -2279,6 +2285,9 @@ class MathematicalProgram {
    * indeterminates in this MathematicalProgram object, and p2's coefficients
    * are affine functions of decision variables in this MathematicalProgram
    * object.
+   *
+   * @note It calls `Reparse` to enforce `p1` and `p2` to have this
+   * MathematicalProgram's indeterminates.
    */
   void AddEqualityConstraintBetweenPolynomials(const symbolic::Polynomial& p1,
                                                const symbolic::Polynomial& p2);
