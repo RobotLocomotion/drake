@@ -64,7 +64,7 @@ template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const std::vector<SurfaceVertex<T>>& vertices_F,
     const SurfaceFace& triangle,
-    const internal::PosedHalfSpace<T>& half_space_F,
+    const PosedHalfSpace<T>& half_space_F,
     std::vector<SurfaceVertex<T>>* new_vertices_F,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
@@ -72,9 +72,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices);
 
-}  // namespace internal
-
-/**
+/*
  Constructs the SurfaceMesh that results from intersecting a triangle mesh with
  a half space.
  @param input_mesh_F the mesh with vertices measured and expressed in some
@@ -87,8 +85,9 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<T>& input_mesh_F,
-    const internal::PosedHalfSpace<T>& half_space_F);
+    const PosedHalfSpace<T>& half_space_F);
 
 
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

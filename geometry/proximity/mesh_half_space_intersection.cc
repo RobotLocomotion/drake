@@ -227,34 +227,9 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   return;
 }
 
-template void ConstructTriangleHalfspaceIntersectionPolygon(
-    const std::vector<SurfaceVertex<double>>& vertices_F,
-const SurfaceFace& triangle,
-const internal::PosedHalfSpace<double>& half_space_F,
-    std::vector<SurfaceVertex<double>>* new_vertices_F,
-std::vector<SurfaceFace>* new_faces,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-vertices_to_newly_created_vertices,
-std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-edges_to_newly_created_vertices);
-
-template void ConstructTriangleHalfspaceIntersectionPolygon(
-    const std::vector<SurfaceVertex<AutoDiffXd>>& vertices_F,
-const SurfaceFace& triangle,
-const internal::PosedHalfSpace<AutoDiffXd>& half_space_F,
-    std::vector<SurfaceVertex<AutoDiffXd>>* new_vertices_F,
-std::vector<SurfaceFace>* new_faces,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-vertices_to_newly_created_vertices,
-std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-edges_to_newly_created_vertices);
-
-}  // namespace internal
-
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<T>& input_mesh_F,
-    const internal::PosedHalfSpace<T>& half_space_F) {
+    const SurfaceMesh<T>& input_mesh_F, const PosedHalfSpace<T>& half_space_F) {
   std::vector<SurfaceVertex<T>> new_vertices_F;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
@@ -272,14 +247,35 @@ SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
   return SurfaceMesh<T>(std::move(new_faces), std::move(new_vertices_F));
 }
 
+template void ConstructTriangleHalfspaceIntersectionPolygon(
+    const std::vector<SurfaceVertex<double>>& vertices_F,
+    const SurfaceFace& triangle, const PosedHalfSpace<double>& half_space_F,
+    std::vector<SurfaceVertex<double>>* new_vertices_F,
+    std::vector<SurfaceFace>* new_faces,
+    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
+        vertices_to_newly_created_vertices,
+    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
+        edges_to_newly_created_vertices);
+
+template void ConstructTriangleHalfspaceIntersectionPolygon(
+    const std::vector<SurfaceVertex<AutoDiffXd>>& vertices_F,
+    const SurfaceFace& triangle, const PosedHalfSpace<AutoDiffXd>& half_space_F,
+    std::vector<SurfaceVertex<AutoDiffXd>>* new_vertices_F,
+    std::vector<SurfaceFace>* new_faces,
+    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
+        vertices_to_newly_created_vertices,
+    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
+        edges_to_newly_created_vertices);
+
 template SurfaceMesh<double> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
-    const internal::PosedHalfSpace<double>& half_space_F);
+    const PosedHalfSpace<double>& half_space_F);
 
 template SurfaceMesh<AutoDiffXd>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<AutoDiffXd>& input_mesh_F,
-    const internal::PosedHalfSpace<AutoDiffXd>& half_space_F);
+    const PosedHalfSpace<AutoDiffXd>& half_space_F);
 
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

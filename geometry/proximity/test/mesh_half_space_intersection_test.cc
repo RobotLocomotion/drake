@@ -7,9 +7,8 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
 namespace {
-
-using internal::PosedHalfSpace;
 
 template <typename T>
 class MeshHalfspaceIntersectionTest : public ::testing::Test {
@@ -575,5 +574,6 @@ typedef ::testing::Types<double, AutoDiffXd> MyTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfspaceIntersectionTest, MyTypes);
 
 }  // namespace
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
