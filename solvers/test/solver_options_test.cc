@@ -22,8 +22,8 @@ GTEST_TEST(SolverOptionsTest, ToString) {
   dut.SetOption(id2, "some_int", "3");
   dut.SetOption(id2, "some_string", "foo");
 
-  dut.SetOption(DrakeSolverOption::kPrintFileName, "foo.txt");
-  dut.SetOption(DrakeSolverOption::kPrintToConsole, 0);
+  dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
+  dut.SetOption(CommonSolverOption::kPrintToConsole, 0);
 
   EXPECT_EQ(to_string(dut),
             "{SolverOptions,"
@@ -32,8 +32,13 @@ GTEST_TEST(SolverOptionsTest, ToString) {
             " id1:some_int=2,"
             " id2:some_int=3,"
             " id2:some_string=foo,"
-            " print file name=foo.txt,"
-            " print to console=0}");
+            " kPrintFileName=foo.txt,"
+            " kPrintToConsole=0}");
+
+  const std::unordered_map<CommonSolverOption, int> int_options =
+      dut.GetOptions<int>();
+  EXPECT_EQ(int_options.size(), 1);
+  EXPECT_EQ(int_options.at(CommonSolverOption::kPrintToConsole), 0);
 }
 
 GTEST_TEST(SolverOptionsTest, Ids) {
@@ -89,13 +94,13 @@ GTEST_TEST(SolverOptionsTest, Merge) {
   EXPECT_EQ(dut, dut_expected);
 
   // foo contains a non-empty drake_solver_option map
-  foo.SetOption(DrakeSolverOption::kPrintFileName, "bar.txt");
+  foo.SetOption(CommonSolverOption::kPrintFileName, "bar.txt");
   dut.Merge(foo);
-  dut_expected.SetOption(DrakeSolverOption::kPrintFileName, "bar.txt");
+  dut_expected.SetOption(CommonSolverOption::kPrintFileName, "bar.txt");
   EXPECT_EQ(dut, dut_expected);
 
   // Duplicate drake_solver_option map, no-op.
-  foo.SetOption(DrakeSolverOption::kPrintFileName, "bar_new.txt");
+  foo.SetOption(CommonSolverOption::kPrintFileName, "bar_new.txt");
   dut.Merge(foo);
   EXPECT_EQ(dut, dut_expected);
 }

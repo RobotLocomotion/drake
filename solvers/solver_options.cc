@@ -34,7 +34,7 @@ void SolverOptions::SetOption(const SolverId& solver_id,
   solver_options_str_[solver_id][solver_option] = option_value;
 }
 
-void SolverOptions::SetOption(DrakeSolverOption key, double) {
+void SolverOptions::SetOption(CommonSolverOption key, double) {
   switch (key) {
     default:
       throw std::runtime_error(fmt::format(
@@ -43,14 +43,14 @@ void SolverOptions::SetOption(DrakeSolverOption key, double) {
   }
 }
 
-void SolverOptions::SetOption(DrakeSolverOption key, int value) {
+void SolverOptions::SetOption(CommonSolverOption key, int value) {
   switch (key) {
-    case DrakeSolverOption::kPrintToConsole:
+    case CommonSolverOption::kPrintToConsole:
       if (value != 0 && value != 1) {
         throw std::runtime_error(
             fmt::format("{} expects value either 0 or 1", key));
       }
-      drake_solver_options_int_[key] = value;
+      common_solver_options_int_[key] = value;
       break;
     default:
       throw std::runtime_error(fmt::format(
@@ -59,10 +59,11 @@ void SolverOptions::SetOption(DrakeSolverOption key, int value) {
   }
 }
 
-void SolverOptions::SetOption(DrakeSolverOption key, const std::string& value) {
+void SolverOptions::SetOption(CommonSolverOption key,
+                              const std::string& value) {
   switch (key) {
-    case DrakeSolverOption::kPrintFileName:
-      drake_solver_options_str_[key] = value;
+    case CommonSolverOption::kPrintFileName:
+      common_solver_options_str_[key] = value;
       break;
     default:
       throw std::runtime_error(fmt::format(
@@ -120,8 +121,8 @@ void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
 }
 
 template <typename T>
-void MergeHelper(const std::unordered_map<DrakeSolverOption, T>& other,
-                 std::unordered_map<DrakeSolverOption, T>* self) {
+void MergeHelper(const std::unordered_map<CommonSolverOption, T>& other,
+                 std::unordered_map<CommonSolverOption, T>* self) {
   for (const auto& other_keyval : other) {
     // This is a no-op when the key already exists.
     self->insert(other_keyval);
@@ -133,20 +134,21 @@ void SolverOptions::Merge(const SolverOptions& other) {
   MergeHelper(other.solver_options_double_, &solver_options_double_);
   MergeHelper(other.solver_options_int_, &solver_options_int_);
   MergeHelper(other.solver_options_str_, &solver_options_str_);
-  MergeHelper<int>(other.drake_solver_options_int_, &drake_solver_options_int_);
-  MergeHelper<double>(other.drake_solver_options_double_,
-                      &drake_solver_options_double_);
-  MergeHelper<std::string>(other.drake_solver_options_str_,
-                           &drake_solver_options_str_);
+  MergeHelper<int>(other.common_solver_options_int_,
+                   &common_solver_options_int_);
+  MergeHelper<double>(other.common_solver_options_double_,
+                      &common_solver_options_double_);
+  MergeHelper<std::string>(other.common_solver_options_str_,
+                           &common_solver_options_str_);
 }
 
 bool SolverOptions::operator==(const SolverOptions& other) const {
   return solver_options_double_ == other.solver_options_double_ &&
          solver_options_int_ == other.solver_options_int_ &&
          solver_options_str_ == other.solver_options_str_ &&
-         drake_solver_options_double_ == other.drake_solver_options_double_ &&
-         drake_solver_options_int_ == other.drake_solver_options_int_ &&
-         drake_solver_options_str_ == other.drake_solver_options_str_;
+         common_solver_options_double_ == other.common_solver_options_double_ &&
+         common_solver_options_int_ == other.common_solver_options_int_ &&
+         common_solver_options_str_ == other.common_solver_options_str_;
 }
 
 bool SolverOptions::operator!=(const SolverOptions& other) const {
@@ -165,7 +167,7 @@ void Summarize(const SolverId& id,
 }
 
 template <typename T>
-void Summarize(const std::unordered_map<DrakeSolverOption, T>& keyvals,
+void Summarize(const std::unordered_map<CommonSolverOption, T>& keyvals,
                std::map<std::string, std::string>* pairs) {
   for (const auto& keyval : keyvals) {
     (*pairs)[fmt::format("{}", keyval.first)] =
@@ -235,47 +237,20 @@ void SolverOptions::CheckOptionKeysForSolver(
                                  solver_id.name());
 }
 
-const std::unordered_map<std::string, double>& SolverOptions::GetOptionsImpl(
-    const SolverId& solver_id, double*) const {
-  return GetOptionsDouble(solver_id);
-}
-const std::unordered_map<std::string, int>& SolverOptions::GetOptionsImpl(
-    const SolverId& solver_id, int*) const {
-  return GetOptionsInt(solver_id);
-}
-const std::unordered_map<std::string, std::string>&
-SolverOptions::GetOptionsImpl(const SolverId& solver_id, std::string*) const {
-  return GetOptionsStr(solver_id);
-}
-
-const std::unordered_map<DrakeSolverOption, double>&
+const std::unordered_map<CommonSolverOption, double>&
 SolverOptions::GetOptionsDouble() const {
-  return drake_solver_options_double_;
+  return common_solver_options_double_;
 }
 
-const std::unordered_map<DrakeSolverOption, int>& SolverOptions::GetOptionsInt()
-    const {
-  return drake_solver_options_int_;
+const std::unordered_map<CommonSolverOption, int>&
+SolverOptions::GetOptionsInt() const {
+  return common_solver_options_int_;
 }
 
-const std::unordered_map<DrakeSolverOption, std::string>&
+const std::unordered_map<CommonSolverOption, std::string>&
 SolverOptions::GetOptionsStr() const {
-  return drake_solver_options_str_;
+  return common_solver_options_str_;
 }
 
-const std::unordered_map<DrakeSolverOption, double>&
-SolverOptions::GetOptionsImpl(double*) const {
-  return drake_solver_options_double_;
-}
-
-const std::unordered_map<DrakeSolverOption, int>& SolverOptions::GetOptionsImpl(
-    int*) const {
-  return drake_solver_options_int_;
-}
-
-const std::unordered_map<DrakeSolverOption, std::string>&
-SolverOptions::GetOptionsImpl(std::string*) const {
-  return drake_solver_options_str_;
-}
 }  // namespace solvers
 }  // namespace drake

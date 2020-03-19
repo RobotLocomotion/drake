@@ -6,7 +6,7 @@
 #include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/drake_solver_options.h"
+#include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/solver_id.h"
 
 namespace drake {
@@ -57,11 +57,22 @@ class SolverOptions {
   void SetOption(const SolverId& solver_id, const std::string& solver_option,
                  const std::string& option_value);
 
-  void SetOption(DrakeSolverOption key, const std::string& value);
+  /// @anchor set_common_option
+  /// @name SetCommonOption
+  /// Set common options for all solvers supporting that option (for example,
+  /// printing the progress in each iteration). If the solver doesn't support
+  /// the option, the option is ignored.
+  //@{
 
-  void SetOption(DrakeSolverOption key, int value);
+  /// See @ref set_common_option for more information.
+  void SetOption(CommonSolverOption key, const std::string& value);
 
-  void SetOption(DrakeSolverOption key, double value);
+  /// See @ref set_common_option for more information.
+  void SetOption(CommonSolverOption key, int value);
+
+  /// See @ref set_common_option for more information.
+  void SetOption(CommonSolverOption key, double value);
+  //@}
 
   const std::unordered_map<std::string, double>& GetOptionsDouble(
       const SolverId& solver_id) const;
@@ -73,33 +84,52 @@ class SolverOptions {
       const SolverId& solver_id) const;
 
   /**
-   * Get the common options for all solvers. Refer to DrakeSolverOption for more
-   * details.
+   * Gets the common options for all solvers. Refer to CommonSolverOption for
+   * more details.
    */
-  const std::unordered_map<DrakeSolverOption, double>& GetOptionsDouble() const;
+  const std::unordered_map<CommonSolverOption, double>& GetOptionsDouble()
+      const;
 
   /**
-   * Get the common options for all solvers. Refer to DrakeSolverOption for more
-   * details.
+   * Gets the common options for all solvers. Refer to CommonSolverOption for
+   * more details.
    */
-  const std::unordered_map<DrakeSolverOption, int>& GetOptionsInt() const;
+  const std::unordered_map<CommonSolverOption, int>& GetOptionsInt() const;
 
   /**
-   * Get the common options for all solvers. Refer to DrakeSolverOption for more
-   * details.
+   * Gets the common options for all solvers. Refer to CommonSolverOption for
+   * more details.
    */
-  const std::unordered_map<DrakeSolverOption, std::string>& GetOptionsStr()
+  const std::unordered_map<CommonSolverOption, std::string>& GetOptionsStr()
       const;
 
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(
       const SolverId& solver_id) const {
-    return GetOptionsImpl(solver_id, static_cast<T*>(nullptr));
+    if constexpr (std::is_same_v<T, double>) {
+      return GetOptionsDouble(solver_id);
+    } else if constexpr (std::is_same_v<T, int>) {
+      return GetOptionsInt(solver_id);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+      return GetOptionsStr(solver_id);
+    }
+    DRAKE_UNREACHABLE();
   }
 
+  /**
+   * Gets the common option for all solvers.
+   * @tparam T can be either int, double or std::string.
+   */
   template <typename T>
-  const std::unordered_map<std::string, T>& GetOptions() const {
-    return GetOptionsImpl(static_cast<T*>(nullptr));
+  const std::unordered_map<CommonSolverOption, T>& GetOptions() const {
+    if constexpr (std::is_same_v<T, double>) {
+      return GetOptionsDouble();
+    } else if constexpr (std::is_same_v<T, int>) {
+      return GetOptionsInt();
+    } else if constexpr (std::is_same_v<T, std::string>) {
+      return GetOptionsStr();
+    }
+    DRAKE_UNREACHABLE();
   }
 
   /** Returns the IDs that have any option set. */
@@ -141,18 +171,6 @@ class SolverOptions {
       const std::unordered_set<std::string>& allowable_str_keys) const;
 
  private:
-  const std::unordered_map<std::string, double>& GetOptionsImpl(
-      const SolverId& solver_id, double*) const;
-  const std::unordered_map<std::string, int>& GetOptionsImpl(
-      const SolverId& solver_id, int*) const;
-  const std::unordered_map<std::string, std::string>& GetOptionsImpl(
-      const SolverId& solver_id, std::string*) const;
-  const std::unordered_map<DrakeSolverOption, double>& GetOptionsImpl(
-      double*) const;
-  const std::unordered_map<DrakeSolverOption, int>& GetOptionsImpl(int*) const;
-  const std::unordered_map<DrakeSolverOption, std::string>& GetOptionsImpl(
-      std::string*) const;
-
   std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
   std::unordered_map<SolverId, std::unordered_map<std::string, int>>
@@ -160,10 +178,11 @@ class SolverOptions {
   std::unordered_map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
 
-  std::unordered_map<DrakeSolverOption, double> drake_solver_options_double_{};
-  std::unordered_map<DrakeSolverOption, int> drake_solver_options_int_{};
-  std::unordered_map<DrakeSolverOption, std::string>
-      drake_solver_options_str_{};
+  std::unordered_map<CommonSolverOption, double>
+      common_solver_options_double_{};
+  std::unordered_map<CommonSolverOption, int> common_solver_options_int_{};
+  std::unordered_map<CommonSolverOption, std::string>
+      common_solver_options_str_{};
 };
 
 std::string to_string(const SolverOptions&);
