@@ -93,8 +93,7 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   // TODO(russt): Remove ToExpression below pending resolution of #12833.
   prog.AddSosConstraint(
       ((V_balanced - rho) * Polynomial(pow((x.transpose() * x)[0], d)) -
-       lambda * Vdot_balanced)
-          .ToExpression());
+       lambda * Vdot_balanced));
 
   // If Vdot is indefinite, then the linearization does not inform us about the
   // local stability.  Add "lambda(x) is SOS" to confirm this local stability.
