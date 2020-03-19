@@ -20,6 +20,12 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
    * Constrain that the distance between a point P1 attached to frame B1 and
    * another point P2 attached to frame B2 is within the range [distance_lower,
    * distance_upper].
+   * Mathematically, we impose the constraint
+   * distance_lower² <= distance(P1, P2)² <= distance_upper².
+   * We impose the constraint on the distance square instead of distance
+   * directly, because the gradient of distance is not well defined at
+   * distance=0, the the gradient of the distance square is well defined
+   * everywhere.
    * @param plant The MultibodyPlant on which the constraint is imposed. `plant`
    * should be alive during the lifetime of this constraint.
    * @param frame1 The frame in which P1 is attached to.
