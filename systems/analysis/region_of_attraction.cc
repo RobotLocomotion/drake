@@ -90,11 +90,9 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
 
   // Want (V-rho)(x'x)^d and Lambda*Vdot to be the same degree.
   const int d = std::floor((lambda_degree + Vdot_degree - V_degree) / 2);
-  // TODO(russt): Remove ToExpression below pending resolution of #12833.
   prog.AddSosConstraint(
       ((V_balanced - rho) * Polynomial(pow((x.transpose() * x)[0], d)) -
-       lambda * Vdot_balanced)
-          .ToExpression());
+       lambda * Vdot_balanced));
 
   // If Vdot is indefinite, then the linearization does not inform us about the
   // local stability.  Add "lambda(x) is SOS" to confirm this local stability.
