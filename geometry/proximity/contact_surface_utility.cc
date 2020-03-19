@@ -1,13 +1,126 @@
 #include "drake/geometry/proximity/contact_surface_utility.h"
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 namespace drake {
+
 namespace geometry {
 namespace internal {
+namespace {
+
+/* Utility for CalcPolygonCentroid() to evaluate the correctness of the inputs
+ to CalcPolygonCentroid(). CalcPolygonCentroid() uses area computations to
+ compute the centroid position and this method verifies that the parameter
+ values are consistent with that effort. It throws only if the parameters
+ would prevent that function from computing meaningful areas. The following
+ conditions are cases in which that would occur.
+
+   1. If the normal is "too short" -- approximately zero. Technically, non-zero
+      vectors would be sufficient, but we want to make sure the caller is
+      passing vectors they have confidence in and not rounding error-derived
+      vectors.
+   2. The polygon vertices are not planar.
+   3. The normal is "insufficiently" perpendicular to the polygon plane. If the
+      normal is parallel with the polygon plane, area will be _incorrectly_
+      calculated to be zero. Perpendicularity prevents that.
+      CalcPolygonCentroid() is documented as requiring a truly perpendicular.
+      normal In practice it is not necessary; we just need the normal to clearly
+      not lie on the polygon's plane. So, to be friendly we allow a fair amount
+      of tolerance under the hood, knowing we can always tighten it later.
+
+  NOTE: If the polygon is shown to be degenerate (having zero area), we don't
+  have to care about #3 above. This is because, even if the normal is parallel,
+  the resultant zero area is correct. So, if the end result is unaffected, it's
+  not worth throwing.
+  */
+template <typename T>
+void ThrowIfInvalidForCentroid(const char* prefix,
+                     const std::vector<SurfaceVertexIndex>& polygon,
+                     const Vector3<T>& n_F,
+                     const std::vector<SurfaceVertex<T>>& vertices_F) {
+  // TODO(SeanCurtis-TRI): Consider also validating convexity.
+
+  // First test for sufficient length.
+  if (n_F.norm() < 1e-10) {
+    throw std::runtime_error(fmt::format(
+        "{}: given normal is too small; normal [{}] with length {}",
+        prefix, n_F.transpose(), n_F.norm()));
+  }
+
+  // Now test for orthogonality.
+  // We have no assurance as to the degeneracy of the input polygon. Inferring
+  // the true polygon normal can be algorithmically tricky -- which three
+  // vertices span the plane (if any)?
+  // There's a plane equation (n⃗ ⋅ x⃗ + d = 0) that must be true for every point
+  // in the polygon. Expressed in linear algebra it looks like this:
+  //
+  //  │ x₁ y₁ z₁ 1 │ │ nx │   │ 0 │
+  //  │ ...        │⋅│ ny │ = │ ┇ │
+  //  │ xₙ yₙ zₙ 1 │ │ nz │   │ 0 │
+  //                 │ d  │
+  //
+  //  This is simply Ax = 0
+  //
+  // So, the plane normal can be extracted from the null space of A.
+  // We have the following possible outcomes:
+  //
+  //   - The null space is *only* the zero vector; the vertices aren't planar.
+  //   - The null space has a basis with multiple vectors; the polygon is
+  //     degenerate and doesn't define a plane. It has zero area and we don't
+  //     care about the normal.
+  //   - the null space has a single, non-zero basis vector; this is the plane
+  //     equation and we can extract the normal from it.
+  MatrixX<T> A;
+  const int v_count = static_cast<int>(polygon.size());
+  A.resize(v_count, 4);
+  for (int i = 0; i < v_count; ++i) {
+    const Vector3<T>& v = vertices_F[polygon[i]].r_MV();
+    A.block(i, 0, 1, 4) << v(0), v(1), v(2), 1;
+  }
+
+  Eigen::FullPivLU<MatrixX<T>> lu(A);
+
+  if (lu.dimensionOfKernel() == 0) {
+    // A kernel with dimension equal to zero implies the null space consists of
+    // a single point.
+    // https://eigen.tuxfamily.org/dox/classEigen_1_1FullPivLU.html
+    throw std::runtime_error(
+        fmt::format("{}: input polygon is not planar", prefix));
+  }
+
+  if (lu.dimensionOfKernel() > 1) {
+    // This is a degenerate (zero-area) polygon. The normal really won't matter.
+    return;
+  }
+
+  // The kernel is the null space of A. We know it has a single vector and we
+  // take the first three entries as the normal.
+  const Vector3<T> plane_norm = lu.kernel().block(0, 0, 3, 1).normalized();
+
+  // We've stated "@pre n_F is perpendicular to polygon". This is sleight of
+  // hand so the caller makes an effort. In practice,  as long as we're well
+  // away from co-planar, the answer is fine. So, we'll test it against a
+  // large cone (with an approximately 90-degree angle). We  can always tighten
+  // it later, if necessary.
+
+  // NOTE: We have no guarantee that n_F and plane_norm are pointing to the same
+  // side of the polygon plane, simply throw out the sign of the dot product.
+  using std::abs;
+  if (abs(plane_norm.dot(n_F.normalized())) < 0.7071) {
+    throw std::runtime_error(
+        fmt::format("{}: the given normal is not perpendicular to the "
+                    "polygon's plane; given normal: [{}], plane normal: [{}]",
+                    prefix, n_F.transpose(), plane_norm.transpose()));
+  }
+}
+
+}  // namespace
 
 template <typename T>
 Vector3<T> CalcPolygonCentroid(
     const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<T>& nhat_F,
+    const Vector3<T>& n_F,
     const std::vector<SurfaceVertex<T>>& vertices_F) {
   // The position of the geometric centroid can be computed by decomposing the
   // polygon into triangles and performing an area-weighted average of each of
@@ -15,6 +128,8 @@ Vector3<T> CalcPolygonCentroid(
   // See https://en.wikipedia.org/wiki/Centroid#By_geometric_decomposition.
   const int v_count = static_cast<int>(polygon.size());
   DRAKE_DEMAND(v_count >= 3);
+  DRAKE_ASSERT_VOID(ThrowIfInvalidForCentroid("CalcPolygonCentroid", polygon,
+                                              n_F, vertices_F));
 
   using V = SurfaceVertexIndex;
 
@@ -34,31 +149,25 @@ Vector3<T> CalcPolygonCentroid(
   //   triangle 0: v0, v1, v2
   //   triangle 1: v0, v2, v3
   //   etc.
-  // The polygon centroid is: ∑(kAᵢ * centroidᵢ) / ∑kAᵢ, where Aᵢ and centroidᵢ
-  // are the area and centroid of the ith triangle in the fan. We can use the
-  // area up to any scale (k != 0) because that scale factor gets divided right
-  // back out.
+  // The polygon centroid is a weighted average of each triangle's centroid:
+  // ∑(Aᵢ * centroidᵢ) / ∑Aᵢ, where Aᵢ and centroidᵢ
+  // are the area and centroid of the ith triangle in the fan.
 
-  // This computes an area-based weight. In the purest form, the magnitude of
-  // the cross product is twice the area of the triangle. The value returned is
-  // a scaled area based on two factors:
-  //   - We don't need the actual area; any non-zero scale of the area would
-  //     work just fine.
-  //   - the normal (nhat_F) while documented as unit length may not actually
-  //     be. However, for a planar polygon, each decomposed triangle should
-  //     produce a parallel cross product and dotting each of those with an
-  //     _arbitrary_ normal direction simply further scales the area by
-  //     another constant, leaving the relative weights the same.
-  auto triangle_weight = [&vertices_F, &nhat_F](V v0, V v1, V v2) {
+  // We're not using actual triangle area as our weight. We're using some
+  // arbitrary scale of area, k. However,
+  // ∑(Aᵢ * centroidᵢ) / ∑Aᵢ = ∑(kAᵢ * centroidᵢ) / ∑kAᵢ, k != 0.
+  // The value of k comes from the scale and orientation of n_F.
+  auto triangle_weight = [&vertices_F, &n_F](V v0, V v1, V v2) {
     const Vector3<T>& r_MV0 = vertices_F[v0].r_MV();
     const Vector3<T>& r_MV1 = vertices_F[v1].r_MV();
     const Vector3<T>& r_MV2 = vertices_F[v2].r_MV();
-    return (r_MV1 - r_MV0).cross(r_MV2 - r_MV0).dot(nhat_F);
+    return (r_MV1 - r_MV0).cross(r_MV2 - r_MV0).dot(n_F);
   };
 
   Vector3<T> p_FC_accum = Vector3<T>::Zero();
   T total_weight{0};
 
+  // Create the triangle fan about v0 described above.
   const V v0 = polygon[0];
   V v2 = polygon[1];
   for (int i = 2; i < v_count; ++i) {
@@ -69,23 +178,33 @@ Vector3<T> CalcPolygonCentroid(
     total_weight += weight;
   }
 
+  if (total_weight == 0) {
+    // The polygon is degenerate with no area. In that case, we'll simply
+    // define the centroid as the average vertex position. (Alternatively we
+    // could just *pick* one of the vertices.
+    p_FC_accum = Vector3<T>::Zero();
+    for (int i = 0; i < v_count; ++i) {
+      p_FC_accum += vertices_F[polygon[i]].r_MV();
+    }
+    total_weight = v_count;
+  }
+
   return p_FC_accum / total_weight;
 }
 
 template <typename T>
 void AddPolygonToMeshData(
     const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<T>& nhat_F,
+    const Vector3<T>& n_F,
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<T>>* vertices_F) {
   DRAKE_DEMAND(faces != nullptr);
   DRAKE_DEMAND(vertices_F != nullptr);
   DRAKE_DEMAND(polygon.size() >= 3);
 
-  // We're going to create a triangle fan for the polygon. This requires adding
-  // a new vertex at the polygon's geometric centroid (which is the centroid
-  // for this "uniform material" polygon).
-  Vector3<T> p_FC = CalcPolygonCentroid(polygon, nhat_F, *vertices_F);
+  // The polygon will be represented by an equivalent triangle fan around the
+  // polygon's centroid. This requires add a new vertex: the centroid.
+  Vector3<T> p_FC = CalcPolygonCentroid(polygon, n_F, *vertices_F);
   const SurfaceVertexIndex centroid_index(vertices_F->size());
   vertices_F->emplace_back(p_FC);
 
@@ -104,19 +223,31 @@ void AddPolygonToMeshData(
   }
 }
 
+// Instantiation to facilitate unit testing of this support function.
 template
 Vector3<double> CalcPolygonCentroid(
     const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<double>& nhat_F,
+    const Vector3<double>& n_F,
     const std::vector<SurfaceVertex<double>>& vertices_F);
 
 template
-void AddPolygonToMeshData(
+Vector3<AutoDiffXd> CalcPolygonCentroid(
     const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<double>& nhat_F,
+    const Vector3<AutoDiffXd>& n_F,
+    const std::vector<SurfaceVertex<AutoDiffXd>>& vertices_F);
+
+template void AddPolygonToMeshData(
+    const std::vector<SurfaceVertexIndex>& polygon,
+    const Vector3<double>& n_F,
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<double>>* vertices_F);
-    
+
+template void AddPolygonToMeshData(
+    const std::vector<SurfaceVertexIndex>& polygon,
+    const Vector3<AutoDiffXd>& n_F,
+    std::vector<SurfaceFace>* faces,
+    std::vector<SurfaceVertex<AutoDiffXd>>* vertices_F);
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

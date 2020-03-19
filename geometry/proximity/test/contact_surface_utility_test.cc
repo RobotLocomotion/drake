@@ -7,7 +7,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -174,6 +176,106 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
   }
 }
 
+// The centroid for a zero-area polygon is problematic; the area-weighted
+// calculation means that the weights are zero and the total weight is zero.
+// This would give us a centroid consisting of NaNs. This confirms that the
+// value is:
+//   a) _not_ NaN
+//   b) the average vertex position.
+//
+// Note: this test is done without any particular frame noted because the frame
+// is irrelevant. The vertex positions imply a frame and the centroid is
+// computed in that same frame.
+TEST_F(ContactSurfaceUtilityTest, ZeroAreaPolygon) {
+  using V = SurfaceVertex<double>;
+  using VIndex = SurfaceVertexIndex;
+  constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
+
+  // We'll use two primitives from two points:
+  // Triangle: (a, a, b)
+  // Quad: (a, a, b, b)
+  const vector<V> vertices{V{Vector3d{0.25, 1.5, -3}},
+                           V{Vector3d{-0.75, 0.25, 1.25}}};
+  const VIndex a{0};
+  const VIndex b{1};
+
+  const Vector3d p_AB = vertices[b].r_MV() - vertices[a].r_MV();
+  const Vector3d normal = Vector3d{0, p_AB(2), -p_AB(1)}.normalized();
+
+  {
+    const vector<VIndex> triangle{a, a, b};
+    const Vector3d centroid = CalcPolygonCentroid(triangle, normal, vertices);
+    const Vector3d expected_centroid =
+        (2 * vertices[a].r_MV() + vertices[b].r_MV()) / 3.0;
+    EXPECT_TRUE(CompareMatrices(centroid, expected_centroid, kEps));
+  }
+
+  {
+    const vector<VIndex> quad{a, a, b, b};
+    const Vector3d centroid = CalcPolygonCentroid(quad, normal, vertices);
+    const Vector3d expected_centroid =
+        (2 * vertices[a].r_MV() + 2 * vertices[b].r_MV()) / 4;
+    EXPECT_TRUE(CompareMatrices(centroid, expected_centroid, kEps));
+  }
+}
+
+// This confirms that with assertions armed, non-planar polygons are detected.
+TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
+  using V = SurfaceVertex<double>;
+  using VIndex = SurfaceVertexIndex;
+  constexpr double kEps = 11 * std::numeric_limits<double>::epsilon();
+  if (kDrakeAssertIsArmed) {
+    const Vector3d Mz = Vector3d::UnitZ();
+    const vector<V> vertices_M{
+        V{Vector3d{-1.5, -0.25, kEps}}, V{Vector3d{1, 0, -kEps}},
+        V{Vector3d{0.75, 1.25, -kEps}}, V{Vector3d{0, 1, -kEps}}};
+    const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(2), VIndex(3)};
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        CalcPolygonCentroid(quad, Mz, vertices_M), std::runtime_error,
+        "CalcPolygonCentroid: input polygon is not planar");
+  }
+}
+
+// This confirms that with assertions armed, normal perpendicularity is ignored
+// for degenerate polygons (lines and points).
+TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
+  using V = SurfaceVertex<double>;
+  using VIndex = SurfaceVertexIndex;
+
+  if (kDrakeAssertIsArmed) {
+    const vector<V> vertices_M{
+        V{Vector3d{-1.5, -0.25, 0}}, V{Vector3d{1, 0, 0}},
+        V{Vector3d{0.75, 1.25, 0}}, V{Vector3d{0, 1, 0}}};
+    const Vector3d My = Vector3d::UnitY();
+
+    {
+      // Base case: polygon is _not_ degenerate, but the normal is parallel
+      // with the polygon's plane; it throws.
+      const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(2), VIndex(3)};
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CalcPolygonCentroid(quad, My, vertices_M), std::runtime_error,
+          "CalcPolygonCentroid: the given normal is not perpendicular to the "
+          "polygon's plane.*");
+    }
+
+    // In this case, we're just confirming that the parallel normal doesn't
+    // throw with assert armed -- because the degeneracy is more important. The
+    // actual behavior of what it does with assert _unarmed_ is handled in the
+    // PolygonCentroidTest_NormalUse test.
+    {
+      // Case: same normal, subset of the vertices span a line.
+      const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(1), VIndex(0)};
+      EXPECT_NO_THROW(CalcPolygonCentroid(quad, My, vertices_M));
+    }
+
+    {
+      // Case: same normal, subset of the vertices span a point.
+      const vector<VIndex> quad{VIndex(0), VIndex(0), VIndex(0), VIndex(0)};
+      EXPECT_NO_THROW(CalcPolygonCentroid(quad, My, vertices_M));
+    }
+  }
+}
+
 // This confirms several invariants on the input normal.
 //
 //   1. The scale of the normal doesn't particularly matter.
@@ -197,24 +299,68 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
       vector<VIndex>{VIndex{0}, VIndex{1}, VIndex{2}}, vertices_M);
 
   {
-    // A zero vector is catastrophically bad; it produces a NaN centroid.
+    // A literal zero normal vector.
     const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{2}, VIndex{3}};
     Vector3d kZeroVec = Vector3d::Zero();
-    EXPECT_TRUE(CompareMatrices(
-        CalcPolygonCentroid(quad, kZeroVec, vertices_M),
-        Vector3d::Constant(std::numeric_limits<double>::quiet_NaN())));
+    if (kDrakeAssertIsArmed) {
+      // With assertions armed; we throw.
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CalcPolygonCentroid(quad, kZeroVec, vertices_M), std::runtime_error,
+          "CalcPolygonCentroid: given normal is too small; .*");
+    } else {
+      // Without assertions, we compute the average vertex position.
+      const Vector3d expected_centroid =
+          (vertices_M[quad[0]].r_MV() + vertices_M[quad[1]].r_MV() +
+           vertices_M[quad[2]].r_MV() + vertices_M[quad[3]].r_MV()) /
+          4;
+      EXPECT_TRUE(CompareMatrices(
+          CalcPolygonCentroid(quad, kZeroVec, vertices_M), expected_centroid));
+    }
+  }
+
+  {
+    // A close-to-zero normal vector.
+    const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{2}, VIndex{3}};
+    Vector3d kZeroVec{kEps, kEps, kEps};
+    if (kDrakeAssertIsArmed) {
+      // With assertions armed; we throw.
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CalcPolygonCentroid(quad, kZeroVec, vertices_M), std::runtime_error,
+          "CalcPolygonCentroid: given normal is too small; .*");
+    } else {
+      // Without assertions, we compute the triangle's centroid.
+      EXPECT_TRUE(CompareMatrices(
+          CalcPolygonCentroid(pseudo_triangle, kZeroVec, vertices_M),
+          p_MC_expected));
+    }
   }
 
   {
     // A "normal" parallel to the polygon's plane is bad.
-    // Note: for arbitrarily oriented polygon planes, this won't necessarily
-    // be the case because the cross product (in those cases) won't necessarily
-    // produce a vector that is *perfectly* perpendicular to the normal. In
-    // many of those cases, we may still provide a reasonable answer.
     const Vector3d Fy{0, 1, 0};
-    EXPECT_TRUE(CompareMatrices(
-        CalcPolygonCentroid(pseudo_triangle, Fy, vertices_M),
-        Vector3d::Constant(-std::numeric_limits<double>::quiet_NaN())));
+    if (kDrakeAssertIsArmed) {
+      // With assertions armed; we throw.
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CalcPolygonCentroid(pseudo_triangle, Fy, vertices_M),
+          std::runtime_error,
+          "CalcPolygonCentroid: the given normal is not perpendicular to the "
+          "polygon's plane.*");
+    } else {
+      // Without assertions, we compute the average vertex position.
+      // Note: Generally, it will be difficult produce a normal that is exactly
+      // parallel with the plane such that all of the dot products are exactly
+      // zero. In those cases, there will be non-zero weights and _a_ centroid
+      // will be computed. This tests the magical condition of exactly zero.
+      const Vector3d expected_centroid =
+          (vertices_M[pseudo_triangle[0]].r_MV() +
+           vertices_M[pseudo_triangle[1]].r_MV() +
+           vertices_M[pseudo_triangle[2]].r_MV() +
+           vertices_M[pseudo_triangle[3]].r_MV()) /
+          4;
+      EXPECT_TRUE(
+          CompareMatrices(CalcPolygonCentroid(pseudo_triangle, Fy, vertices_M),
+                          expected_centroid));
+    }
   }
 
   for (const auto& X_FM : X_FMs_) {
@@ -225,18 +371,20 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
     const Vector3d p_FC_expected = X_FM * p_MC_expected;
     const Vector3d& Mz_F = X_FM.rotation().matrix().col(2);
 
-    // A "normal" that is too long or too short still produce the right
-    // centroid.
-    EXPECT_TRUE(CompareMatrices(
-        CalcPolygonCentroid<double>(pseudo_triangle, 2 * Mz_F, vertices_F),
-        p_FC_expected, kEps));
-    EXPECT_TRUE(CompareMatrices(
-        CalcPolygonCentroid<double>(pseudo_triangle, 0.5 * Mz_F, vertices_F),
-        p_FC_expected, kEps));
+    if (kDrakeAssertIsDisarmed) {
+      // A "normal" that is too long or too short still produce the right
+      // centroid with assertions disarmed.
+      EXPECT_TRUE(CompareMatrices(
+          CalcPolygonCentroid<double>(pseudo_triangle, 2 * Mz_F, vertices_F),
+          p_FC_expected, kEps));
+      EXPECT_TRUE(CompareMatrices(
+          CalcPolygonCentroid<double>(pseudo_triangle, 0.5 * Mz_F, vertices_F),
+          p_FC_expected, kEps));
+    }
 
     // A "normal" that isn't perpendicular (and isn't parallel) works.
     const Vector3d My_F = X_FM.rotation().matrix().col(1);
-    const Vector3d not_normal_F = (2 * My_F + Mz_F).normalized();
+    const Vector3d not_normal_F = (My_F + 2 * Mz_F).normalized();
     // Larger epsilon reflects loss of precision as the "normal" becomes
     // less and less normal.
     EXPECT_TRUE(CompareMatrices(CalcPolygonCentroid<double>(
