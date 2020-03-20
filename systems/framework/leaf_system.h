@@ -1611,7 +1611,7 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const) const {
     return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc);
+        this, this, description, direction_type, calc);
   }
 
   /// Constructs the witness function with the given description (used primarily
@@ -1650,7 +1650,7 @@ class LeafSystem : public System<T> {
     PublishEvent<T> publish_event(fn);
     publish_event.set_trigger_type(TriggerType::kWitness);
     return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc, publish_event.Clone());
+        this, this, description, direction_type, calc, publish_event.Clone());
   }
 
   /// Constructs the witness function with the given description (used primarily
@@ -1678,7 +1678,7 @@ class LeafSystem : public System<T> {
     DiscreteUpdateEvent<T> du_event(fn);
     du_event.set_trigger_type(TriggerType::kWitness);
     return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc, du_event.Clone());
+        this, this, description, direction_type, calc, du_event.Clone());
   }
 
   /// Constructs the witness function with the given description (used primarily
@@ -1706,7 +1706,7 @@ class LeafSystem : public System<T> {
     UnrestrictedUpdateEvent<T> uu_event(fn);
     uu_event.set_trigger_type(TriggerType::kWitness);
     return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc, uu_event.Clone());
+        this, this, description, direction_type, calc, uu_event.Clone());
   }
 
   /// Constructs the witness function with the given description (used primarily
@@ -1729,7 +1729,7 @@ class LeafSystem : public System<T> {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
     return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc, e.Clone());
+        this, this, description, direction_type, calc, e.Clone());
   }
 
   /// Constructs the witness function with the given description (used primarily

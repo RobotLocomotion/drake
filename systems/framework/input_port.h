@@ -190,6 +190,8 @@ class InputPort final : public InputPortBase {
                        data_type, size, random_type, std::move(eval)),
         system_(*system) {
     DRAKE_DEMAND(system != nullptr);
+    // Check the precondition on identical parameters; note that comparing as
+    // void* is only valid because we have single inheritance.
     DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
   }
 

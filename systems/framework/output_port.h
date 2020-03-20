@@ -192,6 +192,8 @@ class OutputPort : public OutputPortBase {
       : OutputPortBase(system_interface, std::move(name), index, ticket,
                        data_type, size),
         system_{*system} {
+    // Check the precondition on identical parameters; note that comparing as
+    // void* is only valid because we have single inheritance.
     DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
   }
 
