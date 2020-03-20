@@ -28,22 +28,22 @@ namespace systems {
  * This integrator requires a system of ordinary differential equations in
  * state `x = (q,v,z)` to be expressible in the following form:
  *
- *     q̇ = N(q) v;                            (1)
- *     ẏ = f_y(t,q,y),                        (2)
+ *     q̇ = N(q) v;                                   (1)
+ *     ẏ = f_y(t,q,y),                               (2)
  * where `q̇` and `v` are linearly related via the kinematic mapping `N(q)`,
  * `y = (v,z)`, and `f_y` is a function that can depend on the time and state.
  *
  * Implicit Euler uses the following update rule at time step n:
  *
- *     qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;            (3)
- *     yⁿ⁺¹ = yⁿ + h f_y(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).     (4)
+ *     qⁿ⁺¹ = qⁿ + h N(qⁿ⁺¹) vⁿ⁺¹;                   (3)
+ *     yⁿ⁺¹ = yⁿ + h f_y(tⁿ⁺¹,qⁿ⁺¹,yⁿ⁺¹).            (4)
  *
  * To solve the nonlinear system for `(qⁿ⁺¹,yⁿ⁺¹)`, the velocity-implicit Euler
  * integrator iterates with a modified Newton's method: At iteration `k`, it
  * finds a `(qₖ₊₁,yₖ₊₁)` that attempts to satisfy
  *
- *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.              (5)
- *     yₖ₊₁ = yⁿ + h f_y(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);     (6)
+ *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.                     (5)
+ *     yₖ₊₁ = yⁿ + h f_y(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);            (6)
  *
  * In this notation, the `n`'s index timesteps, while the `k`'s index the
  * specific Newton-Raphson iterations within each time step.
@@ -57,13 +57,13 @@ namespace systems {
  * To find a `(qₖ₊₁,yₖ₊₁)` that approximately satisfies (5-6), we linearize
  * the system (5-6) to compute a Newton step. Define
  *
- *     l(y) = f_y(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),     (7)
- *     Jₗ(y) = ∂l(y) / ∂y.                    (8)
+ *     l(y) = f_y(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),            (7)
+ *     Jₗ(y) = ∂l(y) / ∂y.                           (8)
  *
  * To advance the Newton step, the velocity-implicit Euler integrator solves
  * the following linear equation for `Δy`:
  *
- *     (I - h Jₗ) Δy = - R(yₖ),               (9)
+ *     (I - h Jₗ) Δy = - R(yₖ),                      (9)
  * where `R(y) = y - yⁿ - h l(y)` and `Δy = yₖ₊₁ - yₖ`. The `Δy` solution
  * directly gives us `yₖ₊₁`. It then substitutes the `vₖ₊₁` component of `yₖ₊₁`
  * in (5) to get `qₖ₊₁`.
@@ -76,18 +76,18 @@ namespace systems {
  * ### Error Estimation
  *
  * In this integrator, we simultaneously take a large step at the requested
- * step size of h as well as two half-sized steps each with step size h/2.
+ * step size of h as well as two half-sized steps each with step size `h/2`.
  * The result from two half-sized steps is propagated as the solution, while
  * the difference between the two results is used as the error estimate for the
  * propagated solution. This error estimate is accurate to the second order.
  *
- * To be precise, let x̅ⁿ⁺¹ be the computed solution from a large step, x̃ⁿ⁺¹
- * be the computed solution from two small steps, and xⁿ⁺¹ be the true
- * solution. Since the integrator propagates x̃ⁿ⁺¹ as its solution, we denote
- * the true error vector as ε = x̃ⁿ⁺¹ - xⁿ⁺¹. VelocityImplicitEulerIntegrator
- * uses ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, the difference between the two solutions, as the
- * second-order error estimate, because for a smooth system, ‖ε'‖ = O(h²), and
- * ‖ε - ε'‖ = O(h³). See the notes in
+ * To be precise, let `x̅ⁿ⁺¹` be the computed solution from a large step,
+ * `x̃ⁿ⁺¹` be the computed solution from two small steps, and `xⁿ⁺¹` be the true
+ * solution. Since the integrator propagates `x̃ⁿ⁺¹` as its solution, we denote
+ * the true error vector as `ε = x̃ⁿ⁺¹ - xⁿ⁺¹`. VelocityImplicitEulerIntegrator
+ * uses `ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹`, the difference between the two solutions, as the
+ * second-order error estimate, because for a smooth system, `‖ε'‖ = O(h²)`,
+ * and `‖ε - ε'‖ = O(h³)`. See the notes in
  * VelocityImplicitEulerIntegrator<T>::get_error_estimate_order() for a
  * detailed derivation of the error estimate's truncation error.
  *
@@ -137,16 +137,19 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   /**
    * Returns the asymptotic order of the difference between the large and small
-   * steps (from which the error estimate is computed), which is 2. The error
-   * estimate is accurate to within O(h³) of the true error.
+   * steps (from which the error estimate is computed), which is 2. That is, the
+   * error estimate, `ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹` has the property that `‖ε'‖ = O(h²)`,
+   * and it deviates from the true error, `ε`, by `‖ε - ε'‖ = O(h³)`. 
    * 
    * ### Derivation of the asymptotic order
    *
    * To derive the second-order error estimate, let us first define the vector-
    * valued function `e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ - xⁿ⁺¹`, the truncation error for a
    * single, full-sized velocity-implicit Euler integration step, with initial
-   * conditions `(tⁿ, xⁿ)`, and a step size of `h`.
-   * Furthermore, use `∇f` to denote the Jacobian df/dx.
+   * conditions `(tⁿ, xⁿ)`, and a step size of `h`. Furthermore, use `ẍ` to
+   * denote `df/dt`, and `∇f` and `∇ẍ` to denote the Jacobians `df/dx` and
+   * `dẍ/dx`. Note that `ẍ` uses a total time derivative, i.e.,
+   * `ẍ = ∂f/∂t + ∇f f`.
    *
    * Let us use `x*` to denote the true solution after a half-step, `x(tⁿ+½h)`,
    * and `x̃*` to denote the velocity-implicit Euler solution after a single
@@ -171,34 +174,41 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *            :
    *            xⁿ ───────  x*   ─────── xⁿ⁺¹  <─── true solution
    *
-   * Furthermore, we will use superscripts to denote evaluating an expression
-   * with x at that subscript and t at the corresponding time, e.g. `ẍⁿ`
-   * denotes `ẍ(tⁿ, xⁿ) = ∂f/∂tⁿ + ∇fⁿ fⁿ`, and `f*` denotes `f(tⁿ+½h, x*)`.
+   * We will use superscripts to denote evaluating an expression with `x` at
+   * that subscript and `t` at the corresponding time, e.g. `ẍⁿ` denotes
+   * `ẍ(tⁿ, xⁿ)`, and `f*` denotes `f(tⁿ+½h, x*)`.
    * 
    * Let us look at a single velocity-implicit Euler step. Upon Newton-Raphson
    * convergence, the truncation error for velocity-implicit Euler, which is the
    * same as the truncation error for implicit Euler (because both methods solve
    * Eqs. (3-4)), is
    *
-   *     e(tⁿ, tⁿ+h, xⁿ) = ½ h²ẍⁿ + O(h³).       (10)
+   *     e(tⁿ, tⁿ+h, xⁿ) = ½ h²ẍⁿ⁺¹ + O(h³)
+   *                     = ½ h²ẍⁿ + O(h³).           (10)
    *
-   * After one small half-sized step, the
-   * solution `x̃*` is
+   * To see why the two are equivalent, we can Taylor expand about `(tⁿ, xⁿ)`,
+   * 
+   *     xⁿ⁺¹ = xⁿ + h fⁿ + O(h²),  ==>  xⁿ⁺¹ - xⁿ = O(h),
+   *     ẍⁿ⁺¹ = ẍⁿ + h ∂ẍ/∂tⁿ + ∇ẍⁿ (xⁿ⁺¹ - xⁿ) + O(h (xⁿ⁺¹ - xⁿ)),
+   *     ẍⁿ⁺¹ - ẍⁿ = O(h).
+   *
+   * Moving on with our derivation, after one small half-sized implicit Euler
+   * step, the solution `x̃*` is
    *
    *     x̃* = x* + e(tⁿ, tⁿ+½h, xⁿ)
    *        = x* + (1/8) h²ẍⁿ + O(h³),
-   *     x̃* - x* = (1/8) h²ẍⁿ + O(h³).         (11)
+   *     x̃* - x* = (1/8) h²ẍⁿ + O(h³).               (11)
    *
-   *  Taylor
-   * expanding about `t = tⁿ+½h` in this alternate reality,
+   * Taylor expanding about `t = tⁿ+½h` in this `x = x̃*` alternate reality,
    *
-   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²).               (12)
+   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²). (12)
    *
-   * Similarly, Taylor expansions give us
+   * Similarly, Taylor expansions about `t = tⁿ+½h` and the true solution
+   * `x = x*` also give us
    *
-   *     xⁿ⁺¹ = x* + ½h f* + O(h²),               (13)
+   *     xⁿ⁺¹ = x* + ½h f* + O(h²),                  (13)
    *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* - x*)
-   *                   = f* + O(h²),              (14)
+   *                  = f* + O(h²),                  (14)
    * where in the last line we substituted Eq. (11).
    *
    * Eq. (12) minus Eq. (13) gives us,
@@ -207,50 +217,40 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *                 = x̃* - x* + O(h³),
    * where we just substituted in Eq. (14). Finally, substituting in Eq. (11),
    *
-   *     xⁿ*¹ - xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).       (15)
+   *     xⁿ*¹ - xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).           (15)
    *
    * After the second small step, the solution `x̃ⁿ⁺¹` is
    *
    *     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, tⁿ+h, x̃*)
-   *          = xⁿ*¹ + (1/8) h² ẍ(tⁿ+½h, x̃*) + O(h³).       (16)
+   *          = xⁿ*¹ + (1/8)h² ẍ(tⁿ+½h, x̃*) + O(h³). (16)
    *
-   * Taking Taylor expansions,
+   * Taking Taylor expansions about `(tⁿ, xⁿ)`,
    *
-   *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).                (17)
-   *     x̃* - xⁿ = (x̃* - x*) + (x* - xⁿ) = O(h),         (18)
-   * where we substituted in Eqs. (11) and (17),
+   *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).        (17)
+   *     x̃* - xⁿ = (x̃* - x*) + (x* - xⁿ) = O(h),     (18)
+   * where we substituted in Eqs. (11) and (17), and
+   * 
+   *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* - xⁿ) + O(h²)
+   *                  = ẍⁿ + O(h),                   (19)
+   * where we substituted in Eq. (18).
    *
-   *     ∂f/∂t(tⁿ+½h, x̃*) = ∂f/∂tⁿ + ½h ∂²f/∂t²ⁿ + ∇∂f/∂tⁿ (x̃* - xⁿ) + O(h²)
-   *                      = ∂f/∂tⁿ + O(h),                   (19)
-   * where we substituted in Eq. (18), and
+   * Substituting Eqs. (19) and (15) into Eq. (16),
    *
-   *     ∇f(tⁿ+½h, x̃*) = ∇fⁿ + ½h (∂/∂t)∇f(tⁿ+½h, x̃*) + ∇²fⁿ (x̃* - xⁿ) +
-   *                     O(h²)
-   *                   = ∇fⁿ + O(h),                         (20)
-   *     f(tⁿ+½h, x̃*)  = fⁿ + ½h ∂f/∂tⁿ + ∇fⁿ (x̃* - xⁿ)
-   *                   = fⁿ + O(h),                          (21)
-   * therefore,
-   *
-   *     ẍ(tⁿ+½h, x̃*) = ∂f/∂t(tⁿ+½h, x̃*) + ∇f(tⁿ+½h, x̃*) f(tⁿ+½h, x̃*)
-   *                  = ∂f/∂tⁿ + ∇fⁿ fⁿ + O(h) = ẍⁿ + O(h)   (22)
-   *
-   * Substituting (22) into (16),
-   *
-   *     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h² ẍⁿ + O(h³)
-   *          = xⁿ⁺¹ + (1/4) h² ẍⁿ + O(h³),
+   *     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h²ẍⁿ + O(h³)
+   *          = xⁿ⁺¹ + (1/4) h²ẍⁿ + O(h³),
    * therefore
    *
-   *     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).  (23)
+   *     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).      (20)
    *
-   * Subtracting Eq. (23) from Eq. (10),
+   * Subtracting Eq. (20) from Eq. (10),
    *
-   *     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h² ẍⁿ + O(h³),
-   *     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h² ẍⁿ + O(h³).
+   *     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h²ẍⁿ + O(h³),
+   *     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h²ẍⁿ + O(h³).
    *
-   * Since the first term on the RHS matches `ε` (Eq. (23)) and the LHS
+   * Since the first term on the RHS matches `ε` (Eq. (20)) and the LHS
    * matches `ε'`,
    *
-   *     ε' = ε + O(h³).                                     (24)
+   *     ε' = ε + O(h³).                              (21)
    */
   int get_error_estimate_order() const final { return 2; }
 
@@ -366,8 +366,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Jacobian, Jₗ(y), of the function l(y), used in this integrator's
   // residual computation, with respect to y, where y = (v,z) and x = (q,v,z).
   // This Jacobian is then defined as:
-  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
-  //     Jₗ(y) = ∂l(y)/∂y                       (8)
+  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)          (7)
+  //     Jₗ(y) = ∂l(y)/∂y                              (8)
   // We use the Jacobian computation scheme from
   // get_jacobian_computation_scheme(), which is either a first-order forward
   // difference, a second-order centered difference, or automatic
@@ -476,7 +476,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // This helper method evaluates the Newton-Raphson residual R(y), defined as
   // the following:
   //     R(y)  = y - yⁿ - h l(y),
-  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
+  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
   // with tⁿ⁺¹, y = (v, z), qₖ, qⁿ, yⁿ, and h passed in.
   // @param t refers to tⁿ⁺¹, the time at which to compute the residual R(y).
   // @param y is the generalized velocity and miscellaneous states around which
@@ -498,7 +498,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                               BasicVector<T>* qdot);
 
   // This helper method evaluates l(y), defined as the following:
-  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
+  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
   // with tⁿ⁺¹, y = (v, z), qₖ, qⁿ, yⁿ, and h passed in.
   // @param t refers to tⁿ⁺¹, the time at which to compute the residual R(y).
   // @param y is the generalized velocity and miscellaneous states around which
