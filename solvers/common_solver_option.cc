@@ -5,8 +5,8 @@
 namespace drake {
 namespace solvers {
 std::ostream& operator<<(std::ostream& os,
-                         CommonSolverOption drake_solver_option) {
-  switch (drake_solver_option) {
+                         CommonSolverOption common_solver_option) {
+  switch (common_solver_option) {
     case CommonSolverOption::kPrintFileName:
       os << "kPrintFileName";
       return os;

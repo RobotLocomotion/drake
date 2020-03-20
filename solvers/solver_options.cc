@@ -38,7 +38,7 @@ void SolverOptions::SetOption(CommonSolverOption key, double) {
   switch (key) {
     default:
       throw std::runtime_error(fmt::format(
-          "SolverOptions::SetOption doesn't support {} with string value.",
+          "SolverOptions::SetOption doesn't support {} with double value.",
           key));
   }
 }
@@ -54,8 +54,7 @@ void SolverOptions::SetOption(CommonSolverOption key, int value) {
       break;
     default:
       throw std::runtime_error(fmt::format(
-          "SolverOptions::SetOption doesn't support {} with string value.",
-          key));
+          "SolverOptions::SetOption doesn't support {} with int value.", key));
   }
 }
 
@@ -170,7 +169,7 @@ template <typename T>
 void Summarize(const std::unordered_map<CommonSolverOption, T>& keyvals,
                std::map<std::string, std::string>* pairs) {
   for (const auto& keyval : keyvals) {
-    (*pairs)[fmt::format("{}", keyval.first)] =
+    (*pairs)[fmt::format("CommonSolverOption::{}", keyval.first)] =
         fmt::format("{}", keyval.second);
   }
 }

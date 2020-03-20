@@ -28,6 +28,6 @@ enum class CommonSolverOption {
 };
 
 std::ostream& operator<<(std::ostream& os,
-                         CommonSolverOption drake_solver_option);
+                         CommonSolverOption common_solver_option);
 }  // namespace solvers
 }  // namespace drake

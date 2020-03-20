@@ -8,7 +8,7 @@
 namespace drake {
 namespace solvers {
 
-GTEST_TEST(SolverOptionsTest, ToString) {
+GTEST_TEST(SolverOptionsTest, SetGetOption) {
   SolverOptions dut;
   EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
 
@@ -27,18 +27,24 @@ GTEST_TEST(SolverOptionsTest, ToString) {
 
   EXPECT_EQ(to_string(dut),
             "{SolverOptions,"
+            " CommonSolverOption::kPrintFileName=foo.txt,"
+            " CommonSolverOption::kPrintToConsole=0,"
             " id1:some_before=1.2,"
             " id1:some_double=1.1,"
             " id1:some_int=2,"
             " id2:some_int=3,"
-            " id2:some_string=foo,"
-            " kPrintFileName=foo.txt,"
-            " kPrintToConsole=0}");
+            " id2:some_string=foo}");
 
-  const std::unordered_map<CommonSolverOption, int> int_options =
-      dut.GetOptions<int>();
-  EXPECT_EQ(int_options.size(), 1);
-  EXPECT_EQ(int_options.at(CommonSolverOption::kPrintToConsole), 0);
+  const std::unordered_map<CommonSolverOption, int> int_options_expected(
+      {{CommonSolverOption::kPrintToConsole, 0}});
+  EXPECT_EQ(dut.GetOptions<int>(), int_options_expected);
+  EXPECT_EQ(dut.GetOptionsInt(), int_options_expected);
+  const std::unordered_map<CommonSolverOption, std::string>
+      str_options_expected({{CommonSolverOption::kPrintFileName, "foo.txt"}});
+  EXPECT_EQ(dut.GetOptions<std::string>(), str_options_expected);
+  EXPECT_EQ(dut.GetOptionsStr(), str_options_expected);
+  // TODO(hongkai.dai): Test GetOption<double>() and `GetOptionDouble()` when
+  // a CommonSolverOption takes a double value.
 }
 
 GTEST_TEST(SolverOptionsTest, Ids) {
@@ -131,6 +137,23 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
 
   DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
       id1, {"key1", "key2"}, {"key2"}, {"key3"}));
+}
+
+GTEST_TEST(SolverOptionsTest, SetOptionError) {
+  SolverOptions solver_options;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(CommonSolverOption::kPrintFileName, 1),
+      std::runtime_error,
+      "SolverOptions::SetOption doesn't support kPrintFileName with int "
+      "value.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(CommonSolverOption::kPrintFileName, 1.),
+      std::runtime_error,
+      "SolverOptions::SetOption doesn't support kPrintFileName with double "
+      "value.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2),
+      std::runtime_error, "kPrintToConsole expects value either 0 or 1");
 }
 }  // namespace solvers
 }  // namespace drake
