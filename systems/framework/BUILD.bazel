@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":value_to_abstract_value",
         ":vector",
         ":vector_system",
+        ":witness_function",
     ],
 )
 
@@ -404,15 +405,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "witness_function",
+    srcs = ["witness_function.cc"],
+    hdrs = ["witness_function.h"],
+    deps = [
+        ":context",
+        ":event_collection",
+        ":system_base",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "system",
-    srcs = [
-        "system.cc",
-        "witness_function.cc",
-    ],
-    hdrs = [
-        "system.h",
-        "witness_function.h",
-    ],
+    srcs = ["system.cc"],
+    hdrs = ["system.h"],
     deps = [
         ":context",
         ":event_collection",
@@ -422,6 +430,7 @@ drake_cc_library(
         ":system_constraint",
         ":system_output",
         ":system_scalar_converter",
+        ":witness_function",
         "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",

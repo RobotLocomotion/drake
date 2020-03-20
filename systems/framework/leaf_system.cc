@@ -675,7 +675,7 @@ std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
     const WitnessFunctionDirection& direction_type,
     std::function<T(const Context<T>&)> calc) const {
   return std::make_unique<WitnessFunction<T>>(
-      this, description, direction_type, calc);
+      this, this, description, direction_type, calc);
 }
 
 template <typename T>
@@ -685,7 +685,7 @@ std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
     std::function<T(const Context<T>&)> calc,
     const Event<T>& e) const {
   return std::make_unique<WitnessFunction<T>>(
-      this, description, direction_type, calc, e.Clone());
+      this, this, description, direction_type, calc, e.Clone());
 }
 
 template <typename T>
