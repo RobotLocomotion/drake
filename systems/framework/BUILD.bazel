@@ -419,7 +419,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system",
-    srcs = ["system.old.cc"],
+    srcs = ["system.cc"],
     hdrs = ["system.h"],
     tags = ["nolint"],
     deps = [
