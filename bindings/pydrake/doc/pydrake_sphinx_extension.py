@@ -14,7 +14,6 @@ For guidance, see:
 from collections import namedtuple
 import re
 import warnings
-from typing import Any, Tuple
 
 from sphinx.locale import _
 import sphinx.domains.python as pydoc
@@ -251,99 +250,6 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     return None
 
 
-def patch_document_members(original, self, all_members=False):
-    # type: (bool) -> None
-    """Generate reST for member documentation.
-
-    If *all_members* is True, do all members, else those given by
-    *self.options.members*.
-
-    Note: This function is a patched version for Drake to add the functionality
-    of sorting the documented members using a custom key function.
-    The original code is from Sphinx 1.6.7 installed via the `python3-sphinx`
-    package.  Debian patches the upstream version:
-    https://sources.debian.org/patches/sphinx/1.6.7-2/
-    However, this piece of code is not patched.
-    https://github.com/sphinx-doc/sphinx/blob/v1.6.7/sphinx/ext/autodoc.py#L996-L1057
-    Our upstream PR: https://github.com/sphinx-doc/sphinx/pull/7177
-    """
-    # set current namespace for finding members
-    self.env.temp_data['autodoc:module'] = self.modname
-    if self.objpath:
-        self.env.temp_data['autodoc:class'] = self.objpath[0]
-
-    want_all = all_members or self.options.inherited_members or \
-        self.options.members is autodoc.ALL
-    # find out which members are documentable
-    members_check_module, members = self.get_object_members(want_all)
-
-    # remove members given by exclude-members
-    if self.options.exclude_members:
-        members = [(membername, member) for (membername, member) in members
-                   if membername not in self.options.exclude_members]
-
-    # document non-skipped members
-    memberdocumenters = []  # type: List[Tuple[Documenter, bool]]
-    for (mname, member, isattr) in self.filter_members(members, want_all):
-        classes = [cls for cls in __import__("six").itervalues(
-            autodoc.AutoDirective._registry)
-            if cls.can_document_member(member, mname, isattr, self)]
-        if not classes:
-            # don't know how to document this member
-            continue
-        # prefer the documenter with the highest priority
-        classes.sort(key=lambda cls: cls.priority)
-        # give explicitly separated module name, so that members
-        # of inner classes can be documented
-        full_mname = self.modname + '::' + \
-            '.'.join(self.objpath + [mname])
-        documenter = classes[-1](self.directive, full_mname, self.indent)
-        memberdocumenters.append((documenter, isattr))
-    member_order = self.options.member_order or \
-        self.env.config.autodoc_member_order
-    if member_order == 'groupwise':
-        # sort by group; relies on stable sort to keep items in the
-        # same group sorted alphabetically
-        memberdocumenters.sort(key=lambda e: e[0].member_order)
-    elif member_order == 'bysource' and self.analyzer:
-        # sort by source order, by virtue of the module analyzer
-        tagorder = self.analyzer.tagorder
-
-        def keyfunc(entry):
-            # type: (Tuple[Documenter, bool]) -> int
-            fullname = entry[0].name.split('::')[1]
-            return tagorder.get(fullname, len(tagorder))
-        memberdocumenters.sort(key=keyfunc)
-    # N.B. Patch for Drake starts here.
-    elif member_order == 'bycustomfunction':
-
-        def custom_key(entry: Tuple[autodoc.Documenter, bool]) -> Any:
-            result = self.env.app.emit_firstresult(
-                'autodoc-member-order-custom-function', entry[0])
-            if result is None:
-                raise RuntimeError("autodoc-member-order-custom-function "
-                                   "has not been specified by user")
-            return result
-        memberdocumenters.sort(key=custom_key)
-    # Patch ends here.
-
-    for documenter, isattr in memberdocumenters:
-        documenter.generate(
-            all_members=True, real_modname=self.real_modname,
-            check_module=members_check_module and not isattr)
-
-    # reset current objects
-    self.env.temp_data['autodoc:module'] = None
-    self.env.temp_data['autodoc:class'] = None
-
-
-def autodoc_member_order_function(app, documenter):
-    """Let's sort the member full-names (`Class.member_name`) by lower-case."""
-    # N.B. This follows suite with the following 3.x code: https://git.io/Jv1CH
-    fullname = documenter.name.split('::')[1]
-    return fullname.lower()
-
-
 def setup(app):
     """Installs Drake-specific extensions and patches.
     """
@@ -357,9 +263,6 @@ def setup(app):
         patch_class_add_directive_header)
     # Skip specific members.
     app.connect('autodoc-skip-member', autodoc_skip_member)
-    app.add_event('autodoc-member-order-custom-function')
-    app.connect('autodoc-member-order-custom-function',
-                autodoc_member_order_function)
     # Register directive so we can pretty-print template declarations.
     pydoc.PythonDomain.directives['template'] = pydoc.PyClasslike
     # Register autodocumentation for templates.
@@ -370,5 +273,4 @@ def setup(app):
     pydoc.py_sig_re = IrregularExpression(extended=False)
     patch(autodoc.ClassLevelDocumenter, 'resolve_name', patch_resolve_name)
     patch(autodoc.ModuleLevelDocumenter, 'resolve_name', patch_resolve_name)
-    patch(autodoc.Documenter, 'document_members', patch_document_members)
     return dict(parallel_read_safe=True)
