@@ -80,21 +80,22 @@ void System<T>::SetDefaultContext(Context<T>* context) const {
 
 template <typename T>
 void System<T>::SetRandomState(const Context<T>& context, State<T>* state,
-                            RandomGenerator* generator) const {
+                               RandomGenerator* generator) const {
   unused(generator);
   SetDefaultState(context, state);
 }
 
 template <typename T>
 void System<T>::SetRandomParameters(const Context<T>& context,
-                                 Parameters<T>* parameters,
-                                 RandomGenerator* generator) const {
+                                    Parameters<T>* parameters,
+                                    RandomGenerator* generator) const {
   unused(generator);
   SetDefaultParameters(context, parameters);
 }
 
 template <typename T>
-void System<T>::SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
+void System<T>::SetRandomContext(Context<T>* context,
+                                 RandomGenerator* generator) const {
   ValidateContext(context);
 
   // Set the default state, checking that the number of state variables does
@@ -158,7 +159,7 @@ bool System<T>::HasDirectFeedthrough(int input_port, int output_port) const {
 
 template <typename T>
 void System<T>::Publish(const Context<T>& context,
-             const EventCollection<PublishEvent<T>>& events) const {
+                        const EventCollection<PublishEvent<T>>& events) const {
   ValidateContext(context);
   DispatchPublishHandler(context, events);
 }
@@ -235,7 +236,7 @@ SystemConstraintIndex System<T>::AddExternalConstraint(
 
 template <typename T>
 void System<T>::CalcTimeDerivatives(const Context<T>& context,
-                         ContinuousState<T>* derivatives) const {
+                                    ContinuousState<T>* derivatives) const {
   DRAKE_DEMAND(derivatives != nullptr);
   ValidateContext(context);
   ValidateChildOfContext(derivatives);
@@ -261,8 +262,9 @@ void System<T>::ApplyDiscreteVariableUpdate(
 }
 
 template <typename T>
-void System<T>::CalcDiscreteVariableUpdates(const Context<T>& context,
-                                 DiscreteValues<T>* discrete_state) const {
+void System<T>::CalcDiscreteVariableUpdates(
+    const Context<T>& context,
+    DiscreteValues<T>* discrete_state) const {
   CalcDiscreteVariableUpdates(
       context, this->get_forced_discrete_update_events(), discrete_state);
 }
@@ -297,14 +299,14 @@ void System<T>::ApplyUnrestrictedUpdate(
 
 template <typename T>
 void System<T>::CalcUnrestrictedUpdate(const Context<T>& context,
-                            State<T>* state) const {
+                                       State<T>* state) const {
   CalcUnrestrictedUpdate(
       context, this->get_forced_unrestricted_update_events(), state);
 }
 
 template <typename T>
 T System<T>::CalcNextUpdateTime(const Context<T>& context,
-                     CompositeEventCollection<T>* events) const {
+                                CompositeEventCollection<T>* events) const {
   ValidateContext(context);
   DRAKE_DEMAND(events != nullptr);
   events->Clear();
@@ -317,7 +319,7 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
 
 template <typename T>
 void System<T>::GetPerStepEvents(const Context<T>& context,
-                      CompositeEventCollection<T>* events) const {
+                                 CompositeEventCollection<T>* events) const {
   ValidateContext(context);
   DRAKE_DEMAND(events != nullptr);
   events->Clear();
@@ -325,8 +327,9 @@ void System<T>::GetPerStepEvents(const Context<T>& context,
 }
 
 template <typename T>
-void System<T>::GetInitializationEvents(const Context<T>& context,
-                             CompositeEventCollection<T>* events) const {
+void System<T>::GetInitializationEvents(
+    const Context<T>& context,
+    CompositeEventCollection<T>* events) const {
   ValidateContext(context);
   DRAKE_DEMAND(events != nullptr);
   events->Clear();
@@ -378,7 +381,8 @@ std::map<PeriodicEventData, std::vector<const Event<T>*>,
 }
 
 template <typename T>
-void System<T>::CalcOutput(const Context<T>& context, SystemOutput<T>* outputs) const {
+void System<T>::CalcOutput(const Context<T>& context,
+                           SystemOutput<T>* outputs) const {
   DRAKE_DEMAND(outputs != nullptr);
   ValidateContext(context);
   DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
@@ -417,8 +421,8 @@ T System<T>::CalcNonConservativePower(const Context<T>& context) const {
 
 template <typename T>
 void System<T>::MapVelocityToQDot(const Context<T>& context,
-                       const VectorBase<T>& generalized_velocity,
-                       VectorBase<T>* qdot) const {
+                                  const VectorBase<T>& generalized_velocity,
+                                  VectorBase<T>* qdot) const {
   MapVelocityToQDot(context, generalized_velocity.CopyToVector(), qdot);
 }
 
@@ -432,22 +436,24 @@ void System<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void System<T>::MapQDotToVelocity(const Context<T>& context, const VectorBase<T>& qdot,
-                       VectorBase<T>* generalized_velocity) const {
+void System<T>::MapQDotToVelocity(const Context<T>& context,
+                                  const VectorBase<T>& qdot,
+                                  VectorBase<T>* generalized_velocity) const {
   MapQDotToVelocity(context, qdot.CopyToVector(), generalized_velocity);
 }
 
 template <typename T>
 void System<T>::MapQDotToVelocity(const Context<T>& context,
-                       const Eigen::Ref<const VectorX<T>>& qdot,
-                       VectorBase<T>* generalized_velocity) const {
+                                  const Eigen::Ref<const VectorX<T>>& qdot,
+                                  VectorBase<T>* generalized_velocity) const {
   this->ValidateContext(context);
   DoMapQDotToVelocity(context, qdot, generalized_velocity);
 }
 
 template <typename T>
-const Context<T>& System<T>::GetSubsystemContext(const System<T>& subsystem,
-                                      const Context<T>& context) const {
+const Context<T>& System<T>::GetSubsystemContext(
+    const System<T>& subsystem,
+    const Context<T>& context) const {
   ValidateContext(context);
   auto ret = DoGetTargetSystemContext(subsystem, &context);
   if (ret != nullptr) return *ret;
@@ -461,7 +467,7 @@ const Context<T>& System<T>::GetSubsystemContext(const System<T>& subsystem,
 
 template <typename T>
 Context<T>& System<T>::GetMutableSubsystemContext(const System<T>& subsystem,
-                                       Context<T>* context) const {
+                                                  Context<T>* context) const {
   DRAKE_ASSERT(context != nullptr);
   // Make use of the const method to avoid code duplication.
   const Context<T>& subcontext = GetSubsystemContext(subsystem, *context);
@@ -469,7 +475,8 @@ Context<T>& System<T>::GetMutableSubsystemContext(const System<T>& subsystem,
 }
 
 template <typename T>
-const Context<T>& System<T>::GetMyContextFromRoot(const Context<T>& root_context) const {
+const Context<T>& System<T>::GetMyContextFromRoot(
+    const Context<T>& root_context) const {
   if (!root_context.is_root_context())
     throw std::logic_error(
         "GetMyContextFromRoot(): given context must be a root context.");
@@ -483,7 +490,8 @@ const Context<T>& System<T>::GetMyContextFromRoot(const Context<T>& root_context
 }
 
 template <typename T>
-Context<T>& System<T>::GetMyMutableContextFromRoot(Context<T>* root_context) const {
+Context<T>& System<T>::GetMyMutableContextFromRoot(
+    Context<T>* root_context) const {
   DRAKE_DEMAND(root_context != nullptr);
   // Make use of the const method to avoid code duplication.
   const Context<T>& subcontext = GetMyContextFromRoot(*root_context);
@@ -505,8 +513,8 @@ State<T>* System<T>::DoGetMutableTargetSystemState(
 }
 
 template <typename T>
-const State<T>* System<T>::DoGetTargetSystemState(const System<T>& target_system,
-                                               const State<T>* state) const {
+const State<T>* System<T>::DoGetTargetSystemState(
+    const System<T>& target_system, const State<T>* state) const {
   if (&target_system == this) return state;
   return nullptr;
 }
@@ -579,7 +587,8 @@ const InputPort<T>* System<T>::get_input_port_selection(
 }
 
 template <typename T>
-const InputPort<T>& System<T>::GetInputPort(const std::string& port_name) const {
+const InputPort<T>& System<T>::GetInputPort(
+    const std::string& port_name) const {
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
     if (port_name == get_input_port_base(i).get_name()) {
       return get_input_port(i);
@@ -609,7 +618,8 @@ const OutputPort<T>* System<T>::get_output_port_selection(
 }
 
 template <typename T>
-const OutputPort<T>& System<T>::GetOutputPort(const std::string& port_name) const {
+const OutputPort<T>& System<T>::GetOutputPort(
+    const std::string& port_name) const {
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
     if (port_name == get_output_port_base(i).get_name()) {
       return get_output_port(i);
@@ -679,7 +689,8 @@ void System<T>::CheckValidOutput(const SystemOutput<T>* output) const {
 }
 
 template <typename T>
-VectorX<T> System<T>::CopyContinuousStateVector(const Context<T>& context) const {
+VectorX<T> System<T>::CopyContinuousStateVector(
+    const Context<T>& context) const {
   return context.get_continuous_state().CopyToVector();
 }
 
@@ -696,26 +707,28 @@ std::string System<T>::GetGraphvizString(int max_depth) const {
 
 template <typename T>
 void System<T>::GetGraphvizFragment(int max_depth,
-                                 std::stringstream* dot) const {
+                                    std::stringstream* dot) const {
   unused(dot, max_depth);
 }
 
 template <typename T>
 void System<T>::GetGraphvizInputPortToken(const InputPort<T>& port,
-                                       int max_depth,
-                                       std::stringstream* dot) const {
+                                          int max_depth,
+                                          std::stringstream* dot) const {
   unused(port, max_depth, dot);
 }
 
 template <typename T>
 void System<T>::GetGraphvizOutputPortToken(const OutputPort<T>& port,
-                                        int max_depth,
-                                        std::stringstream* dot) const {
+                                           int max_depth,
+                                           std::stringstream* dot) const {
   unused(port, max_depth, dot);
 }
 
 template <typename T>
-int64_t System<T>::GetGraphvizId() const { return reinterpret_cast<int64_t>(this); }
+int64_t System<T>::GetGraphvizId() const {
+  return reinterpret_cast<int64_t>(this);
+}
 
 template <typename T>
 std::unique_ptr<System<AutoDiffXd>> System<T>::ToAutoDiffXd() const {
@@ -740,7 +753,8 @@ std::unique_ptr<System<symbolic::Expression>> System<T>::ToSymbolic() const {
 }
 
 template <typename T>
-std::unique_ptr<System<symbolic::Expression>> System<T>::ToSymbolicMaybe() const {
+std::unique_ptr<System<symbolic::Expression>>
+System<T>::ToSymbolicMaybe() const {
   using U = symbolic::Expression;
   auto result = system_scalar_converter_.Convert<U, T>(*this);
   if (result) {
@@ -753,8 +767,8 @@ std::unique_ptr<System<symbolic::Expression>> System<T>::ToSymbolicMaybe() const
 
 template <typename T>
 void System<T>::FixInputPortsFrom(const System<double>& other_system,
-                       const Context<double>& other_context,
-                       Context<T>* target_context) const {
+                                  const Context<double>& other_context,
+                                  Context<T>* target_context) const {
   ValidateContext(target_context);
   other_system.ValidateContext(other_context);
 
@@ -797,8 +811,9 @@ const SystemScalarConverter& System<T>::get_system_scalar_converter() const {
 }
 
 template <typename T>
-void System<T>::GetWitnessFunctions(const Context<T>& context,
-                         std::vector<const WitnessFunction<T>*>* w) const {
+void System<T>::GetWitnessFunctions(
+    const Context<T>& context,
+    std::vector<const WitnessFunction<T>*>* w) const {
   DRAKE_DEMAND(w);
   DRAKE_DEMAND(w->empty());
   ValidateContext(context);
@@ -806,8 +821,9 @@ void System<T>::GetWitnessFunctions(const Context<T>& context,
 }
 
 template <typename T>
-T System<T>::CalcWitnessValue(const Context<T>& context,
-                   const WitnessFunction<T>& witness_func) const {
+T System<T>::CalcWitnessValue(
+    const Context<T>& context,
+    const WitnessFunction<T>& witness_func) const {
   ValidateContext(context);
   return DoCalcWitnessValue(context, witness_func);
 }
@@ -928,7 +944,7 @@ SystemConstraintIndex System<T>::AddConstraint(
 
 template <typename T>
 void System<T>::DoCalcTimeDerivatives(const Context<T>& context,
-                                   ContinuousState<T>* derivatives) const {
+                                      ContinuousState<T>* derivatives) const {
   // This default implementation is only valid for Systems with no continuous
   // state. Other Systems must override this method!
   unused(context);
@@ -937,8 +953,8 @@ void System<T>::DoCalcTimeDerivatives(const Context<T>& context,
 
 template <typename T>
 void System<T>::DoCalcNextUpdateTime(const Context<T>& context,
-                                  CompositeEventCollection<T>* events,
-                                  T* time) const {
+                                     CompositeEventCollection<T>* events,
+                                     T* time) const {
   unused(context, events);
   *time = std::numeric_limits<double>::infinity();
 }
@@ -983,8 +999,8 @@ T System<T>::DoCalcNonConservativePower(const Context<T>& context) const {
 
 template <typename T>
 void System<T>::DoMapQDotToVelocity(const Context<T>& context,
-                                 const Eigen::Ref<const VectorX<T>>& qdot,
-                                 VectorBase<T>* generalized_velocity) const {
+                                    const Eigen::Ref<const VectorX<T>>& qdot,
+                                    VectorBase<T>* generalized_velocity) const {
   unused(context);
   // In the particular case where generalized velocity and generalized
   // configuration are not even the same size, we detect this error and abort.
@@ -1015,8 +1031,8 @@ void System<T>::DoMapVelocityToQDot(
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> System<T>::GetMutableOutputVector(SystemOutput<T>* output,
-                                                      int port_index) const {
+Eigen::VectorBlock<VectorX<T>> System<T>::GetMutableOutputVector(
+    SystemOutput<T>* output, int port_index) const {
   DRAKE_ASSERT(0 <= port_index && port_index < num_output_ports());
 
   BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
@@ -1037,7 +1053,8 @@ void System<T>::DoCheckValidContext(const ContextBase& context_base) const {
 }
 
 template <typename T>
-std::function<void(const AbstractValue&)> System<T>::MakeFixInputPortTypeChecker(
+std::function<void(const AbstractValue&)>
+System<T>::MakeFixInputPortTypeChecker(
     InputPortIndex port_index) const {
   const InputPort<T>& port = this->get_input_port(port_index);
   const std::string& port_name = port.get_name();
