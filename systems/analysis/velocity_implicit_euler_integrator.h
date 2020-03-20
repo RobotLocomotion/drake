@@ -190,7 +190,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * To see why the two are equivalent, we can Taylor expand about `(tⁿ, xⁿ)`,
    *
    *     xⁿ⁺¹ = xⁿ + h fⁿ + O(h²),  ==>  xⁿ⁺¹ - xⁿ = O(h),
-   *     ẍⁿ⁺¹ = ẍⁿ + h ∂ẍ/∂tⁿ + ∇ẍⁿ (xⁿ⁺¹ - xⁿ) + O(h (xⁿ⁺¹ - xⁿ)),
+   *     ẍⁿ⁺¹ = ẍⁿ + h ∂ẍ/∂tⁿ + ∇ẍⁿ (xⁿ⁺¹ - xⁿ) + O(h ‖xⁿ⁺¹ - xⁿ‖),
    *     ẍⁿ⁺¹ - ẍⁿ = O(h).
    *
    * Moving on with our derivation, after one small half-sized implicit Euler
@@ -208,7 +208,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * `x = x*` also give us
    *
    *     xⁿ⁺¹ = x* + ½h f* + O(h²),                  (13)
-   *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* - x*)
+   *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* - x*) + O(‖x̃* - x*‖²)
    *                  = f* + O(h²),                  (14)
    * where in the last line we substituted Eq. (11).
    *
@@ -231,7 +231,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *     x̃* - xⁿ = (x̃* - x*) + (x* - xⁿ) = O(h),     (18)
    * where we substituted in Eqs. (11) and (17), and
    *
-   *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* - xⁿ) + O(h²)
+   *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* - xⁿ) + O(h ‖x̃* - xⁿ‖)
    *                  = ẍⁿ + O(h),                   (19)
    * where we substituted in Eq. (18).
    *
