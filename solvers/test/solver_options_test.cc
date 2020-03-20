@@ -35,14 +35,11 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
             " id2:some_int=3,"
             " id2:some_string=foo}");
 
-  const std::unordered_map<CommonSolverOption, int> int_options_expected(
-      {{CommonSolverOption::kPrintToConsole, 0}});
-  EXPECT_EQ(dut.GetOptions<int>(), int_options_expected);
-  EXPECT_EQ(dut.GetOptionsInt(), int_options_expected);
-  const std::unordered_map<CommonSolverOption, std::string>
-      str_options_expected({{CommonSolverOption::kPrintFileName, "foo.txt"}});
-  EXPECT_EQ(dut.GetOptions<std::string>(), str_options_expected);
-  EXPECT_EQ(dut.GetOptionsStr(), str_options_expected);
+  const std::unordered_map<CommonSolverOption,
+                           std::variant<double, int, std::string>>
+      common_options_expected(
+          {{CommonSolverOption::kPrintToConsole, 0},
+           {CommonSolverOption::kPrintFileName, "foo.txt"}});
   // TODO(hongkai.dai): Test GetOption<double>() and `GetOptionDouble()` when
   // a CommonSolverOption takes a double value.
 }
@@ -144,12 +141,7 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintFileName, 1),
       std::runtime_error,
-      "SolverOptions::SetOption doesn't support kPrintFileName with int "
-      "value.");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_options.SetOption(CommonSolverOption::kPrintFileName, 1.),
-      std::runtime_error,
-      "SolverOptions::SetOption doesn't support kPrintFileName with double "
+      "SolverOptions::SetOption support kPrintFileName only with std::string "
       "value.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2),

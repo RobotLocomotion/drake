@@ -34,40 +34,34 @@ void SolverOptions::SetOption(const SolverId& solver_id,
   solver_options_str_[solver_id][solver_option] = option_value;
 }
 
-void SolverOptions::SetOption(CommonSolverOption key, double) {
+void SolverOptions::SetOption(
+    CommonSolverOption key,
+    const std::variant<double, int, std::string>& value) {
   switch (key) {
-    default:
-      throw std::runtime_error(fmt::format(
-          "SolverOptions::SetOption doesn't support {} with double value.",
-          key));
-  }
-}
-
-void SolverOptions::SetOption(CommonSolverOption key, int value) {
-  switch (key) {
-    case CommonSolverOption::kPrintToConsole:
-      if (value != 0 && value != 1) {
+    case CommonSolverOption::kPrintToConsole: {
+      if (!std::holds_alternative<int>(value)) {
+        throw std::runtime_error(fmt::format(
+            "SolverOptions::SetOption support {} only with int value.", key));
+      }
+      const int int_value = std::get<int>(value);
+      if (int_value != 0 && int_value != 1) {
         throw std::runtime_error(
             fmt::format("{} expects value either 0 or 1", key));
       }
-      common_solver_options_int_[key] = value;
+      common_solver_options_[key] = value;
       break;
-    default:
-      throw std::runtime_error(fmt::format(
-          "SolverOptions::SetOption doesn't support {} with int value.", key));
-  }
-}
-
-void SolverOptions::SetOption(CommonSolverOption key,
-                              const std::string& value) {
-  switch (key) {
-    case CommonSolverOption::kPrintFileName:
-      common_solver_options_str_[key] = value;
+    }
+    case CommonSolverOption::kPrintFileName: {
+      if (!std::holds_alternative<std::string>(value)) {
+        throw std::runtime_error(fmt::format(
+            "SolverOptions::SetOption support {} only with std::string value.",
+            key));
+      }
+      common_solver_options_[key] = value;
       break;
+    }
     default:
-      throw std::runtime_error(fmt::format(
-          "SolverOptions::SetOption doesn't support {} with string value.",
-          key));
+      DRAKE_UNREACHABLE();
   }
 }
 
@@ -133,21 +127,15 @@ void SolverOptions::Merge(const SolverOptions& other) {
   MergeHelper(other.solver_options_double_, &solver_options_double_);
   MergeHelper(other.solver_options_int_, &solver_options_int_);
   MergeHelper(other.solver_options_str_, &solver_options_str_);
-  MergeHelper<int>(other.common_solver_options_int_,
-                   &common_solver_options_int_);
-  MergeHelper<double>(other.common_solver_options_double_,
-                      &common_solver_options_double_);
-  MergeHelper<std::string>(other.common_solver_options_str_,
-                           &common_solver_options_str_);
+  MergeHelper<std::variant<double, int, std::string>>(
+      other.common_solver_options_, &common_solver_options_);
 }
 
 bool SolverOptions::operator==(const SolverOptions& other) const {
   return solver_options_double_ == other.solver_options_double_ &&
          solver_options_int_ == other.solver_options_int_ &&
          solver_options_str_ == other.solver_options_str_ &&
-         common_solver_options_double_ == other.common_solver_options_double_ &&
-         common_solver_options_int_ == other.common_solver_options_int_ &&
-         common_solver_options_str_ == other.common_solver_options_str_;
+         common_solver_options_ == other.common_solver_options_;
 }
 
 bool SolverOptions::operator!=(const SolverOptions& other) const {
@@ -166,11 +154,15 @@ void Summarize(const SolverId& id,
 }
 
 template <typename T>
-void Summarize(const std::unordered_map<CommonSolverOption, T>& keyvals,
-               std::map<std::string, std::string>* pairs) {
+void Summarize(
+    const std::unordered_map<CommonSolverOption,
+                             std::variant<double, int, std::string>>& keyvals,
+    std::map<std::string, std::string>* pairs) {
   for (const auto& keyval : keyvals) {
-    (*pairs)[fmt::format("CommonSolverOption::{}", keyval.first)] =
-        fmt::format("{}", keyval.second);
+    if (std::holds_alternative<T>(keyval.second)) {
+      (*pairs)[fmt::format("CommonSolverOption::{}", keyval.first)] =
+          fmt::format("{}", std::get<T>(keyval.second));
+    }
   }
 }
 }  // namespace
@@ -188,9 +180,9 @@ std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
       Summarize(id, x.GetOptionsInt(id), &pairs);
       Summarize(id, x.GetOptionsStr(id), &pairs);
     }
-    Summarize(x.GetOptionsDouble(), &pairs);
-    Summarize(x.GetOptionsInt(), &pairs);
-    Summarize(x.GetOptionsStr(), &pairs);
+    Summarize<double>(x.common_solver_options(), &pairs);
+    Summarize<int>(x.common_solver_options(), &pairs);
+    Summarize<std::string>(x.common_solver_options(), &pairs);
     for (const auto& pair : pairs) {
       os << ", " << pair.first << "=" << pair.second;
     }
@@ -234,21 +226,6 @@ void SolverOptions::CheckOptionKeysForSolver(
                                  solver_id.name());
   CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys,
                                  solver_id.name());
-}
-
-const std::unordered_map<CommonSolverOption, double>&
-SolverOptions::GetOptionsDouble() const {
-  return common_solver_options_double_;
-}
-
-const std::unordered_map<CommonSolverOption, int>&
-SolverOptions::GetOptionsInt() const {
-  return common_solver_options_int_;
-}
-
-const std::unordered_map<CommonSolverOption, std::string>&
-SolverOptions::GetOptionsStr() const {
-  return common_solver_options_str_;
 }
 
 }  // namespace solvers
