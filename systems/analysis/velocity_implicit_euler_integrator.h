@@ -85,11 +85,15 @@ namespace systems {
  * `x̃ⁿ⁺¹` be the computed solution from two small steps, and `xⁿ⁺¹` be the true
  * solution. Since the integrator propagates `x̃ⁿ⁺¹` as its solution, we denote
  * the true error vector as `ε = x̃ⁿ⁺¹ - xⁿ⁺¹`. VelocityImplicitEulerIntegrator
- * uses `ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹`, the difference between the two solutions, as the
- * second-order error estimate, because for a smooth system, `‖ε'‖ = O(h²)`,
- * and `‖ε - ε'‖ = O(h³)`. See the notes in
+ * uses `ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹`, the difference between the two solutions, as the
+ * second-order error estimate, because for a smooth system, `‖ε*‖ = O(h²)`,
+ * and `‖ε - ε*‖ = O(h³)`. See the notes in
  * VelocityImplicitEulerIntegrator<T>::get_error_estimate_order() for a
  * detailed derivation of the error estimate's truncation error.
+ *
+ * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
+ *                    Equations II (Stiff and Differential-Algebraic Problems).
+ *                    Springer, 1996, Section IV.8, p. 118–130.
  *
  * @note In the statistics reported by IntegratorBase, all statistics that deal
  * with the number of steps or the step sizes will track the large full-sized
@@ -102,15 +106,12 @@ namespace systems {
  * followed by the two small propagated steps, implying that most of the work in
  * constructing and factorizing matrices and failed Newton-Raphson iterations
  * are performed during the large steps and counted toward the error estimation
- * statistics
- *
- * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
- *                    Equations II (Stiff and Differential-Algebraic Problems).
- *                    Springer, 1996, Section IV.8, p. 118–130.
+ * statistics.
  *
  * @note This integrator uses the integrator accuracy setting, even when run
  *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
  *       process. See IntegratorBase::set_target_accuracy() for more info.
+ *
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
  * @see ImplicitEulerIntegrator class documentation for information about
@@ -138,8 +139,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /**
    * Returns the asymptotic order of the difference between the large and small
    * steps (from which the error estimate is computed), which is 2. That is, the
-   * error estimate, `ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹` has the property that `‖ε'‖ = O(h²)`,
-   * and it deviates from the true error, `ε`, by `‖ε - ε'‖ = O(h³)`. 
+   * error estimate, `ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
+   * and it deviates from the true error, `ε`, by `‖ε - ε*‖ = O(h³)`. 
    * 
    * ### Derivation of the asymptotic order
    *
@@ -183,8 +184,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * same as the truncation error for implicit Euler (because both methods solve
    * Eqs. (3-4)), is
    *
-   *     e(tⁿ, tⁿ+h, xⁿ) = ½ h²ẍⁿ⁺¹ + O(h³)
-   *                     = ½ h²ẍⁿ + O(h³).           (10)
+   *     e(tⁿ, h, xⁿ) = ½ h²ẍⁿ⁺¹ + O(h³)
+   *                  = ½ h²ẍⁿ + O(h³).              (10)
    *
    * To see why the two are equivalent, we can Taylor expand about `(tⁿ, xⁿ)`,
    *
@@ -195,7 +196,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * Moving on with our derivation, after one small half-sized implicit Euler
    * step, the solution `x̃*` is
    *
-   *     x̃* = x* + e(tⁿ, tⁿ+½h, xⁿ)
+   *     x̃* = x* + e(tⁿ, ½h, xⁿ)
    *        = x* + (1/8) h²ẍⁿ + O(h³),
    *     x̃* - x* = (1/8) h²ẍⁿ + O(h³).               (11)
    *
@@ -221,7 +222,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    * After the second small step, the solution `x̃ⁿ⁺¹` is
    *
-   *     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, tⁿ+h, x̃*)
+   *     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, ½h, x̃*)
    *          = xⁿ*¹ + (1/8)h² ẍ(tⁿ+½h, x̃*) + O(h³). (16)
    *
    * Taking Taylor expansions about `(tⁿ, xⁿ)`,
@@ -244,13 +245,13 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    * Subtracting Eq. (20) from Eq. (10),
    *
-   *     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h²ẍⁿ + O(h³),
+   *     e(tⁿ, h, xⁿ) - ε = (½ - 1/4) h²ẍⁿ + O(h³),
    *     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h²ẍⁿ + O(h³).
    *
    * Since the first term on the RHS matches `ε` (Eq. (20)) and the LHS matches
-   * `ε'`,
+   * `ε*`,
    *
-   *     ε' = ε + O(h³).                              (21)
+   *     ε* = ε + O(h³).                              (21)
    */
   int get_error_estimate_order() const final { return 2; }
 
@@ -520,7 +521,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_vie_;
 
   // Vector used in error estimate calculations. At the end of every step, we
-  // set this to ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, which is our estimate for ε = x̃ⁿ⁺¹ - xⁿ⁺¹,
+  // set this to ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, which is our estimate for ε = x̃ⁿ⁺¹ - xⁿ⁺¹,
   // the error of the propagated half-sized steps.
   VectorX<T> err_est_vec_;
 
