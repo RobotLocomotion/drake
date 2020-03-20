@@ -86,22 +86,23 @@ namespace systems {
  * solution. Since the integrator propagates x̃ⁿ⁺¹ as its solution, we denote
  * the true error vector as ε = x̃ⁿ⁺¹ - xⁿ⁺¹. VelocityImplicitEulerIntegrator
  * uses ε' = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, the difference between the two solutions, as the
- * second-order error estimate, because for a smooth system, |ε - ε'| = O(h³).
- * See the notes in
+ * second-order error estimate, because for a smooth system, ‖ε'‖ = O(h²), and
+ * ‖ε - ε'‖ = O(h³). See the notes in
  * VelocityImplicitEulerIntegrator<T>::get_error_estimate_order() for a
  * detailed derivation of the error estimate's truncation error.
  *
- * Note: In the statistics reported by IntegratorBase, all statistics that deal
+ * @note In the statistics reported by IntegratorBase, all statistics that deal
  * with the number of steps or the step sizes will track the large full-sized
  * steps. Furthermore, because the small half-sized steps are propagated as the
  * solution, the large full-sized step is the error estimator, and the error
  * estimation statistics track the effort during the large full-sized step.
- * Depending on the system, the statistics may be unintuitive and difficult to
- * compare against other integrators, because the large error-estimation step
- * is performed first, followed by the two small propagated steps, implying
- * that most of the work in constructing and factorizing matrices and failed
- * Newton-Raphson iterations are performed during the large steps and counted
- * toward the error estimation statistics.
+ * Depending on the system, when the integrator is not in full-Newton mode, the
+ * statistics may be counterintuitive and difficult to compare against other
+ * integrators, because the large error-estimation step is performed first,
+ * followed by the two small propagated steps, implying that most of the work in
+ * constructing and factorizing matrices and failed Newton-Raphson iterations
+ * are performed during the large steps and counted toward the error estimation
+ * statistics
  *
  * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
  *                    Equations II (Stiff and Differential-Algebraic Problems).
@@ -128,102 +129,128 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                                            Context<T>* context = nullptr)
       : ImplicitIntegrator<T>(system, context) {}
 
-  /// The integrator supports error estimation.
+  /**
+   * The integrator supports error estimation.
+   */
   bool supports_error_estimation() const final { return true; }
 
-  /// The asymptotic order of the difference between the large and small steps
-  /// (from which the error estimate is computed) is O(h²), and the error
-  /// estimate is accurate to within O(h³) of the true error.
-  /// @note Here is the derivation for why this error estimate is second-order.
-  ///
-  /// Let us first define the vector-valued function
-  /// `e(tⁱ, tᶠ, xⁱ) = x̅ⁿ⁺¹ - xⁿ⁺¹`, the truncation error for a single,
-  /// full-sized velocity-implicit Euler integration step, with initial
-  /// conditions `tⁿ=tⁱ`, `xⁿ=xⁱ`, and a step size of `h = tᶠ - tⁱ`.
-  /// Furthermore, use `∇f` to denote the Jacobian df/dx.
-  ///
-  /// Let us look at a single step, and use `f` to denote `f(tⁿ, xⁿ)`. Upon
-  /// Newton-Raphson convergence, the truncation error for velocity-implicit
-  /// Euler, which is the same as the truncation error for implicit Euler
-  /// (because both methods solve Eqs. (3-4)), is
-  ///
-  ///     e(tⁿ, tⁿ+h, xⁿ) = ½ h²(∂f/∂t + ∇f f) + O(h³).       (10)
-  ///
-  /// Let us use `xⁿ*` to denote the true solution after a half-step,
-  /// `x(tⁿ+½h)`, and `x̃ⁿ*` to denote the velocity-implicit Euler solution
-  /// after a single half-sized step. After one small half-sized step, the
-  /// solution `x̃ⁿ*` is
-  ///
-  ///     x̃ⁿ* = xⁿ* + e(tⁿ, tⁿ+½h, xⁿ)
-  ///         = xⁿ* + (1/8) h²(∂f/∂t + ∇f f) + O(h³),
-  ///     x̃ⁿ* - xⁿ* = (1/8) h²(∂f/∂t + ∇f f) + O(h³).         (11)
-  ///
-  /// Let us use `xⁿ*¹` to denote the true solution of the system at time
-  /// `t = tⁿ+h` if the system were at `x̃ⁿ*` when `t = tⁿ+½h`. Taylor
-  /// expanding about `t = tⁿ+½h` in this alternate reality,
-  ///
-  ///     xⁿ*¹ = x̃ⁿ* + h f(tⁿ+½h, x̃ⁿ*) + O(h²).               (12)
-  ///
-  /// Similarly, Taylor expansions give us
-  ///
-  ///     xⁿ⁺¹ = xⁿ* + h f(tⁿ+½h, xⁿ*) + O(h²),               (13)
-  ///     f(tⁿ+½h, x̃ⁿ*) = f(tⁿ+½h, xⁿ*) + ∇f(tⁿ+½h, xⁿ*)(x̃ⁿ* - xⁿ*)
-  ///                   = f(tⁿ+½h, xⁿ*) + O(h²),              (14)
-  /// where in the last line we substituted Eq. (11).
-  ///
-  /// Eq. (12) minus Eq. (13) gives us,
-  ///
-  ///     xⁿ*¹ - xⁿ⁺¹ = x̃ⁿ* - xⁿ* + h(f(tⁿ+½h, x̃ⁿ*) - f(tⁿ+½h, xⁿ*)) + O(h³),
-  ///                 = x̃ⁿ* - xⁿ* + O(h³),
-  /// where we just substituted in Eq. (14). Finally, substituting in Eq. (11),
-  ///
-  ///     xⁿ*¹ - xⁿ⁺¹ = (1/8) h²(∂f/∂t + ∇f f) + O(h³).       (15)
-  ///
-  /// After the second small step, the solution `x̃ⁿ⁺¹` is
-  ///
-  ///     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, tⁿ+h, x̃ⁿ*)
-  ///          = xⁿ*¹ +
-  ///            (1/8) h² (∂f/∂t(tⁿ+½h, x̃ⁿ*) +
-  ///                      ∇f(tⁿ+½h, x̃ⁿ*) f(tⁿ+½h, x̃ⁿ*)) +
-  ///            O(h³).                                       (16)
-  ///
-  /// Taking Taylor expansions,
-  ///
-  ///     xⁿ* = xⁿ + ½h f + O(h²) = xⁿ + O(h).                (17)
-  ///     x̃ⁿ* - xⁿ = (x̃ⁿ* - xⁿ*) + (xⁿ* - xⁿ) = O(h),         (18)
-  /// where we substituted in Eqs. (11) and (17),
-  ///
-  ///     ∂f/∂t(tⁿ+½h, x̃ⁿ*) = ∂f/∂t + ½h ∂²f/∂t² + ∇∂f/∂t (x̃ⁿ* - xⁿ) + O(h²)
-  ///                       = ∂f/∂t + O(h),                   (19)
-  /// where we substituted in Eq. (18), and
-  ///
-  ///     ∇f(tⁿ+½h, x̃ⁿ*) = ∇f + ½h (∂/∂t)∇f(tⁿ+½h, x̃ⁿ*) + ∇²f (x̃ⁿ* - xⁿ) +
-  ///                      O(h²)
-  ///                    = ∇f + O(h),                         (20)
-  ///     f(tⁿ+½h, x̃ⁿ*)  = f + ½h ∂f/∂t + ∇f (x̃ⁿ* - xⁿ)
-  ///                    = f + O(h),                          (21)
-  /// therefore,
-  ///
-  ///     ∂f/∂t(tⁿ+½h, x̃ⁿ*) + ∇f(tⁿ+½h, x̃ⁿ*) f(tⁿ+½h, x̃ⁿ*)
-  ///         = ∂f/∂t + ∇f f + O(h).                          (22)
-  ///
-  /// Substituting (22) into (16),
-  ///
-  ///     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h² (∂f/∂t + ∇f f) + O(h³)
-  ///          = xⁿ⁺¹ + (1/4) h² (∂f/∂t + ∇f f) + O(h³),
-  /// therefore
-  ///
-  ///     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = (1/4) h² (∂f/∂t + ∇f f) + O(h³).  (23)
-  ///
-  /// Subtracting Eq. (23) from Eq. (10),
-  ///
-  ///     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h² (∂f/∂t + ∇f f) + O(h³),
-  ///     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h² (∂f/∂t + ∇f f) + O(h³).
-  ///
-  /// Since the first term on the RHS matches `ε` (Eq. (23)) and the LHS
-  /// matches `ε'`,
-  ///
-  ///     ε' = ε + O(h³).                                     (24)
+  /**
+   * Returns the asymptotic order of the difference between the large and small
+   * steps (from which the error estimate is computed), which is 2. The error
+   * estimate is accurate to within O(h³) of the true error.
+   * 
+   * ### Derivation of the asymptotic order
+   *
+   * To derive the second-order error estimate, let us first define the vector-
+   * valued function `e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ - xⁿ⁺¹`, the truncation error for a
+   * single, full-sized velocity-implicit Euler integration step, with initial
+   * conditions `(tⁿ, xⁿ)`, and a step size of `h`.
+   * Furthermore, use `∇f` to denote the Jacobian df/dx.
+   *
+   * Let us use `x*` to denote the true solution after a half-step, `x(tⁿ+½h)`,
+   * and `x̃*` to denote the velocity-implicit Euler solution after a single
+   * half-sized step. Furthermore, let us use `xⁿ*¹` to denote the true solution
+   * of the system at time `t = tⁿ+h` if the system were at `x̃*` when
+   * `t = tⁿ+½h`. See the following diagram for an illustration.
+   *
+   *      Legend:
+   *      ───── propagation along the true system
+   *      :···· propagation using implicit Euler with a half step
+   *      :---- propagation using implicit Euler with a full step
+   *
+   *      Time  tⁿ         tⁿ+½h         tⁿ+h
+   *      
+   *      State :----------------------- x̅ⁿ⁺¹  <─── error estimator
+   *            :
+   *            :
+   *            :          
+   *            :            :·········· x̃ⁿ⁺¹  <─── propagated result
+   *            :            :
+   *            :·········  x̃*   ─────── xⁿ*¹
+   *            :
+   *            xⁿ ───────  x*   ─────── xⁿ⁺¹  <─── true solution
+   *
+   * Furthermore, we will use superscripts to denote evaluating an expression
+   * with x at that subscript and t at the corresponding time, e.g. `ẍⁿ`
+   * denotes `ẍ(tⁿ, xⁿ) = ∂f/∂tⁿ + ∇fⁿ fⁿ`, and `f*` denotes `f(tⁿ+½h, x*)`.
+   * 
+   * Let us look at a single velocity-implicit Euler step. Upon Newton-Raphson
+   * convergence, the truncation error for velocity-implicit Euler, which is the
+   * same as the truncation error for implicit Euler (because both methods solve
+   * Eqs. (3-4)), is
+   *
+   *     e(tⁿ, tⁿ+h, xⁿ) = ½ h²ẍⁿ + O(h³).       (10)
+   *
+   * After one small half-sized step, the
+   * solution `x̃*` is
+   *
+   *     x̃* = x* + e(tⁿ, tⁿ+½h, xⁿ)
+   *        = x* + (1/8) h²ẍⁿ + O(h³),
+   *     x̃* - x* = (1/8) h²ẍⁿ + O(h³).         (11)
+   *
+   *  Taylor
+   * expanding about `t = tⁿ+½h` in this alternate reality,
+   *
+   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²).               (12)
+   *
+   * Similarly, Taylor expansions give us
+   *
+   *     xⁿ⁺¹ = x* + ½h f* + O(h²),               (13)
+   *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* - x*)
+   *                   = f* + O(h²),              (14)
+   * where in the last line we substituted Eq. (11).
+   *
+   * Eq. (12) minus Eq. (13) gives us,
+   *
+   *     xⁿ*¹ - xⁿ⁺¹ = x̃* - x* + ½h(f(tⁿ+½h, x̃*) - f*) + O(h³),
+   *                 = x̃* - x* + O(h³),
+   * where we just substituted in Eq. (14). Finally, substituting in Eq. (11),
+   *
+   *     xⁿ*¹ - xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).       (15)
+   *
+   * After the second small step, the solution `x̃ⁿ⁺¹` is
+   *
+   *     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, tⁿ+h, x̃*)
+   *          = xⁿ*¹ + (1/8) h² ẍ(tⁿ+½h, x̃*) + O(h³).       (16)
+   *
+   * Taking Taylor expansions,
+   *
+   *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).                (17)
+   *     x̃* - xⁿ = (x̃* - x*) + (x* - xⁿ) = O(h),         (18)
+   * where we substituted in Eqs. (11) and (17),
+   *
+   *     ∂f/∂t(tⁿ+½h, x̃*) = ∂f/∂tⁿ + ½h ∂²f/∂t²ⁿ + ∇∂f/∂tⁿ (x̃* - xⁿ) + O(h²)
+   *                      = ∂f/∂tⁿ + O(h),                   (19)
+   * where we substituted in Eq. (18), and
+   *
+   *     ∇f(tⁿ+½h, x̃*) = ∇fⁿ + ½h (∂/∂t)∇f(tⁿ+½h, x̃*) + ∇²fⁿ (x̃* - xⁿ) +
+   *                     O(h²)
+   *                   = ∇fⁿ + O(h),                         (20)
+   *     f(tⁿ+½h, x̃*)  = fⁿ + ½h ∂f/∂tⁿ + ∇fⁿ (x̃* - xⁿ)
+   *                   = fⁿ + O(h),                          (21)
+   * therefore,
+   *
+   *     ẍ(tⁿ+½h, x̃*) = ∂f/∂t(tⁿ+½h, x̃*) + ∇f(tⁿ+½h, x̃*) f(tⁿ+½h, x̃*)
+   *                  = ∂f/∂tⁿ + ∇fⁿ fⁿ + O(h) = ẍⁿ + O(h)   (22)
+   *
+   * Substituting (22) into (16),
+   *
+   *     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h² ẍⁿ + O(h³)
+   *          = xⁿ⁺¹ + (1/4) h² ẍⁿ + O(h³),
+   * therefore
+   *
+   *     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).  (23)
+   *
+   * Subtracting Eq. (23) from Eq. (10),
+   *
+   *     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h² ẍⁿ + O(h³),
+   *     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h² ẍⁿ + O(h³).
+   *
+   * Since the first term on the RHS matches `ε` (Eq. (23)) and the LHS
+   * matches `ε'`,
+   *
+   *     ε' = ε + O(h³).                                     (24)
+   */
   int get_error_estimate_order() const final { return 2; }
 
  private:
