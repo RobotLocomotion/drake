@@ -162,11 +162,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *      :---- propagation using implicit Euler with a full step
    *
    *      Time  tⁿ         tⁿ+½h         tⁿ+h
-   *      
-   *      State :----------------------- x̅ⁿ⁺¹  <─── error estimator
+   *
+   *      State :----------------------- x̅ⁿ⁺¹  <─── used for error estimation
    *            :
    *            :
-   *            :          
+   *            :
    *            :            :·········· x̃ⁿ⁺¹  <─── propagated result
    *            :            :
    *            :·········  x̃*   ─────── xⁿ*¹
@@ -176,7 +176,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * We will use superscripts to denote evaluating an expression with `x` at
    * that subscript and `t` at the corresponding time, e.g. `ẍⁿ` denotes
    * `ẍ(tⁿ, xⁿ)`, and `f*` denotes `f(tⁿ+½h, x*)`.
-   * 
+   *
    * Let us look at a single velocity-implicit Euler step. Upon Newton-Raphson
    * convergence, the truncation error for velocity-implicit Euler, which is the
    * same as the truncation error for implicit Euler (because both methods solve
@@ -186,7 +186,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *                     = ½ h²ẍⁿ + O(h³).           (10)
    *
    * To see why the two are equivalent, we can Taylor expand about `(tⁿ, xⁿ)`,
-   * 
+   *
    *     xⁿ⁺¹ = xⁿ + h fⁿ + O(h²),  ==>  xⁿ⁺¹ - xⁿ = O(h),
    *     ẍⁿ⁺¹ = ẍⁿ + h ∂ẍ/∂tⁿ + ∇ẍⁿ (xⁿ⁺¹ - xⁿ) + O(h (xⁿ⁺¹ - xⁿ)),
    *     ẍⁿ⁺¹ - ẍⁿ = O(h).
@@ -200,7 +200,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    * Taylor expanding about `t = tⁿ+½h` in this `x = x̃*` alternate reality,
    *
-   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²). (12)
+   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²).        (12)
    *
    * Similarly, Taylor expansions about `t = tⁿ+½h` and the true solution
    * `x = x*` also give us
@@ -228,7 +228,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).        (17)
    *     x̃* - xⁿ = (x̃* - x*) + (x* - xⁿ) = O(h),     (18)
    * where we substituted in Eqs. (11) and (17), and
-   * 
+   *
    *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* - xⁿ) + O(h²)
    *                  = ẍⁿ + O(h),                   (19)
    * where we substituted in Eq. (18).
@@ -246,8 +246,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *     e(tⁿ, tⁿ+h, xⁿ) - ε = (½ - 1/4) h²ẍⁿ + O(h³),
    *     (x̅ⁿ⁺¹ - xⁿ⁺¹) - (x̃ⁿ⁺¹ - xⁿ⁺¹) = (1/4) h²ẍⁿ + O(h³).
    *
-   * Since the first term on the RHS matches `ε` (Eq. (20)) and the LHS
-   * matches `ε'`,
+   * Since the first term on the RHS matches `ε` (Eq. (20)) and the LHS matches
+   * `ε'`,
    *
    *     ε' = ε + O(h³).                              (21)
    */
