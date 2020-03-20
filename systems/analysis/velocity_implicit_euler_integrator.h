@@ -132,7 +132,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       : ImplicitIntegrator<T>(system, context) {}
 
   /**
-   * The integrator supports error estimation.
+   * Returns true, because this integrator supports error estimation.
    */
   bool supports_error_estimation() const final { return true; }
 
