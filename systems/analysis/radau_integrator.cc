@@ -731,4 +731,3 @@ template class drake::systems::RadauIntegrator<drake::AutoDiffXd, 1>;
 
 template class drake::systems::RadauIntegrator<double, 2>;
 template class drake::systems::RadauIntegrator<drake::AutoDiffXd, 2>;
-

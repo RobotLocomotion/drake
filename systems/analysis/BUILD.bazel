@@ -81,8 +81,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "dense_output",
+    srcs = ["dense_output.cc"],
     hdrs = ["dense_output.h"],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
         "@fmt",
     ],
@@ -90,19 +92,23 @@ drake_cc_library(
 
 drake_cc_library(
     name = "stepwise_dense_output",
+    srcs = ["stepwise_dense_output.cc"],
     hdrs = ["stepwise_dense_output.h"],
     deps = [
         ":dense_output",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "hermitian_dense_output",
+    srcs = ["hermitian_dense_output.cc"],
     hdrs = ["hermitian_dense_output.h"],
     deps = [
         ":stepwise_dense_output",
         "//common:autodiff",
+        "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
         "//common/trajectories:piecewise_polynomial",
@@ -112,18 +118,23 @@ drake_cc_library(
 
 drake_cc_library(
     name = "scalar_dense_output",
+    srcs = ["scalar_dense_output.cc"],
     hdrs = ["scalar_dense_output.h"],
     deps = [
+        ":dense_output",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "scalar_view_dense_output",
+    srcs = ["scalar_view_dense_output.cc"],
     hdrs = ["scalar_view_dense_output.h"],
     deps = [
         ":dense_output",
         ":scalar_dense_output",
+        "//common:default_scalars",
         "//common:essential",
         "@fmt",
     ],
@@ -137,6 +148,7 @@ drake_cc_library(
         ":dense_output",
         ":hermitian_dense_output",
         ":stepwise_dense_output",
+        "//common:default_scalars",
         "//systems/framework:context",
         "//systems/framework:system",
     ],
@@ -144,7 +156,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "explicit_euler_integrator",
-    srcs = [],
+    srcs = ["explicit_euler_integrator.cc"],
     hdrs = ["explicit_euler_integrator.h"],
     deps = [
         ":integrator_base",
@@ -190,7 +202,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "runge_kutta2_integrator",
-    srcs = [],
+    srcs = ["runge_kutta2_integrator.cc"],
     hdrs = ["runge_kutta2_integrator.h"],
     deps = [
         ":integrator_base",
@@ -270,10 +282,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "semi_explicit_euler_integrator",
-    srcs = [],
-    hdrs = [
-        "semi_explicit_euler_integrator.h",
-    ],
+    srcs = ["semi_explicit_euler_integrator.cc"],
+    hdrs = ["semi_explicit_euler_integrator.h"],
     deps = [
         ":integrator_base",
     ],

@@ -376,4 +376,3 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::VelocityImplicitEulerIntegrator)
-
