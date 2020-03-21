@@ -17,7 +17,7 @@ namespace systems {
 /// DenseOutput class instance and behaves as a view to one of
 /// its elements.
 ///
-/// @tparam_nonsymbolic_scalar
+/// @tparam_default_scalar
 template <typename T>
 class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
  public:
@@ -77,5 +77,5 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::ScalarViewDenseOutput)

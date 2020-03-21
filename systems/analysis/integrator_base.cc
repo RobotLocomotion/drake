@@ -130,7 +130,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
       }
     }
   } while (!step_succeeded);
-  return (step_size_to_attempt == h_max);
+  return static_cast<bool>(step_size_to_attempt == h_max);
 }
 
 template <class T>
@@ -302,7 +302,9 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
       return std::make_pair(false, new_step_size);
   }
 
-  return std::make_pair(new_step_size >= step_taken, new_step_size);
+  return std::make_pair(
+      static_cast<bool>(new_step_size >= step_taken),
+      new_step_size);
 }
 
 template <class T>
@@ -463,5 +465,5 @@ typename IntegratorBase<T>::StepResult
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::IntegratorBase)

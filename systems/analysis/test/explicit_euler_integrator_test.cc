@@ -314,6 +314,23 @@ GTEST_TEST(IntegratorTest, StepSize) {
   }
 }
 
+GTEST_TEST(IntegratorTest, Symbolic) {
+  using symbolic::Expression;
+
+  // Create the mass spring system.
+  SpringMassSystem<Expression> spring_mass(1., 1., 0.);
+  // Set the maximum step size.
+  const double max_h = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  // Create the integrator.
+  ExplicitEulerIntegrator<Expression> integrator(
+      spring_mass, max_h, context.get());
+  integrator.Initialize();
+
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(0.1));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

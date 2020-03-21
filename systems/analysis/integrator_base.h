@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/dense_output.h"
@@ -107,7 +108,7 @@ namespace systems {
                      Equations II (Stiff and Differential-Algebraic Problems).
                      Springer, 1996.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
  */
 template <class T>
 class IntegratorBase {
@@ -892,17 +893,19 @@ class IntegratorBase {
     if (!context_) throw std::logic_error("Context has not been set.");
 
     // Verify that user settings are reasonable.
-    if (max_step_size_ < req_min_step_size_) {
-      throw std::logic_error("Integrator maximum step size is less than the "
-                             "minimum step size");
-    }
-    if (req_initial_step_size_ > max_step_size_) {
-      throw std::logic_error("Requested integrator initial step size is larger "
-                             "than the maximum step size.");
-    }
-    if (req_initial_step_size_ < req_min_step_size_) {
-      throw std::logic_error("Requested integrator initial step size is smaller"
-                             " than the minimum step size.");
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (max_step_size_ < req_min_step_size_) {
+        throw std::logic_error("Integrator maximum step size is less than the "
+                               "minimum step size");
+      }
+      if (req_initial_step_size_ > max_step_size_) {
+        throw std::logic_error("Requested integrator initial step size is "
+                               "larger than the maximum step size.");
+      }
+      if (req_initial_step_size_ < req_min_step_size_) {
+        throw std::logic_error("Requested integrator initial step size is "
+                               "smaller than the minimum step size.");
+      }
     }
 
     // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
@@ -1722,5 +1725,5 @@ class IntegratorBase {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::IntegratorBase)
