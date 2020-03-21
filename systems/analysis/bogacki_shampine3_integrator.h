@@ -77,4 +77,3 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::BogackiShampine3Integrator)
-
