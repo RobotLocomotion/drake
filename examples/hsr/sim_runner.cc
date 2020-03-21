@@ -40,7 +40,10 @@ int DoMain() {
     drake::VectorX<double> constant_pos_value = drake::VectorX<double>::Zero(
         hsr_plant.num_positions() + hsr_plant.num_velocities());
     // Set the w of the quaternion base to be 1.0 to make the state to be valid.
-    constant_pos_value(0) = 1.0;
+    constant_pos_value(0) = 0.5;
+    const std::string joint_name = "head_tilt_joint";
+    constant_pos_value[hsr_plant.GetJointByName(joint_name).position_start()] =
+        1;
 
     auto desired_pos_constant_source =
         builder.template AddSystem<systems::ConstantVectorSource<double>>(
@@ -78,8 +81,8 @@ int DoMain() {
   auto diagram = builder.Build();
 
   // Create and run the simulator.
-  drake::systems::Simulator<double> simulator(
-      *diagram, std::move(diagram->CreateDefaultContext()));
+  drake::systems::Simulator<double> simulator(*diagram,
+                                              diagram->CreateDefaultContext());
   simulator.set_target_realtime_rate(sim_parameters.target_realtime_rate);
   simulator.AdvanceTo(sim_parameters.simulation_time);
 

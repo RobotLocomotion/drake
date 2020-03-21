@@ -31,6 +31,7 @@ void SimCommandReceiver::CalcDesiredStateOutput(
     const int num_positions = robot_plant_->num_positions();
     for (int i = 0; i < joint_command_size; ++i) {
       const auto& joint_name = command.joint_name[i];
+      std::cout << "Joint name received: " << joint_name << std::endl;
       const auto& joint_it = robot_plant_->GetJointByName(joint_name);
       (*output)[joint_it.position_start()] = command.joint_position[i];
       (*output)[num_positions + joint_it.velocity_start()] =
