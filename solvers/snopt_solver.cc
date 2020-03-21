@@ -115,7 +115,7 @@ template<>
 struct SnoptImpl<false> {
   // The unit number for our "Print file" log for the current thread.  When the
   // "Print file" option is not enabled, this is zero.
-  thread_local static int g_iprint;
+  thread_local inline static int g_iprint;
 
   template <typename Int>
   static void snend(
@@ -194,9 +194,6 @@ struct SnoptImpl<false> {
     ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
   }
 };
-
-// The next line is C++ boilerplate to declare linker storage for this global.
-thread_local int SnoptImpl<false>::g_iprint;
 
 // Choose the correct SnoptImpl specialization.
 #pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
