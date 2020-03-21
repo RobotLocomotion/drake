@@ -19,7 +19,7 @@ namespace hsr {
 
 /// A system that represents the complete HSR world environment, including
 /// the robots and anything a user might want to load into the model such as
-/// objects or sensors. All these Parameterss are stored in the configration
+/// objects or sensors. All these Parameters are stored in the configration
 /// yaml file. For the proof of life purpose, only a simple table and a
 /// bottle are added as the extra objects.
 ///
@@ -35,8 +35,8 @@ namespace hsr {
 ///   @output_port{pose_bundle}
 ///   @output_port{contact_results}
 ///   @output_port{plant_continuous_state}
-///   @output_pott{geometry_poses}
-///   Availablity of the following ports depends on the configuration.
+///   @output_port{geometry_poses}
+///   Availability of the following ports depends on the configuration.
 ///   @output_port{[name]_imu_status}
 ///   @output_port{[name]_force_sensor_status}
 ///   @output_port{[name]_camera_rgb_image}
@@ -71,9 +71,9 @@ class HsrWorld : public systems::Diagram<T> {
   /// joint commands, etc.
   struct OwnedRobotControllerPlant {
     using mbp = multibody::MultibodyPlant<T>;
-    explicit OwnedRobotControllerPlant(const double time_step)
-        : float_plant(std::make_unique<mbp>(time_step)),
-          welded_plant(std::make_unique<mbp>(time_step)) {}
+    explicit OwnedRobotControllerPlant(const double max_time_step)
+        : float_plant(std::make_unique<mbp>(max_time_step)),
+          welded_plant(std::make_unique<mbp>(max_time_step)) {}
     std::unique_ptr<mbp> float_plant;
     std::unique_ptr<mbp> welded_plant;
   };

@@ -107,6 +107,25 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "hsr_stack_mock",
+    srcs = [
+        "hsr_stack_mock.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hsr_world",
+        ":sim_command_sender",
+        ":sim_status_receiver",
+        "//examples/hsr/parameters",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/lcm",
+        "//systems/primitives:constant_vector_source",
+        "@gflags",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
