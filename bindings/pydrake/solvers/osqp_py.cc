@@ -39,7 +39,8 @@ PYBIND11_MODULE(osqp, m) {
       .def_readwrite("polish_time", &OsqpSolverDetails::polish_time,
           doc.OsqpSolverDetails.polish_time.doc)
       .def_readwrite("run_time", &OsqpSolverDetails::run_time,
-          doc.OsqpSolverDetails.run_time.doc);
+          doc.OsqpSolverDetails.run_time.doc)
+      .def_readwrite("y", &OsqpSolverDetails::y, doc.OsqpSolverDetails.y.doc);
   AddValueInstantiation<OsqpSolverDetails>(m);
 }
 
