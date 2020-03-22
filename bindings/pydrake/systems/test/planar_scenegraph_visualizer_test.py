@@ -1,9 +1,10 @@
 import unittest
 
 import numpy as np
+import os
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import Box
+from pydrake.geometry import Box, Mesh
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
@@ -115,9 +116,23 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         mbp.RegisterCollisionGeometry(
             box_body, RigidTransform.Identity(), box_shape, "ground_col",
             CoulombFriction(0.9, 0.8))
+        mesh_name = FindResourceOrThrow(
+            "drake/manipulation/models/iiwa_description/meshes/visual/"
+            "link_0.obj")
+        # Test that the visualizer will find the .obj even if the
+        # specification includes a different format.
+        mesh_name_wrong_ext = os.path.splitext(mesh_name)[0] + ".STL"
+        mesh_shape = Mesh(mesh_name_wrong_ext)
+        mesh_body = mbp.AddRigidBody("mesh", SpatialInertia(
+            mass=1.0, p_PScm_E=np.array([0., 0., 0.]),
+            G_SP_E=UnitInertia(1.0, 1.0, 1.0)))
+        mbp.WeldFrames(world_body.body_frame(), mesh_body.body_frame(),
+                       RigidTransform())
+        mbp.RegisterVisualGeometry(
+            mesh_body, RigidTransform.Identity(), mesh_shape, "mesh_vis",
+            np.array([0.5, 0.5, 0.5, 1.]))
         mbp.Finalize()
 
-        frames_to_draw = {"world": {"box"}}
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))

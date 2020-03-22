@@ -1,9 +1,12 @@
 import math
 import warnings
 
+import errno
+import glob
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 with warnings.catch_warnings():  # noqa
     # N.B. We must suppress this to appease `all_test`.
     # TODO(eric.cousineau): Remove this once all supported platform ships
@@ -239,7 +242,20 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                          for pt in sample_pts])
 
                 elif geom.type == geom.MESH:
-                    mesh = ReadObjToSurfaceMesh(geom.string_data)
+                    filename = geom.string_data
+                    base, ext = os.path.splitext(filename)
+                    if ext.lower() is not ".obj":
+                        # Check for a juxtaposed .obj file (case insensitive).
+                        filename = base + ".obj"
+                        for f in glob.glob(base + '.*'):
+                            base, ext = os.path.splitext(f)
+                            if ext.lower() == '.obj':
+                                filename = f
+                                break
+                    if not os.path.exists(filename):
+                        raise FileNotFoundError(errno.ENOENT, os.strerror(
+                            errno.ENOENT, filename))
+                    mesh = ReadObjToSurfaceMesh(filename)
                     patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
 
                 else:
