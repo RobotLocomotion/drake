@@ -1,9 +1,10 @@
 import unittest
 
 import numpy as np
+import os
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import Box
+from pydrake.geometry import Box, Mesh
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
@@ -67,7 +68,6 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         kuka.GetFrameByName("iiwa_link_7", iiwa)
         kuka.GetFrameByName("iiwa_link_6", iiwa)
 
-        frames_to_draw = {"iiwa14": {"iiwa_link_7", "iiwa_link_6"}}
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
@@ -117,7 +117,6 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
             CoulombFriction(0.9, 0.8))
         mbp.Finalize()
 
-        frames_to_draw = {"world": {"box"}}
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
@@ -134,3 +133,54 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
 
         visualizer.draw(vis_context)
         self.assertEqual(visualizer.ax.get_title(), "t = 0.1",)
+
+    def test_mesh_file_parsing(self):
+        """
+        This test ensures we can load obj files or provide a reasonable error
+        message.
+        """
+        def scene_graph_with_mesh(filename):
+            builder = DiagramBuilder()
+            mbp, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+            world_body = mbp.world_body()
+
+            mesh_shape = Mesh(filename)
+            mesh_body = mbp.AddRigidBody("mesh", SpatialInertia(
+                mass=1.0, p_PScm_E=np.array([0., 0., 0.]),
+                G_SP_E=UnitInertia(1.0, 1.0, 1.0)))
+            mbp.WeldFrames(world_body.body_frame(), mesh_body.body_frame(),
+                           RigidTransform())
+            mbp.RegisterVisualGeometry(
+                mesh_body, RigidTransform.Identity(), mesh_shape, "mesh_vis",
+                np.array([0.5, 0.5, 0.5, 1.]))
+            mbp.Finalize()
+
+            return scene_graph
+
+        # This mesh should load correctly.
+        mesh_name = FindResourceOrThrow(
+            "drake/manipulation/models/iiwa_description/meshes/visual/"
+            "link_0.obj")
+        scene_graph = scene_graph_with_mesh(mesh_name)
+        PlanarSceneGraphVisualizer(scene_graph)
+
+        # This should load correctly, too, by substituting the .obj.
+        mesh_name_wrong_ext = os.path.splitext(mesh_name)[0] + ".STL"
+        scene_graph = scene_graph_with_mesh(mesh_name_wrong_ext)
+        PlanarSceneGraphVisualizer(scene_graph)
+
+        # This should report that the file does not exist:
+        with self.assertRaises(FileNotFoundError):
+            PlanarSceneGraphVisualizer(
+                scene_graph, substitute_collocated_mesh_files=False)
+
+        # This should report that the file does not exist.
+        scene_graph = scene_graph_with_mesh("garbage.obj")
+        with self.assertRaises(FileNotFoundError):
+            PlanarSceneGraphVisualizer(scene_graph)
+
+        # This should report that the extension was wrong and no .obj was
+        # found.
+        scene_graph = scene_graph_with_mesh("garbage.STL")
+        with self.assertRaises(RuntimeError):
+            PlanarSceneGraphVisualizer(scene_graph)
