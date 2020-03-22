@@ -1,9 +1,12 @@
 import math
 import warnings
 
+import errno
+import glob
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 with warnings.catch_warnings():  # noqa
     # N.B. We must suppress this to appease `all_test`.
     # TODO(eric.cousineau): Remove this once all supported platform ships
@@ -72,6 +75,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                  ylim=[-1, 1],
                  facecolor=[1, 1, 1],
                  use_random_colors=False,
+                 substitute_collocated_mesh_files=True,
                  ax=None,
                  show=None):
         """
@@ -88,6 +92,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             use_random_colors: If set to True, will render each body with a
                 different color. (Multiple visual elements on the same body
                 will be the same color.)
+            substitute_collocated_mesh_files: If True, then a mesh file
+                specified with an unsupported filename extension may be
+                replaced by a file of the same base name in the same directory,
+                but with a supported filename extension.  Currently only .obj
+                files are supported.
             ax: If supplied, the visualizer will draw onto those axes instead
                 of creating a new set of axes. The visualizer will still change
                 the view range and figure size of those axes.
@@ -122,7 +131,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self.fig.set_size_inches(figsize[0], figsize[1])
 
         # Populate body patches.
-        self._build_body_patches(use_random_colors)
+        self._build_body_patches(use_random_colors,
+                                 substitute_collocated_mesh_files)
 
         # Populate the body fill list -- which requires doing most of a draw
         # pass, but with an ax.fill() command to initialize the draw patches.
@@ -149,7 +159,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # Then update the vertices for a more accurate initial draw.
                 self._update_body_fill_verts(body_fill, patch_V)
 
-    def _build_body_patches(self, use_random_colors):
+    def _build_body_patches(self, use_random_colors,
+                            substitute_collocated_mesh_files):
         """
         Generates body patches. self._patch_Blist stores a list of patches for
         each body (starting at body id 1). A body patch is a list of all 3D
@@ -239,7 +250,24 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                          for pt in sample_pts])
 
                 elif geom.type == geom.MESH:
-                    mesh = ReadObjToSurfaceMesh(geom.string_data)
+                    filename = geom.string_data
+                    base, ext = os.path.splitext(filename)
+                    if (ext.lower() is not ".obj") and \
+                       substitute_collocated_mesh_files:
+                        # Check for a co-located .obj file (case insensitive).
+                        for f in glob.glob(base + '.*'):
+                            if f[-4:].lower() == '.obj':
+                                filename = f
+                                break
+                        if filename[-4:].lower() != '.obj':
+                            raise RuntimeError(
+                                "The given file " + filename + " is not "
+                                "supported and no alternate " + base +
+                                ".obj could be found.")
+                    if not os.path.exists(filename):
+                        raise FileNotFoundError(errno.ENOENT, os.strerror(
+                            errno.ENOENT), filename)
+                    mesh = ReadObjToSurfaceMesh(filename)
                     patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
 
                 else:
