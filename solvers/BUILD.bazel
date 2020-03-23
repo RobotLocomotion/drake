@@ -255,8 +255,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "solver_options",
-    srcs = ["solver_options.cc"],
-    hdrs = ["solver_options.h"],
+    srcs = [
+        "common_solver_option.cc",
+        "solver_options.cc",
+    ],
+    hdrs = [
+        "common_solver_option.h",
+        "solver_options.h",
+    ],
     deps = [
         ":solver_id",
     ],
