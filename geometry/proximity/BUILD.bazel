@@ -86,6 +86,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "contact_surface_utility",
+    srcs = ["contact_surface_utility.cc"],
     hdrs = ["contact_surface_utility.h"],
     deps = [
         ":surface_mesh",
@@ -493,6 +494,7 @@ drake_cc_googletest(
     deps = [
         ":contact_surface_utility",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
