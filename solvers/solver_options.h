@@ -59,8 +59,6 @@ class SolverOptions {
   void SetOption(const SolverId& solver_id, const std::string& solver_option,
                  const std::string& option_value);
 
-  /// @anchor set_common_option
-  /// @name SetCommonOption
   /// Set common options for all solvers supporting that option (for example,
   /// printing the progress in each iteration). If the solver doesn't support
   /// the option, the option is ignored.
