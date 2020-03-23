@@ -126,8 +126,9 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
     osqp_solver.Solve(prog, {}, {}, &result);
     const int OSQP_SOLVED = 1;
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+    // OSQP is not very accurate, use a loose tolerance.
     EXPECT_TRUE(CompareMatrices(result.get_solver_details<OsqpSolver>().y,
-                                Eigen::Vector3d(0, 0, -0.0619621), 1E-4));
+                                Eigen::Vector3d(0, 0, -0.0619621), 1E-5));
 
     // Now only allow half the iterations in the OSQP solver. The solver should
     // not be able to solve the problem accurately.
