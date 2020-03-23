@@ -60,8 +60,7 @@ void SolverOptions::SetOption(
       common_solver_options_[key] = value;
       break;
     }
-    default:
-      DRAKE_UNREACHABLE();
+    DRAKE_UNREACHABLE();
   }
 }
 
@@ -113,9 +112,11 @@ void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
   }
 }
 
-template <typename T>
-void MergeHelper(const std::unordered_map<CommonSolverOption, T>& other,
-                 std::unordered_map<CommonSolverOption, T>* self) {
+void MergeHelper(
+    const std::unordered_map<CommonSolverOption,
+                             std::variant<double, int, std::string>>& other,
+    std::unordered_map<CommonSolverOption,
+                       std::variant<double, int, std::string>>* self) {
   for (const auto& other_keyval : other) {
     // This is a no-op when the key already exists.
     self->insert(other_keyval);
@@ -127,7 +128,7 @@ void SolverOptions::Merge(const SolverOptions& other) {
   MergeHelper(other.solver_options_double_, &solver_options_double_);
   MergeHelper(other.solver_options_int_, &solver_options_int_);
   MergeHelper(other.solver_options_str_, &solver_options_str_);
-  MergeHelper<std::variant<double, int, std::string>>(
+  MergeHelper(
       other.common_solver_options_, &common_solver_options_);
 }
 
@@ -153,18 +154,6 @@ void Summarize(const SolverId& id,
   }
 }
 
-template <typename T>
-void Summarize(
-    const std::unordered_map<CommonSolverOption,
-                             std::variant<double, int, std::string>>& keyvals,
-    std::map<std::string, std::string>* pairs) {
-  for (const auto& keyval : keyvals) {
-    if (std::holds_alternative<T>(keyval.second)) {
-      (*pairs)[fmt::format("CommonSolverOption::{}", keyval.first)] =
-          fmt::format("{}", std::get<T>(keyval.second));
-    }
-  }
-}
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
@@ -180,9 +169,14 @@ std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
       Summarize(id, x.GetOptionsInt(id), &pairs);
       Summarize(id, x.GetOptionsStr(id), &pairs);
     }
-    Summarize<double>(x.common_solver_options(), &pairs);
-    Summarize<int>(x.common_solver_options(), &pairs);
-    Summarize<std::string>(x.common_solver_options(), &pairs);
+    for (auto [key, val] : x.common_solver_options()) {
+      std::visit(
+          [key, &pairs](auto& val_x) {
+            pairs[fmt::format("CommonSolverOption::{}", key)] =
+                fmt::format("{}", val_x);
+          },
+          val);
+    }
     for (const auto& pair : pairs) {
       os << ", " << pair.first << "=" << pair.second;
     }

@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace solvers {
-
 GTEST_TEST(SolverOptionsTest, SetGetOption) {
   SolverOptions dut;
   EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
