@@ -444,6 +444,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "door_hinge_test",
     timeout = "moderate",
+    shard_count = 2,
     deps = [
         ":tree",
         "//multibody/plant",
