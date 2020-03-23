@@ -14,5 +14,6 @@ from .trajectory_optimization import *
 
 try:
     from .drawing import *
+    from .system_sliders import *
 except ImportError:
     pass
