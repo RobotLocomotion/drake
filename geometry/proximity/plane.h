@@ -68,11 +68,7 @@ class Plane {
       }
       nhat_F_ = n_F / magnitude;
     } else {
-      using std::abs;
-      // We pick a threshold that should easily contain typical precision loss
-      // in the columns/rows of a rotation matrix -- a likely source for plane
-      // normals.
-      DRAKE_ASSERT(abs(n_F.norm() - 1.0) > 1e-13);
+      DRAKE_ASSERT_VOID(ThrowIfInsufficientlyNormal(n_F));
       nhat_F_ = n_F;
     }
     displacement_ = nhat_F_.dot(p_FP);
@@ -90,6 +86,21 @@ class Plane {
   const Vector3<T>& normal() const { return nhat_F_; }
 
  private:
+  // Used to validate the "already normalized" plane normal in debug mode.
+  static void ThrowIfInsufficientlyNormal(const Vector3<T>& n) {
+    using std::abs;
+    const T delta = abs(n.norm() - 1);
+    // We pick a threshold that should easily contain typical precision loss
+    // in the columns/rows of a rotation matrix -- a likely source for plane
+    // normals.
+    if (delta > 1e-13) {
+      throw std::runtime_error(
+          fmt::format("Plane constructed with a normal vector that was "
+                      "declared normalized; the vector is not unit length. "
+                      "Vector [{}] with length {}", n.transpose(), n.norm()));
+    }
+  }
+
   Vector3<T> nhat_F_;
   T displacement_{};
 };

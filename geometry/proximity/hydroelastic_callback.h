@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
+#include "drake/geometry/proximity/mesh_plane_intersection.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -83,6 +84,33 @@ enum class CalcContactSurfaceResult {
   kSameCompliance   //< The two geometries have the same compliance.
 };
 
+/** Computes ContactSurface using the algorithm appropriate to the Shape types
+ represented by the given `soft` and `rigid` geometries.  */
+template <typename T>
+std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
+    const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
+    GeometryId id_S, const RigidGeometry& rigid,
+    const math::RigidTransform<T>& X_WR, GeometryId id_R) {
+  if (rigid.is_half_space()) {
+    // Soft volume vs rigid half space. The half space-mesh intersection
+    // requires the mesh field to be a linear mesh field.
+    const auto& field_S =
+        dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
+            soft.pressure_field());
+    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
+    return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+  } else {
+    // soft cannot be a half space; so this must be mesh-mesh.
+    const VolumeMeshField<double, double>& field_S = soft.pressure_field();
+    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
+    const SurfaceMesh<double>& mesh_R = rigid.mesh();
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R = rigid.bvh();
+
+    return ComputeContactSurfaceFromSoftVolumeRigidSurface(
+        id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
+  }
+}
 
 /** Calculates the contact surface (if it exists) between two potentially
  colliding geometries.
@@ -123,23 +151,12 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   const math::RigidTransform<T>& X_WS(data->X_WGs.at(id_S));
   const math::RigidTransform<T>& X_WR(data->X_WGs.at(id_R));
 
-  // TODO(SeanCurtis-TRI): We are currently assuming that *everything* is a
-  //  mesh. When rigid and compliant half spaces are fully supported modify
-  //  this.
   const SoftGeometry& soft = data->geometries.soft_geometry(id_S);
-  const VolumeMeshField<double, double>& field_S = soft.pressure_field();
-  const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
   const RigidGeometry& rigid = data->geometries.rigid_geometry(id_R);
-  const SurfaceMesh<double>& mesh_R = rigid.mesh();
-  const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
-  // TODO(SeanCurtis-TRI): There are multiple heap allocations implicit in
-  // this (resizing vector, constructing mesh and pressure field), this *may*
-  // prove to be too expensive to be in the inner loop of the simulation.
-  // Keep an eye on this.
   std::unique_ptr<ContactSurface<T>> surface =
-      ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
+      DispatchRigidSoftCalculation(soft, X_WS, id_S, rigid, X_WR, id_R);
+
   if (surface != nullptr) {
     DRAKE_DEMAND(surface->id_M() < surface->id_N());
     data->surfaces.emplace_back(std::move(*surface));

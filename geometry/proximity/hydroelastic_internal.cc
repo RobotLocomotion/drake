@@ -1,7 +1,6 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
-#include <limits>
-#include <vector>
+#include <string>
 
 #include <fmt/format.h>
 
@@ -21,10 +20,8 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-using Eigen::Vector3d;
 using std::make_unique;
 using std::move;
-using std::vector;
 
 SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
   if (this == &g) return *this;
@@ -41,8 +38,10 @@ SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
 RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
   if (this == &g) return *this;
 
-  auto mesh = make_unique<SurfaceMesh<double>>(g.mesh());
-  geometry_ = RigidMesh(move(mesh));
+  geometry_ = std::nullopt;
+  if (!g.is_half_space()) {
+    geometry_ = RigidMesh(make_unique<SurfaceMesh<double>>(g.mesh()));
+  }
 
   return *this;
 }
@@ -194,6 +193,12 @@ class PositiveDouble : public Validator<double> {
     }
   }
 };
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const HalfSpace&, const ProximityProperties&) {
+  // Default constructor creates a rigid half space.
+  return RigidGeometry();
+}
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {

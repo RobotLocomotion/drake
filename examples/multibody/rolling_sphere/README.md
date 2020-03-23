@@ -37,10 +37,9 @@ objects:
 The "hydroelastic" model doesn't have full support yet. There are some types
 of geometries that cannot yet be given a hydroelastic representation and some
 types of contact which aren't modeled yet. For example:
-  - Drake `HalfSpace` shapes can't be represented at all
-  - Drake `Mesh` shapes can only be modeled with _rigid_ hydroelastic
-    representation
-  - Contact between two rigid or two soft objects aren't supported.
+  - Drake `HalfSpace` and `Mesh` shapes can only be modeled with _rigid_
+    hydroleastic representation
+  - Contact between two rigid or two soft objects isn't supported.
 
 __Changing the configuration__
 
