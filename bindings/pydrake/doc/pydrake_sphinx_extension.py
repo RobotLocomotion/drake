@@ -16,6 +16,7 @@ import re
 import warnings
 from typing import Any, Tuple
 
+from sphinx import version_info as sphinx_version
 from sphinx.locale import _
 import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
@@ -277,17 +278,35 @@ def patch_document_members(original, self, all_members=False):
     # find out which members are documentable
     members_check_module, members = self.get_object_members(want_all)
 
+    # This method changed after version 1.6.7.
+    # We accomodate the changes till version 2.4.4.
+    # https://github.com/sphinx-doc/sphinx/commit/6e1e35c98ac29397d4552caf72710ccf4bf98bea
+    if sphinx_version[:3] >= (1, 8, 0):
+        exclude_members_all = self.options.exclude_members is autodoc.ALL
+    else:
+        exclude_members_all = False
     # remove members given by exclude-members
     if self.options.exclude_members:
-        members = [(membername, member) for (membername, member) in members
-                   if membername not in self.options.exclude_members]
+        members = [
+            (membername, member) for (membername, member) in members
+            if (
+                exclude_members_all or
+                membername not in self.options.exclude_members
+                )
+            ]
 
     # document non-skipped members
     memberdocumenters = []  # type: List[Tuple[Documenter, bool]]
     for (mname, member, isattr) in self.filter_members(members, want_all):
-        classes = [cls for cls in __import__("six").itervalues(
-            autodoc.AutoDirective._registry)
-            if cls.can_document_member(member, mname, isattr, self)]
+        # This method changed after version 1.6.7.
+        # We accomodate the changes till version 2.4.4.
+        # https://github.com/sphinx-doc/sphinx/commit/5d6413b7120cfc6d3d0cc9367cfe8b6f7ee87523
+        if sphinx_version[:3] >= (1, 7, 0):
+            documenters = self.documenters
+        else:
+            documenters = autodoc.AutoDirective._registry
+        classes = [cls for cls in documenters.values()
+                   if cls.can_document_member(member, mname, isattr, self)]
         if not classes:
             # don't know how to document this member
             continue
