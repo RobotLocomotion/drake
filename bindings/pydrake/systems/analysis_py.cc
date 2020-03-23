@@ -69,6 +69,12 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc);
+  };
+  type_visit(bind_scalar_types, CommonScalarPack{});
+
+  auto bind_nonsymbolic_scalar_types = [m](auto dummy) {
+    constexpr auto& doc = pydrake_doc.drake.systems;
+    using T = decltype(dummy);
 
     DefineTemplateClassWithDefault<RungeKutta3Integrator<T>, IntegratorBase<T>>(
         m, "RungeKutta3Integrator", GetPyParam<T>(),
@@ -132,7 +138,7 @@ PYBIND11_MODULE(analysis, m) {
             &Simulator<T>::set_target_realtime_rate,
             doc.Simulator.set_target_realtime_rate.doc);
   };
-  type_visit(bind_scalar_types, NonSymbolicScalarPack{});
+  type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 
   // Monte Carlo Testing
   {
