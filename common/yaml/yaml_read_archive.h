@@ -58,6 +58,8 @@ namespace yaml {
 /// std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
 /// also be used.
 ///
+/// YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
+///
 /// For inspiration and background, see:
 /// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
 class YamlReadArchive final {
@@ -67,11 +69,7 @@ class YamlReadArchive final {
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
   /// class overview for details.
   explicit YamlReadArchive(const YAML::Node& root)
-      : owned_root_(root),
-        root_(&owned_root_),
-        mapish_item_key_(nullptr),
-        mapish_item_value_(nullptr),
-        parent_(nullptr) {}
+      : YamlReadArchive(true, &root, nullptr, nullptr, nullptr) {}
 
   /// Sets the contents `serializable` based on the YAML file associated with
   /// this archive.  See the %YamlReadArchive class overview for details.
@@ -99,14 +97,7 @@ class YamlReadArchive final {
   // Internal-use constructor during recursion.  This constructor aliases all
   // of its arguments, so all must outlive this object.
   YamlReadArchive(const YAML::Node* root, const YamlReadArchive* parent)
-      : owned_root_(),
-        root_(root),
-        mapish_item_key_(nullptr),
-        mapish_item_value_(nullptr),
-        parent_(parent) {
-    DRAKE_DEMAND(root != nullptr);
-    DRAKE_DEMAND(parent != nullptr);
-  }
+      : YamlReadArchive(false, root, nullptr, nullptr, parent) {}
 
   // Internal-use constructor during recursion.  This constructor aliases all
   // of its arguments, so all must outlive this object.  The effect is as-if
@@ -114,15 +105,17 @@ class YamlReadArchive final {
   YamlReadArchive(const char* mapish_item_key,
                   const YAML::Node* mapish_item_value,
                   const YamlReadArchive* parent)
-      : owned_root_(),
-        root_(nullptr),
-        mapish_item_key_(mapish_item_key),
-        mapish_item_value_(mapish_item_value),
-        parent_(parent) {
-    DRAKE_DEMAND(mapish_item_key != nullptr);
-    DRAKE_DEMAND(mapish_item_value != nullptr);
-    DRAKE_DEMAND(parent != nullptr);
-  }
+      : YamlReadArchive(false, nullptr, mapish_item_key, mapish_item_value,
+                        parent) {}
+
+  // All of the other constructors delegate to here.  The `should_copy_root`
+  // if true iff we're coming from the public constructor where the user is
+  // passing in a Node reference that we need to keep alive.
+  YamlReadArchive(bool should_copy_root,
+                  const YAML::Node* root,
+                  const char* mapish_item_key,
+                  const YAML::Node* mapish_item_value,
+                  const YamlReadArchive* parent);
 
   enum class VisitShouldMemorizeType { kNo, kYes };
 
@@ -426,6 +419,10 @@ class YamlReadArchive final {
     result.clear();
     for (const auto& yaml_key_value : sub_node) {
       const std::string& key = yaml_key_value.first.Scalar();
+      if (key == "<<") {
+        // Ignore "merge key" values.  See AddMergeKeys in cc file for details.
+        continue;
+      }
       auto newiter_inserted = result.emplace(key, Value{});
       auto& newiter = newiter_inserted.first;
       const bool inserted = newiter_inserted.second;
