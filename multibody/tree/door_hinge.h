@@ -124,15 +124,8 @@ class DoorHinge : public ForceElement<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoorHinge)
 
   /// Constructs a hinge force element with parameters @p config applied to the
-  /// specified @p joint.
-  ///
-  /// Some minimal sanity checking is asserted on the supplied config.
-  /// @throws std::exception if `config.spring_constant` is negative.
-  /// @throws std::exception if `config.dynamic_friction_torque` is negative.
-  /// @throws std::exception if `config.static_friction_torque` is negative.
-  /// @throws std::exception if `config.viscous_friction` is negative.
-  /// @throws std::exception if `config.catch_width` is negative.
-  /// @throws std::exception if `config.motion_threshold` is negative.
+  /// specified @p joint. It will throw execption if the DoorHingeConfig is
+  /// invalid.
   DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config);
 
   const RevoluteJoint<T>& joint() const;
