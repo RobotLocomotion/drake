@@ -130,7 +130,13 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.set_publish_every_time_step.doc)
         .def("set_target_realtime_rate",
             &Simulator<T>::set_target_realtime_rate,
-            doc.Simulator.set_target_realtime_rate.doc);
+            doc.Simulator.set_target_realtime_rate.doc)
+        .def("get_target_realtime_rate",
+            &Simulator<T>::get_target_realtime_rate,
+            doc.Simulator.get_target_realtime_rate.doc)
+        .def("get_actual_realtime_rate",
+            &Simulator<T>::get_actual_realtime_rate,
+            doc.Simulator.get_actual_realtime_rate.doc);
   };
   type_visit(bind_scalar_types, NonSymbolicScalarPack{});
 

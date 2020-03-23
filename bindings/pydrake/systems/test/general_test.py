@@ -344,6 +344,8 @@ class TestGeneral(unittest.TestCase):
                             simulator.get_mutable_context())
             check_output(simulator.get_context())
             simulator.AdvanceTo(1)
+            self.assertEqual(simulator.get_target_realtime_rate(), 0)
+            self.assertTrue(simulator.get_actual_realtime_rate() > 0.)
 
             # Create simulator specifying context.
             context = system.CreateDefaultContext()
