@@ -90,7 +90,7 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
-/// @tparam_nonsymbolic_scalar
+/// @tparam_default_scalar
 template <typename T>
 class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
@@ -352,20 +352,24 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       throw std::runtime_error("Provided step start time and"
                                " previous step end time differ.");
     }
-    const MatrixX<T>& prev_end_state = prev_step.get_states().back();
-    const MatrixX<T>& next_start_state = next_step.get_states().front();
-    if (!prev_end_state.isApprox(next_start_state)) {
-      throw std::runtime_error("Provided step start state and previous step end"
-                               " state differ. Cannot ensure C0 continuity.");
-    }
-    const MatrixX<T>& prev_end_state_derivative =
-        prev_step.get_state_derivatives().back();
-    const MatrixX<T>& next_start_state_derivative =
-        next_step.get_state_derivatives().front();
-    if (!prev_end_state_derivative.isApprox(next_start_state_derivative)) {
-      throw std::runtime_error("Provided step start state derivative and"
-                               " previous step end state derivative differ."
-                               " Cannot ensure C1 continuity.");
+    // We can't sanity check the state values when using symbolic expressions.
+    if constexpr (scalar_predicate<T>::is_bool) {
+      const MatrixX<T>& prev_end_state = prev_step.get_states().back();
+      const MatrixX<T>& next_start_state = next_step.get_states().front();
+      if (!prev_end_state.isApprox(next_start_state)) {
+        throw std::runtime_error(
+            "Provided step start state and previous step end state differ. "
+            "Cannot ensure C0 continuity.");
+      }
+      const MatrixX<T>& prev_end_state_derivative =
+          prev_step.get_state_derivatives().back();
+      const MatrixX<T>& next_start_state_derivative =
+          next_step.get_state_derivatives().front();
+      if (!prev_end_state_derivative.isApprox(next_start_state_derivative)) {
+        throw std::runtime_error(
+            "Provided step start state derivative and previous step end state "
+            "derivative differ. Cannot ensure C1 continuity.");
+      }
     }
   }
 
@@ -399,5 +403,5 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::HermitianDenseOutput)
