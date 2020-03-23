@@ -37,11 +37,14 @@ class OpenGlContext::Impl {
 
     // Create a window to get an OpenGL context and hide it since we don't want
     // to display anything yet.
-    glutInitWindowSize(320, 240);
+    glutInitWindowSize(window_width_, window_height_);
     glutInitWindowPosition(0, 0);
     window_id_ = glutCreateWindow("Window");
     glutHideWindow();
-
+    auto display = []() {
+      glFlush();
+    };
+    glutDisplayFunc(display);
     GLenum err = glewInit();
     if (GLEW_OK != err) {
       throw std::runtime_error(fmt::format(
@@ -70,6 +73,20 @@ class OpenGlContext::Impl {
     if (glutGetWindow() != window_id_) {
         glutSetWindow(window_id_);
     }
+  }
+
+  void resize_window(const int width, const int height) {
+    if (width != window_width_ || height != window_height_) {
+      glutReshapeWindow(width, height);
+      window_width_ = width;
+      window_height_ = height;
+      glutMainLoopEvent();
+    }
+  }
+
+  void display_window() {
+    glutShowWindow();
+    glutMainLoopEvent();
   }
 
   bool is_initialized() const { return is_initialized_; }
@@ -105,6 +122,8 @@ class OpenGlContext::Impl {
 
   bool is_initialized_{false};
   int window_id_{0};
+  int window_width_{640};
+  int window_height_{480};
 };
 bool OpenGlContext::Impl::is_glut_initialized_{false};
 
@@ -114,6 +133,14 @@ OpenGlContext::OpenGlContext(bool debug)
 OpenGlContext::~OpenGlContext() = default;
 
 void OpenGlContext::make_current() const { impl_->make_current(); }
+
+void OpenGlContext::display_window() {
+  impl_->display_window();
+}
+
+void OpenGlContext::resize_window(const int width, const int height) {
+  impl_->resize_window(width, height);
+}
 
 bool OpenGlContext::is_initialized() const { return impl_->is_initialized(); }
 

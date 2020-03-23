@@ -114,6 +114,17 @@ class RenderEngineGl final : public RenderEngine {
   OpenGlGeometry SetupVAO(const VertexBuffer& vertices,
                           const IndexBuffer& indices);
 
+  // Updates the display window with the last image rendered.
+  // If `show_window` is true:
+  //  - if the window is not currently visible, it is made visible
+  //  - the window's contents display the most recent image rendered.
+  // If `show_window` is false:
+  //  - the display window's state is unchanged; hidden remains hidden, and
+  //    visible remains visible with unchanged contents.
+  // @pre RenderTarget's BufferDim is the same as the size reported by `camera`.
+  void UpdateVisibleWindow(const CameraProperties& camera, bool show_window,
+                           const RenderTarget& target) const;
+
   // The cached value transformation between camera and world frame.
   mutable math::RigidTransformd X_CW_;
 

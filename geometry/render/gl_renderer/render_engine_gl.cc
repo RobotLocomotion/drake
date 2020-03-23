@@ -296,6 +296,32 @@ void RenderEngineGl::GetDepthImage(ImageDepth32F* depth_image_out,
   }
 }
 
+void RenderEngineGl::UpdateVisibleWindow(const CameraProperties& camera,
+                                         bool show_window,
+                                         const RenderTarget& target) const {
+  // We don't need to check that the camera width and camera height match the
+  // target dimensions as this is already handled in the target's creation. The
+  // same camera and target are then used together in the invocation of this
+  // function. The target itself does not retain any size information as it is
+  // retrieved via the BufferDim.
+
+  if (show_window) {
+    opengl_context_->resize_window(camera.width, camera.height);
+    // Clear the default buffer (0) which will be used for the window.
+    const GLint clear_color = 0;
+    glClearNamedFramebufferiv(0, GL_COLOR, 0, &clear_color);
+    // Use the render target buffer as the read buffer and the default buffer
+    // (0) as the draw buffer for displaying in the window. We transfer the full
+    // image bounded by (0, 0) and (camera.width, camera.height) from source to
+    // destination.
+    glBlitNamedFramebuffer(target.frame_buffer, 0,
+                           0, 0, camera.width, camera.height,  // Src bounds.
+                           0, 0, camera.width, camera.height,  // Dest bounds.
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    opengl_context_->display_window();
+  }
+}
+
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
