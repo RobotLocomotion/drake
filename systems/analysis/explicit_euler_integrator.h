@@ -16,7 +16,7 @@ namespace systems {
  * x(t+h) = x(t) + dx/dt * h
  * </pre>
  *
- * @tparam_nonsymbolic_scalar
+ * @tparam_default_scalar
  */
 template <class T>
 class ExplicitEulerIntegrator final : public IntegratorBase<T> {
@@ -92,5 +92,5 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& h) {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::ExplicitEulerIntegrator)
