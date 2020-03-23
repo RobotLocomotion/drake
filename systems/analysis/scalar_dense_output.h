@@ -13,7 +13,7 @@ namespace systems {
 /// As such, its value can evaluated in both scalar and vectorial
 /// form (via EvaluateScalar() and Evaluate(), respectively).
 ///
-/// @tparam_nonsymbolic_scalar
+/// @tparam_default_scalar
 template <typename T>
 class ScalarDenseOutput : public DenseOutput<T> {
  public:
@@ -52,5 +52,5 @@ class ScalarDenseOutput : public DenseOutput<T> {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::ScalarDenseOutput)
