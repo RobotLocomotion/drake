@@ -1,8 +1,12 @@
 import unittest
 
-from pydrake.symbolic import Variable
-from pydrake.systems.primitives import SymbolicVectorSystem
+from pydrake.symbolic import Variable, Expression
+from pydrake.systems.primitives import (
+    SymbolicVectorSystem,
+    SymbolicVectorSystem_
+)
 from pydrake.systems.analysis import (
+    RungeKutta2Integrator_,
     RegionOfAttraction,
     RegionOfAttractionOptions
 )
@@ -17,3 +21,11 @@ class AnalysisTest(unittest.TestCase):
         options.lyapunov_candidate = x*x
         options.state_variables = [x]
         V = RegionOfAttraction(system=sys, context=context, options=options)
+
+    def test_symbolic_integrators(self):
+        x = Variable("x")
+        sys = SymbolicVectorSystem_[Expression](state=[x], dynamics=[-x+x**3])
+        context = sys.CreateDefaultContext()
+
+        max_h = 0.1
+        RungeKutta2Integrator_[Expression](sys, max_h, context)
