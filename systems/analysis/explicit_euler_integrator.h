@@ -17,6 +17,7 @@ namespace systems {
  * </pre>
  *
  * @tparam_default_scalar
+ * @ingroup integrators
  */
 template <class T>
 class ExplicitEulerIntegrator final : public IntegratorBase<T> {

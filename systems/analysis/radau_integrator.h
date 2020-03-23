@@ -56,6 +56,7 @@ namespace systems {
  * @note This integrator uses the integrator accuracy setting, even when run
  *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
  *       process. See IntegratorBase::set_target_accuracy() for more info.
+ * @ingroup integrators
  */
 template <typename T, int num_stages = 2>
 class RadauIntegrator final : public ImplicitIntegrator<T> {
