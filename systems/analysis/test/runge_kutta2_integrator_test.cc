@@ -196,6 +196,29 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
       10 * std::numeric_limits<double>::epsilon());
 }
 
+GTEST_TEST(IntegratorTest, Symbolic) {
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  // Create the mass spring system.
+  SpringMassSystem<Expression> spring_mass(1., 1.);
+  // Set the maximum step size.
+  const double max_h = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  // Create the integrator.
+  RungeKutta2Integrator<Expression> integrator(
+      spring_mass, max_h, context.get());
+  integrator.Initialize();
+
+  const Variable q("q");
+  const Variable v("v");
+  const Variable work("work");
+  const Variable h("h");
+  context->SetContinuousState(Vector3<Expression>(q, v, work));
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
