@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/dense_output.h"
@@ -107,7 +108,7 @@ namespace systems {
                      Equations II (Stiff and Differential-Algebraic Problems).
                      Springer, 1996.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
  */
 template <class T>
 class IntegratorBase {
@@ -892,17 +893,19 @@ class IntegratorBase {
     if (!context_) throw std::logic_error("Context has not been set.");
 
     // Verify that user settings are reasonable.
-    if (max_step_size_ < req_min_step_size_) {
-      throw std::logic_error("Integrator maximum step size is less than the "
-                             "minimum step size");
-    }
-    if (req_initial_step_size_ > max_step_size_) {
-      throw std::logic_error("Requested integrator initial step size is larger "
-                             "than the maximum step size.");
-    }
-    if (req_initial_step_size_ < req_min_step_size_) {
-      throw std::logic_error("Requested integrator initial step size is smaller"
-                             " than the minimum step size.");
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (max_step_size_ < req_min_step_size_) {
+        throw std::logic_error("Integrator maximum step size is less than the "
+                               "minimum step size");
+      }
+      if (req_initial_step_size_ > max_step_size_) {
+        throw std::logic_error("Requested integrator initial step size is "
+                               "larger than the maximum step size.");
+      }
+      if (req_initial_step_size_ < req_min_step_size_) {
+        throw std::logic_error("Requested integrator initial step size is "
+                               "smaller than the minimum step size.");
+      }
     }
 
     // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
@@ -1044,7 +1047,7 @@ class IntegratorBase {
     using std::abs;
 
     const T h = t_target - context_->get_time();
-    if (h < 0) {
+    if (scalar_predicate<T>::is_bool && h < 0) {
       throw std::logic_error("IntegrateWithSingleFixedStepToTime() called with "
                              "a negative step size.");
     }
@@ -1057,12 +1060,15 @@ class IntegratorBase {
 
     UpdateStepStatistics(h);
 
-    // Correct any round-off error that has occurred. Formula below requires
-    // that time be non-negative.
-    DRAKE_DEMAND(context_->get_time() >= 0);
-    const double tol = 10 * std::numeric_limits<double>::epsilon() *
-        ExtractDoubleOrThrow(max(1.0, max(t_target, context_->get_time())));
-    DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
+    if constexpr (scalar_predicate<T>::is_bool) {
+      // Correct any round-off error that has occurred. Formula below requires
+      // that time be non-negative.
+      DRAKE_DEMAND(context_->get_time() >= 0);
+      const double tol = 10 * std::numeric_limits<double>::epsilon() *
+          ExtractDoubleOrThrow(max(1.0, max(t_target, context_->get_time())));
+      DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
+    }
+
     context_->SetTime(t_target);
 
     return true;
@@ -1722,5 +1728,5 @@ class IntegratorBase {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::IntegratorBase)
