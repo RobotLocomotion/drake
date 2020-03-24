@@ -1737,7 +1737,7 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
 template <>
 void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     const drake::systems::Context<double>& context,
-    HydroelasticFallbackCacheData* data) const {
+    internal::HydroelasticFallbackCacheData<double>* data) const {
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
@@ -1761,9 +1761,10 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
 
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<T>&, HydroelasticFallbackCacheData*) const {
+    const drake::systems::Context<T>&,
+    internal::HydroelasticFallbackCacheData<T>*) const {
   // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
-  //  as long as there are no collisions -- akin to CalcPontPairPenetrations().
+  //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
   throw std::domain_error(fmt::format("This method doesn't support T = {}.",
                                       NiceTypeName::Get<T>()));
 }
@@ -2398,7 +2399,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   //  cache entries.
   auto& hydro_point_cache_entry = this->DeclareCacheEntry(
       std::string("Hydroelastic contact with point-pair fallback"),
-      HydroelasticFallbackCacheData(),
+      internal::HydroelasticFallbackCacheData<T>(),
       &MultibodyPlant::CalcHydroelasticWithFallback,
       {this->configuration_ticket()});
   cache_indexes_.hydro_fallback = hydro_point_cache_entry.cache_index();
