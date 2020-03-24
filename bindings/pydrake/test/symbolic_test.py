@@ -565,6 +565,11 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(J[0], sym.cos(y))
         numpy_compare.assert_equal(J[1], -x * sym.sin(y))
 
+    def test_is_affine(self):
+        M = np.array([[a * a * x, 3 * x], [2 * x, 3 * a]])
+        self.assertTrue(sym.IsAffine(M, sym.Variables([x])))
+        self.assertFalse(sym.IsAffine(M))
+
     def test_differentiate(self):
         e = x * x
         numpy_compare.assert_equal(e.Differentiate(x), 2 * x)
