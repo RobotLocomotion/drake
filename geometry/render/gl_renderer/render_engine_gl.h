@@ -21,6 +21,14 @@ namespace geometry {
 namespace render {
 namespace gl {
 
+// Image types available.
+// TODO(tehbelinda): Implement color image type.
+enum ImageType {
+  kColor = 0,
+  kLabel = 1,
+  kDepth = 2,
+};
+
 /** See documentation of MakeRenderEngineGl().  */
 class RenderEngineGl final : public RenderEngine {
  public:
@@ -84,12 +92,22 @@ class RenderEngineGl final : public RenderEngine {
   // Copy constructor used for cloning.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
-  // Render inverse depth of the object at a specific pose in the camera frame.
-  void RenderAt(const Eigen::Matrix4f& X_CM) const;
+  // Performs the common setup for all shape types.
+  void ImplementGeometry(const OpenGlGeometry& geometry, void* user_data,
+                         const Vector3<double>& scale);
 
-  // Obtain the depth image of rendered from a specific object pose. This is
+  // Render the object at a specific pose in the camera frame using the given
+  // shader program.
+  void RenderAt(std::shared_ptr<ShaderProgram> shader_program,
+                const Eigen::Matrix4f& X_CM, const ImageType image_type) const;
+
+  // Obtain the depth image rendered from a specific object pose. This is
   // slow because it reads the buffer back from the GPU.
   void GetDepthImage(systems::sensors::ImageDepth32F* depth_image_out,
+                     const RenderTarget& target) const;
+  // Obtain the label image rendered from a specific object pose. This is
+  // slow because it reads the buffer back from the GPU.
+  void GetLabelImage(drake::systems::sensors::ImageLabel16I* label_image_out,
                      const RenderTarget& target) const;
 
   // Provide triangle mesh definitions of the various geometries supported by
@@ -101,14 +119,23 @@ class RenderEngineGl final : public RenderEngine {
   OpenGlGeometry GetMesh(const std::string& filename);
 
   // Infrastructure for setting up the frame buffer object.
-  RenderTarget SetupFBO(const DepthCameraProperties& camera);
+  RenderTarget SetupFBO(const CameraProperties& camera,
+                        const ImageType image_type);
 
   // Configure the model view and projection matrices.
-  void SetGLProjectionMatrix(const DepthCameraProperties& camera);
-  void SetGLModelViewMatrix(const Eigen::Matrix4f& X_CM) const;
+  void SetGLProjectionMatrix(std::shared_ptr<ShaderProgram> shader_program,
+                             const CameraProperties& camera);
+  void SetGLModelViewMatrix(std::shared_ptr<ShaderProgram> shader_program,
+                            const Eigen::Matrix4f& X_CM) const;
 
-  // Configure the OpenGL properties dependent on the camera properties.
-  RenderTarget SetCameraProperties(const DepthCameraProperties& camera);
+  // Configure the shader program for the given image type.
+  std::shared_ptr<ShaderProgram> SetShaderProperties(
+      const CameraProperties& camera, const ImageType image_type);
+
+  // Configure the OpenGL properties dependent on the camera properties and
+  // image type.
+  RenderTarget SetCameraProperties(const CameraProperties& camera,
+                                   const ImageType image_type);
 
   // Configure the vertex array object for a triangle mesh.
   OpenGlGeometry SetupVAO(const VertexBuffer& vertices,
@@ -137,7 +164,10 @@ class RenderEngineGl final : public RenderEngine {
   // I'm having each instance of the renderer share these OpenGl objects and
   // the context. If I'm going to do that, I may be better off making them
   // part of the Context rather than part of the renderer.
-  std::shared_ptr<ShaderProgram> shader_program_;
+  // Renders the inverse depth of objects.
+  std::shared_ptr<ShaderProgram> depth_shader_program_;
+  // Renders the label of objects.
+  std::shared_ptr<ShaderProgram> label_shader_program_;
 
   // One OpenGLGeometry per primitive type -- allow for instancing.
   OpenGlGeometry sphere_;
@@ -150,12 +180,18 @@ class RenderEngineGl final : public RenderEngine {
 
   // Mapping from width and height to a RenderTarget. Allows for the re-use of
   // frame buffers if they are of the same dimension.
-  std::shared_ptr<std::unordered_map<BufferDim, RenderTarget>> frame_buffers_;
+  std::shared_ptr<std::unordered_map<BufferDim, RenderTarget>>
+      depth_frame_buffers_;
+  std::shared_ptr<std::unordered_map<BufferDim, RenderTarget>>
+      label_frame_buffers_;
 
   // Mapping from RenderIndex to the visual data associated with that geometry.
   // This is copied so independent renderers can have different *instances* but
   // the instances still refer to the same, shared, underlying geometry.
   std::unordered_map<GeometryId, OpenGlInstance> visuals_;
+
+  // Obnoxious bright orange.
+  Eigen::Vector4d default_diffuse_{0.9, 0.45, 0.1, 1.0};
 };
 
 }  // namespace gl

@@ -66,6 +66,7 @@ drake_cc_library_gl_ubuntu_only(
     visibility = ["//visibility:private"],
     deps = [
         ":opengl_context",
+        "//geometry/render:render_label",
         "//math:geometric_transform",
     ],
 )
@@ -96,6 +97,7 @@ drake_cc_library(
             ":shader_program",
             "//common:essential",
             "//geometry/render:render_engine",
+            "//geometry/render:render_label",
             "//systems/sensors:image",
         ],
     }),
@@ -131,7 +133,7 @@ drake_cc_googletest(
     deps = [
         ":render_engine_gl",
         "//common:find_resource",
-        "//geometry/render:render_label",
+        "//common/test_utilities:expect_throws_message",
         "//systems/sensors:color_palette",
     ],
 )

@@ -12,31 +12,42 @@ using std::make_shared;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
+using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 
 namespace {
 
+// Set boundaries for OpenGl clipping planes.
+const float kGLZNear = 0.01;
+const float kGLZFar = 10.0;
+const float kInvZNearMinusZFar = 1. / (kGLZNear - kGLZFar);
+
 // Data to pass through the reification process.
 struct RegistrationData {
   const GeometryId id;
   const RigidTransformd& X_WG;
+  const PerceptionProperties& properties;
 };
 
 }  // namespace
 
 RenderEngineGl::RenderEngineGl()
     : opengl_context_(make_shared<OpenGlContext>()),
-      shader_program_(make_shared<ShaderProgram>()),
+      depth_shader_program_(make_shared<ShaderProgram>()),
+      label_shader_program_(make_shared<ShaderProgram>()),
       meshes_(make_shared<unordered_map<string, OpenGlGeometry>>()),
-      frame_buffers_(make_shared<unordered_map<BufferDim, RenderTarget>>()),
+      depth_frame_buffers_(
+          make_shared<unordered_map<BufferDim, RenderTarget>>()),
+      label_frame_buffers_(
+          make_shared<unordered_map<BufferDim, RenderTarget>>()),
       visuals_() {
   if (!opengl_context_->is_initialized())
     throw std::runtime_error("OpenGL Context has not been initialized.");
 
   // Setup shader program.
-  const string kVertexShader = R"__(
+  const string kDepthVertexShader = R"__(
 #version 330
 
 layout(location = 0) in vec3 p_Model;
@@ -49,7 +60,7 @@ void main() {
   depth = -p_Camera.z;
   gl_Position = projection_matrix * p_Camera;
 })__";
-  const string kFragmentShader = R"__(
+  const string kDepthFragmentShader = R"__(
 #version 330
 
 in float depth;
@@ -67,7 +78,26 @@ void main() {
   else
     inverse_depth = 1.0 / depth;
 })__";
-  shader_program_->LoadFromSources(kVertexShader, kFragmentShader);
+  const std::string kLabelVertexShader = R"__(
+#version 330
+layout(location = 0) in vec3 p_Model;
+uniform mat4 model_view_matrix;
+uniform mat4 projection_matrix;
+void main() {
+  vec4 p_Camera = model_view_matrix * vec4(p_Model, 1);
+  gl_Position = projection_matrix * p_Camera;
+})__";
+  const std::string kLabelFragmentShader = R"__(
+#version 330
+out vec4 color;
+uniform vec4 diffuse;
+void main() {
+  color = diffuse;
+})__";
+  label_shader_program_->LoadFromSources(kLabelVertexShader,
+                                         kLabelFragmentShader);
+  depth_shader_program_->LoadFromSources(kDepthVertexShader,
+                                         kDepthFragmentShader);
 }
 
 void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
@@ -83,38 +113,66 @@ void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
                                       ImageDepth32F* depth_image_out) const {
   opengl_context_->make_current();
 
+  RenderEngineGl* renderer = const_cast<RenderEngineGl*>(this);
+  std::shared_ptr<ShaderProgram> shader_program =
+      renderer->SetShaderProperties(camera, ImageType::kDepth);
   RenderTarget target =
-      const_cast<RenderEngineGl*>(this)->SetCameraProperties(camera);
+      renderer->SetCameraProperties(camera, ImageType::kDepth);
 
-  RenderAt(X_CW_.GetAsMatrix4().matrix().cast<float>());
+  RenderAt(shader_program, X_CW_.GetAsMatrix4().matrix().cast<float>(),
+           ImageType::kDepth);
   GetDepthImage(depth_image_out, target);
 }
 
-void RenderEngineGl::RenderLabelImage(const CameraProperties&, bool,
-                                      ImageLabel16I*) const {
-  throw std::runtime_error("RenderEngineDepthGl cannot render label images");
+void RenderEngineGl::RenderLabelImage(const CameraProperties& camera,
+                                      bool show_window,
+                                      ImageLabel16I* label_image_out) const {
+  opengl_context_->make_current();
+
+  RenderEngineGl* renderer = const_cast<RenderEngineGl*>(this);
+  std::shared_ptr<ShaderProgram> shader_program =
+      renderer->SetShaderProperties(camera, ImageType::kLabel);
+  RenderTarget target =
+      renderer->SetCameraProperties(camera, ImageType::kLabel);
+
+  RenderAt(shader_program, X_CW_.GetAsMatrix4().matrix().cast<float>(),
+           ImageType::kLabel);
+  UpdateVisibleWindow(camera, show_window, target);
+  GetLabelImage(label_image_out, target);
+}
+
+std::shared_ptr<ShaderProgram> RenderEngineGl::SetShaderProperties(
+    const CameraProperties& camera, const ImageType image_type) {
+  std::shared_ptr<ShaderProgram> shader_program;
+  if (image_type == kDepth) {
+    shader_program = depth_shader_program_;
+    shader_program->Use();
+    const DepthCameraProperties& depth_camera =
+        static_cast<const DepthCameraProperties&>(camera);
+    shader_program->SetUniformValue1f("depth_z_near", depth_camera.z_near);
+    shader_program->SetUniformValue1f("depth_z_far", depth_camera.z_far);
+    if (depth_camera.z_near < kGLZNear)
+      throw std::runtime_error(
+          fmt::format("Camera's z_near ({}) is closer than what this renderer "
+                      "can handle ({})",
+                      depth_camera.z_near, kGLZNear));
+    if (depth_camera.z_far > kGLZFar)
+      throw std::runtime_error(
+          fmt::format("Camera's z_far ({}) is farther than what this renderer "
+                      "can handle ({})",
+                      depth_camera.z_far, kGLZFar));
+
+  } else if (image_type == kLabel) {
+    shader_program = label_shader_program_;
+    shader_program->Use();
+  }
+  SetGLProjectionMatrix(shader_program, camera);
+  return shader_program;
 }
 
 void RenderEngineGl::SetGLProjectionMatrix(
-    const DepthCameraProperties& camera) {
-  shader_program_->Use();
-  shader_program_->SetUniformValue1f("depth_z_near", camera.z_near);
-  shader_program_->SetUniformValue1f("depth_z_far", camera.z_far);
-
-  static constexpr float kGLZNear = 0.01;
-  static constexpr float kGLZFar = 10.0;
-  static constexpr float kInvZNearMinusZFar = 1. / (kGLZNear - kGLZFar);
-  if (camera.z_near < kGLZNear)
-    throw std::runtime_error(
-        fmt::format("Camera's z_near ({}) is closer than what this renderer "
-                    "can handle ({})",
-                    camera.z_near, kGLZNear));
-  if (camera.z_far > kGLZFar)
-    throw std::runtime_error(
-        fmt::format("Camera's z_far ({}) is farther than what this renderer "
-                    "can handle ({})",
-                    camera.z_far, kGLZFar));
-
+    std::shared_ptr<ShaderProgram> shader_program,
+    const CameraProperties& camera) {
   // https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
   // An OpenGL projection matrix maps points in a camera coordinate to a "clip
   // coordinate", in which the projection step maps a 3D point into 2D
@@ -140,7 +198,7 @@ void RenderEngineGl::SetGLProjectionMatrix(
       0.0, 0.0, -1.0, 0.0;
   // clang-format on
   auto projection_matrix_id =
-      shader_program_->GetUniformLocation("projection_matrix");
+      shader_program->GetUniformLocation("projection_matrix");
   glUniformMatrix4fv(projection_matrix_id, 1, GL_FALSE, P.data());
 }
 
@@ -184,7 +242,8 @@ OpenGlGeometry RenderEngineGl::SetupVAO(const VertexBuffer& vertices,
   return geometry;
 }
 
-RenderTarget RenderEngineGl::SetupFBO(const DepthCameraProperties& camera) {
+RenderTarget RenderEngineGl::SetupFBO(const CameraProperties& camera,
+                                      const ImageType image_type) {
   // Create a framebuffer object.
   RenderTarget target;
   glCreateFramebuffers(1, &target.frame_buffer);
@@ -198,8 +257,13 @@ RenderTarget RenderEngineGl::SetupFBO(const DepthCameraProperties& camera) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, kWidth, kHeight, 0, GL_RED, GL_FLOAT,
-               0);
+  if (image_type == ImageType::kDepth) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, kWidth, kHeight, 0, GL_RED,
+                 GL_FLOAT, 0);
+  } else {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, 0);
+  }
   glBindTexture(GL_TEXTURE_2D, 0);
 
   // Attach the texture to FBO color attachment point.
@@ -228,9 +292,11 @@ RenderTarget RenderEngineGl::SetupFBO(const DepthCameraProperties& camera) {
   return target;
 }
 
-void RenderEngineGl::SetGLModelViewMatrix(const Eigen::Matrix4f& X_CM) const {
+void RenderEngineGl::SetGLModelViewMatrix(
+    std::shared_ptr<ShaderProgram> shader_program,
+    const Eigen::Matrix4f& X_CM) const {
   auto model_view_matrix_id =
-      shader_program_->GetUniformLocation("model_view_matrix");
+      shader_program->GetUniformLocation("model_view_matrix");
 
   // Our camera frame C wrt the OpenGL's camera frame Cgl.
   static const Eigen::Matrix4f kX_CglC =
@@ -241,16 +307,16 @@ void RenderEngineGl::SetGLModelViewMatrix(const Eigen::Matrix4f& X_CM) const {
   glUniformMatrix4fv(model_view_matrix_id, 1, GL_FALSE, X_CglM.data());
 }
 
-RenderTarget RenderEngineGl::SetCameraProperties(
-    const DepthCameraProperties& camera) {
-  SetGLProjectionMatrix(camera);
-
+RenderTarget RenderEngineGl::SetCameraProperties(const CameraProperties& camera,
+                                                 const ImageType image_type) {
   const BufferDim dim{camera.width, camera.height};
   RenderTarget target;
-  auto iter = frame_buffers_->find(dim);
-  if (iter == frame_buffers_->end()) {
-    target = SetupFBO(camera);
-    frame_buffers_->insert({dim, target});
+  std::shared_ptr<std::unordered_map<BufferDim, RenderTarget>> frame_buffers =
+      image_type == kDepth ? depth_frame_buffers_ : label_frame_buffers_;
+  auto iter = frame_buffers->find(dim);
+  if (iter == frame_buffers->end()) {
+    target = SetupFBO(camera, image_type);
+    frame_buffers->insert({dim, target});
   } else {
     target = iter->second;
   }
@@ -259,28 +325,39 @@ RenderTarget RenderEngineGl::SetCameraProperties(
   return target;
 }
 
-void RenderEngineGl::RenderAt(const Eigen::Matrix4f& X_CW) const {
-  shader_program_->Use();
-
+void RenderEngineGl::RenderAt(std::shared_ptr<ShaderProgram> shader_program,
+                              const Eigen::Matrix4f& X_CW,
+                              const ImageType image_type) const {
   glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
   glEnable(GL_DEPTH_TEST);
+  if (image_type == kLabel) {
+    // Set the default background for label images to be the empty label.
+    const auto empty_color =
+        RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
+    glClearColor(empty_color.r, empty_color.g, empty_color.b, 1);
+  }
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
   for (const auto& pair : visuals_) {
     const auto& vis = pair.second;
     glBindVertexArray(vis.geometry.vertex_array);
-
+    if (image_type == kLabel) {
+      const auto color = RenderEngine::GetColorDFromLabel(vis.label);
+      shader_program->SetUniformValue4f("diffuse", color.r, color.g, color.b,
+                                        1.f);
+    }
     Eigen::DiagonalMatrix<float, 4, 4> scale(
         Vector4<float>(vis.scale(0), vis.scale(1), vis.scale(2), 1.0));
     // Create the scaled transform (S_CG = X_CW * X_WG * scale) which poses a
     // scaled version of a canonical geometry.
-    SetGLModelViewMatrix(X_CW * vis.X_WG.GetAsMatrix4().cast<float>() * scale);
+    SetGLModelViewMatrix(shader_program,
+                         X_CW * vis.X_WG.GetAsMatrix4().cast<float>() * scale);
     glDrawElements(GL_TRIANGLES, vis.geometry.index_buffer_size,
                    GL_UNSIGNED_INT, 0);
   }
   // Unbind the vertex array back to the default of 0.
   glBindVertexArray(0);
-  shader_program_->Unuse();
+  shader_program->Unuse();
 }
 
 void RenderEngineGl::GetDepthImage(ImageDepth32F* depth_image_out,
@@ -292,6 +369,22 @@ void RenderEngineGl::GetDepthImage(ImageDepth32F* depth_image_out,
   for (int y = 0; y < depth_image_out->height(); ++y) {
     for (int x = 0; x < depth_image_out->width(); ++x) {
       *depth_image_out->at(x, y) = 1.f / *depth_image_out->at(x, y);
+    }
+  }
+}
+
+void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
+                                   const RenderTarget& target) const {
+  ImageRgba8U image(label_image_out->width(), label_image_out->height());
+  glGetTextureImage(target.texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                    image.size() * sizeof(GLubyte), image.at(0, 0));
+  ColorI color;
+  for (int y = 0; y < image.height(); ++y) {
+    for (int x = 0; x < image.width(); ++x) {
+      color.r = image.at(x, y)[0];
+      color.g = image.at(x, y)[1];
+      color.b = image.at(x, y)[2];
+      *label_image_out->at(x, y) = RenderEngine::LabelFromColor(color);
     }
   }
 }
@@ -324,59 +417,57 @@ void RenderEngineGl::UpdateVisibleWindow(const CameraProperties& camera,
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = sphere.radius();
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{r, r, r}));
+  ImplementGeometry(geometry, user_data, Vector3<double>{r, r, r});
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
                                        void* user_data) {
   OpenGlGeometry geometry = GetCylinder();
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{r, r, l}));
+  ImplementGeometry(geometry, user_data, Vector3<double>{r, r, l});
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
   OpenGlGeometry geometry = GetHalfSpace();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+  const RenderLabel label = GetRenderLabelOrThrow(data.properties);
   visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{1, 1, 1}));
+                                           Vector3<double>{1, 1, 1}, label));
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
   OpenGlGeometry geometry = GetBox();
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(
-      data.id, OpenGlInstance(geometry, data.X_WG,
-                              Vector3<double>{box.width(), box.depth(),
-                                                     box.height()}));
+  ImplementGeometry(geometry, user_data,
+                    Vector3<double>{box.width(), box.depth(), box.height()});
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   OpenGlGeometry geometry = GetMesh(mesh.filename());
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(
-      data.id, OpenGlInstance(geometry, data.X_WG,
-                              Vector3<double>{1, 1, 1} * mesh.scale()));
+  ImplementGeometry(geometry, user_data,
+                    Vector3<double>{1, 1, 1} * mesh.scale());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   OpenGlGeometry geometry = GetMesh(convex.filename());
+  ImplementGeometry(geometry, user_data,
+                    Vector3<double>{1, 1, 1} * convex.scale());
+}
+
+void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
+                                       void* user_data,
+                                       const Vector3<double>& scale) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{1, 1, 1} *
-                                               convex.scale()));
+  const RenderLabel label = GetRenderLabelOrThrow(data.properties);
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG, scale, label));
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
-                                      const PerceptionProperties&,
+                                      const PerceptionProperties& properties,
                                       const RigidTransformd& X_WG) {
   opengl_context_->make_current();
-  RegistrationData data{id, RigidTransformd{X_WG}};
+  RegistrationData data{id, RigidTransformd{X_WG}, properties};
   shape.Reify(this, &data);
   return true;
 }
