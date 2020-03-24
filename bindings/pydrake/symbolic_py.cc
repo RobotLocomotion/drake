@@ -363,7 +363,18 @@ PYBIND11_MODULE(symbolic, m) {
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);
       },
-      doc.Expression.Jacobian.doc);
+      doc.Jacobian.doc);
+
+  m.def("IsAffine",
+      [](const Eigen::Ref<const MatrixX<Expression>>& M,
+          const Variables& vars) { return IsAffine(M, vars); },
+      doc.IsAffine.doc_2args);
+
+  m.def("IsAffine",
+      [](const Eigen::Ref<const MatrixX<Expression>>& M) {
+        return IsAffine(M);
+      },
+      doc.IsAffine.doc_1args);
 
   m.def("Evaluate",
       [](const MatrixX<Expression>& M, const Environment::map& env,

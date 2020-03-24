@@ -14,10 +14,12 @@ using test::FormulaEqual;
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
  protected:
+  const Variable var_a_{"a"};
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
   const Variable var_w_{"w"};
+  const Expression a_{var_a_};
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
@@ -537,6 +539,20 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {
 // Note that in 1) Matrix<Expression>::inverse() is called while in 2)
 // Matrix<double>::inverse() is used.
 TEST_F(SymbolicExpressionMatrixTest, Inverse) {
+  Eigen::Matrix<Expression, 2, 2> M;
+  // clang-format off
+  M << a_ * a_ * x_, x_,
+       2 * x_,      3*x_ + 1;
+  // clang-format on
+
+  // M is affine in {x}.
+  EXPECT_TRUE(IsAffine(M, {var_x_}));
+
+  // However, M is *not* affine in {a, x}.
+  EXPECT_FALSE(IsAffine(M));
+}
+
+TEST_F(SymbolicExpressionMatrixTest, IsAffine) {
   Eigen::Matrix<Expression, 2, 2> M;
   // clang-format off
   M << x_, y_,
