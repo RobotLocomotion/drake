@@ -154,7 +154,7 @@ class DoorHingeTest : public ::testing::Test {
     const VectorX<double> init_state =
         (VectorX<double>(3) << 0.0, 0.0, angular_rate).finished();
 
-    const systems::InitialValueProblem<double>::SpecifiedValues default_values(
+    const systems::InitialValueProblem<double>::OdeContext default_values(
         kInitialTime, init_state, kDefaultParameters);
     systems::InitialValueProblem<double> ivp(energy_ode, default_values);
     ivp.get_mutable_integrator().set_target_accuracy(kIntegrationAccuracy);

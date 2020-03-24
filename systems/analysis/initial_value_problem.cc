@@ -18,11 +18,11 @@ namespace {
 //
 // @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
-class ODESystem : public LeafSystem<T> {
+class OdeSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ODESystem);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OdeSystem);
 
-  typedef typename InitialValueProblem<T>::ODEFunction SystemFunction;
+  typedef typename InitialValueProblem<T>::OdeFunction SystemFunction;
 
   // Constructs a system that will use the given @p system_function,
   // parameterized as described by the @p param_model, to compute the
@@ -36,24 +36,21 @@ class ODESystem : public LeafSystem<T> {
   // @param system_function The system function f(t, 𝐱; 𝐤).
   // @param state_model The state model vector 𝐱₀, with initial values.
   // @param param_model The parameter model vector 𝐤₀, with default values.
-  ODESystem(const SystemFunction& system_function,
-            const VectorX<T>& state_model,
-            const VectorX<T>& param_model);
+  OdeSystem(const SystemFunction& system_function,
+            const VectorX<T>& state_model, const VectorX<T>& param_model);
 
  protected:
-  void DoCalcTimeDerivatives(
-      const Context<T>& context,
-      ContinuousState<T>* derivatives) const override;
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
 
  private:
   // General ODE system d𝐱/dt = f(t, 𝐱; 𝐤) function.
   const SystemFunction system_function_;
 };
 
-
 template <typename T>
-ODESystem<T>::ODESystem(
-    const typename ODESystem<T>::SystemFunction& system_function,
+OdeSystem<T>::OdeSystem(
+    const typename OdeSystem<T>::SystemFunction& system_function,
     const VectorX<T>& state_model, const VectorX<T>& param_model)
     : system_function_(system_function) {
   // Models system state after the given state model.
@@ -63,17 +60,16 @@ ODESystem<T>::ODESystem(
 }
 
 template <typename T>
-void ODESystem<T>::DoCalcTimeDerivatives(
+void OdeSystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   // Retrieves the state vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
   // a BasicVector<T>, and the implementation deals with LeafSystem<T>
   // instances only by design.
   const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
-          context.get_continuous_state_vector());
+      context.get_continuous_state_vector());
   // Retrieves the parameter vector.
-  const BasicVector<T>& parameter_vector =
-      context.get_numeric_parameter(0);
+  const BasicVector<T>& parameter_vector = context.get_numeric_parameter(0);
 
   // Retrieves the derivatives vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
@@ -83,28 +79,26 @@ void ODESystem<T>::DoCalcTimeDerivatives(
       dynamic_cast<BasicVector<T>&>(derivatives->get_mutable_vector());
   // Computes the derivatives vector using the given system function
   // for the given time and state and with the given parameterization.
-  derivatives_vector.set_value(system_function_(
-      context.get_time(), state_vector.get_value(),
-      parameter_vector.get_value()));
+  derivatives_vector.set_value(system_function_(context.get_time(),
+                                                state_vector.get_value(),
+                                                parameter_vector.get_value()));
 }
 
 }  // namespace
 
-template<typename T>
+template <typename T>
 const double InitialValueProblem<T>::kDefaultAccuracy = 1e-4;
 
-template<typename T>
+template <typename T>
 const T InitialValueProblem<T>::kInitialStepSize = static_cast<T>(1e-4);
 
-template<typename T>
+template <typename T>
 const T InitialValueProblem<T>::kMaxStepSize = static_cast<T>(1e-1);
 
 template <typename T>
-InitialValueProblem<T>::InitialValueProblem(
-    const ODEFunction& ode_function,
-    const SpecifiedValues& default_values)
-    : default_values_(default_values),
-      current_values_(default_values) {
+InitialValueProblem<T>::InitialValueProblem(const OdeFunction& ode_function,
+                                            const OdeContext& default_values)
+    : default_values_(default_values), current_values_(default_values) {
   // Checks that preconditions are met.
   if (!default_values_.t0) {
     throw std::logic_error("No default initial time t0 was given.");
@@ -116,7 +110,7 @@ InitialValueProblem<T>::InitialValueProblem(
     throw std::logic_error("No default parameters vector k was given.");
   }
   // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<ODESystem<T>>(
+  system_ = std::make_unique<OdeSystem<T>>(
       ode_function, default_values_.x0.value(), default_values_.k.value());
 
   // Allocates a new default integration context with the
@@ -125,24 +119,22 @@ InitialValueProblem<T>::InitialValueProblem(
   context_->SetTime(default_values_.t0.value());
 
   // Instantiates an explicit RK3 integrator by default.
-  integrator_ = std::make_unique<RungeKutta3Integrator<T>>(
-      *system_, context_.get());
+  integrator_ =
+      std::make_unique<RungeKutta3Integrator<T>>(*system_, context_.get());
 
   // Sets step size and accuracy defaults.
   integrator_->request_initial_step_size_target(
       InitialValueProblem<T>::kInitialStepSize);
-  integrator_->set_maximum_step_size(
-      InitialValueProblem<T>::kMaxStepSize);
-  integrator_->set_target_accuracy(
-      InitialValueProblem<T>::kDefaultAccuracy);
+  integrator_->set_maximum_step_size(InitialValueProblem<T>::kMaxStepSize);
+  integrator_->set_target_accuracy(InitialValueProblem<T>::kDefaultAccuracy);
 }
 
 template <typename T>
-VectorX<T> InitialValueProblem<T>::Solve(
-    const T& tf, const SpecifiedValues& values) const {
+VectorX<T> InitialValueProblem<T>::Solve(const T& tf,
+                                         const OdeContext& values) const {
   // Gets all values to solve with, either given or default, while
   // checking that all preconditions hold.
-  const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
+  const OdeContext safe_values = SanitizeValuesOrThrow(tf, values);
 
   // Potentially invalidates the cache.
   ResetCachedStateIfNecessary(tf, safe_values);
@@ -165,8 +157,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
 }
 
 template <typename T>
-void InitialValueProblem<T>::ResetCachedState(
-    const SpecifiedValues& values) const {
+void InitialValueProblem<T>::ResetCachedState(const OdeContext& values) const {
   // Sets context (initial) time.
   context_->SetTime(values.t0.value());
 
@@ -179,8 +170,7 @@ void InitialValueProblem<T>::ResetCachedState(
   state_vector.set_value(values.x0.value());
 
   // Sets context parameters.
-  BasicVector<T>& parameter_vector =
-      context_->get_mutable_numeric_parameter(0);
+  BasicVector<T>& parameter_vector = context_->get_mutable_numeric_parameter(0);
   parameter_vector.set_value(values.k.value());
 
   // Keeps track of current step size and accuracy settings (regardless
@@ -206,7 +196,7 @@ void InitialValueProblem<T>::ResetCachedState(
 
 template <typename T>
 void InitialValueProblem<T>::ResetCachedStateIfNecessary(
-    const T& tf, const SpecifiedValues& values) const {
+    const T& tf, const OdeContext& values) const {
   // Only resets cache if necessary, i.e. if either initial
   // conditions or parameters have changed or if the time
   // the IVP is to be solved for is in the past with respect
@@ -217,34 +207,37 @@ void InitialValueProblem<T>::ResetCachedStateIfNecessary(
 }
 
 template <typename T>
-typename InitialValueProblem<T>::SpecifiedValues
-InitialValueProblem<T>::SanitizeValuesOrThrow(
-    const T& tf, const SpecifiedValues& values) const {
-  SpecifiedValues safe_values;
+typename InitialValueProblem<T>::OdeContext
+InitialValueProblem<T>::SanitizeValuesOrThrow(const T& tf,
+                                              const OdeContext& values) const {
+  OdeContext safe_values;
   safe_values.t0 = values.t0.has_value() ? values.t0 : default_values_.t0;
   if (tf < safe_values.t0.value()) {
-    throw std::logic_error("Cannot solve IVP for a time"
-                           " before the initial condition.");
+    throw std::logic_error(
+        "Cannot solve IVP for a time"
+        " before the initial condition.");
   }
   safe_values.x0 = values.x0.has_value() ? values.x0 : default_values_.x0;
   if (safe_values.x0.value().size() != default_values_.x0.value().size()) {
-    throw std::logic_error("IVP initial state vector x0 is"
-                           " of the wrong dimension.");
+    throw std::logic_error(
+        "IVP initial state vector x0 is"
+        " of the wrong dimension.");
   }
   safe_values.k = values.k.has_value() ? values.k : default_values_.k;
   if (safe_values.k.value().size() != default_values_.k.value().size()) {
-    throw std::logic_error("IVP parameters vector k is "
-                           " of the wrong dimension");
+    throw std::logic_error(
+        "IVP parameters vector k is "
+        " of the wrong dimension");
   }
   return safe_values;
 }
 
 template <typename T>
 std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
-    const T& tf, const SpecifiedValues& values) const {
+    const T& tf, const OdeContext& values) const {
   // Gets all values to solve with, either given or default, while
   // checking that all preconditions hold.
-  const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
+  const OdeContext safe_values = SanitizeValuesOrThrow(tf, values);
 
   // Unconditionally invalidates the cache. All integration steps that
   // take the IVP forward in time up to tf are necessary to build a

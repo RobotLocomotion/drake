@@ -25,7 +25,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
   // The default parameters 𝐤₀, for IVP definition.
   const VectorX<double> kDefaultParameters = VectorX<double>::Constant(1, 1.0);
   // All specified values by default, for IVP definition.
-  const ScalarInitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const ScalarInitialValueProblem<double>::ScalarOdeContext kDefaultValues(
       kDefaultInitialTime, kDefaultInitialState, kDefaultParameters);
 
   // Instantiates a generic IVP for test purposes only,
@@ -58,7 +58,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
 
   // Specifies a different parameter vector, but leaves both
   // initial time and state as defaults.
-  ScalarInitialValueProblem<double>::SpecifiedValues values;
+  ScalarInitialValueProblem<double>::ScalarOdeContext values;
   values.k = VectorX<double>::Constant(1, 5.0).eval();
   const VectorX<double>& k2 = values.k.value();
   const double t2 = kDefaultInitialTime + 0.3;
@@ -74,7 +74,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
   // Defines a generic ODE dx/dt = -x * t, that does not
   // model (nor attempts to model) any physical process.
   const ScalarInitialValueProblem<double>::
-      ScalarODEFunction dummy_scalar_ode_function =
+      ScalarOdeFunction dummy_scalar_ode_function =
       [](const double& t, const double& x,
          const VectorX<double>& k) -> double {
     unused(k);
@@ -83,14 +83,14 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       const ScalarInitialValueProblem<double>::
-          SpecifiedValues no_values;
+          ScalarOdeContext no_values;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, no_values);
     }, std::logic_error, "No default.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
-          SpecifiedValues values_without_t0;
+          ScalarOdeContext values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
@@ -99,7 +99,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
-          SpecifiedValues values_without_x0;
+          ScalarOdeContext values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const ScalarInitialValueProblem<double> ivp(
@@ -108,7 +108,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
-          SpecifiedValues values_without_k;
+          ScalarOdeContext values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
@@ -125,7 +125,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   // The default parameters 𝐤₀, for IVP definition.
   const VectorX<double> kDefaultParameters = VectorX<double>::Constant(2, 1.0);
   // All specified values by default, for IVP definition.
-  const ScalarInitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const ScalarInitialValueProblem<double>::ScalarOdeContext kDefaultValues(
       kDefaultInitialTime, kDefaultInitialState, kDefaultParameters);
 
   // Instantiates a generic IVP for test purposes only,
@@ -165,7 +165,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime), std::logic_error,
                               kInvalidTimeErrorMessage);
   {
-    ScalarInitialValueProblem<double>::SpecifiedValues values;
+    ScalarInitialValueProblem<double>::ScalarOdeContext values;
     values.k = kInvalidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
                                 kInvalidParametersErrorMessage);
@@ -175,7 +175,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   }
 
   {
-    ScalarInitialValueProblem<double>::SpecifiedValues values;
+    ScalarInitialValueProblem<double>::ScalarOdeContext values;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
                                 std::logic_error, kInvalidTimeErrorMessage);
@@ -213,7 +213,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
       VectorX<double>(2) << kInitialResistance,
                             kInitialCapacitance).finished();
   // Wraps all specified values by default, for IVP definition.
-  const ScalarInitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const ScalarInitialValueProblem<double>::ScalarOdeContext kDefaultValues(
       kInitialTime, kInitialStoredCharge, kDefaultParameters);
 
   // Instantiates the stored charge scalar IVP.
@@ -247,7 +247,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
        Rs += kResistanceStep) {
     for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance ;
          Cs += kCapacitanceStep) {
-      ScalarInitialValueProblem<double>::SpecifiedValues values;
+      ScalarInitialValueProblem<double>::ScalarOdeContext values;
       values.k = (VectorX<double>(2) << Rs, Cs).finished();
 
       const std::unique_ptr<ScalarDenseOutput<double>> stored_charge_approx =
@@ -298,7 +298,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   const VectorX<double> kDefaultParameters =
       VectorX<double>::Constant(1, kDefaultMalthusParam);
   // Wraps all specified values by default, for IVP definition.
-  const ScalarInitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const ScalarInitialValueProblem<double>::ScalarOdeContext kDefaultValues(
       kInitialTime, kInitialPopulation, kDefaultParameters);
 
   ScalarInitialValueProblem<double> population_growth_ivp(
@@ -325,7 +325,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   const double tf = kTotalTime;
   for (double r = kLowestMalthusParam; r <= kHighestMalthusParam;
        r += kMalthusParamStep) {
-    ScalarInitialValueProblem<double>::SpecifiedValues values;
+    ScalarInitialValueProblem<double>::ScalarOdeContext values;
     values.k = VectorX<double>::Constant(1, r).eval();
 
     const std::unique_ptr<ScalarDenseOutput<double>> population_growth_approx =
