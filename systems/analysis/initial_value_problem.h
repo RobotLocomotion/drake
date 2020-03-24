@@ -73,8 +73,8 @@ class InitialValueProblem {
   /// @param x The dependent vector variable 𝐱 ∈ ℝⁿ.
   /// @param k The vector of parameters 𝐤 ∈ ℝᵐ.
   /// @return The derivative vector d𝐱/dt ∈ ℝⁿ.
-  using OdeFunction = std::function<VectorX<T> (
-      const T& t, const VectorX<T>& x, const VectorX<T>& k)>;
+  using OdeFunction = std::function<VectorX<T>(const T& t, const VectorX<T>& x,
+                                               const VectorX<T>& k)>;
 
   DRAKE_DEPRECATED("2020-07-01", "ODEFunction has been renamed OdeFunction.")
   typedef OdeFunction ODEFunction;
@@ -93,25 +93,22 @@ class InitialValueProblem {
     /// @param x0_in Specified initial state vector 𝐱₀.
     /// @param k_in Specified parameter vector 𝐤.
     OdeContext(const std::optional<T>& t0_in,
-                    const std::optional<VectorX<T>>& x0_in,
-                    const std::optional<VectorX<T>>& k_in)
+               const std::optional<VectorX<T>>& x0_in,
+               const std::optional<VectorX<T>>& k_in)
         : t0(t0_in), x0(x0_in), k(k_in) {}
 
     bool operator==(const OdeContext& rhs) const {
       return (t0 == rhs.t0 && x0 == rhs.x0 && k == rhs.k);
     }
 
-    bool operator!=(const OdeContext& rhs) const {
-      return !operator==(rhs);
-    }
+    bool operator!=(const OdeContext& rhs) const { return !operator==(rhs); }
 
-    std::optional<T> t0;  ///< The initial time t₀ for the IVP.
+    std::optional<T> t0;           ///< The initial time t₀ for the IVP.
     std::optional<VectorX<T>> x0;  ///< The initial state vector 𝐱₀ for the IVP.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
 
-  DRAKE_DEPRECATED("2020-07-01",
-                   "SpecifiedValues has been renamed OdeContext.")
+  DRAKE_DEPRECATED("2020-07-01", "SpecifiedValues has been renamed OdeContext.")
   typedef OdeContext SpecifiedValues;
 
   /// Constructs an IVP described by the given @p ode_function, using
@@ -196,8 +193,8 @@ class InitialValueProblem {
   ///          InitialValueProblem::get_mutable_integrator().
   template <typename Integrator, typename... Args>
   Integrator* reset_integrator(Args&&... args) {
-    integrator_ = std::make_unique<Integrator>(
-        *system_, std::forward<Args>(args)...);
+    integrator_ =
+        std::make_unique<Integrator>(*system_, std::forward<Args>(args)...);
     integrator_->reset_context(context_.get());
     return static_cast<Integrator*>(integrator_.get());
   }
@@ -227,8 +224,7 @@ class InitialValueProblem {
   //                          InitialValueProblem::Solve() and
   //                          InitialValueProblem::DenseSolve()
   //                          do not hold.
-  OdeContext SanitizeValuesOrThrow(
-      const T& tf, const OdeContext& values) const;
+  OdeContext SanitizeValuesOrThrow(const T& tf, const OdeContext& values) const;
 
   // IVP values specified by default.
   const OdeContext default_values_;
@@ -250,8 +246,7 @@ class InitialValueProblem {
   // values and integration context based on time @p tf to solve for
   // and the provided @p values. If cached state can be reused, it's a
   // no-op.
-  void ResetCachedStateIfNecessary(
-      const T& tf, const OdeContext& values) const;
+  void ResetCachedStateIfNecessary(const T& tf, const OdeContext& values) const;
 
   // IVP current specified values (for caching).
   mutable OdeContext current_values_;

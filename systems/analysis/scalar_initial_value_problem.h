@@ -58,8 +58,8 @@ class ScalarInitialValueProblem {
   /// @param x The dependent variable x ∈ ℝ .
   /// @param k The parameter vector 𝐤 ∈ ℝᵐ.
   /// @return The derivative dx/dt ∈ ℝ.
-  using ScalarOdeFunction = std::function<T(const T& t, const T& x,
-                                            const VectorX<T>& k)>;
+  using ScalarOdeFunction =
+      std::function<T(const T& t, const T& x, const VectorX<T>& k)>;
 
   DRAKE_DEPRECATED("2020-07-01",
                    "ScalarODEFunction has been renamed "
@@ -83,8 +83,8 @@ class ScalarInitialValueProblem {
                      const std::optional<VectorX<T>>& k_in)
         : t0(t0_in), x0(x0_in), k(k_in) {}
 
-    std::optional<T> t0;  ///< The initial time t₀ for the IVP.
-    std::optional<T> x0;  ///< The initial state x₀ for the IVP.
+    std::optional<T> t0;          ///< The initial time t₀ for the IVP.
+    std::optional<T> x0;          ///< The initial state x₀ for the IVP.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
 
@@ -210,16 +210,15 @@ class ScalarInitialValueProblem {
  private:
   // Transforms given scalar IVP specified @p values into vector
   // IVP specified values.
-  static typename InitialValueProblem<T>::OdeContext
-  ToVectorIVPOdeContext(const ScalarOdeContext& values) {
+  static typename InitialValueProblem<T>::OdeContext ToVectorIVPOdeContext(
+      const ScalarOdeContext& values) {
     typename InitialValueProblem<T>::OdeContext vector_ivp_values;
     vector_ivp_values.k = values.k;
     vector_ivp_values.t0 = values.t0;
     if (values.x0.has_value()) {
       // Scalar initial state x₀ as a vector initial state 𝐱₀
       // of a single dimension.
-      vector_ivp_values.x0 = VectorX<T>::Constant(
-          1, values.x0.value()).eval();
+      vector_ivp_values.x0 = VectorX<T>::Constant(1, values.x0.value()).eval();
     }
     return vector_ivp_values;
   }
