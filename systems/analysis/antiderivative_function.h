@@ -63,20 +63,25 @@ class AntiderivativeFunction {
   /// partially specify the definite integral i.e. providing the lower
   /// integration bound v and the parameter vector 𝐤, leaving the upper
   /// integration bound u to be specified on evaluation.
-  struct SpecifiedValues {
+  struct IntegrableFunctionContext {
     /// Default constructor that leaves all values unspecified.
-    SpecifiedValues() = default;
+    IntegrableFunctionContext() = default;
 
     /// Constructor that specifies all values.
     /// @param v_in Specified lower integration bound v.
     /// @param k_in Specified parameter vector 𝐤.
-    SpecifiedValues(const std::optional<T>& v_in,
-                    const std::optional<VectorX<T>>& k_in)
+    IntegrableFunctionContext(const std::optional<T>& v_in,
+                              const std::optional<VectorX<T>>& k_in)
         : v(v_in), k(k_in) {}
 
     std::optional<T> v;  ///< The lower integration bound v.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤.
   };
+
+  DRAKE_DEPRECATED(
+      "2020-07-01",
+      "SpecifiedValues has been renamed IntegrableFunctionContext.")
+  typedef IntegrableFunctionContext SpecifiedValues;
 
   /// Constructs the antiderivative function of the given
   /// @p integrable_function, using @p default_values.v as lower integration
@@ -88,16 +93,16 @@ class AntiderivativeFunction {
   ///                       i.e. default lower integration bound v ∈ ℝ  and
   ///                       default parameter vector 𝐤 ∈ ℝᵐ.
   AntiderivativeFunction(const IntegrableFunction& integrable_function,
-                         const SpecifiedValues& default_values = {}) {
+                         const IntegrableFunctionContext& default_values = {}) {
     // Expresses the scalar integral to be solved as an ODE.
-    typename ScalarInitialValueProblem<T>::ScalarODEFunction
+    typename ScalarInitialValueProblem<T>::ScalarOdeFunction
         scalar_ode_function = [integrable_function](
             const T& t, const T& x, const VectorX<T>& k) -> T {
       unused(x);
       return integrable_function(t, k);
     };
 
-    typename ScalarInitialValueProblem<T>::SpecifiedValues
+    typename ScalarInitialValueProblem<T>::ScalarOdeContext
         scalar_ivp_default_values;
     // Default initial time for the scalar ODE form falls back
     // to 0 if no lower integration bound is specified.
@@ -128,8 +133,8 @@ class AntiderivativeFunction {
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
   /// @throws std::logic_error if any of the preconditions is not met.
-  T Evaluate(const T& u, const SpecifiedValues& values = {}) const {
-    typename ScalarInitialValueProblem<T>::SpecifiedValues
+  T Evaluate(const T& u, const IntegrableFunctionContext& values = {}) const {
+    typename ScalarInitialValueProblem<T>::ScalarOdeContext
         scalar_ivp_values(values.v, {}, values.k);
     return scalar_ivp_->Solve(u, scalar_ivp_values);
   }
@@ -163,10 +168,10 @@ class AntiderivativeFunction {
   ///      values given on construction.
   /// @throws std::logic_error if any of the preconditions is not met.
   std::unique_ptr<ScalarDenseOutput<T>> MakeDenseEvalFunction(
-      const T& w, const SpecifiedValues& values = {}) const {
+      const T& w, const IntegrableFunctionContext& values = {}) const {
     // Delegates request to the scalar IVP used for computations, by putting
     // specified values in scalar IVP terms.
-    typename ScalarInitialValueProblem<T>::SpecifiedValues
+    typename ScalarInitialValueProblem<T>::ScalarOdeContext
         scalar_ivp_values(values.v, {}, values.k);
     return this->scalar_ivp_->DenseSolve(w, scalar_ivp_values);
   }

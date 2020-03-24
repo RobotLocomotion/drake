@@ -18,11 +18,11 @@ namespace {
 //
 // @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
-class ODESystem : public LeafSystem<T> {
+class OdeSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ODESystem);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OdeSystem);
 
-  typedef typename InitialValueProblem<T>::ODEFunction SystemFunction;
+  typedef typename InitialValueProblem<T>::OdeFunction SystemFunction;
 
   // Constructs a system that will use the given @p system_function,
   // parameterized as described by the @p param_model, to compute the
@@ -36,7 +36,7 @@ class ODESystem : public LeafSystem<T> {
   // @param system_function The system function f(t, 𝐱; 𝐤).
   // @param state_model The state model vector 𝐱₀, with initial values.
   // @param param_model The parameter model vector 𝐤₀, with default values.
-  ODESystem(const SystemFunction& system_function,
+  OdeSystem(const SystemFunction& system_function,
             const VectorX<T>& state_model,
             const VectorX<T>& param_model);
 
@@ -52,8 +52,8 @@ class ODESystem : public LeafSystem<T> {
 
 
 template <typename T>
-ODESystem<T>::ODESystem(
-    const typename ODESystem<T>::SystemFunction& system_function,
+OdeSystem<T>::OdeSystem(
+    const typename OdeSystem<T>::SystemFunction& system_function,
     const VectorX<T>& state_model, const VectorX<T>& param_model)
     : system_function_(system_function) {
   // Models system state after the given state model.
@@ -63,7 +63,7 @@ ODESystem<T>::ODESystem(
 }
 
 template <typename T>
-void ODESystem<T>::DoCalcTimeDerivatives(
+void OdeSystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   // Retrieves the state vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
@@ -101,8 +101,8 @@ const T InitialValueProblem<T>::kMaxStepSize = static_cast<T>(1e-1);
 
 template <typename T>
 InitialValueProblem<T>::InitialValueProblem(
-    const ODEFunction& ode_function,
-    const SpecifiedValues& default_values)
+    const OdeFunction& ode_function,
+    const OdeContext& default_values)
     : default_values_(default_values),
       current_values_(default_values) {
   // Checks that preconditions are met.
@@ -116,7 +116,7 @@ InitialValueProblem<T>::InitialValueProblem(
     throw std::logic_error("No default parameters vector k was given.");
   }
   // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<ODESystem<T>>(
+  system_ = std::make_unique<OdeSystem<T>>(
       ode_function, default_values_.x0.value(), default_values_.k.value());
 
   // Allocates a new default integration context with the
@@ -139,10 +139,10 @@ InitialValueProblem<T>::InitialValueProblem(
 
 template <typename T>
 VectorX<T> InitialValueProblem<T>::Solve(
-    const T& tf, const SpecifiedValues& values) const {
+    const T& tf, const OdeContext& values) const {
   // Gets all values to solve with, either given or default, while
   // checking that all preconditions hold.
-  const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
+  const OdeContext safe_values = SanitizeValuesOrThrow(tf, values);
 
   // Potentially invalidates the cache.
   ResetCachedStateIfNecessary(tf, safe_values);
@@ -166,7 +166,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
 
 template <typename T>
 void InitialValueProblem<T>::ResetCachedState(
-    const SpecifiedValues& values) const {
+    const OdeContext& values) const {
   // Sets context (initial) time.
   context_->SetTime(values.t0.value());
 
@@ -206,7 +206,7 @@ void InitialValueProblem<T>::ResetCachedState(
 
 template <typename T>
 void InitialValueProblem<T>::ResetCachedStateIfNecessary(
-    const T& tf, const SpecifiedValues& values) const {
+    const T& tf, const OdeContext& values) const {
   // Only resets cache if necessary, i.e. if either initial
   // conditions or parameters have changed or if the time
   // the IVP is to be solved for is in the past with respect
@@ -217,10 +217,10 @@ void InitialValueProblem<T>::ResetCachedStateIfNecessary(
 }
 
 template <typename T>
-typename InitialValueProblem<T>::SpecifiedValues
+typename InitialValueProblem<T>::OdeContext
 InitialValueProblem<T>::SanitizeValuesOrThrow(
-    const T& tf, const SpecifiedValues& values) const {
-  SpecifiedValues safe_values;
+    const T& tf, const OdeContext& values) const {
+  OdeContext safe_values;
   safe_values.t0 = values.t0.has_value() ? values.t0 : default_values_.t0;
   if (tf < safe_values.t0.value()) {
     throw std::logic_error("Cannot solve IVP for a time"
@@ -241,10 +241,10 @@ InitialValueProblem<T>::SanitizeValuesOrThrow(
 
 template <typename T>
 std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
-    const T& tf, const SpecifiedValues& values) const {
+    const T& tf, const OdeContext& values) const {
   // Gets all values to solve with, either given or default, while
   // checking that all preconditions hold.
-  const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
+  const OdeContext safe_values = SanitizeValuesOrThrow(tf, values);
 
   // Unconditionally invalidates the cache. All integration steps that
   // take the IVP forward in time up to tf are necessary to build a
