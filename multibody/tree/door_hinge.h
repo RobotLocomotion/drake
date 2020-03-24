@@ -147,6 +147,41 @@ class DoorHinge final : public ForceElement<T> {
       const internal::PositionKinematicsCache<T>&,
       const internal::VelocityKinematicsCache<T>&) const override;
 
+  /**
+   @anchor door_hinge_advanced
+   @name Advanced Functions
+    Convinient simple functions for cleaner math and easier testing. Instead
+    of using the corresponding cache and context, this function provides a
+    simpler interface and uses the internal DoorHingeConfig implicitly for the
+    calculations.
+  @{
+  */
+
+  /// Calculate the total frictional torque with the given @p angular_rate
+  /// and the internal DoorHingeConfig.
+  T CalcHingeFrictionalTorque(const T& angular_rate) const;
+
+  /// Calculate the total spring related torque with the given @p angle
+  /// and the internal DoorHingeConfig.
+  T CalcHingeSpringTorque(const T& angle) const;
+
+  /// Calculate the total torque with the given @p angle and
+  /// @p angular_rate and the internal DoorHingeConfig.
+  T CalcHingeTorque(const T& angle, const T& angular_rate) const;
+
+  /// Calculate the total conservative power with the given @p angle,
+  /// @p angular_rate, and the internal DoorHingeConfig.
+  T CalcHingeConservativePower(const T& angle, const T& angular_rate) const;
+
+  /// Calculate the total non-conservative power with the given
+  /// @p angular_rate and the internal DoorHingeConfig.
+  T CalcHingeNonConservativePower(const T& angular_rate) const;
+
+  /// Calculate the total potential energy of the DoorHinge ForceElement with
+  /// the given @p angle and the internal DoorHingeConfig.
+  T CalcHingeStoredEnergy(const T& angle) const;
+  // @}
+
  protected:
   void DoCalcAndAddForceContribution(
       const systems::Context<T>& context,
@@ -164,6 +199,7 @@ class DoorHinge final : public ForceElement<T> {
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
  private:
+  // For unit test only.
   friend class DoorHingeTester;
 
   template <typename U>
@@ -175,19 +211,6 @@ class DoorHinge final : public ForceElement<T> {
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedClone(
       const internal::MultibodyTree<ToScalar>&) const;
-
-  // Convinient simple functions for cleaner math and easier testing.
-  T CalcHingeFrictionalTorque(const T& angular_velocity) const;
-
-  T CalcHingeSpringTorque(const T& angle) const;
-
-  T CalcHingeTorque(const T& angle, const T& angular_velocity) const;
-
-  T CalcHingeConservativePower(const T& angle, const T& angular_velocity) const;
-
-  T CalcHingeNonConservativePower(const T& angular_velocity) const;
-
-  T CalcHingeStoredEnergy(const T& angle) const;
 
   const JointIndex joint_index_;
   const DoorHingeConfig config_;
