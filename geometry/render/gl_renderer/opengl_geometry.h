@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/geometry/render/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -41,12 +42,13 @@ struct OpenGlGeometry {
 struct OpenGlInstance {
   OpenGlInstance(const OpenGlGeometry& g_in,
                  const math::RigidTransformd& pose_in,
-                 const Vector3<double>& scale_in)
-      : geometry(g_in), X_WG(pose_in), scale(scale_in) {}
+                 const Vector3<double>& scale_in, const RenderLabel& label_in)
+      : geometry(g_in), X_WG(pose_in), scale(scale_in), label(label_in) {}
   OpenGlGeometry geometry;
   math::RigidTransformd X_WG;
   // The scale factors providing the basis for non-unit geometry.
   Vector3<double> scale;
+  RenderLabel label;
 };
 
 }  // namespace internal

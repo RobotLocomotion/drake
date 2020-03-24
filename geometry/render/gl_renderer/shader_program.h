@@ -37,6 +37,10 @@ class ShaderProgram {
   /** Sets the scalar uniform value to the given value.  */
   void SetUniformValue1f(const std::string& uniform_name, float value) const;
 
+  /** Sets the vector4 uniform value to the given value.  */
+  void SetUniformValue4f(const std::string& uniform_name, float value0,
+                         float value1, float value2, float value3) const;
+
   /** Binds the program for usage.  */
   void Use() const;
 
