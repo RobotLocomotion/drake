@@ -103,6 +103,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
+# TODO(jwnimmer-tri) On 2020-07-01 update GCC min to 7.5 here and in the bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 11)
 set(MINIMUM_CLANG_VERSION 6)
 set(MINIMUM_GNU_VERSION 7.4)

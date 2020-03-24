@@ -89,15 +89,7 @@ namespace multibody {
 ///     Robot and multibody dynamics: analysis and algorithms.
 ///     Springer Science & Business Media.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template<typename T>
 class ArticulatedBodyInertia {
  public:
@@ -167,14 +159,27 @@ class ArticulatedBodyInertia {
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool, bool>
   IsPhysicallyValid() const {
-    // Note that this tolerance may need to be loosened.
-    const double kTolerance = -1e-14;
+    // We estimate a (dimensional) tolerance based on the norm of the
+    // eigenvalues of the articulated body inertia so that it scales with its
+    // magnitude. The dimensionless constant kEta allows to tighten or loosen
+    // this estimation. Experimentation on the values of kEta shows that 2.0 is
+    // a tight value and might lead to false negatives due to round-off errors,
+    // 10.0 works ok for most cases and 100.0 is a very loose value. Consider
+    // loosening the value of kEta if false negatives are reported. See issue
+    // #12640 for further details.
+    const double kEta = 10.0;  // Dimensionless tolerance.
 
     // Get the eigenvalues of the matrix and see if they are all greater than or
     // equal to zero with some tolerance for floating point errors.
     const auto eigvals =
         matrix_.template selfadjointView<Eigen::Lower>().eigenvalues();
-    return (eigvals.array() > kTolerance).all();
+
+    // Dimensional tolerance that scales with the magnitude of this ABI.
+    // Notice that tolerance < 0 to allow round-off errors below zero.
+    const T tolerance =
+        -eigvals.norm() * std::numeric_limits<double>::epsilon() * kEta;
+
+    return (eigvals.array() > tolerance).all();
   }
 
   /// IsPhysicallyValid() for non-numeric scalar types is not supported.

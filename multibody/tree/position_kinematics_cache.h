@@ -29,16 +29,7 @@ namespace internal {
 ///   mobilizer's generalized velocities v to cross-joint spatial velocities
 ///   V_FM = H_FM * v.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class PositionKinematicsCache {
  public:

@@ -1,4 +1,3 @@
-
 #include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
 namespace drake {

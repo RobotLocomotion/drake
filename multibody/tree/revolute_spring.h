@@ -22,7 +22,7 @@ class Body;
 /// where θ₀ is the nominal joint position. Note that joint damping exists
 /// within the RevoluteJoint itself, and so is not included here.
 ///
-/// @tparam T Must be one of drake's default scalar types.
+/// @tparam_default_scalar
 template <typename T>
 class RevoluteSpring final : public ForceElement<T> {
  public:

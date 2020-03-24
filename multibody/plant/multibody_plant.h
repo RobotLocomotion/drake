@@ -36,6 +36,17 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
+
+// Data stored in the cache entry for the hydroelastic with fallback contact
+// model.
+template <typename T>
+struct HydroelasticFallbackCacheData {
+  std::vector<geometry::ContactSurface<T>> contact_surfaces;
+  std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
+};
+
+}  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
 // contact_model_doxygen.h.
@@ -353,8 +364,7 @@ enum class ContactModel {
 ///     Minimal formulation of joint motion for biomechanisms.
 ///     Nonlinear dynamics, 62(1), pp.291-303.
 ///
-/// @tparam T Must be one of drake's default scalar types.
-///
+/// @tparam_default_scalar
 /// @ingroup systems
 template <typename T>
 class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
@@ -555,7 +565,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  MultibodyPlant(const MultibodyPlant<U>& other)
+  explicit MultibodyPlant(const MultibodyPlant<U>& other)
       : internal::MultibodyTreeSystem<T>(
             systems::SystemTypeTag<MultibodyPlant>{},
             other.internal_tree().template CloneToScalar<T>(),
@@ -1995,9 +2005,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
       case ContactModel::kHydroelasticWithFallback: {
-        const HydroelasticFallbackCacheData& data =
+        const auto& data =
             this->get_cache_entry(cache_indexes_.hydro_fallback)
-                .template Eval<HydroelasticFallbackCacheData>(context);
+                .template Eval<internal::HydroelasticFallbackCacheData<T>>(
+                    context);
         return data.point_pairs;
       }
       default:
@@ -3616,9 +3627,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context) const {
     switch (contact_model_) {
       case ContactModel::kHydroelasticWithFallback: {
-        const HydroelasticFallbackCacheData& data =
+        const auto& data =
             this->get_cache_entry(cache_indexes_.hydro_fallback)
-                .template Eval<HydroelasticFallbackCacheData>(context);
+                .template Eval<internal::HydroelasticFallbackCacheData<T>>(
+                    context);
         return data.contact_surfaces;
       }
       case ContactModel::kHydroelasticsOnly:
@@ -3631,17 +3643,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     }
   }
 
-  // Data stored in the cache entry for the hydroelastic with fallback contact
-  // model.
-  struct HydroelasticFallbackCacheData {
-    std::vector<geometry::ContactSurface<T>> contact_surfaces;
-    std::vector<geometry::PenetrationAsPointPair<T>> point_pairs;
-  };
-
   // Computes the hydroelastic fallback method -- all contacts are partitioned
   // between ContactSurfaces and point pair contacts.
-  void CalcHydroelasticWithFallback(const drake::systems::Context<T>& context,
-                                    HydroelasticFallbackCacheData* data) const;
+  void CalcHydroelasticWithFallback(
+      const drake::systems::Context<T>& context,
+      internal::HydroelasticFallbackCacheData<T>* data) const;
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
@@ -4317,7 +4323,8 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
 template <>
 void MultibodyPlant<double>::CalcHydroelasticWithFallback(
-    const systems::Context<double>&, HydroelasticFallbackCacheData*) const;
+    const systems::Context<double>&,
+    internal::HydroelasticFallbackCacheData<double>*) const;
 #endif
 
 }  // namespace multibody

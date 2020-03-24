@@ -12,17 +12,7 @@ namespace systems {
 /// This system combines multiple vector-valued inputs into a vector-valued
 /// output.  The input to this system directly feeds through to its output.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following `T` values are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// Currently, no other values for `T` are supported.
-///
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class Multiplexer : public LeafSystem<T> {

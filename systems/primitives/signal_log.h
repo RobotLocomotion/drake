@@ -12,7 +12,7 @@ namespace systems {
  primarily intended to support the Drake System primitive SignalLogger, but can
  be used independently.
 
- @tparam T The vector element type, which must be a valid Eigen scalar.
+ @tparam_default_scalar
  */
 template <typename T>
 class SignalLog {

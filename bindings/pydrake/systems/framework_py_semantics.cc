@@ -618,7 +618,9 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_vector", &ContinuousState<T>::get_vector,
             py_reference_internal, doc.ContinuousState.get_vector.doc)
         .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,
-            py_reference_internal, doc.ContinuousState.get_mutable_vector.doc);
+            py_reference_internal, doc.ContinuousState.get_mutable_vector.doc)
+        .def("CopyToVector", &ContinuousState<T>::CopyToVector,
+            doc.ContinuousState.CopyToVector.doc);
 
     auto discrete_values = DefineTemplateClassWithDefault<DiscreteValues<T>>(
         m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);

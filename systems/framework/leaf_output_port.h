@@ -10,9 +10,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/system_base.h"
 
 namespace drake {
 namespace systems {
@@ -24,16 +24,8 @@ namespace systems {
 entry in the same LeafSystem as the port. This is intended for internal use in
 implementing the DeclareOutputPort() variants in LeafSystem.
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided:
-
-- double
-- AutoDiffXd
-- symbolic::Expression
-
-They are already available to link against in the containing library.
-No other values for T are currently supported. */
+@tparam_default_scalar
+*/
 template <typename T>
 class LeafOutputPort final : public OutputPort<T> {
  public:
@@ -78,12 +70,13 @@ class LeafOutputPort final : public OutputPort<T> {
   friend class internal::FrameworkFactory;
 
   // Constructs a cached output port. The `system` parameter must be the same
-  // object as the `system_base` parameter.
-  LeafOutputPort(const System<T>* system, SystemBase* system_base,
+  // object as the `system_interface` parameter.
+  LeafOutputPort(const System<T>* system,
+                 internal::SystemMessageInterface* system_interface,
                  std::string name, OutputPortIndex index,
                  DependencyTicket ticket, PortDataType data_type, int size,
                  CacheEntry* cache_entry)
-      : OutputPort<T>(system, system_base, std::move(name), index, ticket,
+      : OutputPort<T>(system, system_interface, std::move(name), index, ticket,
                       data_type, size),
         cache_entry_(cache_entry) {
     DRAKE_DEMAND(cache_entry != nullptr);

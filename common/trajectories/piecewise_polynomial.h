@@ -57,11 +57,7 @@ namespace trajectories {
  * the range defined by the breaks. So `pp.value(-2.0, row, col)` in the example
  * above would evaluate to -1.0. See value().
  *
- * @tparam T is a scalar type.
- *
- * Explicit instantiations are provided for:
- *
- * - double
+ * @tparam_double_only
  */
 template <typename T>
 class PiecewisePolynomial final : public PiecewiseTrajectory<T> {

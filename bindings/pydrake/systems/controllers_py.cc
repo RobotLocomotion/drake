@@ -41,7 +41,7 @@ PYBIND11_MODULE(controllers, m) {
 
   py::class_<DynamicProgrammingOptions>(
       m, "DynamicProgrammingOptions", doc.DynamicProgrammingOptions.doc)
-      .def(py::init<>())
+      .def(py::init<>(), doc.DynamicProgrammingOptions.ctor.doc)
       .def_readwrite("discount_factor",
           &DynamicProgrammingOptions::discount_factor,
           doc.DynamicProgrammingOptions.discount_factor.doc)

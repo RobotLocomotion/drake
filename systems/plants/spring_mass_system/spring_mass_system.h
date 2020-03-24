@@ -13,15 +13,7 @@ namespace systems {
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 template <typename T>
 class SpringMassStateVector : public BasicVector<T> {
  public:
@@ -64,14 +56,7 @@ class SpringMassStateVector : public BasicVector<T> {
 /// @endverbatim
 /// Units are MKS (meters-kilograms-seconds).
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_default_scalar
 /// @ingroup rigid_body_systems
 template <typename T>
 class SpringMassSystem : public LeafSystem<T> {

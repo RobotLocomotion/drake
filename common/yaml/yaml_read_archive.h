@@ -58,6 +58,8 @@ namespace yaml {
 /// std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
 /// also be used.
 ///
+/// YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
+///
 /// For inspiration and background, see:
 /// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
 class YamlReadArchive final {
@@ -67,13 +69,21 @@ class YamlReadArchive final {
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
   /// class overview for details.
   explicit YamlReadArchive(const YAML::Node& root)
-      : YamlReadArchive(root, nullptr) {}
+      : owned_root_(root),
+        root_(&owned_root_),
+        mapish_item_key_(nullptr),
+        mapish_item_value_(nullptr),
+        parent_(nullptr) {
+    // Reprocess the owned_root for merge keys only after all member fields are
+    // initialized; otherwise, the method might access invalid member data.
+    RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
+  }
 
   /// Sets the contents `serializable` based on the YAML file associated with
   /// this archive.  See the %YamlReadArchive class overview for details.
   template <typename Serializable>
   void Accept(Serializable* serializable) {
-    if (!root_) {
+    if (!has_root()) {
       // TODO(jwnimmer-tri) This should probably be a ReportMissingYaml error.
       return;
     }
@@ -92,9 +102,33 @@ class YamlReadArchive final {
   // N.B. In the private details below, we use "NVP" to abbreviate the
   // "NameValuePair" template concept.
 
-  // Iff we are recursing, parent will be non-nullptr.
-  YamlReadArchive(const YAML::Node& root, const YamlReadArchive* parent)
-      : root_(root), parent_(parent) {}
+  // Internal-use constructor during recursion.  This constructor aliases all
+  // of its arguments, so all must outlive this object.
+  YamlReadArchive(const YAML::Node* root, const YamlReadArchive* parent)
+      : owned_root_(),
+        root_(root),
+        mapish_item_key_(nullptr),
+        mapish_item_value_(nullptr),
+        parent_(parent) {
+    DRAKE_DEMAND(root != nullptr);
+    DRAKE_DEMAND(parent != nullptr);
+  }
+
+  // Internal-use constructor during recursion.  This constructor aliases all
+  // of its arguments, so all must outlive this object.  The effect is as-if
+  // we have a root of type NodeType::Map with a single (key, value) entry.
+  YamlReadArchive(const char* mapish_item_key,
+                  const YAML::Node* mapish_item_value,
+                  const YamlReadArchive* parent)
+      : owned_root_(),
+        root_(nullptr),
+        mapish_item_key_(mapish_item_key),
+        mapish_item_value_(mapish_item_value),
+        parent_(parent) {
+    DRAKE_DEMAND(mapish_item_key != nullptr);
+    DRAKE_DEMAND(mapish_item_value != nullptr);
+    DRAKE_DEMAND(parent != nullptr);
+  }
 
   enum class VisitShouldMemorizeType { kNo, kYes };
 
@@ -213,7 +247,7 @@ class YamlReadArchive final {
   void VisitSerializable(const NVP& nvp) {
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
     if (!sub_node) { return; }
-    YamlReadArchive sub_archive(sub_node, this);
+    YamlReadArchive sub_archive(&sub_node, this);
     auto&& value = *nvp.value();
     sub_archive.Accept(&value);
   }
@@ -232,7 +266,7 @@ class YamlReadArchive final {
     // When visiting an optional, it's fine if the YAML node is either absent
     // or has an empty value.  In yaml-cpp, presence is denoted by IsDefined(),
     // and empty is denoted by IsNull().
-    const auto& sub_node = root_[nvp.name()];
+    const auto& sub_node = MaybeGetSubNode(nvp.name());
     if (!sub_node.IsDefined() || sub_node.IsNull()) {
       *nvp.value() = std::nullopt;
       return;
@@ -248,7 +282,7 @@ class YamlReadArchive final {
 
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
-    const YAML::Node sub_node = root_[nvp.name()];
+    const YAML::Node sub_node = MaybeGetSubNode(nvp.name());
     if (!sub_node) {
       ReportMissingYaml("is missing");
       return;
@@ -325,11 +359,10 @@ class YamlReadArchive final {
           sub_node.size(), size));
     }
     for (size_t i = 0; i < size; ++i) {
-      const std::string item_name = fmt::format("{}[{}]", name, i);
-      YAML::Node item_node(YAML::NodeType::Map);
-      item_node[item_name] = sub_node[i];
-      YamlReadArchive item_archive(item_node, this);
-      item_archive.Visit(drake::MakeNameValue(item_name.c_str(), &data[i]));
+      const std::string key = fmt::format("{}[{}]", name, i);
+      const YAML::Node value = sub_node[i];
+      YamlReadArchive item_archive(key.c_str(), &value, this);
+      item_archive.Visit(drake::MakeNameValue(key.c_str(), &data[i]));
     }
   }
 
@@ -381,13 +414,10 @@ class YamlReadArchive final {
     // Parse.
     for (size_t i = 0; i < rows; ++i) {
       for (size_t j = 0; j < cols; ++j) {
-        const std::string item_name =
-            fmt::format("{}[{}][{}]", name, i, j);
-        YAML::Node item_node(YAML::NodeType::Map);
-        item_node[item_name] = sub_node[i][j];
-        YamlReadArchive item_archive(item_node, this);
-        item_archive.Visit(drake::MakeNameValue(
-            item_name.c_str(), &storage(i, j)));
+        const std::string key = fmt::format("{}[{}][{}]", name, i, j);
+        const YAML::Node value = sub_node[i][j];
+        YamlReadArchive item_archive(key.c_str(), &value, this);
+        item_archive.Visit(drake::MakeNameValue(key.c_str(), &storage(i, j)));
       }
     }
   }
@@ -407,7 +437,7 @@ class YamlReadArchive final {
       const bool inserted = newiter_inserted.second;
       DRAKE_DEMAND(inserted == true);
       Value& newvalue = newiter->second;
-      YamlReadArchive item_archive(sub_node, this);
+      YamlReadArchive item_archive(&sub_node, this);
       item_archive.Visit(drake::MakeNameValue(key.c_str(), &newvalue));
     }
   }
@@ -415,19 +445,54 @@ class YamlReadArchive final {
   // --------------------------------------------------------------------------
   // @name Helpers, utilities, and member variables.
 
-  // If root_ is a Map and has child with the given name and type, return the
-  // child.  Otherwise, report an error and return an undefined node.
+  // Do we have a root Node?
+  bool has_root() const;
+
+  // Move the merge key values (if any) into the given node using the merge key
+  // semantics; see https://yaml.org/type/merge.html for details.  If yaml-cpp
+  // adds native support for merge keys, then we should remove this helper.
+  void RewriteMergeKeys(YAML::Node*) const;
+
+  // If our root is a Map and has child with the given name and type, return
+  // the child.  Otherwise, report an error and return an undefined node.
   YAML::Node GetSubNode(const char*, YAML::NodeType::value) const;
+
+  // If our root is a Map and has child with the given name and type, return
+  // the child.  Otherwise, return an undefined node.
+  YAML::Node MaybeGetSubNode(const char*) const;
 
   void ReportMissingYaml(const std::string&) const;
   void PrintNodeSummary(std::ostream& s) const;
   void PrintVisitNameType(std::ostream& s) const;
   static const char* to_string(YAML::NodeType::value);
 
-  const YAML::Node root_;
-  const YamlReadArchive* const parent_;
+  // These jointly denote the YAML::Node root that our Accept() will read from.
+  // For performance reasons, we'll use a few different members all for the
+  // same purpose.  Never access these directly from Visit methods -- use
+  // GetSubNode() instead.
+  // @{
+  // A copy of the root node provided by the user to our public constructor.
+  // Our recursive calls to private constructors leave this unset.
+  const YAML::Node owned_root_;
+  // Typically set to alias the Node that Accept() will read from.  If set,
+  // this will alias owned_root_ when using the public constructor, or else a
+  // temporary root when using the private recursion constructor.  Only ever
+  // unset during internal recursion when mapish_item_{key,value}_ are being
+  // used instead.
+  const YAML::Node* const root_;
+  // During certain cases of internal recursion, instead of creating a Map node
+  // with only a single key-value pair as the root_ pointer, instead we'll pass
+  // the key-value pointers directly.  This avoids the copying associated with
+  // constructing a new Map node.  The root_ vs key_,value_ representations are
+  // mutially exclusive -- when root_ is null, both the key_ and value_ must be
+  // non-null, and when root_ is non-null, both key_,value_ must be null.
+  const char* const mapish_item_key_;
+  const YAML::Node* const mapish_item_value_;
+  // @}
 
-  // These are non-nullptr only during Visit()'s lifetime.
+  // These are only used for error messages.  The two `debug_...` members are
+  // non-nullptr only during Visit()'s lifetime.
+  const YamlReadArchive* const parent_;
   const char* debug_visit_name_{};
   const std::type_info* debug_visit_type_{};
 };

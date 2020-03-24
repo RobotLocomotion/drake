@@ -12,7 +12,7 @@
 #include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
-#include "drake/geometry/proximity/plane.h"
+#include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
@@ -54,9 +54,8 @@ namespace internal {
  @param p_FB
      Point B measured and expressed in the common frame F.
  @param H_F
-     The half space H, as represented by its boundary plane with the plane's
-     normal pointing out of the half space, expressed in frame F (i.e., points
-     also expressed in frame F can be tested against it).
+     The half space H measured and expressed in frame F (i.e., points also
+     measured and expressed in frame F can be tested against it).
  @pre
      1. Points A and B are not coincident.
      2. One of A and B is outside the half space (and the other is contained in
@@ -67,7 +66,7 @@ namespace internal {
  */
 template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const Plane<T>& H_F) {
+                            const PosedHalfSpace<T>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
@@ -82,8 +81,9 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
   // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
   // too small.
   const T kEps(1e-14);
-  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into* Plane
-  //  if it turns out we need to perform this test at other sites.
+  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into*
+  //  PosedHalfSpace if it turns out we need to perform this test at other
+  //  sites.
   // Verify that the intersection point is on the plane of the half space.
   using std::abs;
   DRAKE_DEMAND(abs(H_F.CalcSignedDistance(intersection)) < kEps);
@@ -112,14 +112,13 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 //  check whether we can have other as yet undocumented degenerate cases.
 /** Intersects a polygon with the half space H. It keeps the part of
  the polygon contained in the half space (signed distance is <= 0).
- The plane `H_F` and vertex positions of `polygon_vertices_F` are both defined
- in a common frame F.
+ The half space `H_F` and vertex positions of `polygon_vertices_F` are both
+ defined in a common frame F.
  @param[in] polygon_vertices_F
      Input polygon is represented as a sequence of positions of its vertices.
      The input polygon is allowed to have zero area.
  @param[in] H_F
-     The clipping half space H in frame F, represented by its boundary plane
-     with the plane's normal pointing out of the half space.
+     The clipping half space H in frame F.
  @return
      Output polygon is represented as a sequence of positions of its vertices.
      It could be an empty sequence if the input polygon is entirely outside
@@ -148,7 +147,8 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 */
 template <typename T>
 std::vector<Vector3<T>> ClipPolygonByHalfSpace(
-    const std::vector<Vector3<T>>& polygon_vertices_F, const Plane<T>& H_F) {
+    const std::vector<Vector3<T>>& polygon_vertices_F,
+    const PosedHalfSpace<T>& H_F) {
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
   // clipping a polygon.
   std::vector<Vector3<T>> output_vertices_F;
@@ -164,8 +164,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = polygon_vertices_F[i];
     const Vector3<T>& previous = polygon_vertices_F[(i - 1 + size) % size];
-    const bool current_contained = !H_F.PointIsOutside(current);
-    const bool previous_contained = !H_F.PointIsOutside(previous);
+    const bool current_contained = H_F.CalcSignedDistance(current) <= 0;
+    const bool previous_contained = H_F.CalcSignedDistance(previous) <= 0;
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where
@@ -323,9 +323,9 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     const Vector3<T>& p_MA = p_MVs[face_vertex[0]];
     const Vector3<T>& p_MB = p_MVs[face_vertex[1]];
     const Vector3<T>& p_MC = p_MVs[face_vertex[2]];
-    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA).normalized();
-    T height = normal_M.dot(p_MA);
-    Plane<T> half_space_M(normal_M, height);
+    // We'll allow the PosedHalfSpace to normalize our vector.
+    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
+    PosedHalfSpace<T> half_space_M(normal_M, p_MA);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     polygon_M = ClipPolygonByHalfSpace(polygon_M, half_space_M);
@@ -592,7 +592,7 @@ void SampleVolumeFieldOnSurface(
 
     // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
     //  positions. Specifically, each vertex will be transformed M times (once
-    //  per tetrahedron. Even with broadphase culling, this vertex will get
+    //  per tetrahedron). Even with broadphase culling, this vertex will get
     //  transformed once for each tet-tri pair where the tri is incidental
     //  to the vertex and the tet-tri pair can't be conservatively culled.
     //  This is O(mn), where m is the number of faces incident to the vertex

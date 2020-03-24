@@ -60,15 +60,8 @@ using FrameIdSet = std::unordered_set<FrameId>;
 
  @note This is intended as an internal class only.
 
- @tparam T The scalar type. Must be a valid Eigen scalar.
-
- Instantiated templates for the following kinds of T's are provided:
-
- - double
- - AutoDiffXd
-
- They are already available to link against in the containing library.
- No other values for T are currently supported.  */
+ @tparam_nonsymbolic_scalar
+*/
 template <typename T>
 class GeometryState {
  public:
@@ -532,7 +525,7 @@ class GeometryState {
   // (either in the initialization list or in the body). Failure to do so will
   // lead to errors in the converted GeometryState instance.
   template <typename U>
-  GeometryState(const GeometryState<U>& source)
+  explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
         source_root_frame_map_(source.source_root_frame_map_),

@@ -23,7 +23,7 @@ namespace multibody {
  message. It has a single input port with type ContactResults<T> and a single
  output port with lcmt_contact_results_for_viz.
 
- @tparam T Must be one of drake's default scalar types.
+ @tparam_default_scalar
  */
 template <typename T>
 class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {

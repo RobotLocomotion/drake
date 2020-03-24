@@ -12,15 +12,6 @@ namespace systems {
 
 /**
  * A third-order Runge Kutta integrator with a third order error estimate.
- * @tparam T A double or autodiff type.
- *
- * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
- * this class, please refer to https://drake.mit.edu/cxx_inl.html.
- *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- * - AutoDiffXd
  *
  * For a discussion of this Runge-Kutta method, see [Butcher, 1987]. The
  * embedded error estimate was derived using the method mentioned in
@@ -55,6 +46,9 @@ namespace systems {
  *   Differential Equations. John Wiley & Sons, 1987. p. 325.
  * - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
  *   rev. ed. Springer, 1993. p. 166.
+ *
+ * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class RungeKutta3Integrator final : public IntegratorBase<T> {

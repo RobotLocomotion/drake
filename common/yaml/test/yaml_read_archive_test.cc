@@ -263,6 +263,79 @@ TEST_F(YamlReadArchiveTest, StdMap) {
        {{"foo", 0.0}, {"bar", 1.0}});
 }
 
+TEST_F(YamlReadArchiveTest, StdMapWithMergeKeys) {
+  const auto test = [](const std::string& doc,
+                       const std::map<std::string, double>& expected) {
+    const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
+    EXPECT_EQ(x.value, expected) << doc;
+  };
+
+  // Use merge keys to populate some keys.
+  test(R"R(
+_template: &template
+  foo: 1.0
+
+doc:
+  value:
+    << : *template
+    bar: 2.0
+)R", {{"foo", 1.0}, {"bar", 2.0}});
+
+  // A pre-existing value should win, though.
+  test(R"R(
+_template: &template
+  foo: 3.0
+
+doc:
+  value:
+    << : *template
+    foo: 1.0
+    bar: 2.0
+)R", {{"foo", 1.0}, {"bar", 2.0}});
+
+  // A list of merges should also work.
+  test(R"R(
+_template: &template
+  - foo: 1.0
+  - baz: 3.0
+
+doc:
+  value:
+    << : *template
+    bar: 2.0
+)R", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
+}
+
+TEST_F(YamlReadArchiveTest, StdMapWithBadMergeKey) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MapStruct>(Load(R"R(
+_template: &template 99.0
+
+doc:
+  value:
+    << : *template
+    bar: 2.0
+)R")),
+      std::runtime_error,
+      "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
+      " has invalid merge key type \\(Scalar\\) within entry"
+      " for std::map<[^ ]*> value\\.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MapStruct>(Load(R"R(
+_template: &template
+
+doc:
+  value:
+    << : *template
+    bar: 2.0
+)R")),
+      std::runtime_error,
+      "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
+      " has invalid merge key type \\(Null\\) within entry"
+      " for std::map<[^ ]*> value\\.");
+}
+
 TEST_F(YamlReadArchiveTest, Optional) {
   const auto test = [](const std::string& doc,
                        const std::optional<double>& expected) {
@@ -343,6 +416,115 @@ doc:
 )R"));
   EXPECT_EQ(x.outer_value, 1.0);
   EXPECT_EQ(x.inner_struct.inner_value, 2.0);
+}
+
+TEST_F(YamlReadArchiveTest, NestedWithMergeKeys) {
+  const auto test = [](const std::string& doc) {
+    SCOPED_TRACE("With doc = " + doc);
+    const auto& x = AcceptNoThrow<OuterStruct>(Load(doc));
+    EXPECT_EQ(x.outer_value, 1.0);
+    EXPECT_EQ(x.inner_struct.inner_value, 2.0);
+  };
+
+  // Use merge keys to populate InnerStruct.
+  test(R"R(
+_template: &template
+  inner_value: 2.0
+  ignored_key: ignored_value
+
+doc:
+  inner_struct:
+    << : *template
+  outer_value: 1.0
+)R");
+
+  // Use merge keys to populate InnerStruct, though to no effect because the
+  // existing value wins.
+  test(R"R(
+_template: &template
+  inner_value: 3.0
+  ignored_key: ignored_value
+
+doc:
+  inner_struct:
+    << : *template
+    inner_value: 2.0
+  outer_value: 1.0
+)R");
+
+  // Use merge keys to populate OuterStruct.
+  test(R"R(
+_template: &template
+  inner_struct:
+    inner_value: 2.0
+    ignored_key: ignored_value
+
+doc:
+  << : *template
+  outer_value: 1.0
+)R");
+
+  // Use array of merge keys to populate OuterStruct.
+  // First array with a value wins.
+  test(R"R(
+_template: &template
+  - inner_struct:
+      inner_value: 2.0
+      ignored_key: ignored_value
+  - inner_struct:
+      inner_value: 3.0
+
+doc:
+  << : *template
+  outer_value: 1.0
+)R");
+}
+
+TEST_F(YamlReadArchiveTest, NestedWithBadMergeKey) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<OuterStruct>(Load(R"R(
+_template: &template 99.0
+
+doc:
+  inner_struct:
+    << : *template
+  outer_value: 1.0
+)R")),
+      std::runtime_error,
+      "YAML node of type Map"
+      " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
+      " has invalid merge key type \\(Scalar\\) within entry"
+      " for .*::OuterStruct::InnerStruct inner_struct\\.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<OuterStruct>(Load(R"R(
+_template: &template
+
+doc:
+  inner_struct:
+    << : *template
+  outer_value: 1.0
+)R")),
+      std::runtime_error,
+      "YAML node of type Map"
+      " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
+      " has invalid merge key type \\(Null\\) within entry"
+      " for .*::OuterStruct::InnerStruct inner_struct\\.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<OuterStruct>(Load(R"R(
+_template: &template
+  - inner_value
+  - 2.0
+
+doc:
+  << : *template
+  outer_value: 1.0
+)R")),
+      std::runtime_error,
+      "YAML node of type Map \\(with size 1 and keys \\{outer_value\\}\\)"
+      " has invalid merge key type \\(Sequence-of-non-Map\\) within entry"
+      " for <root>\\.");
 }
 
 // This finds nothing when a scalar was wanted, because the name had a typo.

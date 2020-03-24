@@ -53,11 +53,7 @@ class SystemScalarConverter {
   /// @endcode
   ///
   /// This constructor only creates a converter between a limited set of types,
-  /// specifically:
-  ///
-  /// - double
-  /// - drake::AutoDiffXd
-  /// - drake::symbolic::Expression
+  /// specifically the @ref default_scalars "default scalars".
   ///
   /// By default, all non-identity pairs (pairs where T and U differ) drawn
   /// from the above list can be used for T and U.  Systems may specialize

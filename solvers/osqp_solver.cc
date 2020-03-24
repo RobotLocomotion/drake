@@ -323,6 +323,8 @@ void OsqpSolver::DoSolve(
             work->solution->x, prog.num_vars());
         result->set_x_val(osqp_sol.cast<double>());
         result->set_optimal_cost(work->info->obj_val + constant_cost_term);
+        solver_details.y =
+            Eigen::Map<Eigen::VectorXd>(work->solution->y, work->data->m);
         solution_result = SolutionResult::kSolutionFound;
         break;
       }

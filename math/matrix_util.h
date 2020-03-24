@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 
@@ -120,13 +121,17 @@ ToSymmetricMatrixFromLowerTriangularColumns(
 }
 
 /// Checks if a matrix is symmetric and has all eigenvalues greater than @p
-/// threshold.  threshold must be >= 0 -- where 0 implies positive
+/// tolerance.  tolerance must be >= 0 -- where 0 implies positive
 /// semi-definite (but is of course subject to all of the pitfalls of floating
 /// point).
+///
+/// To consider the numerical robustness of the eigenvalue estimation, we
+/// specifically check that
+/// min_eigenvalue >= tolerance * max(1, max_abs_eigenvalue).
 template <typename Derived>
 bool IsPositiveDefinite(const Eigen::MatrixBase<Derived>& matrix,
-                        const double threshold) {
-  DRAKE_DEMAND(threshold >= 0);
+                        double tolerance = 0.0) {
+  DRAKE_DEMAND(tolerance >= 0);
   if (!IsSymmetric(matrix)) return false;
 
   // Note: Eigen's documentation clearly warns against using the faster LDLT
@@ -134,7 +139,13 @@ bool IsPositiveDefinite(const Eigen::MatrixBase<Derived>& matrix,
   Eigen::SelfAdjointEigenSolver<typename Derived::PlainObject> eigensolver(
       matrix);
   DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
-  return eigensolver.eigenvalues().minCoeff() >= threshold;
+  // According to the Lapack manual, the absolute accuracy of eigenvalues is
+  // eps*max(|eigenvalues|), so I will write my tolerances relative to that.
+  // Anderson et al., Lapack User's Guide, 3rd ed. section 4.7, 1999.
+  const double max_abs_eigenvalue =
+      eigensolver.eigenvalues().cwiseAbs().maxCoeff();
+  return eigensolver.eigenvalues().minCoeff() >=
+         tolerance * std::max(1., max_abs_eigenvalue);
 }
 
 }  // namespace math

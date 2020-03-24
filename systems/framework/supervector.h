@@ -19,7 +19,7 @@ namespace systems {
 /// VectorBase by concatenating multiple VectorBases, which it
 /// does not own.
 ///
-/// @tparam T A mathematical type compatible with Eigen's Scalar.
+/// @tparam_default_scalar
 template <typename T>
 class Supervector : public VectorBase<T> {
  public:

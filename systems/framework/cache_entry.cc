@@ -46,7 +46,7 @@ std::unique_ptr<AbstractValue> CacheEntry::Allocate() const {
 void CacheEntry::Calc(const ContextBase& context,
                       AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
-  DRAKE_ASSERT_VOID(owning_system_->ThrowIfContextNotCompatible(context));
+  DRAKE_ASSERT_VOID(owning_system_->ValidateContext(context));
   DRAKE_ASSERT_VOID(CheckValidAbstractValue(*value));
 
   calc_function_(context, value);

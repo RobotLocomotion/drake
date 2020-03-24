@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "fmt/format.h"
+#include "fmt/ostream.h"
 
 #include "drake/common/never_destroyed.h"
 
@@ -31,6 +32,36 @@ void SolverOptions::SetOption(const SolverId& solver_id,
                               const std::string& solver_option,
                               const std::string& option_value) {
   solver_options_str_[solver_id][solver_option] = option_value;
+}
+
+void SolverOptions::SetOption(
+    CommonSolverOption key,
+    const std::variant<double, int, std::string>& value) {
+  switch (key) {
+    case CommonSolverOption::kPrintToConsole: {
+      if (!std::holds_alternative<int>(value)) {
+        throw std::runtime_error(fmt::format(
+            "SolverOptions::SetOption support {} only with int value.", key));
+      }
+      const int int_value = std::get<int>(value);
+      if (int_value != 0 && int_value != 1) {
+        throw std::runtime_error(
+            fmt::format("{} expects value either 0 or 1", key));
+      }
+      common_solver_options_[key] = value;
+      return;
+    }
+    case CommonSolverOption::kPrintFileName: {
+      if (!std::holds_alternative<std::string>(value)) {
+        throw std::runtime_error(fmt::format(
+            "SolverOptions::SetOption support {} only with std::string value.",
+            key));
+      }
+      common_solver_options_[key] = value;
+      return;
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 
 namespace {
@@ -80,18 +111,32 @@ void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
     }
   }
 }
+
+void MergeHelper(
+    const std::unordered_map<CommonSolverOption,
+                             std::variant<double, int, std::string>>& other,
+    std::unordered_map<CommonSolverOption,
+                       std::variant<double, int, std::string>>* self) {
+  for (const auto& other_keyval : other) {
+    // This is a no-op when the key already exists.
+    self->insert(other_keyval);
+  }
+}
 }  // namespace
 
 void SolverOptions::Merge(const SolverOptions& other) {
   MergeHelper(other.solver_options_double_, &solver_options_double_);
   MergeHelper(other.solver_options_int_, &solver_options_int_);
   MergeHelper(other.solver_options_str_, &solver_options_str_);
+  MergeHelper(
+      other.common_solver_options_, &common_solver_options_);
 }
 
 bool SolverOptions::operator==(const SolverOptions& other) const {
   return solver_options_double_ == other.solver_options_double_ &&
          solver_options_int_ == other.solver_options_int_ &&
-         solver_options_str_ == other.solver_options_str_;
+         solver_options_str_ == other.solver_options_str_ &&
+         common_solver_options_ == other.common_solver_options_;
 }
 
 bool SolverOptions::operator!=(const SolverOptions& other) const {
@@ -108,6 +153,7 @@ void Summarize(const SolverId& id,
         fmt::format("{}", keyval.second);
   }
 }
+
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
@@ -122,6 +168,16 @@ std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
       Summarize(id, x.GetOptionsDouble(id), &pairs);
       Summarize(id, x.GetOptionsInt(id), &pairs);
       Summarize(id, x.GetOptionsStr(id), &pairs);
+    }
+    for (const auto& keyval : x.common_solver_options()) {
+      const CommonSolverOption& key = keyval.first;
+      const auto& val = keyval.second;
+      std::visit(
+          [key, &pairs](auto& val_x) {
+            pairs[fmt::format("CommonSolverOption::{}", key)] =
+                fmt::format("{}", val_x);
+          },
+          val);
     }
     for (const auto& pair : pairs) {
       os << ", " << pair.first << "=" << pair.second;
@@ -166,19 +222,6 @@ void SolverOptions::CheckOptionKeysForSolver(
                                  solver_id.name());
   CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys,
                                  solver_id.name());
-}
-
-const std::unordered_map<std::string, double>& SolverOptions::GetOptionsImpl(
-    const SolverId& solver_id, double*) const {
-  return GetOptionsDouble(solver_id);
-}
-const std::unordered_map<std::string, int>& SolverOptions::GetOptionsImpl(
-    const SolverId& solver_id, int*) const {
-  return GetOptionsInt(solver_id);
-}
-const std::unordered_map<std::string, std::string>&
-SolverOptions::GetOptionsImpl(const SolverId& solver_id, std::string*) const {
-  return GetOptionsStr(solver_id);
 }
 
 }  // namespace solvers

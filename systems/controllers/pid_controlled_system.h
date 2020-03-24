@@ -53,13 +53,7 @@ namespace controllers {
 /// desired state (size 2 * U), `S` is used to compute the state error as
 /// `x_err = S * x - x_d`.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
+/// @tparam_nonsymbolic_scalar
 /// @ingroup control_systems
 template <typename T>
 class PidControlledSystem : public Diagram<T> {

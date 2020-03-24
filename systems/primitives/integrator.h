@@ -8,16 +8,8 @@ namespace drake {
 namespace systems {
 
 /// An integrator for a continuous vector input.
-/// @tparam T The type being integrated. Must be a valid Eigen scalar.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class Integrator final : public VectorSystem<T> {

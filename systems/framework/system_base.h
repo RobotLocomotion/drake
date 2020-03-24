@@ -80,7 +80,7 @@ class SystemBase : public internal::SystemMessageInterface {
   DRAKE_DEPRECATED("2020-05-01",
                    "This method is no longer necessary. See ValidateContext() "
                    "for a possible replacement.")
-  void ThrowIfContextNotCompatible(const ContextBase& context) const final {
+  void ThrowIfContextNotCompatible(const ContextBase& context) const {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CheckValidContext(context);
@@ -789,7 +789,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Checks whether the given context was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
-  void ValidateContext(const ContextBase& context) const {
+  void ValidateContext(const ContextBase& context) const final {
     if (context.get_system_id() != system_id_) {
       throw std::logic_error(
           fmt::format("Context was not created for {} system {}; it was "
@@ -819,7 +819,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // data type.
   void AddInputPort(std::unique_ptr<InputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(&port->get_system_interface() == this);
     DRAKE_DEMAND(port->get_index() == num_input_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
@@ -844,7 +844,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // data type.
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(&port->get_system_interface() == this);
     DRAKE_DEMAND(port->get_index() == num_output_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 

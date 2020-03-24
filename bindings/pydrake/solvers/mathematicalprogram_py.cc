@@ -254,8 +254,8 @@ top-level documentation for :py:mod:`pydrake.math`.
             self.Solve(prog, initial_guess, solver_options, &result);
             return result;
           },
-          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
-          doc.SolverBase.Solve.doc)
+          py::arg("prog"), py::arg("initial_guess") = std::nullopt,
+          py::arg("solver_options") = std::nullopt, doc.SolverBase.Solve.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
           [](const SolverInterface& self) {
@@ -472,6 +472,10 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("AddDecisionVariables", &MathematicalProgram::AddDecisionVariables,
           py::arg("decision_variables"),
           doc.MathematicalProgram.AddDecisionVariables.doc)
+      .def("MakePolynomial", &MathematicalProgram::MakePolynomial, py::arg("e"),
+          doc.MathematicalProgram.MakePolynomial.doc)
+      .def("Reparse", &MathematicalProgram::Reparse, py::arg("p"),
+          doc.MathematicalProgram.Reparse.doc)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&,
@@ -520,6 +524,13 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddConstraint),
           py::arg("constraint"), py::arg("vars"),
           doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
+      .def("AddConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<Formula>>& formulas) {
+            return self->AddConstraint(formulas);
+          },
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddConstraint.doc_matrix_formula)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,

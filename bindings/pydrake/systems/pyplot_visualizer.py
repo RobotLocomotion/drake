@@ -110,16 +110,17 @@ class PyPlotVisualizer(LeafSystem):
                                       **kwargs)
         return ani
 
-    def animate(self, log, resample=True, repeat=False):
+    def animate(self, log, resample=True, **kwargs):
         """
         Args:
-            log: A reference to a pydrake.systems.primitives.SignalLogger that
-                contains the plant state after running a simulation.
+            log: A reference to a pydrake.systems.primitives.SignalLogger
+                or a pydrake.trajectories.Trajectory that contains the plant
+                state after running a simulation.
             resample: Whether we should do a resampling operation to make the
                 samples more consistent in time. This can be disabled if you
                 know the draw_period passed into the constructor exactly
                 matches the sample timestep of the log.
-            repeat: Whether the resulting animation should repeat.
+            Additional kwargs are passed through to FuncAnimation.
         """
         if isinstance(log, SignalLogger):
             t = log.sample_times()
@@ -139,10 +140,10 @@ class PyPlotVisualizer(LeafSystem):
         def animate_update(i):
             self.draw(x[:, i])
 
-        ani = animation.FuncAnimation(self.fig,
-                                      animate_update,
-                                      t.shape[0],
+        ani = animation.FuncAnimation(fig=self.fig,
+                                      func=animate_update,
+                                      frames=t.shape[0],
                                       # Convert from s to ms.
                                       interval=1000*self.timestep,
-                                      repeat=repeat)
+                                      **kwargs)
         return ani

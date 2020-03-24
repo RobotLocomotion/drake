@@ -45,6 +45,12 @@ class TestInverseKinematics(unittest.TestCase):
         self.prog = self.ik_two_bodies.get_mutable_prog()
         self.q = self.ik_two_bodies.q()
 
+        # Test constructor without joint limits
+        ik.InverseKinematics(plant=self.plant, with_joint_limits=False)
+        ik.InverseKinematics(
+            plant=self.plant, plant_context=plant_context,
+            with_joint_limits=False)
+
         def squaredNorm(x):
             return np.array([x[0] ** 2 + x[1] ** 2 + x[2] ** 2 + x[3] ** 2])
 
@@ -217,6 +223,37 @@ class TestInverseKinematics(unittest.TestCase):
                           (np.linalg.norm(na_W) * np.linalg.norm(nb_W)))
 
         self.assertLess(math.fabs(angle - angle_lower), 1E-6)
+
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
+
+    def test_AddPointToPointDistanceConstraint(self):
+        p_B1P1 = np.array([0.2, -0.4, 0.9])
+        p_B2P2 = np.array([1.4, -0.1, 1.8])
+
+        distance_lower = 0.1
+        distance_upper = 0.2
+
+        self.ik_two_bodies.AddPointToPointDistanceConstraint(
+            frame1=self.body1_frame, p_B1P1=p_B1P1,
+            frame2=self.body2_frame, p_B2P2=p_B2P2,
+            distance_lower=distance_lower, distance_upper=distance_upper)
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+
+        q_val = result.GetSolution(self.q)
+        body1_quat = self._body1_quat(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
+
+        p_WP1 = self._body1_xyz(q_val) + body1_rotmat.dot(p_B1P1)
+        p_WP2 = self._body2_xyz(q_val) + body2_rotmat.dot(p_B2P2)
+        distance = np.linalg.norm(p_WP1 - p_WP2)
+
+        self.assertLess(distance, distance_upper + 3e-6)
+        self.assertGreater(distance, distance_lower - 3e-6)
 
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
@@ -418,6 +455,16 @@ class TestConstraints(unittest.TestCase):
             frameAbar=variables.body1_frame, R_AbarA=RotationMatrix(),
             frameBbar=variables.body2_frame, R_BbarB=RotationMatrix(),
             theta_bound=0.2 * math.pi, plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_point_to_point_distance_constraint(self, variables):
+        constraint = ik.PointToPointDistanceConstraint(
+            plant=variables.plant,
+            frame1=variables.body1_frame, p_B1P1=[0.1, 0.2, 0.3],
+            frame2=variables.body2_frame, p_B2P2=[0.3, 0.4, 0.5],
+            distance_lower=0.1, distance_upper=0.2,
+            plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables

@@ -406,7 +406,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
  * End users should never need to use or know about this class.  It is for
  * internal use only.
  *
- * @tparam T needs to be compatible with Eigen Scalar type.
+ * @tparam_default_scalar
  */
 template <typename T>
 class CompositeEventCollection {

@@ -23,7 +23,6 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
 
 /**
  * A first-order, fully implicit integrator optimized for second-order systems.
- * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * The velocity-implicit Euler integrator is a variant of the first-order
  * implicit Euler that takes advantage of the simple mapping q̇ = N(q) v
@@ -94,6 +93,9 @@ __attribute__((noreturn)) inline void EmitNoErrorEstimatorStatAndMessage() {
  *      integration methods in general.
  * @see ImplicitEulerIntegrator class documentation for information about
  *      the "implicit Euler" integration method.
+ *
+ * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
@@ -375,4 +377,3 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::VelocityImplicitEulerIntegrator)
-

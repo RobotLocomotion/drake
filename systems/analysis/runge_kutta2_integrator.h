@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -10,6 +11,8 @@ namespace systems {
 
 /**
  * A second-order, explicit Runge Kutta integrator.
+ * @tparam_default_scalar
+ * @ingroup integrators
  */
 template <class T>
 class RungeKutta2Integrator final : public IntegratorBase<T> {
@@ -128,3 +131,5 @@ bool RungeKutta2Integrator<T>::DoStep(const T& h) {
 }  // namespace systems
 }  // namespace drake
 
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::RungeKutta2Integrator)

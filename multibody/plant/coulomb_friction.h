@@ -57,7 +57,7 @@ namespace multibody {
 /// combination law model for tires, will have a different set of requirements
 /// from the ones stated above.
 ///
-/// @tparam T Must be one of drake's default scalar types.
+/// @tparam_default_scalar
 template<typename T>
 class CoulombFriction {
  public:

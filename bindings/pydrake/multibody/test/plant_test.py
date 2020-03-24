@@ -287,6 +287,10 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_state_output_port(), OutputPort)
         self.assertIsInstance(
+            plant.get_generalized_acceleration_output_port(), OutputPort)
+        self.assertIsInstance(
+            plant.get_reaction_forces_output_port(), OutputPort)
+        self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
         self.assertIsInstance(plant.num_frames(), int)
         self.assertIsInstance(plant.get_body(body_index=BodyIndex(0)), Body)
@@ -617,6 +621,10 @@ class TestPlant(unittest.TestCase):
             plant.get_actuation_input_port(iiwa_model), InputPort)
         self.assertIsInstance(
             plant.get_state_output_port(gripper_model), OutputPort)
+        self.assertIsInstance(
+            plant.get_generalized_acceleration_output_port(
+                model_instance=gripper_model),
+            OutputPort)
         self.assertIsInstance(
             plant.get_generalized_contact_forces_output_port(
                 model_instance=gripper_model),

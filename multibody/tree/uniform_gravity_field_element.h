@@ -14,16 +14,7 @@ namespace multibody {
 /// felt by bodies on the surface of the Earth.
 /// This gravity field acts on all bodies in the MultibodyTree model.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 template <typename T>
 class UniformGravityFieldElement : public ForceElement<T> {
  public:

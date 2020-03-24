@@ -24,13 +24,10 @@ namespace controllers {
  * acceleration and uses this class to compute generalized forces. This class
  * should be used directly if desired acceleration is computed differently.
  *
- * @tparam T The vector element type, which must be a valid Eigen scalar.
  * @see Constructors for descriptions of how (and which) forces are incorporated
  *      into the inverse dynamics computation.
  *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
+ * @tparam_double_only
  */
 template <typename T>
 class InverseDynamics : public LeafSystem<T> {

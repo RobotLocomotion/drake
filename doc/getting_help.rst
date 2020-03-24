@@ -44,7 +44,7 @@ When reporting an issue, please consider providing the following information
 *   Operating system (*Ubuntu 18.04, macOS Catalina*)
 *   Language (C++, :ref:`Python <python-bindings>`)
 
-    -   C++ compiler (*GCC 7.4.0, Clang 6.0.0*)
+    -   C++ compiler (*GCC 7.5.0, Clang 6.0.0*)
     -   Python version (*Python 3.6.7*)
     -   Python distribution (*apt, homebrew*)
 

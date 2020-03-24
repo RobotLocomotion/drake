@@ -44,8 +44,8 @@ constexpr int kNumJoints = kNumFingers * 2;
  * fingertips. This method welds the planar-gripper such that all motion lies in
  * the Y-Z plane (in frame G). Note: The planar gripper frame G perfectly
  * coincides with the world coordinate frame W when welded via this method.
- * @tparam T The scalar type. Currently only supports double.
  * @param plant The plant containing the planar-gripper.
+ * @tparam_double_only
  */
 template <typename T>
 void WeldGripperFrames(MultibodyPlant<T>* plant);

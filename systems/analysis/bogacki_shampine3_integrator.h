@@ -12,11 +12,6 @@ namespace systems {
 /**
  A third-order, four-stage, first-same-as-last (FSAL) Runge-Kutta integrator
  with a second order error estimate.
- @tparam T A double or autodiff type.
-
- Instantiated templates for the following kinds of T's are provided:
- - double
- - AutoDiffXd
 
  For a discussion of this Runge-Kutta method, see [Hairer, 1993].
  The Butcher tableau for this integrator follows:
@@ -34,6 +29,9 @@ namespace systems {
 
  - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
    formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
+
+ @tparam_nonsymbolic_scalar
+ @ingroup integrators
  */
 template <class T>
 class BogackiShampine3Integrator final : public IntegratorBase<T> {
@@ -80,4 +78,3 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::BogackiShampine3Integrator)
-

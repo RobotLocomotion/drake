@@ -32,7 +32,7 @@ namespace systems {
 /// None of the contained vectors (groups) may be null, although any of them may
 /// be zero-length.
 ///
-/// @tparam T A mathematical type compatible with Eigen's Scalar.
+/// @tparam_default_scalar
 template <typename T>
 class DiscreteValues {
  public:

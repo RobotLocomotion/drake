@@ -37,7 +37,7 @@ typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 7.4 on Bionic. On macOS, the default compiler is the Apple
+``PATH``, usually GCC 7.5 on Bionic. On macOS, the default compiler is the Apple
 LLVM compiler. To use Clang 6.0 on Ubuntu, set the ``CC`` and ``CXX``
 environment variables before running **bazel build**, **bazel test**, or any
 other **bazel** commands.

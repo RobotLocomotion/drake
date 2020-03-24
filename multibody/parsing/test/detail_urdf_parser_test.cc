@@ -98,6 +98,12 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
 
   EXPECT_EQ(plant.num_positions(), 37);
   EXPECT_EQ(plant.num_velocities(), 36);
+
+  // Verify that joint actuator limits are set correctly.
+  ASSERT_TRUE(plant.HasJointActuatorNamed("back_bkz_motor"));
+  const JointActuator<double>& actuator =
+      plant.GetJointActuatorByName("back_bkz_motor");
+  EXPECT_EQ(actuator.effort_limit(), 106);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
@@ -165,6 +171,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(
       CompareMatrices(revolute_joint.velocity_upper_limits(), Vector1d(100)));
 
+  const JointActuator<double>& revolute_actuator =
+      plant.GetJointActuatorByName("revolute_actuator");
+  EXPECT_EQ(revolute_actuator.effort_limit(), 100);
+
   const Joint<double>& prismatic_joint =
       plant.GetJointByName("prismatic_joint");
   EXPECT_TRUE(
@@ -175,6 +185,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
       CompareMatrices(prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
   EXPECT_TRUE(
       CompareMatrices(prismatic_joint.velocity_upper_limits(), Vector1d(5)));
+  EXPECT_FALSE(plant.HasJointActuatorNamed("prismatic_actuator"));
 
   const Joint<double>& no_limit_joint =
       plant.GetJointByName("revolute_joint_no_limits");
@@ -185,6 +196,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+
+  const JointActuator<double>& revolute_actuator_no_limits =
+      plant.GetJointActuatorByName("revolute_actuator_no_limits");
+  EXPECT_EQ(revolute_actuator_no_limits.effort_limit(), inf(0));
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {

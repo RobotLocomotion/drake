@@ -109,6 +109,24 @@ class Polynomial {
   /// Returns the decision variables of this polynomial.
   const Variables& decision_variables() const;
 
+  /// Sets the indeterminates to `new_indeterminates`.
+  ///
+  /// Changing the indeterminates would change `monomial_to_coefficient_map()`,
+  /// and also potentially the degree of the polynomial. Here is an example.
+  ///
+  /// @code
+  /// // p is a quadratic polynomial with x being the indeterminates.
+  /// symbolic::Polynomial p(a * x * x + b * x + c, {x});
+  /// // p.monomial_to_coefficient_map() contains {1: c, x: b, x*x:a}.
+  /// std::cout << p.TotalDegree(); // prints 2.
+  /// // Now set (a, b, c) to the indeterminates. p becomes a linear
+  /// // polynomial of a, b, c.
+  /// p.SetIndeterminates({a, b, c});
+  /// // p.monomial_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
+  /// std::cout << p.TotalDegree(); // prints 1.
+  /// @endcode
+  void SetIndeterminates(const Variables& new_indeterminates);
+
   /// Returns the highest degree of this polynomial in a variable @p v.
   int Degree(const Variable& v) const;
 
@@ -177,14 +195,17 @@ class Polynomial {
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
+  Polynomial& operator+=(const Variable& v);
 
   Polynomial& operator-=(const Polynomial& p);
   Polynomial& operator-=(const Monomial& m);
   Polynomial& operator-=(double c);
+  Polynomial& operator-=(const Variable& v);
 
   Polynomial& operator*=(const Polynomial& p);
   Polynomial& operator*=(const Monomial& m);
   Polynomial& operator*=(double c);
+  Polynomial& operator*=(const Variable& v);
 
   /// Returns true if this polynomial and @p p are structurally equal.
   bool EqualTo(const Polynomial& p) const;
@@ -192,6 +213,11 @@ class Polynomial {
   /// Returns true if this polynomial and @p p are equal, after expanding the
   /// coefficients.
   bool EqualToAfterExpansion(const Polynomial& p) const;
+
+  /// Returns true if this polynomial and @p are almost equal (the difference
+  /// in the corresponding coefficients are all less than @p tol), after
+  /// expanding the coefficients.
+  bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
 
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.
@@ -211,6 +237,7 @@ class Polynomial {
       hash_append(hasher, p.second);
     }
   }
+  friend Polynomial operator/(Polynomial p, double v);
 
  private:
   // Throws std::runtime_error if there is a variable appeared in both of
@@ -223,7 +250,7 @@ class Polynomial {
 };
 
 /// Unary minus operation for polynomial.
-Polynomial operator-(Polynomial p);
+Polynomial operator-(const Polynomial& p);
 
 Polynomial operator+(Polynomial p1, const Polynomial& p2);
 Polynomial operator+(Polynomial p, const Monomial& m);
@@ -233,6 +260,8 @@ Polynomial operator+(const Monomial& m1, const Monomial& m2);
 Polynomial operator+(const Monomial& m, double c);
 Polynomial operator+(double c, Polynomial p);
 Polynomial operator+(double c, const Monomial& m);
+Polynomial operator+(Polynomial p, const Variable& v);
+Polynomial operator+(const Variable& v, Polynomial p);
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2);
 Polynomial operator-(Polynomial p, const Monomial& m);
@@ -242,6 +271,8 @@ Polynomial operator-(const Monomial& m1, const Monomial& m2);
 Polynomial operator-(const Monomial& m, double c);
 Polynomial operator-(double c, Polynomial p);
 Polynomial operator-(double c, const Monomial& m);
+Polynomial operator-(Polynomial p, const Variable& v);
+Polynomial operator-(const Variable& v, const Polynomial& p);
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
@@ -252,6 +283,11 @@ Polynomial operator*(const Monomial& m, Polynomial p);
 Polynomial operator*(const Monomial& m, double c);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(double c, const Monomial& m);
+Polynomial operator*(Polynomial p, const Variable& v);
+Polynomial operator*(const Variable& v, Polynomial p);
+
+/// Returns `p / v`.
+Polynomial operator/(Polynomial p, double v);
 
 /// Returns polynomial @p rasied to @p n.
 Polynomial pow(const Polynomial& p, int n);
@@ -306,6 +342,7 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
 #endif
+
 }  // namespace symbolic
 }  // namespace drake
 
@@ -414,3 +451,31 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+/// Evaluates a matrix `m` of symbolic polynomials using `env`.
+///
+/// @returns a matrix of double whose size is the size of @p m.
+/// @throws std::runtime_error if NaN is detected during evaluation.
+/// @pydrake_mkdoc_identifier{polynomial}
+template <typename Derived>
+std::enable_if_t<
+    std::is_same<typename Derived::Scalar, Polynomial>::value,
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
+                  Derived::MaxColsAtCompileTime>>
+Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
+}
+
+/// Computes the Jacobian matrix J of the vector function @p f with respect to
+/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
+///
+/// @pre {@p vars is non-empty}.
+/// @pydrake_mkdoc_identifier{polynomial}
+MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
+                             const Eigen::Ref<const VectorX<Variable>>& vars);
+
+}  // namespace symbolic
+}  // namespace drake

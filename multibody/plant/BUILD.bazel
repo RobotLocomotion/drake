@@ -387,6 +387,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_plant_forward_dynamics_test",
+    data = ["//examples/atlas:models"],
     deps = [
         ":kuka_iiwa_model_tests",
         ":plant",

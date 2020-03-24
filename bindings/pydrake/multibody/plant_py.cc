@@ -658,6 +658,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<const systems::OutputPort<T>&,
                 multibody::ModelInstanceIndex>(&Class::get_state_output_port),
             py_reference_internal, cls_doc.get_state_output_port.doc_1args)
+        .def("get_generalized_acceleration_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_generalized_acceleration_output_port),
+            py_reference_internal,
+            cls_doc.get_generalized_acceleration_output_port.doc_0args)
+        .def("get_generalized_acceleration_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_generalized_acceleration_output_port),
+            py::arg("model_instance"), py_reference_internal,
+            cls_doc.get_generalized_acceleration_output_port.doc_1args)
+        .def("get_reaction_forces_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_reaction_forces_output_port),
+            py_reference_internal, cls_doc.get_reaction_forces_output_port.doc)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
