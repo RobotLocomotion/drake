@@ -153,22 +153,6 @@ int get_input_port_size(
   }
 }
 
-// TODO(soonho-tri): Remove this pending resolution of #12928.
-bool is_affine(const VectorX<symbolic::Expression>& expressions,
-               const symbolic::Variables& vars) {
-  for (int i = 0; i < expressions.size(); ++i) {
-    const symbolic::Expression& e{expressions(i)};
-    if (!e.is_polynomial()) {
-      return false;
-    }
-    const symbolic::Polynomial p{e, vars};
-    if (p.TotalDegree() > 1) {
-      return false;
-    }
-  }
-  return true;
-}
-
 }  // end namespace
 
 DirectTranscription::DirectTranscription(
@@ -322,7 +306,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
           symbolic_context->get_continuous_state_vector().CopyToVector();
     }
     if (i == 0 &&
-        !is_affine(next_state, symbolic::Variables(decision_variables()))) {
+        !IsAffine(next_state, symbolic::Variables(decision_variables()))) {
       // Note: only check on the first iteration, where we can return false
       // before adding any constraints to the program.  For i>0, the
       // AddLinearEqualityConstraint call with throw.

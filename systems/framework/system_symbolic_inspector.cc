@@ -238,26 +238,6 @@ bool SystemSymbolicInspector::IsTimeInvariant() const {
   return true;
 }
 
-namespace {
-
-// helper method for HasAffineDynamics
-bool is_affine(const VectorX<symbolic::Expression>& expressions,
-               const symbolic::Variables& vars) {
-  for (int i = 0; i < expressions.size(); ++i) {
-    const Expression& e{expressions(i)};
-    if (!e.is_polynomial()) {
-      return false;
-    }
-    const symbolic::Polynomial p{e, vars};
-    if (p.TotalDegree() > 1) {
-      return false;
-    }
-  }
-  return true;
-}
-
-}  // namespace
-
 bool SystemSymbolicInspector::HasAffineDynamics() const {
   // If the Context contains any abstract values, then I can't trust my parsing.
   if (context_is_abstract_) {
@@ -272,11 +252,11 @@ bool SystemSymbolicInspector::HasAffineDynamics() const {
     vars.insert(symbolic::Variables(v));
   }
 
-  if (!is_affine(derivatives_->CopyToVector(), vars)) {
+  if (!IsAffine(derivatives_->CopyToVector(), vars)) {
     return false;
   }
   for (int i = 0; i < discrete_updates_->num_groups(); ++i) {
-    if (!is_affine(discrete_updates_->get_vector(i).get_value(), vars)) {
+    if (!IsAffine(discrete_updates_->get_vector(i).get_value(), vars)) {
       return false;
     }
   }

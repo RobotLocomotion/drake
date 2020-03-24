@@ -1406,6 +1406,15 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
 
+/// Checks if every element in `m` is affine in `vars`.
+/// @note If `m` is an empty matrix, it returns true.
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
+              const Variables& vars);
+
+/// Checks if every element in `m` is affine.
+/// @note If `m` is an empty matrix, it returns true.
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m);
+
 /// Returns the distinct variables in the matrix of expressions.
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);
 
