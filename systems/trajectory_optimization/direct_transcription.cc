@@ -153,12 +153,28 @@ int get_input_port_size(
   }
 }
 
+// TODO(soonho-tri): Remove this pending resolution of #12928.
+bool is_affine(const VectorX<symbolic::Expression>& expressions,
+               const symbolic::Variables& vars) {
+  for (int i = 0; i < expressions.size(); ++i) {
+    const symbolic::Expression& e{expressions(i)};
+    if (!e.is_polynomial()) {
+      return false;
+    }
+    const symbolic::Polynomial p{e, vars};
+    if (p.TotalDegree() > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // end namespace
 
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
     int num_time_samples,
-    std::variant<InputPortSelection, InputPortIndex> input_port_index)
+    const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
                        get_period(system)),
@@ -168,7 +184,7 @@ DirectTranscription::DirectTranscription(
   ValidateSystem(*system, context, input_port_index);
 
   // First try symbolic dynamics.
-  if (!AddSymbolicDynamicConstraints(system, context)) {
+  if (!AddSymbolicDynamicConstraints(system, context, input_port_index)) {
     AddAutodiffDynamicConstraints(system, context, input_port_index);
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
@@ -177,7 +193,7 @@ DirectTranscription::DirectTranscription(
 DirectTranscription::DirectTranscription(
     const TimeVaryingLinearSystem<double>* system,
     const Context<double>& context, int num_time_samples,
-    std::variant<InputPortSelection, InputPortIndex> input_port_index)
+    const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
           context.num_total_states(), num_time_samples,
           std::max(system->time_period(),
@@ -201,7 +217,7 @@ DirectTranscription::DirectTranscription(
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
     int num_time_samples, TimeStep fixed_timestep,
-    std::variant<InputPortSelection, InputPortIndex> input_port_index)
+    const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
                        fixed_timestep.value),
@@ -214,7 +230,7 @@ DirectTranscription::DirectTranscription(
   }
 
   // First try symbolic dynamics.
-  if (!AddSymbolicDynamicConstraints(system, context)) {
+  if (!AddSymbolicDynamicConstraints(system, context, input_port_index)) {
     AddAutodiffDynamicConstraints(system, context, input_port_index);
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
@@ -261,64 +277,65 @@ PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory(
 }
 
 bool DirectTranscription::AddSymbolicDynamicConstraints(
-    const System<double>* system, const Context<double>& context) {
+    const System<double>* system, const Context<double>& context,
+    const std::variant<InputPortSelection, InputPortIndex>& input_port_index) {
+  using symbolic::Expression;
   const auto symbolic_system = system->ToSymbolicMaybe();
   if (!symbolic_system) {
     return false;
   }
-
-  const auto inspector =
-      std::make_unique<SystemSymbolicInspector>(*symbolic_system);
-  if (!inspector->HasAffineDynamics()) {
+  auto symbolic_context = symbolic_system->CreateDefaultContext();
+  if (SystemSymbolicInspector::IsAbstract(*symbolic_system,
+                                          *symbolic_context)) {
     return false;
   }
+  symbolic_context->SetTimeStateAndParametersFrom(context);
 
-  symbolic::Substitution sub;
-  for (int i = 0; i < context.num_numeric_parameter_groups(); i++) {
-    const auto& params = context.get_numeric_parameter(i).get_value();
-    for (int j = 0; j < params.size(); j++) {
-      sub.emplace(inspector->numeric_parameters(i)[j], params[j]);
-    }
-  }
+  const InputPort<Expression>* input_port =
+      symbolic_system->get_input_port_selection(input_port_index);
 
-  // TODO(russt): Use integrator here, too, instead of hard-coding the
-  // explicit Euler update.
+  std::unique_ptr<DiscreteValues<Expression>> discrete_state =
+      discrete_time_system_ ? symbolic_system->AllocateDiscreteVariables() :
+      nullptr;
+  ExplicitEulerIntegrator<Expression> integrator(
+      *symbolic_system, fixed_timestep(), symbolic_context.get());
+  integrator.Initialize();
+  VectorX<Expression> next_state(num_states());
+
   for (int i = 0; i < N() - 1; i++) {
-    sub[inspector->time()] = i * fixed_timestep();
-    // TODO(russt/soonho): Can we make a cleaner way to do substitutions
-    // with Vectors to avoid these loops appearing everywhere? #6925
-    for (int j = 0; j < num_inputs(); j++) {
-      sub[inspector->input(0)[j]] = input(i)[j];
+    symbolic_context->SetTime(i*fixed_timestep());
+
+    if (input_port) {
+      input_port->FixValue(symbolic_context.get(), input(i).cast<Expression>());
     }
 
     if (discrete_time_system_) {
-      VectorX<symbolic::Expression> update = inspector->discrete_update(0);
-      for (int j = 0; j < num_states(); j++) {
-        sub[inspector->discrete_state(0)[j]] = state(i)[j];
-      }
-      for (int j = 0; j < num_states(); j++) {
-        update(j) = update(j).Substitute(sub);
-      }
-      AddLinearEqualityConstraint(state(i + 1) == update);
+      symbolic_context->SetDiscreteState(state(i).cast<Expression>());
+      symbolic_system->CalcDiscreteVariableUpdates(*symbolic_context,
+                                                   discrete_state.get());
+      next_state = discrete_state->get_vector(0).get_value();
     } else {
-      VectorX<symbolic::Expression> derivatives = inspector->derivatives();
-      for (int j = 0; j < num_states(); j++) {
-        sub[inspector->continuous_state()[j]] = state(i)[j];
-      }
-      for (int j = 0; j < num_states(); j++) {
-        derivatives(j) = derivatives(j).Substitute(sub);
-      }
-      // The next state should match the explicit Euler integration.
-      AddLinearEqualityConstraint(state(i + 1) ==
-                                  state(i) + fixed_timestep() * derivatives);
+      symbolic_context->SetContinuousState(state(i).cast<Expression>());
+      DRAKE_THROW_UNLESS(integrator.IntegrateWithSingleFixedStepToTime(
+          (i + 1) * fixed_timestep()));
+      next_state =
+          symbolic_context->get_continuous_state_vector().CopyToVector();
     }
+    if (i == 0 &&
+        !is_affine(next_state, symbolic::Variables(decision_variables()))) {
+      // Note: only check on the first iteration, where we can return false
+      // before adding any constraints to the program.  For i>0, the
+      // AddLinearEqualityConstraint call with throw.
+      return false;
+    }
+    AddLinearEqualityConstraint(state(i + 1) == next_state);
   }
   return true;
 }
 
 void DirectTranscription::AddAutodiffDynamicConstraints(
     const System<double>* system, const Context<double>& context,
-    std::variant<InputPortSelection, InputPortIndex> input_port_index) {
+    const std::variant<InputPortSelection, InputPortIndex>& input_port_index) {
   system_ = system->ToAutoDiffXd();
   DRAKE_DEMAND(system_ != nullptr);
   context_ = system_->CreateDefaultContext();
@@ -367,7 +384,7 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
 
 void DirectTranscription::ValidateSystem(
     const System<double>& system, const Context<double>& context,
-    std::variant<InputPortSelection, InputPortIndex> input_port_index) {
+    const std::variant<InputPortSelection, InputPortIndex>& input_port_index) {
   DRAKE_DEMAND(system.IsDifferenceEquationSystem());
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
   if (context.num_input_ports() > 0) {
