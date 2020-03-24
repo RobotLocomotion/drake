@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
@@ -26,8 +27,10 @@ using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
+using systems::sensors::Color;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
 using systems::sensors::InvalidDepth;
 
 // Default camera properties.
@@ -36,6 +39,7 @@ const int kHeight = 480;
 const double kZNear = 0.5;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
+const bool kShowWindow = false;
 
 // NOTE: The depth tolerance is this large mostly due to the combination of
 // several factors:
@@ -53,6 +57,16 @@ const double kFovY = M_PI_4;
 // larger (in area) than the default image size.
 const double kDepthTolerance = 2.5e-4;  // meters.
 
+// Provide a default visual color for this tests -- it is intended to be
+// different from the default color of the OpenGL render engine.
+const ColorI kDefaultVisualColor = {229u, 229u, 229u};
+const float kDefaultDistance{3.f};
+
+// Values to be used with the "centered shape" tests.
+// The amount inset from the edge of the images to *still* expect terrain
+// values.
+static constexpr int kInset{10};
+
 // Holds `(x, y)` indices of the screen coordinate system where the ranges of
 // `x` and `y` are [0, image_width) and [0, image_height) respectively.
 struct ScreenCoord {
@@ -66,10 +80,30 @@ std::ostream& operator<<(std::ostream& out, const ScreenCoord& c) {
   return out;
 }
 
+// Utility struct for doing color testing; provides three mechanisms for
+// creating a common rgba color. We get colors from images (as a pointer to
+// unsigned bytes, as a (ColorI, alpha) pair, and from a normalized color. It's
+// nice to articulate tests without having to worry about those details.
+struct RgbaColor {
+  RgbaColor(const Color<int>& c, int alpha)
+      : r(c.r), g(c.g), b(c.b), a(alpha) {}
+  explicit RgbaColor(const uint8_t* p) : r(p[0]), g(p[1]), b(p[2]), a(p[3]) {}
+  explicit RgbaColor(const Vector4d& norm_color)
+      : r(static_cast<int>(norm_color(0) * 255)),
+        g(static_cast<int>(norm_color(1) * 255)),
+        b(static_cast<int>(norm_color(2) * 255)),
+        a(static_cast<int>(norm_color(3) * 255)) {}
+  int r;
+  int g;
+  int b;
+  int a;
+};
+
 class RenderEngineGlTest : public ::testing::Test {
  public:
   RenderEngineGlTest()
       : depth_(kWidth, kHeight),
+        label_(kWidth, kHeight),
         // Looking straight down from 3m above the ground.
         X_WR_(Translation3d(0, 0, kDefaultDistance) *
               Eigen::AngleAxisd(M_PI, Vector3d::UnitY()) *
@@ -83,11 +117,24 @@ class RenderEngineGlTest : public ::testing::Test {
   // test.
   void Render(RenderEngineGl* renderer = nullptr,
               const DepthCameraProperties* camera_in = nullptr,
-              ImageDepth32F* depth_in = nullptr) {
+              ImageDepth32F* depth_in = nullptr,
+              ImageLabel16I* label_in = nullptr) {
     if (!renderer) renderer = renderer_.get();
     const DepthCameraProperties& camera = camera_in ? *camera_in : camera_;
+    ImageLabel16I* label = label_in ? label_in : &label_;
     ImageDepth32F* depth = depth_in ? depth_in : &depth_;
     EXPECT_NO_THROW(renderer->RenderDepthImage(camera, depth));
+    EXPECT_NO_THROW(renderer->RenderLabelImage(camera, kShowWindow, label));
+  }
+
+  // Confirms that all pixels in the member label image have the same value.
+  void VerifyUniformLabel(int16_t label) {
+    for (int y = 0; y < kHeight; ++y) {
+      for (int x = 0; x < kWidth; ++x) {
+        ASSERT_EQ(label_.at(x, y)[0], label)
+            << "At pixel (" << x << ", " << y << ")";
+      }
+    }
   }
 
   // Confirms that all pixels in the member depth image have the same value.
@@ -159,14 +206,18 @@ class RenderEngineGlTest : public ::testing::Test {
   // member images will be tested.
   void VerifyOutliers(const RenderEngineGl& renderer,
                       const DepthCameraProperties& camera, const char* name,
-                      ImageDepth32F* depth_in = nullptr) {
+                      ImageDepth32F* depth_in = nullptr,
+                      ImageLabel16I* label_in = nullptr) {
     ImageDepth32F& depth = depth_in ? *depth_in : depth_;
+    ImageLabel16I& label = label_in ? *label_in : label_;
 
     for (const auto& screen_coord : GetOutliers(camera)) {
-      // Depth
       EXPECT_TRUE(IsExpectedDepth(depth, screen_coord, expected_outlier_depth_,
                                   kDepthTolerance))
-          << name;
+          << "Depth at: " << screen_coord << " for test: " << name;
+      EXPECT_EQ(label.at(screen_coord.x, screen_coord.y)[0],
+                expected_outlier_label_)
+          << "Label at: " << screen_coord << " for test: " << name;
     }
   }
 
@@ -179,7 +230,9 @@ class RenderEngineGlTest : public ::testing::Test {
 
     if (add_terrain) {
       const GeometryId ground_id = GeometryId::get_new_id();
-      renderer_->RegisterVisual(ground_id, HalfSpace(), PerceptionProperties(),
+      PerceptionProperties material;
+      material.AddProperty("label", "id", RenderLabel::kDontCare);
+      renderer_->RegisterVisual(ground_id, HalfSpace(), material,
                                 RigidTransformd::Identity(),
                                 false /** needs update */);
     }
@@ -191,9 +244,7 @@ class RenderEngineGlTest : public ::testing::Test {
     Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
                    kDefaultVisualColor.b / 255., 1.);
     material.AddProperty("phong", "diffuse", color);
-    // NOTE: Any render label is sufficient; we aren't testing them for this
-    // depth-only renderer.
-    material.AddProperty("label", "id", RenderLabel::kEmpty);
+    material.AddProperty("label", "id", expected_label_);
     return material;
   }
 
@@ -201,7 +252,8 @@ class RenderEngineGlTest : public ::testing::Test {
   // PerformCenterShapeTest().
   void PopulateSphereTest(RenderEngineGl* renderer) {
     Sphere sphere{0.5};
-    renderer->RegisterVisual(geometry_id_, sphere, PerceptionProperties(),
+    expected_label_ = RenderLabel(12345);  // an arbitrary value.
+    renderer->RegisterVisual(geometry_id_, sphere, simple_material(),
                              RigidTransformd::Identity(),
                              true /* needs update */);
     RigidTransformd X_WV{Vector3d{0, 0, 0.5}};
@@ -219,32 +271,33 @@ class RenderEngineGlTest : public ::testing::Test {
     // Can't use the member images in case the camera has been configured to a
     // different size than the default camera_ configuration.
     ImageDepth32F depth(cam.width, cam.height);
-    Render(renderer, &cam, &depth);
+    ImageLabel16I label(cam.width, cam.height);
+    Render(renderer, &cam, &depth, &label);
 
-    VerifyOutliers(*renderer, cam, name, &depth);
+    VerifyOutliers(*renderer, cam, name, &depth, &label);
 
     // Verifies inside the sphere.
     const ScreenCoord inlier = GetInlier(cam);
+
     EXPECT_TRUE(
         IsExpectedDepth(depth, inlier, expected_object_depth_, kDepthTolerance))
-        << name;
+        << "Depth at: " << inlier << " for test: " << name;
+    EXPECT_EQ(label.at(inlier.x, inlier.y)[0],
+              static_cast<int>(expected_label_))
+        << "Label at: " << inlier << " for test: " << name;
   }
 
-  // Provide a default visual color for this tests -- it is intended to be
-  // different from the default color of the VTK render engine.
-  const ColorI kDefaultVisualColor = {229u, 229u, 229u};
-  const float kDefaultDistance{3.f};
-
-  // Values to be used with the "centered shape" tests.
-  // The amount inset from the edge of the images to *still* expect terrain
-  // values.
-  static constexpr int kInset{10};
   float expected_outlier_depth_{3.f};
   float expected_object_depth_{2.f};
+  RenderLabel expected_label_;
+  RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
+  RgbaColor default_color_{kDefaultVisualColor, 255};
 
   const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY,
                                          "n/a",  kZNear,  kZFar};
+
   ImageDepth32F depth_;
+  ImageLabel16I label_;
   RigidTransformd X_WR_;
   GeometryId geometry_id_;
 
@@ -260,6 +313,7 @@ TEST_F(RenderEngineGlTest, NoBodyTest) {
   SetUp(RigidTransformd::Identity());
   Render();
 
+  VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
 }
 
@@ -275,6 +329,7 @@ TEST_F(RenderEngineGlTest, TerrainTest) {
     X_WR_.set_translation(p_WR);
     renderer_->UpdateViewpoint(X_WR_);
     Render();
+    VerifyUniformLabel(RenderLabel::kDontCare);
     VerifyUniformDepth(depth);
   }
 
@@ -283,6 +338,7 @@ TEST_F(RenderEngineGlTest, TerrainTest) {
   X_WR_.set_translation(p_WR);
   renderer_->UpdateViewpoint(X_WR_);
   Render();
+  VerifyUniformLabel(RenderLabel::kDontCare);
   VerifyUniformDepth(InvalidDepth::kTooClose);
 
   // Farther than kZFar.
@@ -290,6 +346,7 @@ TEST_F(RenderEngineGlTest, TerrainTest) {
   X_WR_.set_translation(p_WR);
   renderer_->UpdateViewpoint(X_WR_);
   Render();
+  VerifyUniformLabel(RenderLabel::kDontCare);
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
     for (int x = 0; x < kWidth; ++x) {
@@ -304,6 +361,7 @@ TEST_F(RenderEngineGlTest, BoxTest) {
 
   // Sets up a box.
   Box box(1, 1, 1);
+  expected_label_ = RenderLabel(1);
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, box, simple_material(),
                             RigidTransformd::Identity(),
@@ -330,6 +388,7 @@ TEST_F(RenderEngineGlTest, CylinderTest) {
 
   // Sets up a cylinder.
   Cylinder cylinder(0.2, 1.2);
+  expected_label_ = RenderLabel(2);
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, cylinder, simple_material(),
                             RigidTransformd::Identity(),
@@ -352,6 +411,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   auto filename = FindResourceOrThrow(
       "drake/systems/sensors/test/models/meshes/box.obj");
   Mesh mesh(filename);
+  expected_label_ = RenderLabel(3);
   PerceptionProperties material = simple_material();
   // NOTE: Specifying a diffuse map with a known bad path, will force the box
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
@@ -376,6 +436,7 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   auto filename = FindResourceOrThrow(
       "drake/systems/sensors/test/models/meshes/box.obj");
   Convex convex(filename);
+  expected_label_ = RenderLabel(4);
   PerceptionProperties material = simple_material();
   // NOTE: Specifying a diffuse map with a known bad path, will force the box
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
@@ -430,42 +491,48 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
 //
 TEST_F(RenderEngineGlTest, RemoveVisual) {
   SetUp(X_WR_, true);
+  PopulateSphereTest(renderer_.get());
+  RenderLabel default_label = expected_label_;
   const float default_depth = expected_object_depth_;
 
   // Positions a sphere centered at <0, 0, z> with the given color.
-  auto add_sphere = [this](double z, GeometryId geometry_id) {
+  auto add_sphere = [this](const double z, const GeometryId geometry_id) {
     const double kRadius = 0.5;
     Sphere sphere{kRadius};
     const float depth = kDefaultDistance - kRadius - z;
+    RenderLabel label = RenderLabel(5);
     PerceptionProperties material;
+    material.AddProperty("label", "id", label);
+    // This will accept all registered geometries and therefore, (bool)index
+    // should always be true.
     renderer_->RegisterVisual(geometry_id, sphere, material,
-                              RigidTransformd::Identity(), true);
+                              RigidTransformd::Identity());
     RigidTransformd X_WV{Translation3d(0, 0, z)};
     X_WV_.insert({geometry_id, X_WV});
     renderer_->UpdatePoses(X_WV_);
-    return depth;
+    return std::make_tuple(label, depth);
   };
 
   // Sets the expected values prior to calling PerformCenterShapeTest().
-  auto set_expectations = [this](float depth) {
+  auto set_expectations = [this](const float depth, const RenderLabel& label) {
+    expected_label_ = label;
     expected_object_depth_ = depth;
   };
 
-  const GeometryId id0 = GeometryId::get_new_id();
-  const float depth0 = add_sphere(0.5, id0);
-  set_expectations(depth0);
-  PerformCenterShapeTest(renderer_.get(), "First sphere test");
-
-  // Add another sphere of a different color in front of the default sphere
+  // Add another sphere of a different color in front of the default sphere.
   const GeometryId id1 = GeometryId::get_new_id();
-  const float depth1 = add_sphere(0.75, id1);
-  set_expectations(depth1);
+  float depth1{};
+  RenderLabel label1{};
+  std::tie(label1, depth1) = add_sphere(0.75, id1);
+  set_expectations(depth1, label1);
   PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
 
   // Add a _third_ sphere in front of the second.
   const GeometryId id2 = GeometryId::get_new_id();
-  float depth2 = add_sphere(1.0, id2);
-  set_expectations(depth2);
+  float depth2{};
+  RenderLabel label2{};
+  std::tie(label2, depth2) = add_sphere(1.0, id2);
+  set_expectations(depth2, label2);
   PerformCenterShapeTest(renderer_.get(), "Third sphere added in remove test");
 
   // Remove the first sphere added; should report "true" and the render test
@@ -478,7 +545,7 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
   // return to its default configuration.
   removed = renderer_->RemoveGeometry(id2);
   EXPECT_TRUE(removed);
-  set_expectations(default_depth);
+  set_expectations(default_depth, default_label);
   PerformCenterShapeTest(renderer_.get(),
                          "Default image restored by removing extra geometries");
 }
@@ -587,23 +654,14 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
 
     DepthCameraProperties clipping_near_plane(camera_);
     clipping_near_plane.z_near = expected_object_depth_ + 0.1;
-    const float old_object_depth_ = expected_object_depth_;
     expected_object_depth_ = 0;
     PerformCenterShapeTest(renderer_.get(), "Camera change - z near clips mesh",
                            &clipping_near_plane);
-    // NOTE: Need to restored expected object depth for next test.
-    expected_object_depth_ = old_object_depth_;
-
-    // Test rendering with a previous camera once again to make sure the
-    // existing target is reused correctly.
-    expected_outlier_depth_ = std::numeric_limits<float>::infinity();
-    PerformCenterShapeTest(renderer_.get(),
-                           "Camera change - z far clips terrain",
-                           &clipping_far_plane);
   }
 }
 
-// Tests that registered geometry without specific values renders without error.
+// Tests that registered geometry without specific values renders without error
+// except for default render labels.
 // TODO(SeanCurtis-TRI): When the ability to set defaults is exposed through a
 // public API, actually test for the *default values*. Until then, error-free
 // rendering is sufficient.
@@ -613,8 +671,15 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   // Sets up a box.
   Box box(1, 1, 1);
   const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, box, PerceptionProperties(),
-                            RigidTransformd::Identity(), true);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      renderer_->RegisterVisual(id, box, PerceptionProperties(),
+                                RigidTransformd::Identity(), true),
+      std::logic_error,
+      ".* geometry with the 'unspecified' or 'empty' render labels.*");
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel::kDontCare);
+  renderer_->RegisterVisual(id, box, material, RigidTransformd::Identity(),
+                            true);
   RigidTransformd X_WV{Translation3d(0, 0, 0.5)};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
@@ -631,7 +696,9 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
   const GeometryId ground = GeometryId::get_new_id();
 
   auto add_terrain = [ground](auto* renderer) {
-    renderer->RegisterVisual(ground, HalfSpace(), PerceptionProperties(),
+    PerceptionProperties material;
+    material.AddProperty("label", "id", RenderLabel::kDontCare);
+    renderer->RegisterVisual(ground, HalfSpace(), material,
                              RigidTransformd::Identity(),
                              false /** needs update */);
   };

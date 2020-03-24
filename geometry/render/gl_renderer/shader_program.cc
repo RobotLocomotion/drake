@@ -96,6 +96,12 @@ void ShaderProgram::SetUniformValue1f(const std::string& uniform_name,
   glUniform1f(GetUniformLocation(uniform_name), value);
 }
 
+void ShaderProgram::SetUniformValue4f(const std::string& uniform_name,
+                                      float value0, float value1, float value2,
+                                      float value3) const {
+  glUniform4f(GetUniformLocation(uniform_name), value0, value1, value2, value3);
+}
+
 void ShaderProgram::Use() const { glUseProgram(program_id_); }
 
 void ShaderProgram::Unuse() const { glUseProgram(0); }
