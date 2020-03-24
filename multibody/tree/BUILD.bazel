@@ -7,15 +7,9 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
 package(
     default_visibility = ["//visibility:public"],
-)
-
-drake_jupyter_py_binary(
-    name = "door_hinge_joint_inspector",
-    add_test_rule = 1,
 )
 
 drake_cc_package_library(

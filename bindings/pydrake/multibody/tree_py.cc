@@ -12,6 +12,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/joint.h"
@@ -76,6 +77,30 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc.world_model_instance.doc);
   m.def("default_model_instance", &default_model_instance,
       doc.default_model_instance.doc);
+
+  {
+    using Class = DoorHingeConfig;
+    constexpr auto& cls_doc = doc.DoorHingeConfig;
+    py::class_<Class>(m, "DoorHingeConfig", cls_doc.doc)
+        .def(ParamInit<Class>(), cls_doc.ctor.doc)
+        .def_readwrite("spring_zero_angle_rad", &Class::spring_zero_angle_rad,
+            cls_doc.spring_zero_angle_rad.doc)
+        .def_readwrite("spring_constant", &Class::spring_constant,
+            cls_doc.spring_constant.doc)
+        .def_readwrite("dynamic_friction_torque",
+            &Class::dynamic_friction_torque,
+            cls_doc.dynamic_friction_torque.doc)
+        .def_readwrite("static_friction_torque", &Class::static_friction_torque,
+            cls_doc.static_friction_torque.doc)
+        .def_readwrite("viscous_friction", &Class::viscous_friction,
+            cls_doc.viscous_friction.doc)
+        .def_readwrite(
+            "catch_width", &Class::catch_width, cls_doc.catch_width.doc)
+        .def_readwrite(
+            "catch_torque", &Class::catch_torque, cls_doc.catch_torque.doc)
+        .def_readwrite("motion_threshold", &Class::motion_threshold,
+            cls_doc.motion_threshold.doc);
+  }
 
   {
     using Enum = JacobianWrtVariable;
@@ -358,6 +383,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.gravity_vector.doc)
         .def("set_gravity_vector", &Class::set_gravity_vector,
             cls_doc.set_gravity_vector.doc);
+  }
+
+  {
+    using Class = DoorHinge<T>;
+    constexpr auto& cls_doc = doc.DoorHinge;
+    auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
+        m, "DoorHinge", param, cls_doc.doc);
+    cls.def(py::init<const RevoluteJoint<T>&, const DoorHingeConfig&>(),
+           py::arg("joint"), py::arg("config"), cls_doc.ctor.doc)
+        .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc)
+        .def(
+            "config", &Class::config, py_reference_internal, cls_doc.config.doc)
+        .def("CalcHingeFrictionalTorque", &Class::CalcHingeFrictionalTorque,
+            py::arg("angular_rate"), cls_doc.CalcHingeFrictionalTorque.doc)
+        .def("CalcHingeSpringTorque", &Class::CalcHingeSpringTorque,
+            py::arg("angle"), cls_doc.CalcHingeSpringTorque.doc)
+        .def("CalcHingeTorque", &Class::CalcHingeTorque, py::arg("angle"),
+            py::arg("angular_rate"), cls_doc.CalcHingeTorque.doc);
   }
 
   // MultibodyForces
