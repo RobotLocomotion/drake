@@ -54,7 +54,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const System<double>* system, const Context<double>& context,
       int num_time_samples,
-      std::variant<InputPortSelection, InputPortIndex> input_port_index =
+      const std::variant<InputPortSelection, InputPortIndex>& input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt): Generalize the symbolic short-cutting to handle this case,
@@ -87,7 +87,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const TimeVaryingLinearSystem<double>* system,
       const Context<double>& context, int num_time_samples,
-      std::variant<InputPortSelection, InputPortIndex> input_port_index =
+      const std::variant<InputPortSelection, InputPortIndex>& input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt): Support more than just forward Euler integration
@@ -114,7 +114,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const System<double>* system, const Context<double>& context,
       int num_time_samples, TimeStep fixed_timestep,
-      std::variant<InputPortSelection, InputPortIndex> input_port_index =
+      const std::variant<InputPortSelection, InputPortIndex>& input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt):  Implement constructor for continuous time systems with
@@ -142,15 +142,16 @@ class DirectTranscription : public MultipleShooting {
   // Attempts to create a symbolic version of the plant, and to add linear
   // constraints to impose the dynamics if possible.  Returns true iff the
   // constraints are added.
-  bool AddSymbolicDynamicConstraints(const System<double>* system,
-                                     const Context<double>& context);
+  bool AddSymbolicDynamicConstraints(
+      const System<double>* system, const Context<double>& context,
+      const std::variant<InputPortSelection, InputPortIndex>& input_port_index);
 
   // Attempts to create an autodiff version of the plant, and to impose
   // the generic (nonlinear) constraints to impose the dynamics.
   // Aborts if the conversion ToAutoDiffXd fails.
   void AddAutodiffDynamicConstraints(
       const System<double>* system, const Context<double>& context,
-      std::variant<InputPortSelection, InputPortIndex> input_port_index);
+      const std::variant<InputPortSelection, InputPortIndex>& input_port_index);
 
   // Constrain the final input to match the penultimate, otherwise the final
   // input is unconstrained.
@@ -164,11 +165,9 @@ class DirectTranscription : public MultipleShooting {
   // Ensures that the MultipleShooting problem is well-formed and that the
   // provided @p system and @p context have only one group of discrete states
   // and only one (possibly multidimensional) input.
-  void ValidateSystem(const System<double>& system,
-                      const Context<double>& context,
-                      std::variant<InputPortSelection, InputPortIndex>
-                      input_port_index =
-                      InputPortSelection::kUseFirstInputIfItExists);
+  void ValidateSystem(
+      const System<double>& system, const Context<double>& context,
+      const std::variant<InputPortSelection, InputPortIndex>& input_port_index);
 
   // AutoDiff versions of the System components (for the constraints).
   // These values are allocated iff the dynamic constraints are allocated
