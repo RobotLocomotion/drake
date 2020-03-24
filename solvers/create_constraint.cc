@@ -35,32 +35,18 @@ using internal::ExtractAndAppendVariablesFromExpression;
 using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
 
-
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
   DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
 
-  bool is_linear = true;
-  // Check that all elements are linear.
-  for (int i = 0; i < v.size(); ++i) {
-    if (!v(i).is_polynomial()) {
-      is_linear = false;
-      break;
-    }
-    const Polynomial p{v(i)};
-    if (p.TotalDegree() > 1) {
-      is_linear = false;
-      break;
-    }
-  }
-  if (!is_linear) {
+  if (!IsAffine(v)) {
     auto constraint = make_shared<ExpressionConstraint>(v, lb, ub);
     return CreateBinding(constraint, constraint->vars());
   }  // else, continue on to linear-specific version below.
 
-  if ((ub-lb).isZero()) {
+  if ((ub - lb).isZero()) {
     return ParseLinearEqualityConstraint(v, lb);
   }
 
