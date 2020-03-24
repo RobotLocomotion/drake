@@ -10,6 +10,8 @@ from pydrake.symbolic import Expression
 from pydrake.multibody.tree import (
     Body_,
     BodyIndex,
+    DoorHinge_,
+    DoorHingeConfig,
     FixedOffsetFrame_,
     ForceElement_,
     ForceElementIndex,
@@ -189,10 +191,10 @@ class TestPlant(unittest.TestCase):
             self.assertGreater(plant.num_collision_geometries(), 0)
             self.assertEqual(plant.default_coulomb_friction(
                 plant.GetCollisionGeometriesForBody(body)[0]
-                ).static_friction(), 0.6)
+            ).static_friction(), 0.6)
             self.assertEqual(plant.default_coulomb_friction(
                 plant.GetCollisionGeometriesForBody(body)[0]
-                ).dynamic_friction(), 0.5)
+            ).dynamic_friction(), 0.5)
             explicit_props = ProximityProperties()
             explicit_props.AddProperty("material", "coulomb_friction",
                                        CoulombFriction(1.1, 0.8))
@@ -381,6 +383,7 @@ class TestPlant(unittest.TestCase):
         MultibodyPlant = MultibodyPlant_[T]
         LinearSpringDamper = LinearSpringDamper_[T]
         RevoluteSpring = RevoluteSpring_[T]
+        DoorHinge = DoorHinge_[T]
         SpatialInertia = SpatialInertia_[float]
 
         plant = MultibodyPlant(0.0)
@@ -399,6 +402,9 @@ class TestPlant(unittest.TestCase):
                 damping=0.))
         revolute_spring = plant.AddForceElement(RevoluteSpring(
             joint=revolute_joint, nominal_angle=0.1, stiffness=100.))
+        door_hinge_config = DoorHingeConfig()
+        door_hinge = plant.AddForceElement(DoorHinge(
+            joint=revolute_joint, config=door_hinge_config))
         plant.Finalize()
 
         # Test LinearSpringDamper accessors
@@ -414,6 +420,26 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(revolute_spring.joint(), revolute_joint)
         self.assertEqual(revolute_spring.nominal_angle(), 0.1)
         self.assertEqual(revolute_spring.stiffness(), 100.)
+
+        # Test DoorHinge accessors
+        self.assertEqual(door_hinge.joint(), revolute_joint)
+        door_hinge_config_test = door_hinge.config()
+        # Only test two members since the rest would be the same
+        self.assertEqual(door_hinge_config_test.spring_zero_angle_rad,
+                         door_hinge_config.spring_zero_angle_rad)
+        self.assertEqual(door_hinge_config_test.static_friction_torque,
+                         door_hinge_config.static_friction_torque)
+
+        # Test DoorHinge torque calculation. Set the angle to be the half of
+        # the catch width so that there is only torsional spring torque which
+        # is easy to compute by hand.
+        if T == float:
+            self.assertEqual(door_hinge.CalcHingeFrictionalTorque(
+                angular_rate=0.0), 0.0)
+            self.assertEqual(door_hinge.CalcHingeSpringTorque(
+                angle=0.01), -2.265)
+            self.assertEqual(door_hinge.CalcHingeTorque(
+                angle=0.01, angular_rate=0.0), -2.265)
 
     @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
