@@ -196,6 +196,15 @@ TEST_F(PendulumInspectorTest, HasAffineDynamics) {
   EXPECT_FALSE(inspector_->HasAffineDynamics());
 }
 
+TEST_F(SystemSymbolicInspectorTest, IsAbstract) {
+  auto context = system_.CreateDefaultContext();
+  EXPECT_FALSE(SystemSymbolicInspector::IsAbstract(system_, *context));
+
+  system_.AddAbstractInputPort();
+  auto context2 = system_.CreateDefaultContext();
+  EXPECT_TRUE(SystemSymbolicInspector::IsAbstract(system_, *context2));
+}
+
 TEST_F(PendulumInspectorTest, SymbolicParameters) {
   auto params = inspector_->numeric_parameters(0);
 

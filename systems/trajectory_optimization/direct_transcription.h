@@ -142,8 +142,9 @@ class DirectTranscription : public MultipleShooting {
   // Attempts to create a symbolic version of the plant, and to add linear
   // constraints to impose the dynamics if possible.  Returns true iff the
   // constraints are added.
-  bool AddSymbolicDynamicConstraints(const System<double>* system,
-                                     const Context<double>& context);
+  bool AddSymbolicDynamicConstraints(
+      const System<double>* system, const Context<double>& context,
+      std::variant<InputPortSelection, InputPortIndex> input_port_index);
 
   // Attempts to create an autodiff version of the plant, and to impose
   // the generic (nonlinear) constraints to impose the dynamics.
