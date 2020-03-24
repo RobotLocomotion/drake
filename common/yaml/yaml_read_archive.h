@@ -58,6 +58,8 @@ namespace yaml {
 /// std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
 /// also be used.
 ///
+/// YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
+///
 /// For inspiration and background, see:
 /// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
 class YamlReadArchive final {
@@ -71,7 +73,11 @@ class YamlReadArchive final {
         root_(&owned_root_),
         mapish_item_key_(nullptr),
         mapish_item_value_(nullptr),
-        parent_(nullptr) {}
+        parent_(nullptr) {
+    // Reprocess the owned_root for merge keys only after all member fields are
+    // initialized; otherwise, the method might access invalid member data.
+    RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
+  }
 
   /// Sets the contents `serializable` based on the YAML file associated with
   /// this archive.  See the %YamlReadArchive class overview for details.
@@ -441,6 +447,11 @@ class YamlReadArchive final {
 
   // Do we have a root Node?
   bool has_root() const;
+
+  // Move the merge key values (if any) into the given node using the merge key
+  // semantics; see https://yaml.org/type/merge.html for details.  If yaml-cpp
+  // adds native support for merge keys, then we should remove this helper.
+  void RewriteMergeKeys(YAML::Node*) const;
 
   // If our root is a Map and has child with the given name and type, return
   // the child.  Otherwise, report an error and return an undefined node.
