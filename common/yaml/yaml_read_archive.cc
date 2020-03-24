@@ -9,6 +9,63 @@
 
 namespace drake {
 namespace yaml {
+namespace {
+
+// The source and destination are both of type Map.  Copy the key-value pairs
+// from source into destination, but don't overwrite any existing keys.
+void CopyMergeKeys(const YAML::Node& source, YAML::Node* destination) {
+  for (const auto& key_value : source) {
+    const YAML::Node& key = key_value.first;
+    const YAML::Node& value = key_value.second;
+    YAML::Node entry = (*destination)[key.Scalar()];
+    if (!entry) {
+      entry = value;
+    }
+  }
+}
+
+}  // namespace
+
+void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
+  DRAKE_DEMAND(node != nullptr);
+  DRAKE_DEMAND(node->Type() == YAML::NodeType::Map);
+  const YAML::Node& merge_key = (*node)["<<"];
+  if (!merge_key) {
+    return;
+  }
+  (*node).remove("<<");
+  switch (merge_key.Type()) {
+    case YAML::NodeType::Map: {
+      // Merge `merge_key` Map into `node` Map.
+      CopyMergeKeys(merge_key, node);
+      return;
+    }
+    case YAML::NodeType::Sequence: {
+      // Merge each Map in `merge_key` Sequence-of-Maps into the `node` Map.
+      for (const YAML::Node& merge_key_item : merge_key) {
+        if (merge_key_item.Type() != YAML::NodeType::Map) {
+          ReportMissingYaml(
+              "has invalid merge key type (Sequence-of-non-Map) within");
+        }
+        CopyMergeKeys(merge_key_item, node);
+      }
+      return;
+    }
+    case YAML::NodeType::Scalar: {
+      ReportMissingYaml("has invalid merge key type (Scalar) within");
+      return;
+    }
+    case YAML::NodeType::Null: {
+      ReportMissingYaml("has invalid merge key type (Null) within");
+      return;
+    }
+    case YAML::NodeType::Undefined: {
+      // We should never reach here due to the "if (!merge_key)" guard above.
+      DRAKE_UNREACHABLE();
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
 
 bool YamlReadArchive::has_root() const {
   if (mapish_item_key_ != nullptr) {
@@ -33,7 +90,7 @@ YAML::Node YamlReadArchive::MaybeGetSubNode(const char* name) const {
 
 YAML::Node YamlReadArchive::GetSubNode(
     const char* name, YAML::NodeType::value expected_type) const {
-  const YAML::Node result = MaybeGetSubNode(name);
+  YAML::Node result = MaybeGetSubNode(name);
   if (!result) {
     ReportMissingYaml("is missing");
     return {};
@@ -43,6 +100,9 @@ YAML::Node YamlReadArchive::GetSubNode(
     ReportMissingYaml(fmt::format(
         "has non-{} ({})", to_string(expected_type), to_string(actual_type)));
     return {};
+  }
+  if (expected_type == YAML::NodeType::Map) {
+    RewriteMergeKeys(&result);
   }
   return result;
 }
@@ -107,6 +167,10 @@ void YamlReadArchive::PrintNodeSummary(std::ostream& s) const {
 }
 
 void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
+  if (!debug_visit_name_) {
+    s << "<root>";
+    return;
+  }
   DRAKE_DEMAND(debug_visit_name_);
   DRAKE_DEMAND(debug_visit_type_);
   fmt::print(s, "{} {}",
