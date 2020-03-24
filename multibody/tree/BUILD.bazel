@@ -16,6 +16,9 @@ package(
 drake_jupyter_py_binary(
     name = "door_hinge_joint_inspector",
     add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
 )
 
 drake_cc_package_library(
