@@ -66,13 +66,13 @@ void DrakeVisualizer::ReplayCachedSimulation() const {
     }
 
     auto sample_data = log_->data();
-    std::vector<MatrixX<double>> knots;
-    knots.reserve(sample_data.cols());
+    std::vector<MatrixX<double>> samples;
+    samples.reserve(sample_data.cols());
     for (int c : included_times) {
-      knots.push_back(sample_data.col(c));
+      samples.push_back(sample_data.col(c));
     }
-    auto func =
-        trajectories::PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
+    auto func = trajectories::PiecewisePolynomial<double>::ZeroOrderHold(
+        breaks, samples);
 
     PlaybackTrajectory(func);
   } else {

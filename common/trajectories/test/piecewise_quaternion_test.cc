@@ -87,7 +87,7 @@ std::vector<Quaternion<Scalar>> GenerateRandomQuaternions(
 }
 
 // Tests CheckSlerpInterpolation and "closestness" for PiecewiseQuaternionSlerp
-// generated from random breaks and knots.
+// generated from random breaks and samples.
 GTEST_TEST(TestPiecewiseQuaternionSlerp,
            TestRandomizedPiecewiseQuaternionSlerp) {
   std::default_random_engine generator(123);
@@ -104,7 +104,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
     EXPECT_TRUE(CheckSlerpInterpolation(rot_spline, t));
   }
 
-  EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_knots()));
+  EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_samples()));
 }
 
 // Tests when the given quaternions are not "closest" to the previous one.
@@ -121,7 +121,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
 
   PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
   const std::vector<Quaternion<double>>& internal_quat =
-      rot_spline.get_quaternion_knots();
+      rot_spline.get_quaternion_samples();
 
   EXPECT_TRUE(CheckClosest(internal_quat));
   EXPECT_FALSE(CheckClosest(quat));
@@ -158,7 +158,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   double t = 0.3 * time[0] + 0.7 * time[1];
 
   const std::vector<Quaternion<double>>& internal_quats =
-      rot_spline.get_quaternion_knots();
+      rot_spline.get_quaternion_samples();
   EXPECT_TRUE(CompareMatrices(
       rot_spline.orientation(t).coeffs(),
       internal_quats[0].coeffs(), 1e-10,
