@@ -177,12 +177,12 @@ bool CheckInterpolatedValuesAtBreakTime(
 // The last two conditions are the monotonic conditions ("shape preserving").
 template <typename CoefficientType>
 void PchipTest(const std::vector<double>& breaks,
-               const std::vector<MatrixX<CoefficientType>>& knots,
+               const std::vector<MatrixX<CoefficientType>>& samples,
                const PiecewisePolynomial<CoefficientType>& traj,
                CoefficientType tol) {
   typedef Polynomial<CoefficientType> PolynomialType;
   const std::vector<double>& T = breaks;
-  const std::vector<MatrixX<CoefficientType>>& Y = knots;
+  const std::vector<MatrixX<CoefficientType>>& Y = samples;
 
   int rows = Y.front().rows();
   int cols = Y.front().cols();
@@ -298,7 +298,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
   EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-12));
 
-  // Add special case for pchip to test for the last two knots being the same.
+  // Add special case for pchip to test for the last two samples being the same.
   // There was a sign comparison bug in ComputePchipEndSlope when the end
   // slope = 0. See issue #4450.
   T = {0, 1, 2};
@@ -352,7 +352,7 @@ GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
     PiecewisePolynomial<double> spline =
         PiecewisePolynomial<double>::ZeroOrderHold(T, Y);
     // Don't check the last time step, because constant spline ignores the last
-    // knot.
+    // sample.
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12, false));
     EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-12, false));
   }
@@ -500,7 +500,7 @@ GTEST_TEST(SplineTests, CubicSplineSize2) {
   spline = PiecewisePolynomial<double>::Cubic(T, Y, {Ydot0, Ydot1});
   EXPECT_TRUE(CheckValues(spline, {Y, {Ydot0, Ydot1}}, 1e-8));
 
-  // Calling Cubic(times, Y) with only 2 knots should not be allowed.
+  // Calling Cubic(times, Y) with only 2 samples should not be allowed.
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
 }
 
@@ -512,66 +512,66 @@ GTEST_TEST(SplineTests, EigenTest) {
   Vector3d breaks_mat{0., 1., 2.};
   std::vector<double> breaks_vec{0., 1., 2.};
 
-  Matrix3d knots_mat = Matrix3d::Identity();
-  std::vector<MatrixXd> knots_vec = {Vector3d{1., 0., 0.}, Vector3d{0., 1., 0.},
-                                     Vector3d{0., 0., 1.}};
+  Matrix3d samples_mat = Matrix3d::Identity();
+  std::vector<MatrixXd> samples_vec = {
+      Vector3d{1., 0., 0.}, Vector3d{0., 1., 0.}, Vector3d{0., 0., 1.}};
 
   // Keep the code cleaner below.
   using PP = PiecewisePolynomial<double>;
 
-  EXPECT_TRUE(PP::ZeroOrderHold(breaks_mat, knots_mat)
-                  .isApprox(PP::ZeroOrderHold(breaks_vec, knots_vec), tol));
+  EXPECT_TRUE(PP::ZeroOrderHold(breaks_mat, samples_mat)
+                  .isApprox(PP::ZeroOrderHold(breaks_vec, samples_vec), tol));
 
-  EXPECT_TRUE(PP::FirstOrderHold(breaks_mat, knots_mat)
-                  .isApprox(PP::FirstOrderHold(breaks_vec, knots_vec), tol));
+  EXPECT_TRUE(PP::FirstOrderHold(breaks_mat, samples_mat)
+                  .isApprox(PP::FirstOrderHold(breaks_vec, samples_vec), tol));
 
-  EXPECT_TRUE(PP::Pchip(breaks_mat, knots_mat, false)
-                  .isApprox(PP::Pchip(breaks_vec, knots_vec, false), tol));
+  EXPECT_TRUE(PP::Pchip(breaks_mat, samples_mat, false)
+                  .isApprox(PP::Pchip(breaks_vec, samples_vec, false), tol));
 
-  EXPECT_TRUE(PP::Pchip(breaks_mat, knots_mat, true)
-                  .isApprox(PP::Pchip(breaks_vec, knots_vec, true), tol));
+  EXPECT_TRUE(PP::Pchip(breaks_mat, samples_mat, true)
+                  .isApprox(PP::Pchip(breaks_vec, samples_vec, true), tol));
 
-  EXPECT_TRUE(PP::Cubic(breaks_mat, knots_mat)
-                  .isApprox(PP::Cubic(breaks_vec, knots_vec), tol));
+  EXPECT_TRUE(PP::Cubic(breaks_mat, samples_mat)
+                  .isApprox(PP::Cubic(breaks_vec, samples_vec), tol));
 
-  Matrix3d knots_dot_mat = 2. * Matrix3d::Identity();
-  std::vector<MatrixXd> knots_dot_vec = {
+  Matrix3d samples_dot_mat = 2. * Matrix3d::Identity();
+  std::vector<MatrixXd> samples_dot_vec = {
       Vector3d{2., 0., 0.}, Vector3d{0., 2., 0.}, Vector3d{0., 0., 2.}};
 
   EXPECT_TRUE(
-      PP::Cubic(breaks_mat, knots_mat, knots_dot_mat)
-          .isApprox(PP::Cubic(breaks_vec, knots_vec, knots_dot_vec), tol));
+      PP::Cubic(breaks_mat, samples_mat, samples_dot_mat)
+          .isApprox(PP::Cubic(breaks_vec, samples_vec, samples_dot_vec), tol));
 
   EXPECT_TRUE(
-      PP::Cubic(breaks_mat, knots_mat, knots_dot_vec[0], knots_dot_vec[2])
-          .isApprox(PP::Cubic(breaks_vec, knots_vec, knots_dot_vec[0],
-                              knots_dot_vec[2]),
+      PP::Cubic(breaks_mat, samples_mat, samples_dot_vec[0], samples_dot_vec[2])
+          .isApprox(PP::Cubic(breaks_vec, samples_vec, samples_dot_vec[0],
+                              samples_dot_vec[2]),
                     tol));
 }
 
 template <typename CoefficientType>
 void TestThrows(const std::vector<double>& breaks,
-                const std::vector<MatrixX<CoefficientType>>& knots) {
-  EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots),
+                const std::vector<MatrixX<CoefficientType>>& samples) {
+  EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples),
                std::runtime_error);
-  EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(breaks, knots),
+  EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(breaks, samples),
                std::runtime_error);
-  EXPECT_THROW(PiecewisePolynomial<double>::Pchip(breaks, knots),
+  EXPECT_THROW(PiecewisePolynomial<double>::Pchip(breaks, samples),
                std::runtime_error);
-  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(breaks, knots),
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(breaks, samples),
                std::runtime_error);
 }
 
 template <typename CoefficientType>
 void TestNoThrows(
     const std::vector<double>& breaks,
-    const std::vector<MatrixX<CoefficientType>>& knots) {
+    const std::vector<MatrixX<CoefficientType>>& samples) {
   DRAKE_EXPECT_NO_THROW(
-      PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots));
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples));
   DRAKE_EXPECT_NO_THROW(
-      PiecewisePolynomial<double>::FirstOrderHold(breaks, knots));
-  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Pchip(breaks, knots));
-  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(breaks, knots));
+      PiecewisePolynomial<double>::FirstOrderHold(breaks, samples));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Pchip(breaks, samples));
+  DRAKE_EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(breaks, samples));
 }
 
 GTEST_TEST(SplineTests, TestException) {

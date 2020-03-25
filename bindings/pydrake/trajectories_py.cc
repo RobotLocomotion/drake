@@ -3,6 +3,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -78,33 +79,77 @@ PYBIND11_MODULE(trajectories, m) {
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&, bool>(
               &PiecewisePolynomial<T>::Pchip),
-          py::arg("breaks"), py::arg("knots"),
+          py::arg("breaks"), py::arg("samples"),
           py::arg("zero_end_point_derivatives") = false,
           doc.PiecewisePolynomial.Pchip.doc)
+      .def_static("Pchip",
+          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
+              const Eigen::Ref<const MatrixX<T>>& samples,
+              bool zero_end_point_derivatives) {
+            WarnDeprecated(
+                "Pchip argument knots is renamed to samples.  "
+                "Support will be removed after 2020-07-01.");
+            return PiecewisePolynomial<T>::Pchip(
+                breaks, samples, zero_end_point_derivatives);
+          },
+          py::arg("breaks"), py::arg("knots"),
+          py::arg("zero_end_point_derivatives") = false)
       .def_static("Cubic",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&,
               const Eigen::Ref<const VectorX<T>>&,
               const Eigen::Ref<const VectorX<T>>&>(
               &PiecewisePolynomial<T>::Cubic),
-          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot_start"),
-          py::arg("knots_dot_end"),
+          py::arg("breaks"), py::arg("samples"), py::arg("sample_dot_start"),
+          py::arg("sample_dot_end"),
           doc.PiecewisePolynomial.Cubic
-              .doc_4args_breaks_knots_knots_dot_start_knots_dot_end)
+              .doc_4args_breaks_samples_sample_dot_start_sample_dot_end)
+      .def_static("Cubic",
+          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
+              const Eigen::Ref<const MatrixX<T>>& samples,
+              const Eigen::Ref<const VectorX<T>>& sample_dot_start,
+              const Eigen::Ref<const VectorX<T>>& sample_dot_end) {
+            WarnDeprecated(
+                "Cubic arguments knots are renamed to samples.  "
+                "Support will be removed after 2020-07-01.");
+            return PiecewisePolynomial<T>::Cubic(
+                breaks, samples, sample_dot_start, sample_dot_end);
+          },
+          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot_start"),
+          py::arg("knots_dot_end"))
       .def_static("Cubic",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&,
               const Eigen::Ref<const MatrixX<T>>&>(
               &PiecewisePolynomial<T>::Cubic),
-          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot"),
-          doc.PiecewisePolynomial.Cubic.doc_3args_breaks_knots_knots_dot)
+          py::arg("breaks"), py::arg("samples"), py::arg("samples_dot"),
+          doc.PiecewisePolynomial.Cubic.doc_3args_breaks_samples_samples_dot)
+      .def_static("Cubic",
+          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
+              const Eigen::Ref<const MatrixX<T>>& samples,
+              const Eigen::Ref<const MatrixX<T>>& samples_dot) {
+            WarnDeprecated(
+                "Cubic arguments knots are renamed to samples.  "
+                "Support will be removed after 2020-07-01.");
+            return PiecewisePolynomial<T>::Cubic(breaks, samples, samples_dot);
+          },
+          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot"))
       .def_static("Cubic",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&, bool>(
               &PiecewisePolynomial<T>::Cubic),
-          py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"),
+          py::arg("breaks"), py::arg("samples"), py::arg("periodic_end"),
           doc.PiecewisePolynomial.Cubic
-              .doc_3args_breaks_knots_periodic_end_condition)
+              .doc_3args_breaks_samples_periodic_end_condition)
+      .def_static("Cubic",
+          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
+              const Eigen::Ref<const MatrixX<T>>& samples, bool periodic_end) {
+            WarnDeprecated(
+                "Cubic arguments knots are renamed to samples.  "
+                "Support will be removed after 2020-07-01.");
+            return PiecewisePolynomial<T>::Cubic(breaks, samples, periodic_end);
+          },
+          py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
       .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
           doc.PiecewisePolynomial.value.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
