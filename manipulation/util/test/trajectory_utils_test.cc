@@ -25,7 +25,8 @@ class PiecewiseCubicTrajectoryTest : public ::testing::Test {
                    (times_.front() + times_.back()) / 2., times_.back(),
                    times_.back() + 0.3};
 
-    pos_ = PiecewisePolynomial<double>::Cubic(times_, samples_);
+    pos_ = PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+        times_, samples_);
     dut_ = PiecewiseCubicTrajectory<double>(pos_);
     vel_ = pos_.derivative();
     acc_ = vel_.derivative();
@@ -94,8 +95,9 @@ TEST_F(PiecewiseCubicTrajectoryTest, IsApprox) {
   PiecewiseCubicTrajectory<double> equal = dut_;
   EXPECT_TRUE(dut_.is_approx(equal, 1e-12));
 
-  PiecewiseCubicTrajectory<double> not_equal(PiecewisePolynomial<double>::Cubic(
-      times_, samples_, Vector2<double>::Zero(), Vector2<double>::Zero()));
+  PiecewiseCubicTrajectory<double> not_equal(
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          times_, samples_, Vector2<double>::Zero(), Vector2<double>::Zero()));
 
   EXPECT_TRUE(!dut_.is_approx(not_equal, 1e-12));
 }
@@ -132,7 +134,8 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
                    times.back() + 0.3};
 
     position_ = PiecewiseCubicTrajectory<double>(
-        PiecewisePolynomial<double>::Cubic(times, pos_samples, vel0, vel1));
+        PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+            times, pos_samples, vel0, vel1));
     orientation_ = PiecewiseQuaternionSlerp<double>(times, rot_samples);
   }
 
@@ -234,7 +237,8 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   rot_samples[2] = AngleAxis<double>(-0.44, Vector3<double>::UnitZ());
 
   PiecewiseCubicTrajectory<double> new_pos_traj(
-      PiecewisePolynomial<double>::Cubic(times, pos_samples));
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          times, pos_samples));
   PiecewiseQuaternionSlerp<double> new_rot_traj(times, rot_samples);
 
   {

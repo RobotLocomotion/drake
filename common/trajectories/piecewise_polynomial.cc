@@ -475,6 +475,8 @@ static int sign(T val, T tol) {
   return 0;
 }
 
+namespace {
+
 // Computes the first derivative for either the starting or the end sample
 // point.  This is an internal helpful function for pchip.
 // The first derivative is computed using a non-centered, shape-preserving
@@ -482,11 +484,12 @@ static int sign(T val, T tol) {
 // See equation (2.10) in the following reference for more details.
 // http://www.mi.sanu.ac.rs/~gvm/radovi/mon.pdf
 template <typename T>
-MatrixX<T>
-PiecewisePolynomial<T>::ComputePchipEndSlope(
-    double dt0, double dt1, const CoefficientMatrix& slope0,
-    const CoefficientMatrix& slope1) {
-  CoefficientMatrix deriv =
+MatrixX<T> ComputePchipEndSlope(
+    double dt0, double dt1,
+    const typename PiecewisePolynomial<T>::CoefficientMatrix& slope0,
+    const typename PiecewisePolynomial<T>::CoefficientMatrix& slope1) {
+  constexpr T kSlopeEpsilon = 1e-10;
+  typename PiecewisePolynomial<T>::CoefficientMatrix deriv =
       ((2.0 * dt0 + dt1) * slope0 - dt0 * slope1) / (dt0 + dt1);
   for (int i = 0; i < deriv.rows(); ++i) {
     for (int j = 0; j < deriv.cols(); ++j) {
@@ -503,6 +506,8 @@ PiecewisePolynomial<T>::ComputePchipEndSlope(
   return deriv;
 }
 
+}  // end namespace
+
 // Makes a cubic piecewise polynomial.
 // It first computes the first derivatives at each break, and solves for each
 // segment's coefficients using the derivatives and samples.
@@ -513,7 +518,7 @@ PiecewisePolynomial<T>::ComputePchipEndSlope(
 // more details.
 template <typename T>
 PiecewisePolynomial<T>
-PiecewisePolynomial<T>::Pchip(
+PiecewisePolynomial<T>::CubicShapePreserving(
     const std::vector<double>& breaks,
     const std::vector<CoefficientMatrix>& samples,
     bool zero_end_point_derivatives) {
@@ -542,10 +547,11 @@ PiecewisePolynomial<T>::Pchip(
   CoefficientMatrix Ydot_end = CoefficientMatrix::Zero(rows, cols);
 
   if (!zero_end_point_derivatives) {
-    Ydot_start = ComputePchipEndSlope(times[1] - times[0], times[2] - times[1],
-                                      (Y[1] - Y[0]) / (times[1] - times[0]),
-                                      (Y[2] - Y[1]) / (times[2] - times[1]));
-    Ydot_end = ComputePchipEndSlope(
+    Ydot_start =
+        ComputePchipEndSlope<T>(times[1] - times[0], times[2] - times[1],
+                                (Y[1] - Y[0]) / (times[1] - times[0]),
+                                (Y[2] - Y[1]) / (times[2] - times[1]));
+    Ydot_end = ComputePchipEndSlope<T>(
         times[N - 1] - times[N - 2], times[N - 2] - times[N - 3],
         (Y[N - 1] - Y[N - 2]) / (times[N - 1] - times[N - 2]),
         (Y[N - 2] - Y[N - 3]) / (times[N - 2] - times[N - 3]));
@@ -593,7 +599,7 @@ PiecewisePolynomial<T>::Pchip(
 // derivatives at each break.
 template <typename T>
 PiecewisePolynomial<T>
-PiecewisePolynomial<T>::Cubic(
+PiecewisePolynomial<T>::CubicHermite(
     const std::vector<double>& breaks,
     const std::vector<CoefficientMatrix>& samples,
     const std::vector<CoefficientMatrix>& samples_dot) {
@@ -704,7 +710,7 @@ int PiecewisePolynomial<T>::
 // and `sample_dot_at_end`.
 template <typename T>
 PiecewisePolynomial<T>
-PiecewisePolynomial<T>::Cubic(
+PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
     const std::vector<double>& breaks,
     const std::vector<CoefficientMatrix>& samples,
     const CoefficientMatrix& sample_dot_at_start,
@@ -778,7 +784,7 @@ PiecewisePolynomial<T>::Cubic(
 // end condition).
 template <typename T>
 PiecewisePolynomial<T>
-PiecewisePolynomial<T>::Cubic(
+PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
     const std::vector<double>& breaks,
     const std::vector<CoefficientMatrix>& samples,
     bool periodic_end_condition) {
@@ -899,49 +905,50 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::FirstOrderHold(
 }
 
 template <typename T>
-PiecewisePolynomial<T> PiecewisePolynomial<T>::Pchip(
+PiecewisePolynomial<T> PiecewisePolynomial<T>::CubicShapePreserving(
     const Eigen::Ref<const Eigen::VectorXd>& breaks,
     const Eigen::Ref<const MatrixX<T>>& samples,
     bool zero_end_point_derivatives) {
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
-  return PiecewisePolynomial<T>::Pchip(
+  return PiecewisePolynomial<T>::CubicShapePreserving(
       my_breaks, ColsToStdVector(samples), zero_end_point_derivatives);
 }
 
 template <typename T>
-PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
+PiecewisePolynomial<T>
+PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
     const Eigen::Ref<const Eigen::VectorXd>& breaks,
     const Eigen::Ref<const MatrixX<T>>& samples,
     const Eigen::Ref<const VectorX<T>>& samples_dot_start,
     const Eigen::Ref<const VectorX<T>>& samples_dot_end) {
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
-  return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(samples),
-                                       samples_dot_start.eval(),
-                                       samples_dot_end.eval());
+  return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
+      my_breaks, ColsToStdVector(samples), samples_dot_start.eval(),
+      samples_dot_end.eval());
 }
 
 template <typename T>
-PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
+PiecewisePolynomial<T> PiecewisePolynomial<T>::CubicHermite(
     const Eigen::Ref<const Eigen::VectorXd>& breaks,
     const Eigen::Ref<const MatrixX<T>>& samples,
     const Eigen::Ref<const MatrixX<T>>& samples_dot) {
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
-  return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(samples),
-                                       ColsToStdVector(samples_dot));
+  return PiecewisePolynomial<T>::CubicHermite(
+      my_breaks, ColsToStdVector(samples), ColsToStdVector(samples_dot));
 }
 
 template <typename T>
-PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
+PiecewisePolynomial<T>
+PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
     const Eigen::Ref<const Eigen::VectorXd>& breaks,
-    const Eigen::Ref<const MatrixX<T>>& samples,
-    bool periodic_end_condition) {
+    const Eigen::Ref<const MatrixX<T>>& samples, bool periodic_end_condition) {
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
-  return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(samples),
-                                       periodic_end_condition);
+  return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
+      my_breaks, ColsToStdVector(samples), periodic_end_condition);
 }
 
 // Computes the cubic spline coefficients based on the given values and first

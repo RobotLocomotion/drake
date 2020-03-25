@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
@@ -54,10 +55,10 @@ namespace trajectories {
  * `breaks` to indicate the scalar (e.g. times) which form the boundary of
  * each segment.  We use `samples` to indicate the function value at the
  * `breaks`, e.g. `p(breaks[i]) = samples[i]`.  The term `knot` should be
- * reserved for the "(x,y)" coordinate, here `knot[i] = (breaks[i], samples[i])
- * `, though it is use inconsistently in the interpolation literature
- * (sometimes for `breaks`, sometimes for `samples`), so we try to mostly
- * avoid it here.
+ * reserved for the "(x,y)" coordinate, here
+ * `knot[i] = (breaks[i], samples[i])`, though it is used inconsistently in
+ * the interpolation literature (sometimes for `breaks`, sometimes for
+ * `samples`), so we try to mostly avoid it here.
  *
  * PiecewisePolynomial objects can be added, subtracted, and multiplied.
  * They cannot be divided because Polynomials are not closed
@@ -255,6 +256,10 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples);
 
+  // TODO(russt): This version of the method is not exposed in pydrake, but
+  //  the version that is has limited documentation that refers back to this
+  //  verbose version.  Either add support for this in pydrake, or flip the
+  //  documentation so that pydrake gets the verbose/stand-along version.
   /**
    * Constructs a third order %PiecewisePolynomial using vector samples,
    * where each column of `samples` represents a sample point. First derivatives
@@ -293,24 +298,42 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *         @ref coefficient_construction_methods.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
-  static PiecewisePolynomial<T> Pchip(
+  static PiecewisePolynomial<T> CubicShapePreserving(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& samples,
       bool zero_end_point_derivatives = false);
 
+  DRAKE_DEPRECATED("2020-07-01",
+                   "Pchip has been renamed to CubicShapePreserving.")
+  static PiecewisePolynomial<T> Pchip(
+      const std::vector<double>& breaks,
+      const std::vector<CoefficientMatrix>& samples,
+      bool zero_end_point_derivatives = false) {
+    return CubicShapePreserving(breaks, samples, zero_end_point_derivatives);
+  }
+
   /**
-   * Version of Pchip(breaks, samples, zero_end_point_derivatives) that uses
-   * vector samples and Eigen VectorXd / MatrixX<T> inputs. Each column of
-   * `samples` represents a sample point.
+   * Version of CubicShapePreserving(breaks, samples,
+   * zero_end_point_derivatives) that uses vector samples and Eigen VectorXd
+   * and MatrixX<T> inputs. Each column of `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
-  static PiecewisePolynomial<T> Pchip(
+  static PiecewisePolynomial<T> CubicShapePreserving(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,
       bool zero_end_point_derivatives = false);
+
+  DRAKE_DEPRECATED("2020-07-01",
+                   "Pchip has been renamed to CubicShapePreserving.")
+  static PiecewisePolynomial<T> Pchip(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& samples,
+      bool zero_end_point_derivatives = false) {
+    return CubicShapePreserving(breaks, samples, zero_end_point_derivatives);
+  }
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples.
@@ -325,26 +348,48 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *         @ref coefficient_construction_methods.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
+  static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
+      const std::vector<double>& breaks,
+      const std::vector<CoefficientMatrix>& samples,
+      const CoefficientMatrix& sample_dot_at_start,
+      const CoefficientMatrix& sample_dot_at_end);
+
+  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
+                                 "CubicWithContinuousSecondDerivatives.")
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& samples,
-      const CoefficientMatrix& sample_dot_start,
-      const CoefficientMatrix& sample_dot_end);
+      const CoefficientMatrix& sample_dot_at_start,
+      const CoefficientMatrix& sample_dot_at_end) {
+    return CubicWithContinuousSecondDerivatives(
+        breaks, samples, sample_dot_at_start, sample_dot_at_end);
+  }
 
   /**
-   * Version of Cubic(breaks, samples, sample_dot_start, sample_dot_end) that uses
-   * vector samples and Eigen VectorXd / MatrixX<T> inputs. Each column of `samples`
-   * represents a sample point.
+   * Version of CubicWithContinuousSecondDerivatives() that uses vector
+   * samples and Eigen VectorXd / MatrixX<T> inputs. Each column of
+   * `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
+  static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& samples,
+      const Eigen::Ref<const VectorX<T>>& sample_dot_at_start,
+      const Eigen::Ref<const VectorX<T>>& sample_dot_at_end);
+
+  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
+  "CubicWithContinuousSecondDerivatives.")
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,
-      const Eigen::Ref<const VectorX<T>>& sample_dot_start,
-      const Eigen::Ref<const VectorX<T>>& sample_dot_end);
+      const Eigen::Ref<const VectorX<T>>& sample_dot_at_start,
+      const Eigen::Ref<const VectorX<T>>& sample_dot_at_end) {
+    return CubicWithContinuousSecondDerivatives(
+        breaks, samples, sample_dot_at_start, sample_dot_at_end);
+  }
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples and
@@ -356,23 +401,41 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
-  static PiecewisePolynomial<T> Cubic(
+  static PiecewisePolynomial<T> CubicHermite(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& samples,
       const std::vector<CoefficientMatrix>& samples_dot);
 
+  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
+  "CubicHermite.")
+  static PiecewisePolynomial<T> Cubic(
+      const std::vector<double>& breaks,
+      const std::vector<CoefficientMatrix>& samples,
+      const std::vector<CoefficientMatrix>& samples_dot) {
+    return CubicHermite(breaks, samples, samples_dot);
+  }
+
   /**
-   * Version of Cubic(breaks, samples, samples_dot) that uses vector samples and
+   * Version of CubicHermite(breaks, samples, samples_dot) that uses vector samples and
    * Eigen VectorXd / MatrixX<T> inputs. Corresponding columns of `samples` and
    * `samples_dot` are used as the sample point and independent variable derivative,
    * respectively.
    *
    * @pre `samples.cols() == samples_dot.cols() == breaks.size()`.
    */
-  static PiecewisePolynomial<T> Cubic(
+  static PiecewisePolynomial<T> CubicHermite(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,
       const Eigen::Ref<const MatrixX<T>>& samples_dot);
+
+  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
+  "CubicHermite.")
+  static PiecewisePolynomial<T> Cubic(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& samples,
+      const Eigen::Ref<const MatrixX<T>>& samples_dot) {
+    return CubicHermite(breaks, samples, samples_dot);
+  }
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples.
@@ -399,21 +462,40 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `periodic_end_condition` is `false` the problem is ill-defined.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
-  static PiecewisePolynomial<T> Cubic(
+  static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& samples,
       bool periodic_end_condition = false);
 
+  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
+  "CubicWithContinuousSecondDerivatives.")
+  static PiecewisePolynomial<T> Cubic(
+      const std::vector<double>& breaks,
+      const std::vector<CoefficientMatrix>& samples,
+      bool periodic_end_condition = false) {
+    return CubicWithContinuousSecondDerivatives(breaks, samples,
+                                                periodic_end_condition);
+  }
+
   /**
-   * Version of Cubic(breaks, samples) that uses vector samples and Eigen VectorXd /
-   * MatrixX<T> inputs. Each column of `samples` represents a sample point.
+   * Version of CubicWithContinuousSecondDerivatives(breaks, samples) that
+   * uses vector samples and Eigen VectorXd / MatrixX<T> inputs. Each column
+   * of `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
    */
-  static PiecewisePolynomial<T> Cubic(
+  static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,
       bool periodic_end_condition = false);
+
+  static PiecewisePolynomial<T> Cubic(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& samples,
+      bool periodic_end_condition = false) {
+    return CubicWithContinuousSecondDerivatives(breaks, samples,
+        periodic_end_condition);
+  }
   // @}
 
   /**
@@ -657,8 +739,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
                                       Eigen::Index row, Eigen::Index col) const;
 
-  static constexpr T kSlopeEpsilon = 1e-10;
-
   // a PolynomialMatrix for each piece (segment).
   std::vector<PolynomialMatrix> polynomials_;
 
@@ -686,7 +766,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // Pi(0) = samples[i], for i in [0, N - 2]
   // Pi(duration_i) = samples[i+1], for i in [0, N - 2]
   // N - 2 velocity constraints for the interior points:
-// Pi'(duration_i) = Pi+1'(0), for i in [0, N - 3]
+  // Pi'(duration_i) = Pi+1'(0), for i in [0, N - 3]
   // N - 2 acceleration constraints for the interior points:
   // Pi''(duration_i) = Pi+1''(0), for i in [0, N - 3]
   //
@@ -698,12 +778,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& samples, int row, int col,
       MatrixX<T>* A, VectorX<T>* b);
-
-  // Computes the first derivative at the end point using a non-centered,
-  // shape-preserving three-point formulae.
-  static CoefficientMatrix ComputePchipEndSlope(
-      double dt0, double dt1, const CoefficientMatrix& slope0,
-      const CoefficientMatrix& slope1);
 
   // Throws std::runtime_error if
   // `breaks` and `samples` have different length,

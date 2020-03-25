@@ -221,7 +221,8 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   const bool periodic_endpoint = true;
 
   PiecewisePolynomial<double> periodic_spline =
-      PiecewisePolynomial<double>::Cubic(breaks, samples, periodic_endpoint);
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples, periodic_endpoint);
 
   std::unique_ptr<Trajectory<double>> spline_dt =
       periodic_spline.MakeDerivative(1);
@@ -257,21 +258,22 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
         1, 1, 1;
 
   // No throw with monotonic breaks.
-  PiecewisePolynomial<double>::Cubic(breaks, samples, true);
+  PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+      breaks, samples, true);
 
   // Throw when breaks are too close.
   breaks[1] = less_than_epsilon;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::Cubic(breaks, samples, true),
-      std::runtime_error,
-      "Times must be at least .* apart.");
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples, true),
+      std::runtime_error, "Times must be at least .* apart.");
 
   // Throw when breaks are not strictly monotonic.
   breaks[1] = 0;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::Cubic(breaks, samples, true),
-      std::runtime_error,
-      "Times must be in increasing order.");
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples, true),
+      std::runtime_error, "Times must be in increasing order.");
 }
 
 GTEST_TEST(testPiecewisePolynomial, AllTests) {

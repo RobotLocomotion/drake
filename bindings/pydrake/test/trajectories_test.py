@@ -60,21 +60,21 @@ class TestTrajectories(unittest.TestCase):
     def test_pchip(self):
         t = [0., 1., 2.]
         x = np.array([[0, 1, 1]])
-        pp = PiecewisePolynomial.Pchip(breaks=t, samples=x,
-                                       zero_end_point_derivatives=False)
+        pp = PiecewisePolynomial.CubicShapePreserving(
+            breaks=t, samples=x, zero_end_point_derivatives=False)
 
     def test_cubic(self):
         t = [0., 1., 2.]
         x = np.diag((4., 5., 6.))
         periodic_end = False
         # Just test the spelling for these.
-        pp1 = PiecewisePolynomial.Cubic(breaks=t, samples=x,
-                                        periodic_end=periodic_end)
-        pp2 = PiecewisePolynomial.Cubic(breaks=t, samples=x,
-                                        samples_dot=np.identity(3))
-        pp3 = PiecewisePolynomial.Cubic(breaks=t, samples=x,
-                                        sample_dot_start=[0., 0., 0.],
-                                        sample_dot_end=[0., 0., 0.])
+        pp1 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=x, periodic_end=periodic_end)
+        pp2 = PiecewisePolynomial.CubicHermite(
+            breaks=t, samples=x, samples_dot=np.identity(3))
+        pp3 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
+            sample_dot_at_end=[0., 0., 0.])
 
     def test_slice_and_shift(self):
         x = np.array([[10.], [20.], [30.]]).transpose()

@@ -144,8 +144,9 @@ class PiecewiseCartesianTrajectory {
     }
 
     return PiecewiseCartesianTrajectory(
-        trajectories::PiecewisePolynomial<T>::Cubic(times, pos_knots, vel0,
-                                                    vel1),
+        trajectories::PiecewisePolynomial<
+            T>::CubicWithContinuousSecondDerivatives(times, pos_knots, vel0,
+                                                     vel1),
         trajectories::PiecewiseQuaternionSlerp<T>(times, rot_knots));
   }
 

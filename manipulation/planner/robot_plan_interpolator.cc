@@ -231,12 +231,13 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
               input_time, knots);
           break;
         case InterpolatorType::Pchip :
-          plan.pp = PiecewisePolynomial<double>::Pchip(
+          plan.pp = PiecewisePolynomial<double>::CubicShapePreserving(
               input_time, knots, true);
           break;
         case InterpolatorType::Cubic :
-          plan.pp = PiecewisePolynomial<double>::Cubic(
-              input_time, knots, knot_dot, knot_dot);
+          plan.pp =
+              PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+                  input_time, knots, knot_dot, knot_dot);
           break;
       }
       plan.pp_deriv = plan.pp.derivative();
