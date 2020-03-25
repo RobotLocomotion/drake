@@ -27,7 +27,6 @@ using test::KukaIiwaModelTests;
 namespace {
 
 using Eigen::Vector3d;
-using Eigen::AngleAxisd;
 
 // For one or more points Ei fixed on a body B, this method computes Jq_v_WEi_W,
 // Ei's translational velocity Jacobian in world W with respect to q̇.  However,
@@ -290,9 +289,10 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   void SetUp() override {
     // Spatial inertia for each body. The inertia values are not important
     // because these are only testing CenterOfMass jacobian methods.
-    const SpatialInertia<double> M_B = SpatialInertia<double>::MakeFromCentralInertia(
-        mass_, Vector3<double>::Zero(),
-        0.0 * UnitInertia<double>::SolidBox(1.0, 1.0, 1.0));
+    const SpatialInertia<double> M_B =
+        SpatialInertia<double>::MakeFromCentralInertia(
+            mass_, Vector3<double>::Zero(),
+            0.0 * UnitInertia<double>::SolidBox(1.0, 1.0, 1.0));
 
     // Create an empty MultibodyPlant.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
@@ -341,19 +341,17 @@ TEST_F(TwoDOFPlanarPendulumTest,
   joint2_->set_angular_rate(context_.get(), state[3]);
 
   Eigen::MatrixXd Js_v_WCcm_W(3, 2);
-  Eigen::MatrixXd Js_v_WCcm_W_expected(3,2);
-  Js_v_WCcm_W_expected << 0.0, 0.0,
-                          1.0, 0.25,
-                          0.0, 0.0;
+  Eigen::MatrixXd Js_v_WCcm_W_expected(3, 2);
+  Js_v_WCcm_W_expected << 0.0, 0.0, 1.0, 0.25, 0.0, 0.0;
   Vector3d v_WCcm_W_expected = 3.0 * link_length_ * Vector3d::UnitY();
 
   plant_->CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
       *context_, JacobianWrtVariable::kV, plant_->world_frame(),
       plant_->world_frame(), &Js_v_WCcm_W);
   EXPECT_TRUE(CompareMatrices(Js_v_WCcm_W, Js_v_WCcm_W_expected, kTolerance));
-  EXPECT_TRUE(CompareMatrices(
-      Js_v_WCcm_W * state.tail(plant_->num_velocities()),
-      v_WCcm_W_expected, kTolerance));
+  EXPECT_TRUE(
+      CompareMatrices(Js_v_WCcm_W * state.tail(plant_->num_velocities()),
+                      v_WCcm_W_expected, kTolerance));
 }
 
 TEST_F(TwoDOFPlanarPendulumTest,
@@ -364,8 +362,8 @@ TEST_F(TwoDOFPlanarPendulumTest,
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
 
-  Vector3d abias_WCcm_W_expected = -(state[2]*state[2]) * link_length_ *
-      Vector3d::UnitX();
+  Vector3d abias_WCcm_W_expected =
+      -(state[2] * state[2]) * link_length_ * Vector3d::UnitX();
 
   const Vector3<double>& abias_WCcm_W =
       plant_->CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
