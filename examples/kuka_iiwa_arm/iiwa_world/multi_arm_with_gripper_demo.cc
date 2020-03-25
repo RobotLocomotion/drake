@@ -78,8 +78,10 @@ void main() {
     std::vector<MatrixX<double>> knots(times.size(),
                                        MatrixX<double>::Zero(7, 1));
     knots[1] << M_PI, 0, 0, M_PI / 2., 0, 0, 0;
-    PiecewisePolynomial<double> poly = PiecewisePolynomial<double>::Cubic(
-        times, knots, MatrixX<double>::Zero(7, 1), MatrixX<double>::Zero(7, 1));
+    PiecewisePolynomial<double> poly =
+        PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+            times, knots, MatrixX<double>::Zero(7, 1),
+            MatrixX<double>::Zero(7, 1));
 
     // Adds a trajectory source for desired state and accelerations.
     iiwa_traj_src =

@@ -78,7 +78,7 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
   zmp_trajs.push_back(
       PiecewisePolynomial<double>::FirstOrderHold(time_steps, zmp_d));
   zmp_trajs.push_back(
-      PiecewisePolynomial<double>::Pchip(time_steps, zmp_d));
+      PiecewisePolynomial<double>::CubicShapePreserving(time_steps, zmp_d));
 
   return zmp_trajs;
 }

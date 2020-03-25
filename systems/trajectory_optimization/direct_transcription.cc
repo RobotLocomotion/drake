@@ -345,8 +345,8 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
       *system_, fixed_timestep(), context_.get());
   integrator_->Initialize();
 
-  // For N-1 timesteps, add a constraint which depends on the knot
-  // value along with the state and input vectors at that knot and the
+  // For N-1 timesteps, add a constraint which depends on the breakpoint
+  // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; i++) {
     // Add the dynamic constraints.

@@ -96,7 +96,7 @@ void DirectCollocationConstraint::DoEval(
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:
-  // h - current time (knot) value
+  // h - current time (breakpoint)
   // x0, x1 state vector at time steps k, k+1
   // u0, u1 input vector at time steps k, k+1
   const AutoDiffXd h = x(0);
@@ -182,8 +182,8 @@ DirectCollocation::DirectCollocation(
 
   DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) == num_states());
 
-  // For N-1 timesteps, add a constraint which depends on the knot
-  // value along with the state and input vectors at that knot and the
+  // For N-1 timesteps, add a constraint which depends on the breakpoint
+  // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; i++) {
     AddConstraint(constraint,
@@ -239,7 +239,8 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
   }
-  return PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives);
+  return PiecewisePolynomial<double>::CubicHermite(times_vec, states,
+                                                   derivatives);
 }
 
 }  // namespace trajectory_optimization

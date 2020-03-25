@@ -45,7 +45,7 @@ class DirectTranscription : public MultipleShooting {
   ///    context will also be "cloned" by the optimization; changes to the
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
-  /// @param num_time_samples The number of knot points in the trajectory.
+  /// @param num_time_samples The number of breakpoints in the trajectory.
   /// @param input_port_index A valid input port index or valid
   /// InputPortSelection for @p system.  All other inputs on the system will be
   /// left disconnected (if they are disconnected in @p context) or will be set
@@ -73,7 +73,7 @@ class DirectTranscription : public MultipleShooting {
   ///    context will also be "cloned" by the optimization; changes to the
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
-  /// @param num_time_samples The number of knot points in the trajectory.
+  /// @param num_time_samples The number of breakpoints in the trajectory.
   /// @param input_port_index A valid input port index or valid
   /// InputPortSelection for @p system.  All other inputs on the system will be
   /// left disconnected (if they are disconnected in @p context) or will be set
@@ -104,7 +104,7 @@ class DirectTranscription : public MultipleShooting {
   ///    context will also be "cloned" by the optimization; changes to the
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
-  /// @param num_time_samples The number of knot points in the trajectory.
+  /// @param num_time_samples The number of breakpoints in the trajectory.
   /// @param fixed_timestep The spacing between sample times.
   /// @param input_port_index A valid input port index or valid
   /// InputPortSelection for @p system.  All other inputs on the system will be

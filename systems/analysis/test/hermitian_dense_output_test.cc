@@ -304,7 +304,7 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
           this->kInitialStateDerivative, this->kMidStateDerivative,
           this->kFinalStateDerivative};
   const trajectories::PiecewisePolynomial<double> hermite_spline =
-      trajectories::PiecewisePolynomial<double>::Cubic(
+      trajectories::PiecewisePolynomial<double>::CubicHermite(
           spline_times, spline_states, spline_state_derivatives);
   // Instantiates dense output.
   HermitianDenseOutput<TypeParam> dense_output;
