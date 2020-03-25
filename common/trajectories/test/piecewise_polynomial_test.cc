@@ -59,7 +59,7 @@ void testIntegralAndDerivative() {
   EXPECT_TRUE(CompareMatrices(desired_value_at_t0, value_at_t0, 1e-10,
                               MatrixCompareType::absolute));
 
-  // check continuity at knot points
+  // check continuity at sample points
   for (int i = 0; i < piecewise.get_number_of_segments() - 1; ++i) {
     EXPECT_EQ(integral.getPolynomial(i)
                   .EvaluateUnivariate(integral.duration(i)),
@@ -212,8 +212,8 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
-  Eigen::MatrixXd knots(3, 5);
-  knots << 1, 1, 1,
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
         2, 2, 2,
         0, 3, 3,
         -2, 2, 2,
@@ -221,7 +221,7 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   const bool periodic_endpoint = true;
 
   PiecewisePolynomial<double> periodic_spline =
-      PiecewisePolynomial<double>::Cubic(breaks, knots, periodic_endpoint);
+      PiecewisePolynomial<double>::Cubic(breaks, samples, periodic_endpoint);
 
   std::unique_ptr<Trajectory<double>> spline_dt =
       periodic_spline.MakeDerivative(1);
@@ -249,27 +249,27 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
-  Eigen::MatrixXd knots(3, 5);
-  knots << 1, 1, 1,
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
         2, 2, 2,
         0, 3, 3,
         -2, 2, 2,
         1, 1, 1;
 
   // No throw with monotonic breaks.
-  PiecewisePolynomial<double>::Cubic(breaks, knots, true);
+  PiecewisePolynomial<double>::Cubic(breaks, samples, true);
 
   // Throw when breaks are too close.
   breaks[1] = less_than_epsilon;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::Cubic(breaks, knots, true),
+      PiecewisePolynomial<double>::Cubic(breaks, samples, true),
       std::runtime_error,
       "Times must be at least .* apart.");
 
   // Throw when breaks are not strictly monotonic.
   breaks[1] = 0;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::Cubic(breaks, knots, true),
+      PiecewisePolynomial<double>::Cubic(breaks, samples, true),
       std::runtime_error,
       "Times must be in increasing order.");
 }
