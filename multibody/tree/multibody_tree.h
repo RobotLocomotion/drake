@@ -1398,7 +1398,7 @@ class MultibodyTree {
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
-      EigenPtr<Matrix3X<T>> Js_v_ACcm) const;
+      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const;
 
   /// See MultibodyPlant method.
   Vector3<T> CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
