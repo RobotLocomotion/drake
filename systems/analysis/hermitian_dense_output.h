@@ -270,7 +270,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     }
     for (const IntegrationStep& step : raw_steps_) {
       continuous_trajectory_.ConcatenateInTime(
-          trajectories::PiecewisePolynomial<double>::Cubic(
+          trajectories::PiecewisePolynomial<double>::CubicHermite(
               internal::ExtractDoublesOrThrow(step.get_times()),
               internal::ExtractDoublesOrThrow(step.get_states()),
               internal::ExtractDoublesOrThrow(step.get_state_derivatives())));

@@ -160,8 +160,8 @@ class RobotPlanRunner {
     }
     const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
     plan_.reset(new PiecewisePolynomial<double>(
-        PiecewisePolynomial<double>::Cubic(input_time, knots,
-                                           knot_dot, knot_dot)));
+        PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+            input_time, knots, knot_dot, knot_dot)));
     ++plan_number_;
   }
 

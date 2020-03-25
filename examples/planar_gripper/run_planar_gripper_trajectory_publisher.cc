@@ -93,7 +93,8 @@ int DoMain() {
     times(i) = i * FLAGS_keyframe_dt;
   }
   const auto pp =
-      trajectories::PiecewisePolynomial<double>::Pchip(times, keyframes);
+      trajectories::PiecewisePolynomial<double>::CubicShapePreserving(
+          times, keyframes);
   auto state_src = builder.AddSystem<systems::TrajectorySource<double>>(
       pp, 1 /* with one derivative */);
 

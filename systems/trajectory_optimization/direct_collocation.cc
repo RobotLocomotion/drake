@@ -239,7 +239,8 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
   }
-  return PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives);
+  return PiecewisePolynomial<double>::CubicHermite(times_vec, states,
+                                                   derivatives);
 }
 
 }  // namespace trajectory_optimization

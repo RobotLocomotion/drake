@@ -96,8 +96,9 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
   const Eigen::Vector2d x0(6, 7), x1(8, 9), u0(10, 11), u1(12, 13);
   const Eigen::Vector2d xdot0 = system->A() * x0 + system->B() * u0;
   const Eigen::Vector2d xdot1 = system->A() * x1 + system->B() * u1;
-  const auto segment = PiecewisePolynomial<double>::Cubic(
-      {0.0, kTimeStep}, {x0, x1}, xdot0, xdot1);
+  const auto segment =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          {0.0, kTimeStep}, {x0, x1}, xdot0, xdot1);
   const auto derivative = segment.derivative();
   const Eigen::Vector2d defect = derivative.value(kTimeStep / 2.0) -
                                  system->A() * segment.value(kTimeStep / 2.0) -
