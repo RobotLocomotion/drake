@@ -39,7 +39,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   double end_time() const override { return knots()[num_control_points()]; }
 
   // Other methods
-  int num_control_points() const { return basis_.num_control_points(); }
+  int num_control_points() const { return basis_.num_basis_functions(); }
 
   const std::vector<MatrixX<T>>& control_points() const {
     return control_points_;

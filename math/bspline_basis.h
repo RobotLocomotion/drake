@@ -21,29 +21,29 @@ class BsplineBasis final {
   BsplineBasis(int order, std::vector<T> knots);
 
   /** Constructs a B-spline basis with the specified `order` and
-  `num_control_points` with an auto-generated knot vector. If `type ==
+  `num_basis_functions` with an auto-generated knot vector. If `type ==
   KnotVectorType::kClampedUniform` the knot vector is a clamped uniform knot
   vector from 0 to 1. If `type == KnotVectorType::kUniform`, the knot vector
-  is [-(order - 1), ..., num_control_points].
-  @throws std::invalid_argument if num_control_points < order. */
-  BsplineBasis(int order, int num_control_points,
+  is [-(order - 1), ..., num_basis_functions].
+  @throws std::invalid_argument if num_basis_functions < order. */
+  BsplineBasis(int order, int num_basis_functions,
                KnotVectorType type = KnotVectorType::kClampedUniform);
 
   int order() const { return order_; }
 
-  int num_control_points() const { return num_control_points_; }
+  int num_basis_functions() const { return num_basis_functions_; }
 
   const std::vector<T>& knots() const { return knots_; }
 
   T initial_parameter_value() const { return knots()[order() - 1]; }
 
-  T final_parameter_value() const { return knots()[num_control_points()]; }
 
   bool IsControlPointActive(int control_point_index,
                             const std::array<T, 2>& parameter_interval) const;
 
   bool IsControlPointActive(int control_point_index,
                             const T& parameter_value) const;
+  T final_parameter_value() const { return knots()[num_basis_functions()]; }
 
   std::vector<int> ComputeActiveControlPointIndices(
       const std::array<T, 2>& parameter_interval) const;
@@ -56,7 +56,7 @@ class BsplineBasis final {
 
   /** Evaluates the B-spline curve defined by `this` and `control_points` at the
   given `parameter_value`.
-  @pre control_points.size() == this->num_control_points()
+  @pre control_points.size() == this->num_basis_functions()
   */
   template <typename T_control_point>
   T_control_point EvaluateCurve(
@@ -115,7 +115,7 @@ class BsplineBasis final {
 
  private:
   int order_;
-  int num_control_points_;
+  int num_basis_functions_;
   std::vector<T> knots_;
 };
 }  // namespace math
