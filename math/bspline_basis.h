@@ -52,12 +52,6 @@ class BsplineBasis final {
 
   T initial_parameter_value() const { return knots()[order() - 1]; }
 
-
-  bool IsControlPointActive(int control_point_index,
-                            const std::array<T, 2>& parameter_interval) const;
-
-  bool IsControlPointActive(int control_point_index,
-                            const T& parameter_value) const;
   T final_parameter_value() const { return knots()[num_basis_functions()]; }
 
   std::vector<int> ComputeActiveControlPointIndices(
@@ -132,6 +126,12 @@ class BsplineBasis final {
   int order_;
   int num_basis_functions_;
   std::vector<T> knots_;
+
+  bool IsControlPointActive(int control_point_index,
+                            const std::array<T, 2>& parameter_interval) const;
+
+  bool IsControlPointActive(int control_point_index,
+                            const T& parameter_value) const;
 };
 }  // namespace math
 }  // namespace drake
