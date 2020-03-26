@@ -10,6 +10,21 @@
 
 namespace drake {
 namespace math {
+/** Given a set of non-descending breakpoints t₀ ≤ t₁ ≤ ⋅⋅⋅ ≤ tₘ, a B-spline 
+basis of order k is a set of n + 1 (where n = m - k) piecewise polynomials of 
+degree k - 1 defined over those breakpoints. The elements of this set are 
+called "B-splines". The vector T = (t₀, t₁, ..., tₘ)' is referred to as 
+the "knot vector" of the basis and its elements are refered to as "knots".
+
+A B-spline curve using a B-spline basis B, is a parametric curve mapping 
+parameter values in [tₖ₋₁, tₙ] to a vector space V. For t ∈ [tₖ₋₁, tₙ] the value
+of the curve is given by the linear combination of n control points, pᵢ ∈ V,
+with the elements of B evaluated at t.
+
+For more information on B-splines and their uses, see (for example) 
+Patrikalakis et al. [1].
+
+[1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node15.html */
 template <typename T>
 class BsplineBasis final {
  public:
