@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/math/bspline_basis.h"
