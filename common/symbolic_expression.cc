@@ -170,10 +170,10 @@ Expression& Expression::set_expanded() {
   return *this;
 }
 
-Polynomiald Expression::ToPolynomial() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->ToPolynomial();
-}
+// Polynomiald Expression::ToPolynomial() const {
+//   DRAKE_ASSERT(ptr_ != nullptr);
+//   return ptr_->ToPolynomial();
+// }
 
 double Expression::Evaluate(const Environment& env,
                             RandomGenerator* const random_generator) const {

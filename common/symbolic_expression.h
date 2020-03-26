@@ -30,7 +30,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
-#include "drake/common/polynomial.h"
+// #include "drake/common/polynomial.h"
 #include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
@@ -230,11 +230,11 @@ class Expression {
   /** Checks if this symbolic expression is convertible to Polynomial. */
   bool is_polynomial() const;
 
-  /** Returns a Polynomial representing this expression.
-   *  Note that the ID of a variable is preserved in this translation.
-   *  \pre{is_polynomial() is true.}
-   */
-  Polynomiald ToPolynomial() const;
+  // /** Returns a Polynomial representing this expression.
+  //  *  Note that the ID of a variable is preserved in this translation.
+  //  *  \pre{is_polynomial() is true.}
+  //  */
+  // Polynomiald ToPolynomial() const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
    * a random number generator. If there is a random variable in this expression

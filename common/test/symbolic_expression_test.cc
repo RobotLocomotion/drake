@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
+#include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/is_memcpy_movable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -559,23 +560,23 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
   const Expression e8{pow(pow(x_, 3), 1.0 / 3)};
 
   EXPECT_NEAR(e0.Evaluate(env),
-              e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e0).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e1.Evaluate(env),
-              e1.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e1).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e2.Evaluate(env),
-              e2.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e2).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e3.Evaluate(env),
-              e3.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e3).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e4.Evaluate(env),
-              e4.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e4).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e5.Evaluate(env),
-              e5.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e5).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e6.Evaluate(env),
-              e6.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e6).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e7.Evaluate(env),
-              e7.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e7).EvaluateMultivariate(eval_point), 1e-8);
   EXPECT_NEAR(e8.Evaluate(env),
-              e8.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+              ToPolynomial(e8).EvaluateMultivariate(eval_point), 1e-8);
 }
 
 TEST_F(SymbolicExpressionTest, ToPolynomial2) {
@@ -587,7 +588,7 @@ TEST_F(SymbolicExpressionTest, ToPolynomial2) {
       e_uf_};
   for (const Expression& e : test_vec) {
     EXPECT_FALSE(e.is_polynomial());
-    EXPECT_THROW(e.ToPolynomial(), runtime_error);
+    EXPECT_THROW(ToPolynomial(e), runtime_error);
   }
 }
 

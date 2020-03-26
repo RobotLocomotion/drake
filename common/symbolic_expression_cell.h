@@ -22,7 +22,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/polynomial.h"
 #include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
@@ -72,12 +71,6 @@ class ExpressionCell {
 
   /** Sets this symbolic expression as already expanded. */
   void set_expanded() { is_expanded_ = true; }
-
-  /** Returns a Polynomial representing this expression.
-   *  Note that the ID of a variable is preserved in this translation.
-   *  @pre is_polynomial() is true.
-   */
-  virtual Polynomiald ToPolynomial() const = 0;
 
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
@@ -211,7 +204,6 @@ class ExpressionVar : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
@@ -231,7 +223,6 @@ class ExpressionConstant : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
@@ -250,7 +241,6 @@ class ExpressionNaN : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
@@ -281,7 +271,6 @@ class ExpressionAdd : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
@@ -384,7 +373,6 @@ class ExpressionMul : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
@@ -471,7 +459,6 @@ class ExpressionMulFactory {
 class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -485,7 +472,6 @@ class ExpressionDiv : public BinaryExpressionCell {
 class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -503,7 +489,6 @@ class ExpressionLog : public UnaryExpressionCell {
 class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -520,7 +505,6 @@ class ExpressionAbs : public UnaryExpressionCell {
 class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -534,7 +518,6 @@ class ExpressionExp : public UnaryExpressionCell {
 class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -552,7 +535,6 @@ class ExpressionSqrt : public UnaryExpressionCell {
 class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -571,7 +553,6 @@ class ExpressionPow : public BinaryExpressionCell {
 class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -585,7 +566,6 @@ class ExpressionSin : public UnaryExpressionCell {
 class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -599,7 +579,6 @@ class ExpressionCos : public UnaryExpressionCell {
 class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -613,7 +592,6 @@ class ExpressionTan : public UnaryExpressionCell {
 class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -631,7 +609,6 @@ class ExpressionAsin : public UnaryExpressionCell {
 class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -649,7 +626,6 @@ class ExpressionAcos : public UnaryExpressionCell {
 class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -664,7 +640,6 @@ class ExpressionAtan : public UnaryExpressionCell {
 class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   ExpressionAtan2(const Expression& e1, const Expression& e2);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -678,7 +653,6 @@ class ExpressionAtan2 : public BinaryExpressionCell {
 class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -692,7 +666,6 @@ class ExpressionSinh : public UnaryExpressionCell {
 class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -706,7 +679,6 @@ class ExpressionCosh : public UnaryExpressionCell {
 class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -720,7 +692,6 @@ class ExpressionTanh : public UnaryExpressionCell {
 class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -734,7 +705,6 @@ class ExpressionMin : public BinaryExpressionCell {
 class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -748,7 +718,6 @@ class ExpressionMax : public BinaryExpressionCell {
 class ExpressionCeiling : public UnaryExpressionCell {
  public:
   explicit ExpressionCeiling(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -762,7 +731,6 @@ class ExpressionCeiling : public UnaryExpressionCell {
 class ExpressionFloor : public UnaryExpressionCell {
  public:
   explicit ExpressionFloor(const Expression& e);
-  Polynomiald ToPolynomial() const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -783,7 +751,6 @@ class ExpressionIfThenElse : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
@@ -815,7 +782,6 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  Polynomiald ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;

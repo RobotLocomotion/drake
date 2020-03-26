@@ -4,6 +4,7 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -11,6 +12,7 @@
 using Eigen::Dynamic;
 using Eigen::Matrix;
 using Eigen::PolynomialSolver;
+using std::pair;
 using std::runtime_error;
 using std::string;
 using std::vector;
@@ -613,3 +615,162 @@ template class Polynomial<double>;
 
 // template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it
+
+namespace {
+
+using drake::symbolic::Expression;
+
+// Visitor class to implement ToPolynomial.
+class ToPolynomialVisitor {
+ public:
+  Polynomiald Visit(const Expression& e) {
+    return drake::symbolic::VisitExpression<Polynomiald>(this, e);
+  }
+
+ private:
+  static Polynomiald VisitAddition(const Expression& e) {
+    const auto constant = get_constant_in_addition(e);
+    const auto& expr_to_coeff_map = get_expr_to_coeff_map_in_addition(e);
+    return accumulate(expr_to_coeff_map.begin(), expr_to_coeff_map.end(),
+                      Polynomiald{constant},
+                      [](const Polynomiald& polynomial,
+                         const pair<const Expression, double>& p) {
+                        return polynomial + ToPolynomial(p.first) * p.second;
+                      });
+  }
+
+  static Polynomiald VisitMultiplication(const Expression& e) {
+    const auto constant = drake::symbolic::get_constant_in_multiplication(e);
+    const auto& base_to_exponent_map =
+        drake::symbolic::get_base_to_exponent_map_in_multiplication(e);
+    return accumulate(
+        base_to_exponent_map.begin(), base_to_exponent_map.end(),
+        Polynomiald{constant},
+        [](const Polynomiald& polynomial,
+           const pair<const Expression, Expression>& p) {
+          const Expression& base{p.first};
+          const Expression& exponent{p.second};
+          DRAKE_ASSERT(base.is_polynomial());
+          DRAKE_ASSERT(is_constant(exponent));
+          return polynomial *
+                 pow(ToPolynomial(base),
+                     static_cast<int>(get_constant_value(exponent)));
+        });
+  }
+
+  static Polynomiald VisitDivision(const Expression& e) {
+    DRAKE_ASSERT(e.is_polynomial());
+    const auto& first_arg{get_first_argument(e)};
+    const auto& second_arg{get_second_argument(e)};
+    DRAKE_ASSERT(is_constant(second_arg));
+    return ToPolynomial(first_arg) / get_constant_value(second_arg);
+  }
+
+  static Polynomiald VisitVariable(const Expression& e) {
+    return Polynomiald{1.0, static_cast<Polynomial<double>::VarType>(
+                                get_variable(e).get_id())};
+  }
+
+  static Polynomiald VisitConstant(const Expression& e) {
+    return Polynomiald{get_constant_value(e)};
+  }
+
+  static Polynomiald VisitLog(const Expression&) {
+    throw runtime_error("Log expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitPow(const Expression& e) {
+    DRAKE_ASSERT(e.is_polynomial());
+    const int exponent{
+        static_cast<int>(get_constant_value(get_second_argument(e)))};
+    return pow(ToPolynomial(get_first_argument(e)), exponent);
+  }
+
+  static Polynomiald VisitAbs(const Expression&) {
+    throw runtime_error("Abs expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitExp(const Expression&) {
+    throw runtime_error("Exp expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitSqrt(const Expression&) {
+    throw runtime_error("Sqrt expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitSin(const Expression&) {
+    throw runtime_error("Sin expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitCos(const Expression&) {
+    throw runtime_error("Cos expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitTan(const Expression&) {
+    throw runtime_error("Tan expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitAsin(const Expression&) {
+    throw runtime_error("Asin expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitAcos(const Expression&) {
+    throw runtime_error("Acos expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitAtan(const Expression&) {
+    throw runtime_error("Atan expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitAtan2(const Expression&) {
+    throw runtime_error("Atan2 expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitSinh(const Expression&) {
+    throw runtime_error("Sinh expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitCosh(const Expression&) {
+    throw runtime_error("Cosh expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitTanh(const Expression&) {
+    throw runtime_error("Tanh expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitMin(const Expression&) {
+    throw runtime_error("Min expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitMax(const Expression&) {
+    throw runtime_error("Max expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitCeil(const Expression&) {
+    throw runtime_error("Ceil expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitFloor(const Expression&) {
+    throw runtime_error("Floor expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitIfThenElse(const Expression&) {
+    throw runtime_error("IfThenElse expression is not polynomial-convertible.");
+  }
+
+  static Polynomiald VisitUninterpretedFunction(const Expression&) {
+    throw runtime_error(
+        "Uninterpreted-function expression is not polynomial-convertible.");
+  }
+
+  // Makes VisitExpression a friend of this class so that VisitExpression can
+  // use its private methods.
+  friend Polynomiald drake::symbolic::VisitExpression<Polynomiald>(
+      ToPolynomialVisitor*, const Expression&);
+};
+
+}  // namespace
+
+Polynomiald ToPolynomial(const Expression& e) {
+  return ToPolynomialVisitor{}.Visit(e);
+}
