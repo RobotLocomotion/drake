@@ -522,42 +522,44 @@ PYBIND11_MODULE(symbolic, m) {
           doc.MonomialBasis.doc_2args);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)
+  py::class_<symbolic::Polynomial>(m, "Polynomial", doc.Polynomial.doc)
       .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
-      .def(py::init<Polynomial::MapType>(), doc.Polynomial.ctor.doc_1args_init)
+      .def(py::init<symbolic::Polynomial::MapType>(),
+          doc.Polynomial.ctor.doc_1args_init)
       .def(py::init<const Monomial&>(), doc.Polynomial.ctor.doc_1args_m)
       .def(py::init<const Expression&>(), doc.Polynomial.ctor.doc_1args_e)
       .def(py::init<const Expression&, const Variables&>(),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
       .def(py::init([](const Expression& e,
                         const Eigen::Ref<const VectorX<Variable>>& vars) {
-        return Polynomial{e, Variables{vars}};
+        return symbolic::Polynomial{e, Variables{vars}};
       }),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
-      .def("indeterminates", &Polynomial::indeterminates,
+      .def("indeterminates", &symbolic::Polynomial::indeterminates,
           doc.Polynomial.indeterminates.doc)
-      .def("decision_variables", &Polynomial::decision_variables,
+      .def("decision_variables", &symbolic::Polynomial::decision_variables,
           doc.Polynomial.decision_variables.doc)
-      .def("SetIndeterminates", &Polynomial::SetIndeterminates,
+      .def("SetIndeterminates", &symbolic::Polynomial::SetIndeterminates,
           doc.Polynomial.SetIndeterminates.doc)
-      .def("Degree", &Polynomial::Degree, doc.Polynomial.Degree.doc)
-      .def("TotalDegree", &Polynomial::TotalDegree,
+      .def("Degree", &symbolic::Polynomial::Degree, doc.Polynomial.Degree.doc)
+      .def("TotalDegree", &symbolic::Polynomial::TotalDegree,
           doc.Polynomial.TotalDegree.doc)
       .def("monomial_to_coefficient_map",
-          &Polynomial::monomial_to_coefficient_map,
+          &symbolic::Polynomial::monomial_to_coefficient_map,
           doc.Polynomial.monomial_to_coefficient_map.doc)
-      .def("ToExpression", &Polynomial::ToExpression,
+      .def("ToExpression", &symbolic::Polynomial::ToExpression,
           doc.Polynomial.ToExpression.doc)
-      .def("Differentiate", &Polynomial::Differentiate,
+      .def("Differentiate", &symbolic::Polynomial::Differentiate,
           doc.Polynomial.Differentiate.doc)
-      .def("AddProduct", &Polynomial::AddProduct, doc.Polynomial.AddProduct.doc)
+      .def("AddProduct", &symbolic::Polynomial::AddProduct,
+          doc.Polynomial.AddProduct.doc)
       .def("RemoveTermsWithSmallCoefficients",
-          &Polynomial::RemoveTermsWithSmallCoefficients,
+          &symbolic::Polynomial::RemoveTermsWithSmallCoefficients,
           py::arg("coefficient_tol"),
           doc.Polynomial.RemoveTermsWithSmallCoefficients.doc)
-      .def("CoefficientsAlmostEqual", &Polynomial::CoefficientsAlmostEqual,
-          py::arg("p"), py::arg("tolerance"),
-          doc.Polynomial.CoefficientsAlmostEqual.doc)
+      .def("CoefficientsAlmostEqual",
+          &symbolic::Polynomial::CoefficientsAlmostEqual, py::arg("p"),
+          py::arg("tolerance"), doc.Polynomial.CoefficientsAlmostEqual.doc)
       .def(py::self + py::self)
       .def(py::self + Monomial())
       .def(Monomial() + py::self)
@@ -581,51 +583,56 @@ PYBIND11_MODULE(symbolic, m) {
       .def(Variable() * py::self)
       .def(-py::self)
       .def(py::self / double())
-      .def("EqualTo", &Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
+      .def(
+          "EqualTo", &symbolic::Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("__hash__",
-          [](const Polynomial& self) { return std::hash<Polynomial>{}(self); })
+          [](const symbolic::Polynomial& self) {
+            return std::hash<symbolic::Polynomial>{}(self);
+          })
       .def("__str__",
-          [](const Polynomial& self) { return fmt::format("{}", self); })
+          [](const symbolic::Polynomial& self) {
+            return fmt::format("{}", self);
+          })
       .def("__repr__",
-          [](const Polynomial& self) {
+          [](const symbolic::Polynomial& self) {
             return fmt::format("<Polynomial \"{}\">", self);
           })
-      .def("__pow__",
-          [](const Polynomial& self, const int n) { return pow(self, n); })
+      .def("__pow__", [](const symbolic::Polynomial& self,
+                          const int n) { return pow(self, n); })
       .def("Evaluate",
-          [](const Polynomial& self, const Environment::map& env) {
+          [](const symbolic::Polynomial& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
           doc.Polynomial.Evaluate.doc)
       // TODO(Eric.Cousineau): add python binding for symbolic::Environment.
       .def("EvaluatePartial",
-          [](const Polynomial& self, const Environment::map& env) {
+          [](const symbolic::Polynomial& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
           },
           py::arg("env"), doc.Polynomial.EvaluatePartial.doc_1args)
       .def("EvaluatePartial",
-          [](const Polynomial& self, const Variable& var, double c) {
+          [](const symbolic::Polynomial& self, const Variable& var, double c) {
             return self.EvaluatePartial(var, c);
           },
           py::arg("var"), py::arg("c"),
           doc.Polynomial.EvaluatePartial.doc_2args)
       .def("Jacobian",
-          [](const Polynomial& p,
+          [](const symbolic::Polynomial& p,
               const Eigen::Ref<const VectorX<Variable>>& vars) {
             return p.Jacobian(vars);
           },
           doc.Polynomial.Jacobian.doc);
 
   m.def("Evaluate",
-      [](const MatrixX<Polynomial>& M, const Environment::map& env) {
+      [](const MatrixX<symbolic::Polynomial>& M, const Environment::map& env) {
         return Evaluate(M, Environment{env});
       },
       py::arg("m"), py::arg("env"), doc.Evaluate.doc_polynomial);
 
   m.def("Jacobian",
-      [](const Eigen::Ref<const VectorX<Polynomial>>& f,
+      [](const Eigen::Ref<const VectorX<symbolic::Polynomial>>& f,
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);
       },

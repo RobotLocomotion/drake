@@ -1,5 +1,6 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
+#include <cmath>
 #include <limits>
 
 #include "drake/math/gray_code.h"
@@ -7,10 +8,12 @@
 #include "drake/solvers/integer_optimization_util.h"
 #include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 
-using drake::symbolic::Expression;
-
 namespace drake {
 namespace solvers {
+
+using drake::symbolic::Expression;
+using std::pow;
+
 namespace {
 // Returns true if n is positive and n is a power of 2.
 bool IsPowerOfTwo(int n) {

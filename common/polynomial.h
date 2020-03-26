@@ -13,7 +13,9 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 
+namespace drake {
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
  *
  * Polynomial represents a list of additive Monomials, each one of which is a
@@ -482,3 +484,15 @@ typedef Polynomial<double> Polynomiald;
 
 /// A column vector of polynomials; used in several optimization classes.
 typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;
+}  // namespace drake
+
+template <typename _CoefficientType = double>
+using Polynomial DRAKE_DEPRECATED("2020-07-01",
+                                  "Use drake::Polynomial instead.") =
+    drake::Polynomial<_CoefficientType>;
+
+using Polynomiald DRAKE_DEPRECATED("2020-07-01", "Use drake::Polynomiald.") =
+    drake::Polynomial<double>;
+
+using VectorXPoly DRAKE_DEPRECATED("2020-07-01", "Use drake::VectorXPoly.") =
+    Eigen::Matrix<drake::Polynomiald, Eigen::Dynamic, 1>;

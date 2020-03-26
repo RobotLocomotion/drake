@@ -9,9 +9,10 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 
+namespace drake {
+
 using std::pow;
 
-namespace drake {
 namespace solvers {
 
 template <typename T>

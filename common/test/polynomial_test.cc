@@ -1,5 +1,6 @@
 #include "drake/common/polynomial.h"
 
+#include <cmath>
 #include <cstddef>
 #include <map>
 #include <sstream>
@@ -18,6 +19,8 @@ using std::uniform_real_distribution;
 
 namespace drake {
 namespace {
+
+using std::pow;
 
 template <typename CoefficientType>
 void testIntegralAndDerivative() {

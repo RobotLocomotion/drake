@@ -10,7 +10,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/polynomial.h"
+
+namespace drake {
 
 /** A scalar multi-variate polynomial containing sines and cosines.
  *
@@ -465,3 +468,16 @@ typedef TrigPoly<double> TrigPolyd;
 
 /// A column vector of TrigPoly; used in several optimization classes.
 typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;
+
+}  // namespace drake
+
+template <typename _CoefficientType = double>
+using TrigPoly DRAKE_DEPRECATED("2020-07-01", "Use drake::TrigPoly instead.") =
+    drake::Polynomial<_CoefficientType>;
+
+using TrigPolyd DRAKE_DEPRECATED("2020-07-01", "Use drake::TrigPolyd.") =
+    drake::TrigPoly<double>;
+
+using VectorXTrigPoly DRAKE_DEPRECATED("2020-07-01",
+                                       "Use drake::VectorXTrigPoly.") =
+    Eigen::Matrix<drake::TrigPolyd, Eigen::Dynamic, 1>;

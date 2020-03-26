@@ -103,6 +103,8 @@ std::ostream& QuadraticConstraint::DoDisplay(
 template <typename DerivedX, typename ScalarY>
 void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
+  using std::pow;
+
   const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);

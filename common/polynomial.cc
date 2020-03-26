@@ -15,6 +15,8 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 
+namespace drake {
+
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::HasSameExponents(
     const Monomial& other) const {
@@ -613,3 +615,5 @@ template class Polynomial<double>;
 
 // template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it
+
+}  // namespace drake

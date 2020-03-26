@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
+#include <cmath>
 #include <functional>
 #include <limits>
 
@@ -19,6 +20,7 @@ namespace {
 
 using Eigen::Vector3d;
 using std::function;
+using std::pow;
 
 // Tests the simple public API of the hydroelastic::Geometries: adding
 // geometries and querying the data stored.

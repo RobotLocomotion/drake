@@ -15,7 +15,7 @@ PYBIND11_MODULE(polynomial, m) {
   {
     using CoefficientType = double;
     using Class = Polynomial<CoefficientType>;
-    constexpr auto& cls_doc = pydrake_doc.Polynomial;
+    constexpr auto& cls_doc = pydrake_doc.drake.Polynomial;
     py::class_<Class>(m, "Polynomial", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const CoefficientType&>(), cls_doc.ctor.doc_1args_scalar)
