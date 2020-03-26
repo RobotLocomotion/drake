@@ -13,6 +13,7 @@
 /.project/
 /.settings/
 /.clwb/
+/.vscode/
 
 # (Possible) CMake build artifacts
 /build/
