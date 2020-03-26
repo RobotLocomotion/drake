@@ -157,11 +157,6 @@ math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
   return CopyBlock(0, 0, n, 1);
 }
 
-template <typename T>
-double BsplineTrajectory<T>::BasisFunctionValue(int index, double time) const {
-  return basis().BasisFunctionValue(index, time);
-}
-
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class BsplineTrajectory);
 }  // namespace math
