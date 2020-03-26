@@ -39,6 +39,7 @@ libtheora-dev
 libtiff5-dev
 libtinyxml-dev
 libtool
+libx11-dev
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
