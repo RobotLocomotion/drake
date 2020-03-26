@@ -83,8 +83,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   typedef Polynomial<T> PolynomialType;
   typedef MatrixX<PolynomialType> PolynomialMatrix;
-  typedef MatrixX<T> CoefficientMatrix;
-  typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
   /**
    * Single segment, constant value constructor over the interval [0, ∞].
@@ -193,7 +191,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * interpolating Polynomial objects that pass through the sample points. These
    * methods differ by the continuity constraints that they enforce at break
    * points and whether each sample represents a full matrix (versions taking
-   * `const std::vector<CoefficientMatrix>&`) or a column vector (versions
+   * `const std::vector<MatrixX<T>>&`) or a column vector (versions
    * taking `const Eigen::Ref<const MatrixX<T>>&`).
    *
    * These methods will throw `std::runtime_error` if:
@@ -217,7 +215,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> ZeroOrderHold(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples);
+      const std::vector<MatrixX<T>>& samples);
 
   /**
    * Version of ZeroOrderHold(breaks, samples) that uses vector samples and
@@ -241,7 +239,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> FirstOrderHold(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples);
+      const std::vector<MatrixX<T>>& samples);
 
   /**
    * Version of FirstOrderHold(breaks, samples) that uses vector samples and
@@ -300,14 +298,14 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> CubicShapePreserving(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
+      const std::vector<MatrixX<T>>& samples,
       bool zero_end_point_derivatives = false);
 
   DRAKE_DEPRECATED("2020-07-01",
                    "Pchip has been renamed to CubicShapePreserving.")
   static PiecewisePolynomial<T> Pchip(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
+      const std::vector<MatrixX<T>>& samples,
       bool zero_end_point_derivatives = false) {
     return CubicShapePreserving(breaks, samples, zero_end_point_derivatives);
   }
@@ -350,17 +348,17 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
-      const CoefficientMatrix& sample_dot_at_start,
-      const CoefficientMatrix& sample_dot_at_end);
+      const std::vector<MatrixX<T>>& samples,
+      const MatrixX<T>& sample_dot_at_start,
+      const MatrixX<T>& sample_dot_at_end);
 
   DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
                                  "CubicWithContinuousSecondDerivatives.")
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
-      const CoefficientMatrix& sample_dot_at_start,
-      const CoefficientMatrix& sample_dot_at_end) {
+      const std::vector<MatrixX<T>>& samples,
+      const MatrixX<T>& sample_dot_at_start,
+      const MatrixX<T>& sample_dot_at_end) {
     return CubicWithContinuousSecondDerivatives(
         breaks, samples, sample_dot_at_start, sample_dot_at_end);
   }
@@ -403,15 +401,15 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> CubicHermite(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
-      const std::vector<CoefficientMatrix>& samples_dot);
+      const std::vector<MatrixX<T>>& samples,
+      const std::vector<MatrixX<T>>& samples_dot);
 
   DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
   "CubicHermite.")
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
-      const std::vector<CoefficientMatrix>& samples_dot) {
+      const std::vector<MatrixX<T>>& samples,
+      const std::vector<MatrixX<T>>& samples_dot) {
     return CubicHermite(breaks, samples, samples_dot);
   }
 
@@ -464,14 +462,14 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
+      const std::vector<MatrixX<T>>& samples,
       bool periodic_end_condition = false);
 
   DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
   "CubicWithContinuousSecondDerivatives.")
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples,
+      const std::vector<MatrixX<T>>& samples,
       bool periodic_end_condition = false) {
     return CubicWithContinuousSecondDerivatives(breaks, samples,
                                                 periodic_end_condition);
@@ -540,7 +538,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * (zeroth-order coefficient) of the resulting Polynomial.
    */
   PiecewisePolynomial<T> integral(
-      const CoefficientMatrixRef& value_at_start_time) const;
+      const Eigen::Ref<MatrixX<T>>& value_at_start_time) const;
 
   /**
    * Returns `true` if this trajectory has no breaks/samples/polynomials.
@@ -639,9 +637,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
 
-  PiecewisePolynomial& operator+=(const CoefficientMatrix& coeff);
+  PiecewisePolynomial& operator+=(const MatrixX<T>& coeff);
 
-  PiecewisePolynomial& operator-=(const CoefficientMatrix& coeff);
+  PiecewisePolynomial& operator-=(const MatrixX<T>& coeff);
 
   /**
    * Adds each Polynomial in the PolynomialMatrix of `other` to the
@@ -676,9 +674,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
 
-  const PiecewisePolynomial operator+(const CoefficientMatrix& coeff) const;
+  const PiecewisePolynomial operator+(const MatrixX<T>& coeff) const;
 
-  const PiecewisePolynomial operator-(const CoefficientMatrix& coeff) const;
+  const PiecewisePolynomial operator-(const MatrixX<T>& coeff) const;
 
   /**
    * Checks whether a %PiecewisePolynomial is approximately equal to this one.
@@ -776,7 +774,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // "not-a-sample" / etc). These will be specified by the callers.
   static int SetupCubicSplineInteriorCoeffsLinearSystem(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples, int row, int col,
+      const std::vector<MatrixX<T>>& samples, int row, int col,
       MatrixX<T>* A, VectorX<T>* b);
 
   // Throws std::runtime_error if
@@ -786,7 +784,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // `breaks` has length smaller than min_length.
   static void CheckSplineGenerationInputValidityOrThrow(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& samples, int min_length);
+      const std::vector<MatrixX<T>>& samples, int min_length);
 };
 
 }  // namespace trajectories

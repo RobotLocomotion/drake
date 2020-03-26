@@ -13,12 +13,12 @@ namespace pydrake {
 
 PYBIND11_MODULE(polynomial, m) {
   {
-    using CoefficientType = double;
-    using Class = Polynomial<CoefficientType>;
+    using T = double;
+    using Class = Polynomial<T>;
     constexpr auto& cls_doc = pydrake_doc.Polynomial;
     py::class_<Class>(m, "Polynomial", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<const CoefficientType&>(), cls_doc.ctor.doc_1args_scalar)
+        .def(py::init<const T&>(), cls_doc.ctor.doc_1args_scalar)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(),
             cls_doc.ctor.doc_1args_constEigenMatrixBase)
         .def("GetNumberOfCoefficients", &Class::GetNumberOfCoefficients,
