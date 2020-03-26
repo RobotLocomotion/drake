@@ -44,19 +44,31 @@ class BsplineBasis final {
   BsplineBasis(int order, int num_basis_functions,
                KnotVectorType type = KnotVectorType::kClampedUniform);
 
+  /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
 
+  /** The number of basis functions in this B-spline basis (n in the class
+  description). */
   int num_basis_functions() const { return num_basis_functions_; }
 
+  /** The knot vector of this B-spline basis (T in the class description). */
   const std::vector<T>& knots() const { return knots_; }
 
+  /** The minimum allowable parameter value for B-spline curves using this
+  basis*/
   T initial_parameter_value() const { return knots()[order() - 1]; }
 
+  /** The maximum allowable parameter value for B-spline curves using this
+  basis*/
   T final_parameter_value() const { return knots()[num_basis_functions()]; }
 
+  /** Returns the indices of the basis functions which are non-zero for some
+  parameter value in `parameter_interval`. */
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const std::array<T, 2>& parameter_interval) const;
 
+  /** Returns the indices of the basis functions which are non-zero when
+  evaluated at `parameter_value`. */
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
@@ -118,6 +130,8 @@ class BsplineBasis final {
     return p.front();
   }
 
+  /** Returns the value of the `index`-th basis function evaluated at 
+  `parameter_value`. */
   T BasisFunctionValue(int index, T parameter_value) const;
 
   bool operator==(const BsplineBasis& other) const;
