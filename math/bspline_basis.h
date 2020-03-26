@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/math/knot_vector_type.h"
@@ -99,6 +100,7 @@ class BsplineBasis final {
 
     // NOTE: The implementation of this method is included in the header so that
     // it can be used with custom values of T_control_point.
+    DRAKE_DEMAND(static_cast<int>(control_points.size()) == num_basis_functions());
 
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
