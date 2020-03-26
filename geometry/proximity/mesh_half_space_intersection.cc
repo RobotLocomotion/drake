@@ -103,6 +103,9 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         vertices_to_newly_created_vertices,
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices) {
+  // TODO(SeanCurtis-TRI): This needs to support the "backface" culling that is
+  //  implemented in mesh-mesh intersection. See the
+  //  IsFaceNormalAlongPressureGradient() function in mesh_intersection.h.
   DRAKE_DEMAND(new_vertices_W);
   DRAKE_DEMAND(new_faces);
   DRAKE_DEMAND(vertices_to_newly_created_vertices);
@@ -298,7 +301,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 }
 
 template <typename T>
-SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+std::unique_ptr<SurfaceMesh<T>>
+ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F,
     const std::vector<SurfaceFaceIndex>& tri_indices,
@@ -317,12 +321,82 @@ SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
         &edges_to_newly_created_vertices);
   }
 
+  if (new_faces.size() == 0) return nullptr;
+
   // TODO(SeanCurtis-TRI): This forces SurfaceMesh to recompute the normals for
   //  every triangle in the set of faces. But we know that they should be the
   //  normals drawn from the input mesh. We should accumulate the normals
   //  during accumulation and explicitly provide them here (with a reasonable
   //  check that the winding and the normals are consistent).
-  return SurfaceMesh<T>(std::move(new_faces), std::move(new_vertices_W));
+  return std::make_unique<SurfaceMesh<T>>(std::move(new_faces),
+                                          std::move(new_vertices_W));
+}
+
+template <typename T>
+std::unique_ptr<ContactSurface<T>>
+ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
+    GeometryId id_R, const SurfaceMesh<double>& mesh_R,
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const math::RigidTransform<T>& X_WR) {
+  std::vector<SurfaceFaceIndex> tri_indices;
+  tri_indices.reserve(mesh_R.num_elements());
+  auto bvh_callback = [&tri_indices](SurfaceFaceIndex tri_index) {
+    tri_indices.push_back(tri_index);
+    return BvttCallbackResult::Continue;
+  };
+  const math::RigidTransform<T> X_RW = X_WR.inverse();
+  const math::RigidTransform<T> X_RS = X_RW * X_WS;
+  // To collide half space with _BVH_ we need (as documented):
+  //   - HalfSpace and
+  //   - X_PH - pose of the hierarchy in the primitive frame or, in this
+  //     context, the hierarchy of the _rigid_ mesh_R in the half space
+  //     primitive: X_SR.
+  bvh_R.Collide(HalfSpace{}, X_RS.inverse(), bvh_callback);
+
+  if (tri_indices.size() == 0) return nullptr;
+
+  // In contrast, to collide the half space with the _mesh_, we need the half
+  // space measured and expressed in the mesh's frame.
+  const Vector3<T>& Sz_R = X_RS.rotation().col(2);
+  const Vector3<T>& p_RSo = X_RS.translation();
+  // NOTE: We don't need the PosedHalfSpace constructor to normalize Sz_R. It's
+  // sufficiently unit-length for our purposes.
+  const PosedHalfSpace<T> hs_R{Sz_R, p_RSo, false /* needs_normalization */};
+
+  // TODO(SeanCurtis-TRI): Modify this to return the signed distances of all the
+  //  vertices. It will be cheaper than re-evaluating the signed distance for
+  //  every vertex just so I can compute the pressure. Alternatively, these
+  //  should take a functor for evaluating the pressure or some such thing.
+  //  This is a recurrent them in _all_ of the contact surface generating
+  //  methods.
+  std::unique_ptr<SurfaceMesh<T>> mesh_W =
+      ConstructSurfaceMeshFromMeshHalfspaceIntersection(mesh_R, hs_R,
+                                                        tri_indices, X_WR);
+
+  if (mesh_W == nullptr) return nullptr;
+
+  // Compute the pressure field
+  using std::min;
+  std::vector<T> vertex_pressures;
+  const PosedHalfSpace<T> hs_W{X_WR.rotation() * hs_R.normal(), X_WR * p_RSo};
+  vertex_pressures.reserve(mesh_W->num_vertices());
+  for (SurfaceVertexIndex v(0); v < mesh_W->num_vertices(); ++v) {
+    const Vector3<double> p_WV = mesh_W->vertex(v).r_MV();
+    // The signed distance of the point is the negative of the penetration
+    // depth. We can use the pressure_scale to directly compute pressure at the
+    // point.
+    const T phi_V = hs_W.CalcSignedDistance(p_WV);
+    vertex_pressures.push_back(-phi_V * pressure_scale);
+  }
+  auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "pressure", std::move(vertex_pressures), mesh_W.get(),
+      false /* calc_gradient */);
+
+  // ConstructSurfaceMeshFromMeshHalfspaceIntersection() promises to make the
+  // face normals point out of the rigid surface and into the soft half space.
+  return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(mesh_W),
+                                             std::move(field_W));
 }
 
 template void ConstructTriangleHalfspaceIntersectionPolygon(
@@ -347,18 +421,38 @@ template void ConstructTriangleHalfspaceIntersectionPolygon(
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices);
 
-template SurfaceMesh<double> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<double>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
-    const math::RigidTransform<double>& X_WF);
+template std::unique_ptr<SurfaceMesh<double>>
+    ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+        const SurfaceMesh<double>& input_mesh_F,
+        const PosedHalfSpace<double>& half_space_F,
+        const std::vector<SurfaceFaceIndex>& tri_indices,
+        const math::RigidTransform<double>& X_WF);
 
-template SurfaceMesh<AutoDiffXd>
-ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<AutoDiffXd>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
-    const math::RigidTransform<AutoDiffXd>& X_WF);
+template std::unique_ptr<SurfaceMesh<AutoDiffXd>>
+    ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+        const SurfaceMesh<double>& input_mesh_F,
+        const PosedHalfSpace<AutoDiffXd>& half_space_F,
+        const std::vector<SurfaceFaceIndex>& tri_indices,
+        const math::RigidTransform<AutoDiffXd>& X_WF);
+
+template std::unique_ptr<ContactSurface<double>>
+ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    GeometryId id_S, const math::RigidTransform<double>& X_WS,
+    double pressure_scale, GeometryId id_R, const SurfaceMesh<double>& field_R,
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const math::RigidTransform<double>& X_WR);
+
+template <>
+std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    GeometryId, const math::RigidTransform<AutoDiffXd>&, double, GeometryId,
+    const SurfaceMesh<double>&,
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
+    const math::RigidTransform<AutoDiffXd>&) {
+  throw std::logic_error(
+      "AutoDiff-valued ContactSurface calculations are not currently "
+      "supported");
+}
 
 }  // namespace internal
 }  // namespace geometry

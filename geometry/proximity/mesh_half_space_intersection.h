@@ -1,12 +1,16 @@
 #pragma once
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/query_results/contact_surface.h"
 
 namespace drake {
 namespace geometry {
@@ -96,15 +100,51 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
      The relative pose of Frame F with the world frame W.
  @retval `mesh_W`, the SurfaceMesh corresponding to the intersection between
          the mesh and the half space; the vertices are measured and expressed in
-         Frame W.
+         Frame W. `nullptr` if there is no intersection.
  */
 template <typename T>
-SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+std::unique_ptr<SurfaceMesh<T>>
+ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F,
     const std::vector<SurfaceFaceIndex>& tri_indices,
     const math::RigidTransform<T>& X_WF);
 
+/*
+ Computes the ContactSurface formed by a soft half space and the given rigid
+ mesh.
+
+ The definition of the half space is implicit in the call -- it is the type
+ defined by the HalfSpace class, thus, only its id, its pose in a common frame
+ (the world frame), and the thickness of the compliant volume is necessary.
+
+ @param[in] id_S            The id of the soft half space.
+ @param[in] X_WS            The relative pose of Frame S (the soft half space's
+                            canonical frame) and the world frame W.
+ @param[in] pressure_scale  A linear scale factor that transforms penetration
+                            depth into pressure values. Generally,
+                            `pressure_scale = elastic_modulus / thickness`.
+ @param[in] id_R            The id of the rigid mesh.
+ @param[in] mesh_R          The rigid mesh. The field mesh vertices are measured
+                            and expressed in Frame R.
+ @param[in] bvh_R           The bounding-volume hierarchy of the rigid surface
+                            mesh measured and expressed in Frame R.
+ @param[in] X_WR            The relative pose between Frame R -- the frame the
+                            mesh is defined in -- and the world frame W.
+ @returns `nullptr` if there is no collision, otherwise the ContactSurface
+          between geometries S and R. Each triangle in the contact surface is a
+          piece of a triangle in the input `mesh_R`; the normals of the former
+          will match the normals of the latter.
+ @tparam T The underlying scalar type. Must be a valid Eigen scalar. Currently,
+           only double is supported.
+ */
+template <typename T>
+std::unique_ptr<ContactSurface<T>>
+ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
+    GeometryId id_R, const SurfaceMesh<double>& mesh_R,
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
