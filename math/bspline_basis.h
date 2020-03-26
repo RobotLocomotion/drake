@@ -56,11 +56,11 @@ class BsplineBasis final {
 
   /** The minimum allowable parameter value for B-spline curves using this
   basis*/
-  T initial_parameter_value() const { return knots()[order() - 1]; }
+  const T& initial_parameter_value() const { return knots()[order() - 1]; }
 
   /** The maximum allowable parameter value for B-spline curves using this
   basis*/
-  T final_parameter_value() const { return knots()[num_basis_functions()]; }
+  const T& final_parameter_value() const { return knots()[num_basis_functions()]; }
 
   /** Returns the indices of the basis functions which are non-zero for some
   parameter value in `parameter_interval`. */
