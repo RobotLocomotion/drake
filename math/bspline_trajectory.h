@@ -79,8 +79,6 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   @pre original.cols() == 1 */
   math::BsplineTrajectory<T> CopyHead(int n) const;
 
-  double BasisFunctionValue(int index, double time) const;
-
  private:
   BsplineBasis<double> basis_;
   std::vector<MatrixX<T>> control_points_;

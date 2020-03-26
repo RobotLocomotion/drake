@@ -22,7 +22,7 @@ MatrixX<double> NaiveBsplineTrajectoryValue(
   MatrixX<double> value =
       MatrixX<double>::Zero(trajectory.rows(), trajectory.cols());
   for (int i = 0; i < trajectory.num_control_points(); ++i) {
-    value += trajectory.BasisFunctionValue(i, parameter_value) *
+    value += trajectory.basis().BasisFunctionValue(i, parameter_value) *
              trajectory.control_points()[i];
   }
   return value;
