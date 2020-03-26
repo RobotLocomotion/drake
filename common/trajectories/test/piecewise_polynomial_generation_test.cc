@@ -23,21 +23,21 @@ namespace {
 
 // Computes the maximum or minimum velocity in interval [0, t].
 // This assumes `vel` is a second order polynomial.
-template <typename CoefficientType>
-CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel,
+template <typename T>
+T ComputeExtremeVel(const Polynomial<T>& vel,
                                   double t, bool max_vel) {
   DRAKE_DEMAND(vel.GetDegree() == 2);
 
-  Polynomial<CoefficientType> acc = vel.Derivative();
-  VectorX<CoefficientType> acc_coeffs = acc.GetCoefficients();
+  Polynomial<T> acc = vel.Derivative();
+  VectorX<T> acc_coeffs = acc.GetCoefficients();
 
-  CoefficientType vel0 = vel.EvaluateUnivariate(0);
-  CoefficientType vel1 = vel.EvaluateUnivariate(t);
-  CoefficientType vel_extrema = vel0;
+  T vel0 = vel.EvaluateUnivariate(0);
+  T vel1 = vel.EvaluateUnivariate(t);
+  T vel_extrema = vel0;
 
   // Not constant acceleration, vel extrema is when acc = 0.
   if (std::abs(acc_coeffs[1]) > 1e-12) {
-    CoefficientType t_extrema = -acc_coeffs[0] / acc_coeffs[1];
+    T t_extrema = -acc_coeffs[0] / acc_coeffs[1];
 
     // If t_extrema is in [0, t], vel_extrema needs to be evaluated.
     // Otherwise, it's at one of the end points.
@@ -55,17 +55,17 @@ CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel,
 
 // Check continuity for up to d degree, where d is the minimum of \p degree and
 // the highest degree of the trajectory.
-template <typename CoefficientType>
-bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj,
-                     CoefficientType tol, int degree) {
+template <typename T>
+bool CheckContinuity(const PiecewisePolynomial<T>& traj,
+                     T tol, int degree) {
   if (degree < 0) return false;
 
-  typedef Polynomial<CoefficientType> PolynomialType;
+  typedef Polynomial<T> PolynomialType;
 
   int rows = traj.rows();
   int cols = traj.cols();
 
-  CoefficientType val0, val1;
+  T val0, val1;
 
   for (int n = 0; n < traj.get_number_of_segments() - 1; ++n) {
     double dt = traj.duration(n);
@@ -98,19 +98,19 @@ bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj,
 
 // Check P(t), P'(t), P''(t), ... match values[i][t], where i is the ith
 // derivative, and t is the tth break.
-template <typename CoefficientType>
+template <typename T>
 bool CheckValues(
-    const PiecewisePolynomial<CoefficientType>& traj,
-    const std::vector<std::vector<MatrixX<CoefficientType>>>& values,
-    CoefficientType tol, bool check_last_time_step = true) {
+    const PiecewisePolynomial<T>& traj,
+    const std::vector<std::vector<MatrixX<T>>>& values,
+    T tol, bool check_last_time_step = true) {
   if (values.empty()) return false;
 
-  typedef Polynomial<CoefficientType> PolynomialType;
+  typedef Polynomial<T> PolynomialType;
 
   int rows = traj.rows();
   int cols = traj.cols();
 
-  CoefficientType val0, val1;
+  T val0, val1;
 
   for (int n = 0; n < traj.get_number_of_segments(); ++n) {
     double dt = traj.duration(n);
@@ -144,11 +144,11 @@ bool CheckValues(
   return true;
 }
 
-template <typename CoefficientType>
+template <typename T>
 bool CheckInterpolatedValuesAtBreakTime(
-    const PiecewisePolynomial<CoefficientType>& traj,
+    const PiecewisePolynomial<T>& traj,
     const std::vector<double>& breaks,
-    const std::vector<MatrixX<CoefficientType>>& values, CoefficientType tol,
+    const std::vector<MatrixX<T>>& values, T tol,
     bool check_last_time_step = true) {
   int N = static_cast<int>(breaks.size());
   for (int i = 0; i < N; ++i) {
@@ -172,35 +172,34 @@ bool CheckInterpolatedValuesAtBreakTime(
 //     max(Pi') <= 0
 //
 // The last two conditions are the monotonic conditions ("shape preserving").
-template <typename CoefficientType>
+template <typename T>
 void PchipTest(const std::vector<double>& breaks,
-               const std::vector<MatrixX<CoefficientType>>& samples,
-               const PiecewisePolynomial<CoefficientType>& traj,
-               CoefficientType tol) {
-  typedef Polynomial<CoefficientType> PolynomialType;
-  const std::vector<double>& T = breaks;
-  const std::vector<MatrixX<CoefficientType>>& Y = samples;
+               const std::vector<MatrixX<T>>& samples,
+               const PiecewisePolynomial<T>& traj,
+               T tol) {
+  typedef Polynomial<T> PolynomialType;
+  const std::vector<MatrixX<T>>& Y = samples;
 
   int rows = Y.front().rows();
   int cols = Y.front().cols();
 
   EXPECT_TRUE(CheckContinuity(traj, tol, 1));
   EXPECT_TRUE(CheckValues(traj, {Y}, tol));
-  EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(traj, T, Y, tol));
+  EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(traj, breaks, Y, tol));
 
   // Check monotonic.
   for (int n = 0; n < traj.get_number_of_segments(); ++n) {
     double dt = traj.duration(n);
 
-    EXPECT_NEAR(T[n], traj.start_time(n), tol);
+    EXPECT_NEAR(breaks[n], traj.start_time(n), tol);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
         const PolynomialType& poly = traj.getPolynomial(n, i, j);
         PolynomialType poly_deriv = poly.Derivative();
 
-        CoefficientType y0 = poly.EvaluateUnivariate(0);
-        CoefficientType y1 = poly.EvaluateUnivariate(dt);
+        T y0 = poly.EvaluateUnivariate(0);
+        T y1 = poly.EvaluateUnivariate(dt);
 
         double vv;
         // If Y is increasing in this segment, all velocity in this segment >=
@@ -561,9 +560,9 @@ GTEST_TEST(SplineTests, EigenTest) {
                             tol));
 }
 
-template <typename CoefficientType>
+template <typename T>
 void TestThrows(const std::vector<double>& breaks,
-                const std::vector<MatrixX<CoefficientType>>& samples) {
+                const std::vector<MatrixX<T>>& samples) {
   EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples),
                std::runtime_error);
   EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(breaks, samples),
@@ -577,9 +576,9 @@ void TestThrows(const std::vector<double>& breaks,
       std::runtime_error);
 }
 
-template <typename CoefficientType>
+template <typename T>
 void TestNoThrows(const std::vector<double>& breaks,
-                  const std::vector<MatrixX<CoefficientType>>& samples) {
+                  const std::vector<MatrixX<T>>& samples) {
   DRAKE_EXPECT_NO_THROW(
       PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples));
   DRAKE_EXPECT_NO_THROW(

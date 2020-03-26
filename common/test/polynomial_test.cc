@@ -19,39 +19,39 @@ using std::uniform_real_distribution;
 namespace drake {
 namespace {
 
-template <typename CoefficientType>
+template <typename T>
 void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
-  Polynomial<CoefficientType> poly(coefficients);
+  Polynomial<T> poly(coefficients);
 
   EXPECT_TRUE(CompareMatrices(poly.GetCoefficients(),
                               poly.Derivative(0).GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> third_derivative = poly.Derivative(3);
+  Polynomial<T> third_derivative = poly.Derivative(3);
 
-  Polynomial<CoefficientType> third_derivative_check =
+  Polynomial<T> third_derivative_check =
       poly.Derivative().Derivative().Derivative();
 
   EXPECT_TRUE(CompareMatrices(third_derivative.GetCoefficients(),
                               third_derivative_check.GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> tenth_derivative = poly.Derivative(10);
+  Polynomial<T> tenth_derivative = poly.Derivative(10);
 
   EXPECT_TRUE(CompareMatrices(tenth_derivative.GetCoefficients(),
                               VectorXd::Zero(1), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> integral = poly.Integral(0.0);
-  Polynomial<CoefficientType> poly_back = integral.Derivative();
+  Polynomial<T> integral = poly.Integral(0.0);
+  Polynomial<T> poly_back = integral.Derivative();
 
   EXPECT_TRUE(CompareMatrices(poly_back.GetCoefficients(),
                               poly.GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 }
 
-template <typename CoefficientType>
+template <typename T>
 void testOperators() {
   int max_num_coefficients = 6;
   int num_tests = 10;
@@ -61,24 +61,24 @@ void testOperators() {
 
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeff1 = VectorXd::Random(int_distribution(generator));
-    Polynomial<CoefficientType> poly1(coeff1);
+    Polynomial<T> poly1(coeff1);
 
     VectorXd coeff2 = VectorXd::Random(int_distribution(generator));
-    Polynomial<CoefficientType> poly2(coeff2);
+    Polynomial<T> poly2(coeff2);
 
     double scalar = uniform(generator);
 
-    Polynomial<CoefficientType> sum = poly1 + poly2;
-    Polynomial<CoefficientType> difference = poly2 - poly1;
-    Polynomial<CoefficientType> product = poly1 * poly2;
-    Polynomial<CoefficientType> poly1_plus_scalar = poly1 + scalar;
-    Polynomial<CoefficientType> poly1_minus_scalar = poly1 - scalar;
-    Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
-    Polynomial<CoefficientType> poly1_div = poly1 / scalar;
-    Polynomial<CoefficientType> poly1_times_poly1 = poly1;
-    const Polynomial<CoefficientType> pow_poly1_3{pow(poly1, 3)};
-    const Polynomial<CoefficientType> pow_poly1_4{pow(poly1, 4)};
-    const Polynomial<CoefficientType> pow_poly1_10{pow(poly1, 10)};
+    Polynomial<T> sum = poly1 + poly2;
+    Polynomial<T> difference = poly2 - poly1;
+    Polynomial<T> product = poly1 * poly2;
+    Polynomial<T> poly1_plus_scalar = poly1 + scalar;
+    Polynomial<T> poly1_minus_scalar = poly1 - scalar;
+    Polynomial<T> poly1_scaled = poly1 * scalar;
+    Polynomial<T> poly1_div = poly1 / scalar;
+    Polynomial<T> poly1_times_poly1 = poly1;
+    const Polynomial<T> pow_poly1_3{pow(poly1, 3)};
+    const Polynomial<T> pow_poly1_4{pow(poly1, 4)};
+    const Polynomial<T> pow_poly1_10{pow(poly1, 10)};
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
@@ -119,7 +119,7 @@ void testOperators() {
   }
 }
 
-template <typename CoefficientType>
+template <typename T>
 void testRoots() {
   int max_num_coefficients = 6;
   default_random_engine generator;
@@ -128,7 +128,7 @@ void testRoots() {
   int num_tests = 50;
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
-    Polynomial<CoefficientType> poly(coeffs);
+    Polynomial<T> poly(coeffs);
     auto roots = poly.Roots();
     EXPECT_EQ(roots.rows(), poly.GetDegree());
     for (int k = 0; k < roots.size(); k++) {
@@ -153,7 +153,7 @@ void testEvalType() {
   EXPECT_EQ(typeid(decltype(valueComplexInput)), typeid(std::complex<double>));
 }
 
-template <typename CoefficientType>
+template <typename T>
 void testPolynomialMatrix() {
   int max_matrix_rows_cols = 7;
   int num_coefficients = 6;
@@ -165,11 +165,11 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+  auto A = test::RandomPolynomialMatrix<T>(num_coefficients,
                                                          rows_A, cols_A);
-  auto B = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+  auto B = test::RandomPolynomialMatrix<T>(num_coefficients,
                                                          rows_B, cols_B);
-  auto C = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+  auto C = test::RandomPolynomialMatrix<T>(num_coefficients,
                                                          rows_A, cols_A);
   auto product = A * B;
   auto sum = A + C;

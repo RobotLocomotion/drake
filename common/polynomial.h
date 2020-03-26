@@ -17,9 +17,8 @@
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
  *
  * Polynomial represents a list of additive Monomials, each one of which is a
- * product of a constant coefficient (of _CoefficientType, which by default is
- * double) and any number of distinct Terms (variables raised to positive
- * integer powers).
+ * product of a constant coefficient (of T, which by default is double) and any
+ * number of distinct Terms (variables raised to positive integer powers).
  *
  * Variables are identified by integer indices rather than symbolic names, but
  * an automatic facility is provided to covert variable names up to four
@@ -28,25 +27,20 @@
  * example, valid names include "dx4" and "m_x".
  *
  * Monomials which have the same variables and powers may be constructed but
- * will be automatically combined:
- *   (3 * a * b * a) + (1.5 * b * a**2)
- * will be reduced to
- *   (4.5 * b * a**2)
- * internally after construction.
+ * will be automatically combined: (3 * a * b * a) + (1.5 * b * a**2) will be
+ * reduced to (4.5 * b * a**2) internally after construction.
  *
  * Polynomials can be added, subtracted, and multiplied.  They may only be
- * divided by scalars (of _CoefficientType) because Polynomials are not closed
- * under division.
+ * divided by scalars (of T) because Polynomials are not closed under division.
  */
-template <typename _CoefficientType = double>
+template <typename T = double>
 class Polynomial {
  public:
-  typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
   /// This should be 'unsigned int' but MSVC considers a call to std::pow(...,
   /// unsigned int) ambiguous because it won't cast unsigned int to int.
   typedef int PowerType;
-  typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
+  typedef typename Eigen::NumTraits<T>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
 
@@ -77,7 +71,7 @@ class Polynomial {
   /// Terms and a coefficient.
   class Monomial {
    public:
-    CoefficientType coefficient;
+    T coefficient;
     std::vector<Term> terms;  // a list of N variable ids
 
     bool operator==(const Monomial& other) const {
@@ -114,10 +108,10 @@ class Polynomial {
   // This is required for some Eigen operations when used in a
   // polynomial matrix.
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  Polynomial(const CoefficientType& scalar);
+  Polynomial(const T& scalar);
 
   /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
-  Polynomial(const CoefficientType coeff, const std::vector<Term>& terms);
+  Polynomial(const T coeff, const std::vector<Term>& terms);
 
   /// Construct a Polynomial from a sequence of Monomials.
   Polynomial(typename std::vector<Monomial>::const_iterator start,
@@ -128,7 +122,7 @@ class Polynomial {
   explicit Polynomial(const std::string varname, const unsigned int num = 1);
 
   /// Construct a single Monomial of the given coefficient and variable.
-  Polynomial(const CoefficientType& coeff, const VarType& v);
+  Polynomial(const T& coeff, const VarType& v);
 
   /// A legacy constructor for univariate polynomials:  Takes a vector
   /// of coefficients for the constant, x, x**2, x**3... Monomials.
@@ -168,7 +162,7 @@ class Polynomial {
 
   const std::vector<Monomial>& GetMonomials() const;
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> GetCoefficients() const;
+  Eigen::Matrix<T, Eigen::Dynamic, 1> GetCoefficients() const;
 
   /// Returns a set of all of the variables present in this Polynomial.
   std::set<VarType> GetVariables() const;
@@ -181,10 +175,10 @@ class Polynomial {
    * x may be of any type supporting the ** and + operations (which can
    * be different from both CoefficientsType and RealScalar)
    */
-  template <typename T>
-  typename Product<CoefficientType, T>::type EvaluateUnivariate(
-      const T& x) const {
-    typedef typename Product<CoefficientType, T>::type ProductType;
+  template <typename U>
+  typename Product<T, U>::type EvaluateUnivariate(
+      const U& x) const {
+    typedef typename Product<T, U>::type ProductType;
 
     if (!is_univariate_)
       throw std::runtime_error(
@@ -214,11 +208,11 @@ class Polynomial {
    * (supporting the std::pow, *, and + operations) and need not be
    * CoefficientsType or RealScalar)
    */
-  template <typename T>
-  typename Product<CoefficientType, T>::type EvaluateMultivariate(
-      const std::map<VarType, T>& var_values) const {
+  template <typename U>
+  typename Product<T, U>::type EvaluateMultivariate(
+      const std::map<VarType, U>& var_values) const {
     typedef typename std::remove_const<
-      typename Product<CoefficientType, T>::type>::type ProductType;
+      typename Product<T, U>::type>::type ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;
@@ -260,14 +254,14 @@ class Polynomial {
    * Polynomial.
    *
    * Analogous to EvaluateMultivariate, but:
-   *  (1) Restricted to CoefficientType, and
+   *  (1) Restricted to T, and
    *  (2) Need not map every variable in var_values.
    *
    * Returns a Polynomial in which each variable in var_values has been
    * replaced with its value and constants appropriately combined.
    */
   Polynomial EvaluatePartial(
-      const std::map<VarType, CoefficientType>& var_values) const;
+      const std::map<VarType, T>& var_values) const;
 
   /// Replaces all instances of variable orig with replacement.
   void Subs(const VarType& orig, const VarType& replacement);
@@ -293,7 +287,7 @@ class Polynomial {
    * If integration_constant is given, adds that constant as the constant
    * term (zeroth-order coefficient) of the resulting Polynomial.
    */
-  Polynomial Integral(const CoefficientType& integration_constant = 0.0) const;
+  Polynomial Integral(const T& integration_constant = 0.0) const;
 
   bool operator==(const Polynomial& other) const;
 
@@ -303,13 +297,13 @@ class Polynomial {
 
   Polynomial& operator*=(const Polynomial& other);
 
-  Polynomial& operator+=(const CoefficientType& scalar);
+  Polynomial& operator+=(const T& scalar);
 
-  Polynomial& operator-=(const CoefficientType& scalar);
+  Polynomial& operator-=(const T& scalar);
 
-  Polynomial& operator*=(const CoefficientType& scalar);
+  Polynomial& operator*=(const T& scalar);
 
-  Polynomial& operator/=(const CoefficientType& scalar);
+  Polynomial& operator/=(const T& scalar);
 
   const Polynomial operator+(const Polynomial& other) const;
 
@@ -320,13 +314,13 @@ class Polynomial {
   const Polynomial operator*(const Polynomial& other) const;
 
   friend const Polynomial operator+(const Polynomial& p,
-                                    const CoefficientType& scalar) {
+                                    const T& scalar) {
     Polynomial ret = p;
     ret += scalar;
     return ret;
   }
 
-  friend const Polynomial operator+(const CoefficientType& scalar,
+  friend const Polynomial operator+(const T& scalar,
                                     const Polynomial& p) {
     Polynomial ret = p;
     ret += scalar;
@@ -334,13 +328,13 @@ class Polynomial {
   }
 
   friend const Polynomial operator-(const Polynomial& p,
-                                    const CoefficientType& scalar) {
+                                    const T& scalar) {
     Polynomial ret = p;
     ret -= scalar;
     return ret;
   }
 
-  friend const Polynomial operator-(const CoefficientType& scalar,
+  friend const Polynomial operator-(const T& scalar,
                                     const Polynomial& p) {
     Polynomial ret = -p;
     ret += scalar;
@@ -348,19 +342,19 @@ class Polynomial {
   }
 
   friend const Polynomial operator*(const Polynomial& p,
-                                    const CoefficientType& scalar) {
+                                    const T& scalar) {
     Polynomial ret = p;
     ret *= scalar;
     return ret;
   }
-  friend const Polynomial operator*(const CoefficientType& scalar,
+  friend const Polynomial operator*(const T& scalar,
                                     const Polynomial& p) {
     Polynomial ret = p;
     ret *= scalar;
     return ret;
   }
 
-  const Polynomial operator/(const CoefficientType& scalar) const;
+  const Polynomial operator/(const T& scalar) const;
 
   /// A comparison to allow std::lexicographical_compare on this class; does
   /// not reflect any sort of mathematical total order.
@@ -436,10 +430,9 @@ class Polynomial {
   static std::string IdToVariableName(const VarType id);
   //@}
 
-  template <typename CoefficientType>
-  friend Polynomial<CoefficientType> pow(
-      const Polynomial<CoefficientType>& p,
-      typename Polynomial<CoefficientType>::PowerType n);
+  template <typename U>
+  friend Polynomial<U> pow(const Polynomial<U>& p,
+                           typename Polynomial<U>::PowerType n);
 
  private:
   /// Sorts through Monomial list and merges any that have the same powers.
@@ -447,15 +440,15 @@ class Polynomial {
 };
 
 /** Provides power function for Polynomial. */
-template <typename CoefficientType>
-Polynomial<CoefficientType> pow(
-    const Polynomial<CoefficientType>& base,
-    typename Polynomial<CoefficientType>::PowerType exponent) {
+template <typename T>
+Polynomial<T> pow(
+    const Polynomial<T>& base,
+    typename Polynomial<T>::PowerType exponent) {
   DRAKE_DEMAND(exponent >= 0);
   if (exponent == 0) {
-    return Polynomial<CoefficientType>{1.0};
+    return Polynomial<T>{1.0};
   }
-  const Polynomial<CoefficientType> pow_half{pow(base, exponent / 2)};
+  const Polynomial<T> pow_half{pow(base, exponent / 2)};
   if (exponent % 2 == 1) {
     return base * pow_half * pow_half;  // Odd exponent case.
   } else {
@@ -463,10 +456,10 @@ Polynomial<CoefficientType> pow(
   }
 }
 
-template <typename CoefficientType, int Rows, int Cols>
+template <typename T, int Rows, int Cols>
 std::ostream& operator<<(
     std::ostream& os,
-    const Eigen::Matrix<Polynomial<CoefficientType>, Rows, Cols>& poly_mat) {
+    const Eigen::Matrix<Polynomial<T>, Rows, Cols>& poly_mat) {
   for (int i = 0; i < poly_mat.rows(); i++) {
     os << "[ ";
     for (int j = 0; j < poly_mat.cols(); j++) {
