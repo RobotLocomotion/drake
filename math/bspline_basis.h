@@ -73,7 +73,8 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
-  /** Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1]. */
+  /** Find the knot index 𝑙 (ell in code) such that 
+  t[𝑙] ≤ parameter_value < t[𝑙 + 1]. */
   int FindContainingInterval(const T& parameter_value) const;
 
   /** Evaluates the B-spline curve defined by `this` and `control_points` at the
