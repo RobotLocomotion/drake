@@ -100,7 +100,7 @@ bool BsplineBasis<T>::IsControlPointActive(int control_point_index,
 }
 
 template <typename T>
-std::vector<int> BsplineBasis<T>::ComputeActiveControlPointIndices(
+std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     const std::array<T, 2>& plan_interval) const {
   std::vector<int> active_control_point_indices{};
   for (int i = 0; i < num_basis_functions(); ++i) {
@@ -112,9 +112,9 @@ std::vector<int> BsplineBasis<T>::ComputeActiveControlPointIndices(
 }
 
 template <typename T>
-std::vector<int> BsplineBasis<T>::ComputeActiveControlPointIndices(
+std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     const T& parameter_value) const {
-  return ComputeActiveControlPointIndices({{parameter_value, parameter_value}});
+  return ComputeActiveBasisFunctionIndices({{parameter_value, parameter_value}});
 }
 
 template <typename T>

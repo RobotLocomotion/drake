@@ -49,9 +49,9 @@ GTEST_TEST(BsplineBasisTests, MinNumControlPoints) {
       expected_message_1);
 }
 
-// Verifies that ComputeActiveControlPointIndices() returns the correct values
+// Verifies that ComputeActiveBasisFunctionIndices() returns the correct values
 // for selected inputs.
-GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
+GTEST_TEST(BsplineBasisTests, ComputeActiveBasisFunctionIndicesTest) {
   const int expected_order = 5;
   const int expected_num_basis_functions = 14;
   BsplineBasis<double> bspline_basis_0{expected_order,
@@ -61,7 +61,7 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   const std::vector<int> expected_active_control_point_indices_0{9, 10, 11, 12,
                                                                  13};
   std::vector<int> active_control_point_indices_0{
-      bspline_basis_0.ComputeActiveControlPointIndices(plan_interval_0)};
+      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_0)};
   EXPECT_EQ(active_control_point_indices_0,
             expected_active_control_point_indices_0);
 
@@ -69,7 +69,7 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   const std::vector<int> expected_active_control_point_indices_1{9, 10, 11, 12,
                                                                  13};
   std::vector<int> active_control_point_indices_1{
-      bspline_basis_0.ComputeActiveControlPointIndices(plan_interval_1)};
+      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_1)};
   EXPECT_EQ(active_control_point_indices_1,
             expected_active_control_point_indices_1);
 
@@ -77,14 +77,14 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   const std::vector<int> expected_active_control_point_indices_2{8,  9,  10,
                                                                  11, 12, 13};
   std::vector<int> active_control_point_indices_2{
-      bspline_basis_0.ComputeActiveControlPointIndices(plan_interval_2)};
+      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_2)};
   EXPECT_EQ(active_control_point_indices_2,
             expected_active_control_point_indices_2);
 
   const std::array<double, 2> plan_interval_3{0.0, 0.0};
   const std::vector<int> expected_active_control_point_indices_3{0, 1, 2, 3, 4};
   std::vector<int> active_control_point_indices_3{
-      bspline_basis_0.ComputeActiveControlPointIndices(plan_interval_3)};
+      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_3)};
   EXPECT_EQ(active_control_point_indices_3,
             expected_active_control_point_indices_3);
 
@@ -92,7 +92,7 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   const std::vector<int> expected_active_control_point_indices_4{9, 10, 11, 12,
                                                                  13};
   std::vector<int> active_control_point_indices_4{
-      bspline_basis_0.ComputeActiveControlPointIndices(plan_interval_4)};
+      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_4)};
   EXPECT_EQ(active_control_point_indices_4,
             expected_active_control_point_indices_4);
 
@@ -100,7 +100,7 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   const std::array<double, 2> plan_interval_5{0.0, 0.0};
   const std::vector<int> expected_active_control_point_indices_5{0};
   std::vector<int> active_control_point_indices_5{
-      bspline_basis_1.ComputeActiveControlPointIndices(plan_interval_5)};
+      bspline_basis_1.ComputeActiveBasisFunctionIndices(plan_interval_5)};
   EXPECT_EQ(active_control_point_indices_5,
             expected_active_control_point_indices_5);
 }

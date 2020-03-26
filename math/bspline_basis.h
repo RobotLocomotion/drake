@@ -54,10 +54,10 @@ class BsplineBasis final {
 
   T final_parameter_value() const { return knots()[num_basis_functions()]; }
 
-  std::vector<int> ComputeActiveControlPointIndices(
+  std::vector<int> ComputeActiveBasisFunctionIndices(
       const std::array<T, 2>& parameter_interval) const;
 
-  std::vector<int> ComputeActiveControlPointIndices(
+  std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
   /** Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1]. */
