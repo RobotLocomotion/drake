@@ -1,5 +1,6 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
@@ -7,6 +8,10 @@ load(
     "@drake_detected_os//:os.bzl",
     "DISTRIBUTION",
 )
+
+def drake_cc_googletest_gl_ubuntu_only(**kwargs):
+    if DISTRIBUTION == "ubuntu":
+        drake_cc_googletest(**kwargs)
 
 def drake_cc_library_gl_ubuntu_only(**kwargs):
     if DISTRIBUTION == "ubuntu":

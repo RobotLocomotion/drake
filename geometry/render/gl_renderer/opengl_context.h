@@ -7,15 +7,46 @@
 namespace drake {
 namespace geometry {
 namespace render {
-namespace gl {
+namespace internal {
 
-/** Temporary dummy class for building dummy RenderEngineGl dependencies.  */
+/** Handle OpenGL context initialization, clean-up and generic OpenGL queries.
+ This class creates and owns a new context upon construction. Rendering classes
+ need to keep their own OpenGlContext and ensure that they switch to it using
+ `MakeCurrent()` before any OpenGL calls.
+ */
 class OpenGlContext {
  public:
-  static void Dummy() {}
+  /** Constructor. Open an X display and initialize an OpenGL context. The
+   display will be open and ready for offscreen rendering, but no window is
+   visible.
+   @param debug  If true, diagnostics about the initialization of the context
+   and ongoing debug messages will be written to the Drake log.
+   */
+  explicit OpenGlContext(bool debug = false);
+
+  /** Releases context.  */
+  ~OpenGlContext();
+
+  /** Makes this context current or throws.  */
+  void MakeCurrent();
+
+  /** Returns the specified values for the current OpenGL context.
+   @note Even if invoked via an instance, they may not reflect that instance's
+   configuration if the instance differs from whichever context is current.  */
+  static GLint max_texture_size();
+  static GLint max_renderbuffer_size();
+  static GLint max_allowable_texture_size();
+
+ private:
+  // Note: we are dependent on `GL/glx.h` but don't want to let that bleed into
+  // other code. So, we pimpl this up so that glx.h lives only in the
+  // implementation.
+  class Impl;
+
+  std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace gl
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
