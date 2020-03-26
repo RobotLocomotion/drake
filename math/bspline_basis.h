@@ -31,7 +31,7 @@ class BsplineBasis final {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineBasis);
 
   /** Constructs a B-spline basis with the specified `order` and `knots`.
-  @pre `knots` is sorted in ascending order.
+  @pre `knots` is sorted in non-descending order.
   @throws std::invalid_argument if knots.size() < 2 * order. */
   BsplineBasis(int order, std::vector<T> knots);
 
