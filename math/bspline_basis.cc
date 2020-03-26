@@ -93,13 +93,6 @@ bool BsplineBasis<T>::IsControlPointActive(
 }
 
 template <typename T>
-bool BsplineBasis<T>::IsControlPointActive(int control_point_index,
-                                              const T& parameter_value) const {
-  return IsControlPointActive(control_point_index,
-                              {{parameter_value, parameter_value}});
-}
-
-template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     const std::array<T, 2>& plan_interval) const {
   std::vector<int> active_control_point_indices{};

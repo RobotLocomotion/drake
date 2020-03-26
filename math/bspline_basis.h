@@ -143,9 +143,6 @@ class BsplineBasis final {
 
   bool IsControlPointActive(int control_point_index,
                             const std::array<T, 2>& parameter_interval) const;
-
-  bool IsControlPointActive(int control_point_index,
-                            const T& parameter_value) const;
 };
 }  // namespace math
 }  // namespace drake
