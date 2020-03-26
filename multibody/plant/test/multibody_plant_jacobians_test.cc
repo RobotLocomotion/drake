@@ -288,7 +288,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // Setup the MBP.
   void SetUp() override {
     // Spatial inertia for each body. The inertia values are not important
-    // because these are only testing CenterOfMass jacobian methods.
+    // because these are only testing CenterOfMass Jacobian methods.
     const SpatialInertia<double> M_B =
         SpatialInertia<double>::MakeFromCentralInertia(
             mass_, Vector3<double>::Zero(),
@@ -301,7 +301,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     body2_ = &plant_->AddRigidBody("Body2", M_B);
 
     joint1_ = &plant_->AddJoint<RevoluteJoint>(
-        "PinJoint1", plant_->world_body(), std::nullopt, *body1_, X_WB1_,
+        "PinJoint1", plant_->world_body(), std::nullopt, *body1_, X_B1Wo_,
         Vector3d::UnitZ());
     joint2_ = &plant_->AddJoint<RevoluteJoint>(
         "PinJoint2", *body1_, X_B1F_, *body2_, X_B2M_, Vector3d::UnitZ());
@@ -317,59 +317,49 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
 
  protected:
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  double mass_ = 1.0;
-  double link_length_ = 1.0;
+  const double mass_ = 5.0;         // kg
+  const double link_length_ = 4.0;  // meters
+  const double omegaz_ = 3.0;       // rad/sec
 
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<Context<double>> context_;
   const RigidBody<double>* body1_{nullptr};
-
   const RigidBody<double>* body2_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
-  math::RigidTransformd X_WB1_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
+  math::RigidTransformd X_B1Wo_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
   math::RigidTransformd X_B1F_{Vector3d(0.5 * link_length_, 0.0, 0.0)};
   math::RigidTransformd X_B2M_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
 };
 
 TEST_F(TwoDOFPlanarPendulumTest,
-       CalcJacobianTranslationalVelocityOfSystemCenterOfMass) {
-  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, 3.0, 0.0);
+       CalcJacobianVelocityAndBiasAccelerationOfSystemCenterOfMass) {
+  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, omegaz_, 0.0);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
 
-  Eigen::MatrixXd Js_v_WCcm_W(3, 2);
-  Eigen::MatrixXd Js_v_WCcm_W_expected(3, 2);
-  Js_v_WCcm_W_expected << 0.0, 0.0, 1.0, 0.25, 0.0, 0.0;
-  Vector3d v_WCcm_W_expected = 3.0 * link_length_ * Vector3d::UnitY();
-
+  Eigen::MatrixXd Js_v_WCcm_W(3, plant_->num_velocities());
   plant_->CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
       *context_, JacobianWrtVariable::kV, plant_->world_frame(),
       plant_->world_frame(), &Js_v_WCcm_W);
-  EXPECT_TRUE(CompareMatrices(Js_v_WCcm_W, Js_v_WCcm_W_expected, kTolerance));
-  EXPECT_TRUE(
-      CompareMatrices(Js_v_WCcm_W * state.tail(plant_->num_velocities()),
-                      v_WCcm_W_expected, kTolerance));
-}
-
-TEST_F(TwoDOFPlanarPendulumTest,
-       CalcBiasTranslationalAccelerationOfSystemCenterOfMass) {
-  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, 3.0, 0.0);
-  joint1_->set_angle(context_.get(), state[0]);
-  joint2_->set_angle(context_.get(), state[1]);
-  joint1_->set_angular_rate(context_.get(), state[2]);
-  joint2_->set_angular_rate(context_.get(), state[3]);
-
-  Vector3d abias_WCcm_W_expected =
-      -(state[2] * state[2]) * link_length_ * Vector3d::UnitX();
-
   const Vector3<double>& abias_WCcm_W =
       plant_->CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
           *context_, JacobianWrtVariable::kV, plant_->world_frame(),
           plant_->world_frame());
 
+  Eigen::MatrixXd Js_v_WCcm_W_expected(3, plant_->num_velocities());
+  Js_v_WCcm_W_expected << 0.0, 0.0, link_length_, 0.5 * (0.5 * link_length_),
+      0.0, 0.0;
+  Vector3d v_WCcm_W_expected = omegaz_ * link_length_ * Vector3d::UnitY();
+  Vector3d abias_WCcm_W_expected =
+      -(omegaz_ * omegaz_) * link_length_ * Vector3d::UnitX();
+
+  EXPECT_TRUE(CompareMatrices(Js_v_WCcm_W, Js_v_WCcm_W_expected, kTolerance));
+  EXPECT_TRUE(
+      CompareMatrices(Js_v_WCcm_W * state.tail(plant_->num_velocities()),
+                      v_WCcm_W_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
 }
 
