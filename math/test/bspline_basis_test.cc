@@ -10,27 +10,27 @@ namespace math {
 // Verifies that the constructors work as expected.
 GTEST_TEST(BsplineBasisTests, ConstructorTest) {
   const int expected_order = 4;
-  const int expected_num_control_points = 11;
+  const int expected_num_basis_functions = 11;
   const std::vector<double> expected_knots_0{
       0, 0, 0, 0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1, 1, 1, 1};
   const std::vector<double> expected_knots_1{-3, -2, -1, 0, 1, 2,  3, 4,
                                              5,  6,  7,  8, 9, 10, 11};
-  // Check the order and num_control_points constructor.
+  // Check the order and num_basis_functions constructor.
   BsplineBasis<double> bspline_basis_0{expected_order,
-                                       expected_num_control_points};
+                                       expected_num_basis_functions};
   EXPECT_EQ(bspline_basis_0.order(), expected_order);
-  EXPECT_EQ(bspline_basis_0.num_control_points(), expected_num_control_points);
+  EXPECT_EQ(bspline_basis_0.num_basis_functions(), expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_0.knots(), expected_knots_0);
   BsplineBasis<double> bspline_basis_1{
-      expected_order, expected_num_control_points, KnotVectorType::kUniform};
+      expected_order, expected_num_basis_functions, KnotVectorType::kUniform};
   EXPECT_EQ(bspline_basis_1.order(), expected_order);
-  EXPECT_EQ(bspline_basis_1.num_control_points(), expected_num_control_points);
+  EXPECT_EQ(bspline_basis_1.num_basis_functions(), expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_1.knots(), expected_knots_1);
 
   // Check the order and knots constructor.
   BsplineBasis<double> bspline_basis_2{expected_order, expected_knots_0};
   EXPECT_EQ(bspline_basis_2.order(), expected_order);
-  EXPECT_EQ(bspline_basis_2.num_control_points(), expected_num_control_points);
+  EXPECT_EQ(bspline_basis_2.num_basis_functions(), expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_2.knots(), expected_knots_0);
 }
 
@@ -53,9 +53,9 @@ GTEST_TEST(BsplineBasisTests, MinNumControlPoints) {
 // for selected inputs.
 GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   const int expected_order = 5;
-  const int expected_num_control_points = 14;
+  const int expected_num_basis_functions = 14;
   BsplineBasis<double> bspline_basis_0{expected_order,
-                                       expected_num_control_points};
+                                       expected_num_basis_functions};
 
   const std::array<double, 2> plan_interval_0{0.9, 1.0};
   const std::vector<int> expected_active_control_point_indices_0{9, 10, 11, 12,
@@ -96,7 +96,7 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
   EXPECT_EQ(active_control_point_indices_4,
             expected_active_control_point_indices_4);
 
-  BsplineBasis<double> bspline_basis_1{1, expected_num_control_points};
+  BsplineBasis<double> bspline_basis_1{1, expected_num_basis_functions};
   const std::array<double, 2> plan_interval_5{0.0, 0.0};
   const std::vector<int> expected_active_control_point_indices_5{0};
   std::vector<int> active_control_point_indices_5{
@@ -129,8 +129,8 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveControlPointIndicesTest) {
 // been replaced with the correct one (1.0).
 GTEST_TEST(BsplineBasisTests, BasisFunctionValueScipyComparison) {
   const int order = 4;
-  const int num_control_points = 7;
-  BsplineBasis<double> basis{order, num_control_points};
+  const int num_basis_functions = 7;
+  BsplineBasis<double> basis{order, num_basis_functions};
   std::vector<std::vector<double>> parameter_values{};
   std::vector<std::vector<double>> expected_basis_function_values{};
   parameter_values.push_back(std::vector<double>{
@@ -193,10 +193,10 @@ GTEST_TEST(BsplineBasisTests, BasisFunctionValueScipyComparison) {
       0.00000000000000000, 0.00462962962962962, 0.03703703703703709,
       0.12500000000000000, 0.29629629629629611, 0.57870370370370305,
       1.00000000000000000});
-  ASSERT_EQ(static_cast<int>(parameter_values.size()), num_control_points);
+  ASSERT_EQ(static_cast<int>(parameter_values.size()), num_basis_functions);
   ASSERT_EQ(static_cast<int>(expected_basis_function_values.size()),
-            num_control_points);
-  for (int i = 0; i < num_control_points; ++i) {
+            num_basis_functions);
+  for (int i = 0; i < num_basis_functions; ++i) {
     const int num_parameter_values =
         static_cast<int>(parameter_values[i].size());
     ASSERT_EQ(static_cast<int>(expected_basis_function_values[i].size()),

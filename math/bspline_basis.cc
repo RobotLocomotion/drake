@@ -13,22 +13,22 @@ namespace math {
 namespace {
 
 template <typename T>
-std::vector<T> ConstructDefaultKnots(int order, int num_control_points,
+std::vector<T> ConstructDefaultKnots(int order, int num_basis_functions,
                                      KnotVectorType type) {
-  if (num_control_points < order) {
+  if (num_basis_functions< order) {
     throw std::invalid_argument(fmt::format(
         "The number of control points ({}) should be greater than or "
         "equal to the order ({}).",
-        num_control_points, order));
+        num_basis_functions, order));
   }
-  const int num_knots{num_control_points + order};
+  const int num_knots{num_basis_functions+ order};
   std::vector<T> knots(num_knots, 0.0);
   switch (type) {
     case KnotVectorType::kClampedUniform: {
       const T knot_interval =
-          1.0 / static_cast<double>(num_control_points - (order - 1));
+          1.0 / static_cast<double>(num_basis_functions- (order - 1));
       for (int i = order; i < num_knots; ++i) {
-        if (i < num_control_points) {
+        if (i < num_basis_functions) {
           knots.at(i) = knots.at(i - 1) + knot_interval;
         } else {
           knots.at(i) = 1.0;
@@ -49,7 +49,7 @@ std::vector<T> ConstructDefaultKnots(int order, int num_control_points,
 template <typename T>
 BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
     : order_(order),
-      num_control_points_(knots.size() - order),
+      num_basis_functions_(knots.size() - order),
       knots_(std::move(knots)) {
   if (static_cast<int>(knots_.size()) < 2 * order) {
     throw std::invalid_argument(
@@ -61,10 +61,10 @@ BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
 }
 
 template <typename T>
-BsplineBasis<T>::BsplineBasis(int order, int num_control_points,
+BsplineBasis<T>::BsplineBasis(int order, int num_basis_functions,
                               KnotVectorType type)
     : BsplineBasis<T>(
-          order, ConstructDefaultKnots<T>(order, num_control_points, type)) {}
+          order, ConstructDefaultKnots<T>(order, num_basis_functions, type)) {}
 
 template <typename T>
 bool BsplineBasis<T>::IsControlPointActive(
@@ -103,7 +103,7 @@ template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveControlPointIndices(
     const std::array<T, 2>& plan_interval) const {
   std::vector<int> active_control_point_indices{};
-  for (int i = 0; i < num_control_points(); ++i) {
+  for (int i = 0; i < num_basis_functions(); ++i) {
     if (IsControlPointActive(i, plan_interval)) {
       active_control_point_indices.push_back(i);
     }
@@ -131,7 +131,7 @@ int BsplineBasis<T>::FindContainingInterval(const T& parameter_value) const {
 
 template <typename T>
 T BsplineBasis<T>::BasisFunctionValue(int index, T parameter_value) const {
-  std::vector<T> delta(num_control_points(), 0.0);
+  std::vector<T> delta(num_basis_functions(), 0.0);
   delta[index] = 1.0;
   return EvaluateCurve(delta, parameter_value);
 }
