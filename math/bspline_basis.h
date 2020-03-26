@@ -81,7 +81,8 @@ class BsplineBasis final {
   /** Evaluates the B-spline curve defined by `this` and `control_points` at the
   given `parameter_value`.
   @pre control_points.size() == this->num_basis_functions()
-  */
+  @pre parameter_value ≥ this->initial_parameter_value()
+  @pre parameter_value ≤ this->final_parameter_value() */
   template <typename T_control_point>
   T_control_point EvaluateCurve(
       const std::vector<T_control_point>& control_points,
