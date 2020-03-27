@@ -15,18 +15,18 @@ namespace {
 template <typename T>
 std::vector<T> ConstructDefaultKnots(int order, int num_basis_functions,
                                      KnotVectorType type) {
-  if (num_basis_functions< order) {
+  if (num_basis_functions < order) {
     throw std::invalid_argument(fmt::format(
         "The number of control points ({}) should be greater than or "
         "equal to the order ({}).",
         num_basis_functions, order));
   }
-  const int num_knots{num_basis_functions+ order};
+  const int num_knots{num_basis_functions + order};
   std::vector<T> knots(num_knots, 0.0);
   switch (type) {
     case KnotVectorType::kClampedUniform: {
       const T knot_interval =
-          1.0 / static_cast<double>(num_basis_functions- (order - 1));
+          1.0 / static_cast<double>(num_basis_functions - (order - 1));
       for (int i = order; i < num_knots; ++i) {
         if (i < num_basis_functions) {
           knots.at(i) = knots.at(i - 1) + knot_interval;
@@ -107,7 +107,8 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
 template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     const T& parameter_value) const {
-  return ComputeActiveBasisFunctionIndices({{parameter_value, parameter_value}});
+  return ComputeActiveBasisFunctionIndices(
+      {{parameter_value, parameter_value}});
 }
 
 template <typename T>

@@ -19,18 +19,21 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
   BsplineBasis<double> bspline_basis_0{expected_order,
                                        expected_num_basis_functions};
   EXPECT_EQ(bspline_basis_0.order(), expected_order);
-  EXPECT_EQ(bspline_basis_0.num_basis_functions(), expected_num_basis_functions);
+  EXPECT_EQ(bspline_basis_0.num_basis_functions(),
+            expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_0.knots(), expected_knots_0);
   BsplineBasis<double> bspline_basis_1{
       expected_order, expected_num_basis_functions, KnotVectorType::kUniform};
   EXPECT_EQ(bspline_basis_1.order(), expected_order);
-  EXPECT_EQ(bspline_basis_1.num_basis_functions(), expected_num_basis_functions);
+  EXPECT_EQ(bspline_basis_1.num_basis_functions(),
+            expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_1.knots(), expected_knots_1);
 
   // Check the order and knots constructor.
   BsplineBasis<double> bspline_basis_2{expected_order, expected_knots_0};
   EXPECT_EQ(bspline_basis_2.order(), expected_order);
-  EXPECT_EQ(bspline_basis_2.num_basis_functions(), expected_num_basis_functions);
+  EXPECT_EQ(bspline_basis_2.num_basis_functions(),
+            expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_2.knots(), expected_knots_0);
 }
 
