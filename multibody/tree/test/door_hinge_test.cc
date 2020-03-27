@@ -7,7 +7,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/initial_value_problem.h"
 #include "drake/systems/analysis/simulator.h"
@@ -26,8 +25,6 @@ constexpr double kMaximumTimeStep = 1e-5;  // [s]
 constexpr double kTotalSimTime = 0.5;      // [s]
 constexpr double kIntegrationAccuracy = 1e-9;
 const char kRevoluteJointName[] = "RevoluteJoint";
-
-}  // namespace
 
 class DoorHingeTest : public ::testing::Test {
  protected:
@@ -64,27 +61,21 @@ class DoorHingeTest : public ::testing::Test {
     revolute_joint_->set_angular_rate(plant_context_.get(), angular_rate);
   }
 
-  double CalcPotentialEnergy() const {
+  double CalcHingePotentialEnergy() const {
     return door_hinge_->CalcPotentialEnergy(
         *plant_context_, plant_->EvalPositionKinematics(*plant_context_));
   }
 
-  double CalcConservPower() const {
+  double CalcHingeConservativePower() const {
     return door_hinge_->CalcConservativePower(
         *plant_context_, plant_->EvalPositionKinematics(*plant_context_),
         plant_->EvalVelocityKinematics(*plant_context_));
   }
 
-  double CalcNonConservPower() const {
+  double CalcHingeNonConservativePower() const {
     return door_hinge_->CalcNonConservativePower(
         *plant_context_, plant_->EvalPositionKinematics(*plant_context_),
         plant_->EvalVelocityKinematics(*plant_context_));
-  }
-
-  // This function will be used to confirm that the scalar conversion methods
-  // work properly.
-  const internal::MultibodyTree<double>& parent_tree() const {
-    return door_hinge_->get_parent_tree();
   }
 
   // This function confirms the potential energy (PE) is computed correctly by
@@ -103,7 +94,7 @@ class DoorHingeTest : public ::testing::Test {
   // energy has to be bigger than 1, which is significantly bigger than the
   // integration accuracy (1e-9).
   void TestPotentialEnergyCalculation() {
-    const double potential_energy = CalcPotentialEnergy();
+    const double potential_energy = CalcHingePotentialEnergy();
     DRAKE_DEMAND(std::abs(potential_energy) >= 1.0);
 
     const auto& door_hinge_temp = door_hinge();
@@ -188,23 +179,49 @@ TEST_F(DoorHingeTest, ZeroTest) {
   EXPECT_EQ(dut.CalcHingeSpringTorque(1.), 0);
 
   // Test energy should be zero at the default state.
-  EXPECT_EQ(CalcPotentialEnergy(), 0.0);
+  EXPECT_EQ(CalcHingePotentialEnergy(), 0.0);
 
   // Test energy should be zero at a non-zero state.
   SetHingeJointState(kAngle, kAngularRate);
-  EXPECT_EQ(CalcPotentialEnergy(), 0.0);
+  EXPECT_EQ(CalcHingePotentialEnergy(), 0.0);
 }
 
 // Test that scalar conversion produces properly constructed results.
 TEST_F(DoorHingeTest, CloneTest) {
-  const DoorHingeConfig config = CreateZeroForcesDoorHingeConfig();
-  BuildDoorHinge(config);
+  // Create an arbitrary configuration so we can see it get copied properly.
+  DoorHingeConfig config;
+  config.spring_zero_angle_rad = -1.25;
+  config.spring_constant = 100.;
+  config.dynamic_friction_torque = 10.;
+  config.static_friction_torque = 7.;
+  config.viscous_friction = 2.;
+  config.catch_width = 0.05;
+  config.catch_torque = 20;
+  config.motion_threshold = 0.125;
 
-  std::unique_ptr<internal::MultibodyTree<AutoDiffXd>> tree_ad =
-      parent_tree().CloneToScalar<AutoDiffXd>();
-  EXPECT_EQ(tree_ad->num_positions(), 1);
-  EXPECT_EQ(tree_ad->num_velocities(), 1);
-  EXPECT_EQ(tree_ad->num_actuated_dofs(), 0);
+  BuildDoorHinge(config);
+  MultibodyPlant<AutoDiffXd> plant_ad(plant());
+
+  EXPECT_EQ(plant_ad.num_positions(), 1);
+  EXPECT_EQ(plant_ad.num_velocities(), 1);
+  EXPECT_EQ(plant_ad.num_actuated_dofs(), 0);
+
+  // Should include gravity and the door hinge.
+  EXPECT_EQ(plant_ad.num_force_elements(), 2);
+  const DoorHinge<AutoDiffXd>& door_hinge_ad =
+      plant_ad.GetForceElement<DoorHinge>(ForceElementIndex(1));
+
+  EXPECT_EQ(door_hinge_ad.config().spring_zero_angle_rad,
+            config.spring_zero_angle_rad);
+  EXPECT_EQ(door_hinge_ad.config().spring_constant, config.spring_constant);
+  EXPECT_EQ(door_hinge_ad.config().dynamic_friction_torque,
+            config.dynamic_friction_torque);
+  EXPECT_EQ(door_hinge_ad.config().static_friction_torque,
+            config.static_friction_torque);
+  EXPECT_EQ(door_hinge_ad.config().viscous_friction, config.viscous_friction);
+  EXPECT_EQ(door_hinge_ad.config().catch_width, config.catch_width);
+  EXPECT_EQ(door_hinge_ad.config().catch_torque, config.catch_torque);
+  EXPECT_EQ(door_hinge_ad.config().motion_threshold, config.motion_threshold);
 }
 
 // Test with only the torsional spring torque, the corresponding energy
@@ -228,9 +245,9 @@ TEST_F(DoorHingeTest, SpringTest) {
   // Test the powers are computed correctly: a) the conservative power equals to
   // the corresponding torque times velocity; b) non-conservative power should
   // be zero.
-  EXPECT_EQ(CalcConservPower(),
+  EXPECT_EQ(CalcHingeConservativePower(),
             dut.CalcHingeSpringTorque(kAngle) * kAngularRate);
-  EXPECT_EQ(CalcNonConservPower(), 0.0);
+  EXPECT_EQ(CalcHingeNonConservativePower(), 0.0);
 }
 
 // Test with only the catch spring torque, the corresponding energy and power
@@ -254,10 +271,10 @@ TEST_F(DoorHingeTest, CatchTest) {
 
   // Verify that the potential energy with only the catch spring torque at zero
   // position and the catch_width position should be 0.
-  EXPECT_EQ(CalcPotentialEnergy(), 0.0);
+  EXPECT_EQ(CalcHingePotentialEnergy(), 0.0);
 
   SetHingeJointState(config.catch_width, 0.0);
-  EXPECT_EQ(CalcPotentialEnergy(), 0.0);
+  EXPECT_EQ(CalcHingePotentialEnergy(), 0.0);
 
   // Test the energy from power integration.
   SetHingeJointState(kAngle, kAngularRate);
@@ -267,9 +284,9 @@ TEST_F(DoorHingeTest, CatchTest) {
   // Test the powers are computed correctly: a) the conservative power equals to
   // the corresponding torque times velocity; b) non-conservative power should
   // be zero.
-  EXPECT_EQ(CalcConservPower(),
+  EXPECT_EQ(CalcHingeConservativePower(),
             dut.CalcHingeSpringTorque(kAngle) * kAngularRate);
-  EXPECT_EQ(CalcNonConservPower(), 0.0);
+  EXPECT_EQ(CalcHingeNonConservativePower(), 0.0);
 }
 
 // Test with only the static friction torque, the torques, energy and power are
@@ -293,9 +310,9 @@ TEST_F(DoorHingeTest, StaticFrictionTest) {
   // non-conservative power equals to the corresponding torque times velocity;
   // b) conservative power should be zero.
   SetHingeJointState(kAngle, kAngularRate);
-  EXPECT_EQ(CalcNonConservPower(),
+  EXPECT_EQ(CalcHingeNonConservativePower(),
             dut.CalcHingeFrictionalTorque(kAngularRate) * kAngularRate);
-  EXPECT_EQ(CalcConservPower(), 0.0);
+  EXPECT_EQ(CalcHingeConservativePower(), 0.0);
 }
 
 // Test with only the dynamic friction torque, the torques, energy and power are
@@ -319,9 +336,9 @@ TEST_F(DoorHingeTest, DynamicFrictionTest) {
   // non-conservative power equals to the corresponding torque times velocity;
   // b) conservative power should be zero.
   SetHingeJointState(kAngle, kAngularRate);
-  EXPECT_EQ(CalcNonConservPower(),
+  EXPECT_EQ(CalcHingeNonConservativePower(),
             dut.CalcHingeFrictionalTorque(kAngularRate) * kAngularRate);
-  EXPECT_EQ(CalcConservPower(), 0.0);
+  EXPECT_EQ(CalcHingeConservativePower(), 0.0);
 }
 
 // Test with only the viscous friction torque, the torques, energy and power are
@@ -345,31 +362,17 @@ TEST_F(DoorHingeTest, ViscousFrictionTest) {
   // non-conservative power equals to the corresponding torque times velocity;
   // b) conservative power should be zero.
   SetHingeJointState(kAngle, kAngularRate);
-  EXPECT_EQ(CalcNonConservPower(),
+  EXPECT_EQ(CalcHingeNonConservativePower(),
             dut.CalcHingeFrictionalTorque(kAngularRate) * kAngularRate);
-  EXPECT_EQ(CalcConservPower(), 0.0);
+  EXPECT_EQ(CalcHingeConservativePower(), 0.0);
 }
 
-// Returns the total energy `E = KE + PE` of the plant. It assumes there is only
-// one non-world body and one joint.
-// N.B. Since the MultibodyPlant does not provide methods to compute the
-// kinetic energy, we have to provide a simple function to compute it.
-// Once the plant has this method, this function could be removed.
-// TODO(huihua.zhao) Fix this note once the PR #12895 lands.
+// Returns the total energy `E = KE + PE` of the plant.
 double CalcSystemTotalEnergy(const systems::Simulator<double>& simulator,
                              const MultibodyPlant<double>& plant) {
   const auto& context = simulator.get_context();
-  const auto& state = context.get_discrete_state_vector();
-  DRAKE_THROW_UNLESS(state.size() == 2);
-  // Calculate the kinetic energy. If m is inertia, v should be angular rate.
-  // TODO(huihua.zhao) Use the MBP::CalcKineticEnergy() once it is available
-  // (issue #12886 and PR #12895).
-  auto calc_kinetic_energy = [](double m, double v) { return 0.5 * m * v * v; };
 
-  const double kinetic_energy =
-      calc_kinetic_energy(kPrincipalInertia, state[1]);
-  const double potential_energy = plant.CalcPotentialEnergy(context);
-  return kinetic_energy + potential_energy;
+  return plant.EvalKineticEnergy(context) + plant.EvalPotentialEnergy(context);
 }
 
 // Runs a simulator to integrate the system (i.e., `plant`) forward to time
@@ -379,11 +382,6 @@ double CalcSystemTotalEnergy(const systems::Simulator<double>& simulator,
 // total energy of the system and `W(t)` is work done by non-conservative
 // torques. It assumes that there is no external torques other than the torques
 // introduced by the DoorHinge force element.
-//
-// N.B. Since the MultibodyPlant does not provide methods to compute the
-// non-conservative power, the DoorHingeTest has to be passed in for this
-// purpose.
-// TODO(huihua.zhao) Fix this note once the PR #12895 lands.
 //
 // N.B. for simplicity, instead of building a new system and defining a
 // continuous state to compute the work `W(t)` done by conservative torques,
@@ -405,24 +403,22 @@ double CalcSystemTotalEnergy(const systems::Simulator<double>& simulator,
 // make sure that the energy has a significant change or shift. There two
 // numbers are set by heuristic. Since the main focus of this test is to verify
 // the correctness of the energy calculation, the settings are good enough.
-void TestEnergyConservative(const MultibodyPlant<double>& plant,
-                            const DoorHinge<double>& dut,
+void TestEnergyConservation(const MultibodyPlant<double>& plant,
                             const Eigen::Vector2d& init_state) {
   systems::Simulator<double> simulator(plant);
   simulator.Initialize();
 
   double non_conserv_work = 0.0;
   double prev_time = 0.0;
-  simulator.set_monitor([&plant, &dut, &prev_time, &non_conserv_work](
+  simulator.set_monitor([&plant, &prev_time, &non_conserv_work](
                             const systems::Context<double>& root_context) {
     // Compute delta time and update previous time.
     const double curr_time = root_context.get_time();
     const double delta_time = curr_time - prev_time;
     prev_time = curr_time;
 
-    const double non_conserv_power = dut.CalcNonConservativePower(
-        root_context, plant.EvalPositionKinematics(root_context),
-        plant.EvalVelocityKinematics(root_context));
+    const double non_conserv_power =
+        plant.EvalNonConservativePower(root_context);
     non_conserv_work += non_conserv_power * delta_time;
 
     return systems::EventStatus::Succeeded();
@@ -463,12 +459,12 @@ TEST_F(DoorHingeTest, EnergyTestWithOnlyConservativeTorques) {
   config.spring_zero_angle_rad = 1.0;
   config.catch_width = 0.02;
   config.catch_torque = 1.0;
+  BuildDoorHinge(config);
 
-  const DoorHinge<double>& dut = BuildDoorHinge(config);
   // Set the initial velocity to a relative large value to make sure the energy
   // is numerically significant comparing to the tolerance.
   const Eigen::Vector2d init_state{0, 2.0};
-  TestEnergyConservative(plant(), dut, init_state);
+  TestEnergyConservation(plant(), init_state);
 }
 
 // Confirm the energy loss should equal to the non-conservative energy, i.e.,
@@ -476,12 +472,14 @@ TEST_F(DoorHingeTest, EnergyTestWithOnlyConservativeTorques) {
 TEST_F(DoorHingeTest, EnergyTestWithAllTorques) {
   // Use the default door hinge configuration.
   const DoorHingeConfig config;
-  const DoorHinge<double>& dut = BuildDoorHinge(config);
+  BuildDoorHinge(config);
+
   // Set the initial velocity to a relative large value to make sure the energy
   // is numerically significant comparing to the tolerance.
   const Eigen::Vector2d init_state{0, 2.0};
-  TestEnergyConservative(plant(), dut, init_state);
+  TestEnergyConservation(plant(), init_state);
 }
 
+}  // namespace
 }  // namespace multibody
 }  // namespace drake
