@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include "drake/systems/analysis/hermitian_dense_output.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -255,7 +256,17 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
 
   // Stops dense integration to prevent future updates to
   // the dense output just built and yields it to the caller.
-  return integrator_->StopDenseIntegration();
+  const std::unique_ptr<trajectories::PiecewiseTrajectory<T>> traj =
+      integrator_->StopDenseIntegration();
+
+  const auto* pp =
+      dynamic_cast<trajectories::PiecewisePolynomial<T>*>(traj.get());
+  if (!pp) {
+    throw std::runtime_error(
+        "DenseSolve current assumes that the dense output is represented as a "
+        "PiecewisePolynomial.");
+  }
+  return std::make_unique<HermitianDenseOutput<T>>(*pp);
 }
 
 }  // namespace systems
