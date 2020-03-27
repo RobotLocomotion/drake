@@ -1186,7 +1186,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
-  const HydroelasticContactInfoAndBodySpatialForces&
+  const internal::HydroelasticContactInfoAndBodySpatialForces<T>&
       contact_info_and_spatial_body_forces =
           EvalHydroelasticContactForces(context);
   for (const HydroelasticContactInfo<T>& contact_info :
@@ -1415,7 +1415,8 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const Context<symbolic::Expression>&,
-    HydroelasticContactInfoAndBodySpatialForces*) const {
+    internal::HydroelasticContactInfoAndBodySpatialForces<
+        symbolic::Expression>*) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
@@ -1423,8 +1424,8 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
-    HydroelasticContactInfoAndBodySpatialForces* contact_info_and_body_forces)
-    const {
+    internal::HydroelasticContactInfoAndBodySpatialForces<T>*
+        contact_info_and_body_forces) const {
   DRAKE_DEMAND(contact_info_and_body_forces != nullptr);
 
   std::vector<SpatialForce<T>>& F_BBo_W_array =
@@ -2510,7 +2511,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             std::string("Hydroelastic contact info and body spatial forces."),
             [this]() {
               return AbstractValue::Make(
-                  HydroelasticContactInfoAndBodySpatialForces(
+                  internal::HydroelasticContactInfoAndBodySpatialForces<T>(
                       this->num_bodies()));
             },
             [this](const systems::ContextBase& context_base,
@@ -2518,7 +2519,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
               auto& context = dynamic_cast<const Context<T>&>(context_base);
               auto& contact_info_and_body_spatial_forces_cache =
                   cache_value->get_mutable_value<
-                      HydroelasticContactInfoAndBodySpatialForces>();
+                      internal::HydroelasticContactInfoAndBodySpatialForces<
+                          T>>();
               this->CalcHydroelasticContactForces(
                   context, &contact_info_and_body_spatial_forces_cache);
             },
