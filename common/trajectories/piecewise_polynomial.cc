@@ -92,7 +92,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::integral(
               matrix(row, col).Integral(value_at_start_time(row, col));
         } else {
           matrix(row, col) =
-              matrix(row, col).Integral(ret.segmentValueAtGlobalAbscissa(
+              matrix(row, col).Integral(ret.EvaluateSegmentAbsoluteTime(
                   segment_index - 1, this->start_time(segment_index), row,
                   col));
         }
@@ -107,7 +107,7 @@ double PiecewisePolynomial<T>::scalarValue(double t,
                                            Eigen::Index row,
                                            Eigen::Index col) const {
   int segment_index = this->get_segment_index(t);
-  return segmentValueAtGlobalAbscissa(segment_index, t, row, col);
+  return EvaluateSegmentAbsoluteTime(segment_index, t, row, col);
 }
 
 template <typename T>
@@ -120,7 +120,7 @@ MatrixX<T> PiecewisePolynomial<T>::EvalDerivative(double t,
       ret(rows(), cols());
   for (Eigen::Index row = 0; row < rows(); row++) {
     for (Eigen::Index col = 0; col < cols(); col++) {
-      ret(row, col) = segmentValueAtGlobalAbscissa(segment_index, t, row, col,
+      ret(row, col) = EvaluateSegmentAbsoluteTime(segment_index, t, row, col,
                                                    derivative_order);
     }
   }
@@ -251,8 +251,9 @@ bool PiecewisePolynomial<T>::isApprox(const PiecewisePolynomial<T>& other,
     const PolynomialMatrix& other_matrix = other.polynomials_[segment_index];
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
-        if (!matrix(row, col).IsApprox(other_matrix(row, col), tol))
+        if (!matrix(row, col).IsApprox(other_matrix(row, col), tol)) {
           return false;
+        }
       }
     }
   }
@@ -289,6 +290,45 @@ void PiecewisePolynomial<T>::ConcatenateInTime(
     breaks = other.breaks();
     polynomials_ = other.polynomials_;
   }
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::AppendCubicHermiteSegment(
+    double time, const Eigen::Ref<const MatrixX<T>>& sample,
+    const Eigen::Ref<const MatrixX<T>>& sample_dot) {
+  DRAKE_DEMAND(!empty());
+  DRAKE_DEMAND(time > this->end_time());
+  DRAKE_DEMAND(sample.rows() == rows());
+  DRAKE_DEMAND(sample.cols() == cols());
+  DRAKE_DEMAND(sample_dot.rows() == rows());
+  DRAKE_DEMAND(sample_dot.cols() == cols());
+
+  const int segment_index = polynomials_.size() - 1;
+  const double dt = time - this->end_time();
+
+  PolynomialMatrix matrix(rows(), cols());
+
+  for (int row = 0; row < rows(); ++row) {
+    for (int col = 0; col < cols(); ++col) {
+      const double start = EvaluateSegmentAbsoluteTime(
+          segment_index, this->end_time(), row, col);
+      const int derivative_order = 1;
+      const double start_dot = EvaluateSegmentAbsoluteTime(
+          segment_index, this->end_time(), row, col, derivative_order);
+      Vector4<T> coeffs = ComputeCubicSplineCoeffs(
+            dt, start, sample(row, col), start_dot, sample_dot(row, col));
+      matrix(row, col) = PolynomialType(coeffs);
+    }
+  }
+  polynomials_.push_back(matrix);
+  this->get_mutable_breaks().push_back(time);
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::RemoveFinalSegment() {
+  DRAKE_DEMAND(!empty());
+  polynomials_.pop_back();
+  this->get_mutable_breaks().pop_back();
 }
 
 template <typename T>
@@ -330,7 +370,7 @@ PiecewisePolynomial<T>::slice(int start_segment_index, int num_segments) const {
 }
 
 template <typename T>
-double PiecewisePolynomial<T>::segmentValueAtGlobalAbscissa(
+double PiecewisePolynomial<T>::EvaluateSegmentAbsoluteTime(
     int segment_index, double t, Eigen::Index row, Eigen::Index col,
     int derivative_order) const {
   return polynomials_[segment_index](row, col).EvaluateUnivariate(
@@ -614,9 +654,9 @@ PiecewisePolynomial<T>::CubicHermite(
 
   for (int t = 0; t < N - 1; ++t) {
     polynomials[t].resize(Y[t].rows(), Y[t].cols());
+    const double dt = times[t + 1] - times[t];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        double dt = times[t + 1] - times[t];
         Eigen::Matrix<T, 4, 1> coeffs = ComputeCubicSplineCoeffs(
             dt, Y[t](i, j), Y[t + 1](i, j), Ydot[t](i, j), Ydot[t + 1](i, j));
         polynomials[t](i, j) = PolynomialType(coeffs);

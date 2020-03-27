@@ -180,6 +180,12 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("tol"), doc.PiecewisePolynomial.isApprox.doc)
       .def("ConcatenateInTime", &PiecewisePolynomial<T>::ConcatenateInTime,
           py::arg("other"), doc.PiecewisePolynomial.ConcatenateInTime.doc)
+      .def("AppendCubicHermiteSegment",
+          &PiecewisePolynomial<T>::AppendCubicHermiteSegment, py::arg("time"),
+          py::arg("sample"), py::arg("sample_dot"),
+          doc.PiecewisePolynomial.AppendCubicHermiteSegment.doc)
+      .def("RemoveFinalSegment", &PiecewisePolynomial<T>::RemoveFinalSegment,
+          doc.PiecewisePolynomial.RemoveFinalSegment.doc)
       .def("slice", &PiecewisePolynomial<T>::slice,
           py::arg("start_segment_index"), py::arg("num_segments"),
           doc.PiecewisePolynomial.slice.doc)
