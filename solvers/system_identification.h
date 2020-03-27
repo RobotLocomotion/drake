@@ -40,7 +40,7 @@ namespace solvers {
 template <typename T>
 class SystemIdentification {
  public:
-  typedef ::Polynomial<T> PolyType;
+  typedef Polynomial<T> PolyType;
   typedef typename PolyType::Monomial MonomialType;
   typedef typename PolyType::Term TermType;
   typedef typename PolyType::VarType VarType;

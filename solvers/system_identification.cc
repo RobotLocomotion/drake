@@ -9,8 +9,6 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 
-using std::pow;
-
 namespace drake {
 namespace solvers {
 
@@ -323,7 +321,7 @@ SystemIdentification<T>::EstimateParameters(
   }
   T error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
-    error_squared += pow(result.GetSolution(error_variables(i)), 2);
+    error_squared += std::pow(result.GetSolution(error_variables(i)), 2);
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));

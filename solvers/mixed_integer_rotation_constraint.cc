@@ -1,5 +1,6 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
+#include <cmath>
 #include <limits>
 
 #include "drake/math/gray_code.h"
@@ -46,13 +47,13 @@ void AddUnitLengthConstraintWithSos2Lambda(
   const symbolic::Expression x2{phi.dot(lambda2.cast<symbolic::Expression>())};
   for (int phi0_idx = 0; phi0_idx < num_phi; phi0_idx++) {
     const symbolic::Expression x0_square_lb{2 * phi(phi0_idx) * x0 -
-                                            pow(phi(phi0_idx), 2)};
+                                            std::pow(phi(phi0_idx), 2)};
     for (int phi1_idx = 0; phi1_idx < num_phi; phi1_idx++) {
       const symbolic::Expression x1_square_lb{2 * phi(phi1_idx) * x1 -
-                                              pow(phi(phi1_idx), 2)};
+                                              std::pow(phi(phi1_idx), 2)};
       for (int phi2_idx = 0; phi2_idx < num_phi; phi2_idx++) {
         const symbolic::Expression x2_square_lb{2 * phi(phi2_idx) * x2 -
-                                                pow(phi(phi2_idx), 2)};
+                                                std::pow(phi(phi2_idx), 2)};
         symbolic::Expression x_sum_of_squares_lb{x0_square_lb + x1_square_lb +
                                                  x2_square_lb};
         if (!is_constant(x_sum_of_squares_lb)) {

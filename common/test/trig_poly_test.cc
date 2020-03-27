@@ -133,6 +133,20 @@ GTEST_TEST(TrigPolyTest, EvaluatePartialTest) {
             theta + cos(theta) + sin(theta + 1));
 }
 
+// Checks deprecated aliases.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+// TODO(soonho-tri): Remove the following checks when we remove ::TrigPoly.
+static_assert(std::is_same<::TrigPoly<double>, drake::TrigPoly<double>>::value,
+              "::TrigPoly should be an alias of drake::TrigPoly.");
+static_assert(std::is_same<::TrigPolyd, drake::TrigPolyd>::value,
+              "::TrigPolyd should be an alias of drake::TrigPolyd.");
+static_assert(
+    std::is_same<::VectorXTrigPoly, drake::VectorXTrigPoly>::value,
+    "::VectorXTrigPoly should be an alias of drake::VectorXTrigPoly.");
+#pragma GCC diagnostic pop
+
 }  // anonymous namespace
 }  // namespace util
 }  // namespace drake

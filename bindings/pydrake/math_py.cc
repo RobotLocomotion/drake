@@ -29,6 +29,7 @@
 namespace drake {
 namespace pydrake {
 
+using std::pow;
 using symbolic::Expression;
 
 namespace {
