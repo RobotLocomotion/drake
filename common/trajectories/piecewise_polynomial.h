@@ -720,6 +720,27 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   void ConcatenateInTime(const PiecewisePolynomial& other);
 
   /**
+   * The CubicHermite spline construction has a nice property of being
+   * incremental (each segment can be solved independently). Given a new sample
+   * and it's derivative, this method adds one segment to the end of `this`
+   * where the start sample and derivative are taken as the value and derivative
+   * at the final break of `this`.
+   *
+   * @pre `this` is not empty()
+   * @pre `time` > end_time()
+   * @pre `sample` and `sample_dot` must have size rows() x cols().
+   */
+  void AppendCubicHermiteSegment(
+      double time, const Eigen::Ref<const MatrixX<T>>& sample,
+      const Eigen::Ref<const MatrixX<T>>& sample_dot);
+
+  /** Removes the final segment from the trajectory, reducing the number of
+   * segments by 1.
+   * @pre `this` is not empty()
+   */
+  void RemoveFinalSegment();
+
+  /**
    * Adds `offset` to all of the breaks. `offset` need not be a non-negative
    * number.
    * @note has no effect if empty().
@@ -747,9 +768,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
  private:
-  double segmentValueAtGlobalAbscissa(int segment_index, double t,
-                                      Eigen::Index row, Eigen::Index col,
-                                      int derivative_order = 0) const;
+  double EvaluateSegmentAbsoluteTime(int segment_index, double t,
+                                     Eigen::Index row, Eigen::Index col,
+                                     int derivative_order = 0) const;
 
   // a PolynomialMatrix for each piece (segment).
   std::vector<PolynomialMatrix> polynomials_;

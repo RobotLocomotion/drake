@@ -311,6 +311,32 @@ GTEST_TEST(testPiecewisePolynomial, VectorValueTest) {
       "This method only supports vector-valued trajectories.");
 }
 
+GTEST_TEST(testPiecewisePolynomial, RemoveFinalSegmentTest) {
+  Eigen::VectorXd breaks(5);
+  breaks << 0, .5, 1., 1.5, 2.0;
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
+        2, 2, 2,
+        0, 3, 3,
+        -2, 2, 2,
+        1, 1, 1;
+
+  PiecewisePolynomial<double> pp =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+
+  EXPECT_EQ(pp.end_time(), 2.);
+  EXPECT_EQ(pp.get_number_of_segments(), 4);
+
+  pp.RemoveFinalSegment();
+  EXPECT_EQ(pp.end_time(), 1.5);
+  EXPECT_EQ(pp.get_number_of_segments(), 3);
+
+  pp.RemoveFinalSegment();
+  EXPECT_EQ(pp.end_time(), 1.);
+  EXPECT_EQ(pp.get_number_of_segments(), 2);
+}
+
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake

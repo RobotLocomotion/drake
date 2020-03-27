@@ -473,11 +473,21 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
       Ydot[i] = MatrixX<double>::Random(rows, cols);
     }
 
-    PiecewisePolynomial<double> spline =
+    const PiecewisePolynomial<double> spline =
         PiecewisePolynomial<double>::CubicHermite(T, Y, Ydot);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 1));
     EXPECT_TRUE(CheckValues(spline, {Y, Ydot}, 1e-8));
     EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-8));
+
+    // Now test that we could have constructed the same trajectory
+    // incrementally.
+    PiecewisePolynomial<double> incremental =
+        PiecewisePolynomial<double>::CubicHermite({T[0], T[1]}, {Y[0], Y[1]},
+                                                  {Ydot[0], Ydot[1]});
+    for (int i = 2; i < N; i++) {
+      incremental.AppendCubicHermiteSegment(T[i], Y[i], Ydot[i]);
+    }
+    EXPECT_TRUE(spline.isApprox(incremental, 1e-10));
   }
 }
 
