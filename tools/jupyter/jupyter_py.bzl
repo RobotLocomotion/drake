@@ -33,7 +33,9 @@ def drake_jupyter_py_binary(
         tags = [],
         add_test_rule = None,
         test_timeout = None,
-        test_flaky = 0,
+        # TODO(eric.cousineau): Reset default flaky value to False once #12536
+        # is resolved.
+        test_flaky = True,
         **kwargs):
     """Creates a target to run a Jupyter notebook.
 
