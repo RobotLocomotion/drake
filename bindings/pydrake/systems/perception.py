@@ -75,14 +75,14 @@ class PointCloudConcatenation(LeafSystem):
 
     def _align_point_clouds(self, context):
         # These will be aggregated 2D arrays.
-        ps_F = None
+        plist_F = None
         colors = None
 
         for i in self._id_list:
             point_cloudᵢ_Cᵢ = self._point_cloud_ports[i].Eval(context)
             X_FCᵢ = self._transform_ports[i].Eval(context)
-            psᵢ_Cᵢ = point_cloudᵢ_Cᵢ.xyzs()
-            psᵢ_F = X_FCᵢ.multiply(psᵢ_Cᵢ)
+            plistᵢ_Cᵢ = point_cloudᵢ_Cᵢ.xyzs()
+            plistᵢ_F = X_FCᵢ.multiply(plistᵢ_Cᵢ)
 
             if point_cloudᵢ_Cᵢ.has_rgbs():
                 colorsᵢ = point_cloudᵢ_Cᵢ.rgbs()
@@ -91,19 +91,19 @@ class PointCloudConcatenation(LeafSystem):
                     self._default_rgb, point_cloudᵢ_Cᵢ.size())
 
             # Aggregate.
-            ps_F = _hstack_none(ps_F, psᵢ_F)
+            plist_F = _hstack_none(plist_F, plistᵢ_F)
             colors = _hstack_none(colors, colorsᵢ)
 
         # Trim NaN values.
-        valid_indices = np.logical_not(np.isnan(ps_F).any(axis=0))
-        ps_F = ps_F[:, valid_indices]
+        valid_indices = np.logical_not(np.isnan(plist_F).any(axis=0))
+        plist_F = plist_F[:, valid_indices]
         colors = colors[:, valid_indices]
-        return ps_F, colors
+        return plist_F, colors
 
     def DoCalcOutput(self, context, output):
-        ps_F, colors = self._align_point_clouds(context)
+        plist_F, colors = self._align_point_clouds(context)
         # Put points and colors into final point cloud.
         point_cloud_F = output.get_mutable_value()
-        point_cloud_F.resize(ps_F.shape[1])
-        point_cloud_F.mutable_xyzs()[:] = ps_F
+        point_cloud_F.resize(plist_F.shape[1])
+        point_cloud_F.mutable_xyzs()[:] = plist_F
         point_cloud_F.mutable_rgbs()[:] = colors
