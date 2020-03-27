@@ -177,19 +177,20 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    * We will use superscripts to denote evaluating an expression with `x` at
    * that subscript and `t` at the corresponding time, e.g. `ẍⁿ` denotes
-   * `ẍ(tⁿ, xⁿ)`, and `f*` denotes `f(tⁿ+½h, x*)`.
+   * `ẍ(tⁿ, xⁿ)`, and `f*` denotes `f(tⁿ+½h, x*)`. We first present a shortened
+   * derivation, followed by the longer, detailed version.
    *
    * We know the local truncation error for the implicit Euler method is:
    *
    *     e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ - xⁿ⁺¹ = ½ h²ẍⁿ + O(h³).    (10)
    *
    * The local truncation error ε from taking two half steps is composed of
-   * two terms:
+   * these two terms:
    *
    *     e₁ = xⁿ*¹ - xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³),          (15)
    *     e₂ = x̃ⁿ⁺¹ - xⁿ*¹ = (1/8) h²ẍⁿ + O(h³).          (20)
    *
-   * Therefore,
+   * Taking the sum,
    *
    *     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = e₁ + e₂ = (1/4) h²ẍⁿ + O(h³). (21)
    *
