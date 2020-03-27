@@ -25,7 +25,8 @@ class OpenGlContext {
 
   ~OpenGlContext();
 
-  /** Makes this context current.
+  /** Makes this context current. For more information, see
+   https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glXMakeCurrent.xml
    @throw std::runtime_error if not successful.  */
   void MakeCurrent();
 

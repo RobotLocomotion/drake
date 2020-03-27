@@ -89,7 +89,8 @@ class OpenGlContext::Impl {
                                    GLX_CONTEXT_MINOR_VERSION_ARB, 3, None};
     // Since we have provided attributes in the call to glXChooseFBConfig, we
     // are guaranteed to have a valid result in fb_configs as we have already
-    // checked for null.
+    // checked for null. There may be more than one that matches the attributes
+    // but we just pick the first for now.
     DRAKE_DEMAND(fb_count > 0);
     // NOTE: The consts True and False come from gl/glx.h (indirectly), but
     // ultimately from X11/Xlib.h.
