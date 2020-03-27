@@ -90,7 +90,7 @@ namespace systems {
  * and `‖ε - ε*‖ = O(h³)`. See the notes in
  * VelocityImplicitEulerIntegrator<T>::get_error_estimate_order() for a
  * detailed derivation of the error estimate's truncation error.
- * 
+ *
  * In this implementation, VelocityImplicitEulerIntegrator<T> attempts the
  * large full-sized step before attempting the two small half-sized steps,
  * because the large step is more likely to fail to converge, and if it is
