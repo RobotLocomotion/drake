@@ -7,59 +7,9 @@ from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import AbstractValue, DiagramBuilder
-# TODO(eric.cousineau): Remove use of private methods!
-from pydrake.systems.perception import (
-    PointCloudConcatenation, _concatenate_point_clouds, _tile_colors)
+from pydrake.systems.perception import PointCloudConcatenation
 # DNM PR DRAFT, TODO(eric.cousineau): Update notation pending review of main
 # code.
-
-
-class TestConcatenatePointClouds(unittest.TestCase):
-    def setUp(self):
-        self.points_0 = np.array([[1.0], [2.0], [3.0]])
-        self.colors_0 = np.array([[0], [128], [255]])
-
-        self.points_1 = np.array([[4.0], [5.0], [6.0]])
-        self.colors_1 = np.array([[50], [100], [200]])
-
-        self.points_list = [self.points_0, self.points_1]
-        self.colors_list = [self.colors_0, self.colors_1]
-
-    def test_concatenation(self):
-        scene_points, scene_colors = _concatenate_point_clouds(
-            self.points_list, self.colors_list)
-
-        self.assertEqual(scene_points.shape, (3, len(self.points_list)))
-        self.assertEqual(scene_colors.shape, (3, len(self.colors_list)))
-        self.assertEqual(scene_points.shape, scene_colors.shape)
-
-        for i, value in enumerate(self.points_0.flatten()):
-            self.assertTrue(value in scene_points[i, :])
-
-        for i, value in enumerate(self.points_1.flatten()):
-            self.assertTrue(value in scene_points[i, :])
-
-        for i, value in enumerate(self.colors_0.flatten()):
-            self.assertTrue(value in scene_colors[i, :])
-
-        for i, value in enumerate(self.colors_0.flatten()):
-            self.assertTrue(value in scene_colors[i, :])
-
-
-class TestTileColors(unittest.TestCase):
-    def setUp(self):
-        self.red = [255, 0, 0]
-        self.blue = [0, 0, 255]
-
-    def test_one_dim(self):
-        tiled = _tile_colors(self.red, 1)
-        expected_tiled = np.array([[255], [0], [0]])
-        self.assertTrue(np.allclose(tiled, expected_tiled))
-
-    def test_three_dims(self):
-        tiled = _tile_colors(self.blue, 1)
-        expected_tiled = np.array([[0, 0, 0], [0, 0, 0], [255, 255, 255]])
-        self.assertTrue(np.allclose(tiled, expected_tiled))
 
 
 class TestTransformPoints(unittest.TestCase):
@@ -119,16 +69,18 @@ class TestPointCloudConcatenation(unittest.TestCase):
         self.context = diagram.GetMutableSubsystemContext(
             self.pc_concat, simulator.get_mutable_context())
 
-        self.pc_concat.GetInputPort("X_FCi_0").FixValue(self.context, X_WP_0)
-        self.pc_concat.GetInputPort("X_FCi_1").FixValue(self.context, X_WP_1)
+        self.pc_concat.GetInputPort("rigid_transform_0").FixValue(
+            self.context, X_WP_0)
+        self.pc_concat.GetInputPort("rigid_transform_1").FixValue(
+            self.context, X_WP_1)
 
     def test_no_rgb(self):
-        self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
+        self.pc_concat.GetInputPort("point_cloud_0").FixValue(
             self.context, AbstractValue.Make(self.pc_no_rgbs))
-        self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
+        self.pc_concat.GetInputPort("point_cloud_1").FixValue(
             self.context, AbstractValue.Make(self.pc_no_rgbs))
 
-        fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
+        fused_pc = self.pc_concat.GetOutputPort("point_cloud").Eval(
             self.context)
 
         self.assertEqual(fused_pc.size(), 2 * self.num_points)
@@ -147,12 +99,12 @@ class TestPointCloudConcatenation(unittest.TestCase):
             np.all(fused_pc.rgbs()[:, -1] == np.array([255, 255, 255])))
 
     def test_rgb(self):
-        self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
+        self.pc_concat.GetInputPort("point_cloud_0").FixValue(
             self.context, self.pc)
-        self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
+        self.pc_concat.GetInputPort("point_cloud_1").FixValue(
             self.context, self.pc)
 
-        fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
+        fused_pc = self.pc_concat.GetOutputPort("point_cloud").Eval(
             self.context)
 
         self.assertEqual(fused_pc.size(), 2 * self.num_points)
@@ -169,12 +121,12 @@ class TestPointCloudConcatenation(unittest.TestCase):
             np.all(fused_pc.rgbs()[:, -1] != np.array([255, 255, 255])))
 
     def test_mix_rgb(self):
-        self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
+        self.pc_concat.GetInputPort("point_cloud_0").FixValue(
             self.context, AbstractValue.Make(self.pc))
-        self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
+        self.pc_concat.GetInputPort("point_cloud_1").FixValue(
             self.context, AbstractValue.Make(self.pc_no_rgbs))
 
-        fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
+        fused_pc = self.pc_concat.GetOutputPort("point_cloud").Eval(
             self.context)
 
         self.assertEqual(fused_pc.size(), 2 * self.num_points)

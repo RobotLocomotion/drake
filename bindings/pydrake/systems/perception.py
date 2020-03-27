@@ -20,21 +20,6 @@ def _hstack_none(A, B):
         return np.hstack((A, B))
 
 
-def _concatenate_point_clouds(psᵢ_F_list, colorsᵢ_list):
-    count = len(psᵢ_F_list)
-    assert count > 0
-    assert len(colorsᵢ_list) == count
-    ps_F = None
-    colors = None
-    for psᵢ_F, colorsᵢ in zip(psᵢ_F_list, colorsᵢ_list):
-        ps_F = _hstack_none(ps_F, psᵢ_F)
-        colors = _hstack_none(colors, colorsᵢ)
-    valid_indices = np.logical_not(np.isnan(ps_F).any(axis=0))
-    ps_F = ps_F[:, valid_indices]
-    colors = colors[:, valid_indices]
-    return ps_F, colors
-
-
 class PointCloudConcatenation(LeafSystem):
 
     def __init__(self, id_list, default_rgb=[255., 255., 255.]):
@@ -89,8 +74,10 @@ class PointCloudConcatenation(LeafSystem):
                                        self.DoCalcOutput)
 
     def _align_point_clouds(self, context):
-        psᵢ_F_list = []  # nested list
-        colorsᵢ_list = []  # nested list
+        # These will be aggregated 2D arrays.
+        ps_F = None
+        colors = None
+
         for i in self._id_list:
             point_cloudᵢ_Cᵢ = self._point_cloud_ports[i].Eval(context)
             X_FCᵢ = self._transform_ports[i].Eval(context)
@@ -102,13 +89,20 @@ class PointCloudConcatenation(LeafSystem):
             else:
                 colorsᵢ = _tile_colors(
                     self._default_rgb, point_cloudᵢ_Cᵢ.size())
-            psᵢ_F_list.append(psᵢ_F)
-            colorsᵢ_list.append(colorsᵢ)
-        ps_F, colors = _concatenate_point_clouds(psᵢ_F_list, colorsᵢ_list)
-        return ps_F, colors  # flattened lists
+
+            # Aggregate.
+            ps_F = _hstack_none(ps_F, psᵢ_F)
+            colors = _hstack_none(colors, colorsᵢ)
+
+        # Trim NaN values.
+        valid_indices = np.logical_not(np.isnan(ps_F).any(axis=0))
+        ps_F = ps_F[:, valid_indices]
+        colors = colors[:, valid_indices]
+        return ps_F, colors
 
     def DoCalcOutput(self, context, output):
         ps_F, colors = self._align_point_clouds(context)
+        # Put points and colors into final point cloud.
         point_cloud_F = output.get_mutable_value()
         point_cloud_F.resize(ps_F.shape[1])
         point_cloud_F.mutable_xyzs()[:] = ps_F
