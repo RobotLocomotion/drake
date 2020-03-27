@@ -14,6 +14,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -488,6 +489,27 @@ std::ostream& operator<<(
   }
   return os;
 }
+
+/** Returns a Polynomial representing the symbolic expression `e`.
+ * Note that the ID of a variable is preserved in this translation.
+ *
+ * @throw std::runtime_error if `e` is not polynomial-convertible.
+ * @pre e.is_polynomial() is true.
+ */
+Polynomial<double> ToPolynomial(const drake::symbolic::Expression& e);
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace symbolic {
+namespace internal {
+// Helper to implement (deprecated) Expression::ToPolynomial.
+// TODO(soonho-tri): Remove this when we remove Expression::ToPolynomial.
+inline drake::Polynomial<double> ToPolynomial(
+    const drake::symbolic::Expression& e, const ToPolynomialHelperTag&) {
+  return drake::ToPolynomial(e);
+}
+}  // namespace internal
+}  // namespace symbolic
+#endif
 
 typedef Polynomial<double> Polynomiald;
 
