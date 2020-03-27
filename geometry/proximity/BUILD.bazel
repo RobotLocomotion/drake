@@ -305,13 +305,16 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mesh_half_space_intersection",
+    srcs = ["mesh_half_space_intersection.cc"],
     hdrs = [
         "mesh_half_space_intersection.h",
     ],
     deps = [
-        ":mesh_intersection",
+        ":contact_surface_utility",
+        ":posed_half_space",
         ":surface_mesh",
         "//common",
+        "//geometry:utilities",
     ],
 )
 
@@ -651,7 +654,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mesh_half_space_intersection_test",
     deps = [
+        ":contact_surface_utility",
         ":mesh_half_space_intersection",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
