@@ -10,7 +10,6 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 
 RenderEngineGl::RenderEngineGl() {
-  gl::OpenGlContext::Dummy();
 }
 
 void RenderEngineGl::UpdateViewpoint(const RigidTransformd&) {}

@@ -211,6 +211,17 @@ cc_library(
     ],
 )
 
+# Depend on X11 iff on Ubuntu and not MacOS.
+cc_library(
+    name = "x11_deps",
+    deps = select({
+        "//conditions:default": [
+            "@x11",
+        ],
+        "//tools/cc_toolchain:apple": [],
+    }),
+)
+
 # Provide a cc_library target that provides libdrake.so, its headers, its
 # header-only dependencies, and its required *.so's.  This is aliased by
 # `//:drake_shared_library`, which is what downstream users will consume if
@@ -246,6 +257,7 @@ cc_library(
         ":mosek_deps",
         ":nlopt_deps",
         ":vtk_deps",
+        ":x11_deps",
         "//common:drake_marker_shared_library",
         "@ignition_math",
         "@lcm",
