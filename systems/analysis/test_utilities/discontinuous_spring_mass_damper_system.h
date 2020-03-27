@@ -74,6 +74,10 @@ class DiscontinuousSpringMassDamperSystem final
 
     // Second element of the derivative is spring acceleration.
     (*derivatives)[1] = force / this->get_mass();
+
+    // Third element of the derivative is omitted on purpose to test for
+    // unexpected integrator behavior. For example, an AutoDiff Jacobian
+    // would derive a size-zero derivative from this third element.
   }
 
  private:
