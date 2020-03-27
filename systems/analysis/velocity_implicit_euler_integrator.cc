@@ -5,8 +5,10 @@
 #include <stdexcept>
 #include <utility>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -122,8 +124,7 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& t,
       this->get_jacobian_computation_scheme() ==
       ImplicitIntegrator<T>::JacobianComputationScheme::kAutomatic) {
     // Compute the Jacobian using automatic differentiation.
-    throw std::logic_error("AutoDiff Jacobians are not supported yet for"
-        " VelocityImplicitEulerIntegrator.");
+    this->ComputeAutoDiffVelocityJacobian(t, h, y, qk, qn, Jy);
   } else {
     throw new std::logic_error("Invalid Jacobian computation scheme.");
   }
@@ -132,6 +133,58 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& t,
   // evaluations used in computing Jacobians.
   this->increment_jacobian_computation_derivative_evaluations(
       this->get_num_derivative_evaluations() - existing_ODE_evals);
+}
+
+template <class T>
+void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
+    const T& t, const T& h, const VectorX<T>& y, const VectorX<T>& qk,
+    const VectorX<T>& qn, MatrixX<T>* Jy) {
+  DRAKE_LOGGER_DEBUG(
+      "VelocityImplicitEulerIntegrator ComputeAutoDiffVelocityJacobian "
+      "{}-Jacobian t={}", y.size(), t);
+  DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
+                     y.transpose());
+
+  // Create an AutoDiff version of the y vector.
+  VectorX<AutoDiffXd> a_y = y;
+
+  // Set the size of the derivatives and prepare for Jacobian calculation.
+  const int n_y_dim = y.size();
+  for (int i = 0; i < n_y_dim; ++i) {
+    a_y[i].derivatives() = VectorX<T>::Unit(n_y_dim, i);
+  }
+
+  // Get the system and the context in AutoDiffable format. Inputs must also
+  // be copied to the context used by the AutoDiff'd system (which is
+  // accomplished using FixInputPortsFrom()).
+  // TODO(edrumwri): Investigate means for moving as many of the operations
+  //                 below offline (or with lower frequency than once-per-
+  //                 Jacobian calculation) as is possible. These operations
+  //                 are likely to be expensive.
+  const System<T>& system = this->get_system();
+  const auto adiff_system = system.ToAutoDiffXd();
+  std::unique_ptr<Context<AutoDiffXd>> adiff_context = adiff_system->
+      AllocateContext();
+  const Context<T>& context = *(this->get_mutable_context());
+  adiff_context->SetTimeStateAndParametersFrom(context);
+  adiff_system->FixInputPortsFrom(system, context, adiff_context.get());
+  BasicVector<AutoDiffXd> qdot(qn.size());
+
+  // Evaluate the derivatives at that state.
+  VectorX<AutoDiffXd> result = ComputeLOfY(t, a_y, qk, qn, h, &qdot,
+      *adiff_system, adiff_context.get());
+
+  // Sometimes the system's derivatives l(y) do not depend on its velocity or
+  // miscellaneous states. In this case, make sure that the Jacobian isn't
+  // a ny ✕ 0 matrix (we still need to factorize a square matrix). To do this,
+  // we can just initialize the derivative of the first element if it is empty.
+  if (result.size() > 0 && result[0].derivatives().size() == 0) {
+    result[0].derivatives() = VectorX<T>::Zero(n_y_dim);
+  }
+
+  *Jy = math::autoDiffToGradientMatrix(result);
+  DRAKE_DEMAND(Jy->rows() == n_y_dim);
+  DRAKE_DEMAND(Jy->cols() == n_y_dim);
 }
 
 template <class T>
@@ -242,11 +295,13 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualR(
 
 
 template <class T>
-VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(const T& t,
-    const VectorX<T>& y, const VectorX<T>& qk, const VectorX<T>& qn,
-    const T& h, BasicVector<T>* qdot) {
-  DRAKE_DEMAND(qdot != nullptr && qdot->size() == qn.size());
-  Context<T>* context = this->get_mutable_context();
+template <typename U>
+VectorX<U> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(
+    const T& t, const VectorX<U>& y, const VectorX<T>& qk,
+    const VectorX<T>& qn, const T& h, BasicVector<U>* qdot,
+    const System<U>& system, Context<U>* context) {
+  DRAKE_DEMAND(qdot != nullptr);
+  DRAKE_DEMAND(context != nullptr);
   int nq = qn.size();
   int ny = y.size();
 
@@ -255,15 +310,15 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(const T& t,
   // allocations, like in the VectorX<T> constructions of x and q and the return
   // statement, and (2) reduce unnecessary cache invalidations since
   // MapVelocityToQDot() doesn't set any caches.
-  VectorX<T> x(nq+ny);
+  VectorX<U> x(nq+ny);
   x.head(nq) = qk;
   x.tail(ny) = y;
   context->SetTimeAndContinuousState(t, x);
 
   // Compute q = qⁿ + h N(qₖ) v.
-  this->get_system().MapVelocityToQDot(*context,
+  system.MapVelocityToQDot(*context,
       context->get_continuous_state().get_generalized_velocity(), &*qdot);
-  const VectorX<T> q = qn + h * qdot->get_value();
+  const VectorX<U> q = qn + h * qdot->get_value();
 
   // Evaluate l = f_y(t, q, v, z).
   // TODO(antequ): Right now this invalidates the entire cache that depends on
@@ -272,7 +327,8 @@ VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(const T& t,
   context->get_mutable_continuous_state()
       .get_mutable_generalized_position()
       .SetFromVector(q);
-  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
+  const ContinuousState<U>& xc_deriv =
+      this->EvalTimeDerivatives(system, *context);
   return xc_deriv.CopyToVector().tail(ny);
 }
 
