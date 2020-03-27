@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/implicit_integrator.h"
@@ -424,6 +425,30 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                             const VectorX<T>& qk, const VectorX<T>& qn,
                             MatrixX<T>* Jy);
 
+  // Uses automatic differentiation to compute the Jacobian, Jₗ(y), of the
+  // function l(y), used in this integrator's residual computation, with
+  // respect to y, where y = (v,z). This Jacobian is then defined as:
+  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
+  //     Jₗ(y) = ∂l(y)/∂y                       (8)
+  // In this method, we compute the Jacobian Jₗ(y) using automatic
+  // differentiation.
+  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
+  // @param h is the timestep size parameter, h, used in the definition of
+  //        l(y).
+  // @param y is the generalized velocity and miscellaneous states around which
+  //        to evaluate Jₗ(y).
+  // @param qk is qₖ, the current-iteration position used in the definition of
+  //        l(y).
+  // @param qn refers to qⁿ, the initial position used in l(y).
+  // @param [out] Jy is the Jacobian matrix, Jₗ(y).
+  // @note The context's time will be set to t, and its continuous state will
+  //       be indeterminate on return.
+  void ComputeAutoDiffVelocityJacobian(const T& t, const T& h,
+                                       const VectorX<T>& y,
+                                       const VectorX<T>& qk,
+                                       const VectorX<T>& qn,
+                                       MatrixX<T>* Jy);
+
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
   // ImplicitIntegrator<T>::MaybeFreshenMatrices(). We implement our own version
@@ -550,7 +575,42 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post The context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
   VectorX<T> ComputeLOfY(const T& t, const VectorX<T>& y, const VectorX<T>& qk,
                          const VectorX<T>& qn, const T& h,
-                         BasicVector<T>* qdot);
+                         BasicVector<T>* qdot) {
+    return this->ComputeLOfY(t, y, qk, qn, h, qdot, this->get_system(),
+        this->get_mutable_context());
+  }
+
+  // This helper method evaluates l(y), defined as the following:
+  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
+  // with tⁿ⁺¹, y = (v, z), qₖ, qⁿ, yⁿ, and h passed in, for a system that can
+  // use scalar type U, which is either a double or an AutoDiffXd scalar type.
+  // If type U is different from T, then y, qdot, and context must also use
+  // the U scalar type. This version of the method exists to allow the
+  // VelocityImplicitEulerIntegrator to include AutoDiff'd systems in l(y)
+  // evaluations, which is necessary when computing an AutoDiff'd velocity
+  // Jacobian; in particular, this version is explicitly called with type
+  // U=AutoDiffXd in ComputeAutoDiffVelocityJacobian().
+  // @param t refers to tⁿ⁺¹, the time at which to compute the residual R(y).
+  // @param y is the generalized velocity and miscellaneous states around which
+  //        to evaluate l(y); it uses the scalar type U.
+  // @param qk is qₖ, the current-iteration position used in the definition of
+  //        l(y).
+  // @param qn is qⁿ, the generalized position at the beginning of the step.
+  // @param h is the step size.
+  // @param [in, out] qdot is a temporary BasicVector<U> of the same size as qⁿ
+  //        allocated by the caller so that this method avoids unnecessary heap
+  //        allocations. Its value is indeterminate upon return.
+  // @param [in] system defines f_y() so that we can evaluate f_y() with the
+  //        U scalar type.
+  // @param [in, out] context to pass in the time and continuous states when
+  //        evaluating f_y(); its scalar type must also be U.
+  // @param [out] result is set to l(y).
+  // @post context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
+  template <typename U>
+  VectorX<U> ComputeLOfY(const T& t, const VectorX<U>& y, const VectorX<T>& qk,
+                         const VectorX<T>& qn, const T& h,
+                         BasicVector<U>* qdot, const System<U>& system,
+                         Context<U>* context);
 
   // The last computed iteration matrix and factorization.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_vie_;
@@ -581,6 +641,21 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_half_vie_jacobian_function_evaluations_{0};
   int64_t num_half_vie_nr_iterations_{0};
 };
+
+// We do not support computing the Velocity Jacobian matrix using automatic
+// differentiation when the scalar is already an AutoDiff type.
+// Note: must be declared inline because it's specialized and located in the
+// header file (to avoid multiple definition errors).
+template <>
+inline void VelocityImplicitEulerIntegrator<AutoDiffXd>::
+    ComputeAutoDiffVelocityJacobian(const AutoDiffXd&, const AutoDiffXd&,
+                                    const VectorX<AutoDiffXd>&,
+                                    const VectorX<AutoDiffXd>&,
+                                    const VectorX<AutoDiffXd>&,
+                                    MatrixX<AutoDiffXd>*) {
+  throw std::runtime_error("AutoDiff'd Jacobian not supported for "
+                           "AutoDiff'd VelocityImplicitEulerIntegrator");
+}
 
 }  // namespace systems
 }  // namespace drake
