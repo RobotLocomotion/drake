@@ -11,18 +11,18 @@
 
 namespace drake {
 namespace math {
-/** Given a set of non-descending breakpoints t₀ ≤ t₁ ≤ ⋅⋅⋅ ≤ tₘ, a B-spline 
-basis of order k is a set of n + 1 (where n = m - k) piecewise polynomials of 
-degree k - 1 defined over those breakpoints. The elements of this set are 
-called "B-splines". The vector T = (t₀, t₁, ..., tₘ)' is referred to as 
+/** Given a set of non-descending breakpoints t₀ ≤ t₁ ≤ ⋅⋅⋅ ≤ tₘ, a B-spline
+basis of order k is a set of n + 1 (where n = m - k) piecewise polynomials of
+degree k - 1 defined over those breakpoints. The elements of this set are
+called "B-splines". The vector T = (t₀, t₁, ..., tₘ)' is referred to as
 the "knot vector" of the basis and its elements are refered to as "knots".
 
-A B-spline curve using a B-spline basis B, is a parametric curve mapping 
+A B-spline curve using a B-spline basis B, is a parametric curve mapping
 parameter values in [tₖ₋₁, tₙ] to a vector space V. For t ∈ [tₖ₋₁, tₙ] the value
 of the curve is given by the linear combination of n control points, pᵢ ∈ V,
 with the elements of B evaluated at t.
 
-For more information on B-splines and their uses, see (for example) 
+For more information on B-splines and their uses, see (for example)
 Patrikalakis et al. [1].
 
 [1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node15.html */
@@ -61,7 +61,9 @@ class BsplineBasis final {
 
   /** The maximum allowable parameter value for B-spline curves using this
   basis*/
-  const T& final_parameter_value() const { return knots()[num_basis_functions()]; }
+  const T& final_parameter_value() const {
+    return knots()[num_basis_functions()];
+  }
 
   /** Returns the indices of the basis functions which are non-zero for some
   parameter value in `parameter_interval`. */
@@ -73,8 +75,8 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
-  /** If `parameter_value` ∈ [t[0], t[m]), return the knot index 𝑙such that 
-  t[𝑙] ≤ parameter_value < t[𝑙 + 1]. If `parameter_value` == t[m] return m - 1. 
+  /** If `parameter_value` ∈ [t[0], t[m]), return the knot index 𝑙such that
+  t[𝑙] ≤ parameter_value < t[𝑙 + 1]. If `parameter_value` == t[m] return m - 1.
   @pre t[0] ≤ parameter_value ≤ t[m] */
   int FindContainingInterval(const T& parameter_value) const;
 
@@ -103,7 +105,8 @@ class BsplineBasis final {
 
     // NOTE: The implementation of this method is included in the header so that
     // it can be used with custom values of T_control_point.
-    DRAKE_DEMAND(static_cast<int>(control_points.size()) == num_basis_functions());
+    DRAKE_DEMAND(static_cast<int>(control_points.size()) ==
+                 num_basis_functions());
 
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
@@ -136,7 +139,7 @@ class BsplineBasis final {
     return p.front();
   }
 
-  /** Returns the value of the `index`-th basis function evaluated at 
+  /** Returns the value of the `index`-th basis function evaluated at
   `parameter_value`. */
   T BasisFunctionValue(int index, T parameter_value) const;
 

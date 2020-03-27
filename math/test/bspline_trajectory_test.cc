@@ -166,13 +166,15 @@ GTEST_TEST(BsplineTrajectoryTests, CopyBlockTest) {
     expected_control_points.push_back(control_points.back().block(0, 0, 2, 3));
   }
   for (const auto& knot_vector_type :
-    {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
-    BsplineTrajectory<double> trajectory = BsplineTrajectory<double>{
-      BsplineBasis<double>{order, num_control_points, knot_vector_type},
-      control_points}.CopyBlock(0, 0, 2, 3);
+       {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
+    BsplineTrajectory<double> trajectory =
+        BsplineTrajectory<double>{
+            BsplineBasis<double>{order, num_control_points, knot_vector_type},
+            control_points}
+            .CopyBlock(0, 0, 2, 3);
     BsplineTrajectory<double> expected_trajectory = BsplineTrajectory<double>{
-      BsplineBasis<double>{order, num_control_points, knot_vector_type},
-      expected_control_points};
+        BsplineBasis<double>{order, num_control_points, knot_vector_type},
+        expected_control_points};
     EXPECT_EQ(trajectory, expected_trajectory);
   }
 }
@@ -194,14 +196,14 @@ GTEST_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
             .finished());
   }
   for (const auto& knot_vector_type :
-    {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
+       {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
     BsplineTrajectory<double> original_trajectory{
         BsplineBasis<double>{order, num_control_points, knot_vector_type},
         control_points};
     // Create a vector of new knots to add. Note that it contains a knot with a
     // multiplicity of 2.
     std::vector<double> new_knots{original_trajectory.start_time(), M_PI_4,
-          0.25, 0.25, original_trajectory.end_time()};
+                                  0.25, 0.25, original_trajectory.end_time()};
     // Add the new knots.
     BsplineTrajectory<double> trajectory_with_new_knots = original_trajectory;
     trajectory_with_new_knots.InsertKnots({new_knots});
@@ -232,9 +234,9 @@ GTEST_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
     // and the trajectory with additional knots for `num_times` sampled values
     // of `t` between start_time() and end_time().
     const int num_times = 100;
-    VectorX<double> t = VectorX<double>::LinSpaced(
-        num_times, original_trajectory.start_time(),
-        original_trajectory.end_time());
+    VectorX<double> t =
+        VectorX<double>::LinSpaced(num_times, original_trajectory.start_time(),
+                                   original_trajectory.end_time());
     const double tolerance = 2 * std::numeric_limits<double>::epsilon();
     if (FLAGS_visualize) {
       CallPython("figure");
