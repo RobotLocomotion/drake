@@ -232,11 +232,15 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   Eigen::VectorXd begin_ddt = spline_ddt->value(breaks(0));
   Eigen::VectorXd end_ddt = spline_ddt->value(breaks(breaks.size() - 1));
 
-  Eigen::VectorXd dt_diff = end_dt - begin_dt;
-  Eigen::VectorXd ddt_diff = end_ddt - begin_ddt;
+  EXPECT_TRUE(CompareMatrices(end_dt, begin_dt, 1e-14));
+  EXPECT_TRUE(CompareMatrices(end_ddt, begin_ddt, 1e-14));
 
-  EXPECT_TRUE(dt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
-  EXPECT_TRUE(ddt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
+  // Test that evaluating the derivative directly gives the same results.
+  const double t = 1.234;
+  EXPECT_TRUE(CompareMatrices(periodic_spline.EvalDerivative(t, 1),
+                              spline_dt->value(t), 1e-14));
+  EXPECT_TRUE(CompareMatrices(periodic_spline.EvalDerivative(t, 2),
+                              spline_ddt->value(t), 1e-14));
 }
 
 // Test various exception cases.  We want to check that these throw rather

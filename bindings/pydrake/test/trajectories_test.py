@@ -39,6 +39,8 @@ class TestTrajectories(unittest.TestCase):
         pp_d = pp.derivative(derivative_order=1)
         np.testing.assert_equal(np.array([[1.], [2.]]), pp.value(.5))
         np.testing.assert_equal(pp_d.value(.5), np.array([[0.], [0.]]))
+        np.testing.assert_equal(pp.EvalDerivative(t=.5, derivative_order=1),
+                                np.array([[0.], [0.]]))
         p = pp.getPolynomial(segment_index=0, row=1, col=0)
         np.testing.assert_equal(p.GetCoefficients(), np.array([2]))
         self.assertEqual(pp.getSegmentPolynomialDegree(segment_index=1), 0)
