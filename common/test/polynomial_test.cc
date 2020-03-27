@@ -1,5 +1,6 @@
 #include "drake/common/polynomial.h"
 
+#include <cmath>
 #include <cstddef>
 #include <map>
 #include <sstream>
@@ -18,6 +19,8 @@ using std::uniform_real_distribution;
 
 namespace drake {
 namespace {
+
+using std::pow;
 
 template <typename T>
 void testIntegralAndDerivative() {
@@ -407,6 +410,17 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
       std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
             (5 * x * x * x) + 1);
 }
+
+// Checks deprecated aliases.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+// TODO(soonho-tri): Remove the following checks when we remove ::Polynomial.
+static_assert(std::is_same<::Polynomiald, drake::Polynomiald>::value,
+              "::Polynomiald should be an alias of drake::Polynomiald.");
+static_assert(std::is_same<::VectorXPoly, drake::VectorXPoly>::value,
+              "::VectorXPoly should be an alias of drake::VectorXPoly.");
+#pragma GCC diagnostic pop
 
 }  // anonymous namespace
 }  // namespace drake

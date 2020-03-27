@@ -1,11 +1,15 @@
 #include "drake/multibody/optimization/sliding_friction_complementarity_constraint.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
+
+using std::pow;
+
 namespace multibody {
 const double kInf = std::numeric_limits<double>::infinity();
 namespace internal {

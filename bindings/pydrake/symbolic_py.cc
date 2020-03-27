@@ -521,6 +521,8 @@ PYBIND11_MODULE(symbolic, m) {
           },
           doc.MonomialBasis.doc_2args);
 
+  using symbolic::Polynomial;
+
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)
       .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
