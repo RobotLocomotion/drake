@@ -82,14 +82,14 @@ TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
 
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
-        this->integrator_->get_dense_output()->Evaluate(
+        this->integrator_->get_dense_output()->value(
             this->context_->get_time()),
         this->plant_->GetPositionsAndVelocities(*this->context_),
         this->integrator_->get_accuracy_in_use(), MatrixCompareType::relative));
   }
 
   // Stop undergoing dense integration.
-  std::unique_ptr<systems::DenseOutput<double>> dense_output =
+  std::unique_ptr<trajectories::PiecewisePolynomial<double>> dense_output =
       this->integrator_->StopDenseIntegration();
   EXPECT_FALSE(this->integrator_->get_dense_output());
 
