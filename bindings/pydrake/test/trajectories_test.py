@@ -59,11 +59,13 @@ class TestTrajectories(unittest.TestCase):
         pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[2.], [3.]]), pp.value(.5))
 
-    def test_pchip(self):
+    def test_hermite(self):
         t = [0., 1., 2.]
         x = np.array([[0, 1, 1]])
         pp = PiecewisePolynomial.CubicShapePreserving(
             breaks=t, samples=x, zero_end_point_derivatives=False)
+        pp.AppendCubicHermiteSegment(time=3., sample=[2], sample_dot=[2])
+        pp.RemoveFinalSegment()
 
     def test_cubic(self):
         t = [0., 1., 2.]
