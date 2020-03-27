@@ -20,33 +20,33 @@ def _hstack_none(A, B):
         return np.hstack((A, B))
 
 
-def _concatenate_point_clouds(p_FSilist_list, color_Silist_list):
-    n = len(p_FSilist_list)
-    assert n > 0
-    assert len(color_Silist_list) == n
-    p_FSlist = None
-    color_Slist = None
-    for p_FSilist, color_Silist in zip(p_FSilist_list, color_Silist_list):
-        p_FSlist = _hstack_none(p_FSlist, p_FSilist)
-        color_Slist = _hstack_none(color_Slist, color_Silist)
-    valid_indices = np.logical_not(np.isnan(p_FSlist).any(axis=0))
-    p_FSlist = p_FSlist[:, valid_indices]
-    color_Slist = color_Slist[:, valid_indices]
-    return p_FSlist, color_Slist
+def _concatenate_point_clouds(psᵢ_F_list, colorsᵢ_list):
+    count = len(psᵢ_F_list)
+    assert count > 0
+    assert len(colorsᵢ_list) == count
+    ps_F = None
+    colors = None
+    for psᵢ_F, colorsᵢ in zip(psᵢ_F_list, colorsᵢ_list):
+        ps_F = _hstack_none(ps_F, psᵢ_F)
+        colors = _hstack_none(colors, colorsᵢ)
+    valid_indices = np.logical_not(np.isnan(ps_F).any(axis=0))
+    ps_F = ps_F[:, valid_indices]
+    colors = colors[:, valid_indices]
+    return ps_F, colors
 
 
 class PointCloudConcatenation(LeafSystem):
 
     def __init__(self, id_list, default_rgb=[255., 255., 255.]):
         """
-        A system that takes in N point clouds, each a list of points Si in
-        frame Ci denoted as p_CiSilist, and N RigidTransforms representing the
-        pose of frame Ci relative to F, where F is the common frame to
-        transform clouds. The system returns one point cloud combining all of
-        the transformed point clouds as a list of points S (containing the
-        points of S0, ..., SN) in frame F. Each point cloud must have XYZs.
-        RGBs are optional. If absent, those points will be the provided default
-        color.
+        A system that takes in a set of point clouds {point_cloudₒ_Cₒ,
+        point_cloud₁_B₁, ...} measured and expressed in frames {Cₒ, C₁, ...},
+        respectively, and a set of transforms {X_FCₒ, X_FC₁, ...}, where F is a
+        single common frame, and outputs point_cloud_F which is the aggregation
+        of {point_cloudₒ_F, point_cloud₁_F, ...}. The output point cloud will
+        be guaranteed to have per-point RGB colors: each output point's color
+        will either be the corresponding input point's color or the default
+        color (if none is provided).
 
         @param id_list A list containing the string IDs of all of the point
             clouds. This is often the serial number of the camera they came
@@ -57,15 +57,17 @@ class PointCloudConcatenation(LeafSystem):
             255. The default is white.
 
         @system{
-          @input_port{point_cloud_CiSi_id0}
-          @input_port{X_FCi_id0}
+          @input_port{point_cloud_{id₀}}
+          @input_port{rigid_transform_{id₀}}
           .
           .
           .
-          @input_port{point_cloud_CiSi_idN}
-          @input_port{X_FCi_idN}
-          @output_port{point_cloud_FS}
+          @input_port{point_cloud_{idₙ}}
+          @input_port{rigid_transform_{idₙ}}
+          @output_port{point_cloud}
         }
+
+        Note that {idᵢ} is replaced with the string value of id_list[i].
         """
         LeafSystem.__init__(self)
         self._point_cloud_ports = {}
@@ -75,38 +77,39 @@ class PointCloudConcatenation(LeafSystem):
         output_fields = Fields(BaseField.kXYZs | BaseField.kRGBs)
         for i in self._id_list:
             self._point_cloud_ports[i] = self.DeclareAbstractInputPort(
-                "point_cloud_CiSi_{}".format(i),
+                f"point_cloud_{i}",
                 AbstractValue.Make(PointCloud(fields=output_fields)))
 
             self._transform_ports[i] = self.DeclareAbstractInputPort(
-                "X_FCi_{}".format(i),
+                f"rigid_transform_{i}",
                 AbstractValue.Make(RigidTransform.Identity()))
-        self.DeclareAbstractOutputPort("point_cloud_FS",
+        self.DeclareAbstractOutputPort("point_cloud",
                                        lambda: AbstractValue.Make(
                                            PointCloud(fields=output_fields)),
                                        self.DoCalcOutput)
 
     def _align_point_clouds(self, context):
-        p_FSilist_list = []
-        color_Silist_list = []
+        psᵢ_F_list = []  # nested list
+        colorsᵢ_list = []  # nested list
         for i in self._id_list:
-            point_cloud_CiSi = self._point_cloud_ports[i].Eval(context)
-            X_FCi = self._transform_ports[i].Eval(context)
-            p_CiSilist = point_cloud_CiSi.xyzs()
-            p_FSilist = X_FCi.multiply(p_CiSilist)
+            point_cloudᵢ_Cᵢ = self._point_cloud_ports[i].Eval(context)
+            X_FCᵢ = self._transform_ports[i].Eval(context)
+            psᵢ_Cᵢ = point_cloudᵢ_Cᵢ.xyzs()
+            psᵢ_F = X_FCᵢ.multiply(psᵢ_Cᵢ)
 
-            if point_cloud_CiSi.has_rgbs():
-                color_Silist = point_cloud_CiSi.rgbs()
+            if point_cloudᵢ_Cᵢ.has_rgbs():
+                colorsᵢ = point_cloudᵢ_Cᵢ.rgbs()
             else:
-                color_Silist = _tile_colors(
-                    self._default_rgb, point_cloud_CiSi.size())
-            p_FSilist_list.append(p_FSilist)
-            color_Silist_list.append(color_Silist)
-        return _concatenate_point_clouds(p_FSilist_list, color_Silist_list)
+                colorsᵢ = _tile_colors(
+                    self._default_rgb, point_cloudᵢ_Cᵢ.size())
+            psᵢ_F_list.append(psᵢ_F)
+            colorsᵢ_list.append(colorsᵢ)
+        ps_F, colors = _concatenate_point_clouds(psᵢ_F_list, colorsᵢ_list)
+        return ps_F, colors  # flattened lists
 
     def DoCalcOutput(self, context, output):
-        p_FSlist, color_Slist = self._align_point_clouds(context)
-        point_cloud_FS = output.get_mutable_value()
-        point_cloud_FS.resize(p_FSlist.shape[1])
-        point_cloud_FS.mutable_xyzs()[:] = p_FSlist
-        point_cloud_FS.mutable_rgbs()[:] = color_Slist
+        ps_F, colors = self._align_point_clouds(context)
+        point_cloud_F = output.get_mutable_value()
+        point_cloud_F.resize(ps_F.shape[1])
+        point_cloud_F.mutable_xyzs()[:] = ps_F
+        point_cloud_F.mutable_rgbs()[:] = colors
