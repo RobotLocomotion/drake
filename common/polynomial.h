@@ -172,28 +172,44 @@ class Polynomial {
    * Evaluates a univariate Polynomial at the given x.
    * @throws std::runtime_error if this Polynomial is not univariate.
    *
-   * x may be of any type supporting the ** and + operations (which can
-   * be different from both CoefficientsType and RealScalar)
+   * @p x may be of any type supporting the ** and + operations (which can be
+   * different from both CoefficientsType and RealScalar).
+   *
+   * This method may also be used for efficient evaluation of the derivatives of
+   * the univariate polynomial, evaluated at @p x.  @p derivative_order = 0 (the
+   * default) returns the polynomial value without differentiation.  @p
+   * derivative_order = 1 returns the first derivative, etc.
+   *
+   * @pre derivative_order must be non-negative.
    */
   template <typename U>
   typename Product<T, U>::type EvaluateUnivariate(
-      const U& x) const {
+      const U& x, int derivative_order = 0) const {
     typedef typename Product<T, U>::type ProductType;
 
     if (!is_univariate_)
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
+
+    DRAKE_DEMAND(derivative_order >= 0);
     ProductType value = 0;
     using std::pow;
     for (typename std::vector<Monomial>::const_iterator iter =
              monomials_.begin();
          iter != monomials_.end(); iter++) {
-      if (iter->terms.empty())
-        value += iter->coefficient;
-      else
-        value += iter->coefficient *
-                  pow(static_cast<ProductType>(x),
-                      static_cast<PowerType>(iter->terms[0].power));
+      PowerType degree = iter->terms.empty() ? 0 : iter->terms[0].power;
+      if (degree < derivative_order) continue;
+      T coefficient = iter->coefficient;
+      for (int i = 0; i < derivative_order; i++) {
+        coefficient *= degree--;
+      }
+      if (degree == 0) {
+        value += coefficient;
+      } else if (degree == 1) {
+        value += coefficient * x;
+      } else {  // degree > 1.
+        value += coefficient * pow(static_cast<ProductType>(x), degree);
+      }
     }
     return value;
   }

@@ -156,6 +156,9 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
       .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
           doc.PiecewisePolynomial.value.doc)
+      .def("EvalDerivative", &PiecewisePolynomial<T>::EvalDerivative,
+          py::arg("t"), py::arg("derivative_order") = 1,
+          doc.PiecewisePolynomial.EvalDerivative.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
           py::arg("derivative_order") = 1,
           doc.PiecewisePolynomial.derivative.doc)

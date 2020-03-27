@@ -565,7 +565,20 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *          a polynomial defined over [0, 1].
    * @warning See warning in @ref polynomial_construction_warning.
    */
-  MatrixX<T> value(double t) const override;
+  MatrixX<T> value(double t) const override {
+      const int derivative_order = 0;
+      return EvalDerivative(t, derivative_order);
+  }
+
+  /**
+   * Evaluates the %PiecwisePolynomial derivative at the given time @p t.
+   * Returns the nth derivative, where `n` is the value of @p derivative_order.
+   *
+   * @warning See value() for details on what happens if t < start_time() or t >
+   * end_time().
+   * @pre derivative_order must be non-negative.
+   */
+  MatrixX<T> EvalDerivative(double t, int derivative_order = 1) const;
 
   /**
    * Gets the matrix of Polynomials corresponding to the given segment index.
@@ -735,7 +748,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
  private:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
-                                      Eigen::Index row, Eigen::Index col) const;
+                                      Eigen::Index row, Eigen::Index col,
+                                      int derivative_order = 0) const;
 
   // a PolynomialMatrix for each piece (segment).
   std::vector<PolynomialMatrix> polynomials_;

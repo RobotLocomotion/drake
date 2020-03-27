@@ -111,16 +111,17 @@ double PiecewisePolynomial<T>::scalarValue(double t,
 }
 
 template <typename T>
-MatrixX<T>
-PiecewisePolynomial<T>::value(double t) const {
-  int segment_index = this->get_segment_index(t);
+MatrixX<T> PiecewisePolynomial<T>::EvalDerivative(double t,
+                                                  int derivative_order) const {
+  const int segment_index = this->get_segment_index(t);
   t = std::min(std::max(t, this->start_time()), this->end_time());
   Eigen::Matrix<double, PolynomialMatrix::RowsAtCompileTime,
                 PolynomialMatrix::ColsAtCompileTime>
       ret(rows(), cols());
   for (Eigen::Index row = 0; row < rows(); row++) {
     for (Eigen::Index col = 0; col < cols(); col++) {
-      ret(row, col) = segmentValueAtGlobalAbscissa(segment_index, t, row, col);
+      ret(row, col) = segmentValueAtGlobalAbscissa(segment_index, t, row, col,
+                                                   derivative_order);
     }
   }
   return ret;
@@ -330,9 +331,10 @@ PiecewisePolynomial<T>::slice(int start_segment_index, int num_segments) const {
 
 template <typename T>
 double PiecewisePolynomial<T>::segmentValueAtGlobalAbscissa(
-    int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
+    int segment_index, double t, Eigen::Index row, Eigen::Index col,
+    int derivative_order) const {
   return polynomials_[segment_index](row, col).EvaluateUnivariate(
-      t - this->start_time(segment_index));
+      t - this->start_time(segment_index), derivative_order);
 }
 
 template <typename T>

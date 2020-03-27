@@ -28,7 +28,14 @@ void testIntegralAndDerivative() {
                               poly.Derivative(0).GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
+  const T x{1.32};
+  Polynomial<T> first_derivative = poly.Derivative(1);
+  EXPECT_NEAR(poly.EvaluateUnivariate(x, 1),
+              first_derivative.EvaluateUnivariate(x), 1e-14);
+
   Polynomial<T> third_derivative = poly.Derivative(3);
+  EXPECT_NEAR(poly.EvaluateUnivariate(x, 3),
+              third_derivative.EvaluateUnivariate(x), 1e-14);
 
   Polynomial<T> third_derivative_check =
       poly.Derivative().Derivative().Derivative();
