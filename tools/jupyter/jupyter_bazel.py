@@ -8,6 +8,15 @@ from jupyter_core.command import main as _jupyter_main
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
+_ISSUE_12536_NOTES = """
+
+For Drake developers:
+    If you see the error "zmq.error.ZMQError: Address already in use" above,
+    then this is a known flake when running under CI:
+    https://github.com/RobotLocomotion/drake/issues/12536
+
+"""
+
 
 def _jupyter_bazel_notebook_main(cur_dir, notebook_file, argv):
     # This should *ONLY* be called by targets generated via `jupyter_py_*`
@@ -57,5 +66,10 @@ def _jupyter_bazel_notebook_main(cur_dir, notebook_file, argv):
         # TODO(eric.cousineau): See if there is a way to redirect this to
         # stdout, rather than having the notebook capture the output.
         ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
-        ep.preprocess(nb, resources={'metadata': {'path': notebook_dir}})
+        try:
+            ep.preprocess(nb, resources={'metadata': {'path': notebook_dir}})
+        except RuntimeError as e:
+            if "Kernel died before replying to kernel_info" in str(e):
+                print(_ISSUE_12536_NOTES, file=sys.stderr)
+            raise
         print("Done")
