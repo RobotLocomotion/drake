@@ -26,12 +26,15 @@ using std::move;
 SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
   if (this == &g) return *this;
 
-  auto mesh = make_unique<VolumeMesh<double>>(g.mesh());
-  // We can't simply copy the mesh field; the copy must contain a pointer to the
-  // new mesh. So, we use CloneAndSetMesh() instead.
-  auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
-  geometry_ = SoftMesh(move(mesh), move(pressure));
-
+  if (g.is_half_space()) {
+    geometry_ = SoftHalfSpace{g.pressure_scale()};
+  } else {
+    auto mesh = make_unique<VolumeMesh<double>>(g.mesh());
+    // We can't simply copy the mesh field; the copy must contain a pointer to
+    // the new mesh. So, we use CloneAndSetMesh() instead.
+    auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
+    geometry_ = SoftMesh{move(mesh), move(pressure)};
+  }
   return *this;
 }
 
@@ -315,6 +318,18 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeEllipsoidPressureField(ellipsoid, mesh.get(), elastic_modulus));
 
   return SoftGeometry(move(mesh), move(pressure));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const HalfSpace&, const ProximityProperties& props) {
+  PositiveDouble validator("HalfSpace", "soft");
+
+  const double thickness = validator.Extract(props, kHydroGroup, kThickness);
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  return SoftGeometry(elastic_modulus / thickness);
 }
 
 }  // namespace hydroelastic
