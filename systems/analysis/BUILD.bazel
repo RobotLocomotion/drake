@@ -145,10 +145,8 @@ drake_cc_library(
     srcs = ["integrator_base.cc"],
     hdrs = ["integrator_base.h"],
     deps = [
-        ":dense_output",
-        ":hermitian_dense_output",
-        ":stepwise_dense_output",
         "//common:default_scalars",
+        "//common/trajectories:piecewise_polynomial",
         "//systems/framework:context",
         "//systems/framework:system",
     ],
@@ -299,6 +297,7 @@ drake_cc_library(
     ],
     deps = [
         ":dense_output",
+        ":hermitian_dense_output",
         ":integrator_base",
         ":runge_kutta3_integrator",
         "//common:default_scalars",
