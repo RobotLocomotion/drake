@@ -129,6 +129,24 @@ GTEST_TEST(ProximityPropertiesTest, AddSoftProperties) {
             HydroelasticType::kSoft);
 }
 
+// Tests the variant where the static pressure field is defined by the
+// enumeration.
+GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceSoftProperties) {
+  const double E = 1.5e8;
+  for (double thickness : {1e-5, 1.25, 1e7}) {
+    ProximityProperties props;
+    props.AddProperty(internal::kMaterialGroup, internal::kElastic, E);
+    AddSoftHydroelasticPropertiesForHalfSpace(thickness, &props);
+    EXPECT_TRUE(
+        props.HasProperty(internal::kHydroGroup, internal::kSlabThickness));
+    EXPECT_EQ(props.GetProperty<double>(internal::kHydroGroup,
+                                        internal::kSlabThickness),
+              thickness);
+    EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+              HydroelasticType::kSoft);
+  }
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

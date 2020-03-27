@@ -13,6 +13,7 @@ namespace bouncing_ball {
 using drake::geometry::AddContactMaterial;
 using drake::geometry::AddRigidHydroelasticProperties;
 using drake::geometry::AddSoftHydroelasticProperties;
+using drake::geometry::AddSoftHydroelasticPropertiesForHalfSpace;
 using drake::geometry::ProximityProperties;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
@@ -26,7 +27,7 @@ using drake::math::RigidTransformd;
 std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     double radius, double mass, double elastic_modulus, double dissipation,
     const CoulombFriction<double>& surface_friction,
-    const Vector3<double>& gravity_W, bool rigid_sphere,
+    const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
     SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
@@ -40,8 +41,13 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
 
     const RigidTransformd X_WG;  // identity.
     ProximityProperties ground_props;
-    AddRigidHydroelasticProperties(&ground_props);
-    AddContactMaterial({}, {}, surface_friction, &ground_props);
+    if (soft_ground) {
+      AddSoftHydroelasticPropertiesForHalfSpace(1.0, &ground_props);
+    } else {
+      AddRigidHydroelasticProperties(&ground_props);
+    }
+    AddContactMaterial(elastic_modulus, dissipation, surface_friction,
+                       &ground_props);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG,
                                      geometry::HalfSpace{}, "collision",
                                      std::move(ground_props));

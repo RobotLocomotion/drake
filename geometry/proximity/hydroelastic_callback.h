@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/mesh_half_space_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
@@ -78,28 +79,41 @@ struct CallbackData {
 };
 
 enum class CalcContactSurfaceResult {
-  kCalculated,      //< Computation was successful; a contact surface is only
-                    //< produced if the objects were in contact.
-  kUnsupported,     //< Contact surface can't be computed for the geometry pair.
-  kSameCompliance   //< The two geometries have the same compliance.
+  kCalculated,          //< Computation was successful; a contact surface is
+                        //< only produced if the objects were in contact.
+  kUnsupported,         //< Contact surface can't be computed for the geometry
+                        //< pair.
+  kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
+  kSameCompliance       //< The two geometries have the same compliance type.
 };
 
 /** Computes ContactSurface using the algorithm appropriate to the Shape types
- represented by the given `soft` and `rigid` geometries.  */
+ represented by the given `soft` and `rigid` geometries.
+ @pre The geometries are not *both* half spaces.  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
     GeometryId id_S, const RigidGeometry& rigid,
     const math::RigidTransform<T>& X_WR, GeometryId id_R) {
-  if (rigid.is_half_space()) {
-    // Soft volume vs rigid half space. The half space-mesh intersection
-    // requires the mesh field to be a linear mesh field.
-    const auto& field_S =
-        dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
-            soft.pressure_field());
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
-    return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+  if (soft.is_half_space() || rigid.is_half_space()) {
+    if (soft.is_half_space()) {
+      DRAKE_DEMAND(!rigid.is_half_space());
+      // Soft half space with rigid mesh.
+      const SurfaceMesh<double>& mesh_R = rigid.mesh();
+      const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R = rigid.bvh();
+
+      return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR);
+    } else {
+      // Soft volume vs rigid half space. The half space-mesh intersection
+      // requires the mesh field to be a linear mesh field.
+      const auto& field_S =
+          dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
+              soft.pressure_field());
+      const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
+      return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+          id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+    }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.
     const VolumeMeshField<double, double>& field_S = soft.pressure_field();
@@ -148,11 +162,15 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   const GeometryId id_S = A_is_rigid ? encoding_b.id() : encoding_a.id();
   const GeometryId id_R = A_is_rigid ? encoding_a.id() : encoding_b.id();
 
-  const math::RigidTransform<T>& X_WS(data->X_WGs.at(id_S));
-  const math::RigidTransform<T>& X_WR(data->X_WGs.at(id_R));
-
   const SoftGeometry& soft = data->geometries.soft_geometry(id_S);
   const RigidGeometry& rigid = data->geometries.rigid_geometry(id_R);
+
+  if (soft.is_half_space() && rigid.is_half_space()) {
+    return CalcContactSurfaceResult::kHalfSpaceHalfSpace;
+  }
+
+  const math::RigidTransform<T>& X_WS(data->X_WGs.at(id_S));
+  const math::RigidTransform<T>& X_WR(data->X_WGs.at(id_R));
 
   std::unique_ptr<ContactSurface<T>> surface =
       DispatchRigidSoftCalculation(soft, X_WS, id_S, rigid, X_WR, id_R);
@@ -209,6 +227,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
             "{}, {} with id {}); only rigid-soft pairs are currently supported",
             type_A, GetGeometryName(*object_A_ptr), encoding_a.id(),
             GetGeometryName(*object_B_ptr), encoding_b.id()));
+      case CalcContactSurfaceResult::kHalfSpaceHalfSpace:
+        throw std::logic_error(fmt::format(
+            "Requested contact between two half spaces with ids {} and {}; "
+            "that is not allowed", encoding_a.id(), encoding_b.id()));
       default:
         DRAKE_UNREACHABLE();
     }
