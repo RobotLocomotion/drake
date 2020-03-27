@@ -152,6 +152,7 @@ drake_cc_library(
     deps = [
         ":collision_filter_legacy",
         ":hydroelastic_internal",
+        ":mesh_half_space_intersection",
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":penetration_as_point_pair_callback",

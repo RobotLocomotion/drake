@@ -22,23 +22,33 @@ corresponding parameters vx and wy, respectively). The ball will begin sliding
 in the +Wx direction but eventually friction will cause the ball to slow and
 then accelerate in the -Wx direction.
 
+Both the ground and the sphere can be modeled with soft or rigid compliance
+in the hydroelastic model. However, choice of compliance type (more particularly
+contact between objects of particular compliance) will constrain your choice
+of contact model. See details below.
+
 __Contact models__
 
 There are three contact models that can be exercised (via the `--contact_model`
 parameter). They differ in how they model the contact between two penetrating
 objects:
 
-  - "point": modeled as a point pair.
-  - "hydroelastic": _possibly_ modeled as a contact surface.
+  - "point": modeled as a point pair. The compliance type of the objects do
+    not matter; contact will always be reported and resolved.
+  - "hydroelastic": modeled as a contact surface (where supported). If contact
+    between a pair of objects is detected, but hydroelastic cannot evaluate a
+    contact surface between them, the simulation will throw. See below for
+    circumstances under which a contact surface cannot be computed.
   - "hybrid": modeled as a contact surface where possible, and as a point.
     pair otherwise. More formally known as "hydroelastic callback with
     fallback".
 
-The "hydroelastic" model doesn't have full support yet. There are some types
-of geometries that cannot yet be given a hydroelastic representation and some
-types of contact which aren't modeled yet. For example:
-  - Drake `HalfSpace` and `Mesh` shapes can only be modeled with _rigid_
-    hydroleastic representation
+The "hydroelastic" model doesn't all combinations of geometries and compliance
+types. There are some types of geometries that cannot yet be given a
+hydroelastic representation and some types of contact which aren't modeled yet.
+ For example:
+  - Drake `Mesh` shapes can only be modeled with _rigid_ hydroleastic
+    representation
   - Contact between two rigid or two soft objects isn't supported.
 
 __Changing the configuration__
@@ -49,6 +59,8 @@ configuration in various ways:
     "hydroelastic" contact models, the wall will have a _soft_ hydroelastic
     representation.
   - Change the compliance type of the sphere from soft (default) to rigid for
+    the "hybrid" and "hydroelastic" models.
+  - Change the compliance type of the ground from rigid (default) to soft for
     the "hybrid" and "hydroelastic" models.
 
 ```
@@ -75,19 +87,20 @@ The following table enumerates some configuration options and the simulation
 outcome. Default values are indicated as "(d)". (Note: the ground is _always_
 rigid for the "hydroelastic" and "hybrid" contact models.)
 
-|  Wall  |  Sphere  | Contact Model | Note |
-| ------ | -------- | ------------- | ------- |
-| no (d) | soft (d) |   point (d)   | Behavior as described in Figure 1 - point pairs visualized |
-| no (d) | soft (d) | hydroelastic  | Behavior as described in Figure 1 - contact surfaces visualized |
-| no (d) | soft (d) |    hybrid     | Same as "hydroelastic" |
-| no (d) |  rigid   |   point (d)   | Behavior as described in Figure 1 - the sphere's rigid declaration is meaningless for point contact and ignored |
-| no (d) |  rigid   | hydroelastic  | Throws _immediate_ exception -- cannot support rigid-rigid contact surface between ground and sphere |
-| no (d) |  rigid   |    hybrid     | Behavior as described in Figure 1 - rigid-rigid contact (between sphere and ground) uses point-pair contact |
-|  yes   | soft (d) |   point (d)   | Behavior as described in Figure 2 - point pairs visualized |
-|  yes   | soft (d) | hydroelastic  | Behavior as described in Figure 2 - Throws exception when sphere hits wall; cannot support soft-soft contact |
-|  yes   | soft (d) |    hybrid     | Behavior as described in Figure 2 - sphere-ground contact is contact surface, sphere-wall contact is point pair |
-|  yes   |  rigid   |    hybrid     | Behavior as described in Figure 2 - sphere-ground contact is point pair, sphere-wall contact is contact surface |
-
+|  Ground   |  Wall  |  Sphere  | Contact Model | Note |
+| --------- | ------ | -------- | ------------- | ------- |
+| rigid (d) | no (d) | soft (d) |   point (d)   | Behavior as described in Figure 1 - point pairs visualized |
+| rigid (d) | no (d) | soft (d) | hydroelastic  | Behavior as described in Figure 1 - contact surfaces visualized |
+| rigid (d) | no (d) | soft (d) |    hybrid     | Same as "hydroelastic" |
+| rigid (d) | no (d) |  rigid   |   point (d)   | Behavior as described in Figure 1 - the sphere's rigid declaration is meaningless for point contact and ignored |
+| rigid (d) | no (d) |  rigid   | hydroelastic  | Throws _immediate_ exception -- cannot support rigid-rigid contact surface between ground and sphere |
+| rigid (d) | no (d) |  rigid   |    hybrid     | Behavior as described in Figure 1 - rigid-rigid contact (between sphere and ground) uses point-pair contact |
+| rigid (d) |  yes   | soft (d) |   point (d)   | Behavior as described in Figure 2 - point pairs visualized |
+| rigid (d) |  yes   | soft (d) | hydroelastic  | Behavior as described in Figure 2 - Throws exception when sphere hits wall; cannot support soft-soft contact |
+| rigid (d) |  yes   | soft (d) |    hybrid     | Behavior as described in Figure 2 - sphere-ground contact is contact surface, sphere-wall contact is point pair |
+| rigid (d) |  yes   |  rigid   |    hybrid     | Behavior as described in Figure 2 - sphere-ground contact is point pair, sphere-wall contact is contact surface |
+|   soft    |   -    | soft (d) |       -       | Soft-soft contact requires "hybrid" or "point" -- crashes with "hydroelastic |  
+|   soft    |   -    |  rigid   |       -       | Behavior as described in Figure 2 - contact visualized depends on model |  
 
 ## Prerequisites
 
