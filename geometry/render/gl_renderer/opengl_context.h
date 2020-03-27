@@ -30,6 +30,12 @@ class OpenGlContext {
    @throw std::runtime_error if not successful.  */
   void MakeCurrent();
 
+  /** Resize the window to the given dimensions.  */
+  void ResizeWindow(const int width, const int height);
+
+  /** Display the render result in a window.  */
+  void DisplayWindow();
+
   /** Returns the specified values for the current OpenGL context.
    @note Even if invoked via an instance, they may not reflect that instance's
    configuration if the instance differs from whichever context is current.  */
