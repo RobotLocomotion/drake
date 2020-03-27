@@ -107,7 +107,7 @@ namespace systems {
  * time-increment advanced by this integrator: if, for example, the second small
  * half-sized step fails, this integrator revokes to the state before the first
  * small step. This behavior is similar to other integrators with multi-stage
- * evaluation: the step counting statistics count a "step" as the combination of 
+ * evaluation: the step-counting statistics treat a "step" as the combination of 
  * all the stages.
  *
  * @note Furthermore, because the small half-sized steps are propagated as the
