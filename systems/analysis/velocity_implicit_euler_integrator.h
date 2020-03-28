@@ -109,7 +109,6 @@ namespace systems {
  * small step. This behavior is similar to other integrators with multi-stage
  * evaluation: the step-counting statistics treat a "step" as the combination of 
  * all the stages.
- *
  * @note Furthermore, because the small half-sized steps are propagated as the
  * solution, the large full-sized step is the error estimator, and the error
  * estimation statistics track the effort during the large full-sized step. 
@@ -118,10 +117,9 @@ namespace systems {
  * constructing and factorizing matrices and by failing Newton-Raphson
  * iterations will be counted toward the error estimation statistics, because
  * the large step is performed first.
- *
  * @note This integrator uses the integrator accuracy setting, even when run
- *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
- *       process. See IntegratorBase::set_target_accuracy() for more info.
+ * in fixed-step mode, to limit the error in the underlying Newton-Raphson
+ * process. See IntegratorBase::set_target_accuracy() for more info.
  *
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
