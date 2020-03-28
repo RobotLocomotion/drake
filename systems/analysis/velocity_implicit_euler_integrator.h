@@ -107,12 +107,12 @@ namespace systems {
  * time-increment advanced by this integrator: if, for example, the second small
  * half-sized step fails, this integrator revokes to the state before the first
  * small step. This behavior is similar to other integrators with multi-stage
- * evaluation: the step-counting statistics treat a "step" as the combination of 
+ * evaluation: the step-counting statistics treat a "step" as the combination of
  * all the stages.
  * @note Furthermore, because the small half-sized steps are propagated as the
  * solution, the large full-sized step is the error estimator, and the error
- * estimation statistics track the effort during the large full-sized step. 
- * If the integrator is not in full-Newton mode (see
+ * estimation statistics track the effort during the large full-sized step. If
+ * the integrator is not in full-Newton mode (see
  * ImplicitIntegrator<T>::set_use_full_newton()), most of the work incurred by
  * constructing and factorizing matrices and by failing Newton-Raphson
  * iterations will be counted toward the error estimation statistics, because
