@@ -135,7 +135,7 @@ drake_pybind_library(
 )
 
 drake_jupyter_py_binary(
-    name = "door_hinge_joint_inspector",
+    name = "examples/door_hinge_inspector",
     add_test_rule = 1,
     deps = [
         ":plant_py",

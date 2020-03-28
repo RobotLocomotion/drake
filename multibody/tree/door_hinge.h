@@ -95,9 +95,9 @@ struct DoorHingeConfig {
 /// values of these different elements to obtain different characteristics for
 /// the DoorHinge joint that the users want to model. A jupyter notebook tool
 /// is also provided to help the users visualize the curves and design
-/// parameters.
-/// Run `bazel run //bindings/pydrake/multibody:door_hinge_joint_inspector` to
-/// bring up the notebook.
+/// parameters.  Run
+/// `bazel run //bindings/pydrake/multibody:examples/door_hinge_inspector`
+/// to bring up the notebook.
 ///
 /// **To give an example**, a common dishwasher door has a frictional torque
 /// sufficient for it to rest motionless at any angle, a catch at the top to
