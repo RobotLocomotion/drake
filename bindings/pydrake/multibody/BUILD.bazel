@@ -18,6 +18,7 @@ load(
     "drake_py_library_aliases",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -130,6 +131,15 @@ drake_pybind_library(
         ":module_py",
         ":plant_py",
         "//bindings/pydrake/solvers:mathematicalprogram_py",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "door_hinge_joint_inspector",
+    add_test_rule = 1,
+    deps = [
+        ":plant_py",
+        ":tree_py",
     ],
 )
 
