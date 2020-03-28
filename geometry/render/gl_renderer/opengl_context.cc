@@ -36,6 +36,14 @@ F* GetGlXFunctionArb(const char* func_name) {
   return reinterpret_cast<F*>(glXGetProcAddressARB(gl_func_name));
 }
 
+// https://www.khronos.org/registry/OpenGL/extensions/ARB/GLX_ARB_create_context.txt
+GLXContext glXCreateContextAttribsARB(
+    Display* a, GLXFBConfig b, GLXContext c, Bool d, const int* e) {
+  return GetGlXFunctionArb<
+      GLXContext(Display*, GLXFBConfig, GLXContext, Bool, const int*)>(
+      "glXCreateContextAttribsARB")(a, b, c, d, e);
+}
+
 void GlDebugCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei,
                      const GLchar* message, const void*) {
   const char* output =
@@ -72,10 +80,6 @@ class OpenGlContext::Impl {
     // Create an OpenGL context.
     const int kContextAttribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
                                    GLX_CONTEXT_MINOR_VERSION_ARB, 3, None};
-    auto glXCreateContextAttribsARB =
-        GetGlXFunctionArb<GLXContext(Display*, GLXFBConfig, GLXContext, Bool,
-                                     const int*)>("glXCreateContextAttribsARB");
-
     // Since we have provided attributes in the call to glXChooseFBConfig, we
     // are guaranteed to have a valid result in fb_configs as we have already
     // checked for null.
