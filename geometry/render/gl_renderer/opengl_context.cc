@@ -30,10 +30,25 @@ F* GetGlXFunctionArb(const char* func_name) {
   // We must copy the string to a GLubyte buffer to avoid strict aliasing rules.
   // https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8
   constexpr int kBufferSize = 128;
-  DRAKE_ASSERT(strlen(func_name) < kBufferSize);
+  DRAKE_DEMAND(strlen(func_name) < kBufferSize);
   GLubyte gl_func_name[kBufferSize] = {};
   std::memcpy(gl_func_name, func_name, strlen(func_name) + 1);
-  return reinterpret_cast<F*>(glXGetProcAddressARB(gl_func_name));
+  F* result = reinterpret_cast<F*>(glXGetProcAddressARB(gl_func_name));
+  DRAKE_DEMAND(result != nullptr);
+  return result;
+}
+
+// Wrapper that calls the GLX function of the same name as if it has a proper
+// header file declaration (instead of the dynamic lookup that happens under
+// the hood) to improve readability and debug-ability.  For API docs see
+// https://www.khronos.org/registry/OpenGL/extensions/ARB/GLX_ARB_create_context.txt
+GLXContext glXCreateContextAttribsARB(
+    Display* dpy, GLXFBConfig config, GLXContext share_context, Bool direct,
+    const int* attrib_list) {
+  return GetGlXFunctionArb<
+      GLXContext(Display*, GLXFBConfig, GLXContext, Bool, const int*)>(
+      "glXCreateContextAttribsARB")(
+          dpy, config, share_context, direct, attrib_list);
 }
 
 void GlDebugCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei,
@@ -72,10 +87,6 @@ class OpenGlContext::Impl {
     // Create an OpenGL context.
     const int kContextAttribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
                                    GLX_CONTEXT_MINOR_VERSION_ARB, 3, None};
-    auto glXCreateContextAttribsARB =
-        GetGlXFunctionArb<GLXContext(Display*, GLXFBConfig, GLXContext, Bool,
-                                     const int*)>("glXCreateContextAttribsARB");
-
     // Since we have provided attributes in the call to glXChooseFBConfig, we
     // are guaranteed to have a valid result in fb_configs as we have already
     // checked for null.
