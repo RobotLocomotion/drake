@@ -239,6 +239,13 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   HermitianDenseOutput() = default;
 
+  /// Initialize the DenseOutput with an existing trajectory.
+  explicit HermitianDenseOutput(
+      const trajectories::PiecewisePolynomial<double>& trajectory)
+      : start_time_(trajectory.start_time()),
+        end_time_(trajectory.end_time()),
+        continuous_trajectory_(trajectory) {}
+
   /// Update output with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
