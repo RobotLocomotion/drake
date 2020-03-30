@@ -48,6 +48,10 @@ class BsplineBasis final {
   /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
 
+  /** The degree of the piecewise polynomials comprising this B-spline basis
+  (k - 1 in the class description). */
+  int degree() const { return order() - 1; }
+
   /** The number of basis functions in this B-spline basis (n + 1 in the class
   description). */
   int num_basis_functions() const { return num_basis_functions_; }
