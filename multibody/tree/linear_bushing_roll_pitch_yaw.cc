@@ -28,10 +28,10 @@ LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
     torque_damping_constants_(torque_damping_constants),
     force_stiffness_constants_(force_stiffness_constants),
     force_damping_constants_(force_damping_constants) {
-  DRAKE_THROW_UNLESS(torque_stiffness_constants.minCoeff() > 0);
-  DRAKE_THROW_UNLESS(torque_damping_constants.minCoeff() > 0);
-  DRAKE_THROW_UNLESS(force_stiffness_constants.minCoeff() > 0);
-  DRAKE_THROW_UNLESS(force_damping_constants.minCoeff() > 0);
+  DRAKE_THROW_UNLESS(torque_stiffness_constants.minCoeff() >= 0);
+  DRAKE_THROW_UNLESS(torque_damping_constants.minCoeff() >= 0);
+  DRAKE_THROW_UNLESS(force_stiffness_constants.minCoeff() >= 0);
+  DRAKE_THROW_UNLESS(force_damping_constants.minCoeff() >= 0);
 }
 
 template <typename T>
@@ -60,7 +60,7 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
   // Aₒ (A's origin) to L0ₒ (link L0's origin).
   const SpatialForce<T> F_L0_W = F_Ao_W.Shift(p_AoL0_W);
 
-  // The next calculation needs the position from Lo to L1 expressed in world.
+  // The next calculation needs the position from L0 to L1 expressed in world.
   const Vector3<T>& p_WoL0_W = X_WL0.translation();
   const Vector3<T>& p_WoL1_W = link1().EvalPoseInWorld(context).translation();
   const Vector3<T> p_L0L1_W = p_WoL1_W - p_WoL0_W;
@@ -99,7 +99,7 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
   // Use the force stiffness constants [kx, ky, kz] and `p_AₒCₒ_B = [x y z]ʙ`
   // (the position vector from Aₒ to Bₒ expressed in frame B) to form the
   // analytical part of the force potential energy 0.5*(kx*x² + ky*y² + kz*z²).
-  const Vector3<T> xyz = CalcBushing_xyz(context);
+  const Vector3<T> xyz = Calcp_AoCo_B(context);  // [x y z]ʙ
   const Vector3<T> xyzSquared = xyz.cwiseProduct(xyz);
   const T force_potential_energy =
       0.5 * (force_stiffness_constants().dot(xyzSquared));
@@ -132,7 +132,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePowerAnalytical(
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcConservativePowerNumerical(
     const systems::Context<T>& context) const {
-  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × 𝐟ᴋ),
+  // Calculate the part of conservative power due to Pcɪ = w_AC ⋅ (p_AoCo × 𝐟ᴋ),
   // where Pcɪ is the part of conservative power that is numerically integrated
   // to calculate Uɪ (the non-analytical part of potential energy).
   const Vector3<T> spring_force_B =
@@ -175,12 +175,12 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
   const T Pnc_force0 = -(bXDt.dot(xyzDt));
 
-  // Calculate the part of nonconservative power due to w_CA ⋅ (p_AoCo × 𝐟ᴅ).
+  // Calculate the part of nonconservative power due to w_AC ⋅ (p_AoCo × 𝐟ᴅ).
   const Vector3<T> damping_force_B =
       -ForceDampingConstantsTimesDisplacementRate(context);
   const T Pnc_force_extra = CalcPowerHelperMethod(context, damping_force_B);
 
-  // Calculate the part of conservative power due to Pcɪ = w_CA ⋅ (p_AoCo × 𝐟ᴋ),
+  // Calculate the part of conservative power due to Pcɪ = w_AC ⋅ (p_AoCo × 𝐟ᴋ),
   const T PcI = CalcConservativePowerNumerical(context);
 
   return Pnc_torque + Pnc_force0 + Pnc_force_extra + PcI;
@@ -189,7 +189,7 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcPowerHelperMethod(
     const systems::Context<T>& context, const Vector3<T>& force_B) const {
-  // Helper method to calculate a part of power due to w_CA ⋅ (p_AoCo × 𝐟ᴅ).
+  // Helper method to calculate a part of power due to w_AC ⋅ (p_AoCo × 𝐟ᴅ).
   // @param[in] context The state of the multibody system.
   const Vector3<T> p_AoCo_B = Calcp_AoCo_B(context);
   const Vector3<T> pCrossf_B = p_AoCo_B.cross(force_B);
