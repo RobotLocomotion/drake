@@ -80,13 +80,13 @@ bool BsplineBasis<T>::IsControlPointActive(
   // http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
 
   // Define short-hand references to match Patrikalakis et al.:
-  const std::vector<T>& tt = knots();
-  const int& k = order();
+  const std::vector<T>& t = knots();
+  const int k = order();
   const T& t_s = parameter_interval[0];
   const T& t_e = parameter_interval[1];
-  const int& i = control_point_index;
+  const int i = control_point_index;
 
-  return tt[i] <= t_e && t_s <= tt[i + k];
+  return t[i] <= t_e && t_s <= t[i + k];
 }
 
 template <typename T>
