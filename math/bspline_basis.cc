@@ -69,9 +69,6 @@ BsplineBasis<T>::BsplineBasis(int order, int num_basis_functions,
 template <typename T>
 bool BsplineBasis<T>::IsControlPointActive(
     int control_point_index, const std::array<T, 2>& parameter_interval) const {
-  DRAKE_ASSERT(knots_.at(order() - 1) <= parameter_interval.front());
-  DRAKE_ASSERT(parameter_interval.back() <= final_parameter_value());
-  DRAKE_ASSERT(initial_parameter_value() <= parameter_interval.back());
   // Changing control point P[i] affects the curve on the interval (tᵢ, tᵢ₊ₖ).
   // We want to know if P[i] affects the curve over the interval [tₛ, tₑ]. This
   // is true if
@@ -94,10 +91,13 @@ bool BsplineBasis<T>::IsControlPointActive(
 
 template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
-    const std::array<T, 2>& plan_interval) const {
+    const std::array<T, 2>& parameter_interval) const {
+  DRAKE_ASSERT(parameter_interval[0] <= parameter_interval[1]);
+  DRAKE_ASSERT(parameter_interval[0] >= initial_parameter_value());
+  DRAKE_ASSERT(parameter_interval[1] <= final_parameter_value());
   std::vector<int> active_control_point_indices{};
   for (int i = 0; i < num_basis_functions(); ++i) {
-    if (IsControlPointActive(i, plan_interval)) {
+    if (IsControlPointActive(i, parameter_interval)) {
       active_control_point_indices.push_back(i);
     }
   }
