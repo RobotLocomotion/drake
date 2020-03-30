@@ -81,11 +81,6 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
-  /** If `parameter_value` ∈ [t[0], t[m]), return the knot index 𝑙such that
-  t[𝑙] ≤ parameter_value < t[𝑙 + 1]. If `parameter_value` == t[m] return m - 1.
-  @pre t[0] ≤ parameter_value ≤ t[m] */
-  int FindContainingInterval(const T& parameter_value) const;
-
   /** Evaluates the B-spline curve defined by `this` and `control_points` at the
   given `parameter_value`.
   @param control_points Control points of the B-spline curve.
@@ -117,14 +112,16 @@ class BsplineBasis final {
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
     const T t_bar = parameter_value;
-    const int& k = order();
+    const int k = order();
 
-    // Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1].
-    // If t_bar == t[m] use m - 1.
-    const int ell = FindContainingInterval(t_bar);
-
-    // The vector that stores the intermediate de Boor points (the
-    // pᵢʲ in [1]).
+    /* Find the the index, 𝑙, of the greatest knot that is less than or equal to
+    t_bar and strictly less than final_parameter_value(). */
+    const int ell = std::distance(
+        t.begin(),
+        std::prev(t_bar < final_parameter_value()
+                      ? std::upper_bound(t.begin(), t.end(), t_bar)
+                      : std::lower_bound(t.begin(), t.end(), t_bar)));
+    // The vector that stores the intermediate de Boor points (the pᵢʲ in [1]).
     std::vector<T_control_point> p(order());
     /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that
     i = ell - r. */
@@ -138,7 +135,7 @@ class BsplineBasis final {
       for (int r = 0; r < k - j; ++r) {
         const int i = ell - r;
         // α = (t_bar - t[i]) / (t[i + k - j] - t[i]);
-        T alpha = (t_bar - t.at(i)) / (t.at(i + order() - j) - t.at(i));
+        T alpha = (t_bar - t.at(i)) / (t.at(i + k - j) - t.at(i));
         p.at(r) = (1.0 - alpha) * p.at(r + 1) + alpha * p.at(r);
       }
     }

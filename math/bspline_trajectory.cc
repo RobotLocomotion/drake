@@ -89,10 +89,16 @@ void BsplineTrajectory<T>::InsertKnots(
     // Define short-hand references to match Patrikalakis et al.:
     const auto& t = this->knots();
     const auto& t_bar = additional_knots.front();
+    const int k = this->order();
     DRAKE_THROW_UNLESS(t.front() <= t_bar && t_bar <= t.back());
-    const double& k = this->order();
-    // Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1].
-    const int ell = basis().FindContainingInterval(t_bar);
+
+    /* Find the the index, 𝑙, of the greatest knot that is less than or equal to
+    t_bar and strictly less than final_parameter_value(). */
+    const int ell = std::distance(
+        t.begin(),
+        std::prev(t_bar < basis().final_parameter_value()
+                      ? std::upper_bound(t.begin(), t.end(), t_bar)
+                      : std::lower_bound(t.begin(), t.end(), t_bar)));
     auto new_knots = t;
     new_knots.insert(std::next(new_knots.begin(), ell + 1), t_bar);
     std::vector<MatrixX<T>> new_control_points{this->control_points().front()};
