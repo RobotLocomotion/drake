@@ -17,7 +17,7 @@ std::vector<T> ConstructDefaultKnots(int order, int num_basis_functions,
                                      KnotVectorType type) {
   if (num_basis_functions < order) {
     throw std::invalid_argument(fmt::format(
-        "The number of control points ({}) should be greater than or "
+        "The number of basis functions ({}) should be greater than or "
         "equal to the order ({}).",
         num_basis_functions, order));
   }
