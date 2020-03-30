@@ -111,6 +111,8 @@ class BsplineBasis final {
     it can be used with custom values of T_control_point. */
     DRAKE_DEMAND(static_cast<int>(control_points.size()) ==
                  num_basis_functions());
+    DRAKE_DEMAND(parameter_value >= initial_parameter_value());
+    DRAKE_DEMAND(parameter_value <= final_parameter_value());
 
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
