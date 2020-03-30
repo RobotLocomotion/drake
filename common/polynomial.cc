@@ -181,12 +181,6 @@ Polynomial<T>::GetSimpleVariable() const {
 }
 
 template <typename T>
-const std::vector<typename Polynomial<T>::Monomial>&
-Polynomial<T>::GetMonomials() const {
-  return monomials_;
-}
-
-template <typename T>
 Matrix<T, Dynamic, 1>
 Polynomial<T>::GetCoefficients() const {
   if (!is_univariate_)

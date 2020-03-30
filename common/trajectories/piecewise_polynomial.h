@@ -740,10 +740,30 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   void RemoveFinalSegment();
 
+
+  /** 
+   * Scales the time of the trajectory by `scale`.  `scale` should be  
+   * non-zero, but may be negative (e.g. reversing time).  The resulting
+   * polynomial evaluates to pp_after(t) = pp_before(t/scale).  
+   *
+   * As an example, `scale`=2 will result in a trajectory that is twice as long
+   * (start_time() and end_time() have both doubled). 
+   *
+   * Note: For negative scaling, the new trajectory will evaluate differently at
+   * precisely the break points if the original system was discontinuous at the
+   * break points.  This is because the segments are defined on the half-open
+   * intervals [breaks(i), breaks(i+1)), and the order of the breaks have been
+   * reversed.
+   */
+  void ScaleTime(double scale);
+
   /**
    * Adds `offset` to all of the breaks. `offset` need not be a non-negative
-   * number.
-   * @note has no effect if empty().
+   * number.  The resulting polynomial will evaluate to pp_after(t) =
+   * pp_before(t-offset).  
+   *
+   * As an example, `offset`=2 will result in the start_time() and end_time()
+   * being 2 seconds later.
    */
   void shiftRight(double offset);
 

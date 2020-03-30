@@ -315,9 +315,8 @@ GTEST_TEST(testPiecewisePolynomial, RemoveFinalSegmentTest) {
   Eigen::VectorXd breaks(3);
   breaks << 0, .5, 1.;
   Eigen::MatrixXd samples(2, 3);
-  samples << 1, 1,
-        2, 2,
-        0, 3;
+  samples << 1, 1, 2,
+             2, 0, 3;
 
   PiecewisePolynomial<double> pp =
       PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
@@ -332,6 +331,54 @@ GTEST_TEST(testPiecewisePolynomial, RemoveFinalSegmentTest) {
 
   pp.RemoveFinalSegment();
   EXPECT_TRUE(pp.empty());
+}
+
+void TestScaling(const PiecewisePolynomial<double>& pp_orig,
+                 const double scale) {
+  std::unique_ptr<Trajectory<double>> pp_ptr = pp_orig.Clone();
+  PiecewisePolynomial<double>* pp =
+      dynamic_cast<PiecewisePolynomial<double>*>(pp_ptr.get());
+
+  pp->ScaleTime(scale);
+  if (scale > 0.0) {
+    EXPECT_NEAR(pp->start_time(), scale * pp_orig.start_time(), 1e-14);
+    EXPECT_NEAR(pp->end_time(), scale * pp_orig.end_time(), 1e-14);
+  } else {
+    // Start time and end time have been switched.
+    EXPECT_NEAR(pp->start_time(), scale * pp_orig.end_time(), 1e-14);
+    EXPECT_NEAR(pp->end_time(), scale * pp_orig.start_time(), 1e-14);
+  }
+  for (const double trel : {0.1, .2, .52, .77}) {
+    const double t = pp_orig.start_time() +
+                     trel * (pp_orig.end_time() - pp_orig.start_time());
+    EXPECT_TRUE(CompareMatrices(pp->value(scale * t), pp_orig.value(t), 1e-14));
+  }
+}
+
+
+GTEST_TEST(testPiecewisePolynomial, ScaleTimeTest) {
+  Eigen::VectorXd breaks(3);
+  breaks << 0, .5, 1.;
+  Eigen::MatrixXd samples(2, 3);
+  samples << 1, 1, 2,
+             2, 0, 3;
+
+  const PiecewisePolynomial<double> zoh =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  TestScaling(zoh, 2.3);
+  TestScaling(zoh, -1.5);
+
+  const PiecewisePolynomial<double> foh =
+      PiecewisePolynomial<double>::FirstOrderHold(breaks, samples);
+  TestScaling(foh, 1.2);
+  TestScaling(foh, -1.0);
+  TestScaling(foh, -3.6);
+
+  const PiecewisePolynomial<double> spline =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+  TestScaling(spline, 2.0);
+  TestScaling(spline, -4.3);
 }
 
 }  // namespace

@@ -162,7 +162,11 @@ class Polynomial {
   /// coefficient 1 -- then returns that variable; otherwise returns 0.
   VarType GetSimpleVariable() const;
 
-  const std::vector<Monomial>& GetMonomials() const;
+  const std::vector<Monomial>& GetMonomials() const { return monomials_; }
+
+  std::vector<Monomial>& get_mutable_monomials() {
+    return monomials_;
+  }
 
   Eigen::Matrix<T, Eigen::Dynamic, 1> GetCoefficients() const;
 
