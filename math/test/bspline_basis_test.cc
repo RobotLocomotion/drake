@@ -40,7 +40,7 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
 GTEST_TEST(BsplineBasisTests, MinNumControlPoints) {
   const int order = 4;
   const char* expected_message_0 =
-      "The number of control points (.*) should be greater than or equal to "
+      "The number of basis functions (.*) should be greater than or equal to "
       "the order (.*).";
   DRAKE_EXPECT_THROWS_MESSAGE(BsplineBasis<double>(order, 3),
                               std::invalid_argument, expected_message_0);
