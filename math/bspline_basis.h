@@ -126,14 +126,14 @@ class BsplineBasis final {
     // The vector that stores the intermediate de Boor points (the
     // pᵢʲ in [1]).
     std::vector<T_control_point> p(order());
-    // For j = 0, i goes from ell down to ell - (k - 1). Define r such that
-    // i = ell - r.
+    /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that
+    i = ell - r. */
     for (int r = 0; r < k; ++r) {
       const int i = ell - r;
       p.at(r) = control_points.at(i);
     }
-    // For j = 1, ..., k - 1, i goes from ell down to ell - (k - j - 1). Again,
-    // i = ell - r.
+    /* For j = 1, ..., k - 1, i goes from ell down to ell - (k - j - 1). Again,
+    i = ell - r. */
     for (int j = 1; j < k; ++j) {
       for (int r = 0; r < k - j; ++r) {
         const int i = ell - r;
