@@ -17,11 +17,13 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
                                              5,  6,  7,  8, 9, 10, 11};
   // Check the order and num_basis_functions constructor.
   BsplineBasis<double> bspline_basis_0{expected_order,
-                                       expected_num_basis_functions};
+                                       expected_num_basis_functions,
+                                       KnotVectorType::kClampedUniform};
   EXPECT_EQ(bspline_basis_0.order(), expected_order);
   EXPECT_EQ(bspline_basis_0.num_basis_functions(),
             expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_0.knots(), expected_knots_0);
+
   BsplineBasis<double> bspline_basis_1{
       expected_order, expected_num_basis_functions, KnotVectorType::kUniform};
   EXPECT_EQ(bspline_basis_1.order(), expected_order);
@@ -30,14 +32,17 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
   EXPECT_EQ(bspline_basis_1.knots(), expected_knots_1);
 
   // Check the order and knots constructor.
-  BsplineBasis<double> bspline_basis_2{expected_order, expected_knots_0};
+  const std::vector<double> expected_knots_2 = {-5, 0, 0.1, 0.2, 0.3, 0.4, 3,
+                                                10, 17, 25, 50, 100, 200, 400,
+                                                401};
+  BsplineBasis<double> bspline_basis_2{expected_order, expected_knots_2};
   EXPECT_EQ(bspline_basis_2.order(), expected_order);
   EXPECT_EQ(bspline_basis_2.num_basis_functions(),
             expected_num_basis_functions);
-  EXPECT_EQ(bspline_basis_2.knots(), expected_knots_0);
+  EXPECT_EQ(bspline_basis_2.knots(), expected_knots_2);
 }
 
-GTEST_TEST(BsplineBasisTests, MinNumControlPoints) {
+GTEST_TEST(BsplineBasisTests, ConstructorErrors) {
   const int order = 4;
   const char* expected_message_0 =
       "The number of basis functions (.*) should be greater than or equal to "
