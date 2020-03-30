@@ -124,7 +124,7 @@ int BsplineBasis<T>::FindContainingInterval(const T& parameter_value) const {
 }
 
 template <typename T>
-T BsplineBasis<T>::BasisFunctionValue(int index, T parameter_value) const {
+T BsplineBasis<T>::EvaluateBasisFunctionI(int index, T parameter_value) const {
   std::vector<T> delta(num_basis_functions(), 0.0);
   delta[index] = 1.0;
   return EvaluateCurve(delta, parameter_value);

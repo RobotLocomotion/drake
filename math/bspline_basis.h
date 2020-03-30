@@ -143,9 +143,9 @@ class BsplineBasis final {
     return p.front();
   }
 
-  /** Returns the value of the `index`-th basis function evaluated at
+  /** Returns the value of the `i`-th basis function evaluated at
   `parameter_value`. */
-  T BasisFunctionValue(int index, T parameter_value) const;
+  T EvaluateBasisFunctionI(int i, T parameter_value) const;
 
   bool operator==(const BsplineBasis& other) const;
 
