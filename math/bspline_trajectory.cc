@@ -43,17 +43,18 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
   } else if (derivative_order == 1) {
     std::vector<MatrixX<T>> derivative_control_points;
     std::vector<double> derivative_knots;
-    const int num_derivative_knots = knots().size() - 1;
+    const int num_derivative_knots = basis_.knots().size() - 1;
     for (int i = 1; i < num_derivative_knots; ++i) {
-      derivative_knots.push_back(knots()[i]);
+      derivative_knots.push_back(basis_.knots()[i]);
     }
     for (int i = 0; i < num_control_points() - 1; ++i) {
       derivative_control_points.push_back(
-          degree() / (knots()[i + order()] - knots()[i + 1]) *
+          basis_.degree() /
+          (basis_.knots()[i + basis_.order()] - basis_.knots()[i + 1]) *
           (control_points()[i + 1] - control_points()[i]));
     }
     return std::make_unique<BsplineTrajectory<T>>(
-        BsplineBasis<double>(order() - 1, derivative_knots),
+        BsplineBasis<double>(basis_.order() - 1, derivative_knots),
         derivative_control_points);
   } else {
     throw std::invalid_argument(
@@ -87,16 +88,16 @@ void BsplineTrajectory<T>::InsertKnots(
     // [1] http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
 
     // Define short-hand references to match Patrikalakis et al.:
-    const auto& t = this->knots();
+    const auto& t = basis_.knots();
     const auto& t_bar = additional_knots.front();
-    const int k = this->order();
-    DRAKE_THROW_UNLESS(t.front() <= t_bar && t_bar <= t.back());
+    const int k = basis_.order();
+    DRAKE_DEMAND(start_time() <= t_bar && t_bar <= end_time());
 
     /* Find the the index, 𝑙, of the greatest knot that is less than or equal to
-    t_bar and strictly less than final_parameter_value(). */
+    t_bar and strictly less than end_time(). */
     const int ell = std::distance(
         t.begin(),
-        std::prev(t_bar < basis().final_parameter_value()
+        std::prev(t_bar < end_time()
                       ? std::upper_bound(t.begin(), t.end(), t_bar)
                       : std::lower_bound(t.begin(), t.end(), t_bar)));
     auto new_knots = t;
@@ -126,7 +127,7 @@ void BsplineTrajectory<T>::InsertKnots(
     // new_control_points. Do that now.
     new_control_points.push_back(this->control_points().back());
     control_points_.swap(new_control_points);
-    basis_ = BsplineBasis<double>(order(), new_knots);
+    basis_ = BsplineBasis<double>(basis_.order(), new_knots);
   }
 }
 

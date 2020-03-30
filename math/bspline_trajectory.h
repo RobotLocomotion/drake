@@ -46,9 +46,11 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   Eigen::Index cols() const override { return control_points()[0].cols(); }
 
-  double start_time() const override { return knots()[order() - 1]; }
+  double start_time() const override {
+    return basis_.initial_parameter_value();
+  }
 
-  double end_time() const override { return knots()[num_control_points()]; }
+  double end_time() const override { return basis_.final_parameter_value(); }
 
   // Other methods
   /** Returns the number of control points in this curve. */
@@ -64,12 +66,6 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   /** Returns this->value(this->end_time()) */
   MatrixX<T> FinalValue() const;
-
-  const std::vector<double>& knots() const { return basis_.knots(); }
-
-  int order() const { return basis_.order(); }
-
-  int degree() const { return order() - 1; }
 
   /** Returns the basis of this curve. */
   const BsplineBasis<double>& basis() const { return basis_; }
