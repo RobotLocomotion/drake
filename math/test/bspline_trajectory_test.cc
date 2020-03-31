@@ -9,7 +9,9 @@
 #include "drake/math/compute_numerical_gradient.h"
 
 DEFINE_bool(visualize, false,
-            "If true, emit Python plotting commands using CallPython().");
+            "If true, emit Python plotting commands using CallPython(). "
+            "You must build and run //common/proto:call_python_client_cli "
+            "first in order to see the resulting plots.");
 
 namespace drake {
 namespace math {
@@ -17,17 +19,21 @@ namespace math {
 using trajectories::Trajectory;
 
 namespace {
-MatrixX<double> NaiveBsplineTrajectoryValue(
-    const BsplineTrajectory<double>& trajectory, double parameter_value) {
-  MatrixX<double> value =
-      MatrixX<double>::Zero(trajectory.rows(), trajectory.cols());
-  for (int i = 0; i < trajectory.num_control_points(); ++i) {
-    value += trajectory.basis().EvaluateBasisFunctionI(i, parameter_value) *
-             trajectory.control_points()[i];
+BsplineTrajectory<double> MakeCircleTrajectory() {
+  const int order = 4;
+  const int num_control_points = 11;
+  std::vector<MatrixX<double>> control_points{};
+  const auto t_dummy =
+      VectorX<double>::LinSpaced(num_control_points, 0, 2 * M_PI);
+  for (int i = 0; i < num_control_points; ++i) {
+    control_points.push_back(
+        (MatrixX<double>(2, 1) << std::sin(t_dummy(i)),
+         std::cos(t_dummy(i)))
+            .finished());
   }
-  return value;
+  return {BsplineBasis<double>{order, num_control_points},
+          control_points};
 }
-
 }  // namespace
 
 // Verifies that the constructors work as expected.
@@ -57,89 +63,57 @@ GTEST_TEST(BsplineTrajectoryTests, ConstructorTest) {
   EXPECT_EQ(trajectory.control_points(), expected_control_points);
 }
 
-// Verifies that value() works as expected.
+// Verifies that value() works as expected (i.e. as a thin wrapper on
+// basis().EvaluateCurve() with clamping).
 GTEST_TEST(BsplineTrajectoryTests, ValueTest) {
-  const int order = 4;
-  const int num_control_points = 11;
-  const int rows = 2;
-  const int cols = 1;
-  std::vector<MatrixX<double>> control_points{};
-  const auto t_dummy =
-      VectorX<double>::LinSpaced(num_control_points, 0, 2 * M_PI);
-  for (int i = 0; i < num_control_points; ++i) {
-    control_points.push_back(
-        (MatrixX<double>(rows, cols) << std::sin(t_dummy(i)),
-         std::cos(t_dummy(i)))
-            .finished());
-  }
-  for (const auto& knot_vector_type :
-       {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
-    BsplineTrajectory<double> trajectory{
-        BsplineBasis<double>{order, num_control_points, knot_vector_type},
-        control_points};
+  BsplineTrajectory<double> trajectory = MakeCircleTrajectory();
 
-    // Verify that value() returns the expected results.
-    const int num_times = 100;
-    VectorX<double> t = VectorX<double>::LinSpaced(
-        num_times, trajectory.start_time(), trajectory.end_time());
-    for (int k = 0; k < num_times; ++k) {
-      MatrixX<double> value = trajectory.value(t(k));
-      MatrixX<double> expected_value =
-          NaiveBsplineTrajectoryValue(trajectory, t(k));
-      EXPECT_TRUE(CompareMatrices(value, expected_value,
-                                  16 * std::numeric_limits<double>::epsilon()));
-    }
+  // Verify that value() returns the expected results.
+  const int num_times = 100;
+  VectorX<double> t = VectorX<double>::LinSpaced(
+      num_times, trajectory.start_time() - 0.1, trajectory.end_time() + 0.1);
+  for (int k = 0; k < num_times; ++k) {
+    MatrixX<double> value = trajectory.value(t(k));
+    double t_clamped = std::min(std::max(t(k), trajectory.start_time()),
+                         trajectory.end_time());
+    MatrixX<double> expected_value =
+        trajectory.basis().EvaluateCurve(trajectory.control_points(),
+                                         t_clamped);
+    EXPECT_TRUE(CompareMatrices(value, expected_value,
+                                std::numeric_limits<double>::epsilon()));
   }
 }
 
 // Verifies that MakeDerivative() works as expected.
 GTEST_TEST(BsplineTrajectoryTests, MakeDerivativeTest) {
-  const int order = 4;
-  const int num_control_points = 11;
-  const int rows = 2;
-  const int cols = 1;
-  std::vector<MatrixX<double>> control_points{};
-  const auto t_dummy =
-      VectorX<double>::LinSpaced(num_control_points, 0, 2 * M_PI);
-  for (int i = 0; i < num_control_points; ++i) {
-    control_points.push_back(
-        (MatrixX<double>(rows, cols) << std::sin(t_dummy(i)),
-         std::cos(t_dummy(i)))
-            .finished());
-  }
-  for (const auto& knot_vector_type :
-       {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
-    BsplineTrajectory<double> trajectory{
-        BsplineBasis<double>{order, num_control_points, knot_vector_type},
-        control_points};
+  BsplineTrajectory<double> trajectory = MakeCircleTrajectory();
 
-    // Verify that MakeDerivative() returns the expected results.
-    std::unique_ptr<Trajectory<double>> derivative_trajectory =
-        trajectory.MakeDerivative();
-    std::function<void(const Vector1<double>&, VectorX<double>*)> calc_value =
-        [&trajectory](const Vector1<double> t, VectorX<double>* value) {
-          *value = trajectory.value(t(0));
-        };
-    const int num_times = 100;
-    VectorX<double> t = VectorX<double>::LinSpaced(
-        num_times, trajectory.start_time(), trajectory.end_time());
-    for (int k = 0; k < num_times; ++k) {
-      MatrixX<double> derivative = derivative_trajectory->value(t(k));
-      // To avoid evaluating the B-spline trajectory outside of its domain, we
-      // use forward/backward finite differences at the start/end points.
-      NumericalGradientMethod method = NumericalGradientMethod::kCentral;
-      double tolerance = 1e-7;
-      if (k == 0) {
-        method = NumericalGradientMethod::kForward;
-        tolerance = 1e-5;
-      } else if (k == num_times - 1) {
-        method = NumericalGradientMethod::kBackward;
-        tolerance = 1e-5;
-      }
-      MatrixX<double> expected_derivative = ComputeNumericalGradient(
-          calc_value, Vector1<double>{t(k)}, NumericalGradientOption{method});
-      EXPECT_TRUE(CompareMatrices(derivative, expected_derivative, tolerance));
+  // Verify that MakeDerivative() returns the expected results.
+  std::unique_ptr<Trajectory<double>> derivative_trajectory =
+      trajectory.MakeDerivative();
+  std::function<void(const Vector1<double>&, VectorX<double>*)> calc_value =
+      [&trajectory](const Vector1<double>& t, VectorX<double>* value) {
+        *value = trajectory.value(t(0));
+      };
+  const int num_times = 100;
+  VectorX<double> t = VectorX<double>::LinSpaced(
+      num_times, trajectory.start_time(), trajectory.end_time());
+  for (int k = 0; k < num_times; ++k) {
+    MatrixX<double> derivative = derivative_trajectory->value(t(k));
+    // To avoid evaluating the B-spline trajectory outside of its domain, we
+    // use forward/backward finite differences at the start/end points.
+    NumericalGradientMethod method = NumericalGradientMethod::kCentral;
+    double tolerance = 1e-7;
+    if (k == 0) {
+      method = NumericalGradientMethod::kForward;
+      tolerance = 1e-5;
+    } else if (k == num_times - 1) {
+      method = NumericalGradientMethod::kBackward;
+      tolerance = 1e-5;
     }
+    MatrixX<double> expected_derivative = ComputeNumericalGradient(
+        calc_value, Vector1<double>{t(k)}, NumericalGradientOption{method});
+    EXPECT_TRUE(CompareMatrices(derivative, expected_derivative, tolerance));
   }
 }
 
@@ -182,79 +156,62 @@ GTEST_TEST(BsplineTrajectoryTests, CopyBlockTest) {
 // Verifies that InsertKnots() works as expected.
 GTEST_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
   using common::CallPython;
-  const int order = 4;
-  const int num_control_points = 11;
-  const int rows = 2;
-  const int cols = 1;
-  std::vector<MatrixX<double>> control_points{};
-  const auto t_dummy =
-      VectorX<double>::LinSpaced(num_control_points, 0, 2 * M_PI);
-  for (int i = 0; i < num_control_points; ++i) {
-    control_points.push_back(
-        (MatrixX<double>(rows, cols) << std::sin(t_dummy(i)),
-         std::cos(t_dummy(i)))
-            .finished());
+  BsplineTrajectory<double> original_trajectory = MakeCircleTrajectory();
+
+  // Create a vector of new knots to add. Note that it contains a knot with a
+  // multiplicity of 2.
+  std::vector<double> new_knots{original_trajectory.start_time(), M_PI_4,
+                                0.25, 0.25, original_trajectory.end_time()};
+  // Add the new knots.
+  BsplineTrajectory<double> trajectory_with_new_knots = original_trajectory;
+  trajectory_with_new_knots.InsertKnots({new_knots});
+
+  // Verify that the number of control points after insertion is equal to the
+  // original number of control points plus the number of added knots.
+  EXPECT_EQ(trajectory_with_new_knots.num_control_points(),
+            original_trajectory.num_control_points() + new_knots.size());
+
+  // Add the new knots again to verify that nothing goes wrong if the
+  // trajectory into which knots are inserted has interior knots with
+  // multiplicity greater than 1.
+  trajectory_with_new_knots.InsertKnots({new_knots});
+
+  // Verify that the number of control points after insertion is equal to the
+  // original number of control points plus the number of added knots.
+  EXPECT_EQ(trajectory_with_new_knots.num_control_points(),
+            original_trajectory.num_control_points() + 2 * new_knots.size());
+
+  // Verify that start_time() and end_time() return the same results for the
+  // original trajectory and the one with additional knots.
+  EXPECT_EQ(trajectory_with_new_knots.start_time(),
+            original_trajectory.start_time());
+  EXPECT_EQ(trajectory_with_new_knots.end_time(),
+            original_trajectory.end_time());
+
+  // Verify that value() returns the same result for the original trajectory
+  // and the trajectory with additional knots for `num_times` sampled values
+  // of `t` between start_time() and end_time().
+  const int num_times = 100;
+  VectorX<double> t =
+      VectorX<double>::LinSpaced(num_times, original_trajectory.start_time(),
+                                 original_trajectory.end_time());
+  const double tolerance = 2 * std::numeric_limits<double>::epsilon();
+  if (FLAGS_visualize) {
+    CallPython("figure");
   }
-  for (const auto& knot_vector_type :
-       {KnotVectorType::kUniform, KnotVectorType::kClampedUniform}) {
-    BsplineTrajectory<double> original_trajectory{
-        BsplineBasis<double>{order, num_control_points, knot_vector_type},
-        control_points};
-    // Create a vector of new knots to add. Note that it contains a knot with a
-    // multiplicity of 2.
-    std::vector<double> new_knots{original_trajectory.start_time(), M_PI_4,
-                                  0.25, 0.25, original_trajectory.end_time()};
-    // Add the new knots.
-    BsplineTrajectory<double> trajectory_with_new_knots = original_trajectory;
-    trajectory_with_new_knots.InsertKnots({new_knots});
-
-    // Verify that the number of control points after insertion is equal to the
-    // original number of control points plus the number of added knots.
-    EXPECT_EQ(trajectory_with_new_knots.num_control_points(),
-              original_trajectory.num_control_points() + new_knots.size());
-
-    // Add the new knots again to verify that nothing goes wrong if the
-    // trajectory into which knots are inserted has interior knots with
-    // multiplicity greater than 1.
-    trajectory_with_new_knots.InsertKnots({new_knots});
-
-    // Verify that the number of control points after insertion is equal to the
-    // original number of control points plus the number of added knots.
-    EXPECT_EQ(trajectory_with_new_knots.num_control_points(),
-              original_trajectory.num_control_points() + 2 * new_knots.size());
-
-    // Verify that start_time() and end_time() return the same results for the
-    // original trajectory and the one with additional knots.
-    EXPECT_EQ(trajectory_with_new_knots.start_time(),
-              original_trajectory.start_time());
-    EXPECT_EQ(trajectory_with_new_knots.end_time(),
-              original_trajectory.end_time());
-
-    // Verify that value() returns the same result for the original trajectory
-    // and the trajectory with additional knots for `num_times` sampled values
-    // of `t` between start_time() and end_time().
-    const int num_times = 100;
-    VectorX<double> t =
-        VectorX<double>::LinSpaced(num_times, original_trajectory.start_time(),
-                                   original_trajectory.end_time());
-    const double tolerance = 2 * std::numeric_limits<double>::epsilon();
+  for (int k = 0; k < num_times; ++k) {
+    MatrixX<double> value = trajectory_with_new_knots.value(t(k));
+    MatrixX<double> expected_value = original_trajectory.value(t(k));
+    EXPECT_TRUE(CompareMatrices(value, expected_value, tolerance));
     if (FLAGS_visualize) {
-      CallPython("figure");
+      CallPython(
+          "plot", t(k), value.transpose(),
+          CompareMatrices(value, expected_value, tolerance) ? "gs" : "rs");
+      CallPython("plot", t(k), expected_value.transpose(), "ko");
     }
-    for (int k = 0; k < num_times; ++k) {
-      MatrixX<double> value = trajectory_with_new_knots.value(t(k));
-      MatrixX<double> expected_value = original_trajectory.value(t(k));
-      EXPECT_TRUE(CompareMatrices(value, expected_value, tolerance));
-      if (FLAGS_visualize) {
-        CallPython(
-            "plot", t(k), value.transpose(),
-            CompareMatrices(value, expected_value, tolerance) ? "gs" : "rs");
-        CallPython("plot", t(k), expected_value.transpose(), "ko");
-      }
-    }
-    if (FLAGS_visualize) {
-      CallPython("grid", true);
-    }
+  }
+  if (FLAGS_visualize) {
+    CallPython("grid", true);
   }
 }
 
