@@ -3,6 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -809,6 +810,16 @@ class SystemBase : public internal::SystemMessageInterface {
     return context_sizes_.num_abstract_parameters;
   }
 
+  /** Returns the size of the implicit time derivatives residual vector.
+  By default this is the same as num_continuous_states() but a LeafSystem
+  can change it during construction via
+  LeafSystem::DeclareImplicitTimeDerivativesResidualSize(). */
+  int implicit_time_derivatives_residual_size() const {
+    return implicit_time_derivatives_residual_size_.has_value()
+               ? *implicit_time_derivatives_residual_size_
+               : num_continuous_states();
+  }
+
   /** Checks whether the given context was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
   void ValidateContext(const ContextBase& context) const final {
@@ -1142,6 +1153,23 @@ class SystemBase : public internal::SystemMessageInterface {
     return system.get_context_sizes();
   }
 
+  /** Allows a LeafSystem to override the default size for the implicit time
+  derivatives residual and a Diagram to sum up the total size. If no value
+  is set, the default size is n=num_continuous_states().
+
+  @param[in] n The size of the residual vector output argument of
+               System::CalcImplicitTimeDerivativesResidual(). If n <= 0
+               restore to the default, num_continuous_states().
+
+  @see implicit_time_derivatives_residual_size()
+  @see LeafSystem::DeclareImplicitTimeDerivativesResidualSize()
+  @see System::CalcImplicitTimeDerivativesResidual() */
+  void set_implicit_time_derivatives_residual_size(int n) {
+    implicit_time_derivatives_residual_size_.reset();
+    if (n > 0)
+      implicit_time_derivatives_residual_size_ = n;
+  }
+
   // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
   // removed, also remove this function.
   virtual void DoCheckValidContext(const ContextBase&) const {}
@@ -1225,6 +1253,10 @@ class SystemBase : public internal::SystemMessageInterface {
   // declaration for LeafSystem construction; computed recursively during
   // Diagram construction.
   ContextSizes context_sizes_;
+
+  // Defaults to num_continuous_states() if no value here. Diagrams always
+  // fill this in by summing the value from their immediate subsystems.
+  std::optional<int> implicit_time_derivatives_residual_size_;
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

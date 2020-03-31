@@ -25,6 +25,9 @@
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -975,11 +978,11 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   BasicVector<AutoDiffXd> input2(3);
   for (int i = 0; i < 3; ++i) {
     input0[i].value() = 1 + 0.1 * i;
-    input0[i].derivatives() = Eigen::VectorXd::Unit(9, i);
+    input0[i].derivatives() = VectorXd::Unit(9, i);
     input1[i].value() = 2 + 0.2 * i;
-    input1[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
+    input1[i].derivatives() = VectorXd::Unit(9, 3 + i);
     input2[i].value() = 3 + 0.3 * i;
-    input2[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
+    input2[i].derivatives() = VectorXd::Unit(9, 6 + i);
   }
   context->FixInputPort(0, input0);
   context->FixInputPort(1, input1);
@@ -2791,7 +2794,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   // extra computations.
   int64_t expected_derivative_serial = derivative_cache.serial_number();
 
-  Eigen::VectorXd init_state(3);
+  VectorXd init_state(3);
   init_state << 5., 6., 7.;  // x0(=y0=u1), x1(=y1), x2(=y2)
 
   // Set the state from the diagram level, then evaluate the diagram
@@ -2830,7 +2833,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   Context<double>& context1 =
       diagram->GetMutableSubsystemContext(*integ1, &*diagram_context);
 
-  Eigen::VectorXd new_x0(1), new_x1(1);
+  VectorXd new_x0(1), new_x1(1);
   new_x0 << 13.; new_x1 << 17.;
   context0.SetContinuousState(new_x0);
   context1.SetContinuousState(new_x1);
@@ -3235,7 +3238,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
       .get_mutable_continuous_state_vector()
       .SetFromVector(Eigen::Vector2d(11.0, 12.0));
 
-  Eigen::VectorXd value;
+  VectorXd value;
   // Check system 1's x0 constraint.
   const SystemConstraint<double>& constraint0 =
       diagram->get_constraint(SystemConstraintIndex(0));
@@ -3520,6 +3523,65 @@ GTEST_TEST(InitializationTest, InitializationTest) {
 }
 
 // TODO(siyuan) add direct tests for EventCollection
+
+// A System that does not override the default implicit time derivatives
+// implementation.
+class DefaultExplicitSystem : public LeafSystem<double> {
+ public:
+  DefaultExplicitSystem() { DeclareContinuousState(3); }
+  const Eigen::Vector3d kDerivative{1., 2., 3.};
+ private:
+  void DoCalcTimeDerivatives(const Context<double>& context,
+                             ContinuousState<double>* derivatives) const final {
+    derivatives->SetFromVector(kDerivative);
+  }
+};
+
+// A System that _does_ override the default implicit time derivatives
+// implementation, and also changes the residual size from its default.
+class OverrideImplicitSystem : public DefaultExplicitSystem {
+ public:
+  OverrideImplicitSystem() {
+    DeclareImplicitTimeDerivativesResidualSize(1);
+  }
+
+ private:
+  void DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<double>& context,
+    const systems::ContinuousState<double>& proposed_derivatives,
+    EigenPtr<VectorX<double>> residual) const final {
+    EXPECT_EQ(residual->size(), 1);
+    (*residual)[0] = proposed_derivatives.CopyToVector().sum();
+  }
+};
+
+// A Diagram should concatenate the implicit time derivatives from its
+// component subsystems, and tally up the size correctly.
+GTEST_TEST(ImplicitTimeDerivatives, DiagramProcessing) {
+  const Vector3d derivs = DefaultExplicitSystem().kDerivative;
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem<DefaultExplicitSystem>();   // 3 residuals
+  builder.AddSystem<OverrideImplicitSystem>();  // 1 residual
+  builder.AddSystem<DefaultExplicitSystem>();   // 3 more residuals
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  EXPECT_EQ(diagram->implicit_time_derivatives_residual_size(), 7);
+  VectorXd residual = diagram->AllocateImplicitTimeDerivativesResidual();
+  EXPECT_EQ(residual.size(), 7);
+
+  auto xdot = diagram->AllocateTimeDerivatives();
+  EXPECT_EQ(xdot->size(), 9);  // 3 derivatives each subsystem
+  xdot->SetFromVector(VectorXd::LinSpaced(9, 11., 19.));
+  VectorXd expected_result(7);
+  expected_result.segment<3>(0) = Vector3d(11, 12, 13) - derivs;
+  expected_result[3] = Vector3d(14, 15, 16).sum();
+  expected_result.segment<3>(4) = Vector3d(17, 18, 19) - derivs;
+
+  diagram->CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual);
+  EXPECT_EQ(residual, expected_result);
+}
 
 }  // namespace
 }  // namespace systems

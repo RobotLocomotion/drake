@@ -111,7 +111,16 @@ class System : public SystemBase {
   virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const
       = 0;
 
-  /** Returns a DiscreteState of the same dimensions as the discrete_state
+  /** Returns an Eigen VectorX suitable for use as the output argument to
+  the CalcImplicitTimeDerivativesResidual() method. The returned VectorX
+  will have size implicit_time_derivatives_residual_size() with the
+  elements uninitialized. This is just a convenience method -- you are free
+  to use any properly-sized mutable Eigen object as the residual vector. */
+  VectorX<T> AllocateImplicitTimeDerivativesResidual() const {
+    return VectorX<T>(implicit_time_derivatives_residual_size());
+  }
+
+  /** Returns a DiscreteValues of the same dimensions as the discrete_state
   allocated in CreateDefaultContext. The simulator will provide this state
   as the output argument to Update. */
   virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const
@@ -243,22 +252,21 @@ class System : public SystemBase {
   //@{
 
   /** Returns a reference to the cached value of the continuous state variable
-  time derivatives, evaluating first if necessary using
-  CalcTimeDerivatives().
+  time derivatives, evaluating first if necessary using CalcTimeDerivatives().
 
-  This method returns the time derivatives `xcdot` of the continuous state
-  `xc`. The referenced return object will correspond elementwise with the
+  This method returns the time derivatives ẋ꜀ of the continuous state
+  x꜀. The referenced return object will correspond elementwise with the
   continuous state in the given Context. Thus, if the state in the Context
-  has second-order structure `xc=[q v z]`, that same structure applies to
-  the derivatives so we will have `xcdot=[qdot vdot zdot]`.
+  has second-order structure `x꜀ = [q v z]`, that same structure applies to
+  the derivatives so we will have `ẋ꜀ = [q ̇v̇ ż]`.
 
   @param context The Context whose time, input port, parameter, state, and
   accuracy values may be used to evaluate the derivatives.
 
-  @retval xcdot The time derivatives of `xc` returned as a reference to an
-                object of the same type and size as this %Context's
-                continuous state.
-  @see CalcTimeDerivatives(), get_time_derivatives_cache_entry() */
+  @retval xcdot Time derivatives ẋ꜀ of x꜀ returned as a reference to an object
+                of the same type and size as `context`'s continuous state.
+  @see CalcTimeDerivatives(), CalcImplicitTimeDerivativesResidual(),
+       get_time_derivatives_cache_entry() */
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
     const CacheEntry& entry = get_time_derivatives_cache_entry();
@@ -453,17 +461,86 @@ class System : public SystemBase {
   depend on both Context and additional input arguments. */
   //@{
 
-  /** Calculates the time derivatives `xcdot` of the continuous state `xc` into
+  /** Calculates the time derivatives `ẋ꜀` of the continuous state `x꜀` into
   a given output argument. Prefer EvalTimeDerivatives() instead to avoid
   unnecessary recomputation.
-  @see EvalTimeDerivatives() for more information.
 
-  @param context The Context whose contents will be used to evaluate the
-                 derivatives.
-  @param derivatives The time derivatives `xcdot`. Must be the same size as
-                     the continuous state vector in `context`. */
+  This method solves the %System equations in explicit form:
+
+      ẋ꜀ = fₑ(𝓒)
+
+  where `𝓒 = {a, p, t, x, u}` is the current value of the given Context from
+  which accuracy a, parameters p, time t, state x (`={x꜀ xd xₐ}`) and
+  input values u are obtained.
+
+  @param[in] context The source for time, state, inputs, etc. defining the
+      point at which the derivatives should be calculated.
+  @param[out] derivatives The time derivatives `ẋ꜀`. Must be the same size as
+      the continuous state vector in `context`.
+
+  @see EvalTimeDerivatives() for more information.
+  @see CalcImplicitTimeDerivativesResidual() for the implicit form of these
+       equations.*/
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const;
+
+  /** Evaluates the implicit form of the %System equations and returns the
+  residual.
+
+  The explicit and implicit forms of the %System equations are
+
+      (1) ẋ꜀ = fₑ(𝓒)            explicit
+      (2) 0 = fᵢ(𝓒; ẋ꜀)         implicit
+
+  where `𝓒 = {a, p, t, x, u}` is the current value of the given Context from
+  which accuracy a, parameters p, time t, state x (`={x꜀ xd xₐ}`) and input
+  values u are obtained. Substituting (1) into (2) shows that the following
+  condition must always hold:
+
+      (3) fᵢ(𝓒; fₑ(𝓒)) = 0      always true
+
+  When `fᵢ(𝓒; ẋ꜀ₚ)` is evaluated with a proposed time derivative ẋ꜀ₚ that
+  differs from ẋ꜀ the result will be non-zero; we call that the _residual_ of
+  the implicit equation. Given a Context and proposed time derivative ẋ꜀ₚ, this
+  method returns the residual r such that
+
+      (4) r = fᵢ(𝓒; ẋ꜀ₚ).
+
+  The returned r will typically be the same length as x꜀ although that is not
+  required. And even if r and x꜀ are the same size, there will not necessarily
+  be any elementwise correspondence between them. (That is, you should not
+  assume that r[i] is the "residual" of ẋ꜀ₚ[i].) For a Diagram, r is the
+  concatenation of residuals from each of the subsystems, in order of subsystem
+  index within the Diagram.
+
+  A default implementation fᵢ⁽ᵈᵉᶠ⁾ for the implicit form is always provided and
+  makes use of the explicit form as follows:
+
+      (5) fᵢ⁽ᵈᵉᶠ⁾(𝓒; ẋ꜀ₚ) ≜ ẋ꜀ₚ − fₑ(𝓒)
+
+  which satisfies condition (3) by construction. Substantial efficiency gains
+  can often be obtained by replacing the default function with a customized
+  implementation. Override DoCalcImplicitTimeDerivativesResidual() to replace
+  the default implementation with a better one.
+
+  @param[in] context The source for time, state, inputs, etc. to be used
+      in calculating the residual.
+  @param[in] proposed_derivatives The proposed value ẋ꜀ₚ for the time
+      derivatives of x꜀.
+  @param[out] residual The result r of evaluating the implicit function.
+      Can be any mutable Eigen vector object of size
+      implicit_time_derivatives_residual_size().
+
+  @pre `proposed_derivatives` is compatible with this System.
+  @pre `residual` is of size implicit_time_derivatives_residual_size().
+
+  @see SystemBase::implicit_time_derivatives_residual_size()
+  @see LeafSystem::DeclareImplicitTimeDerivativesResidualSize()
+  @see DoCalcImplicitTimeDerivativesResidual()
+  @see CalcTimeDerivatives() */
+  void CalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const;
 
   /** This method is the public entry point for dispatching all discrete
   variable update event handlers. Using all the discrete update handlers in
@@ -1329,6 +1406,19 @@ class System : public SystemBase {
   size zero and aborts otherwise. */
   virtual void DoCalcTimeDerivatives(const Context<T>& context,
                                      ContinuousState<T>* derivatives) const;
+
+  /** Override this if you have an efficient way to evaluate the implicit
+  time derivatives residual for this System. Otherwise the default
+  implementation is
+  `residual = proposed_derivatives − EvalTimeDerivatives(context)`.
+
+  @note The public method has already verified that `proposed_derivatives`
+        is compatible with this System and that `residual` is non-null and is
+        sized properly. You do not have to check those parameters in your
+        implementation. */
+  virtual void DoCalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const;
 
   /** Computes the next time at which this System must perform a discrete
   action.
