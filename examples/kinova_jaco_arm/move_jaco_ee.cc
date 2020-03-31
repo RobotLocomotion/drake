@@ -47,7 +47,8 @@ namespace kinova_jaco_arm {
 namespace {
 
 const char kUrdfPath[] =
-    "drake/manipulation/models/jaco_description/urdf/j2s7s300.urdf";
+    "drake/manipulation/models/jaco_description/urdf/"
+    "j2s7s300_sphere_collision.urdf";
 
 class MoveDemoRunner {
  public:
