@@ -1129,6 +1129,28 @@ class LeafSystem : public System<T> {
       std::unique_ptr<AbstractValue> abstract_state);
   //@}
 
+
+  /** @name    (Advanced) Declare size of implicit time derivatives residual
+  for use with System::CalcImplicitTimeDerivativeResidual(). Most commonly
+  the default value, same as num_continuous_states(), will be the correct
+  size for the residual. */
+  //@{
+
+  /** (Advanced) Overrides the default size for the implicit time
+  derivatives residual. If no value is set, the default size is
+  n=num_continuous_states().
+
+  @param[in] n The size of the residual vector output argument of
+               System::CalcImplicitTimeDerivativesResidual(). If n <= 0
+               restore to the default, num_continuous_states().
+
+  @see implicit_time_derivatives_residual_size()
+  @see System::CalcImplicitTimeDerivativesResidual() */
+  void DeclareImplicitTimeDerivativesResidualSize(int n) {
+    this->set_implicit_time_derivatives_residual_size(n);
+  }
+  //@}
+
   // =========================================================================
   /** @name                    Declare input ports
   Methods in this section are used by derived classes to declare their
