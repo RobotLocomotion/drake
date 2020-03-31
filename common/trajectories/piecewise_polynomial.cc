@@ -332,6 +332,92 @@ void PiecewisePolynomial<T>::RemoveFinalSegment() {
 }
 
 template <typename T>
+void PiecewisePolynomial<T>::ReverseTime() {
+  using std::pow;
+  const std::vector<double>& b = this->breaks();
+
+  // Update the coefficients.
+  for (int i = 0; i < this->get_number_of_segments(); i++) {
+    PolynomialMatrix& matrix = polynomials_[i];
+    const double h = b[i + 1] - b[i];
+    for (int row = 0; row < rows(); row++) {
+      for (int col = 0; col < cols(); col++) {
+        const int d = matrix(row, col).GetDegree();
+        if (d == 0) continue;
+        const Eigen::VectorXd coeffs = matrix(row, col).GetCoefficients();
+
+        // Must shift this segment by h, because it will now be evaluated
+        // relative to breaks[i+1] instead of breaks[i], via p_after(t) =
+        // p_before(t+h). This is a slightly involved operation, because
+        // substituing (t+h) in a monomial with degree k will effect the
+        // coefficients for many monomials.
+
+        // We can perform the time-reversal at the same time, using the variant
+        // p_after(t) = p_before(h-t).
+
+        // Compute (h-t) powers, where (h-t)^(j+1) = \sum_j H(j,k) t^(k-1).
+        // TODO(russt): For efficiency, I could compute this outside the loop
+        // (being careful that every polynomial could have a different
+        // degree).
+        Eigen::MatrixXd H = Eigen::MatrixXd::Zero(d, d + 1);
+        H(0, 0) = h;
+        H(0, 1) = -1;
+        for (int j = 1; j < d; j++) {
+          H.block(j, 0, 1, j + 1) = h * H.block(j - 1, 0, 1, j + 1);
+          H.block(j, 1, 1, j + 1) -= H.block(j - 1, 0, 1, j + 1);
+        }
+
+        Eigen::VectorXd new_coeffs = Eigen::VectorXd::Zero(d + 1);
+        new_coeffs(0) = coeffs(0);
+        // Update coefficients.
+        for (int j = 0; j < d; j++) {
+          new_coeffs += coeffs(j + 1) * H.row(j);
+        }
+
+        matrix(row, col) = Polynomial<T>(new_coeffs);
+      }
+    }
+  }
+
+  // Reverse the order of the breaks and polynomials.
+  std::vector<double>& breaks = this->get_mutable_breaks();
+  std::reverse(breaks.begin(), breaks.end());
+  std::reverse(polynomials_.begin(), polynomials_.end());
+  // Update the breaks.
+  for (auto it = breaks.begin(); it != breaks.end(); ++it) {
+    *it *= -1.0;
+  }
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::ScaleTime(double scale) {
+  using std::pow;
+  DRAKE_DEMAND(scale > 0.0);
+
+  // Update the coefficients.
+  for (int i = 0; i < this->get_number_of_segments(); i++) {
+    PolynomialMatrix& matrix = polynomials_[i];
+    for (int row = 0; row < rows(); row++) {
+      for (int col = 0; col < cols(); col++) {
+        const int d = matrix(row, col).GetDegree();
+        if (d == 0) continue;
+        Eigen::VectorXd coeffs = matrix(row, col).GetCoefficients();
+        for (int p = 1; p < d + 1; p++) {
+          coeffs(p) /= pow(scale, p);
+        }
+        matrix(row, col) = Polynomial<T>(coeffs);
+      }
+    }
+  }
+
+  // Update the breaks.
+  std::vector<double>& breaks = this->get_mutable_breaks();
+  for (auto it = breaks.begin(); it != breaks.end(); ++it) {
+    *it *= scale;
+  }
+}
+
+template <typename T>
 void PiecewisePolynomial<T>::shiftRight(double offset) {
   std::vector<double>& breaks = this->get_mutable_breaks();
   for (auto it = breaks.begin(); it != breaks.end(); ++it) {
