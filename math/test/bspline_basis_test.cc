@@ -15,7 +15,7 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
       0, 0, 0, 0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1, 1, 1, 1};
   const std::vector<double> expected_knots_1{-3, -2, -1, 0, 1, 2,  3, 4,
                                              5,  6,  7,  8, 9, 10, 11};
-  // Check the order and num_basis_functions constructor.
+  // Check the order and num_basis_functions constructor with kClampedUniform.
   BsplineBasis<double> bspline_basis_0{expected_order,
                                        expected_num_basis_functions,
                                        KnotVectorType::kClampedUniform};
@@ -24,6 +24,12 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
             expected_num_basis_functions);
   EXPECT_EQ(bspline_basis_0.knots(), expected_knots_0);
 
+  // Check that the order and num_basis_functions constructor defaults to
+  // kClampedUniform.
+  EXPECT_EQ(bspline_basis_0,
+            BsplineBasis<double>(expected_order, expected_num_basis_functions));
+
+  // Check the order and num_basis_functions constructor with kUniform.
   BsplineBasis<double> bspline_basis_1{
       expected_order, expected_num_basis_functions, KnotVectorType::kUniform};
   EXPECT_EQ(bspline_basis_1.order(), expected_order);

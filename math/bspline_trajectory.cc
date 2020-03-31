@@ -21,16 +21,16 @@ BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<double> basis,
     : basis_(std::move(basis)), control_points_(std::move(control_points)) {}
 
 template <typename T>
+std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
+  return std::make_unique<BsplineTrajectory<T>>(*this);
+}
+
+template <typename T>
 MatrixX<T> BsplineTrajectory<T>::value(double time) const {
   using std::max;
   using std::min;
   return basis().EvaluateCurve(control_points(),
                                min(max(time, start_time()), end_time()));
-}
-
-template <typename T>
-std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
-  return std::make_unique<BsplineTrajectory<T>>(*this);
 }
 
 template <typename T>
@@ -132,12 +132,6 @@ void BsplineTrajectory<T>::InsertKnots(
 }
 
 template <typename T>
-bool BsplineTrajectory<T>::operator==(const BsplineTrajectory<T>& other) const {
-  return this->basis() == other.basis() &&
-         this->control_points() == other.control_points();
-}
-
-template <typename T>
 math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyWithSelector(
     const std::function<MatrixX<T>(const MatrixX<T>&)>& select) const {
   std::vector<MatrixX<T>> new_control_points{};
@@ -162,6 +156,12 @@ template <typename T>
 math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
   DRAKE_THROW_UNLESS(cols() == 1);
   return CopyBlock(0, 0, n, 1);
+}
+
+template <typename T>
+bool BsplineTrajectory<T>::operator==(const BsplineTrajectory<T>& other) const {
+  return this->basis() == other.basis() &&
+         this->control_points() == other.control_points();
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
