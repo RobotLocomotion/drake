@@ -244,6 +244,19 @@ void System<T>::CalcTimeDerivatives(const Context<T>& context,
 }
 
 template <typename T>
+void System<T>::CalcImplicitTimeDerivativesResidual(
+    const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const {
+  DRAKE_DEMAND(residual != nullptr);
+  DRAKE_DEMAND(residual->size() ==
+               this->implicit_time_derivatives_residual_size());
+  ValidateContext(context);
+  ValidateChildOfContext(&proposed_derivatives);
+  DoCalcImplicitTimeDerivativesResidual(context, proposed_derivatives,
+                                        residual);
+}
+
+template <typename T>
 void System<T>::CalcDiscreteVariableUpdates(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
@@ -949,6 +962,18 @@ void System<T>::DoCalcTimeDerivatives(const Context<T>& context,
   // state. Other Systems must override this method!
   unused(context);
   DRAKE_DEMAND(derivatives->size() == 0);
+}
+
+template <typename T>
+void System<T>::DoCalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const {
+  DRAKE_DEMAND(residual != nullptr);
+  // The default implementation is only valid if the residual size is
+  // the same as the number of continuous states (the default).
+  DRAKE_THROW_UNLESS(residual->size() == proposed_derivatives.size());
+  proposed_derivatives.get_vector().CopyToPreSizedVector(residual);
+  *residual -= EvalTimeDerivatives(context).CopyToVector();
 }
 
 template <typename T>
