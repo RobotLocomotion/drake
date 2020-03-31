@@ -2704,6 +2704,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    // TODO(yangwill): Add an optional parameter to calculate this for a
+    // subset of bodies instead of the full system
     internal_tree().CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
         context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
   }
@@ -2735,6 +2737,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
+    // TODO(yangwill): Add an optional parameter to calculate this for a
+    // subset of bodies instead of the full system
     return internal_tree()
         .CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
             context, with_respect_to, frame_A, frame_E);
