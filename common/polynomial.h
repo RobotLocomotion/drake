@@ -14,6 +14,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -397,6 +398,14 @@ class Polynomial {
    */
   bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
 
+  /** Constructs a Polynomial representing the symbolic expression `e`.
+   * Note that the ID of a variable is preserved in this translation.
+   *
+   * @throw std::runtime_error if `e` is not polynomial-convertible.
+   * @pre e.is_polynomial() is true.
+   */
+  static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
+
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
     //    if (m.coefficient == 0) return os;
 
@@ -488,6 +497,20 @@ std::ostream& operator<<(
   }
   return os;
 }
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace symbolic {
+namespace internal {
+// Helper to implement (deprecated) Expression::ToPolynomial.
+// TODO(soonho-tri): Remove this on or after 2020-07-01 when we remove
+// Expression::ToPolynomial.
+inline drake::Polynomial<double> ToPolynomial(
+    const drake::symbolic::Expression& e, const ToPolynomialHelperTag&) {
+  return drake::Polynomial<double>::FromExpression(e);
+}
+}  // namespace internal
+}  // namespace symbolic
+#endif
 
 typedef Polynomial<double> Polynomiald;
 

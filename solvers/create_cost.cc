@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/common/polynomial.h"
 #include "drake/common/unused.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -84,7 +85,7 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
     throw runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
-  const Polynomiald polynomial = e.ToPolynomial();
+  const Polynomiald polynomial = Polynomiald::FromExpression(e);
   vector<Polynomiald::VarType> polynomial_vars(vars.size());
   VectorXDecisionVariable var_vec(vars.size());
   int polynomial_var_count = 0;
