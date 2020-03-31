@@ -244,6 +244,25 @@ void System<T>::CalcTimeDerivatives(const Context<T>& context,
 }
 
 template <typename T>
+void System<T>::CalcImplicitTimeDerivativesResidual(
+    const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const {
+  DRAKE_DEMAND(residual != nullptr);
+  if (residual->size() != this->implicit_time_derivatives_residual_size()) {
+    throw std::logic_error(fmt::format(
+        "CalcImplicitTimeDerivativesResidual(): expected "
+        "residual vector of size {} but got one of size {}.\n"
+        "Use AllocateImplicitTimeDerivativesResidual() to "
+        "obtain a vector of the correct size.",
+        this->implicit_time_derivatives_residual_size(), residual->size()));
+  }
+  ValidateContext(context);
+  ValidateChildOfContext(&proposed_derivatives);
+  DoCalcImplicitTimeDerivativesResidual(context, proposed_derivatives,
+                                        residual);
+}
+
+template <typename T>
 void System<T>::CalcDiscreteVariableUpdates(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
@@ -949,6 +968,27 @@ void System<T>::DoCalcTimeDerivatives(const Context<T>& context,
   // state. Other Systems must override this method!
   unused(context);
   DRAKE_DEMAND(derivatives->size() == 0);
+}
+
+template <typename T>
+void System<T>::DoCalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const {
+  // As documented, we can assume residual is non-null, its length matches the
+  // declared size, and proposed_derivatives is compatible with this System.
+  // However, this default implementation has an additional restriction: the
+  // declared residual size must match the number of continuous states (that's
+  // the default if no one says otherwise).
+  if (residual->size() != proposed_derivatives.size()) {
+    throw std::logic_error(fmt::format(
+        "System::DoCalcImplicitTimeDerivativesResidual(): "
+        "This default implementation requires that the declared residual size "
+        "(here {}) matches the number of continuous state variables ({}). "
+        "You must override this method if your residual is a different size.",
+        residual->size(), proposed_derivatives.size()));
+  }
+  proposed_derivatives.get_vector().CopyToPreSizedVector(residual);
+  *residual -= EvalTimeDerivatives(context).CopyToVector();
 }
 
 template <typename T>

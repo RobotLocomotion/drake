@@ -121,7 +121,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override;
+                             ContinuousState<T>* derivatives) const final;
+
+  void DoCalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const final;
 
   /// Retrieves a reference to the subsystem with name @p name returned by
   /// get_name().
