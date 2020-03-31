@@ -79,7 +79,7 @@ notebooks online, with no need for local installation:
     </a>
 
 You may find more information about how to run these locally with Jupyter and
-how they are published Binder
+how they are published to Binder
 `in the tutorials directory of the source tree <https://github.com/RobotLocomotion/drake/tree/master/tutorials>`_.
 
 .. _examples:

@@ -153,11 +153,18 @@ After following the above install steps, check to ensure you can import
     that you define the ``${GUROBI_PATH}`` environment variable, or specify
     ``${GUROBI_INCLUDE_DIR}`` via CMake.
 
+.. _whats-available-from-python:
+
 What's Available from Python
 ----------------------------
 
-The most up-to-date demonstrations of what can be done using ``pydrake`` are
-the ``pydrake`` unit tests themselves. You can see all of them inside the
+You should first browse the `Python API <pydrake/index.html#://>`_ to see what
+modules are available. The most up-to-date high-level demonstrations of what
+can be done using ``pydrake`` are in Drake's :ref:`Tutorials <tutorials>` and
+the `Underactuated Robotics Textbook <http://underactuated.mit.edu/>`_.
+
+You can also see lower-level usages of the API in the ``pydrake`` unit tests
+themselves, which you can find inside of the
 ``drake/bindings/python/pydrake/**/test`` folders in the Drake source code.
 
 Here's an example snippet of code from ``pydrake``:
