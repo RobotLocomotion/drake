@@ -2698,15 +2698,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::runtime_error unless composite_mass > 0, where composite_mass
   /// is the total mass of all bodies except world_body() in MultibodyPlant.
-  void CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E,
+  void CalcJacobianCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
     // TODO(yangwill): Add an optional parameter to calculate this for a
     // subset of bodies instead of the full system
-    internal_tree().CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
+    internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
         context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
   }
 
@@ -2739,9 +2737,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_E) const {
     // TODO(yangwill): Add an optional parameter to calculate this for a
     // subset of bodies instead of the full system
-    return internal_tree()
-        .CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
-            context, with_respect_to, frame_A, frame_E);
+    return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
+        context, with_respect_to, frame_A, frame_E);
   }
 
   /// This method allows users to map the state of `this` model, x, into a

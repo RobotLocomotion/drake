@@ -1769,11 +1769,9 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
-    const systems::Context<T>& context,
-    JacobianWrtVariable with_respect_to,
-    const Frame<T>& frame_A,
-    const Frame<T>& frame_E,
+void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
+    const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A, const Frame<T>& frame_E,
     EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
 
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
@@ -1782,7 +1780,7 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
   DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
   if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcJacobianTranslationalVelocityOfSystemCenterOfMass(): this "
+        "CalcJacobianCenterOfMassTranslationalVelocity(): this "
         "MultibodyPlant contains only world_body() so its center of mass "
         "is undefined.");
   }
@@ -1805,14 +1803,14 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
 
 template <typename T>
 Vector3<T>
-MultibodyTree<T>::CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
+MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_A, const Frame<T>& frame_E) const {
   DRAKE_THROW_UNLESS(&frame_A == &world_frame());
 
   if (num_bodies() <= 1) {
     throw std::runtime_error(
-        "CalcBiasTranslationalAccelerationOfSystemCenterOfMass(): this "
+        "CalcBiasCenterOfMassTranslationalAcceleration(): this "
         "MultibodyPlant contains only world_body() so its center of mass "
         "is undefined.");
   }

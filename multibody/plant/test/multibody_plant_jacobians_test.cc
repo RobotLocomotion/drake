@@ -342,9 +342,9 @@ TEST_F(TwoDOFPlanarPendulumTest,
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
 
-  // Test for CalcJacobianTranslationalVelocityOfSystemCenterOfMass()
+  // Test for CalcJacobianCenterOfMassTranslationalVelocity()
   Eigen::MatrixXd Js_v_WCcm_W(3, plant_->num_velocities());
-  plant_->CalcJacobianTranslationalVelocityOfSystemCenterOfMass(
+  plant_->CalcJacobianCenterOfMassTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, plant_->world_frame(),
       plant_->world_frame(), &Js_v_WCcm_W);
 
@@ -363,7 +363,7 @@ TEST_F(TwoDOFPlanarPendulumTest,
       CompareMatrices(Js_v_WCcm_W * state.tail(plant_->num_velocities()),
                       v_WCcm_W_expected, kTolerance));
 
-  // Test for CalcBiasTranslationalAccelerationOfSystemCenterOfMass()
+  // Test for CalcBiasCenterOfMassTranslationalAcceleration()
   const Vector3<double>& abias_WCcm_W =
       plant_->CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
           *context_, JacobianWrtVariable::kV, plant_->world_frame(),
