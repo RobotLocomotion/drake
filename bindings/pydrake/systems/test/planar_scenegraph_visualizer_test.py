@@ -195,10 +195,10 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         cart_pole.Finalize()
 
         visualizer = ConnectPlanarSceneGraphVisualizer(
-            builder=builder, scene_graph=scene_graph, xlim=[23, 1.2])
+            builder=builder, scene_graph=scene_graph, xlim=[0.3, 1.2])
         self.assertIsInstance(visualizer, PlanarSceneGraphVisualizer)
         # Confirm that arguments are passed through.
-        self.assertEqual(visualizer.ax.get_xlim(), (23, 1.2))
+        self.assertEqual(visualizer.ax.get_xlim(), (0.3, 1.2))
 
         vis2 = ConnectPlanarSceneGraphVisualizer(
             builder=builder,
