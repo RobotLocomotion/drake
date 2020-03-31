@@ -110,7 +110,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
         PyPlotVisualizer.__init__(self, facecolor=facecolor, figsize=figsize,
                                   ax=ax, draw_period=draw_period, show=show)
-        self.set_name('planar_scenegraph_visualizer')
+        self.set_name('planar_multibody_visualizer')
 
         self._scene_graph = scene_graph
         self._T_VW = T_VW
@@ -363,37 +363,3 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 self._update_body_fill_verts(body_fill, patch_V)
                 body_fill.zorder = X_WB.translation() @ view_dir
         self.ax.set_title('t = {:.1f}'.format(context.get_time()))
-
-
-def ConnectPlanarSceneGraphVisualizer(builder,
-                                      scene_graph,
-                                      output_port=None,
-                                      **kwargs):
-    """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
-    diagram, and wires the scene_graph pose bundle output port to the input
-    port of the visualizer.  Provides a comparable interface to
-    ConnectDrakeVisualizer.
-
-    Args:
-        builder: The diagram builder used to construct the Diagram.
-        scene_graph: The SceneGraph in builder containing the geometry to be
-            visualized.
-        output_port: (optional) If not None, then output_port will be connected
-            to the visualizer input port instead of the scene_graph.
-            get_pose_bundle_output_port().  This is required, for instance,
-            when the SceneGraph is inside a Diagram, and we must connect the
-            exposed port to the visualizer instead of the original SceneGraph
-            port.
-
-        Additional kwargs are passed through to the PlanarSceneGraphVisualizer
-        constructor.
-
-    Returns:
-        The newly created PlanarSceneGraphVisualizer object.
-    """
-    if output_port is None:
-        output_port = scene_graph.get_pose_bundle_output_port()
-    visualizer = builder.AddSystem(
-        PlanarSceneGraphVisualizer(scene_graph, **kwargs))
-    builder.Connect(output_port, visualizer.get_input_port(0))
-    return visualizer

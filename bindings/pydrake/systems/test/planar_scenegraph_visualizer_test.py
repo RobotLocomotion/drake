@@ -13,7 +13,7 @@ from pydrake.multibody.tree import SpatialInertia, UnitInertia
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
-   ConnectPlanarSceneGraphVisualizer, PlanarSceneGraphVisualizer)
+    PlanarSceneGraphVisualizer)
 
 
 class TestPlanarSceneGraphVisualizer(unittest.TestCase):
@@ -184,29 +184,3 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         scene_graph = scene_graph_with_mesh("garbage.STL")
         with self.assertRaises(RuntimeError):
             PlanarSceneGraphVisualizer(scene_graph)
-
-    def testConnectPlanarSceneGraphVisualizer(self):
-        """Cart-Pole with simple geometry."""
-        file_name = FindResourceOrThrow(
-            "drake/examples/multibody/cart_pole/cart_pole.sdf")
-        builder = DiagramBuilder()
-        cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant=cart_pole).AddModelFromFile(file_name)
-        cart_pole.Finalize()
-
-        visualizer = ConnectPlanarSceneGraphVisualizer(
-            builder=builder, scene_graph=scene_graph, xlim=[23, 1.2])
-        self.assertIsInstance(visualizer, PlanarSceneGraphVisualizer)
-        # Confirm that arguments are passed through.
-        self.assertEqual(visualizer.ax.get_xlim(), (23, 1.2))
-
-        vis2 = ConnectPlanarSceneGraphVisualizer(
-            builder=builder,
-            scene_graph=scene_graph,
-            output_port=scene_graph.get_pose_bundle_output_port())
-        vis2.set_name("vis2")
-        self.assertIsInstance(vis2, PlanarSceneGraphVisualizer)
-
-        diagram = builder.Build()
-        context = diagram.CreateDefaultContext()
-        diagram.Publish(context)
