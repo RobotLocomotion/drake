@@ -414,7 +414,6 @@ licenses([
         repository_ctx.os.name,
         "vtkFiltersSources",
         hdrs = [
-            "vtkCubeSource.h",
             "vtkCylinderSource.h",
             "vtkFiltersSourcesModule.h",
             "vtkPlaneSource.h",
