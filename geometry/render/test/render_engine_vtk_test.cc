@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
@@ -27,6 +28,7 @@ namespace render {
 namespace {
 
 using Eigen::AngleAxisd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::internal::DummyRenderEngine;
@@ -542,23 +544,82 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
 // Performs the shape-centered-in-the-image test with a box.
 TEST_F(RenderEngineVtkTest, BoxTest) {
   for (const bool use_texture : {false, true}) {
-    Init(X_WC_, true);
+    for (const double texture_scale : {1.0, 0.5}) {
+      const bool texture_scaled = texture_scale != 1;
+      // We only need to sample texture scale if we're *using* the texture.
+      if (!use_texture && texture_scaled) continue;
+      Init(X_WC_, true);
 
-    // Sets up a box.
-    Box box(1, 1, 1);
-    expected_label_ = RenderLabel(1);
-    const GeometryId id = GeometryId::get_new_id();
-    renderer_->RegisterVisual(id, box, simple_material(use_texture),
-                              RigidTransformd::Identity(),
-                              true /* needs update */);
-    RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitX())},
-                         Vector3d{0, 0, 0.5}};
-    renderer_->UpdatePoses(
-        unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+      // Sets up a box.
+      // Use non-uniform dimensions. Can't make the dimensions too large,
+      // otherwise the box will extend towards the image boundaries, occluding
+      // the background (outlier) pixels which _will_ register the wrong color.
+      Box box(1.999, 0.55, 0.75);
+      expected_label_ = RenderLabel(1);
+      const GeometryId id = GeometryId::get_new_id();
 
-    expected_color_ =
-        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
-    PerformCenterShapeTest(renderer_.get(), "Box test");
+      // For the box, we'll use a special texture that will allow us to detect
+      // tiling. The default VTK cube source tiles the texture based on the
+      // size of the box. We confirm that doesn't actually happen. We test both
+      // the untiled default behavior and the ability to scale the texture.
+      PerceptionProperties props = simple_material(false);
+      if (use_texture) {
+        props.AddProperty(
+            "phong", "diffuse_map",
+            FindResourceOrThrow(
+                "drake/geometry/render/test/diag_gradient.png"));
+        if (texture_scaled) {
+          props.AddProperty(
+              "phong", "diffuse_scale", Vector2d{texture_scale, texture_scale});
+        }
+      }
+      renderer_->RegisterVisual(id, box, props,
+                                RigidTransformd::Identity(),
+                                true /* needs update */);
+      // Position the box so that one corner is in the center of the image. The
+      // corner will report the expected depth, color, and label. Typically, the
+      // center of the box would render to the center of the image, so putting
+      // the corner of the box at the center of the image would require moving
+      // the box half its dimension lengths. Moving it *exactly* that length
+      // means that the center pixel would only partially be filled (the vertex
+      // would be in the center). We want the whole pixel filled so we place the
+      // vertex just *beyond* the center so that the whole pixel is filled by
+      // box face. The z-value comes from taking the *rotated* box and making
+      // sure the near face has the expected depth.
+      RigidTransformd X_WV{
+          RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitX())},
+          Vector3d{-box.width() * 0.49, -box.depth() * 0.49, 0.625}};
+      renderer_->UpdatePoses(
+          unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+
+      if (texture_scaled) {
+        // If we've scaled the texture:
+        //   1. use_texture is enabled.
+        //   2. The color isn't the ideal kTextureColor, because we're somewhere
+        //      else in the gradient texture.
+        // The gradient texture is crafted such that it has the same texture
+        // color as box.png in the corner positioned at the center of the image.
+        // When we scale the image differently, we'll radically change the
+        // color at that same corner.
+
+        expected_color_ = RgbaColor(ColorI{132, 119, 16}, 255);
+        // Quick proof that we're testing for a different color -- we're drawing
+        // the red channel from our expected color.
+        ASSERT_NE(kTextureColor.r, 132);
+      } else {
+        // Otherwise the expected is simply the texture color of box.png.
+        expected_color_ =
+            use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+      }
+
+      PerformCenterShapeTest(
+          renderer_.get(),
+          fmt::format("Box test - {}",
+                      use_texture ?
+                      (texture_scaled ? "scaled texture" : "unscaled texture") :
+                      "diffuse color")
+              .c_str());
+    }
   }
 }
 
