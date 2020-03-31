@@ -6,7 +6,6 @@
 #include <utility>
 
 #include <vtkCamera.h>
-#include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
 #include <vtkOBJReader.h>
 #include <vtkOpenGLPolyDataMapper.h>
@@ -28,6 +27,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+using Eigen::Vector2d;
 using Eigen::Vector4d;
 using std::make_unique;
 using math::RigidTransformd;
@@ -253,11 +253,9 @@ void RenderEngineVtk::ImplementGeometry(const HalfSpace&,
 }
 
 void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
-  vtkNew<vtkCubeSource> cube;
-  cube->SetXLength(box.width());
-  cube->SetYLength(box.depth());
-  cube->SetZLength(box.height());
-  ImplementGeometry(cube.GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(CreateVtkBox(box, data->properties).GetPointer(),
+                    user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
@@ -547,11 +545,15 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
     }
   }
   if (!texture_name.empty()) {
+    const Vector2d& uv_scale = data.properties.GetPropertyOrDefault(
+        "phong", "diffuse_scale", Vector2d{1, 1});
     vtkNew<vtkPNGReader> texture_reader;
     texture_reader->SetFileName(texture_name.c_str());
     texture_reader->Update();
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetInputConnection(texture_reader->GetOutputPort());
+    const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
+    texture->SetRepeat(need_repeat);
     texture->InterpolateOn();
     color_actor->SetTexture(texture.Get());
   } else {
