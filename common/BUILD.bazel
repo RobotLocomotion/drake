@@ -173,6 +173,7 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":essential",
+        ":symbolic",
     ],
 )
 
@@ -223,7 +224,6 @@ drake_cc_library(
         ":essential",
         ":extract_double",
         ":hash",
-        ":polynomial",
         ":random",
         "@fmt",
     ],
@@ -1044,6 +1044,7 @@ drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":essential",
+        ":polynomial",
         ":symbolic",
         "//common/test_utilities:is_memcpy_movable",
         "//common/test_utilities:symbolic_test_util",

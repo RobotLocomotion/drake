@@ -4,18 +4,24 @@
 #include <cstddef>
 #include <map>
 #include <sstream>
+#include <stdexcept>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/random_polynomial_matrix.h"
 
 using Eigen::VectorXd;
 using std::default_random_engine;
+using std::map;
+using std::runtime_error;
 using std::uniform_int_distribution;
 using std::uniform_real_distribution;
+using std::vector;
 
 namespace drake {
 namespace {
@@ -416,6 +422,93 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
   EXPECT_EQ(dut.EvaluatePartial(
       std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
             (5 * x * x * x) + 1);
+}
+
+GTEST_TEST(PolynomialTest, FromExpression) {
+  using symbolic::Environment;
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  Environment env{{x, 1.0}, {y, 2.0}, {z, 3.0}};
+  const map<Polynomiald::VarType, double> eval_point{
+      {x.get_id(), env[x]}, {y.get_id(), env[y]}, {z.get_id(), env[z]}};
+
+  const Expression e0{42.0};
+  const Expression e1{pow(x, 2)};
+  const Expression e2{3 + x + y + z};
+  const Expression e3{1 + pow(x, 2) + pow(y, 2)};
+  const Expression e4{pow(x, 2) * pow(y, 2)};
+  const Expression e5{pow(x + y + z, 3)};
+  const Expression e6{pow(x + y + z, 3) / 10};
+  const Expression e7{-pow(y, 3)};
+  const Expression e8{pow(pow(x, 3), 1.0 / 3)};
+
+  EXPECT_NEAR(
+      e0.Evaluate(env),
+      Polynomial<double>::FromExpression(e0).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e1.Evaluate(env),
+      Polynomial<double>::FromExpression(e1).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e2.Evaluate(env),
+      Polynomial<double>::FromExpression(e2).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e3.Evaluate(env),
+      Polynomial<double>::FromExpression(e3).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e4.Evaluate(env),
+      Polynomial<double>::FromExpression(e4).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e5.Evaluate(env),
+      Polynomial<double>::FromExpression(e5).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e6.Evaluate(env),
+      Polynomial<double>::FromExpression(e6).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e7.Evaluate(env),
+      Polynomial<double>::FromExpression(e7).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e8.Evaluate(env),
+      Polynomial<double>::FromExpression(e8).EvaluateMultivariate(eval_point),
+      1e-8);
+
+  const vector<Expression> test_vec{
+      log(x),
+      abs(x),
+      exp(x),
+      sqrt(x),
+      sin(x),
+      cos(x),
+      tan(x),
+      asin(x),
+      acos(x),
+      atan(x),
+      atan2(x, y),
+      sinh(x),
+      cosh(x),
+      tanh(x),
+      min(x, y),
+      max(x, y),
+      ceil(x),
+      floor(x),
+      if_then_else(x > y, x, y),
+      Expression::NaN(),
+      symbolic::uninterpreted_function("uf", {x, y})};
+  for (const Expression& e : test_vec) {
+    EXPECT_FALSE(e.is_polynomial());
+    EXPECT_THROW(Polynomial<double>::FromExpression(e), runtime_error);
+  }
 }
 
 // Checks deprecated aliases.

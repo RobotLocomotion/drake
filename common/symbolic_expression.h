@@ -25,18 +25,32 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
-#include "drake/common/polynomial.h"
 #include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
 
 namespace symbolic {
+
+#ifndef DRAKE_DOXYGEN_CXX
+class Expression;
+namespace internal {
+// Helper to implement (deprecated) Expression::ToPolynomial.
+// TODO(soonho-tri): Remove this on or after 2020-07-01 when we remove
+// Expression::ToPolynomial.
+struct ToPolynomialHelperTag {};
+template <typename Dummy>
+auto ToPolynomialHelper(const Expression& e, const Dummy&) {
+  return ToPolynomial(e, Dummy{});
+}
+}  // namespace internal
+#endif
 
 /** Kinds of symbolic expressions. */
 enum class ExpressionKind {
@@ -234,7 +248,12 @@ class Expression {
    *  Note that the ID of a variable is preserved in this translation.
    *  \pre{is_polynomial() is true.}
    */
-  Polynomiald ToPolynomial() const;
+  template <typename Dummy = internal::ToPolynomialHelperTag>
+  DRAKE_DEPRECATED("2020-07-01",
+                   "Use drake::ToPolynomial(const Expression&) instead.")
+  auto ToPolynomial() const {
+    return internal::ToPolynomialHelper<Dummy>(*this, Dummy{});
+  }
 
   /** Evaluates using a given environment (by default, an empty environment) and
    * a random number generator. If there is a random variable in this expression
