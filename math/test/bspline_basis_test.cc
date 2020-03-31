@@ -60,81 +60,91 @@ GTEST_TEST(BsplineBasisTests, ConstructorErrors) {
 // Verifies that ComputeActiveBasisFunctionIndices() returns the correct values
 // for selected inputs.
 GTEST_TEST(BsplineBasisTests, ComputeActiveBasisFunctionIndicesTest) {
+  /* For a 5-th order B-spline basis with 14 basis functions (k = 5, n = 13),
+  the clamped, uniform knot vector from 0 to 1 is
+    [0, 0, 0, 0, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1, 1, 1, 1].
+  For i = {0, ..., 9}, t ∈ (0.1 * i, 0.1 * (i + 1)) implies that the k basis
+  functions with indices {i, ..., i + k - 1} are active (potentially non-zero)
+  while all other basis functions are in-active (definitely zero). By convention
+  the active basis functions at t = i * 0.1 are defined to be the same as those
+  for the following interval, despite the fact that the i-th basis function is
+  also zero at that point. Similarly, the active basis functions at t = 1, are
+  defined to be the same as those for the preceeding interval, despite the fact
+  that basis function 9 is zero at that point. */
   const int expected_order = 5;
   const int expected_num_basis_functions = 14;
   BsplineBasis<double> bspline_basis_0{expected_order,
                                        expected_num_basis_functions};
 
-  const std::array<double, 2> plan_interval_0{0.9, 1.0};
-  const std::vector<int> expected_active_control_point_indices_0{9, 10, 11, 12,
-                                                                 13};
-  std::vector<int> active_control_point_indices_0{
-      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_0)};
-  EXPECT_EQ(active_control_point_indices_0,
-            expected_active_control_point_indices_0);
+  auto expected_indices = [](std::initializer_list<int> values) {
+        return std::vector<int>(values);
+  };
 
-  const std::array<double, 2> plan_interval_1{0.95, 1.0};
-  const std::vector<int> expected_active_control_point_indices_1{9, 10, 11, 12,
-                                                                 13};
-  std::vector<int> active_control_point_indices_1{
-      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_1)};
-  EXPECT_EQ(active_control_point_indices_1,
-            expected_active_control_point_indices_1);
+  // Test that the active basis functions for the full final interval are the
+  // last five (and only the last five).
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices({{0.9, 1.0}}),
+            expected_indices({9, 10, 11, 12, 13}));
 
-  const std::array<double, 2> plan_interval_2{0.85, 1.0};
-  const std::vector<int> expected_active_control_point_indices_2{8,  9,  10,
-                                                                 11, 12, 13};
-  std::vector<int> active_control_point_indices_2{
-      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_2)};
-  EXPECT_EQ(active_control_point_indices_2,
-            expected_active_control_point_indices_2);
+  // Test that the active basis functions for part of the final interval are
+  // the last five (and only the last five).
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices({{0.95, 1.0}}),
+            expected_indices({9, 10, 11, 12, 13}));
 
-  const std::array<double, 2> plan_interval_3{0.0, 0.0};
-  const std::vector<int> expected_active_control_point_indices_3{0, 1, 2, 3, 4};
-  std::vector<int> active_control_point_indices_3{
-      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_3)};
-  EXPECT_EQ(active_control_point_indices_3,
-            expected_active_control_point_indices_3);
+  // Test that extending the query interval back into the previous knot interval
+  // adds 8 to the list of active basis function indices.
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices({{0.85, 1.0}}),
+            expected_indices({8,  9,  10, 11, 12, 13}));
 
-  const std::array<double, 2> plan_interval_4{1.0, 1.0};
-  const std::vector<int> expected_active_control_point_indices_4{9, 10, 11, 12,
-                                                                 13};
-  std::vector<int> active_control_point_indices_4{
-      bspline_basis_0.ComputeActiveBasisFunctionIndices(plan_interval_4)};
-  EXPECT_EQ(active_control_point_indices_4,
-            expected_active_control_point_indices_4);
+  // Test an query interval that extends across three knot intervals.
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices({{0.35, 0.59}}),
+            expected_indices({3, 4, 5, 6, 7, 8,  9}));
+
+  // Test that the first five basis functions are active when
+  // t = initial_parameter_value().
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices(0.0),
+            expected_indices({0, 1, 2, 3, 4}));
+
+  // Test an intermediate point, t = 0.43 ∈ (0.1 * i, 0.1 * (i + 1)), for i = 4.
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices(0.43),
+            expected_indices({4, 5, 6, 7, 8}));
+
+  // Test that the last five basis functions are active when
+  // t = final_parameter_value().
+  EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices(1.0),
+            expected_indices({9, 10, 11, 12, 13}));
 
   BsplineBasis<double> bspline_basis_1{1, expected_num_basis_functions};
-  const std::array<double, 2> plan_interval_5{0.0, 0.0};
-  const std::vector<int> expected_active_control_point_indices_5{0};
-  std::vector<int> active_control_point_indices_5{
-      bspline_basis_1.ComputeActiveBasisFunctionIndices(plan_interval_5)};
-  EXPECT_EQ(active_control_point_indices_5,
-            expected_active_control_point_indices_5);
+
+  // Test that the for a 1-st order basis, only the first basis function is
+  // active when t = initial_parameter_value().
+  EXPECT_EQ(bspline_basis_1.ComputeActiveBasisFunctionIndices(0),
+            expected_indices({0}));
 }
 
-// Compares values returned by BsplineBasis::EvaluateBasisFunctionI() to those
-// generated by scipy.interpolate.Bspline.basis_element():
-//
-//     import numpy as np
-//     from scipy.interpolate import BSpline
-//     knots = [0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1]
-//     order = 4
-//     num_basis_functions = len(knots) - order
-//     for i in range(0, num_basis_functions):
-//         bspline = BSpline.basis_element(knots[i:(i+order+1)],
-//                                         extrapolate=False)
-//         u = np.union1d(np.linspace(bspline.t[order - 1],
-//                                    bspline.t[-order], 7), knots)
-//         print("parameter_values.push_back(std::vector<double>{{{}}});"
-//               .format(", ".join("{:.17f}".format(n) for n in u)))
-//         print("expected_basis_function_values.push_back" +
-//               "(std::vector<double>{{{}}});"
-//               .format(", ".join("{:.17f}".format(0.0 if np.isnan(n) else n)
-//                                 for n in bspline(u))))
-//
-// NOTE(avalenzu): Scipy gives B[6](1.0) = 0.0, which is wrong. That value has
-// been replaced with the correct one (1.0).
+/* Compares values returned by BsplineBasis::EvaluateBasisFunctionI() to those
+generated by scipy.interpolate.Bspline.basis_element():
+    import numpy as np
+    from scipy.interpolate import BSpline
+    knots = [0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1]
+    order = 4
+    num_basis_functions = len(knots) - order
+    for i in range(0, num_basis_functions):
+        bspline = BSpline.basis_element(knots[i:(i+order+1)],
+                                        extrapolate=False)
+        u = np.union1d(np.linspace(bspline.t[order - 1],
+                                   bspline.t[-order],
+                                   num_basis_functions),
+                       knots)
+        print("parameter_values.push_back(std::vector<double>{{{}}});"
+              .format(", ".join("{:.17f}".format(n) for n in u)))
+        print("expected_basis_function_values.push_back" +
+              "(std::vector<double>{{{}}});"
+              .format(", ".join("{:.17f}".format(0.0 if np.isnan(n) else n)
+                                for n in bspline(u))))
+NOTE(avalenzu): Scipy gives B[6](1.0) = 0.0, which is wrong. That value has
+been replaced with the correct one (1.0).
+
+This tests (indirectly) the BsplineBasis::EvaluateCurve() method. */
 GTEST_TEST(BsplineBasisTests, EvaluateBasisFunctionIScipyComparison) {
   const int order = 4;
   const int num_basis_functions = 7;
@@ -215,6 +225,29 @@ GTEST_TEST(BsplineBasisTests, EvaluateBasisFunctionIScipyComparison) {
                   std::numeric_limits<double>::epsilon());
     }
   }
+}
+
+// Tests that {initial,final}_parameter_value() behave as expected.
+GTEST_TEST(BsplineBasisTests, InitialAndFinalParameterValueTest) {
+  const int order{3};
+  const std::vector<double> knots{-5, 0, 0.1, 0.2, 0.3, 0.4, 3, 10, 17, 25};
+  BsplineBasis<double> bspline_basis{order, knots};
+  EXPECT_EQ(bspline_basis.initial_parameter_value(), knots[order - 1]);
+  EXPECT_EQ(bspline_basis.final_parameter_value(), knots[knots.size() - order]);
+}
+
+// Tests that operator==() behaves as expected.
+GTEST_TEST(BsplineBasisTests, OperatorEqualsTest) {
+  const int order{3};
+  const std::vector<double> knots{-5, 0, 0.1, 0.2, 0.3, 0.4, 3, 10, 17, 25};
+
+  // Test that identically constructed objects are equal.
+  EXPECT_TRUE(BsplineBasis<double>(order, knots).operator==(
+    BsplineBasis<double>(order, knots)));
+
+  // Test that objects with different orders and the same knots are not equal.
+  EXPECT_FALSE(BsplineBasis<double>(order, knots).operator==(
+    BsplineBasis<double>(order + 1, knots)));
 }
 
 }  // namespace math

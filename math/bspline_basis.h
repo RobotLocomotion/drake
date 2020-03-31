@@ -70,7 +70,7 @@ class BsplineBasis final {
     return knots()[num_basis_functions()];
   }
 
-  /** Returns the indices of the basis functions which evaluate to non-zero
+  /** Returns the indices of the basis functions which may evaluate to non-zero
   values for some parameter value in `parameter_interval`.
   @pre parameter_interval[0] ≤ parameter_interval[1]
   @pre parameter_interval[0] ≥ this->initial_parameter_value()
@@ -78,8 +78,17 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const std::array<T, 2>& parameter_interval) const;
 
-  /** Returns the indices of the basis functions which evaluate to non-zero
-  values for `parameter_value`.
+  /** Returns the indices of the basis functions which may evaluate to non-zero
+  values for `parameter_value`; all other basis functions are strictly zero at
+  this point. The knots {tₖ₋₁, ..., tₙ₊₁} define n - k + 2 intervals,
+  (tᵢ₊ₖ₋₁, tᵢ₊ₖ), for i = {0, ..., n + 1 - k}. For t ∈ (tᵢ₊ₖ₋₁, tᵢ₊ₖ), only the
+  basis functions with indices {i, ..., i + k - 1} are non-zero. By convention,
+  the active basis functions at t = tᵢ₊ₖ₋₁, for i = {0, ..., n + 1 - k}, are
+  defined to be the same as those for the following interval, dispite the 
+  fact that the i-th basis function is also zero at that point. Similarly, the 
+  active basis functions at t = tₙ₊₁ are defined to be the same as those 
+  for the preceeding interval, despite the fact that the basis function with 
+  index n + 1 - k is zero at that point.
   @pre parameter_value ≥ this->initial_parameter_value()
   @pre parameter_value ≤ this->final_parameter_value() */
   std::vector<int> ComputeActiveBasisFunctionIndices(
