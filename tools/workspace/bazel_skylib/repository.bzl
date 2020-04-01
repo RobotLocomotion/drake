@@ -6,7 +6,7 @@ def bazel_skylib_repository(name, mirrors = None):
     github_archive(
         name = name,
         repository = "bazelbuild/bazel-skylib",
-        commit = "0.5.0",
-        sha256 = "b5f6abe419da897b7901f90cbab08af958b97a8f3575b0d3dd062ac7ce78541f",  # noqa
+        commit = "0.9.0",
+        sha256 = "9245b0549e88e356cd6a25bf79f97aa19332083890b7ac6481a2affb6ada9752",  # noqa
         mirrors = mirrors,
     )
