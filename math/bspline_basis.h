@@ -162,9 +162,6 @@ class BsplineBasis final {
   int order_;
   int num_basis_functions_;
   std::vector<T> knots_;
-
-  bool IsControlPointActive(int control_point_index,
-                            const std::array<T, 2>& parameter_interval) const;
 };
 }  // namespace math
 }  // namespace drake
