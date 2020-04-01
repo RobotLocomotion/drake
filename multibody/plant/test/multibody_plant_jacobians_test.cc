@@ -26,6 +26,8 @@ using test::KukaIiwaModelTests;
 
 namespace {
 
+using Eigen::Vector3d;
+
 // For one or more points Ei fixed on a body B, this method computes Jq_v_WEi_W,
 // Ei's translational velocity Jacobian in world W with respect to q̇.  However,
 // the way this calculation is performed is by forming the partial derivatives
@@ -275,6 +277,104 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEi_W, p_WoEi_W_deriv_wrt_q,
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Fixture to setup a simple 2-link pendulum MBP model with z-axis pin
+// joints. The model is in the x-y plane and is configured
+// to have both links parallel to the x-axis.
+// Points Wo B1o Fo Mo B2o are sequentially along a line parallel to 𝐖𝐱.
+//
+class TwoDOFPlanarPendulumTest : public ::testing::Test {
+ public:
+  // Setup the MBP.
+  void SetUp() override {
+    // Spatial inertia for each body. The inertia values are not important
+    // because these are only testing CenterOfMass Jacobian methods.
+    const SpatialInertia<double> M_B =
+        SpatialInertia<double>::MakeFromCentralInertia(
+            mass_, Vector3<double>::Zero(),
+            0.0 * UnitInertia<double>::SolidBox(1.0, 1.0, 1.0));
+
+    // Create an empty MultibodyPlant.
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
+
+    body1_ = &plant_->AddRigidBody("Body1", M_B);
+    body2_ = &plant_->AddRigidBody("Body2", M_B);
+
+    joint1_ = &plant_->AddJoint<RevoluteJoint>(
+        "PinJoint1", plant_->world_body(), std::nullopt, *body1_, X_B1W_,
+        Vector3d::UnitZ());
+    joint2_ = &plant_->AddJoint<RevoluteJoint>(
+        "PinJoint2", *body1_, X_B1F_, *body2_, X_B2M_, Vector3d::UnitZ());
+
+    plant_->Finalize();
+    // Create a context to store the state for this tree:
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  const internal::MultibodyTree<double>& tree() const {
+    return internal::GetInternalTree(*plant_);
+  }
+
+ protected:
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  const double mass_ = 5.0;         // kg
+  const double link_length_ = 4.0;  // meters
+  const double wz1_ = 3.0;          // rad/sec
+  const double wz2_ = 1.2;          // rad/sec
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+  const RigidBody<double>* body1_{nullptr};
+  const RigidBody<double>* body2_{nullptr};
+  const RevoluteJoint<double>* joint1_{nullptr};
+  const RevoluteJoint<double>* joint2_{nullptr};
+  math::RigidTransformd X_B1W_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
+  math::RigidTransformd X_B1F_{Vector3d(0.5 * link_length_, 0.0, 0.0)};
+  math::RigidTransformd X_B2M_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
+};
+
+TEST_F(TwoDOFPlanarPendulumTest,
+       CalcJacobianVelocityAndBiasAccelerationOfSystemCenterOfMass) {
+  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wz1_, wz2_);
+  joint1_->set_angle(context_.get(), state[0]);
+  joint2_->set_angle(context_.get(), state[1]);
+  joint1_->set_angular_rate(context_.get(), state[2]);
+  joint2_->set_angular_rate(context_.get(), state[3]);
+
+  // Test for CalcJacobianCenterOfMassTranslationalVelocity()
+  Eigen::MatrixXd Js_v_WCcm_W(3, plant_->num_velocities());
+  plant_->CalcJacobianCenterOfMassTranslationalVelocity(
+      *context_, JacobianWrtVariable::kV, plant_->world_frame(),
+      plant_->world_frame(), &Js_v_WCcm_W);
+
+  Eigen::MatrixXd Js_v_WCcm_W_expected(3, plant_->num_velocities());
+  // CCm's velocity in world W is expected to be (L wz1_ + 0.25 L wz2_) 𝐖𝐲,
+  // hence the CCm's translational Jacobian with respect to {wz1_ , wz2_} is
+  // { L 𝐖𝐲, 0.25 L 𝐖𝐲 } = { [0, L, 0] [0, 0.25 L, 0] }
+  Js_v_WCcm_W_expected << 0.0, 0.0,
+                          link_length_, 0.25 * link_length_,
+                          0.0, 0.0;
+  Vector3d v_WCcm_W_expected =
+      (wz1_ * link_length_ + wz2_ * 0.25 * link_length_) * Vector3d::UnitY();
+
+  EXPECT_TRUE(CompareMatrices(Js_v_WCcm_W, Js_v_WCcm_W_expected, kTolerance));
+  EXPECT_TRUE(
+      CompareMatrices(Js_v_WCcm_W * state.tail(plant_->num_velocities()),
+                      v_WCcm_W_expected, kTolerance));
+
+  // Test for CalcBiasCenterOfMassTranslationalAcceleration()
+  const Vector3<double>& abias_WCcm_W =
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, JacobianWrtVariable::kV, plant_->world_frame(),
+          plant_->world_frame());
+
+  // CCm's bias translational in world W is expected to be
+  // abias_WCcm = -L (wz1_² + 0.5 wz1_ wz2_ + 0.25 wz2_²) 𝐖𝐱
+  Vector3d abias_WCcm_W_expected =
+      -link_length_ * (wz1_ * wz1_ + 0.5 * wz1_ * wz2_ + 0.25 * wz2_ * wz2_) *
+      Vector3d::UnitX();
+  EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
 }
 
 }  // namespace
