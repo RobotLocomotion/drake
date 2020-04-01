@@ -4,6 +4,7 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -11,6 +12,7 @@
 using Eigen::Dynamic;
 using Eigen::Matrix;
 using Eigen::PolynomialSolver;
+using std::pair;
 using std::runtime_error;
 using std::string;
 using std::vector;
@@ -608,6 +610,169 @@ void Polynomial<T>::MakeMonomialsUnique(void) {
       }
     }
   }
+}
+
+namespace {
+
+using symbolic::Expression;
+
+// Visitor class to implement FromExpression.
+template <typename T>
+class FromExpressionVisitor {
+ public:
+  Polynomial<T> Visit(const Expression& e) {
+    return drake::symbolic::VisitExpression<Polynomial<T>>(this, e);
+  }
+
+ private:
+  static Polynomial<T> VisitAddition(const Expression& e) {
+    const auto constant = get_constant_in_addition(e);
+    const auto& expr_to_coeff_map = get_expr_to_coeff_map_in_addition(e);
+    return accumulate(
+        expr_to_coeff_map.begin(), expr_to_coeff_map.end(),
+        Polynomial<T>{constant},
+        [](const Polynomial<T>& polynomial,
+           const pair<const Expression, double>& p) {
+          return polynomial + Polynomial<T>::FromExpression(p.first) * p.second;
+        });
+  }
+
+  static Polynomial<T> VisitMultiplication(const Expression& e) {
+    const auto constant = drake::symbolic::get_constant_in_multiplication(e);
+    const auto& base_to_exponent_map =
+        drake::symbolic::get_base_to_exponent_map_in_multiplication(e);
+    return accumulate(
+        base_to_exponent_map.begin(), base_to_exponent_map.end(),
+        Polynomial<T>{constant},
+        [](const Polynomial<T>& polynomial,
+           const pair<const Expression, Expression>& p) {
+          const Expression& base{p.first};
+          const Expression& exponent{p.second};
+          DRAKE_ASSERT(base.is_polynomial());
+          DRAKE_ASSERT(is_constant(exponent));
+          return polynomial *
+                 pow(Polynomial<T>::FromExpression(base),
+                     static_cast<int>(get_constant_value(exponent)));
+        });
+  }
+
+  static Polynomial<T> VisitDivision(const Expression& e) {
+    DRAKE_ASSERT(e.is_polynomial());
+    const auto& first_arg{get_first_argument(e)};
+    const auto& second_arg{get_second_argument(e)};
+    DRAKE_ASSERT(is_constant(second_arg));
+    return Polynomial<T>::FromExpression(first_arg) /
+           get_constant_value(second_arg);
+  }
+
+  static Polynomial<T> VisitVariable(const Expression& e) {
+    return Polynomial<T>{1.0, static_cast<Polynomial<double>::VarType>(
+                                  get_variable(e).get_id())};
+  }
+
+  static Polynomial<T> VisitConstant(const Expression& e) {
+    return Polynomial<T>{get_constant_value(e)};
+  }
+
+  static Polynomial<T> VisitLog(const Expression&) {
+    throw runtime_error("Log expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitPow(const Expression& e) {
+    DRAKE_ASSERT(e.is_polynomial());
+    const int exponent{
+        static_cast<int>(get_constant_value(get_second_argument(e)))};
+    return pow(Polynomial<T>::FromExpression(get_first_argument(e)), exponent);
+  }
+
+  static Polynomial<T> VisitAbs(const Expression&) {
+    throw runtime_error("Abs expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitExp(const Expression&) {
+    throw runtime_error("Exp expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitSqrt(const Expression&) {
+    throw runtime_error("Sqrt expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitSin(const Expression&) {
+    throw runtime_error("Sin expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitCos(const Expression&) {
+    throw runtime_error("Cos expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitTan(const Expression&) {
+    throw runtime_error("Tan expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitAsin(const Expression&) {
+    throw runtime_error("Asin expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitAcos(const Expression&) {
+    throw runtime_error("Acos expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitAtan(const Expression&) {
+    throw runtime_error("Atan expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitAtan2(const Expression&) {
+    throw runtime_error("Atan2 expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitSinh(const Expression&) {
+    throw runtime_error("Sinh expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitCosh(const Expression&) {
+    throw runtime_error("Cosh expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitTanh(const Expression&) {
+    throw runtime_error("Tanh expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitMin(const Expression&) {
+    throw runtime_error("Min expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitMax(const Expression&) {
+    throw runtime_error("Max expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitCeil(const Expression&) {
+    throw runtime_error("Ceil expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitFloor(const Expression&) {
+    throw runtime_error("Floor expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitIfThenElse(const Expression&) {
+    throw runtime_error("IfThenElse expression is not polynomial-convertible.");
+  }
+
+  static Polynomial<T> VisitUninterpretedFunction(const Expression&) {
+    throw runtime_error(
+        "Uninterpreted-function expression is not polynomial-convertible.");
+  }
+
+  // Makes VisitExpression a friend of this class so that VisitExpression can
+  // use its private methods.
+  friend Polynomial<T> drake::symbolic::VisitExpression<Polynomial<T>>(
+      FromExpressionVisitor*, const Expression&);
+};
+
+}  // namespace
+
+template <typename T>
+Polynomial<T> Polynomial<T>::FromExpression(const Expression& e) {
+  return FromExpressionVisitor<T>{}.Visit(e);
 }
 
 template class Polynomial<double>;

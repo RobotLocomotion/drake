@@ -608,6 +608,7 @@ drake_cc_library(
     deps = [
         ":context",
         ":system",
+        "//common:polynomial",
         "//common:symbolic",
     ],
 )

@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
+#include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/is_memcpy_movable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -541,6 +542,10 @@ TEST_F(SymbolicExpressionTest, IsPolynomial) {
   EXPECT_FALSE(sqrt(pow(x_, 2)).is_polynomial());
 }
 
+// TODO(soonho-tri): Remove the following tests on or after 2020-07-01 when we
+// remove Expression::ToPolynomial.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SymbolicExpressionTest, ToPolynomial1) {
   Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
   const map<Polynomiald::VarType, double> eval_point{
@@ -590,6 +595,7 @@ TEST_F(SymbolicExpressionTest, ToPolynomial2) {
     EXPECT_THROW(e.ToPolynomial(), runtime_error);
   }
 }
+#pragma GCC diagnostic pop
 
 TEST_F(SymbolicExpressionTest, LessKind) {
   CheckOrdering({e_constant_, e_var_,  e_add_,  e_neg_,  e_mul_,  e_div_,
