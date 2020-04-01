@@ -221,6 +221,13 @@ GTEST_TEST(MosekTest, TestLogFile) {
   solver.set_stream_logging(true, log_file);
   solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(filesystem::exists({log_file}));
+
+  // Now set streaming using CommonSolverOptions.
+  solver.set_stream_logging(false, "");
+  SolverOptions solver_options;
+  solver_options.SetOption(CommonSolverOptions::kPrintFileName, log_file);
+  solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_TRUE(filesystem::exists({log_file}));
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {

@@ -1420,13 +1420,35 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // log file.
-  if (rescode == MSK_RES_OK && stream_logging_) {
-    if (log_file_.empty()) {
+  bool stream_logging = stream_logging_;
+  std::string log_file = log_file_;
+  const auto common_options_print_to_console =
+      merged_options.common_solver_options().find(
+          CommonSolverOptions::kPrintToConsole);
+  const auto common_options_print_file_name =
+      merged_options.common_solver_options().find(
+          CommonSolverOptions::kPrintFileName);
+  // We take print to console over print to file. If the user sets both
+  // CommonSolverOption::kPrintToConsole and CommonSolverOption::kPrintFileName,
+  // then we only print to console as Mosek cannot support both.
+  if (common_options_print_to_console !=
+          merged_options.common_solver_options().end() &&
+      common_options_print_to_console.second == 1) {
+    stream_logging = true;
+    log_file = "";
+  } else if (common_solver_options_print_file_name !=
+             merged_options.common_solver_options().end()) {
+    stream_logging = true;
+    log_file = common_solver_options_print_file_name.second;
+  }
+
+  if (rescode == MSK_RES_OK && stream_logging) {
+    if (log_file.empty()) {
       rescode =
           MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
     } else {
       rescode =
-          MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);
+          MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file.c_str(), 0);
     }
   }
 

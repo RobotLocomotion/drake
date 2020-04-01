@@ -39,6 +39,7 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
       common_options_expected(
           {{CommonSolverOption::kPrintToConsole, 0},
            {CommonSolverOption::kPrintFileName, "foo.txt"}});
+  EXPECT_EQ(dut.common_solver_options(), common_options_expected);
   // TODO(hongkai.dai): Test GetOption<double>() and `GetOptionDouble()` when
   // a CommonSolverOption takes a double value.
 }
