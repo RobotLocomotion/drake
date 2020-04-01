@@ -68,14 +68,9 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveBasisFunctionIndicesTest) {
   /* For a 5-th order B-spline basis with 14 basis functions (k = 5, n = 13),
   the clamped, uniform knot vector from 0 to 1 is
     [0, 0, 0, 0, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1, 1, 1, 1].
-  For i = {0, ..., 9}, t ∈ (0.1 * i, 0.1 * (i + 1)) implies that the k basis
-  functions with indices {i, ..., i + k - 1} are active (potentially non-zero)
-  while all other basis functions are in-active (definitely zero). By convention
-  the active basis functions at t = i * 0.1 are defined to be the same as those
-  for the following interval, despite the fact that the i-th basis function is
-  also zero at that point. Similarly, the active basis functions at t = 1, are
-  defined to be the same as those for the preceeding interval, despite the fact
-  that basis function 9 is zero at that point. */
+  For i = {0, ..., 9}, t ∈ [0.1 * i, 0.1 * (i + 1)) implies that the k basis
+  functions with indices {i, ..., i + k - 1} are active (potentialy non-zero)
+  while all other basis functions are in-active (definitely zero). */
   const int expected_order = 5;
   const int expected_num_basis_functions = 14;
   BsplineBasis<double> bspline_basis_0{expected_order,
