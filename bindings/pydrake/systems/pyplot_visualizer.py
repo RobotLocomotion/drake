@@ -85,12 +85,7 @@ class PyPlotVisualizer(LeafSystem):
         """
         raise NotImplementedError
 
-    def start_recording(self, show=None):
-        if show is not None:
-            warn("The `show` argument of this `start_recording()` method "
-                 "actually never worked.  Pass `show` to the class "
-                 "constructor instead.  This argument will be removed on or "
-                 "after 2020-04-01.")
+    def start_recording(self):
         self._is_recording = True
 
     def stop_recording(self):

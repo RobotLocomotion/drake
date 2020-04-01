@@ -273,12 +273,6 @@ PythonRemoteVariable ToPythonKwargs(Types... args) {
   return CallPython("make_kwargs", args...);
 }
 
-template <typename T>
-DRAKE_DEPRECATED("2020-04-01", "This function is now internal-use-only.")
-PythonRemoteVariable NewPythonVariable(T value) {
-  return internal::NewPythonVariable(value);
-}
-
 #endif  // DRAKE_DOXYGEN_CXX
 }  // namespace common
 }  // namespace drake
