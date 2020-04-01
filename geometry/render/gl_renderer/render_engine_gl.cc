@@ -400,12 +400,12 @@ void RenderEngineGl::UpdateVisibleWindow(const CameraProperties& camera,
     // (0) as the draw buffer for displaying in the window. We transfer the full
     // image bounded by (0, 0) and (camera.width, camera.height) from source to
     // destination.
-    opengl_context_->ResizeWindow(camera.width, camera.height);
+    opengl_context_->DisplayWindow(camera.width, camera.height);
     glBlitNamedFramebuffer(target.frame_buffer, 0,
                            0, 0, camera.width, camera.height,  // Src bounds.
                            0, 0, camera.width, camera.height,  // Dest bounds.
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    opengl_context_->DisplayWindow();
+    opengl_context_->UpdateWindow();
   }
 }
 

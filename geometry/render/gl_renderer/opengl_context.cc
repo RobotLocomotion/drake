@@ -166,7 +166,7 @@ class OpenGlContext::Impl {
     }
   }
 
-  void ResizeWindow(const int width, const int height) {
+  void DisplayWindow(const int width, const int height) {
     if (width != window_width_ || height != window_height_) {
       XResizeWindow(display(), window_, width, height);
       XEvent event;
@@ -176,9 +176,6 @@ class OpenGlContext::Impl {
       window_width_ = width;
       window_height_ = height;
     }
-  }
-
-  void DisplayWindow() {
     if (!is_mapped_) {
       XMapRaised(display(), window_);
       is_mapped_ = true;
@@ -187,6 +184,9 @@ class OpenGlContext::Impl {
       XNextEvent(display(), &event);
       DRAKE_DEMAND(event.type == Expose);
     }
+  }
+
+  void UpdateWindow() {
     XClearWindow(display(), window_);
     glXSwapBuffers(display(), window_);
   }
@@ -236,13 +236,11 @@ OpenGlContext::~OpenGlContext() = default;
 
 void OpenGlContext::MakeCurrent() { impl_->MakeCurrent(); }
 
-void OpenGlContext::ResizeWindow(const int width, const int height) {
-  impl_->ResizeWindow(width, height);
+void OpenGlContext::DisplayWindow(const int width, const int height) {
+  impl_->DisplayWindow(width, height);
 }
 
-void OpenGlContext::DisplayWindow() {
-  impl_->DisplayWindow();
-}
+void OpenGlContext::UpdateWindow() { impl_->UpdateWindow(); }
 
 GLint OpenGlContext::max_texture_size() {
   return OpenGlContext::Impl::max_texture_size();
