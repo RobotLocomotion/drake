@@ -67,39 +67,20 @@ BsplineBasis<T>::BsplineBasis(int order, int num_basis_functions,
           order, ConstructDefaultKnots<T>(order, num_basis_functions, type)) {}
 
 template <typename T>
-bool BsplineBasis<T>::IsControlPointActive(
-    int control_point_index, const std::array<T, 2>& parameter_interval) const {
-  // Changing control point P[i] affects the curve on the interval (tᵢ, tᵢ₊ₖ).
-  // We want to know if P[i] affects the curve over the interval [tₛ, tₑ]. This
-  // is true if
-  //   (tᵢ, tᵢ₊ₖ) ∩ [tₛ,  tₑ] ≠ ∅
-  // or, equivalently, if
-  //   tᵢ ≤ tₑ ∧ tₛ ≤ tᵢ₊ₖ.
-  //
-  // Reference:
-  // http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
-
-  // Define short-hand references to match Patrikalakis et al.:
-  const std::vector<T>& t = knots();
-  const int k = order();
-  const T& t_s = parameter_interval[0];
-  const T& t_e = parameter_interval[1];
-  const int i = control_point_index;
-
-  return t[i] <= t_e && t_s <= t[i + k];
-}
-
-template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     const std::array<T, 2>& parameter_interval) const {
   DRAKE_ASSERT(parameter_interval[0] <= parameter_interval[1]);
   DRAKE_ASSERT(parameter_interval[0] >= initial_parameter_value());
   DRAKE_ASSERT(parameter_interval[1] <= final_parameter_value());
+  const int first_active_index =
+    FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+      parameter_interval[0]) - order() + 1;
+  const int final_active_index =
+    FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+      parameter_interval[1]);
   std::vector<int> active_control_point_indices{};
-  for (int i = 0; i < num_basis_functions(); ++i) {
-    if (IsControlPointActive(i, parameter_interval)) {
-      active_control_point_indices.push_back(i);
-    }
+  for (int i = first_active_index; i <= final_active_index; ++i) {
+    active_control_point_indices.push_back(i);
   }
   return active_control_point_indices;
 }
