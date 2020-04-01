@@ -12,6 +12,7 @@
 #include <unsupported/Eigen/Polynomials>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
@@ -35,6 +36,8 @@ namespace drake {
  *
  * Polynomials can be added, subtracted, and multiplied.  They may only be
  * divided by scalars (of T) because Polynomials are not closed under division.
+ * 
+ * @tparam_default_scalar
  */
 template <typename T = double>
 class Polynomial {
@@ -188,7 +191,10 @@ class Polynomial {
   template <typename U>
   typename Product<T, U>::type EvaluateUnivariate(
       const U& x, int derivative_order = 0) const {
-    typedef typename Product<T, U>::type ProductType;
+    // Note: have to remove_const because Product<AutoDiff, AutoDiff>::type and
+    // even Product<double, AutoDiff>::type returns const AutoDiff.
+    typedef typename std::remove_const<typename Product<T, U>::type>::type
+        ProductType;
 
     if (!is_univariate_)
       throw std::runtime_error(
@@ -230,39 +236,15 @@ class Polynomial {
   template <typename U>
   typename Product<T, U>::type EvaluateMultivariate(
       const std::map<VarType, U>& var_values) const {
+    using std::pow;
     typedef typename std::remove_const<
       typename Product<T, U>::type>::type ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value *= std::pow(
-            static_cast<ProductType>(var_values.at(term.var)),
-            term.power);
-      }
-      value += monomial_value;
-    }
-    return value;
-  }
-
-  /** Specialization of EvaluateMultivariate on AutoDiffXd.
-   *
-   * Specialize EvaluateMultivariate on AutoDiffXd because Eigen autodiffs
-   * implement a confusing subset of operators and conversions that makes a
-   * strictly generic approach too confusing and unreadable.
-   *
-   * Note that it is up to the caller to ensure that all of the AutoDiffXds
-   * in var_values correctly correspond to one another, because Polynomial has
-   * no knowledge of what partial derivative terms the indices of a given
-   * AutoDiffXd correspond to.
-   */
-  drake::AutoDiffXd EvaluateMultivariate(
-      const std::map<VarType, drake::AutoDiffXd>& var_values) const {
-    drake::AutoDiffXd value(0);
-    for (const Monomial& monomial : monomials_) {
-      drake::AutoDiffXd monomial_value(monomial.coefficient);
-      for (const Term& term : monomial.terms) {
-        monomial_value *= pow(var_values.at(term.var), term.power);
+        monomial_value *=
+            pow(static_cast<ProductType>(var_values.at(term.var)), term.power);
       }
       value += monomial_value;
     }
@@ -396,7 +378,7 @@ class Polynomial {
    * corresponding coefficient of this Polynomial.
    * @throws std::exception if either Polynomial is not univariate.
    */
-  bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
+  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const;
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
    * Note that the ID of a variable is preserved in this translation.
@@ -498,6 +480,11 @@ std::ostream& operator<<(
   return os;
 }
 
+template <>
+boolean<symbolic::Expression> Polynomial<symbolic::Expression>::IsApprox(
+    const Polynomial<symbolic::Expression>& other,
+    const Polynomial<symbolic::Expression>::RealScalar& tol) const;
+
 #ifndef DRAKE_DOXYGEN_CXX
 namespace symbolic {
 namespace internal {
@@ -517,6 +504,9 @@ typedef Polynomial<double> Polynomiald;
 /// A column vector of polynomials; used in several optimization classes.
 typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::Polynomial)
 
 /** Provides power function for Polynomial. */
 template <typename T>

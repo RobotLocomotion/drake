@@ -172,6 +172,7 @@ drake_cc_library(
     ],
     deps = [
         ":autodiff",
+        ":default_scalars",
         ":essential",
         ":symbolic",
     ],
