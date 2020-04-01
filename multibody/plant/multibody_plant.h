@@ -4002,10 +4002,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         const T& speed_BcAc,
         const CoulombFriction<double>& friction) const;
 
+    /// Computes the stribeck friction coefficient divided by the slip
+    /// velocity. That is, this returns ComputeFrictionCoefficient() /
+    /// speed_BcAc.
+    T ComputeFrictionCoefficientOverSlip(
+        const T& speed_BcAc,
+        const CoulombFriction<double>& friction) const;
+
     /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
     /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
     /// f(1) = 1.
     static T step5(const T& x);
+
+    /// Computes Q(x) = step5(x)/x = 10x² - 15x³ + 6x⁴.
+    static T step5overx(const T& x);
 
     /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
     /// `v_stiction` must be specified in m/s (meters per second.)

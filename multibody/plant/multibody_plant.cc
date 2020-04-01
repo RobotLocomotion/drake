@@ -1267,27 +1267,23 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
       // plane with normal nhat_BA:
       const Vector3<T> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
-      // Tangential speed (squared):
-      const T vt_squared = vt_AcBc_W.squaredNorm();
 
-      // Consider a value indistinguishable from zero if it is smaller
-      // then 1e-14 and test against that value squared.
-      const T kNonZeroSqd = 1e-14 * 1e-14;
-      // Tangential friction force on A at C, expressed in W.
-      Vector3<T> ft_AC_W = Vector3<T>::Zero();
-      T slip_velocity = 0;
-      if (vt_squared > kNonZeroSqd) {
-        slip_velocity = sqrt(vt_squared);
-        // Stribeck friction coefficient.
-        const T mu_stribeck = friction_model_.ComputeFrictionCoefficient(
-            slip_velocity, combined_friction_pairs[icontact]);
-        // Tangential direction.
-        const Vector3<T> that_W = vt_AcBc_W / slip_velocity;
+      // Tangential speed.
+      const T slip_velocity = vt_AcBc_W.norm();
 
-        // Magnitude of the friction force on A at C.
-        const T ft_AC = mu_stribeck * fn_AC;
-        ft_AC_W = ft_AC * that_W;
-      }
+      // We can factor the slip velocity in the Stribeck friction model as
+      // mu(slip_velocity) = slip_velocity/vs * Q(slip_velocity/vs), with Q(x) a
+      // well defined continuous function even at slip_velocity = 0.
+      // This allow us to write the friction model as:
+      // ft_AC_W = mu(slip_velocity/vs) * fn_AC * vt_AcBc_W / slip_velocity
+      //         = Q(slip_velocity/vs) * fn_AC * vt_AcBc_W
+      // Which is well defined and continuous even at slip_velocity = 0.
+      const T mu_stribeck_over_slip =
+          friction_model_.ComputeFrictionCoefficientOverSlip(
+              slip_velocity, combined_friction_pairs[icontact]);
+
+      // Magnitude of the friction force on A at C.
+      const Vector3<T> ft_AC_W = mu_stribeck_over_slip * fn_AC * vt_AcBc_W;
 
       // Spatial force on body A at C, expressed in the world frame W.
       const SpatialForce<T> F_AC_W(Vector3<T>::Zero(), fn_AC_W + ft_AC_W);
@@ -2949,10 +2945,34 @@ T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
 }
 
 template <typename T>
+T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficientOverSlip(
+    const T& speed_BcAc,
+    const CoulombFriction<double>& friction) const {
+  DRAKE_ASSERT(speed_BcAc >= 0);
+  const double mu_d = friction.dynamic_friction();
+  const double mu_s = friction.static_friction();
+  const T v = speed_BcAc * inv_v_stiction_tolerance_;
+  if (v >= 3) {
+    return mu_d / speed_BcAc;
+  } else if (v >= 1) {
+    return (mu_s - (mu_s - mu_d) * step5((v - 1) / 2)) / speed_BcAc;
+  } else {
+    return mu_s * step5overx(v) * inv_v_stiction_tolerance_;
+  }
+}
+
+template <typename T>
 T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
+}
+
+template <typename T>
+T MultibodyPlant<T>::StribeckModel::step5overx(const T& x) {
+  DRAKE_ASSERT(0 <= x && x <= 1);
+  const T x2 = x * x;
+  return x2 * (10 + x * (6 * x - 15));  // 10x² - 15x³ + 6x⁴.
 }
 
 template <typename T>
