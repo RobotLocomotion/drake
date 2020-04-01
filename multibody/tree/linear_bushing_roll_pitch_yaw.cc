@@ -222,24 +222,22 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& ) const {
-  // const Frame<ToScalar>& frameA_clone = tree_clone.get_variant(frameA());
-  // const Frame<ToScalar>& frameC_clone = tree_clone.get_variant(frameC());
+    const internal::MultibodyTree<ToScalar>&) const {
   const Vector3<double>& k012 = torque_stiffness_constants();
   const Vector3<double>& d012 = torque_damping_constants();
   const Vector3<double>& kxyz = force_stiffness_constants();
   const Vector3<double>& dxyz = force_damping_constants();
 
-  // TODO(mitiguy) Why my kludge for the constructor used below to be public?
+  // TODO(mitiguy) Why is a public constructor needed for the code below?
   std::unique_ptr<LinearBushingRollPitchYaw<ToScalar>> bushing_clone(
       new LinearBushingRollPitchYaw<ToScalar>(this->model_instance(),
           frameA_index_, frameC_index_,
           k012, d012, kxyz, dxyz));
 
   return bushing_clone;
-  //  TODO ask Alejandro/Sherm if need return std::move(bushing_clone).
-  //   std::move(door_hing_clone) was not used in door_hinge.cc
-  //   However, return std::move(joint_clone) was used in revolute_joine.cc
+  // TODO(mitiguy) ask Alejandro/Sherm if need: return std::move(bushing_clone).
+  //  std::move(door_hing_clone) was not used in door_hinge.cc
+  //  However, return std::move(joint_clone) was used in revolute_joint.cc
 }
 
 template <typename T>
@@ -268,4 +266,3 @@ LinearBushingRollPitchYaw<T>::DoCloneToScalar(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::LinearBushingRollPitchYaw)
-

@@ -22,7 +22,7 @@ template <typename T> class Body;
 /// a torque and force due to stiffness (spring) and dissipation (damper)
 /// properties.
 /// Frame B is the bushing frame whose origin Bo is halfway between Ao (A's
-/// origin) and Co (C's origin) and whose unit vectors Bx, By, Bz are "halfway"
+/// origin) and Co (C's origin) and whose unit vectors 𝐁𝐱, 𝐁𝐲, 𝐁𝐳 are "halfway"
 /// (in an angle-axis sense) between the unit vectors of frame A and frame C.
 /// Frame B is a "floating" frame in the sense that it is calculated from the
 /// position and orientation of frames A and C (B is not welded to the bushing).
@@ -61,7 +61,7 @@ template <typename T> class Body;
 ///
 /// The bushing model for the net force 𝐟 on frame C from the bushing depends on
 /// scalars x, y, z which are defined so 𝐫 (the position vector from Ao to Co)
-/// can be expressed in frame B as `𝐫 ≜ p_AoCo = [x y z]ʙ = x Bx + y By + z Bz`.
+/// can be expressed in frame B as `𝐫 ≜ p_AoCo = [x y z]ʙ = x 𝐁𝐱 + y 𝐁𝐲 + z 𝐁𝐳`.
 /// The model for 𝐟 uses a diagonal force-stiffness matrix Kxyᴢ, a diagonal
 /// force-damping matrix Dxyᴢ, and defines fx, fy, fz so `𝐟 = [fx fy fz]ʙ`.<pre>
 /// ⌈ fx ⌉      ⌈kx    0    0⌉ ⌈ x ⌉     ⌈dx    0    0⌉ ⌈ ẋ ⌉
@@ -102,12 +102,18 @@ template <typename T> class Body;
 /// shown below, 𝐭 is discontinuous if τ is discontinuous.
 ///
 /// ### Advanced: Relationship of 𝐭 to τ.
-/// The torque model uses spring-damper "gimbal" torques τ₀ Cx, τ₁ Py, τ₂ Az,
-/// where each of Cx, Py, Az are units vectors associated with a frame in the
-/// roll-pitch-yaw rotation sequence and `Py` is a unit vector of the "pitch"
+/// To understand how "gimbal torques" τ relate to 𝐭, it helps to remember that
+/// the RollPitchYaw class documentation states that a Space-fixed (extrinsic)
+/// X-Y-Z rotation with roll-pitch-yaw angles [q₀ q₁ q₂] is equivalent to a
+/// Body-fixed (intrinsic) Z-Y-X rotation by yaw-pitch-roll angles [q₂ q₁ q₀].
+/// In the context of "gimbal torques", the Body-fixed Z-Y-X rotation sequence
+/// with angles [q₂ q₁ q₀] is physical meaningful as it produces torques
+/// associated with successive frames in a gimbal as τ₂ 𝐀𝐳, τ₁ 𝐏𝐲, τ₀ 𝐂𝐱,
+/// where each of 𝐂𝐱, 𝐏𝐲, 𝐀𝐳 are unit vectors associated with a frame in the
+/// roll-pitch-yaw rotation sequence and 𝐏𝐲 is a unit vector of the "pitch"
 /// intermediate frame.  As described early, torque 𝐭 is the moment of the
 /// bushing forces on frame C about Cp.  Scalars tx, ty, tz are defined so 𝐭 can
-/// be expressed `𝐭 = [tx ty tz]ᴀ = tx Ax + ty Ay + tz Az`.
+/// be expressed `𝐭 = [tx ty tz]ᴀ = tx 𝐀𝐱 + ty 𝐀𝐲 + tz 𝐀𝐳`.
 /// As shown in code documentation, the relationship of [tx ty tz] to [τ₀ τ₁ τ₂]
 /// was found by equating 𝐭's power to τ's power as 𝐭 ⋅ w_AC = τ ⋅ q̇. <pre>
 /// ⌈ tx ⌉      ⌈ τ₀ ⌉            ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉
@@ -131,7 +137,7 @@ template <typename T> class Body;
 ///        = DtB_𝐫 + (w_AB - w_BC) x 𝐫/2 (uses w_AB = -w_BA) </pre>
 /// where DtB_𝐫 is the time-derivative in B of 𝐫, denoted hereafter as 𝐫̇̇̇.
 /// Substitution of v_ApCp into power P and subsequent rearrangement gives <pre>
-/// P = τ * q̇  +  𝐟 ⋅ 𝐫̇̇̇  + (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟) </pre>
+/// P = τ ⋅ q̇  +  𝐟 ⋅ 𝐫̇̇̇  + (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟) </pre>
 /// A bushing's potential energy U can be written as `U = Uᴀ + Uɪ`, where Uᴀ is
 /// the part of U that possesses an analytical potential energy and Uɪ is the
 /// part of U that is calculated by numerically integrating Pcɪ as shown below.
@@ -148,9 +154,9 @@ template <typename T> class Body;
 /// Conservative power Pcɪ is numerically integrated to calculate Uɪ.
 /// Nonconservative power Pɴᴄ is the part of power P without an associated
 /// potential energy (power due to damping force 𝐟ᴅ and damping torque τᴅ).<pre>
-/// Pcᴀ = τᴋ * q̇  +  𝐟ᴋ ⋅ 𝐫̇̇̇                 Uᴀ = −1/2 (τᴋ * q  +  𝐟ᴋ ⋅ 𝐫)
+/// Pcᴀ = τᴋ ⋅ q̇  +  𝐟ᴋ ⋅ 𝐫̇̇̇                 Uᴀ = −1/2 (τᴋ ⋅ q  +  𝐟ᴋ ⋅ 𝐫)
 /// Pcɪ = (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟ᴋ)        Uɪ = −∫ (Pcɪ dt)
-/// Pɴᴄ = τᴅ * q̇  +  𝐟ᴅ ⋅ 𝐫̇̇̇  + (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟ᴅ)
+/// Pɴᴄ = τᴅ ⋅ q̇  +  𝐟ᴅ ⋅ 𝐫̇̇̇  + (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟ᴅ)
 /// P = Pcᴀ + Pcɪ + Pɴᴄ  </pre>
 /// Shown below are this class's current power and potential energy methods.
 /// Currently, the Drake System framework does not calculate Uɪ or Pcɪ. We
@@ -197,7 +203,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @note The net moment on C about Co is affected by both the gimbal torque
   /// and the moment of 𝐟 about Co. Similarly, for the net moment on A about Ao.
   /// @note math::RollPitchYaw describes the roll pitch yaw angles q₀, q₁, q₂.
-  /// The position from Ao to Co is p_AoCo_B = x Bx + y By + z Bz = [x y z]ʙ.
+  /// The position from Ao to Co is p_AoCo_B = x 𝐁𝐱 + y 𝐁𝐲 + z 𝐁𝐳 = [x y z]ʙ.
   /// @pre All the stiffness and damping constants must be non-negative.
   LinearBushingRollPitchYaw(const Frame<T>& frameA, const Frame<T>& frameC,
                             const Vector3<double>& torque_stiffness_constants,
@@ -371,8 +377,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // q2 = λy sin(θ/2) leads to        =>  λy = q2 / (2 sin(θ/4) cos(θ/4) ).
     // q3 = λz sin(θ/2) leads to        =>  λz = q3 / (2 sin(θ/4) cos(θ/4) ).
     // ----------------------------------------------------------------------
-    // Frame B's unit vectors Bx, By, Bz are "halfway" (in an angle-axis sense)
-    // between the unit vectors Ax, Ay, Az of frame A and Cx, Cy, Cz of frame C.
+    // Frame B's unit vectors 𝐁𝐱, 𝐁𝐲, 𝐁𝐳 are "halfway" (in an angle-axis sense)
+    // between the unit vectors 𝐀𝐱, 𝐀𝐲, 𝐀𝐳 of frame A and 𝑪𝒙, 𝑪𝒚, 𝑪𝒛 of frame C.
     // The quaternion q_AB = [e0 e1 e2 e3] is associated with an angle-axis with
     // angle θ/2 and the same axis [λx λy λz], which relate to [e0 e1 e2 e3] as
     // e0 = cos(θ/4) = √(0.5*(q0 + 1)).
@@ -547,7 +553,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // torque −𝐭 on frame A and a force −𝐟 applied to a point Ap of A.
     // Points Ap and Cp are coincident and located halfway between Aₒ and Cₒ.
     // ------------------------------------------------------------------------
-    // This method calculates the torque `𝐭 = t_Cp_A = tx Ax + ty Ay + tz Az`
+    // This method calculates the torque `𝐭 = t_Cp_A = tx 𝐀𝐱 + ty 𝐀𝐲 + tz 𝐀𝐳`
     // that the bushing applies to frame C.  In monogram notation, 𝐭 is computed
     // as t_Cp_A = Nᵀ τ where the N matrix arises from q̇ = N w_AC_A, whereas in
     // matrix form, this relationship is
@@ -558,8 +564,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // The expressions for tx, ty, tz in terms of τ₀, τ₁, τ₂ is derived below by
     // equating the power `𝐭 ⋅ w_AC_A = tx ωx + ty ωy + tz ωz` of torque 𝐭 to
     // the power `τ₀ q̇₀ + τ₁ q̇₁ + τ₂ q̇₂` of the three spring-damper "gimbal"
-    // torques `τ₀ Cx`, `τ₁ Py`, `τ₂ Az` (each of Cx, Py, Az are associated with
-    // a frame in the roll-pitch-yaw rotation sequence, where `Py` denotes a
+    // torques τ₀ 𝑪𝒙, τ₁ 𝑷𝒚, τ₂ 𝐀𝐳 (each of 𝑪𝒙, 𝑷𝒚, 𝐀𝐳 are associated with
+    // a frame in the roll-pitch-yaw rotation sequence, where 𝑷𝒚 denotes a
     // unit vector of the "pitch" intermediate frame).
     // ------------------------------------------------------------------------
     // Power = [τ₀ τ₁ τ₂]⌈ q̇₀ ⌉ = [τ₀ τ₁ τ₂] N ⌈ ωx ⌉ =  [tx ty tz] ⌈ ωx ⌉
@@ -569,7 +575,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // ------------------------------------------------------------------------
 
     // Calculate the matrix N that relates q̇₀, q̇₁, q̇₂ to ωx, ωy, ωz, where frame
-    // C's angular velocity in A is expressed `w_AC_A = ωx Ax + ωy Ay + ωz Az`.
+    // C's angular velocity in A is expressed `w_AC_A = ωx 𝐀𝐱 + ωy 𝐀𝐲 + ωz 𝐀𝐳`.
     // The calculation of N is documented in the class math::RollPitchYaw.
     const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
     const Matrix3<T> N = rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
@@ -603,7 +609,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] context The state of the multibody system.
   Vector3<T> CalcBushingNetForceOnCExpressedInB(
       const systems::Context<T>& context) const {
-    // Calculate force `𝐟 = fx Bx + fy By + fz Bz`.
+    // Calculate force `𝐟 = fx 𝐁𝐱 + fy 𝐁𝐲 + fz 𝐁𝐳`.
     // fx = −(kx x + dx ẋ)
     // fy = −(ky y + dy ẏ)
     // fz = −(kz z + dz ż)
