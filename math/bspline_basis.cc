@@ -112,7 +112,7 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
 }
 
 template <typename T>
-T BsplineBasis<T>::EvaluateBasisFunctionI(int index, T parameter_value) const {
+T BsplineBasis<T>::EvaluateBasisFunctionI(int index, const T& parameter_value) const {
   std::vector<T> delta(num_basis_functions(), 0.0);
   delta[index] = 1.0;
   return EvaluateCurve(delta, parameter_value);
