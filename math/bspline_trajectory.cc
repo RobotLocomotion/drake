@@ -85,22 +85,22 @@ void BsplineTrajectory<T>::InsertKnots(
     // Implements Boehm's Algorithm for knot insertion as described in by
     // Patrikalakis et al. [1], with a typo corrected in equation 1.76.
     //
-    // [1] http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
+    // [1] http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node18.html
 
     // Define short-hand references to match Patrikalakis et al.:
-    const auto& t = basis_.knots();
-    const auto& t_bar = additional_knots.front();
+    const std::vector<double>& t = basis_.knots();
+    const double t_bar = additional_knots.front();
     const int k = basis_.order();
     DRAKE_DEMAND(start_time() <= t_bar && t_bar <= end_time());
 
-    /* Find the the index, 𝑙, of the greatest knot that is less than or equal to
+    /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than end_time(). */
     const int ell = std::distance(
         t.begin(),
         std::prev(t_bar < end_time()
                       ? std::upper_bound(t.begin(), t.end(), t_bar)
                       : std::lower_bound(t.begin(), t.end(), t_bar)));
-    auto new_knots = t;
+    std::vector<double> new_knots = t;
     new_knots.insert(std::next(new_knots.begin(), ell + 1), t_bar);
     std::vector<MatrixX<T>> new_control_points{this->control_points().front()};
     for (int i = 1; i < this->num_control_points(); ++i) {

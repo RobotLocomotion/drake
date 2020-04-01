@@ -10,8 +10,8 @@
 
 namespace drake {
 namespace math {
-/** Represents a B-spline curve using a given `basis` with `control_points` in
-ℝʳᵒʷˢ ˣ ᶜᵒˡˢ.
+/** Represents a B-spline curve using a given `basis` with ordered 
+`control_points` such that each control point is a matrix in ℝʳᵒʷˢ ˣ ᶜᵒˡˢ.
 @see BsplineBasis */
 template <typename T>
 class BsplineTrajectory final : public trajectories::Trajectory<T> {
@@ -32,10 +32,10 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Evaluates the BsplineTrajectory at the given time t.
   @param t The time at which to evaluate the %PiecewisePolynomial.
   @return The matrix of evaluated values.
-  @warning If t does not lie in the range [start_time(), end_time], the
+  @warning If t does not lie in the range [start_time(), end_time()], the
            trajectory will silently be evaluated at the closest
-           point to t. For example, `value(-1)` will return `value(0)` for
-           a trajectory defined over [0, 1].
+           valid value of time to t. For example, `value(-1)` will return 
+           `value(0)` for a trajectory defined over [0, 1].
    */
   MatrixX<T> value(double time) const override;
 
@@ -73,11 +73,9 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Adds new knots at the specified `times` without changing the behavior of
   the trajectory. The basis and control points of the trajectory are adjusted
   such that it produces the same value for any valid time before and after this
-  method is called. If adding the new knots increaces the multiplicity of any
-  existing knots, the modified trajectory will maintain the same level of
-  continuity at that point. However, BsplineTrajectory objects constructed with
-  the modified basis and different control points may have lower levels of
-  continuity. Note that `times` need not be sorted.
+  method is called. The resulting trajectory is guaranteed to have the same
+  level of continuity as the original, even if knot values are duplicated. Note
+  that `times` need not be sorted.
   @pre this->start_time() <= t <= this->end_time() for all t in `times` */
   void InsertKnots(const std::vector<double>& times);
 
