@@ -32,7 +32,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Evaluates the BsplineTrajectory at the given time t.
   @param t The time at which to evaluate the %PiecewisePolynomial.
   @return The matrix of evaluated values.
-  @warning If t does not lie in the range [start_time(), end_time], the 
+  @warning If t does not lie in the range [start_time(), end_time], the
            trajectory will silently be evaluated at the closest
            point to t. For example, `value(-1)` will return `value(0)` for
            a trajectory defined over [0, 1].

@@ -27,12 +27,10 @@ BsplineTrajectory<double> MakeCircleTrajectory() {
       VectorX<double>::LinSpaced(num_control_points, 0, 2 * M_PI);
   for (int i = 0; i < num_control_points; ++i) {
     control_points.push_back(
-        (MatrixX<double>(2, 1) << std::sin(t_dummy(i)),
-         std::cos(t_dummy(i)))
+        (MatrixX<double>(2, 1) << std::sin(t_dummy(i)), std::cos(t_dummy(i)))
             .finished());
   }
-  return {BsplineBasis<double>{order, num_control_points},
-          control_points};
+  return {BsplineBasis<double>{order, num_control_points}, control_points};
 }
 }  // namespace
 
@@ -75,10 +73,9 @@ GTEST_TEST(BsplineTrajectoryTests, ValueTest) {
   for (int k = 0; k < num_times; ++k) {
     MatrixX<double> value = trajectory.value(t(k));
     double t_clamped = std::min(std::max(t(k), trajectory.start_time()),
-                         trajectory.end_time());
-    MatrixX<double> expected_value =
-        trajectory.basis().EvaluateCurve(trajectory.control_points(),
-                                         t_clamped);
+                                trajectory.end_time());
+    MatrixX<double> expected_value = trajectory.basis().EvaluateCurve(
+        trajectory.control_points(), t_clamped);
     EXPECT_TRUE(CompareMatrices(value, expected_value,
                                 std::numeric_limits<double>::epsilon()));
   }
@@ -160,8 +157,8 @@ GTEST_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
 
   // Create a vector of new knots to add. Note that it contains a knot with a
   // multiplicity of 2.
-  std::vector<double> new_knots{original_trajectory.start_time(), M_PI_4,
-                                0.25, 0.25, original_trajectory.end_time()};
+  std::vector<double> new_knots{original_trajectory.start_time(), M_PI_4, 0.25,
+                                0.25, original_trajectory.end_time()};
   // Add the new knots.
   BsplineTrajectory<double> trajectory_with_new_knots = original_trajectory;
   trajectory_with_new_knots.InsertKnots({new_knots});
