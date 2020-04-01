@@ -38,9 +38,8 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
   EXPECT_EQ(bspline_basis_1.knots(), expected_knots_1);
 
   // Check the order and knots constructor.
-  const std::vector<double> expected_knots_2 = {-5, 0, 0.1, 0.2, 0.3, 0.4, 3,
-                                                10, 17, 25, 50, 100, 200, 400,
-                                                401};
+  const std::vector<double> expected_knots_2 = {
+      -5, 0, 0.1, 0.2, 0.3, 0.4, 3, 10, 17, 25, 50, 100, 200, 400, 401};
   BsplineBasis<double> bspline_basis_2{expected_order, expected_knots_2};
   EXPECT_EQ(bspline_basis_2.order(), expected_order);
   EXPECT_EQ(bspline_basis_2.num_basis_functions(),
@@ -83,7 +82,7 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveBasisFunctionIndicesTest) {
                                        expected_num_basis_functions};
 
   auto expected_indices = [](std::initializer_list<int> values) {
-        return std::vector<int>(values);
+    return std::vector<int>(values);
   };
 
   // Test that the active basis functions for the full final interval are the
@@ -99,11 +98,11 @@ GTEST_TEST(BsplineBasisTests, ComputeActiveBasisFunctionIndicesTest) {
   // Test that extending the query interval back into the previous knot interval
   // adds 8 to the list of active basis function indices.
   EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices({{0.85, 1.0}}),
-            expected_indices({8,  9,  10, 11, 12, 13}));
+            expected_indices({8, 9, 10, 11, 12, 13}));
 
   // Test an query interval that extends across three knot intervals.
   EXPECT_EQ(bspline_basis_0.ComputeActiveBasisFunctionIndices({{0.35, 0.59}}),
-            expected_indices({3, 4, 5, 6, 7, 8,  9}));
+            expected_indices({3, 4, 5, 6, 7, 8, 9}));
 
   // Test that the first five basis functions are active when
   // t = initial_parameter_value().
