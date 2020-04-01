@@ -2730,11 +2730,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::runtime_error unless composite_mass > 0, where composite_mass
   /// is the total mass of all bodies except world_body() in MultibodyPlant.
   /// @throws std::exception if frame_A is not the world frame.
-  Vector3<T> CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
-      const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const {
+  Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
+      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A, const Frame<T>& frame_E) const {
     // TODO(yangwill): Add an optional parameter to calculate this for a
     // subset of bodies instead of the full system
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(

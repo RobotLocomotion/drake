@@ -365,7 +365,7 @@ TEST_F(TwoDOFPlanarPendulumTest,
 
   // Test for CalcBiasCenterOfMassTranslationalAcceleration()
   const Vector3<double>& abias_WCcm_W =
-      plant_->CalcBiasTranslationalAccelerationOfSystemCenterOfMass(
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
           *context_, JacobianWrtVariable::kV, plant_->world_frame(),
           plant_->world_frame());
 
