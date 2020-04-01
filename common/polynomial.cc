@@ -11,7 +11,6 @@
 
 using Eigen::Dynamic;
 using Eigen::Matrix;
-using Eigen::PolynomialSolver;
 using std::pair;
 using std::runtime_error;
 using std::string;
@@ -224,13 +223,14 @@ Polynomial<T>::GetVariables() const {
 template <typename T>
 Polynomial<T> Polynomial<T>::EvaluatePartial(
     const std::map<VarType, T>& var_values) const {
+  using std::pow;
   std::vector<Monomial> new_monomials;
   for (const Monomial& monomial : monomials_) {
     T new_coefficient = monomial.coefficient;
     std::vector<Term> new_terms;
     for (const Term& term : monomial.terms) {
       if (var_values.count(term.var)) {
-        new_coefficient *= std::pow(var_values.at(term.var), term.power);
+        new_coefficient *= pow(var_values.at(term.var), term.power);
       } else {
         new_terms.push_back(term);
       }
@@ -486,38 +486,25 @@ const Polynomial<T> Polynomial<T>::operator/(
 }
 
 template <typename T>
-typename Polynomial<T>::RootsType
-Polynomial<T>::Roots() const {
-  if (!is_univariate_)
-    throw runtime_error(
-        "Roots is only defined for univariate polynomials");
-
-  auto coefficients = GetCoefficients();
-
-  // need to handle degree 0 and 1 explicitly because Eigen's polynomial solver
-  // doesn't work for these
-  int degree = static_cast<int>(coefficients.size()) - 1;
-  switch (degree) {
-    case 0:
-      return Polynomial<T>::RootsType(degree);
-    case 1: {
-      Polynomial<T>::RootsType ret(degree);
-      ret[0] = -coefficients[0] / coefficients[1];
-      return ret;
-    }
-    default: {
-      PolynomialSolver<RealScalar, Eigen::Dynamic> solver;
-      solver.compute(coefficients);
-      return solver.roots();
-      break;
-    }
-  }
+bool Polynomial<T>::IsApprox(const Polynomial<T>& other,
+                             const Polynomial<T>::RealScalar& tol) const {
+  return GetCoefficients().isApprox(other.GetCoefficients(), tol);
 }
 
-template <typename T>
-bool Polynomial<T>::IsApprox(const Polynomial& other,
-                                           const RealScalar& tol) const {
-  return GetCoefficients().isApprox(other.GetCoefficients(), tol);
+template <>
+bool Polynomial<symbolic::Expression>::IsApprox(
+    const Polynomial<symbolic::Expression>& other,
+    const Polynomial<symbolic::Expression>::RealScalar& tol) const {
+  DRAKE_DEMAND(tol == 0);
+  const VectorX<symbolic::Expression> a = GetCoefficients();
+  const VectorX<symbolic::Expression> b = other.GetCoefficients();
+  if (a.size() != b.size()) return false;
+  for (int i = 0; i < a.rows(); i++) {
+    if (!a(i).EqualTo(b(i))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 constexpr char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
@@ -775,7 +762,8 @@ Polynomial<T> Polynomial<T>::FromExpression(const Expression& e) {
   return FromExpressionVisitor<T>{}.Visit(e);
 }
 
-template class Polynomial<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::Polynomial)
 
 // template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it
