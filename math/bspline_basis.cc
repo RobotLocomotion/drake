@@ -13,33 +13,31 @@ namespace math {
 namespace {
 
 template <typename T>
-std::vector<T> ConstructDefaultKnots(int order, int num_basis_functions,
-                                     KnotVectorType type) {
+std::vector<T> MakeKnotVector(int order, int num_basis_functions,
+                              KnotVectorType type,
+                              const T& initial_parameter_value,
+                              const T& final_parameter_value) {
   if (num_basis_functions < order) {
     throw std::invalid_argument(fmt::format(
         "The number of basis functions ({}) should be greater than or "
         "equal to the order ({}).",
         num_basis_functions, order));
   }
+  DRAKE_DEMAND(initial_parameter_value < final_parameter_value);
   const int num_knots{num_basis_functions + order};
-  std::vector<T> knots(num_knots, 0.0);
-  switch (type) {
-    case KnotVectorType::kClampedUniform: {
-      const T knot_interval =
-          1.0 / static_cast<double>(num_basis_functions - (order - 1));
-      for (int i = order; i < num_knots; ++i) {
-        if (i < num_basis_functions) {
-          knots.at(i) = knots.at(i - 1) + knot_interval;
-        } else {
-          knots.at(i) = 1.0;
-        }
-      }
-      break;
-    }
-    case KnotVectorType::kUniform: {
-      for (int i = 0; i < num_knots; ++i) {
-        knots.at(i) = static_cast<T>(i - (order - 1));
-      }
+  std::vector<T> knots(num_knots);
+  const T knot_interval =
+      (final_parameter_value - initial_parameter_value) / 
+      static_cast<double>(num_basis_functions - (order - 1));
+  for (int i = 0; i < num_knots; ++i) {
+    if (i < order && type == KnotVectorType::kClampedUniform) {
+      knots.at(i) = initial_parameter_value;
+    } else if (i >= num_basis_functions && 
+               type == KnotVectorType::kClampedUniform) {
+      knots.at(i) = final_parameter_value;
+    } else {
+      knots.at(i) = initial_parameter_value + 
+                    knot_interval * static_cast<T>(i - (order - 1));
     }
   }
   return knots;
@@ -62,9 +60,11 @@ BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
 
 template <typename T>
 BsplineBasis<T>::BsplineBasis(int order, int num_basis_functions,
-                              KnotVectorType type)
+                              KnotVectorType type,
+                              const T& initial_parameter_value,
+                              const T& final_parameter_value)
     : BsplineBasis<T>(
-          order, ConstructDefaultKnots<T>(order, num_basis_functions, type)) {}
+          order, MakeKnotVector<T>(order, num_basis_functions, type, initial_parameter_value, final_parameter_value)) {}
 
 template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
