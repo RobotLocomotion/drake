@@ -71,26 +71,19 @@ class BsplineBasis final {
   }
 
   /** Returns the indices of the basis functions which may evaluate to non-zero
-  values for some parameter value in `parameter_interval`.
+  values for some parameter value in `parameter_interval`; all other basis 
+  functions are strictly zero over `parameter_interval`.
   @pre parameter_interval[0] ≤ parameter_interval[1]
-  @pre parameter_interval[0] ≥ this->initial_parameter_value()
-  @pre parameter_interval[1] ≤ this->final_parameter_value() */
+  @pre parameter_interval[0] ≥ initial_parameter_value()
+  @pre parameter_interval[1] ≤ final_parameter_value() */
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const std::array<T, 2>& parameter_interval) const;
 
   /** Returns the indices of the basis functions which may evaluate to non-zero
   values for `parameter_value`; all other basis functions are strictly zero at
-  this point. The knots {tₖ₋₁, ..., tₙ₊₁} define n - k + 2 intervals,
-  (tᵢ₊ₖ₋₁, tᵢ₊ₖ), for i = {0, ..., n + 1 - k}. For t ∈ (tᵢ₊ₖ₋₁, tᵢ₊ₖ), only the
-  basis functions with indices {i, ..., i + k - 1} are non-zero. By convention,
-  the active basis functions at t = tᵢ₊ₖ₋₁, for i = {0, ..., n + 1 - k}, are
-  defined to be the same as those for the following interval, dispite the 
-  fact that the i-th basis function is also zero at that point. Similarly, the 
-  active basis functions at t = tₙ₊₁ are defined to be the same as those 
-  for the preceeding interval, despite the fact that the basis function with 
-  index n + 1 - k is zero at that point.
-  @pre parameter_value ≥ this->initial_parameter_value()
-  @pre parameter_value ≤ this->final_parameter_value() */
+  this point.
+  @pre parameter_value ≥ initial_parameter_value()
+  @pre parameter_value ≤ final_parameter_value() */
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
@@ -99,9 +92,9 @@ class BsplineBasis final {
   @param control_points Control points of the B-spline curve.
   @param parameter_value Parameter value at which to evaluate the B-spline
   curve defined by `this` and `control_points`.
-  @pre control_points.size() == this->num_basis_functions()
-  @pre parameter_value ≥ this->initial_parameter_value()
-  @pre parameter_value ≤ this->final_parameter_value() */
+  @pre control_points.size() == num_basis_functions()
+  @pre parameter_value ≥ initial_parameter_value()
+  @pre parameter_value ≤ final_parameter_value() */
   template <typename T_control_point>
   T_control_point EvaluateCurve(
       const std::vector<T_control_point>& control_points,
@@ -127,7 +120,7 @@ class BsplineBasis final {
     const T t_bar = parameter_value;
     const int k = order();
 
-    /* Find the the index, 𝑙, of the greatest knot that is less than or equal to
+    /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than final_parameter_value(). */
     const int ell = std::distance(
         t.begin(),
