@@ -119,6 +119,20 @@ T BsplineBasis<T>::EvaluateBasisFunctionI(int index, const T& parameter_value) c
 }
 
 template <typename T>
+int BsplineBasis<T>::FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+  const T& parameter_value) const {
+  DRAKE_ASSERT(parameter_value >= initial_parameter_value());
+  DRAKE_ASSERT(parameter_value <= final_parameter_value());
+  const std::vector<T>& t = knots();
+  const T t_bar = parameter_value;
+  return std::distance(
+      t.begin(),
+      std::prev(t_bar < final_parameter_value()
+                    ? std::upper_bound(t.begin(), t.end(), t_bar)
+                    : std::lower_bound(t.begin(), t.end(), t_bar)));
+}
+
+template <typename T>
 bool BsplineBasis<T>::operator==(const BsplineBasis<T>& other) const {
   return this->order() == other.order() && this->knots() == other.knots();
 }

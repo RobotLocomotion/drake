@@ -70,6 +70,13 @@ class BsplineBasis final {
     return knots()[num_basis_functions()];
   }
 
+  /** Find the index, 𝑙, of the greatest knot that is less than or equal to
+  t_bar and strictly less than final_parameter_value().
+  @pre parameter_value ≥ initial_parameter_value()
+  @pre parameter_value ≤ final_parameter_value() */
+  int FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+    const T& parameter_value) const;
+
   /** Returns the indices of the basis functions which may evaluate to non-zero
   values for some parameter value in `parameter_interval`; all other basis 
   functions are strictly zero over `parameter_interval`.
@@ -122,11 +129,8 @@ class BsplineBasis final {
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than final_parameter_value(). */
-    const int ell = std::distance(
-        t.begin(),
-        std::prev(t_bar < final_parameter_value()
-                      ? std::upper_bound(t.begin(), t.end(), t_bar)
-                      : std::lower_bound(t.begin(), t.end(), t_bar)));
+    const int ell =
+      FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(t_bar);
     // The vector that stores the intermediate de Boor points (the pᵢʲ in [1]).
     std::vector<T_control_point> p(order());
     /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that

@@ -95,11 +95,9 @@ void BsplineTrajectory<T>::InsertKnots(
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than end_time(). */
-    const int ell = std::distance(
-        t.begin(),
-        std::prev(t_bar < end_time()
-                      ? std::upper_bound(t.begin(), t.end(), t_bar)
-                      : std::lower_bound(t.begin(), t.end(), t_bar)));
+    const int ell =
+      basis().FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+        t_bar);
     std::vector<double> new_knots = t;
     new_knots.insert(std::next(new_knots.begin(), ell + 1), t_bar);
     std::vector<MatrixX<T>> new_control_points{this->control_points().front()};
