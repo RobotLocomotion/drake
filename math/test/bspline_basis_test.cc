@@ -254,6 +254,15 @@ GTEST_TEST(BsplineBasisTests, OperatorEqualsTest) {
   // Test that objects with different orders and the same knots are not equal.
   EXPECT_FALSE(BsplineBasis<double>(order, knots).operator==(
     BsplineBasis<double>(order + 1, knots)));
+
+  // Test that objects with the same orders and different knots are not equal.
+  const std::vector<double> other_knots{1, 2, 3, 4, 5, 6, 7, 8};
+  EXPECT_FALSE(BsplineBasis<double>(order, knots).operator==(
+    BsplineBasis<double>(order, other_knots)));
+
+  // Test that objects with different orders and different knots are not equal.
+  EXPECT_FALSE(BsplineBasis<double>(order, knots).operator==(
+    BsplineBasis<double>(order + 1, other_knots)));
 }
 
 }  // namespace math
