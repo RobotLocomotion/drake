@@ -10,6 +10,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/force_element.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
@@ -170,6 +171,7 @@ template <typename T> class Body;
 /// @see math::RollPitchYaw for definitions of roll, pitch, yaw `[q₀ q₁ q₂]`.
 template <typename T>
 class LinearBushingRollPitchYaw final : public ForceElement<T> {
+  // TODO(Mitiguy) Add gimbal picture at "Relationship of 𝐭 to τ".
   // TODO(Mitiguy) move most of the code in this .h file to its .cc file.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw)
@@ -197,26 +199,29 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @note math::RollPitchYaw describes the roll pitch yaw angles q₀, q₁, q₂.
   /// The position from Ao to Co is p_AoCo_B = x Bx + y By + z Bz = [x y z]ʙ.
   /// @pre All the stiffness and damping constants must be non-negative.
-  LinearBushingRollPitchYaw(const Frame<T>& frameA,
-                            const Frame<T>& frameC,
+  LinearBushingRollPitchYaw(const Frame<T>& frameA, const Frame<T>& frameC,
                             const Vector3<double>& torque_stiffness_constants,
                             const Vector3<double>& torque_damping_constants,
                             const Vector3<double>& force_stiffness_constants,
                             const Vector3<double>& force_damping_constants);
 
   /// Returns link (body) L0 (frame A is welded to link L0).
-  const Body<T>& link0() const { return frameA_.body(); }
+  const Body<T>& link0() const { return frameA().body(); }
 
   /// Returns link (body) L1 (frame C is welded to link L1).
-  const Body<T>& link1() const { return frameC_.body(); }
+  const Body<T>& link1() const { return frameC().body(); }
 
   /// Returns frame A, which is the frame that is welded to link (body) L0 and
   /// attached to the bushing.
-  const Frame<T>& frameA() const { return frameA_; }
+  const Frame<T>& frameA() const {
+    return this->get_parent_tree().get_frame(frameA_index_);
+  }
 
   /// Returns frame C, which is the frame that is welded to link (body) L1 and
   /// attached to the bushing.
-  const Frame<T>& frameC() const { return frameC_; }
+  const Frame<T>& frameC() const {
+    return this->get_parent_tree().get_frame(frameC_index_);
+  }
 
   /// Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
   const Vector3<double>& torque_stiffness_constants() const {
@@ -278,7 +283,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
       const systems::Context<T>& context) const {
     // Reminder: The set of forces on C from the bushing can be replaced by a
     // force 𝐟 at point CAo (the point of C coincident with Ao) together with a
-    // torque t_CAo equal to the moment of all bushing forces C about CAo.
+    // torque t_CAo equal to the moment of all bushing forces on C about CAo.
     // Force 𝐟 and torque t_CAo are negative of the bushing's force/torque on A.
     const SpatialForce<T> F_CAo_A = -CalcBushingSpatialForceOnFrameA(context);
     const Vector3<T> p_AoCo_A = Calcp_AoCo_A(context);
@@ -290,6 +295,17 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const math::RotationMatrix<T> R_CA = CalcR_AC(context).inverse();
     return R_CA * F_Co_A;
   }
+
+ public:
+  // TODO(Mitiguy) Try to make this constructor private not public.
+  // Private constructor for a LinearBushingRollPitchYaw.
+  // Many of these input parameters are described in the public constructor.
+  LinearBushingRollPitchYaw(ModelInstanceIndex model_instance,
+                            FrameIndex frameA_index, FrameIndex frameC_index,
+                            const Vector3<double>& torque_stiffness_constants,
+                            const Vector3<double>& torque_damping_constants,
+                            const Vector3<double>& force_stiffness_constants,
+                            const Vector3<double>& force_damping_constants);
 
  private:
   T CalcPotentialEnergy(
@@ -334,6 +350,17 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const Eigen::Quaternion<T> q_AC = R_AC.ToQuaternion();
     const T q0 = q_AC.w(), q1 = q_AC.x(), q2 = q_AC.y(), q3 = q_AC.z();
     // ----------------------------------------------------------------------
+    // The algorithm below is usually more efficient than calculating the `θ λ`
+    // AngleAxis from R_AC and then forming R_AB from the AngleAxis `θ/2 λ`.
+    // Conversion from a rotation matrix to AngleAxis usually first converts the
+    // rotation matrix to a quaternion and then uses that quaternion with a sqrt
+    // and atan2 to convert to AngleAxis.  The algorithm below converts the
+    // rotation matrix to a quaternion and then uses a sqrt (not needing atan2).
+    // So conversion to AngleAxis has a sqrt and atan2 whereas the algorithm
+    // below only has a sqrt.  One may wonder about the cost of the atan2.
+    // With typical libraries on common modern hardware, there are estimates
+    // that atan2 typically requires ≈4 times the cycles of a sqrt.
+    // ----------------------------------------------------------------------
     // The derivation below employs double-angle trigonometric formulas.
     // The quaternion q_AC = [q0 q1 q2 q3] has an associated angle-axis with an
     // angle θ and axis [λx λy λz] which relate to [q0 q1 q2 q3] as follows.
@@ -369,6 +396,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
 #ifdef DRAKE_ASSERT_IS_ARMED
     // The efficient algorithm above is verified by calculating the `θ λ`
     // AngleAxis from R_AC and then forming R_AB from the AngleAxis `θ/2 λ`.
+    // This test is here because a generic unit test is insufficient to test the
+    // significant number of variations this algorithm may encounter.
     constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
     const Eigen::AngleAxis<T> angleAxis_AC = R_AC.ToAngleAxis();
     const T half_theta = 0.5 * angleAxis_AC.angle();
@@ -461,9 +490,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] context The state of the multibody system.
   // @note `w_AC_A ≠ [q̇₀ q̇₁ q̇₂]`
   // @see CalcBushingRollPitchYawAngleRates() for `[q̇₀ q̇₁ q̇₂]`.
-  // TODO(Mitiguy) improve efficiency by implementing a frame method such as
-  //  frameC().CalcAngularVelocity(context, frameA(), frameA()) to mimic
-  //  frameC().CalcSpatialVelocity(context, frameA(), frameA());
   Vector3<T> Calcw_AC_A(const systems::Context<T>& context) const {
     const SpatialVelocity<T> V_AC_A = CalcV_AC_A(context);
     return V_AC_A.rotational();
@@ -605,8 +631,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
-  const Frame<T>& frameA_;
-  const Frame<T>& frameC_;
+  const FrameIndex frameA_index_;
+  const FrameIndex frameC_index_;
 
   const Vector3<double> torque_stiffness_constants_;
   const Vector3<double> torque_damping_constants_;

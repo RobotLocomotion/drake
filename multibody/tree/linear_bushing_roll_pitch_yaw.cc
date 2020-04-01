@@ -15,19 +15,37 @@ using math::RotationMatrix;
 
 template <typename T>
 LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
-                          const Frame<T>& frameA,
-                          const Frame<T>& frameC,
-                          const Vector3<double>& torque_stiffness_constants,
-                          const Vector3<double>& torque_damping_constants,
-                          const Vector3<double>& force_stiffness_constants,
-                          const Vector3<double>& force_damping_constants) :
-    ForceElement<T>(frameA.body().model_instance()),
-    frameA_(frameA),
-    frameC_(frameC),
-    torque_stiffness_constants_(torque_stiffness_constants),
-    torque_damping_constants_(torque_damping_constants),
-    force_stiffness_constants_(force_stiffness_constants),
-    force_damping_constants_(force_damping_constants) {
+    const Frame<T>& frameA, const Frame<T>& frameC,
+    const Vector3<double>& torque_stiffness_constants,
+    const Vector3<double>& torque_damping_constants,
+    const Vector3<double>& force_stiffness_constants,
+    const Vector3<double>& force_damping_constants)
+    : LinearBushingRollPitchYaw(frameA.model_instance(),
+                                frameA.index(), frameC.index(),
+                                torque_stiffness_constants,
+                                torque_damping_constants,
+                                force_stiffness_constants,
+                                force_damping_constants) {
+  DRAKE_THROW_UNLESS(frameA.model_instance() == world_model_instance() ||
+                     frameC.model_instance() == world_model_instance() ||
+                     frameA.model_instance() == frameC.model_instance());
+}
+
+template <typename T>
+LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
+    ModelInstanceIndex model_instance,
+    FrameIndex frameA_index, FrameIndex frameC_index,
+    const Vector3<double>& torque_stiffness_constants,
+    const Vector3<double>& torque_damping_constants,
+    const Vector3<double>& force_stiffness_constants,
+    const Vector3<double>& force_damping_constants)
+    : ForceElement<T>(model_instance),
+      frameA_index_(frameA_index),
+      frameC_index_(frameC_index),
+      torque_stiffness_constants_(torque_stiffness_constants),
+      torque_damping_constants_(torque_damping_constants),
+      force_stiffness_constants_(force_stiffness_constants),
+      force_damping_constants_(force_damping_constants) {
   DRAKE_THROW_UNLESS(torque_stiffness_constants.minCoeff() >= 0);
   DRAKE_THROW_UNLESS(torque_damping_constants.minCoeff() >= 0);
   DRAKE_THROW_UNLESS(force_stiffness_constants.minCoeff() >= 0);
@@ -204,20 +222,24 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const Frame<ToScalar>& frameA_clone = tree_clone.get_variant(frameA());
-  const Frame<ToScalar>& frameC_clone = tree_clone.get_variant(frameC());
+    const internal::MultibodyTree<ToScalar>& ) const {
+  // const Frame<ToScalar>& frameA_clone = tree_clone.get_variant(frameA());
+  // const Frame<ToScalar>& frameC_clone = tree_clone.get_variant(frameC());
   const Vector3<double>& k012 = torque_stiffness_constants();
   const Vector3<double>& d012 = torque_damping_constants();
   const Vector3<double>& kxyz = force_stiffness_constants();
   const Vector3<double>& dxyz = force_damping_constants();
 
-  // Make the LinearBushingRollPitchYaw<T> clone.
-  auto bushing_clone =
-      std::make_unique<LinearBushingRollPitchYaw<ToScalar>>(
-          frameA_clone, frameC_clone, k012, d012, kxyz, dxyz);
+  // TODO(mitiguy) Why my kludge for the constructor used below to be public?
+  std::unique_ptr<LinearBushingRollPitchYaw<ToScalar>> bushing_clone(
+      new LinearBushingRollPitchYaw<ToScalar>(this->model_instance(),
+          frameA_index_, frameC_index_,
+          k012, d012, kxyz, dxyz));
 
   return bushing_clone;
+  //  TODO ask Alejandro/Sherm if need return std::move(bushing_clone).
+  //   std::move(door_hing_clone) was not used in door_hinge.cc
+  //   However, return std::move(joint_clone) was used in revolute_joine.cc
 }
 
 template <typename T>
