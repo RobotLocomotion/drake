@@ -98,7 +98,7 @@ class BsplineBasis final {
   template <typename T_control_point>
   T_control_point EvaluateCurve(
       const std::vector<T_control_point>& control_points,
-      T parameter_value) const {
+      const T& parameter_value) const {
     /* This function implements the de Boor algorithm. It uses the notation
     from Patrikalakis et al. [1]. Since the depth of recursion is known
     a-priori, the algorithm is flattened along the lines described in [2] to
@@ -150,7 +150,7 @@ class BsplineBasis final {
 
   /** Returns the value of the `i`-th basis function evaluated at
   `parameter_value`. */
-  T EvaluateBasisFunctionI(int i, T parameter_value) const;
+  T EvaluateBasisFunctionI(int i, const T& parameter_value) const;
 
   bool operator==(const BsplineBasis& other) const;
 
