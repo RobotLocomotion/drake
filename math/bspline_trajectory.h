@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace math {
-/** Represents a B-spline curve using a given `basis` with ordered 
+/** Represents a B-spline curve using a given `basis` with ordered
 `control_points` such that each control point is a matrix in ℝʳᵒʷˢ ˣ ᶜᵒˡˢ.
 @see BsplineBasis */
 template <typename T>
@@ -34,7 +34,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   @return The matrix of evaluated values.
   @warning If t does not lie in the range [start_time(), end_time()], the
            trajectory will silently be evaluated at the closest
-           valid value of time to t. For example, `value(-1)` will return 
+           valid value of time to t. For example, `value(-1)` will return
            `value(0)` for a trajectory defined over [0, 1].
    */
   MatrixX<T> value(double time) const override;

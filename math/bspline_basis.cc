@@ -27,16 +27,16 @@ std::vector<T> MakeKnotVector(int order, int num_basis_functions,
   const int num_knots{num_basis_functions + order};
   std::vector<T> knots(num_knots);
   const T knot_interval =
-      (final_parameter_value - initial_parameter_value) / 
+      (final_parameter_value - initial_parameter_value) /
       static_cast<double>(num_basis_functions - (order - 1));
   for (int i = 0; i < num_knots; ++i) {
     if (i < order && type == KnotVectorType::kClampedUniform) {
       knots.at(i) = initial_parameter_value;
-    } else if (i >= num_basis_functions && 
+    } else if (i >= num_basis_functions &&
                type == KnotVectorType::kClampedUniform) {
       knots.at(i) = final_parameter_value;
     } else {
-      knots.at(i) = initial_parameter_value + 
+      knots.at(i) = initial_parameter_value +
                     knot_interval * static_cast<T>(i - (order - 1));
     }
   }
@@ -63,8 +63,9 @@ BsplineBasis<T>::BsplineBasis(int order, int num_basis_functions,
                               KnotVectorType type,
                               const T& initial_parameter_value,
                               const T& final_parameter_value)
-    : BsplineBasis<T>(
-          order, MakeKnotVector<T>(order, num_basis_functions, type, initial_parameter_value, final_parameter_value)) {}
+    : BsplineBasis<T>(order, MakeKnotVector<T>(order, num_basis_functions, type,
+                                               initial_parameter_value,
+                                               final_parameter_value)) {}
 
 template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
@@ -73,11 +74,12 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
   DRAKE_ASSERT(parameter_interval[0] >= initial_parameter_value());
   DRAKE_ASSERT(parameter_interval[1] <= final_parameter_value());
   const int first_active_index =
-    FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
-      parameter_interval[0]) - order() + 1;
+      FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+          parameter_interval[0]) -
+      order() + 1;
   const int final_active_index =
-    FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
-      parameter_interval[1]);
+      FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+          parameter_interval[1]);
   std::vector<int> active_control_point_indices{};
   for (int i = first_active_index; i <= final_active_index; ++i) {
     active_control_point_indices.push_back(i);
@@ -93,24 +95,25 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
 }
 
 template <typename T>
-T BsplineBasis<T>::EvaluateBasisFunctionI(int index, const T& parameter_value) const {
+T BsplineBasis<T>::EvaluateBasisFunctionI(int index,
+                                          const T& parameter_value) const {
   std::vector<T> delta(num_basis_functions(), 0.0);
   delta[index] = 1.0;
   return EvaluateCurve(delta, parameter_value);
 }
 
 template <typename T>
-int BsplineBasis<T>::FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
-  const T& parameter_value) const {
+int BsplineBasis<T>::
+    FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
+        const T& parameter_value) const {
   DRAKE_ASSERT(parameter_value >= initial_parameter_value());
   DRAKE_ASSERT(parameter_value <= final_parameter_value());
   const std::vector<T>& t = knots();
   const T t_bar = parameter_value;
   return std::distance(
-      t.begin(),
-      std::prev(t_bar < final_parameter_value()
-                    ? std::upper_bound(t.begin(), t.end(), t_bar)
-                    : std::lower_bound(t.begin(), t.end(), t_bar)));
+      t.begin(), std::prev(t_bar < final_parameter_value()
+                               ? std::upper_bound(t.begin(), t.end(), t_bar)
+                               : std::lower_bound(t.begin(), t.end(), t_bar)));
 }
 
 template <typename T>

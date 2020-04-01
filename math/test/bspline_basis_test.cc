@@ -14,7 +14,8 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
   const std::vector<double> expected_knots_0{
       0, 0, 0, 0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1, 1, 1, 1};
   const std::vector<double> expected_knots_1{
-      -0.375, -0.25, -0.125, 0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1, 1.125, 1.25, 1.375};
+      -0.375, -0.25, -0.125, 0, 0.125, 0.25, 0.375, 0.5,
+      0.625,  0.75,  0.875,  1, 1.125, 1.25, 1.375};
   // Check the order and num_basis_functions constructor with kClampedUniform.
   BsplineBasis<double> bspline_basis_0{expected_order,
                                        expected_num_basis_functions,
