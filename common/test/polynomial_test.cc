@@ -529,5 +529,15 @@ GTEST_TEST(PolynomialTest, DeprecatedPow) {
 }
 #pragma GCC diagnostic pop
 
+GTEST_TEST(PolynomialTest, ScalarTypes) {
+  Eigen::Vector3d coeffs(1., 2., 3.);
+
+  const Polynomial<AutoDiffXd> autodiff(coeffs);
+  EXPECT_NEAR(autodiff.EvaluateUnivariate(0.0).value(), coeffs(0), 1e-14);
+
+  const Polynomial<symbolic::Expression> symbolic(coeffs);
+  EXPECT_NEAR(symbolic.EvaluateUnivariate(0.0).Evaluate(), coeffs(0), 1e-14);
+}
+
 }  // anonymous namespace
 }  // namespace drake

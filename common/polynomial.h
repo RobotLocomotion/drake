@@ -12,6 +12,7 @@
 #include <unsupported/Eigen/Polynomials>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
@@ -188,7 +189,10 @@ class Polynomial {
   template <typename U>
   typename Product<T, U>::type EvaluateUnivariate(
       const U& x, int derivative_order = 0) const {
-    typedef typename Product<T, U>::type ProductType;
+    // Note: have to remove_const because Product<AutoDiff, AutoDiff>::type and
+    // even Product<double, AutoDiff>::type returns const AutoDiff.
+    typedef typename std::remove_const<typename Product<T, U>::type>::type
+        ProductType;
 
     if (!is_univariate_)
       throw std::runtime_error(
@@ -239,30 +243,6 @@ class Polynomial {
         monomial_value *= std::pow(
             static_cast<ProductType>(var_values.at(term.var)),
             term.power);
-      }
-      value += monomial_value;
-    }
-    return value;
-  }
-
-  /** Specialization of EvaluateMultivariate on AutoDiffXd.
-   *
-   * Specialize EvaluateMultivariate on AutoDiffXd because Eigen autodiffs
-   * implement a confusing subset of operators and conversions that makes a
-   * strictly generic approach too confusing and unreadable.
-   *
-   * Note that it is up to the caller to ensure that all of the AutoDiffXds
-   * in var_values correctly correspond to one another, because Polynomial has
-   * no knowledge of what partial derivative terms the indices of a given
-   * AutoDiffXd correspond to.
-   */
-  drake::AutoDiffXd EvaluateMultivariate(
-      const std::map<VarType, drake::AutoDiffXd>& var_values) const {
-    drake::AutoDiffXd value(0);
-    for (const Monomial& monomial : monomials_) {
-      drake::AutoDiffXd monomial_value(monomial.coefficient);
-      for (const Term& term : monomial.terms) {
-        monomial_value *= pow(var_values.at(term.var), term.power);
       }
       value += monomial_value;
     }
@@ -388,7 +368,35 @@ class Polynomial {
    * complex numbers whose components are of the RealScalar type.
    * @throws std::exception of this Polynomial is not univariate.
    */
-  RootsType Roots() const;
+  template <typename U = T>
+  typename std::enable_if<!std::is_same<U, symbolic::Expression>::value,
+                          typename Polynomial<U>::RootsType>::type
+  Roots() const {
+    if (!is_univariate_)
+      throw std::runtime_error(
+          "Roots is only defined for univariate polynomials");
+
+    auto coefficients = GetCoefficients();
+
+    // need to handle degree 0 and 1 explicitly because Eigen's polynomial
+    // solver doesn't work for these
+    int degree = static_cast<int>(coefficients.size()) - 1;
+    switch (degree) {
+      case 0:
+        return Polynomial<T>::RootsType(degree);
+      case 1: {
+        Polynomial<T>::RootsType ret(degree);
+        ret[0] = -coefficients[0] / coefficients[1];
+        return ret;
+      }
+      default: {
+        Eigen::PolynomialSolver<RealScalar, Eigen::Dynamic> solver;
+        solver.compute(coefficients);
+        return solver.roots();
+        break;
+      }
+    }
+  }
 
   /** Checks if a (univariate) Polynomial is approximately equal to this one.
    *
@@ -396,7 +404,7 @@ class Polynomial {
    * corresponding coefficient of this Polynomial.
    * @throws std::exception if either Polynomial is not univariate.
    */
-  bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
+  bool IsApprox(const Polynomial<T>& other, const RealScalar& tol) const;
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
    * Note that the ID of a variable is preserved in this translation.
@@ -498,6 +506,11 @@ std::ostream& operator<<(
   return os;
 }
 
+template <>
+bool Polynomial<symbolic::Expression>::IsApprox(
+    const Polynomial<symbolic::Expression>& other,
+    const Polynomial<symbolic::Expression>::RealScalar& tol) const;
+
 #ifndef DRAKE_DOXYGEN_CXX
 namespace symbolic {
 namespace internal {
@@ -511,6 +524,9 @@ inline drake::Polynomial<double> ToPolynomial(
 }  // namespace internal
 }  // namespace symbolic
 #endif
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::Polynomial)
 
 typedef Polynomial<double> Polynomiald;
 
