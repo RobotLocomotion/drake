@@ -46,7 +46,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // inside drake/math/rigid_transform.h.
     const char* doc_rigid_transform_linear_matrix_deprecation =
         "DO NOT USE! We offer this API for backwards compatibility with "
-        "Isometry3, but it will be removed on or around 2020-04-01. "
+        "Isometry3, but it will be removed on or around 2020-07-01. "
         "See drake issue #9865 for details.";
 
     using Class = RigidTransform<T>;
