@@ -834,6 +834,89 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   }
 }
 
+
+// Confirm that the rigid-soft intersection correctly culls backface geometry.
+GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
+  // For this test, we're just testing for culling. We presume that for a given
+  // configuration of mesh and half space, the right calculations will be done
+  // to compute the intersection mesh. So, to that end:
+  //
+  //   1. We'll leave the box centered on the world frame origin and aligned
+  //      with the world frame basis.  This implies that B = F = W.
+  //   2. However, we'll pose the half space in the world frame such that:
+  //      a. its normal_W is *not* Wz (so we can confirm that the correct normal
+  //         value is used for culling).
+  //      b. it is positioned such that the *entire* box is contained in the
+  //         half space's volume.
+
+  const RigidTransform<double> X_WF, X_FB;  // Both the identity.
+
+  const SurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB);
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_F(mesh_F);
+
+  // Construct the half-space.
+  const GeometryId hs_id = GeometryId::get_new_id();
+  // We align the half space normal along a diagonal of the box (to ease the
+  // prediction of what the outcome should be -- see below).
+  const Vector3<double> normal_W = Vector3<double>{1, -1, -1}.normalized();
+  const RigidTransform<double> X_WH = HalfSpace::MakePose(
+      normal_W, Vector3<double>{0, 0, -30});
+  const double pressure_scale{1.5};
+
+  const std::unique_ptr<ContactSurface<double>> contact_surface =
+      ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+          hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF);
+  // It definitely produces a contact surface.
+  ASSERT_NE(contact_surface, nullptr);
+
+  const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+
+  // For a wholly enclosed mesh _without_ backface culling, the contact surface
+  // would be the full mesh. The input mesh has two triangles per face for a
+  // total of 12 triangles and 8 vertices. As a contact surface, each of those
+  // triangles would be split around its centroid. This means for each triangle
+  // in the input mesh, we have three triangles in the contact surface mesh,
+  // and one additional 1 vertex. Thus the unculled contact surface would have
+  // 8 + 12 = 20 vertices and 12 * 3 = 36 triangles.
+  //
+  // In fact, because the face normal points along one of the box diagonals.
+  // Only three of the box's faces will contribute to the contact surface.
+  // So, we'll have 18 faces (6 triangles per face). For vertices, we'll include
+  // all but one of the input mesh's vertices (7), and introduce one vertex per
+  // input triangle (6) for a total of 13 vertices.
+  ASSERT_EQ(contact_mesh_W.num_faces(), 18);
+  ASSERT_EQ(contact_mesh_W.num_vertices(), 13);
+
+  // Let's explicitly confirm that every face in the contact surface mesh passes
+  // the culling test.
+  // There are two tricky bits in setting up this test.
+  //
+  //   1. The gradient of the half space pressure is in the opposite direction
+  //      as its normal. So, in normal circumstances: grad_p_W = -normal_W.
+  //   2. We only know that the normals of the contact surface mesh point *out*
+  //      of geometry N and *into* geometry M (in the contact surface). We don't
+  //      know what the mapping between those ids and the mesh and half space
+  //      ids are. If id N is the same as the mesh_id, then we know the contact
+  //      surface normals point in the mesh normal direction. We're done.
+  //      However, if mesh_id is the id for M, the contact surface mesh normals
+  //      point in the opposite direction as the input mesh. So, to evaluate
+  //      an _equivalent_ culling test, we should likewise reverse the gradient
+  //      direction. That's what the next two lines of code do to define the
+  //      gradient direction vector.
+  const double grad_scale = contact_surface->id_N() == mesh_id ? 1.0 : -1.0;
+  const Vector3<double> grad_p_W = grad_scale * -normal_W;
+  for (SurfaceFaceIndex tri(0); tri < contact_mesh_W.num_faces(); ++tri) {
+    // Everything is defined in the world frame; so the transform X_WM = I.
+    ASSERT_TRUE(
+        IsFaceNormalInNormalDirection(grad_p_W, contact_mesh_W, tri, {}))
+        << "Face " << tri;
+  }
+  // Note: this confirms that the reported faces satisfy the non-culling
+  // criteria, but doesn't (can't) confirm that the omitted faces don't. Rethink
+  // this test if that proves to be a problem (highly unlikely).
+}
+
 // AutoDiff is not currently supported and should throw with an acceptable
 // message.
 GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest,
