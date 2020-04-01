@@ -529,5 +529,30 @@ GTEST_TEST(PolynomialTest, DeprecatedPow) {
 }
 #pragma GCC diagnostic pop
 
+template <typename T>
+void TestScalarType() {
+  Eigen::Vector3d coeffs(1., 2., 3.);
+  const Polynomial<T> p(coeffs);
+  EXPECT_NEAR(ExtractDoubleOrThrow(p.EvaluateUnivariate(0.0)), coeffs(0),
+              1e-14);
+
+  EXPECT_THROW(p.Roots(), std::runtime_error);
+  EXPECT_TRUE(static_cast<bool>(p.IsApprox(p, 1e-14)));
+
+  Polynomial<T> x("x");
+  Polynomial<T> y("y");
+  const std::map<Polynomiald::VarType, double> eval_point = {
+    {x.GetSimpleVariable(), 1},
+    {y.GetSimpleVariable(), 2}};
+  EXPECT_NEAR(
+      ExtractDoubleOrThrow((x * x + y).EvaluateMultivariate(eval_point)), 3,
+      1e-14);
+}
+
+GTEST_TEST(PolynomialTest, ScalarTypes) {
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
+}
+
 }  // anonymous namespace
 }  // namespace drake
