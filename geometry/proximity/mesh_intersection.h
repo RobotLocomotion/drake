@@ -433,26 +433,15 @@ bool IsFaceNormalAlongPressureGradient(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
     const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
-  const Vector3<T>& normal_N = surface_N.face_normal(tri_index);
-  const Vector3<T>  normal_M = X_MN.rotation() * normal_N;
-  // Evaluate the gradient vector on the tetrahedron.
   // TODO(DamrongGuoy): Change the type of volume_field_M from
   //  VolumeMeshField to VolumeMeshFieldLinear and remove this cast.
+  // Evaluate the gradient vector on the tetrahedron.
   const auto field_M =
       dynamic_cast<const VolumeMeshFieldLinear<T, T>*>(&volume_field_M);
   DRAKE_DEMAND(field_M);
   const Vector3<T> grad_p_M = field_M->EvaluateGradient(tet_index);
-  const T dot_product = normal_M.dot(grad_p_M.normalized());
-
-  // We pick 5π/8 empirically.
-  constexpr double kAngleThreshold = 5. * M_PI / 8.;
-  static const double kDotProductThreshold = std::cos(kAngleThreshold);
-  // dot_product greater than kDotProductThreshold means the angle between
-  // the two unit vectors is less than kAngleThreshold.
-  if (dot_product > kDotProductThreshold)
-    return true;
-  else
-    return false;
+  return IsFaceNormalInNormalDirection(grad_p_M.normalized(), surface_N,
+                                       tri_index, X_MN.rotation());
 }
 
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
