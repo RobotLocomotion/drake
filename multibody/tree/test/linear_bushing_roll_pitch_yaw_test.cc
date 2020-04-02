@@ -670,7 +670,7 @@ TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
 
 // Verify algorithm that calculates rotation matrix R_AB.
 TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
-  // This tests uses a generic unit vector for the "axis" part of AngleAxis.
+  // This test uses a generic unit vector for the "axis" part of AngleAxis.
   const Vector3<double> unit_vector = Vector3<double>(1, 2, 3).normalized();
   for (double angle = 0; angle <= 0.99 * M_PI;  angle += M_PI / 32) {;
     BushingTester::VerifyHalfAngleAxisAlgorithm(angle, unit_vector);

@@ -113,8 +113,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
   //  Currently this method has not been implemented and throws an exception.
   throw std::runtime_error(
       "Error: LinearBushingRollPitchYaw::CalcConservativePower() "
-      "has not been implemented.  Related: Issues #12982 and #12752.");
-  return T(0);
+      "has not been implemented.  Related: Issues #12982 and #12752.");;
 }
 
 template <typename T>
@@ -127,7 +126,6 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   throw std::runtime_error(
       "Error: LinearBushingRollPitchYaw::CalcNonConservativePower() "
       "has not been implemented.  Related: Issues #12982 and #12752.");
-  return T(0);
 }
 
 template <typename T>

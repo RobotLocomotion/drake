@@ -544,9 +544,9 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // that the bushing applies to frame C.  In monogram notation, 𝐭 is computed
     // as t_Cp_A = Nᵀ τ where the N matrix arises from q̇ = N w_AC_A, whereas in
     // matrix form, this relationship is
-    // ⌈ tx ⌉       ⌈ τ₀ ⌉                        ⌈ q̇₀ ⌉     ⌈ ωx ⌉
-    // | ty |  = Nᵀ | τ₁ |  where N arises from   | q̇₁ | = N | ωy |
-    // ⌊ tz ⌋ᴀ      ⌊ τ₂ ⌋                        ⌊ q̇₂ ⌋     ⌊ ωz ⌋ᴀ
+    // ⌈ tx ⌉       ⌈ τ₀ ⌉                       ⌈ q̇₀ ⌉     ⌈ ωx ⌉
+    // | ty |  = Nᵀ | τ₁ |  where N arises from  | q̇₁ | = N | ωy |
+    // ⌊ tz ⌋ᴀ      ⌊ τ₂ ⌋                       ⌊ q̇₂ ⌋     ⌊ ωz ⌋ᴀ
     // ------------------------------------------------------------------------
     // The expressions for tx, ty, tz in terms of τ₀, τ₁, τ₂ is derived below by
     // equating the power `𝐭 ⋅ w_AC_A = tx ωx + ty ωy + tz ωz` of torque 𝐭 to
