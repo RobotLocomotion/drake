@@ -56,7 +56,7 @@ class ExponentialPlusPiecewisePolynomial final
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
-  MatrixX<T> value(double t) const override;
+  MatrixX<T> value(const T& t) const override;
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
 
