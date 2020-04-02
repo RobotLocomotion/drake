@@ -43,7 +43,7 @@ class BushingTester {
     RotationMatrixd R_AB_bad(Eigen::AngleAxis<double>(bad_half_angle, axis));
     DRAKE_EXPECT_THROWS_MESSAGE(LinearBushingRollPitchYaw<double>::
           ThrowIfInvalidHalfAngleAxis(R_AC, R_AB_bad),
-          std::logic_error,
+          std::runtime_error,
           "Error: Calculation of R_AB from quaternion differs from the "
           "R_AB_expected formed via a half-angle axis calculation.");
   }
@@ -136,7 +136,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const RotationMatrixd R_CA = R_AC.inverse();
 
     // Set the context for subsequent harvest of Drake information.
-    systems::Context<double>& context = *(context_.get());
+    systems::Context<double> &context = *(context_.get());
 
     // Use the mobilizer to set the following in Drake:
     //   frame C's orientation in frame A,
@@ -166,8 +166,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // from the calculation in the class LinearBushingRollPitchYaw in that the
     // calculation here is relatively straightforward, the other more efficient.
     const Eigen::AngleAxis<double> angleAxis_AC = R_AC.ToAngleAxis();
-    const Vector3<double>& axis_AC = angleAxis_AC.axis();
-    const double& angle_AC = angleAxis_AC.angle();
+    const Vector3<double> &axis_AC = angleAxis_AC.axis();
+    const double &angle_AC = angleAxis_AC.angle();
     const Eigen::AngleAxis<double> angleAxis_AB(0.5 * angle_AC, axis_AC);
     const RotationMatrixd R_AB(angleAxis_AB);
     const RotationMatrixd R_BA = R_AB.inverse();
@@ -191,10 +191,10 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double zDt = DtB_p_AoCo_B(2);  // m/s
 
     // Get the bushing's torque and force stiffness/damping constants.
-    const Vector3<double>& k012 = K012();
-    const Vector3<double>& d012 = D012();
-    const Vector3<double>& kxyz = Kxyz();
-    const Vector3<double>& dxyz = Dxyz();
+    const Vector3<double> &k012 = K012();
+    const Vector3<double> &d012 = D012();
+    const Vector3<double> &kxyz = Kxyz();
+    const Vector3<double> &dxyz = Dxyz();
     const double d0 = d012(0), d1 = d012(1), d2 = d012(2);  // N*m*s/rad
     const double dx = dxyz(0), dy = dxyz(1), dz = dxyz(2);  // N*s/m
     const double k0 = k012(0), k1 = k012(1), k2 = k012(2);  // N*m/rad
@@ -228,42 +228,16 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Calculate the moment on frame A about Ao, expressed in A.
     const Vector3<double> p_AoBo_B = 0.5 * p_AoCo_B;
     const Vector3<double> t_Ao_A_expected = -txyz +
-                                         R_AB * p_AoBo_B.cross(f_A_B_expected);
+        R_AB * p_AoBo_B.cross(f_A_B_expected);
 
     // Calculate the moment on frame C about Co, expressed in A.
     const Vector3<double> p_CoBo_B = -p_AoBo_B;
     const Vector3<double> t_Co_C_expected = R_CA * txyz
-                                       + R_CB * p_CoBo_B.cross(f_C_B_expected);
-
-    // Contributions to analytical potential energy Uᴀ.
-    using std::pow;
-    const double UA_translation = 0.5 * kx * pow(x, 2)
-                                + 0.5 * ky * pow(y, 2)
-                                + 0.5 * kz * pow(z, 2);
-    const double UA_rotation = 0.5 * k0 * pow(q0, 2)
-                             + 0.5 * k1 * pow(q1, 2)
-                             + 0.5 * k2 * pow(q2, 2);
-    const double UA_expected = UA_translation + UA_rotation;
-
-    // Power is resolved into three terms as `P = Pcᴀ + Pcɪ + Pɴᴄ`.
-    // Conservative power Pcᴀ has an analytical potential energy Uᴀ (Pcᴀ = −U̇ᴀ).
-    // Conservative power Pcɪ is numerically integrated to calculate Uɪ.
-    // Nonconservative power Pɴᴄ is the part of power P without an associated
-    // potential energy (power due to damping forces and damping torques).
-    const Vector3<double> w_AC_B = R_BA * w_AC_A;
-    const double PcA = -k0 * q0 * qDt(0) - kx * x * xDt
-                      - k1 * q1 * qDt(1) - ky * y * yDt
-                      - k2 * q2 * qDt(2) - kz * z * zDt;
-    const double PcI = w_AC_B.dot(p_AoCo_B.cross(fK));
-    const double Pnc = -d0 * pow(qDt(0), 2) - dx * pow(xDt, 2)
-                      - d1 * pow(qDt(1), 2) - dy * pow(yDt, 2)
-                      - d2 * pow(qDt(2), 2) - dz * pow(zDt, 2)
-                      + w_AC_B.dot(p_AoCo_B.cross(fB));
-    // ------------ End of alternate calculations ---------
+        + R_CB * p_CoBo_B.cross(f_C_B_expected);
 
     // Verify F_A_A,, the bushing's spatial force calculation on frame A.
     double torque_epsilon = 32 * kEpsilon * t_Ao_A_expected.norm();
-    double force_epsilon  = 32 * kEpsilon * f_A_A_expected.norm();
+    double force_epsilon = 32 * kEpsilon * f_A_A_expected.norm();
     const SpatialForce<double> F_A_A =
         bushing_->CalcBushingSpatialForceOnFrameA(context);
     EXPECT_TRUE(CompareMatrices(F_A_A.rotational(), t_Ao_A_expected,
@@ -274,8 +248,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Verify the bushing's spatial force (torque and force) calculation at Cₒ.
     const SpatialForce<double> F_C_C =
         bushing_->CalcBushingSpatialForceOnFrameC(context);
-    const Vector3<double>& t_Co_C = F_C_C.rotational();
-    const Vector3<double>& f_C_C = F_C_C.translational();
+    const Vector3<double> &t_Co_C = F_C_C.rotational();
+    const Vector3<double> &f_C_C = F_C_C.translational();
     EXPECT_TRUE(CompareMatrices(t_Co_C, t_Co_C_expected,
                                 torque_epsilon, MatrixCompareType::relative));
     EXPECT_TRUE(CompareMatrices(f_C_C, f_C_C_expected,
@@ -291,37 +265,31 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
                                   force_epsilon, MatrixCompareType::relative));
     }
 
-    // TODO(Mitiguy) Fix CalcPotentialEnergy(), CalcConservativePower(), etc.
-    //  to avoid the need to form pc and vc (see issue #12035).
-    const MultibodyTree<double>& mbt = GetInternalTree(*mbtree_system_);
-    const PositionKinematicsCache<double>& pc =
+    // Verify potential energy and power methods throw exceptions.
+    const MultibodyTree<double> &mbt = GetInternalTree(*mbtree_system_);
+    const PositionKinematicsCache<double> &pc =
         mbt.EvalPositionKinematics(context);
-    const VelocityKinematicsCache<double>& vc =
+    const VelocityKinematicsCache<double> &vc =
         mbt.EvalVelocityKinematics(context);
 
-    // Verify the bushing's analytical potential energy calculation.
-    const ForceElement<double>* bushing_force_element = bushing_;
-    const double potential_energy =
-        bushing_force_element->CalcPotentialEnergy(context, pc);
-    double scaled_epsilon = std::abs(UA_expected) * 32 * kEpsilon;
-    EXPECT_NEAR(potential_energy, UA_expected, scaled_epsilon);
+    // Verify CalcPotentialEnergy() throws an exception (see issue #12982).
+    const ForceElement<double> *bushing_force_element = bushing_;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        bushing_force_element->CalcPotentialEnergy(context, pc),
+        std::runtime_error,
+        "Error: LinearBushingRollPitchYaw::CalcPotentialEnergy().*");
 
-    // Verify the bushing's analytical conservative power calculation.
-    const double conservative_power =
-        bushing_force_element->CalcConservativePower(context, pc, vc);
-    scaled_epsilon = std::abs(PcA) * 32 * kEpsilon;
-    EXPECT_NEAR(conservative_power, PcA, scaled_epsilon);
+    // Verify CalcConservativePower() throws an exception (see issue #12982).
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        bushing_force_element->CalcConservativePower(context, pc, vc),
+        std::runtime_error,
+        "Error: LinearBushingRollPitchYaw::CalcConservativePower().*");
 
-    // Verify the bushing's nonconservative power calculation.
-    // Note: The LinearBushingRollPitchYaw class documentation describes the
-    // calculation of power (conservative/nonconservative) and potential energy.
-    // TODO(Mitiguy) Per issue #12752, change the test below to use Pnc, not
-    //  Pnc + PcI, and add test for CalcConservativePowerNumerical().
-    // ----------------------------------------------------------------------
-    const double non_conservative_power =
-        bushing_force_element->CalcNonConservativePower(context, pc, vc);
-    scaled_epsilon = std::abs(Pnc + PcI) * 32 * kEpsilon;
-    EXPECT_NEAR(non_conservative_power, Pnc + PcI, scaled_epsilon);
+    // Verify CalcConservativePower() throws an exception (see issue #12982).
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        bushing_force_element->CalcNonConservativePower(context, pc, vc),
+        std::runtime_error,
+        "Error: LinearBushingRollPitchYaw::CalcNonConservativePower().*");
   }
 
   // Calculates "reasonable" torque and force stiffness/damping constants,
@@ -703,7 +671,7 @@ TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
 // Verify algorithm that calculates rotation matrix R_AB.
 TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
   const Vector3<double> axis(1, 0, 0);  // unit vector in x-direction.
-  for (double angle = 0; angle < 0.99 * M_PI;  angle += M_PI / 32) {;
+  for (double angle = 0; angle <= 0.99 * M_PI;  angle += M_PI / 32) {;
     BushingTester::VerifyHalfAngleAxisAlgorithm(angle, axis);
   }
 }

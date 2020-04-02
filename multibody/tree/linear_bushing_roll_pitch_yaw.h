@@ -119,65 +119,22 @@ template <typename T> class Body;
 /// | ty | = Nᵀ | τ₁ |  where N = |   −sin(q2)            cos(q2)      0 |
 /// ⌊ tz ⌋      ⌊ τ₂ ⌋            ⌊ cos(q₂)*tan(q₁)   sin(q₂)*tan(q₁)  1 ⌋</pre>
 ///
-/// ### Advanced: Conservative/nonconserative power and potential energy.
-/// The power due to bushing forces on A and C is P = 𝐭 ⋅ w_AC + 𝐟 ⋅ v_ApCp
-/// where v_ApCp is the relative velocity between Cp and Ap in <b>any</b> frame
-/// (<b>any</b> frame because Cp and Ap are coincident). Herein, we use the
-/// relative velocity in frame B and kinematic relationships to rewrite v_ApCp
-/// so that calculations of power P subsequently lead to potential energy.<pre>
-/// v_ApCp = v_BCp - v_BAp     (definition of Cp's relative velocity to Ap in B)
-/// v_BCp  = v_BCo + w_BC ⨯ p_CoCp    (velocity formula for 2 points fixed on C)
-///        = v_BCo - w_BC ⨯ 𝐫/2       (substitute -𝐫/2 = p_CoCp)
-/// v_BAp  = v_BAo + w_BA ⨯ p_AoAp    (velocity formula for 2 points fixed on A)
-///        = v_BCo + w_BA ⨯ 𝐫/2       (substitute  𝐫/2 = p_AoAp)
-/// v_BCo  =  DtB_𝐫 / 2               (uses definition of Co's velocity in B)
-/// v_BAo  = -DtB_𝐫 / 2               (uses definition of Ao's velocity in B)
-/// v_ApCp = DtB_𝐫 - (w_BA + w_BC) ⨯ 𝐫/2 (substitute previous equations)
-///        = DtB_𝐫 + (w_AB - w_BC) x 𝐫/2 (uses w_AB = -w_BA) </pre>
-/// where DtB_𝐫 is the time-derivative in B of 𝐫, denoted hereafter as 𝐫̇̇̇.
-/// Substitution of v_ApCp into power P and subsequent rearrangement gives <pre>
-/// P = τ ⋅ q̇  +  𝐟 ⋅ 𝐫̇̇̇  + (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟) </pre>
-/// A bushing's potential energy U can be written as `U = Uᴀ + Uɪ`, where Uᴀ is
-/// the part of U that possesses an analytical potential energy and Uɪ is the
-/// part of U that is calculated by numerically integrating Pcɪ as shown below.
-/// When w_AC (C's angular velocity in A) is simple (meaning w_AC = s 𝐮, where
-/// 𝐮 is a vector fixed in both A and C), one can show w_AB = w_BC which means
-/// the third term in power P above is zero.  When kx = ky = kz, 𝐫 is parallel
-/// to 𝐟ᴋ, `(𝐫/2  ⨯ 𝐟ᴋ) = 0`, hence the third term in power P above is zero.
-/// When the third term in P is zero, Pcɪ = 0, Uɪ is constant (herein Uɪ = 0),
-/// and U = Uᴀ (the bushing's full potential energy U is written analytically).
-/// When kx, ky, kz, are distinct we have been unable to analytically integrate
-/// Pcɪ and resort to numerical integration for Uɪ.
-/// Shown below, power is resolved into three terms as `P = Pcᴀ + Pcɪ + Pɴᴄ`.
-/// Conservative power Pcᴀ has an analytical potential energy Uᴀ (Pcᴀ = −U̇ᴀ).
-/// Conservative power Pcɪ is numerically integrated to calculate Uɪ.
-/// Nonconservative power Pɴᴄ is the part of power P without an associated
-/// potential energy (power due to damping force 𝐟ᴅ and damping torque τᴅ).<pre>
-/// Pcᴀ = τᴋ ⋅ q̇  +  𝐟ᴋ ⋅ 𝐫̇̇̇                 Uᴀ = −1/2 (τᴋ ⋅ q  +  𝐟ᴋ ⋅ 𝐫)
-/// Pcɪ = (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟ᴋ)        Uɪ = −∫ (Pcɪ dt)
-/// Pɴᴄ = τᴅ ⋅ q̇  +  𝐟ᴅ ⋅ 𝐫̇̇̇  + (w_AB - w_BC) ⋅ (𝐫/2 ⨯ 𝐟ᴅ)
-/// P = Pcᴀ + Pcɪ + Pɴᴄ  </pre>
-/// Shown below are this class's current power and potential energy methods.
-/// Currently, the Drake System framework does not calculate Uɪ or Pcɪ. We
-/// anticipate changes to the ForceElement parent class to provide methods to
-/// calculate Uɪ and Pcɪ (per issue #12752).
-///
-/// Method                     | Currently returns   | Ideally it returns
-/// ---------------------------|:--------------------|:-----------------------
-/// CalcPotentialEnergy()      |  Uᴀ                 | Uᴀ + Uɪ
-/// CalcConservativePower()    |  Pcᴀ                | Pcᴀ + Pcɪ
-/// CalcNonConservativePower() |  Pɴᴄ + Pcɪ          | Pɴᴄ
-///
 /// @note The complete theory for this bushing is documented in the source code.
 /// Please look there if you want more information.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
 /// @see math::RollPitchYaw for definitions of roll, pitch, yaw `[q₀ q₁ q₂]`.
+///
+/// @note Per issue #12982, do not directly or indirectly call the following
+/// methods as they have not yet been implemented and throw an exception:
+/// CalcPotentialEnergy(), CalcConservativePower(), CalcNonConservativePower().
 template <typename T>
 class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // TODO(Mitiguy) Add gimbal picture at "Relationship of 𝐭 to τ".
-  // TODO(Mitiguy) move most of the code in this .h file to its .cc file.
+  // TODO(Mitiguy) Move most of the code in this .h file to its .cc file.
+  // TODO(Mitiguy) Per issue #12982, implement CalcPotentialEnergy(),
+  //  CalcConservativePower(), CalcNonConservativePower().
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw)
 
@@ -321,15 +278,21 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
                             const Vector3<double>& force_stiffness_constants,
                             const Vector3<double>& force_damping_constants);
 
+  // TODO(Mitiguy) Per issue #12982, implement the following method.
+  //  Currently it has not been implemented and throws an exception.
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc) const override;
 
+  // TODO(Mitiguy) Per issue #12982, implement the following method.
+  //  Currently it has not been implemented and throws an exception
   T CalcConservativePower(
       const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc,
       const internal::VelocityKinematicsCache<T>& vc) const override;
 
+  // TODO(Mitiguy) Per issue #12982, implement the following method.
+  //  Currently it has not been implemented and throws an exception
   T CalcNonConservativePower(
       const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc,
@@ -433,7 +396,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const Eigen::AngleAxis<T> angleAxis_AB(half_theta, angleAxis_AC.axis());
     const math::RotationMatrix<T> R_AB_expected(angleAxis_AB);
     if (!R_AB.IsNearlyEqualTo(R_AB_expected, 64 * kEpsilon)) {
-      throw std::logic_error(fmt::format(
+      throw std::runtime_error(fmt::format(
           "Error: Calculation of R_AB from quaternion differs from the "
           "R_AB_expected formed via a half-angle axis calculation."));
     }
@@ -641,20 +604,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const Vector3<T> f_d = -ForceDampingConstantsTimesDisplacementRate(context);
     return f_k + f_d;  // 𝐟 = 𝐟ᴋ + 𝐟ᴅ
   }
-
-  // Calculate Pcᴀ, the part of conservative power that possesses an analytical
-  // (closed-form) integral used to calculate analytical potential energy Uɪ.
-  T  CalcConservativePowerAnalytical(const systems::Context<T>& context) const;
-
-  // Calculate Pcɪ, the part of conservative power that does not possess an
-  // analytical (closed-form) integral.  Pcɪ is used for calculate Uɪ (the part
-  // of potential energy U that is calculated by numerically integrating Pcɪ).
-  T CalcConservativePowerNumerical(const systems::Context<T>& context) const;
-
-  // Helper method to calculate a part of power due to w_AC ⋅ (p_AoCo × 𝐟).
-  // @param[in] context The state of the multibody system.
-  T CalcPowerHelperMethod(const systems::Context<T>& context,
-                          const Vector3<T>& fB) const;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

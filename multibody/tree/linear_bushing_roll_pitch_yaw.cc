@@ -95,123 +95,39 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
 
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
-    const systems::Context<T>& context,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& /* pc */) const {
-  // Note: The LinearBushingRollPitchYaw class documentation describes the
-  // calculation of power (conservative/nonconservative) and potential energy.
-  // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
-  //  values and LinearBushingRollPitchYaw class documentation.
-  // ----------------------------------------------------------------------
-  // Use the torque stiffness constants [k₀ k₁ k₂] and roll-pitch-yaw angles
-  // [q₀ q₁ q₂] to form torque potential energy 0.5*(k₀*q₀² + k₁*q₁² + k₂*q₂²).
-  const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
-  const Vector3<T>& q012 = rpy.vector();
-  const Vector3<T> q012Squared = q012.cwiseProduct(q012);
-  const T torque_potential_energy =
-      0.5 * (torque_stiffness_constants().dot(q012Squared));
-
-  // Use the force stiffness constants [kx, ky, kz] and `p_AₒCₒ_B = [x y z]ʙ`
-  // (the position vector from Aₒ to Bₒ expressed in frame B) to form the
-  // analytical part of the force potential energy 0.5*(kx*x² + ky*y² + kz*z²).
-  const Vector3<T> xyz = Calcp_AoCo_B(context);  // [x y z]ʙ
-  const Vector3<T> xyzSquared = xyz.cwiseProduct(xyz);
-  const T force_potential_energy =
-      0.5 * (force_stiffness_constants().dot(xyzSquared));
-
-  return torque_potential_energy + force_potential_energy;
-}
-
-template <typename T>
-T LinearBushingRollPitchYaw<T>::CalcConservativePowerAnalytical(
-    const systems::Context<T>& context) const {
-  // ----------------------------------------------------------------------
-  // Analytical conservative power Pcᴀ is related to analytical potential energy
-  // Uᴀ by `Pcᴀ = −U̇ᴀ`.
-  // Uᴀ  = 1/2 (k₀ q₀² + k₁ q₁² + k₂ q₂²  +  kx x² + ky y² + kz z²)
-  // Pcᴀ = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂  +  kx x ẋ + ky y ẏ + kz z ż)
-  // ----------------------------------------------------------------------
-  // Calculate Pcᴀ_torque = τᴋ ⋅ q̇ = −(k₀ q₀ q̇₀ + k₁ q₁ q̇₁ + k₂ q₂ q̇₂).
-  const Vector3<T> kQ = TorqueStiffnessConstantsTimesAngles(context);
-  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
-  const T PcA_torque = -(kQ.dot(q012Dt));
-
-  // Calculate Pcᴀ_force = 𝐟ᴋ ⋅ Ẋ = −(kx x ẋ + ky y ẏ + kz z ż).
-  const Vector3<T> kX = ForceStiffnessConstantsTimesDisplacement(context);
-  const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
-  const T PcA_force = -(kX.dot(xyzDt));
-
-  return PcA_torque + PcA_force;
-}
-
-template <typename T>
-T LinearBushingRollPitchYaw<T>::CalcConservativePowerNumerical(
-    const systems::Context<T>& context) const {
-  // Calculate the part of conservative power due to Pcɪ = w_AC ⋅ (p_AoCo × 𝐟ᴋ),
-  // where Pcɪ is the part of conservative power that is numerically integrated
-  // to calculate Uɪ (the non-analytical part of potential energy).
-  const Vector3<T> spring_force_B =
-      -ForceStiffnessConstantsTimesDisplacement(context);
-  const T PcI = CalcPowerHelperMethod(context, spring_force_B);
-  return PcI;
+  // TODO(Mitiguy) Per issues #12982 and #12752, implement this method.
+  //  Currently this method has not been implemented and throws an exception.
+  throw std::runtime_error(fmt::format(
+      "Error: LinearBushingRollPitchYaw::CalcPotentialEnergy() "
+      "has not been implemented.  Related: Issues #12982 and #12752."));
 }
 
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcConservativePower(
-    const systems::Context<T>& context,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& /* pc */,
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
-  // Note: The LinearBushingRollPitchYaw class documentation describes the
-  // calculation of power (conservative/nonconservative) and potential energy.
-  // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
-  //  values and LinearBushingRollPitchYaw class documentation.
-  return CalcConservativePowerAnalytical(context);
+  // TODO(Mitiguy) Per issues #12982 and #12752, implement the following method.
+  //  Currently this method has not been implemented and throws an exception.
+  throw std::runtime_error(fmt::format(
+      "Error: LinearBushingRollPitchYaw::CalcConservativePower() "
+      "has not been implemented.  Related: Issues #12982 and #12752."));
+  return T(0);
 }
 
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
-    const systems::Context<T>& context,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& /* pc */,
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
-  // Note: The LinearBushingRollPitchYaw class documentation describes the
-  // calculation of power (conservative/nonconservative) and potential energy.
-  // TODO(Mitiguy) Per issue #12752, update ForceElement class to improve return
-  //  values and LinearBushingRollPitchYaw class documentation.
-  // ----------------------------------------------------------------------
-  // Calculate the part of nonconservative power due to torque damping.
-  // Pɴᴄ_torque = τᴅ ⋅ q̇ = −(k₀ q̇₀ q̇₀ + k₁ q̇₁ q̇₁ + k₂ q̇₂ q̇₂)
-  const Vector3<T> bQDt = TorqueDampingConstantsTimesAngleRates(context);
-  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
-  const T Pnc_torque = -(bQDt.dot(q012Dt));
-
-  // Calculate a part of nonconservative power that is due to force damping.
-  // Pɴᴄ_force = 𝐟ᴅ ⋅ X = −(kx ẋ ẋ  + ky ẏ ẏ  + kz ż ż)
-  const Vector3<T> bXDt = ForceDampingConstantsTimesDisplacementRate(context);
-  const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
-  const T Pnc_force0 = -(bXDt.dot(xyzDt));
-
-  // Calculate the part of nonconservative power due to w_AC ⋅ (p_AoCo × 𝐟ᴅ).
-  const Vector3<T> damping_force_B =
-      -ForceDampingConstantsTimesDisplacementRate(context);
-  const T Pnc_force_extra = CalcPowerHelperMethod(context, damping_force_B);
-
-  // Calculate the part of conservative power due to Pcɪ = w_AC ⋅ (p_AoCo × 𝐟ᴋ),
-  const T PcI = CalcConservativePowerNumerical(context);
-
-  return Pnc_torque + Pnc_force0 + Pnc_force_extra + PcI;
-}
-
-template <typename T>
-T LinearBushingRollPitchYaw<T>::CalcPowerHelperMethod(
-    const systems::Context<T>& context, const Vector3<T>& force_B) const {
-  // Helper method to calculate a part of power due to w_AC ⋅ (p_AoCo × 𝐟ᴅ).
-  // @param[in] context The state of the multibody system.
-  const Vector3<T> p_AoCo_B = Calcp_AoCo_B(context);
-  const Vector3<T> pCrossf_B = p_AoCo_B.cross(force_B);
-  const Vector3<T> w_AC_A = Calcw_AC_A(context);
-  const math::RotationMatrix<T> R_BA = CalcR_AB(context).inverse();
-  const Vector3<T> w_AC_B = R_BA * w_AC_A;
-  const T power_force_extra = w_AC_B.dot(pCrossf_B);
-  return power_force_extra;
+  // TODO(Mitiguy) Per issues #12982 and #12752, implement the following method.
+  //  Currently this method has not been implemented and throws an exception.
+  throw std::runtime_error(fmt::format(
+      "Error: LinearBushingRollPitchYaw::CalcNonConservativePower() "
+      "has not been implemented.  Related: Issues #12982 and #12752."));
+  return T(0);
 }
 
 template <typename T>
