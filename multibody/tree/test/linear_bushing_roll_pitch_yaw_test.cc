@@ -158,7 +158,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const Vector3<double> qDt =
         rpy.CalcRpyDtFromAngularVelocityInParent(w_AC_A);
 
-    // Frame B is oriented "half-way" between frames A and C.
+    // Frame B is oriented "halfway" between frames A and C.
     // One way to determine B's orientation relative to A is to first determine
     // angleAxis_AC (the angle-axis representation of C's orientation in A) and
     // then use `0.5 * angle_AC` along with axis_AC to form the R_AB rotation

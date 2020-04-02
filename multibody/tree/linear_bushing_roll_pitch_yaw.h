@@ -56,7 +56,7 @@ template <typename T> class Body;
 /// regarded as a 3x1 array of torque scalars associated with roll-pitch yaw.
 /// @note As discussed in the Advanced section below, τ is not 𝐭 `(τ ≠ 𝐭)`.
 /// @note This is a "linear" bushing model as gimbal torque τ varies linearly
-/// with q and q̇ as τ = τᴋ + τᴅ where τᴋ = −K₀₁₂ q and τᴅ = −D₀₁₂ q̇.
+/// with q and q̇ as τ = τᴋ + τᴅ where τᴋ = −K₀₁₂ ⋅ q and τᴅ = −D₀₁₂ ⋅ q̇.
 ///
 /// The bushing model for the net force 𝐟 on frame C from the bushing depends on
 /// scalars x, y, z which are defined so 𝐫 (the position vector from Ao to Co)
@@ -109,8 +109,8 @@ template <typename T> class Body;
 /// with angles [q₂ q₁ q₀] is physical meaningful as it produces torques
 /// associated with successive frames in a gimbal as τ₂ 𝐀𝐳, τ₁ 𝐏𝐲, τ₀ 𝐂𝐱,
 /// where each of 𝐀𝐳, 𝐏𝐲, 𝐂𝐱 are unit vectors associated with a frame in the
-/// roll-pitch-yaw rotation sequence and 𝐏𝐲 is a unit vector of the "pitch"
-/// intermediate frame.  As described early, torque 𝐭 is the moment of the
+/// yaw-pitch-roll rotation sequence and 𝐏𝐲 is a unit vector of the "pitch"
+/// intermediate frame.  As described earlier, torque 𝐭 is the moment of the
 /// bushing forces on frame C about Cp.  Scalars tx, ty, tz are defined so 𝐭 can
 /// be expressed `𝐭 = [tx ty tz]ᴀ = tx 𝐀𝐱 + ty 𝐀𝐲 + tz 𝐀𝐳`.
 /// As shown in code documentation, the relationship of [tx ty tz] to [τ₀ τ₁ τ₂]
@@ -147,7 +147,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// "gimbal" torques τ₀, τ₁, τ₂. The SI units of `k₀, k₁, k₂` are N*m/rad.
   /// @param[in] torque_damping_constants `[d₀ d₁ d₂]` multiply the
   /// roll-pitch-yaw rates `[q̇₀ q̇₁ q̇₂]` to produce the damper portion of the
-  /// "gimbal" torques τ₀, τ₁, τ₂.  The SI units of `d₀, d₁, d₂` are N*m/rad.
+  /// "gimbal" torques τ₀, τ₁, τ₂.  The SI units of `d₀, d₁, d₂` are N*m*s/rad.
   /// @param[in] force_stiffness_constants `[kx ky kz]` multiply the
   /// bushing displacements `[x y z]` to form 𝐟ᴋ, the spring portion of the
   /// force 𝐟 = [fx fy fz]ʙ.  The SI units of `kx, ky, kz` are N/m.
@@ -192,7 +192,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return torque_stiffness_constants_;
   }
 
-  /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m/rad).
+  /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
   }
@@ -355,7 +355,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // q3 = λz sin(θ/2) leads to        =>  λz = q3 / (2 sin(θ/4) cos(θ/4) ).
     // ----------------------------------------------------------------------
     // Frame B's unit vectors 𝐁𝐱, 𝐁𝐲, 𝐁𝐳 are "halfway" (in an angle-axis sense)
-    // between the unit vectors 𝐀𝐱, 𝐀𝐲, 𝐀𝐳 of frame A and 𝑪𝒙, 𝑪𝒚, 𝑪𝒛 of frame C.
+    // between the unit vectors 𝐀𝐱, 𝐀𝐲, 𝐀𝐳 of frame A and 𝐂𝐱, 𝐂𝐲, 𝐂𝐳 of frame C.
     // The quaternion q_AB = [e0 e1 e2 e3] is associated with an angle-axis with
     // angle θ/2 and the same axis [λx λy λz], which relate to [e0 e1 e2 e3] as
     // e0 = cos(θ/4) = √(0.5*(q0 + 1)).
@@ -551,8 +551,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     // The expressions for tx, ty, tz in terms of τ₀, τ₁, τ₂ is derived below by
     // equating the power `𝐭 ⋅ w_AC_A = tx ωx + ty ωy + tz ωz` of torque 𝐭 to
     // the power `τ₀ q̇₀ + τ₁ q̇₁ + τ₂ q̇₂` of the three spring-damper "gimbal"
-    // torques τ₀ 𝑪𝒙, τ₁ 𝑷𝒚, τ₂ 𝐀𝐳 (each of 𝑪𝒙, 𝑷𝒚, 𝐀𝐳 are associated with
-    // a frame in the roll-pitch-yaw rotation sequence, where 𝑷𝒚 denotes a
+    // torques τ₂ 𝐀𝐳, τ₁ 𝐏𝐲, τ₀ 𝐂𝐱 (each of 𝐀𝐳, 𝐏𝐲, 𝐂𝐱 are associated with
+    // a frame in the yaw-pitch-roll rotation sequence, where 𝐏𝐲 denotes a
     // unit vector of the "pitch" intermediate frame).
     // ------------------------------------------------------------------------
     // Power = [τ₀ τ₁ τ₂]⌈ q̇₀ ⌉ = [τ₀ τ₁ τ₂] N ⌈ ωx ⌉ =  [tx ty tz] ⌈ ωx ⌉
