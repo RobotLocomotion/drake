@@ -11,7 +11,6 @@
 
 using Eigen::Dynamic;
 using Eigen::Matrix;
-using Eigen::PolynomialSolver;
 using std::pair;
 using std::runtime_error;
 using std::string;
@@ -224,13 +223,14 @@ Polynomial<T>::GetVariables() const {
 template <typename T>
 Polynomial<T> Polynomial<T>::EvaluatePartial(
     const std::map<VarType, T>& var_values) const {
+  using std::pow;
   std::vector<Monomial> new_monomials;
   for (const Monomial& monomial : monomials_) {
     T new_coefficient = monomial.coefficient;
     std::vector<Term> new_terms;
     for (const Term& term : monomial.terms) {
       if (var_values.count(term.var)) {
-        new_coefficient *= std::pow(var_values.at(term.var), term.power);
+        new_coefficient *= pow(var_values.at(term.var), term.power);
       } else {
         new_terms.push_back(term);
       }
@@ -486,38 +486,57 @@ const Polynomial<T> Polynomial<T>::operator/(
 }
 
 template <typename T>
-typename Polynomial<T>::RootsType
-Polynomial<T>::Roots() const {
+typename Polynomial<T>::RootsType Polynomial<T>::Roots() const {
   if (!is_univariate_)
-    throw runtime_error(
-        "Roots is only defined for univariate polynomials");
+    throw runtime_error("Roots is only defined for univariate polynomials");
 
-  auto coefficients = GetCoefficients();
+  // RootsType (std::complex<T>) does not currently work for AutoDiffXd nor for
+  // Expression, which leaves only double.  We could, in principle, try to
+  // support more types here.
+  if constexpr (std::is_same<T, double>::value) {
+    auto coefficients = GetCoefficients();
 
-  // need to handle degree 0 and 1 explicitly because Eigen's polynomial solver
-  // doesn't work for these
-  int degree = static_cast<int>(coefficients.size()) - 1;
-  switch (degree) {
-    case 0:
-      return Polynomial<T>::RootsType(degree);
-    case 1: {
-      Polynomial<T>::RootsType ret(degree);
-      ret[0] = -coefficients[0] / coefficients[1];
-      return ret;
+    // need to handle degree 0 and 1 explicitly because Eigen's polynomial
+    // solver doesn't work for these
+    int degree = static_cast<int>(coefficients.size()) - 1;
+    switch (degree) {
+      case 0:
+        return Polynomial<T>::RootsType(degree);
+      case 1: {
+        Polynomial<T>::RootsType ret(degree);
+        ret[0] = -coefficients[0] / coefficients[1];
+        return ret;
+      }
+      default: {
+        Eigen::PolynomialSolver<RealScalar, Eigen::Dynamic> solver;
+        solver.compute(coefficients);
+        return solver.roots();
+      }
     }
-    default: {
-      PolynomialSolver<RealScalar, Eigen::Dynamic> solver;
-      solver.compute(coefficients);
-      return solver.roots();
-      break;
-    }
+  } else {
+    throw std::runtime_error(
+        "Polynomial<T>::Roots() is only supports T=double.");
   }
 }
 
 template <typename T>
-bool Polynomial<T>::IsApprox(const Polynomial& other,
-                                           const RealScalar& tol) const {
+boolean<T> Polynomial<T>::IsApprox(const Polynomial<T>& other,
+                             const Polynomial<T>::RealScalar& tol) const {
   return GetCoefficients().isApprox(other.GetCoefficients(), tol);
+}
+
+template <>
+boolean<symbolic::Expression> Polynomial<symbolic::Expression>::IsApprox(
+    const Polynomial<symbolic::Expression>& other,
+    const Polynomial<symbolic::Expression>::RealScalar& tol) const {
+  const VectorX<symbolic::Expression> a = GetCoefficients();
+  const VectorX<symbolic::Expression> b = other.GetCoefficients();
+  if (a.size() != b.size()) return symbolic::Formula(false);
+  symbolic::Formula compare{true};
+  for (int i = 0; i < a.rows(); i++) {
+    compare = compare && (abs(a(i) - b(i)) <= tol);
+  }
+  return compare;
 }
 
 constexpr char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
@@ -775,9 +794,10 @@ Polynomial<T> Polynomial<T>::FromExpression(const Expression& e) {
   return FromExpressionVisitor<T>{}.Visit(e);
 }
 
-template class Polynomial<double>;
-
 // template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it
 
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::Polynomial)
