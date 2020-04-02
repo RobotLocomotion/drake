@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -13,10 +14,44 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
-namespace {
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+
+using math::RotationMatrixd;
+
+// Friend class for accessing protected/private internals of class
+// LinearBushingRollPitchYawTester.
+class BushingTester {
+ public:
+  BushingTester() = delete;
+
+  // Verify the efficient half-angle axis formula in LinearBushingRollPitchYaw.
+  static void VerifyHalfAngleAxisAlgorithm(double angle,
+                                           const Vector3<double>& axis) {
+    RotationMatrixd R_AC(Eigen::AngleAxis<double>(angle, axis));
+    RotationMatrixd R_AB = LinearBushingRollPitchYaw<double>::CalcR_AB(R_AC);
+
+    RotationMatrixd R_AB_expected(Eigen::AngleAxis<double>(angle / 2, axis));
+    DRAKE_EXPECT_NO_THROW(
+      LinearBushingRollPitchYaw<double>::ThrowIfInvalidHalfAngleAxis(
+              R_AC, R_AB_expected));
+
+    // Ensure calculated R_AB is nearly equal to R_AB_expected.
+    DRAKE_ASSERT(R_AB.IsNearlyEqualTo(R_AB_expected, 32 * kEpsilon));
+
+    double bad_half_angle = angle / 2 + 128 * kEpsilon;
+    RotationMatrixd R_AB_bad(Eigen::AngleAxis<double>(bad_half_angle, axis));
+    DRAKE_EXPECT_THROWS_MESSAGE(LinearBushingRollPitchYaw<double>::
+          ThrowIfInvalidHalfAngleAxis(R_AC, R_AB_bad),
+          std::logic_error,
+          "Error: Calculation of R_AB from quaternion differs from the "
+          "R_AB_expected formed via a half-angle axis calculation.");
+  }
+};
+
+
+namespace internal {
+namespace {
 
 class LinearBushingRollPitchYawTester : public ::testing::Test {
  public:
@@ -97,8 +132,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
       const Vector3<double>& v_ACo_A,
       const Vector3<double>* f_C_C_expected_simple = nullptr,
       const Vector3<double>* t_Co_C_expected_simple = nullptr) const {
-    const math::RotationMatrix<double> R_AC(rpy);
-    const math::RotationMatrix<double> R_CA = R_AC.inverse();
+    const RotationMatrixd R_AC(rpy);
+    const RotationMatrixd R_CA = R_AC.inverse();
 
     // Set the context for subsequent harvest of Drake information.
     systems::Context<double>& context = *(context_.get());
@@ -134,9 +169,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const Vector3<double>& axis_AC = angleAxis_AC.axis();
     const double& angle_AC = angleAxis_AC.angle();
     const Eigen::AngleAxis<double> angleAxis_AB(0.5 * angle_AC, axis_AC);
-    const math::RotationMatrix<double> R_AB(angleAxis_AB);
-    const math::RotationMatrix<double> R_BA = R_AB.inverse();
-    const math::RotationMatrix<double> R_CB = (R_BA * R_AC).inverse();
+    const RotationMatrixd R_AB(angleAxis_AB);
+    const RotationMatrixd R_BA = R_AB.inverse();
+    const RotationMatrixd R_CB = (R_BA * R_AC).inverse();
 
     // Form x, y, z, which are defined so p_AoCo_B = x*Bx + y*By + z*Bz.
     const Vector3<double> p_AoCo_B = R_BA * p_AoCo_A;
@@ -663,6 +698,14 @@ TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
   CompareToMotionGenesisResult(rpy,      p_AoCo_A, w_zero, v_ACo_A);
   CompareToMotionGenesisResult(rpy,      p_AoCo_A, w_AC_A, v_zero);
   CompareToMotionGenesisResult(rpy,      p_AoCo_A, w_AC_A, v_ACo_A);
+}
+
+// Verify algorithm that calculates rotation matrix R_AB.
+TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
+  const Vector3<double> axis(1, 0, 0);  // unit vector in x-direction.
+  for (double angle = 0; angle < 0.99 * M_PI;  angle += M_PI / 32) {;
+    BushingTester::VerifyHalfAngleAxisAlgorithm(angle, axis);
+  }
 }
 
 }  // namespace

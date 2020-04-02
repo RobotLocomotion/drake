@@ -10,7 +10,6 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/force_element.h"
-#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
@@ -204,6 +203,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// and the moment of 𝐟 about Co. Similarly, for the net moment on A about Ao.
   /// @note math::RollPitchYaw describes the roll pitch yaw angles q₀, q₁, q₂.
   /// The position from Ao to Co is p_AoCo_B = x 𝐁𝐱 + y 𝐁𝐲 + z 𝐁𝐳 = [x y z]ʙ.
+  /// @note The ModelInstanceIndex assigned to this by the constructor is the
+  /// one assigned to frame C, i.e., frameC.model_instance().
   /// @pre All the stiffness and damping constants must be non-negative.
   LinearBushingRollPitchYaw(const Frame<T>& frameA, const Frame<T>& frameC,
                             const Vector3<double>& torque_stiffness_constants,
@@ -302,10 +303,17 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return R_CA * F_Co_A;
   }
 
- public:
-  // TODO(Mitiguy) Try to make this constructor private not public.
-  // Private constructor for a LinearBushingRollPitchYaw.
-  // Many of these input parameters are described in the public constructor.
+ private:
+  // Friend class for accessing protected/private internals of this class.
+  friend class BushingTester;
+
+  // The following template friend is needed to facilitate use of the private
+  // constructor below for use in the method TemplatedDoCloneToScalar().
+  template <typename U>
+  friend class LinearBushingRollPitchYaw;
+
+  // Many of these input parameters for this private LinearBushingRollPitchYaw
+  // are described in the public constructor's documentation.
   LinearBushingRollPitchYaw(ModelInstanceIndex model_instance,
                             FrameIndex frameA_index, FrameIndex frameC_index,
                             const Vector3<double>& torque_stiffness_constants,
@@ -313,7 +321,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
                             const Vector3<double>& force_stiffness_constants,
                             const Vector3<double>& force_damping_constants);
 
- private:
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc) const override;
@@ -353,6 +360,13 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] context The state of the multibody system.
   math::RotationMatrix<T> CalcR_AB(const systems::Context<T>& context) const {
     const math::RotationMatrix<T> R_AC = CalcR_AC(context);
+    const math::RotationMatrix<T> R_AB = CalcR_AB(R_AC);
+    return R_AB;
+  }
+
+  // Calculate R_AB, the rotation matrix that relates frames A and B.
+  // @param[in] R_AC The rotation matrix that relates frames A and C.
+  static math::RotationMatrix<T> CalcR_AB(math::RotationMatrix<T> R_AC) {
     const Eigen::Quaternion<T> q_AC = R_AC.ToQuaternion();
     const T q0 = q_AC.w(), q1 = q_AC.x(), q2 = q_AC.y(), q3 = q_AC.z();
     // ----------------------------------------------------------------------
@@ -399,20 +413,30 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const Eigen::Quaternion<T> q_AB(e0, e1, e2, e3);
     const math::RotationMatrix<T> R_AB(q_AB);
 
-#ifdef DRAKE_ASSERT_IS_ARMED
-    // The efficient algorithm above is verified by calculating the `θ λ`
-    // AngleAxis from R_AC and then forming R_AB from the AngleAxis `θ/2 λ`.
-    // This test is here because a generic unit test is insufficient to test the
-    // significant number of variations this algorithm may encounter.
+    // The next test is useful to verify the algorithm above because a generic
+    // unit test is insufficient to test the significant number of variations
+    // this algorithm may encounter (although there are also unit tests).
+    DRAKE_ASSERT_VOID(ThrowIfInvalidHalfAngleAxis(R_AC, R_AB));
+
+    return R_AB;
+  }
+
+  // The efficient algorithm CalcR_AB() above is verified in debug builds by
+  // calculating the `θ λ` AngleAxis from R_AC and then forming R_AB_expected
+  // from the AngleAxis `θ/2 λ`.  The function below throws an exception if
+  // R_AB does not match R_AB_expected to near machine precision.
+  static void ThrowIfInvalidHalfAngleAxis(const math::RotationMatrix<T> R_AC,
+                                          const math::RotationMatrix<T> R_AB) {
     constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
     const Eigen::AngleAxis<T> angleAxis_AC = R_AC.ToAngleAxis();
     const T half_theta = 0.5 * angleAxis_AC.angle();
     const Eigen::AngleAxis<T> angleAxis_AB(half_theta, angleAxis_AC.axis());
     const math::RotationMatrix<T> R_AB_expected(angleAxis_AB);
-    DRAKE_ASSERT(R_AB.IsNearlyEqualTo(R_AB_expected, 32 * kEpsilon));
-#endif
-
-    return R_AB;
+    if (!R_AB.IsNearlyEqualTo(R_AB_expected, 64 * kEpsilon)) {
+      throw std::logic_error(fmt::format(
+          "Error: Calculation of R_AB from quaternion differs from the "
+          "R_AB_expected formed via a half-angle axis calculation."));
+    }
   }
 
   // Uses the rotation matrix R_AC that relates frames A and C to calculate the

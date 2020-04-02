@@ -20,16 +20,12 @@ LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
     const Vector3<double>& torque_damping_constants,
     const Vector3<double>& force_stiffness_constants,
     const Vector3<double>& force_damping_constants)
-    : LinearBushingRollPitchYaw(frameA.model_instance(),
+    : LinearBushingRollPitchYaw(frameC.model_instance(),
                                 frameA.index(), frameC.index(),
                                 torque_stiffness_constants,
                                 torque_damping_constants,
                                 force_stiffness_constants,
-                                force_damping_constants) {
-  DRAKE_THROW_UNLESS(frameA.model_instance() == world_model_instance() ||
-                     frameC.model_instance() == world_model_instance() ||
-                     frameA.model_instance() == frameC.model_instance());
-}
+                                force_damping_constants) {}
 
 template <typename T>
 LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
@@ -228,16 +224,13 @@ LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
   const Vector3<double>& kxyz = force_stiffness_constants();
   const Vector3<double>& dxyz = force_damping_constants();
 
-  // TODO(mitiguy) Why is a public constructor needed for the code below?
+  // The declaration <typename U> friend class LinearBushingRollPitchYaw
+  // is needed to facilitate the _private_ use of constructor below.
   std::unique_ptr<LinearBushingRollPitchYaw<ToScalar>> bushing_clone(
       new LinearBushingRollPitchYaw<ToScalar>(this->model_instance(),
-          frameA_index_, frameC_index_,
-          k012, d012, kxyz, dxyz));
+          frameA_index_, frameC_index_, k012, d012, kxyz, dxyz));
 
   return bushing_clone;
-  // TODO(mitiguy) ask Alejandro/Sherm if need: return std::move(bushing_clone).
-  //  std::move(door_hing_clone) was not used in door_hinge.cc
-  //  However, return std::move(joint_clone) was used in revolute_joint.cc
 }
 
 template <typename T>
