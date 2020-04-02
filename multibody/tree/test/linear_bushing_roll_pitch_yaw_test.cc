@@ -136,7 +136,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const RotationMatrixd R_CA = R_AC.inverse();
 
     // Set the context for subsequent harvest of Drake information.
-    systems::Context<double> &context = *(context_.get());
+    systems::Context<double>& context = *(context_.get());
 
     // Use the mobilizer to set the following in Drake:
     //   frame C's orientation in frame A,
@@ -166,8 +166,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // from the calculation in the class LinearBushingRollPitchYaw in that the
     // calculation here is relatively straightforward, the other more efficient.
     const Eigen::AngleAxis<double> angleAxis_AC = R_AC.ToAngleAxis();
-    const Vector3<double> &axis_AC = angleAxis_AC.axis();
-    const double &angle_AC = angleAxis_AC.angle();
+    const Vector3<double>& axis_AC = angleAxis_AC.axis();
+    const double& angle_AC = angleAxis_AC.angle();
     const Eigen::AngleAxis<double> angleAxis_AB(0.5 * angle_AC, axis_AC);
     const RotationMatrixd R_AB(angleAxis_AB);
     const RotationMatrixd R_BA = R_AB.inverse();
@@ -191,10 +191,10 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const double zDt = DtB_p_AoCo_B(2);  // m/s
 
     // Get the bushing's torque and force stiffness/damping constants.
-    const Vector3<double> &k012 = K012();
-    const Vector3<double> &d012 = D012();
-    const Vector3<double> &kxyz = Kxyz();
-    const Vector3<double> &dxyz = Dxyz();
+    const Vector3<double>& k012 = K012();
+    const Vector3<double>& d012 = D012();
+    const Vector3<double>& kxyz = Kxyz();
+    const Vector3<double>& dxyz = Dxyz();
     const double d0 = d012(0), d1 = d012(1), d2 = d012(2);  // N*m*s/rad
     const double dx = dxyz(0), dy = dxyz(1), dz = dxyz(2);  // N*s/m
     const double k0 = k012(0), k1 = k012(1), k2 = k012(2);  // N*m/rad
@@ -248,8 +248,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Verify the bushing's spatial force (torque and force) calculation at Cₒ.
     const SpatialForce<double> F_C_C =
         bushing_->CalcBushingSpatialForceOnFrameC(context);
-    const Vector3<double> &t_Co_C = F_C_C.rotational();
-    const Vector3<double> &f_C_C = F_C_C.translational();
+    const Vector3<double>& t_Co_C = F_C_C.rotational();
+    const Vector3<double>& f_C_C = F_C_C.translational();
     EXPECT_TRUE(CompareMatrices(t_Co_C, t_Co_C_expected,
                                 torque_epsilon, MatrixCompareType::relative));
     EXPECT_TRUE(CompareMatrices(f_C_C, f_C_C_expected,
@@ -266,10 +266,10 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     }
 
     // Verify potential energy and power methods throw exceptions.
-    const MultibodyTree<double> &mbt = GetInternalTree(*mbtree_system_);
-    const PositionKinematicsCache<double> &pc =
+    const MultibodyTree<double>& mbt = GetInternalTree(*mbtree_system_);
+    const PositionKinematicsCache<double>& pc =
         mbt.EvalPositionKinematics(context);
-    const VelocityKinematicsCache<double> &vc =
+    const VelocityKinematicsCache<double>& vc =
         mbt.EvalVelocityKinematics(context);
 
     // Verify CalcPotentialEnergy() throws an exception (see issue #12982).
@@ -670,9 +670,10 @@ TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
 
 // Verify algorithm that calculates rotation matrix R_AB.
 TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
-  const Vector3<double> axis(1, 0, 0);  // unit vector in x-direction.
+  // This tests uses a generic unit vector for the "axis" part of AngleAxis.
+  const Vector3<double> unit_vector = Vector3<double>(1, 2, 3).normalized();
   for (double angle = 0; angle <= 0.99 * M_PI;  angle += M_PI / 32) {;
-    BushingTester::VerifyHalfAngleAxisAlgorithm(angle, axis);
+    BushingTester::VerifyHalfAngleAxisAlgorithm(angle, unit_vector);
   }
 }
 

@@ -396,9 +396,9 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     const Eigen::AngleAxis<T> angleAxis_AB(half_theta, angleAxis_AC.axis());
     const math::RotationMatrix<T> R_AB_expected(angleAxis_AB);
     if (!R_AB.IsNearlyEqualTo(R_AB_expected, 64 * kEpsilon)) {
-      throw std::runtime_error(fmt::format(
+      throw std::runtime_error(
           "Error: Calculation of R_AB from quaternion differs from the "
-          "R_AB_expected formed via a half-angle axis calculation."));
+          "R_AB_expected formed via a half-angle axis calculation.");
     }
   }
 

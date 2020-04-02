@@ -99,9 +99,9 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
     const internal::PositionKinematicsCache<T>& /* pc */) const {
   // TODO(Mitiguy) Per issues #12982 and #12752, implement this method.
   //  Currently this method has not been implemented and throws an exception.
-  throw std::runtime_error(fmt::format(
+  throw std::runtime_error(
       "Error: LinearBushingRollPitchYaw::CalcPotentialEnergy() "
-      "has not been implemented.  Related: Issues #12982 and #12752."));
+      "has not been implemented.  Related: Issues #12982 and #12752.");
 }
 
 template <typename T>
@@ -111,9 +111,9 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
   // TODO(Mitiguy) Per issues #12982 and #12752, implement the following method.
   //  Currently this method has not been implemented and throws an exception.
-  throw std::runtime_error(fmt::format(
+  throw std::runtime_error(
       "Error: LinearBushingRollPitchYaw::CalcConservativePower() "
-      "has not been implemented.  Related: Issues #12982 and #12752."));
+      "has not been implemented.  Related: Issues #12982 and #12752.");
   return T(0);
 }
 
@@ -124,9 +124,9 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
   // TODO(Mitiguy) Per issues #12982 and #12752, implement the following method.
   //  Currently this method has not been implemented and throws an exception.
-  throw std::runtime_error(fmt::format(
+  throw std::runtime_error(
       "Error: LinearBushingRollPitchYaw::CalcNonConservativePower() "
-      "has not been implemented.  Related: Issues #12982 and #12752."));
+      "has not been implemented.  Related: Issues #12982 and #12752.");
   return T(0);
 }
 
