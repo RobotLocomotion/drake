@@ -283,6 +283,7 @@ pkg_config_repository = repository_rule(
         "pkg_config_paths": attr.string_list(),
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )
 

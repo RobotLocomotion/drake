@@ -27,7 +27,7 @@ def _impl(repo_ctx):
             fail(error)
     else:
         repo_ctx.symlink(
-            Label("@drake//tools/workspace/blas:package-ubuntu.BUILD.bazel"),
+            Label("@drake//tools/workspace/openblas:package-ubuntu.BUILD.bazel"),  # noqa
             "BUILD.bazel",
         )
 
@@ -40,5 +40,6 @@ openblas_repository = repository_rule(
         ),
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )

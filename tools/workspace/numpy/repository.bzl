@@ -31,7 +31,6 @@ Arguments:
         //tools/py_toolchain:interpreter_paths.bzl.
 """
 
-load("@drake//tools/workspace:execute.bzl", "which")
 load(
     "@drake//tools/workspace/python:repository.bzl",
     "interpreter_path_attrs",
@@ -84,4 +83,5 @@ numpy_repository = repository_rule(
     _impl,
     attrs = interpreter_path_attrs,
     local = True,
+    configure = True,
 )

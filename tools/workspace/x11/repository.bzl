@@ -31,5 +31,6 @@ x11_repository = repository_rule(
         "licenses": attr.string_list(default = ["notice"]),  # X11/MIT.
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )

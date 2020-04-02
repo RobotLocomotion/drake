@@ -38,5 +38,6 @@ liblapack_repository = repository_rule(
         "licenses": attr.string_list(default = ["notice"]),  # BSD-3-Clause
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )
