@@ -833,6 +833,29 @@ void GurobiSolver::DoSolve(
       error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     }
   }
+  for (const auto it : merged_options.GetOptionsStr(id())) {
+    if (!error) {
+      error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+    }
+  }
+  {
+    auto it = merged_options.common_solver_options().find(
+        CommonSolverOption::kPrintToConsole);
+    if (it != merged_options.common_solver_options().end()) {
+      if (!error) {
+        error = GRBsetintparam(model_env, "LogToConsole",
+                               std::get<int>(it->second));
+      }
+    }
+    it = merged_options.common_solver_options().find(
+        CommonSolverOption::kPrintFileName);
+    if (it != merged_options.common_solver_options().end()) {
+      if (!error) {
+        error = GRBsetstrparam(model_env, "LogFile",
+                               std::get<std::string>(it->second).c_str());
+      }
+    }
+  }
 
   if (initial_guess.rows() != prog.num_vars()) {
     throw std::invalid_argument(fmt::format(

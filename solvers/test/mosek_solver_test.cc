@@ -222,12 +222,20 @@ GTEST_TEST(MosekTest, TestLogFile) {
   solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(filesystem::exists({log_file}));
 
-  // Now set streaming using CommonSolverOptions.
+  // Now set streaming using CommonSolverOption.
+  const std::string log_file2 = temp_directory() + "/mosek2.log";
   solver.set_stream_logging(false, "");
   SolverOptions solver_options;
-  solver_options.SetOption(CommonSolverOptions::kPrintFileName, log_file);
+  solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file2);
   solver.Solve(prog, {}, solver_options, &result);
-  EXPECT_TRUE(filesystem::exists({log_file}));
+  EXPECT_TRUE(filesystem::exists({log_file2}));
+  // When we enable both print to console and print to file, Mosek will
+  // only print to console.
+  solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  const std::string log_file3 = temp_directory() + "/mosek3.log";
+  solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file3);
+  solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_FALSE(filesystem::exists({log_file3}));
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {

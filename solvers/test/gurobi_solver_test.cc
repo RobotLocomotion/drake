@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
@@ -412,6 +414,35 @@ GTEST_TEST(GurobiTest, SolutionPool) {
     EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
     EXPECT_NEAR(result.get_suboptimal_objective(0), 0, tol);
     EXPECT_NEAR(result.get_suboptimal_objective(1), 1, tol);
+  }
+}
+
+GTEST_TEST(GurobiTest, SetSolverOptions) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    MathematicalProgram prog;
+    auto x = prog.NewBinaryVariables<2>();
+    auto y = prog.NewContinuousVariables<1>();
+    prog.AddBoundingBoxConstraint(0.5, 1., y);
+    prog.AddLinearConstraint(x[0] + 2 * x[1] == 3 * y[0]);
+    prog.AddLinearCost(y[0]);
+
+    // set print log file through common solver options.
+    const std::string log_file1 = temp_directory() + "/gurobi1.log";
+    EXPECT_FALSE(filesystem::exists({log_file1}));
+    SolverOptions solver_options1;
+    solver_options1.SetOption(CommonSolverOption::kPrintFileName, log_file1);
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, solver_options1, &result);
+    EXPECT_TRUE(filesystem::exists({log_file1}));
+
+    // set print log file through solver-specific options.
+    SolverOptions solver_options2;
+    const std::string log_file2 = temp_directory() + "/gurobi2.log";
+    EXPECT_FALSE(filesystem::exists({log_file2}));
+    solver_options2.SetOption(solver.id(), "LogFile", log_file2);
+    solver.Solve(prog, {}, solver_options2, &result);
+    EXPECT_TRUE(filesystem::exists({log_file2}));
   }
 }
 

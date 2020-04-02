@@ -218,6 +218,11 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
                        &(settings->polish_refine_iter));
   SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
                                        &(settings->verbose), 0);
+  auto it = solver_options.common_solver_options().find(
+      CommonSolverOption::kPrintToConsole);
+  if (it != solver_options.common_solver_options().end()) {
+    settings->verbose = std::get<int>(it->second);
+  }
   // Default polish to true, to get an accurate solution.
   SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
                                        &(settings->polish), 1);

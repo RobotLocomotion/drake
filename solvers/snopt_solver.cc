@@ -797,19 +797,14 @@ void SolveWithGivenOptions(
     const std::unordered_map<std::string, std::string>& snopt_options_string,
     const std::unordered_map<std::string, int>& snopt_options_int,
     const std::unordered_map<std::string, double>& snopt_options_double,
-    int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val,
-    SnoptSolverDetails* solver_details) {
+    const std::string& print_file_name, int* snopt_status, double* objective,
+    EigenPtr<Eigen::VectorXd> x_val, SnoptSolverDetails* solver_details) {
   DRAKE_ASSERT(x_val->rows() == prog.num_vars());
 
   SnoptUserFunInfo user_info(&prog);
   WorkspaceStorage storage(&user_info);
   const auto & scale_map = prog.GetVariableScaling();
 
-  std::string print_file_name;
-  const auto print_file_it = snopt_options_string.find("Print file");
-  if (print_file_it != snopt_options_string.end()) {
-    print_file_name = print_file_it->second;
-  }
   Snopt::sninit(
       print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
       storage.iw(), storage.leniw(),
@@ -1125,11 +1120,30 @@ void SnoptSolver::DoSolve(
   if (int_options.count(kTimingLevel) == 0) {
     int_options[kTimingLevel] = 0;
   }
+  std::string print_file_name;
+  const auto common_print_file_it = merged_options.common_solver_options().find(
+      CommonSolverOption::kPrintFileName);
+  if (common_print_file_it != merged_options.common_solver_options().end()) {
+    print_file_name = std::get<std::string>(common_print_file_it->second);
+  }
 
-  SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
-                        int_options,
-                        merged_options.GetOptionsDouble(id()), &snopt_status,
-                        &objective, &x_val, &solver_details);
+  const std::unordered_map<std::string, std::string>& snopt_options_string =
+      merged_options.GetOptionsStr(id());
+  const auto print_file_it = snopt_options_string.find("Print file");
+  if (print_file_it != snopt_options_string.end()) {
+    print_file_name = print_file_it->second;
+  }
+  const auto common_print_to_console_it =
+      merged_options.common_solver_options().find(
+          CommonSolverOption::kPrintToConsole);
+  if (common_print_to_console_it !=
+      merged_options.common_solver_options().end()) {
+    drake::log()->warn("snopt_solver doesn't support print to console.");
+  }
+
+  SolveWithGivenOptions(prog, initial_guess, snopt_options_string, int_options,
+                        merged_options.GetOptionsDouble(id()), print_file_name,
+                        &snopt_status, &objective, &x_val, &solver_details);
 
   // Populate our results structure.
   const SolutionResult solution_result =

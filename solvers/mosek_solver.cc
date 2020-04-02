@@ -1424,22 +1424,22 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   std::string log_file = log_file_;
   const auto common_options_print_to_console =
       merged_options.common_solver_options().find(
-          CommonSolverOptions::kPrintToConsole);
+          CommonSolverOption::kPrintToConsole);
   const auto common_options_print_file_name =
       merged_options.common_solver_options().find(
-          CommonSolverOptions::kPrintFileName);
+          CommonSolverOption::kPrintFileName);
   // We take print to console over print to file. If the user sets both
   // CommonSolverOption::kPrintToConsole and CommonSolverOption::kPrintFileName,
   // then we only print to console as Mosek cannot support both.
   if (common_options_print_to_console !=
           merged_options.common_solver_options().end() &&
-      common_options_print_to_console.second == 1) {
+      std::get<int>(common_options_print_to_console->second) == 1) {
     stream_logging = true;
     log_file = "";
-  } else if (common_solver_options_print_file_name !=
+  } else if (common_options_print_file_name !=
              merged_options.common_solver_options().end()) {
     stream_logging = true;
-    log_file = common_solver_options_print_file_name.second;
+    log_file = std::get<std::string>(common_options_print_file_name->second);
   }
 
   if (rescode == MSK_RES_OK && stream_logging) {
