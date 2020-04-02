@@ -20,7 +20,7 @@ load("//tools/clion:repository.bzl", "drake_clion_environment")
 
 drake_clion_environment()
 
-load("@bazel_skylib//:lib.bzl", "versions")
+load("@bazel_skylib//lib:versions.bzl", "versions")
 
 # This needs to be in WORKSPACE or a repository rule for native.bazel_version
 # to actually be defined. The minimum_bazel_version value should match the
