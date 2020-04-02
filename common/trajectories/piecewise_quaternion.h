@@ -81,7 +81,9 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   Quaternion<T> orientation(double t) const;
 
-  MatrixX<T> value(double t) const override { return orientation(t).matrix(); }
+  MatrixX<T> value(const T& t) const override {
+    return orientation(t).matrix();
+  }
 
   /**
    * Interpolates angular velocity.

@@ -28,7 +28,7 @@ std::unique_ptr<Trajectory<T>> ExponentialPlusPiecewisePolynomial<T>::Clone()
 }
 
 template <typename T>
-MatrixX<T> ExponentialPlusPiecewisePolynomial<T>::value(double t) const {
+MatrixX<T> ExponentialPlusPiecewisePolynomial<T>::value(const T& t) const {
   int segment_index = this->get_segment_index(t);
   MatrixX<T> ret = piecewise_polynomial_part_.value(t);
   double tj = this->start_time(segment_index);

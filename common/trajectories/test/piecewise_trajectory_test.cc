@@ -13,25 +13,26 @@ namespace {
 
 // Dummy implementation of PiecewiseTrajectory to test the basic indexing
 // functions.
-class PiecewiseTrajectoryTester : public PiecewiseTrajectory<double> {
+template <typename T = double>
+class PiecewiseTrajectoryTester : public PiecewiseTrajectory<T> {
  public:
-  explicit PiecewiseTrajectoryTester(const std::vector<double>& times)
-      : PiecewiseTrajectory<double>(times) { }
+  explicit PiecewiseTrajectoryTester(const std::vector<T>& times)
+      : PiecewiseTrajectory<T>(times) { }
   Eigen::Index rows() const override { return 0; }
   Eigen::Index cols() const override { return 0; }
-  Eigen::MatrixXd value(double t) const override {
-    return Eigen::MatrixXd(0, 0);
+  MatrixX<T> value(const T& t) const override {
+    return MatrixX<T>(0, 0);
   }
-  std::unique_ptr<Trajectory<double>> Clone() const override {
+  std::unique_ptr<Trajectory<T>> Clone() const override {
     return nullptr;
   }
-  std::unique_ptr<Trajectory<double>> MakeDerivative(int) const override {
+  std::unique_ptr<Trajectory<T>> MakeDerivative(int) const override {
     return nullptr;
   }
 };
 
 void TestPiecewiseTrajectoryTimeRelatedGetters(
-    const PiecewiseTrajectoryTester& traj,
+    const PiecewiseTrajectoryTester<double>& traj,
     const std::vector<double>& time) {
   EXPECT_EQ(traj.get_number_of_segments(), static_cast<int>(time.size()) - 1);
 
@@ -101,6 +102,28 @@ GTEST_TEST(PiecewiseTrajectoryTest, GetIndexTest) {
 
   TestPiecewiseTrajectoryTimeRelatedGetters(traj, time);
 }
+
+template <typename T>
+void TestScalarType() {
+  std::default_random_engine generator(123);
+  std::vector<T> time =
+      PiecewiseTrajectory<T>::RandomSegmentTimes(5, generator);
+
+  PiecewiseTrajectoryTester<T> traj(time);
+
+  const MatrixX<T> value = traj.value(traj.start_time());
+  EXPECT_EQ(value.rows(), 0);
+  EXPECT_EQ(value.cols(), 0);
+
+  EXPECT_TRUE(static_cast<bool>(
+      traj.is_time_in_range((traj.start_time() + traj.end_time()) / 2.0)));
+}
+
+GTEST_TEST(PiecewiseTrajectoryTest, ScalarTypes) {
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
+}
+
 
 }  // namespace
 }  // namespace trajectories

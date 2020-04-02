@@ -6,6 +6,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
@@ -15,7 +16,7 @@ namespace trajectories {
 /// segments of time (delimited by `breaks`) to implement a trajectory that
 /// is represented by simpler logic in each segment or "piece".
 ///
-/// @tparam_double_only
+/// @tparam_default_scalars
 template <typename T>
 class PiecewiseTrajectory : public Trajectory<T> {
  public:
@@ -27,28 +28,28 @@ class PiecewiseTrajectory : public Trajectory<T> {
 
   int get_number_of_segments() const;
 
-  double start_time(int segment_number) const;
+  T start_time(int segment_number) const;
 
-  double end_time(int segment_number) const;
+  T end_time(int segment_number) const;
 
-  double duration(int segment_number) const;
+  T duration(int segment_number) const;
 
-  double start_time() const override;
+  T start_time() const override;
 
-  double end_time() const override;
+  T end_time() const override;
 
   /**
    * Returns true iff `t >= getStartTime() && t <= getEndTime()`.
    */
-  bool is_time_in_range(double t) const;
+  boolean<T> is_time_in_range(const T& t) const;
 
-  int get_segment_index(double t) const;
+  int get_segment_index(const T& t) const;
 
-  const std::vector<double>& get_segment_times() const;
+  const std::vector<T>& get_segment_times() const;
 
   void segment_number_range_check(int segment_number) const;
 
-  static std::vector<double> RandomSegmentTimes(
+  static std::vector<T> RandomSegmentTimes(
       // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references)
       int num_segments, std::default_random_engine &generator);
 
@@ -58,19 +59,22 @@ class PiecewiseTrajectory : public Trajectory<T> {
   PiecewiseTrajectory() = default;
 
   /// @p breaks increments must be greater or equal to kEpsilonTime.
-  explicit PiecewiseTrajectory(const std::vector<double>& breaks);
+  explicit PiecewiseTrajectory(const std::vector<T>& breaks);
 
   bool SegmentTimesEqual(const PiecewiseTrajectory& b,
                          double tol = kEpsilonTime) const;
 
-  const std::vector<double>& breaks() const { return breaks_; }
-  std::vector<double>& get_mutable_breaks() { return breaks_; }
+  const std::vector<T>& breaks() const { return breaks_; }
+  std::vector<T>& get_mutable_breaks() { return breaks_; }
 
  private:
-  int GetSegmentIndexRecursive(double time, int start, int end) const;
+  int GetSegmentIndexRecursive(const T& time, int start, int end) const;
 
-  std::vector<double> breaks_;
+  std::vector<T> breaks_;
 };
 
 }  // namespace trajectories
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::trajectories::PiecewiseTrajectory)
