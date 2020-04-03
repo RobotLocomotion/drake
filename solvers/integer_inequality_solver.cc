@@ -100,16 +100,15 @@ SolutionList VerticalStack(const SolutionList& A,
   return Y;
 }
 
-/*Find each solution (x(1), x(2), ..., x(n)) to Ax <= b when x(i) can only take
- * on values in a finite alphabet Qi, e.g., Qi = {1, 2, 3, 8, 9}.   We do this
- * by recursively enumerating the solutions to
- * A (x(1), x(2), ..., x(n-1) ) <= (b - A_n x_n) for all values of x(n). If the
- * column vectors {An*z : z ∈ Qn} are totally ordered, we propagate infeasibility:
- * if no solutions exist when x(n) = z, then no solution can exist if x(n) takes
- * on values larger than z (in the ordering).  We assume the function
- * "ProcessInputs" was previously called to sort the alphabet in ascending order.
- */
-
+/* Find each solution (x(1), x(2), ..., x(n)) to Ax <= b when x(i) can only take
+on values in a finite alphabet Qi, e.g., Qi = {1, 2, 3, 8, 9}.   We do this
+by recursively enumerating the solutions to
+A (x(1), x(2), ..., x(n-1) ) <= (b - A_n x_n) for all values of x(n). If the
+column vectors {An*z : z ∈ Qn} are totally ordered, we propagate infeasibility:
+if no solutions exist when x(n) = z, then no solution can exist if x(n) takes
+on values larger than z (in the ordering).  We assume the function
+"ProcessInputs" was previously called to sort the alphabet in ascending order.
+*/
 // TODO(frankpermenter):  Update to use preallocated memory
 SolutionList FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,

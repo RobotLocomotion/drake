@@ -168,7 +168,7 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
 
   // ----------------------------------------------------------------------
-  /**@name              Signed Distance Queries
+  /** @name              Signed Distance Queries
   See @ref signed_distance_query "Signed Distance Query" for more details.  */
 
   //@{

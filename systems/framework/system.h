@@ -932,7 +932,7 @@ class System : public SystemBase {
     }
   }
 
-  /** Returns a copy of the continuous state vector `xc` into an Eigen 
+  /** Returns a copy of the continuous state vector `xc` into an Eigen
   vector. */
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const;
   //@}
@@ -1210,7 +1210,7 @@ class System : public SystemBase {
   for more details. */
   //@{
 
-  /** This function dispatches all publish events to the appropriate 
+  /** This function dispatches all publish events to the appropriate
   handlers. */
   virtual void DispatchPublishHandler(
       const Context<T>& context,

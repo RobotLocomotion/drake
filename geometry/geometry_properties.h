@@ -95,7 +95,7 @@ namespace geometry {
  ```
  ProximityProperties properties;
  properties.AddProperty(ProximityProperties::default_group_name(), "count", 7);
- properties.AddProperty(ProximityProperties::default_group_name(), "length", 7.);
+ properties.AddProperty(ProximityProperties::default_group_name(), "width", 7.);
  properties.AddProperty(ProximityProperties::default_group_name(), "name", "7");
  ```
 

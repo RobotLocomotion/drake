@@ -162,7 +162,7 @@ class QueryObject {
    This method only provides double-valued penetration results.
 
    <!--
-   TODO (SeanCurtis-TRI): This can/should be changed to offer at least partial
+   TODO(SeanCurtis-TRI): This can/should be changed to offer at least partial
    AutoDiffXd support. At the very least, it should be declared on T and throw
    for AutoDiffXd. This is related to PR 11143
    https://github.com/RobotLocomotion/drake/pull/11143. In that PR, MBP is
