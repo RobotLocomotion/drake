@@ -597,6 +597,7 @@ drake_cc_googletest(
     deps = [
         ":velocity_implicit_euler_integrator",
         "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
     ],
 )
 
