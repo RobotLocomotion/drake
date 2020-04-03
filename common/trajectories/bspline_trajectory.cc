@@ -1,4 +1,4 @@
-#include "drake/math/bspline_trajectory.h"
+#include "drake/common/trajectories/bspline_trajectory.h"
 
 #include <algorithm>
 #include <utility>
@@ -15,7 +15,10 @@ using drake::symbolic::Variable;
 using drake::trajectories::Trajectory;
 
 namespace drake {
-namespace math {
+namespace trajectories {
+
+using math::BsplineBasis;
+
 template <typename T>
 BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<double> basis,
                                         std::vector<MatrixX<T>> control_points)
@@ -135,7 +138,7 @@ void BsplineTrajectory<T>::InsertKnots(
 }
 
 template <typename T>
-math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyWithSelector(
+BsplineTrajectory<T> BsplineTrajectory<T>::CopyWithSelector(
     const std::function<MatrixX<T>(const MatrixX<T>&)>& select) const {
   std::vector<MatrixX<T>> new_control_points{};
   new_control_points.reserve(num_control_points());
@@ -147,7 +150,7 @@ math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyWithSelector(
 }
 
 template <typename T>
-math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
+BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
     int start_row, int start_col, int block_rows, int block_cols) const {
   return CopyWithSelector([&start_row, &start_col, &block_rows,
                            &block_cols](const MatrixX<T>& full) {
@@ -156,7 +159,7 @@ math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
 }
 
 template <typename T>
-math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
+BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
   DRAKE_DEMAND(cols() == 1);
   DRAKE_DEMAND(n > 0);
   return CopyBlock(0, 0, n, 1);
@@ -177,5 +180,5 @@ boolean<T> BsplineTrajectory<T>::operator==(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class BsplineTrajectory);
-}  // namespace math
+}  // namespace trajectories
 }  // namespace drake

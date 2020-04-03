@@ -16,7 +16,6 @@ drake_cc_package_library(
         ":autodiff",
         ":barycentric",
         ":bspline_basis",
-        ":bspline_trajectory",
         ":compute_numerical_gradient",
         ":continuous_algebraic_riccati_equation",
         ":continuous_lyapunov_equation",
@@ -69,20 +68,6 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
-    ],
-)
-
-drake_cc_library(
-    name = "bspline_trajectory",
-    srcs = [
-        "bspline_trajectory.cc",
-    ],
-    hdrs = [
-        "bspline_trajectory.h",
-    ],
-    deps = [
-        ":bspline_basis",
-        "//common/trajectories:trajectory",
     ],
 )
 
@@ -318,17 +303,6 @@ drake_cc_googletest(
     deps = [
         ":bspline_basis",
         "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "bspline_trajectory_test",
-    deps = [
-        ":bspline_trajectory",
-        "//common:find_resource",
-        "//common/proto:call_python",
-        "//common/test_utilities",
-        "//math:compute_numerical_gradient",
     ],
 )
 

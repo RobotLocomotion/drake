@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "trajectories",
     deps = [
+        ":bspline_trajectory",
         ":piecewise_polynomial",
         ":piecewise_quaternion",
         ":piecewise_trajectory",
@@ -66,6 +67,20 @@ drake_cc_library(
         ":piecewise_trajectory",
         "//common:essential",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_trajectory",
+    srcs = [
+        "bspline_trajectory.cc",
+    ],
+    hdrs = [
+        "bspline_trajectory.h",
+    ],
+    deps = [
+        ":trajectory",
+        "//math:bspline_basis",
     ],
 )
 
@@ -124,6 +139,17 @@ drake_cc_googletest(
         ":piecewise_quaternion",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:wrap_to",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bspline_trajectory_test",
+    deps = [
+        ":bspline_trajectory",
+        "//common:find_resource",
+        "//common/proto:call_python",
+        "//common/test_utilities",
+        "//math:compute_numerical_gradient",
     ],
 )
 

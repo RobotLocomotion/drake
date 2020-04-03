@@ -1,4 +1,4 @@
-#include "drake/math/bspline_trajectory.h"
+#include "drake/common/trajectories/bspline_trajectory.h"
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -6,6 +6,8 @@
 #include "drake/common/proto/call_python.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/trajectory.h"
+#include "drake/math/bspline_basis.h"
+#include "drake/math/knot_vector_type.h"
 #include "drake/math/compute_numerical_gradient.h"
 
 DEFINE_bool(visualize, false,
@@ -17,9 +19,13 @@ DEFINE_bool(visualize, false,
             "`bazel run`. Run the binary from bazel-bin instead.");
 
 namespace drake {
-namespace math {
+namespace trajectories {
 
-using trajectories::Trajectory;
+using math::BsplineBasis;
+using math::ComputeNumericalGradient;
+using math::KnotVectorType;
+using math::NumericalGradientMethod;
+using math::NumericalGradientOption;
 
 namespace {
 BsplineTrajectory<double> MakeCircleTrajectory() {
@@ -215,5 +221,5 @@ GTEST_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
   }
 }
 
-}  // namespace math
+}  // namespace trajectories
 }  // namespace drake

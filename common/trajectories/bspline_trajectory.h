@@ -10,10 +10,10 @@
 #include "drake/math/bspline_basis.h"
 
 namespace drake {
-namespace math {
+namespace trajectories {
 /** Represents a B-spline curve using a given `basis` with ordered
 `control_points` such that each control point is a matrix in ℝʳᵒʷˢ ˣ ᶜᵒˡˢ.
-@see BsplineBasis */
+@see math::BsplineBasis */
 template <typename T>
 class BsplineTrajectory final : public trajectories::Trajectory<T> {
  public:
@@ -22,7 +22,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Constructs a B-spline trajectory with the given `basis` and
   `control_points`.
   @pre control_points.size() == basis.num_basis_functions() */
-  BsplineTrajectory(BsplineBasis<double> basis,
+  BsplineTrajectory(math::BsplineBasis<double> basis,
                     std::vector<MatrixX<T>> control_points);
 
   virtual ~BsplineTrajectory() = default;
@@ -69,7 +69,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   MatrixX<T> FinalValue() const;
 
   /** Returns the basis of this curve. */
-  const BsplineBasis<double>& basis() const { return basis_; }
+  const math::BsplineBasis<double>& basis() const { return basis_; }
 
   /** Adds new knots at the specified `additional_knots` without changing the
   behavior of the trajectory. The basis and control points of the trajectory are
@@ -83,14 +83,14 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `select(point)` on each `point`
   in `this->control_points()`.*/
-  math::BsplineTrajectory<T> CopyWithSelector(
+  BsplineTrajectory<T> CopyWithSelector(
       const std::function<MatrixX<T>(const MatrixX<T>&)>& select) const;
 
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling
   `point.block(start_row, start_col, block_rows, block_cols)` on each `point`
   in `this->control_points()`.*/
-  math::BsplineTrajectory<T> CopyBlock(int start_row, int start_col,
+  BsplineTrajectory<T> CopyBlock(int start_row, int start_col,
                                        int block_rows, int block_cols) const;
 
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
@@ -98,13 +98,13 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   in `this->control_points()`.
   @pre this->cols() == 1
   @pre n > 0 */
-  math::BsplineTrajectory<T> CopyHead(int n) const;
+  BsplineTrajectory<T> CopyHead(int n) const;
 
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
  private:
-  BsplineBasis<double> basis_;
+  math::BsplineBasis<double> basis_;
   std::vector<MatrixX<T>> control_points_;
 };
-}  // namespace math
+}  // namespace trajectories
 }  // namespace drake
