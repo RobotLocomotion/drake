@@ -519,6 +519,52 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
       std::logic_error, "There is no joint actuator named '.*' in the model.");
 }
 
+// Verifies that the SDF parser parses the revolute spring parameters correctly.
+GTEST_TEST(MultibodyPlantSdfParserTest, RevoluteSpringParsingTest) {
+  MultibodyPlant<double> plant(0.0);
+
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "revolute_spring_parsing_test.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
+  // Reads in the SDF file.
+  AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
+  plant.Finalize();
+
+  // Plant should have a UniformGravityFieldElement by default.
+  // Our test contains two joints that have nonzero stiffness
+  // and two joints that have zero stiffness. We only add a
+  // spring for nonzero stiffness, so only two spring forces
+  // should have been added.
+  DRAKE_DEMAND(plant.num_force_elements() == 3);
+
+  // In these two tests, we verify that the generalized forces are
+  // correct for both springs. The first spring has a nonzero reference
+  // of 1.0 radians so should have nonzero torque. The second spring
+  // has a zero reference, so it should have no applied torque.
+  MultibodyForces<double> forces(plant);
+  auto context = plant.CreateDefaultContext();
+  Matrix2X<double> expected_generalized_forces(2, 10);
+  expected_generalized_forces << 0, 0, 0, 0, 0, 0, 5, 0, 0, 0,
+                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  for (int i = 0; i < 2; ++i) {
+    // The ForceElement at index zero is gravity, so we skip that index
+    const ForceElementIndex force_index(i + 1);
+    const auto& nonzero_reference = plant.GetForceElement(force_index);
+    forces.SetZero();
+    nonzero_reference.CalcAndAddForceContribution(
+        *context, plant.EvalPositionKinematics(*context),
+        plant.EvalVelocityKinematics(*context), &forces);
+
+    const VectorX<double>& generalized_forces = forces.generalized_forces();
+    EXPECT_TRUE(CompareMatrices(generalized_forces,
+                                expected_generalized_forces.row(i).transpose(),
+                                kEps, MatrixCompareType::relative));
+  }
+}
+
 GTEST_TEST(SdfParser, TestSupportedFrames) {
   // Test `//link/pose[@relative_to]`.
   ParseTestString(R"(
