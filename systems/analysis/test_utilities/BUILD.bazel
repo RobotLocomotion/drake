@@ -195,8 +195,10 @@ drake_cc_library(
 drake_cc_library(
     name = "stationary_system",
     testonly = 1,
+    srcs = ["stationary_system.cc"],
     hdrs = ["stationary_system.h"],
     deps = [
+        "//common:default_scalars",
         "//systems/framework",
     ],
 )
