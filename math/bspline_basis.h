@@ -43,7 +43,7 @@ class BsplineBasis final {
   `num_basis_functions`, `initial_parameter_value`, `final_parameter_value`,
   and an auto-generated knot vector of the specified `type`.
   @throws std::invalid_argument if num_basis_functions < order
-  @pre initial_parameter_value < final_parameter_value */
+  @pre initial_parameter_value ≤ final_parameter_value */
   BsplineBasis(int order, int num_basis_functions,
                KnotVectorType type = KnotVectorType::kClampedUniform,
                const T& initial_parameter_value = 0,
@@ -74,12 +74,12 @@ class BsplineBasis final {
     return knots()[num_basis_functions()];
   }
 
-  /** Find the index, 𝑙, of the greatest knot that is less than or equal to
-  t_bar and strictly less than final_parameter_value().
+  /** For a `parameter_value` = t, the interval that contains it is the pair of
+  knot values [tᵢ, tᵢ₊₁] for the greatest i such that tᵢ ≤ t and
+  tᵢ < final_parameter_value(). This function returns that value of i.
   @pre parameter_value ≥ initial_parameter_value()
   @pre parameter_value ≤ final_parameter_value() */
-  int FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(
-      const T& parameter_value) const;
+  int FindContainingInterval(const T& parameter_value) const;
 
   /** Returns the indices of the basis functions which may evaluate to non-zero
   values for some parameter value in `parameter_interval`; all other basis
@@ -133,8 +133,7 @@ class BsplineBasis final {
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than final_parameter_value(). */
-    const int ell =
-        FindIndexOfGreatestLowerBoundingKnotLessThanFinalParameterValue(t_bar);
+    const int ell = FindContainingInterval(t_bar);
     // The vector that stores the intermediate de Boor points (the pᵢʲ in [1]).
     std::vector<T_control_point> p(order());
     /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that
@@ -163,8 +162,8 @@ class BsplineBasis final {
   bool operator==(const BsplineBasis& other) const;
 
  private:
-  int order_;
-  int num_basis_functions_;
+  int order_{};
+  int num_basis_functions_{};
   std::vector<T> knots_;
 };
 }  // namespace math
