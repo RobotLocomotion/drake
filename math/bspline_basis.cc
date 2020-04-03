@@ -114,6 +114,11 @@ bool BsplineBasis<T>::operator==(const BsplineBasis<T>& other) const {
   return this->order() == other.order() && this->knots() == other.knots();
 }
 
+template <typename T>
+bool BsplineBasis<T>::operator!=(const BsplineBasis<T>& other) const {
+  return !this->operator==(other);
+}
+
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class BsplineBasis)
 

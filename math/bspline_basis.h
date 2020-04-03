@@ -160,6 +160,8 @@ class BsplineBasis final {
 
   bool operator==(const BsplineBasis& other) const;
 
+  bool operator!=(const BsplineBasis& other) const;
+
  private:
   int order_{};
   int num_basis_functions_{};

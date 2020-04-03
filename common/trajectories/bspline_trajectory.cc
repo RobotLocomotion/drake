@@ -171,6 +171,11 @@ boolean<T> BsplineTrajectory<T>::operator==(
   boolean<T> result{this->basis() == other.basis()};
   result = result && boolean<T>{this->rows() == other.rows()};
   result = result && boolean<T>{this->cols() == other.cols()};
+  // The control points aren't comparable if any of the preceeding checks 
+  // failed.
+  if (!result) {
+      return result;
+  }
   for (int i = 0; i < this->num_control_points(); ++i) {
     result = result && all(this->control_points()[i].array() ==
                            other.control_points()[i].array());
