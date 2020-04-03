@@ -84,5 +84,6 @@ expat_repository = repository_rule(
         "modname": attr.string(default = "expat"),
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )

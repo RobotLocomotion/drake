@@ -34,6 +34,7 @@ which_repository = repository_rule(
         "additional_search_paths": attr.string_list(),
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )
 

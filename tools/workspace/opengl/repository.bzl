@@ -30,5 +30,6 @@ opengl_repository = repository_rule(
         "licenses": attr.string_list(default = ["notice"]),  # SGI-B-2.0.
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )

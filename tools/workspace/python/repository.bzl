@@ -253,4 +253,5 @@ python_repository = repository_rule(
     _impl,
     attrs = interpreter_path_attrs,
     local = True,
+    configure = True,
 )

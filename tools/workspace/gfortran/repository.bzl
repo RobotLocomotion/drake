@@ -85,5 +85,6 @@ def _gfortran_impl(repo_ctx):
 
 gfortran_repository = repository_rule(
     local = True,
+    configure = True,
     implementation = _gfortran_impl,
 )
