@@ -35,9 +35,8 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   @warning If t does not lie in the range [start_time(), end_time()], the
            trajectory will silently be evaluated at the closest
            valid value of time to t. For example, `value(-1)` will return
-           `value(0)` for a trajectory defined over [0, 1].
-   */
-  MatrixX<T> value(double time) const override;
+           `value(0)` for a trajectory defined over [0, 1]. */
+  MatrixX<T> value(const T& time) const override;
 
   std::unique_ptr<trajectories::Trajectory<T>> MakeDerivative(
       int derivative_order = 1) const override;
@@ -46,11 +45,9 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   Eigen::Index cols() const override { return control_points()[0].cols(); }
 
-  double start_time() const override {
-    return basis_.initial_parameter_value();
-  }
+  T start_time() const override { return basis_.initial_parameter_value(); }
 
-  double end_time() const override { return basis_.final_parameter_value(); }
+  T end_time() const override { return basis_.final_parameter_value(); }
 
   // Other methods
   /** Returns the number of control points in this curve. */

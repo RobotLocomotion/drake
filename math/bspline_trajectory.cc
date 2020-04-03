@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 
@@ -26,11 +27,12 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
 }
 
 template <typename T>
-MatrixX<T> BsplineTrajectory<T>::value(double time) const {
+MatrixX<T> BsplineTrajectory<T>::value(const T& time) const {
   using std::max;
   using std::min;
-  return basis().EvaluateCurve(control_points(),
-                               min(max(time, start_time()), end_time()));
+  return basis().EvaluateCurve(
+      control_points(),
+      drake::ExtractDoubleOrThrow(min(max(time, start_time()), end_time())));
 }
 
 template <typename T>
