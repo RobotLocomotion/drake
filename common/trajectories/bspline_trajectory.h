@@ -97,7 +97,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   whose control points are the result of calling `point.head(n)` on each `point`
   in `this->control_points()`.
   @pre this->cols() == 1
-  @pre n > 0 */
+  @pre control_points()[0].head(n) must be a valid operation. */
   BsplineTrajectory<T> CopyHead(int n) const;
 
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
