@@ -19,12 +19,13 @@ int fastQP(
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   std::set<int>& active, Eigen::VectorXd& x);
 
+// TODO(russt): Remove commented-out code.
 // int fastQP(std::vector< Eigen::MatrixXd* > QblkDiag, const Eigen::VectorXd&
 // f, const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq, const
 // Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin, std::set<int>& active,
 // Eigen::VectorXd& x, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
 
-/* TODO: restore templated versions
+/* TODO(russt): Restore templated versions.
 template <typename tA, typename tB, typename tC, typename tD, typename tE,
 typename tF, typename tG>
 int fastQP(std::vector< Eigen::Map<tA> > QblkDiag, const Eigen::MatrixBase<tB>&

@@ -146,9 +146,9 @@ class RenderEngine : public ShapeReifier {
   bool has_geometry(GeometryId id) const;
 
   /** Updates the poses of all geometries marked as "needing update" (see
- RegisterVisual()).
+   RegisterVisual()).
 
- @param  X_WGs   The poses of *all* geometries in SceneGraph (measured and
+   @param X_WGs  The poses of *all* geometries in SceneGraph (measured and
                  expressed in the world frame). The pose for a geometry is
                  accessed by that geometry's id.  */
   template <typename T>

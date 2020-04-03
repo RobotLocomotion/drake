@@ -31,8 +31,8 @@ namespace math {
  * There are no further limitations on the eigenvalues of A.
  * Further, if all λᵢ have negative real parts, and if Q is positive
  * semi-definite, then X is also positive semi-definite [1]. Therefore, if one
- * searches for a Lyapunov function V(z) = zᵀXz for the stable linear system ż =
- * Az, then the solution of the Lyapunov Equation `AᵀX + XA + Q = 0` only
+ * searches for a Lyapunov function V(z) = zᵀXz for the stable linear system
+ * ż = Az, then the solution of the Lyapunov Equation `AᵀX + XA + Q = 0` only
  * returns a valid Lyapunov function if Q is positive semi-definite.
  *
  * The implementation is based on SLICOT routine SB03MD [2]. Note the

@@ -119,7 +119,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
   }
 
- /** Evaluates the gradient in the domain of the element indicated by `e`.
+  /** Evaluates the gradient in the domain of the element indicated by `e`.
   The gradient is a vector in R³ expressed in frame M. For surface meshes, it
   will particularly lie parallel to the plane of the corresponding triangle.
   @throw std::runtime_error if the gradient vector was not calculated.

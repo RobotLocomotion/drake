@@ -83,10 +83,9 @@ bool ContainsExponent(const ExponentList& A, int num_rows, const Exponent& B) {
   return false;
 }
 
-/* Intersection(A, B) removes duplicate rows from B and any row that doesn't also
- * appear in A.  For example, given A = [1, 0; 0, 1; 1, 1] and B = [1, 0; 1, 1;
- * 1, 1;], it overwrites B with [1, 0; 1, 1]. */
-
+/* Intersection(A, B) removes duplicate rows from B and any row that doesn't
+ * also appear in A.  For example, given A = [1, 0; 0, 1; 1, 1] and B = [1, 0;
+ * 1, 1; 1, 1;], it overwrites B with [1, 0; 1, 1]. */
 void Intersection(const ExponentList& A, ExponentList* B) {
   DRAKE_ASSERT(A.cols() == B->cols());
   int index = 0;
