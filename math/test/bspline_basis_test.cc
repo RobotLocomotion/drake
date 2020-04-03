@@ -29,21 +29,22 @@ GTEST_TEST(BsplineBasisTests, ConstructorTest) {
   check_basis(BsplineBasis<double>(order, num_basis_functions,
                                    KnotVectorType::kClampedUniform,
                                    0 /* initial_parameter_value */,
-                                   1 /*final_parameter_value */),
+                                   1 /* final_parameter_value */),
               order, num_basis_functions, clamped_uniform_0_to_1);
 
   check_basis(BsplineBasis<double>(order, num_basis_functions,
                                    KnotVectorType::kClampedUniform,
                                    1 /* initial_parameter_value */,
-                                   9 /*final_parameter_value */),
+                                   9 /* final_parameter_value */),
               order, num_basis_functions, clamped_uniform_1_to_9);
 
   // Check that the order and num_basis_functions constructor defaults to
   // kClampedUniform from 0 to 1.
   EXPECT_EQ(BsplineBasis<double>(order, num_basis_functions),
-            BsplineBasis<double>(
-                order, num_basis_functions, KnotVectorType::kClampedUniform,
-                0 /* initial_parameter_value */, 1 /*final_parameter_value */));
+            BsplineBasis<double>(order, num_basis_functions,
+                                 KnotVectorType::kClampedUniform,
+                                 0 /* initial_parameter_value */,
+                                 1 /* final_parameter_value */));
 
   // Check the order and num_basis_functions constructor with kUniform.
   check_basis(BsplineBasis<double>(order, num_basis_functions,

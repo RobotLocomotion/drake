@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/trajectory.h"
@@ -38,6 +39,9 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
            `value(0)` for a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
+  // TODO(avalenzu): The default parameter here violates the GSG, but is
+  // included to match the parent class. It should be removed along with the
+  // corresponding one in trajectories::Trajectory.
   std::unique_ptr<trajectories::Trajectory<T>> MakeDerivative(
       int derivative_order = 1) const override;
 
@@ -67,14 +71,14 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Returns the basis of this curve. */
   const BsplineBasis<double>& basis() const { return basis_; }
 
-  /** Adds new knots at the specified `times` without changing the behavior of
-  the trajectory. The basis and control points of the trajectory are adjusted
-  such that it produces the same value for any valid time before and after this
-  method is called. The resulting trajectory is guaranteed to have the same
-  level of continuity as the original, even if knot values are duplicated. Note
-  that `times` need not be sorted.
-  @pre this->start_time() <= t <= this->end_time() for all t in `times` */
-  void InsertKnots(const std::vector<double>& times);
+  /** Adds new knots at the specified `additional_knots` without changing the
+  behavior of the trajectory. The basis and control points of the trajectory are
+  adjusted such that it produces the same value for any valid time before and
+  after this method is called. The resulting trajectory is guaranteed to have
+  the same level of continuity as the original, even if knot values are
+  duplicated. Note that `additional_knots` need not be sorted.
+  @pre start_time() <= t <= end_time() for all t in `additional_knots` */
+  void InsertKnots(const std::vector<double>& additional_knots);
 
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `select(point)` on each `point`
@@ -92,10 +96,11 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `point.head(n)` on each `point`
   in `this->control_points()`.
-  @pre this->cols() == 1 */
+  @pre this->cols() == 1
+  @pre n > 0 */
   math::BsplineTrajectory<T> CopyHead(int n) const;
 
-  bool operator==(const BsplineTrajectory<T>& other) const;
+  boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
  private:
   BsplineBasis<double> basis_;

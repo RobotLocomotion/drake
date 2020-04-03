@@ -19,7 +19,10 @@ namespace math {
 template <typename T>
 BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<double> basis,
                                         std::vector<MatrixX<T>> control_points)
-    : basis_(std::move(basis)), control_points_(std::move(control_points)) {}
+    : basis_(std::move(basis)), control_points_(std::move(control_points)) {
+  DRAKE_DEMAND(static_cast<int>(control_points_.size()) ==
+               basis_.num_basis_functions());
+}
 
 template <typename T>
 std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
@@ -43,12 +46,14 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
   } else if (derivative_order > 1) {
     return MakeDerivative(1)->MakeDerivative(derivative_order - 1);
   } else if (derivative_order == 1) {
-    std::vector<MatrixX<T>> derivative_control_points;
     std::vector<double> derivative_knots;
-    const int num_derivative_knots = basis_.knots().size() - 1;
-    for (int i = 1; i < num_derivative_knots; ++i) {
+    const int num_derivative_knots = basis_.knots().size() - 2;
+    derivative_knots.reserve(num_derivative_knots);
+    for (int i = 1; i < num_derivative_knots + 1; ++i) {
       derivative_knots.push_back(basis_.knots()[i]);
     }
+    std::vector<MatrixX<T>> derivative_control_points;
+    derivative_control_points.reserve(num_control_points() - 1);
     for (int i = 0; i < num_control_points() - 1; ++i) {
       derivative_control_points.push_back(
           basis_.degree() /
@@ -152,14 +157,22 @@ math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
 
 template <typename T>
 math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
-  DRAKE_THROW_UNLESS(cols() == 1);
+  DRAKE_DEMAND(cols() == 1);
+  DRAKE_DEMAND(n > 0);
   return CopyBlock(0, 0, n, 1);
 }
 
 template <typename T>
-bool BsplineTrajectory<T>::operator==(const BsplineTrajectory<T>& other) const {
-  return this->basis() == other.basis() &&
-         this->control_points() == other.control_points();
+boolean<T> BsplineTrajectory<T>::operator==(
+    const BsplineTrajectory<T>& other) const {
+  boolean<T> result{this->basis() == other.basis()};
+  result = result && boolean<T>{this->rows() == other.rows()};
+  result = result && boolean<T>{this->cols() == other.cols()};
+  for (int i = 0; i < this->num_control_points(); ++i) {
+    result = result && all(this->control_points()[i].array() ==
+                           other.control_points()[i].array());
+  }
+  return result;
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

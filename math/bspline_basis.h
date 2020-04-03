@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -148,7 +147,7 @@ class BsplineBasis final {
       for (int r = 0; r < k - j; ++r) {
         const int i = ell - r;
         // α = (t_bar - t[i]) / (t[i + k - j] - t[i]);
-        T alpha = (t_bar - t.at(i)) / (t.at(i + k - j) - t.at(i));
+        const T alpha = (t_bar - t.at(i)) / (t.at(i + k - j) - t.at(i));
         p.at(r) = (1.0 - alpha) * p.at(r + 1) + alpha * p.at(r);
       }
     }

@@ -75,6 +75,7 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
       FindContainingInterval(parameter_interval[0]) - order() + 1;
   const int final_active_index = FindContainingInterval(parameter_interval[1]);
   std::vector<int> active_control_point_indices{};
+  active_control_point_indices.reserve(final_active_index - first_active_index);
   for (int i = first_active_index; i <= final_active_index; ++i) {
     active_control_point_indices.push_back(i);
   }

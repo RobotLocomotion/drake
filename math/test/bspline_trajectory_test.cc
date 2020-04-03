@@ -11,7 +11,10 @@
 DEFINE_bool(visualize, false,
             "If true, emit Python plotting commands using CallPython(). "
             "You must build and run //common/proto:call_python_client_cli "
-            "first in order to see the resulting plots.");
+            "first in order to see the resulting plots (you will also need to "
+            "set up an rpc file - see the --help for call_python_client_cli "
+            "for more information). This option does not work with "
+            "`bazel run`. Run the binary from bazel-bin instead.");
 
 namespace drake {
 namespace math {
