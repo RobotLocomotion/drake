@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":autodiff",
         ":barycentric",
+        ":bspline_basis",
         ":compute_numerical_gradient",
         ":continuous_algebraic_riccati_equation",
         ":continuous_lyapunov_equation",
@@ -53,6 +54,20 @@ drake_cc_library(
     hdrs = ["barycentric.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_basis",
+    srcs = [
+        "bspline_basis.cc",
+    ],
+    hdrs = [
+        "bspline_basis.h",
+        "knot_vector_type.h",
+    ],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 
@@ -280,6 +295,14 @@ drake_cc_googletest(
         ":barycentric",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bspline_basis_test",
+    deps = [
+        ":bspline_basis",
+        "//common/test_utilities",
     ],
 )
 
