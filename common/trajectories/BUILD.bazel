@@ -34,7 +34,6 @@ drake_cc_library(
     hdrs = ["piecewise_trajectory.h"],
     deps = [
         ":trajectory",
-        "//common:default_scalars",
         "//common:essential",
     ],
 )

@@ -12,11 +12,10 @@ namespace drake {
 namespace trajectories {
 
 /**
- * A Trajectory represents a time-varying matrix, indexed by a single scalar
- * time.
+ * A Trajectory represents a time-varying matrix, indexed by a single
+ * scalar double time.
  *
- * @tparam T is any scalar type. This is a header-only abstract class (so no
- * concrete scalar type instantiations need to be provided).
+ * @tparam T is a Scalar type for the data that is returned.
  */
 template <typename T>
 class Trajectory {
@@ -33,7 +32,7 @@ class Trajectory {
    * @param t The time at which to evaluate the trajectory.
    * @return The matrix of evaluated values.
    */
-  virtual MatrixX<T> value(const T& t) const = 0;
+  virtual MatrixX<T> value(double t) const = 0;
 
   /**
   * If cols()==1, then evaluates the trajectory at each time @p t, and returns
@@ -43,7 +42,7 @@ class Trajectory {
   * the ith time.
   * @throws std::runtime_error if both cols and rows are not equal to 1.
   */
-  MatrixX<T> vector_values(const std::vector<T>& t) const {
+  MatrixX<T> vector_values(const std::vector<double>& t) const {
     if (cols() != 1 && rows() != 1) {
       throw std::runtime_error(
           "This method only supports vector-valued trajectories.");
@@ -81,9 +80,9 @@ class Trajectory {
    */
   virtual Eigen::Index cols() const = 0;
 
-  virtual T start_time() const = 0;
+  virtual double start_time() const = 0;
 
-  virtual T end_time() const = 0;
+  virtual double end_time() const = 0;
 
  protected:
   // Final subclasses are allowed to make copy/move/assign public.

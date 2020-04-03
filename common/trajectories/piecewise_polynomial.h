@@ -565,7 +565,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *          a polynomial defined over [0, 1].
    * @warning See warning in @ref polynomial_construction_warning.
    */
-  MatrixX<T> value(const T& t) const override {
+  MatrixX<T> value(double t) const override {
       const int derivative_order = 0;
       return EvalDerivative(t, derivative_order);
   }
