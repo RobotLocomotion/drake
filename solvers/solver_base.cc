@@ -49,6 +49,7 @@ void SolverBase::Solve(const MathematicalProgram& prog,
   result->set_decision_variable_index(prog.decision_variable_index());
   const Eigen::VectorXd& x_init =
       initial_guess ? *initial_guess : prog.initial_guess();
+  DRAKE_ASSERT(x_init.rows() == prog.num_vars());
   if (!solver_options) {
     DoSolve(prog, x_init, prog.solver_options(), result);
   } else {
