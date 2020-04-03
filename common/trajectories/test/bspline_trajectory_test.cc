@@ -7,8 +7,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/math/bspline_basis.h"
-#include "drake/math/knot_vector_type.h"
 #include "drake/math/compute_numerical_gradient.h"
+#include "drake/math/knot_vector_type.h"
 
 DEFINE_bool(visualize, false,
             "If true, emit Python plotting commands using CallPython(). "
