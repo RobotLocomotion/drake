@@ -17,6 +17,9 @@ degree k - 1 defined over those breakpoints. The elements of this set are
 called "B-splines". The vector (t₀, t₁, ..., tₘ)' is referred to as
 the "knot vector" of the basis and its elements are referred to as "knots".
 
+At a breakpoint with multiplicity p (i.e. a breakpoint that appears p times in
+the knot vector), B-splines are guaranteed to have Cᵏ⁻ᵖ⁻¹ continuity.
+
 A B-spline curve using a B-spline basis B, is a parametric curve mapping
 parameter values in [tₖ₋₁, tₙ₊₁] to a vector space V. For t ∈ [tₖ₋₁, tₙ₊₁] the
 value of the curve is given by the linear combination of n + 1 control points,
