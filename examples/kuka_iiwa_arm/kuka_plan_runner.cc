@@ -45,7 +45,7 @@ const int kNumJoints = 7;
 
 using trajectories::PiecewisePolynomial;
 typedef PiecewisePolynomial<double> PPType;
-typedef PPType::PolynomialType PPPoly;
+typedef Polynomial<double> PPPoly;
 typedef PPType::PolynomialMatrix PPMatrix;
 
 class RobotPlanRunner {
