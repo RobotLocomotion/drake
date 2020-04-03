@@ -400,6 +400,30 @@ GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
   TestScaling(spline, 4.3);
 }
 
+template <typename T>
+void TestScalarType() {
+  VectorX<T> breaks(3);
+  breaks << 0, .5, 1.;
+  MatrixX<T> samples(2, 3);
+  samples << 1, 1, 2, 2, 0, 3;
+
+  const PiecewisePolynomial<T> spline =
+      PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+
+  const MatrixX<T> value = spline.value(0.5);
+  EXPECT_NEAR(ExtractDoubleOrThrow(value(0)),
+              ExtractDoubleOrThrow(samples(0, 1)), 1e-14);
+  EXPECT_NEAR(ExtractDoubleOrThrow(value(1)),
+              ExtractDoubleOrThrow(samples(1, 1)), 1e-14);
+}
+
+GTEST_TEST(PiecewiseTrajectoryTest, ScalarTypes) {
+  TestScalarType<double>();
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
+}
+
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake
