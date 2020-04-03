@@ -53,7 +53,7 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
     std::vector<double> derivative_knots;
     const int num_derivative_knots = basis_.knots().size() - 2;
     derivative_knots.reserve(num_derivative_knots);
-    for (int i = 1; i < num_derivative_knots + 1; ++i) {
+    for (int i = 1; i <= num_derivative_knots; ++i) {
       derivative_knots.push_back(basis_.knots()[i]);
     }
     std::vector<MatrixX<T>> derivative_control_points;
