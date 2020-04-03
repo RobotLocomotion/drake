@@ -1,6 +1,7 @@
 #include "drake/common/trajectories/bspline_trajectory.h"
 
 #include <algorithm>
+#include <functional>
 #include <utility>
 
 #include <fmt/format.h>
@@ -168,14 +169,20 @@ BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
 template <typename T>
 boolean<T> BsplineTrajectory<T>::operator==(
     const BsplineTrajectory<T>& other) const {
-  boolean<T> result{this->basis() == other.basis()};
-  result = result && boolean<T>{this->rows() == other.rows()};
-  result = result && boolean<T>{this->cols() == other.cols()};
-  for (int i = 0; i < this->num_control_points(); ++i) {
-    result = result && all(this->control_points()[i].array() ==
-                           other.control_points()[i].array());
+  if (this->basis() == other.basis() && this->rows() == other.rows() &&
+      this->cols() == other.cols()) {
+    boolean<T> result{true};
+    for (int i = 0; i < this->num_control_points(); ++i) {
+      result = result && all(this->control_points()[i].array() ==
+                             other.control_points()[i].array());
+      if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
+        break;
+      }
+    }
+    return result;
+  } else {
+    return boolean<T>{false};
   }
-  return result;
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
