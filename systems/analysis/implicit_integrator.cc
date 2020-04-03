@@ -59,8 +59,18 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   adiff_context->SetContinuousState(a_xt);
 
   // Evaluate the derivatives at that state.
-  const VectorX<AutoDiffXd> result =
+  VectorX<AutoDiffXd> result =
       this->EvalTimeDerivatives(*adiff_system, *adiff_context).CopyToVector();
+
+  // Sometimes the system's derivatives f(x) do not depend on its states. In
+  // this case, make sure that the Jacobian isn't a n ✕ 0 matrix (this will
+  // cause a segfault when forming Newton iteration matrices). To fix this,
+  // we can just initialize the derivative of the first element if it is empty,
+  // because math::autoDiffToGradientMatrix() will automatically set the second
+  // dimension to the maximum derivative size.
+  if (result.size() > 0 && result[0].derivatives().size() == 0) {
+    result[0].derivatives() = VectorX<T>::Zero(n_state_dim);
+  }
 
   *J = math::autoDiffToGradientMatrix(result);
 }
