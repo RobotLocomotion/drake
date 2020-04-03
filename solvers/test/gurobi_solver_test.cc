@@ -123,13 +123,6 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
                                   MatrixCompareType::absolute));
       EXPECT_NEAR(result.get_optimal_cost(), 0, 1E-6);
     }
-
-    // Set wrong initial guess with incorrect size.
-    Eigen::VectorXd initial_guess_wrong_size(2);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        solver.Solve(prog, initial_guess_wrong_size, {}),
-        std::invalid_argument,
-        "The initial guess has 2 rows, but 1 rows were expected.");
   }
 }
 

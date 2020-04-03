@@ -138,6 +138,15 @@ GTEST_TEST(SolverBaseTest, SolveAndReturn) {
   // solve-as-output-argument method.
 }
 
+GTEST_TEST(SolverBaseTest, InitialGuessSizeError) {
+  MathematicalProgram prog;
+  prog.NewContinuousVariables<2>();
+  StubSolverBase dut;
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Solve(prog, Eigen::VectorXd(3), {}),
+                              std::invalid_argument,
+                              "Solve expects initial guess of size 2, got 3.");
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace solvers

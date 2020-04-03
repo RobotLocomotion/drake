@@ -49,6 +49,11 @@ void SolverBase::Solve(const MathematicalProgram& prog,
   result->set_decision_variable_index(prog.decision_variable_index());
   const Eigen::VectorXd& x_init =
       initial_guess ? *initial_guess : prog.initial_guess();
+  if (x_init.rows() != prog.num_vars()) {
+    throw std::invalid_argument(
+        fmt::format("Solve expects initial guess of size {}, got {}.",
+                    prog.num_vars(), x_init.rows()));
+  }
   if (!solver_options) {
     DoSolve(prog, x_init, prog.solver_options(), result);
   } else {
