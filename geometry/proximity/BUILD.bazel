@@ -208,6 +208,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "make_box_mesh",
+    srcs = ["make_box_mesh.cc"],
     hdrs = ["make_box_mesh.h"],
     deps = [
         ":surface_mesh",
