@@ -84,6 +84,31 @@ void AddPolygonToMeshData(
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<T>>* vertices_F);
 
+
+/* Determines if the indicated triangle has a face normal that is "in the
+ direction" of the given normal.
+
+ The definition of "in the direction" is within a hard-coded tolerance 5π/8,
+ which was empirically determined. Note that there is no one value that always
+ works (see documentation of IsFaceNormalAlongPressureGradient() in
+ mesh_intersection.h for examples).
+
+ @param normal_F    The normal to test against, expressed in Frame F.
+ @param surface_M   The mesh from which the triangle is drawn, measured and
+                    expressed in Frame M.
+ @param tri_index   The index of the triangle in `surface_M` to test.
+ @param R_FM        The relative orientation between the bases of M and F.
+ @pre `normal_F` is unit length.
+ @return `true` if the angle between `normal_F` and the triangle normal lies
+          within the hard-coded tolerance.
+ @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
+ */
+template <typename T>
+bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
+                                   const SurfaceMesh<T>& surface_M,
+                                   SurfaceFaceIndex tri_index,
+                                   const math::RotationMatrix<T>& R_FM);
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

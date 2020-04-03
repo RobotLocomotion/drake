@@ -223,6 +223,26 @@ void AddPolygonToMeshData(
   }
 }
 
+template <typename T>
+bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
+                                   const SurfaceMesh<T>& surface_M,
+                                   SurfaceFaceIndex tri_index,
+                                   const math::RotationMatrix<T>& R_FM) {
+  const Vector3<T>& face_normal_F = R_FM * surface_M.face_normal(tri_index);
+  // Given the rotation, we're re-normalizing the face normal to guard against
+  // round off error introduced by the rotation; we don't know its history and
+  // how much error it has accumulated.
+  // Theta is the angle between normal_F and face_normal_F. The dot product
+  // produces the cos(theta) if both normals are unit length).
+  const T cos_theta = normal_F.dot(face_normal_F.normalized());
+
+  // We pick 5π/8 empirically to be the threshold angle, alpha.
+  constexpr double kAlpha = 5. * M_PI / 8.;
+  static const double kCosAlpha = std::cos(kAlpha);
+  // cos(θ) > cos(α) → θ < α → condition met.
+  return cos_theta > kCosAlpha;
+}
+
 // Instantiation to facilitate unit testing of this support function.
 template
 Vector3<double> CalcPolygonCentroid(
@@ -247,6 +267,15 @@ template void AddPolygonToMeshData(
     const Vector3<AutoDiffXd>& n_F,
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<AutoDiffXd>>* vertices_F);
+
+template bool IsFaceNormalInNormalDirection(
+    const Vector3<double>& normal_F, const SurfaceMesh<double>& surface_M,
+    SurfaceFaceIndex tri_index, const math::RotationMatrix<double>& R_FM);
+
+template bool IsFaceNormalInNormalDirection(
+    const Vector3<AutoDiffXd>& normal_F,
+    const SurfaceMesh<AutoDiffXd>& surface_M, SurfaceFaceIndex tri_index,
+    const math::RotationMatrix<AutoDiffXd>& R_FM);
 
 }  // namespace internal
 }  // namespace geometry
