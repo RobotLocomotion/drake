@@ -27,7 +27,7 @@ def _impl(repo_ctx):
             fail(error)
     else:
         repo_ctx.symlink(
-            Label("@drake//tools/workspace/blas:package-macos.BUILD.bazel"),
+            Label("@drake//tools/workspace/libblas:package-macos.BUILD.bazel"),
             "BUILD.bazel",
         )
 
@@ -37,5 +37,6 @@ libblas_repository = repository_rule(
         "licenses": attr.string_list(default = ["notice"]),  # BSD-3-Clause
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )

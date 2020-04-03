@@ -98,6 +98,7 @@ ibex_repository = repository_rule(
             default = "@drake//tools/workspace/ibex:package-ubuntu.BUILD.bazel",  # noqa
         ),
     },
+    configure = True,
     implementation = _impl,
 )
 
