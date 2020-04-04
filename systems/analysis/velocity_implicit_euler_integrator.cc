@@ -10,6 +10,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"
+#include "drake/math/jacobian.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -145,46 +146,35 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
   DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
                      y.transpose());
 
-  // Create an AutoDiff version of the y vector.
-  VectorX<AutoDiffXd> a_y = y;
-
-  // Set the size of the derivatives and prepare for Jacobian calculation.
-  const int n_y_dim = y.size();
-  for (int i = 0; i < n_y_dim; ++i) {
-    a_y[i].derivatives() = VectorX<T>::Unit(n_y_dim, i);
-  }
-
   // Get the system and the context in AutoDiffable format. Inputs must also
   // be copied to the context used by the AutoDiff'd system (which is
   // accomplished using FixInputPortsFrom()).
-  // TODO(edrumwri): Investigate means for moving as many of the operations
-  //                 below offline (or with lower frequency than once-per-
-  //                 Jacobian calculation) as is possible. These operations
-  //                 are likely to be expensive.
   const System<T>& system = this->get_system();
-  const auto adiff_system = system.ToAutoDiffXd();
-  std::unique_ptr<Context<AutoDiffXd>> adiff_context = adiff_system->
-      AllocateContext();
+  if (adiff_system_ == nullptr) {
+    adiff_system_ = system.ToAutoDiffXd();
+    adiff_context_ = adiff_system_->AllocateContext();
+  }
   const Context<T>& context = *(this->get_mutable_context());
-  adiff_context->SetTimeStateAndParametersFrom(context);
-  adiff_system->FixInputPortsFrom(system, context, adiff_context.get());
-  BasicVector<AutoDiffXd> qdot(qn.size());
+  adiff_context_->SetTimeStateAndParametersFrom(context);
+  adiff_system_->FixInputPortsFrom(system, context, adiff_context_.get());
 
-  // Evaluate the derivatives at that state.
-  VectorX<AutoDiffXd> result = ComputeLOfY(t, a_y, qk, qn, h, &qdot,
-      *adiff_system, adiff_context.get());
-
-  // Sometimes the system's derivatives l(y) do not depend on its velocity or
-  // miscellaneous states. In this case, make sure that the Jacobian isn't
-  // a ny ✕ 0 matrix (we still need to factorize a square matrix). To do this,
-  // we can just initialize the derivative of the first element if it is empty.
-  if (result.size() > 0 && result[0].derivatives().size() == 0) {
-    result[0].derivatives() = VectorX<T>::Zero(n_y_dim);
+  if (adiff_qdot_ == nullptr || adiff_qdot_->size() != qn.size()) {
+    adiff_qdot_ = std::make_unique<BasicVector<AutoDiffXd>>(qn.size());
   }
 
+  // Define the lambda l_of_y to evaluate l(y).
+  auto l_of_y = [&t, &qk, &qn, &h, this](const auto& a_y) {
+        const auto& autodiff_a_y = a_y.template cast<AutoDiffXd>().eval();
+        return this->ComputeLOfY(
+            t, autodiff_a_y, qk, qn, h, this->adiff_qdot_.get(),
+            *(this->adiff_system_), this->adiff_context_.get());
+      };
+
+  VectorX<AutoDiffXd> result = math::jacobian(l_of_y, y);
+
   *Jy = math::autoDiffToGradientMatrix(result);
-  DRAKE_DEMAND(Jy->rows() == n_y_dim);
-  DRAKE_DEMAND(Jy->cols() == n_y_dim);
+  DRAKE_ASSERT(Jy->rows() == y.size());
+  DRAKE_ASSERT(Jy->cols() == y.size());
 }
 
 template <class T>
