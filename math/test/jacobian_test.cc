@@ -41,12 +41,6 @@ TEST_F(AutodiffJacobianTest, ConstantFunction) {
 
   Vector3d x;
   FillWithNumbersIncreasingFromZero(x);
-  auto a_x = x.cast<AutoDiffXd>().eval();
-  a_x[0].derivatives() = constant;
-  a_x[1].derivatives() = constant;
-  EXPECT_EQ(constant_func(a_x)[0].derivatives().size(), 0);
-  EXPECT_EQ(x.size(), 3);
-
   auto jac = jacobian(constant_func, x);
 
   // Ensure that value is correct.
