@@ -141,7 +141,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
       if (j_limit < chunk_size) {
         ret(i)
             .derivatives()
-            .segment(deriv_num_start + j_limit, deriv_num_start + chunk_size)
+            .segment(deriv_num_start + j_limit, chunk_size - j_limit)
             .setZero();
       }
     }
