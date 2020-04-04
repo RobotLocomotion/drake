@@ -126,9 +126,23 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
 
       // Instead, assign each element individually, making use of conversion
       // constructors.
-      for (Index j = 0; j < chunk_size; j++) {
+
+      // Normally, we should iterate j until j = chunk_size - 1. However, if
+      // chunk_result(i) has a smaller derivative vector, we also need to stop
+      // iterating j at that value to prevent segmentation faults.
+      Index j_limit =
+          std::min(chunk_size, chunk_result(i).derivatives().size());
+      for (Index j = 0; j < j_limit; j++) {
         ret(i).derivatives()(deriv_num_start + j) =
             chunk_result(i).derivatives()(j);
+      }
+
+      // Set the remainder of the derivatives to zero.
+      if (j_limit < chunk_size) {
+        ret(i)
+            .derivatives()
+            .segment(deriv_num_start + j_limit, deriv_num_start + chunk_size)
+            .setZero();
       }
     }
   }
