@@ -223,7 +223,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
                                       initial_velocity);
 
-    // Initialize to reset cached Jacobians.
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
@@ -248,7 +250,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
                                       initial_velocity);
 
-    // Initialize to reset cached Jacobians.
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
@@ -340,7 +344,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     mod_spring_mass_damper_->set_velocity(
         mod_spring_mass_damper_context_.get(), initial_velocity);
 
-    // Initialize to reset cached Jacobians.
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough.
     integrator.Initialize();
 
     // Integrate again.
@@ -369,7 +375,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     mod_spring_mass_damper_->set_velocity(
         mod_spring_mass_damper_context_.get(), initial_velocity);
 
-    // Initialize to reset cached Jacobians.
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough.
     integrator.Initialize();
 
     // Integrate again.
@@ -454,7 +462,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass.set_position(context.get(), initial_position);
     spring_mass.set_velocity(context.get(), initial_velocity);
 
-    // Initialize to reset cached Jacobians.
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
@@ -477,7 +487,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass.set_position(context.get(), initial_position);
     spring_mass.set_velocity(context.get(), initial_velocity);
 
-    // Initialize to reset cached Jacobians.
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
