@@ -258,7 +258,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
           trajectory.getPolynomialMatrix(i);
       MatrixX<Polynomiald> polyd = poly.unaryExpr([](const Polynomial<T>& p) {
         return Polynomiald(
-            internal::ExtractDoublesOrThrow(p.GetCoefficients()));
+            ExtractDoubleOrThrow(p.GetCoefficients()));
       });
       continuous_trajectory_.ConcatenateInTime(
           PiecewisePolynomial<double>({polyd},
