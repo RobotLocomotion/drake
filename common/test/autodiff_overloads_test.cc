@@ -70,6 +70,11 @@ GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
   // A double still works, too.
   double y = 1.0;
   EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
+
+  // Eigen variant.
+  Vector2<Eigen::AutoDiffScalar<Eigen::Vector2d>> v{9.0, 7.0};
+  EXPECT_TRUE(
+      CompareMatrices(ExtractDoubleOrThrow(v), Eigen::Vector2d{9.0, 7.0}));
 }
 
 // Tests correctness of nexttoward.

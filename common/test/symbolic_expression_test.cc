@@ -18,6 +18,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_memcpy_movable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
@@ -1940,6 +1941,15 @@ TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
   // Computed NaN should still throw.
   const Expression bogus = zero_ / e_nan_;
   EXPECT_THROW(ExtractDoubleOrThrow(bogus), std::exception);
+
+  // Eigen variant.
+  const Vector2<Expression> v1{12.0, 13.0};
+  EXPECT_TRUE(
+      CompareMatrices(ExtractDoubleOrThrow(v1), Eigen::Vector2d{12.0, 13.0}));
+
+  // Computed NaN should still throw through the Eigen variant.
+  const Vector2<Expression> v2{12.0, bogus};
+  EXPECT_THROW(ExtractDoubleOrThrow(v2), std::exception);
 }
 
 TEST_F(SymbolicExpressionTest, Jacobian) {

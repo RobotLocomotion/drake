@@ -871,6 +871,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":extract_double",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1091,6 +1092,7 @@ drake_cc_googletest(
         ":essential",
         ":polynomial",
         ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:is_memcpy_movable",
         "//common/test_utilities:symbolic_test_util",
     ],
