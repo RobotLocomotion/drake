@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
@@ -28,5 +29,15 @@ double ExtractDoubleOrThrow(const T&) {
 
 /// Returns @p scalar as a double.  Never throws.
 inline double ExtractDoubleOrThrow(double scalar) { return scalar; }
+
+template <typename Derived>
+inline Eigen::Matrix<
+    double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
+    Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>
+ExtractMatrixDoubleOrThrow(const Eigen::MatrixBase<Derived>& m) {
+  return m.unaryExpr([] (const typename Derived::Scalar& value) {
+      return ExtractDoubleOrThrow(value);
+  });
+}
 
 }  // namespace drake

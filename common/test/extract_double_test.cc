@@ -5,6 +5,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+
 // A non-numeric ScalarType for testing.
 namespace { struct NonNumericScalar { }; }
 
@@ -23,6 +25,45 @@ GTEST_TEST(ExtractDoubleTest, BasicTest) {
   // A non-numeric throws.
   NonNumericScalar non_numeric;
   EXPECT_THROW(ExtractDoubleOrThrow(non_numeric), std::exception);
+}
+
+struct ConditionalScalar {
+  ConditionalScalar() = default;
+  explicit ConditionalScalar(double x) : value(x) {}
+  double value{};
+};
+
+double ExtractDoubleOrThrow(const ConditionalScalar& scalar) {
+  if (scalar.value < 0.0) {
+    throw std::runtime_error(
+        "Negative ConditionalScalar cannot be converted to a double");
+  }
+  return scalar.value;
+}
+
+GTEST_TEST(ExtractDoubleTest, MatrixTest) {
+  // Fixed size matrices work.
+  Eigen::Matrix2d x;
+  x << 1.0, 2.0, 3.0, 4.0;
+  EXPECT_TRUE(CompareMatrices(ExtractMatrixDoubleOrThrow(x), x));
+
+  // Dynamically-sized matrices work.
+  Eigen::MatrixXd y(1, 5);
+  y << 1, 2, 3, 4, 5;
+  EXPECT_TRUE(CompareMatrices(ExtractMatrixDoubleOrThrow(y), y));
+
+  // A non-numeric throws.
+  Matrix3<NonNumericScalar> non_numeric;
+  EXPECT_THROW(ExtractMatrixDoubleOrThrow(non_numeric), std::exception);
+
+  // A type with conditional extraction can work.
+  Vector2<ConditionalScalar> c(1.0, 2.0);
+  EXPECT_TRUE(CompareMatrices(ExtractMatrixDoubleOrThrow(c),
+                              Eigen::Vector2d(1.0, 2.0)));
+
+  // A type with conditional extraction can throw based on one bad elemnent.
+  c(1) = ConditionalScalar(-1.0);
+  EXPECT_THROW(ExtractMatrixDoubleOrThrow(c), std::exception);
 }
 
 }  // namespace
