@@ -52,6 +52,7 @@ drake_cc_library(
     ],
     deps = [
         ":piecewise_trajectory",
+        "//common:default_scalars",
         "//common:essential",
         "//common:polynomial",
         "@fmt",
