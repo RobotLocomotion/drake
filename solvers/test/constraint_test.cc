@@ -4,6 +4,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -37,6 +38,15 @@ Environment BuildEnvironment(const VectorX<Variable>& vars,
     env.insert(vars[i], values[i]);
   }
   return env;
+}
+
+GTEST_TEST(TestConstraint, BoundSizeCheck) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LinearConstraint(Eigen::Matrix3d::Identity(), Eigen::Vector2d(1., 2),
+                       Eigen::Vector3d(2., 3, 4.)),
+      std::invalid_argument,
+      "Constraint  expects lower and upper bounds of size 3, got lower "
+      "bound of size 2 and upper bound of size 3.");
 }
 
 GTEST_TEST(testConstraint, testLinearConstraintUpdate) {

@@ -5,6 +5,8 @@
 #include <set>
 #include <unordered_map>
 
+#include <fmt/format.h>
+
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -58,6 +60,18 @@ std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
   return os;
 }
 }  // namespace
+
+void Constraint::check(int num_constraints) const {
+  static_cast<void>(num_constraints);
+  if (lower_bound_.size() != num_constraints ||
+      upper_bound_.size() != num_constraints) {
+    throw std::invalid_argument(
+        fmt::format("Constraint {} expects lower and upper bounds of size {}, "
+                    "got lower bound of size {} and upper bound of size {}.",
+                    this->get_description(), num_constraints,
+                    lower_bound_.size(), upper_bound_.size()));
+  }
+}
 
 symbolic::Formula Constraint::DoCheckSatisfied(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x) const {
