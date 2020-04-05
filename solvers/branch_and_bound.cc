@@ -8,6 +8,7 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/unused.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/scs_solver.h"
 
@@ -24,30 +25,6 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
   }
   return false;
 }
-
-namespace {
-std::unique_ptr<SolverInterface> MakeSolver(const SolverId& solver_id) {
-  if (solver_id == GurobiSolver::id() || solver_id == ScsSolver::id()) {
-    if (solver_id == GurobiSolver::id()) {
-      auto solver = std::make_unique<GurobiSolver>();
-      if (!solver->available()) {
-        throw std::runtime_error("Gurobi is unavailable.");
-      }
-      return solver;
-    } else {
-      auto solver = std::make_unique<ScsSolver>();
-      if (!solver->available()) {
-        throw std::runtime_error("Scs is unavailable.");
-      }
-      return solver;
-    }
-  } else {
-    throw std::runtime_error(fmt::format(
-        "MixedIntegerBranchAndBoundNode does not support solver {}.",
-        solver_id.name()));
-  }
-}
-}  // namespace
 
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const MathematicalProgram& prog,

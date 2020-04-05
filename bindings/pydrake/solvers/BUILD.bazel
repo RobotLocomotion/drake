@@ -63,6 +63,20 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "branch_and_bound_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+    ],
+    cc_srcs = ["branch_and_bound_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+    ],
+)
+
 drake_cc_library(
     name = "solvers_pybind",
     hdrs = ["solvers_pybind.h"],
@@ -173,6 +187,7 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":branch_and_bound_py",
     ":gurobi_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
@@ -280,6 +295,16 @@ drake_py_unittest(
         ":gurobi_py",
         ":mathematicalprogram_py",
         ":snopt_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "branch_and_bound_test",
+    deps = [
+        ":branch_and_bound_py",
+        ":osqp_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
