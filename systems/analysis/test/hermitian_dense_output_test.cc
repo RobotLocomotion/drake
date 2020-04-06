@@ -306,40 +306,61 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   const trajectories::PiecewisePolynomial<double> hermite_spline =
       trajectories::PiecewisePolynomial<double>::CubicHermite(
           spline_times, spline_states, spline_state_derivatives);
-  // Construct one version using the PiecewisePolynomial constructor.
-  HermitianDenseOutput<TypeParam> from_spline(hermite_spline);
-  // Build another version incrementally.
-  HermitianDenseOutput<TypeParam> incremental;
+  // Instantiates dense output.
+  HermitianDenseOutput<TypeParam> dense_output;
   // Updates output for the first time.
   typename HermitianDenseOutput<TypeParam>::IntegrationStep first_step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
   first_step.Extend(this->kMidTime, this->kMidState, this->kMidStateDerivative);
-  incremental.Update(first_step);
+  dense_output.Update(first_step);
   // Updates output a second time.
   typename HermitianDenseOutput<TypeParam>::IntegrationStep second_step(
       this->kMidTime, this->kMidState, this->kMidStateDerivative);
   second_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  incremental.Update(second_step);
+  dense_output.Update(second_step);
   // Consolidates all previous updates.
-  incremental.Consolidate();
+  dense_output.Consolidate();
   // Verifies that dense output and Hermite spline match.
   const double kAccuracy{1e-12};
-  EXPECT_FALSE(from_spline.is_empty());
-  EXPECT_FALSE(incremental.is_empty());
-  EXPECT_EQ(from_spline.start_time(), incremental.start_time());
-  EXPECT_EQ(from_spline.end_time(), incremental.end_time());
+  EXPECT_FALSE(dense_output.is_empty());
   for (TypeParam t = this->kInitialTime;
        t <= this->kFinalTime; t += this->kTimeStep) {
     const MatrixX<double> matrix_value =
         hermite_spline.value(ExtractDoubleOrThrow(t));
     const VectorX<TypeParam> vector_value =
         matrix_value.col(0).template cast<TypeParam>();
-    EXPECT_TRUE(CompareMatrices(from_spline.Evaluate(t),
-                                vector_value, kAccuracy));
-    EXPECT_TRUE(CompareMatrices(incremental.Evaluate(t),
+    EXPECT_TRUE(CompareMatrices(dense_output.Evaluate(t),
                                 vector_value, kAccuracy));
   }
+}
+
+// Construct a HermitianDenseOutput<T> from PiecewisePolynomial<U>.
+template <typename T>
+void TestScalarType() {
+  const Vector3<T> breaks(0.0, 1.0, 2.0);
+  const RowVector3<T> samples(6.0, 5.0, 4.0);
+
+  const auto foh =
+      trajectories::PiecewisePolynomial<T>::FirstOrderHold(breaks, samples);
+
+  const HermitianDenseOutput<T> hdo(foh);
+
+  EXPECT_EQ(ExtractDoubleOrThrow(hdo.start_time()),
+            ExtractDoubleOrThrow(breaks(0)));
+  EXPECT_EQ(ExtractDoubleOrThrow(hdo.end_time()),
+            ExtractDoubleOrThrow(breaks(2)));
+
+  for (const T& time : {0.1, 0.4, 1.6}) {
+    EXPECT_NEAR(ExtractDoubleOrThrow(hdo.Evaluate(time)(0)),
+                ExtractDoubleOrThrow(foh.value(time)(0)), 1e-14);
+  }
+}
+
+GTEST_TEST(HermitianDenseOutputTest, ConstructFromPiecewisePolynomialTest) {
+  TestScalarType<double>();
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
 }
 
 }  // namespace
