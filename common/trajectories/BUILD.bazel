@@ -149,9 +149,9 @@ drake_cc_googletest(
     deps = [
         ":bspline_trajectory",
         "//common:find_resource",
-        "//common/proto:call_python",
         "//common/test_utilities",
         "//math:compute_numerical_gradient",
+        "//math:gradient",
     ],
 )
 
