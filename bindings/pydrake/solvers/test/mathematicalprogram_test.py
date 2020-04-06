@@ -584,6 +584,13 @@ class TestMathematicalProgram(unittest.TestCase):
         # Verify that they can be evaluated.
         self.assertAlmostEqual(cost_binding.evaluator().Eval(xstar), 0.)
         self.assertAlmostEqual(constraint_binding.evaluator().Eval(xstar), 1.)
+        self.assertEqual(len(prog.generic_constraints()), 1)
+        self.assertEqual(
+            prog.generic_constraints()[0].evaluator(),
+            constraint_binding.evaluator())
+        self.assertEqual(len(prog.generic_costs()), 1)
+        self.assertEqual(
+            prog.generic_costs()[0].evaluator(), cost_binding.evaluator())
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()

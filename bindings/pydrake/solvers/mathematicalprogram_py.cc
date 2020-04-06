@@ -733,6 +733,8 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
+      .def("generic_constraints", &MathematicalProgram::generic_constraints,
+          doc.MathematicalProgram.generic_constraints.doc)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
       .def("linear_equality_constraints",
@@ -741,6 +743,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("bounding_box_constraints",
           &MathematicalProgram::bounding_box_constraints,
           doc.MathematicalProgram.bounding_box_constraints.doc)
+      .def("generic_costs", &MathematicalProgram::generic_costs,
+          doc.MathematicalProgram.generic_costs.doc)
       .def("linear_costs", &MathematicalProgram::linear_costs,
           doc.MathematicalProgram.linear_costs.doc)
       .def("quadratic_costs", &MathematicalProgram::quadratic_costs,
