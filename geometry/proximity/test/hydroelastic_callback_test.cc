@@ -33,8 +33,8 @@ using std::vector;
 // for supported geometries.
 ProximityProperties rigid_properties() {
   ProximityProperties props;
-  const double chararacteristic_length = 0.1;
-  AddRigidHydroelasticProperties(chararacteristic_length, &props);
+  const double resolution_hint = 0.1;
+  AddRigidHydroelasticProperties(resolution_hint, &props);
   return props;
 }
 
@@ -43,8 +43,11 @@ ProximityProperties rigid_properties() {
 ProximityProperties soft_properties() {
   ProximityProperties props;
   AddContactMaterial(1e8, {}, {}, &props);
-  const double chararacteristic_length = 0.25;
-  AddSoftHydroelasticProperties(chararacteristic_length, &props);
+  const double resolution_hint = 0.25;
+  AddSoftHydroelasticProperties(resolution_hint, &props);
+  // Redundantly add slab thickness so it can be used with compliant mesh or
+  // compliant half space.
+  props.AddProperty(kHydroGroup, kSlabThickness, 0.25);
   return props;
 }
 
@@ -106,16 +109,23 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
       "currently supported");
 }
 
-// Utility class for encoding a scene with two geometries. The first is a
-// sphere (which gets tessellated, representing all meshes), the second is
-// either a sphere or a half space.
+// Specification of the shape types to use with TestScene.
+enum class ShapeType {
+  kSphere,
+  kHalfSpace
+};
+
+// Utility class for encoding a scene with two geometries. Each geometry can be
+// either a sphere or a half space. The sphere gets tessellated and is
+// representative of every shape type that is tessellated.
 template <typename T>
 class TestScene {
  public:
-  explicit TestScene(bool B_is_sphere = true)
+  explicit TestScene(ShapeType A_shape_type, ShapeType B_shape_type)
       : id_A_{GeometryId::get_new_id()},
         id_B_{GeometryId::get_new_id()},
-        B_is_sphere_(B_is_sphere),
+        shape_A_type_(A_shape_type),
+        shape_B_type_(B_shape_type),
         data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
               &surfaces_} {
     X_WGs_[id_A_] = RigidTransform<T>();
@@ -139,56 +149,95 @@ class TestScene {
     collision_filter_.AddGeometry(data_A.encoding());
     collision_filter_.AddGeometry(data_B.encoding());
 
-    sphere_A_ = make_unique<CollisionObjectd>(make_shared<Sphered>(radius_));
-    data_A.write_to(sphere_A_.get());
+    shape_A_ = MakeShape(id_A_, type_A, shape_A_type_, &data_A);
+    shape_B_ = MakeShape(id_B_, type_B, shape_B_type_, &data_B);
+  }
 
-    if (B_is_sphere_) {
-      shape_B_ = make_unique<CollisionObjectd>(make_shared<Sphered>(radius_));
-    } else {
-      shape_B_ = make_unique<CollisionObjectd>(make_shared<Halfspaced>());
-    }
-    data_B.write_to(shape_B_.get());
-
-    auto add_hydroelastic = [this](GeometryId id, const HydroelasticType type,
-                                   const Shape& shape) {
-      if (type == HydroelasticType::kSoft) {
+  // Adds a hydroelastic representation of the given `shape` with the given
+  // compliance `type`.
+  void MakeHydroelastic(GeometryId id, const HydroelasticType type,
+                        const Shape& shape) {
+    switch (type) {
+      case HydroelasticType::kSoft:
         this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
                                                         soft_properties());
-      } else if (type == HydroelasticType::kRigid) {
+        break;
+      case HydroelasticType::kRigid:
         this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
                                                         rigid_properties());
-      }
-      // Note: HydroelasticType::kUndefined will not be added.
-    };
-
-    add_hydroelastic(id_A_, type_A, Sphere(this->radius_));
-    if (B_is_sphere_) {
-      add_hydroelastic(id_B_, type_B, Sphere(this->radius_));
-    } else {
-      add_hydroelastic(id_B_, type_B, HalfSpace{});
+        break;
+      case HydroelasticType::kUndefined:
+        // Note: HydroelasticType::kUndefined will not be added.
+        break;
     }
   }
 
+  // Given the "description" of the shape to be added, does the work of
+  // instantiating an FCL and hydroelastic representation. Returns the
+  // fcl representation.
+  unique_ptr<CollisionObjectd> MakeShape(GeometryId id, HydroelasticType type,
+                                         ShapeType shape_type,
+                                         EncodedData* data) {
+    unique_ptr<CollisionObjectd> shape;
+    switch (shape_type) {
+      case ShapeType::kSphere:
+        shape = make_unique<CollisionObjectd>(make_shared<Sphered>(kRadius));
+        MakeHydroelastic(id, type, Sphere(kRadius));
+        break;
+      case ShapeType::kHalfSpace:
+        shape = make_unique<CollisionObjectd>(make_shared<Halfspaced>());
+        MakeHydroelastic(id, type, HalfSpace());
+        break;
+    }
+    data->write_to(shape.get());
+    return shape;
+  }
+
   void PoseGeometry(bool are_colliding) {
-    // Sphere A stays at the origin, and shape B is moved _below_ sphere A along
-    // the z axis an "appropriate" distance. The distance depends on:
-    //  - the shape of geometry B and
-    //  - whether collision is requested or not.
+    // If both shapes are half spaces, that is not contact we support and the
+    // configuration is irrelevant (technically, their boundary planes could be
+    // parallel and the half spaces could be disjoint -- but this test doesn't
+    // care about that case).  Otherwise, the meaningful logic handles the case
+    // where at least one is a sphere.
     //
-    // We need to compute the total distance that geometry B needs to move in
-    // the -z direction to *touch* the bottom of sphere A. That includes two
-    // quantities:
-    //   - the radius of A
-    //   - the distance from geometry B's origin to its surface. (radius if B is
-    //     a sphere, 0 if B is a half space).
-    const double a_b_touch = radius_ + (B_is_sphere_ ? radius_ : 0.0);
-    const double z_offset = -a_b_touch + (are_colliding ? 0.25 : -0.25);
+    // If A is a sphere:
+    //    - A stays at the origin.
+    //    - B is moved _below_ shape A along the z axis an "appropriate"
+    //      distance. The distance depends on:
+    //      - the shape of geometry B and
+    //      - whether collision is requested or not.
+    // If A is a half space (and B is a sphere):
+    //    - A's orientation is reversed, so that its outward normal points in
+    //      the -Wz direction.
+    //    - B is still placed "below" A based on the same kind of logic.
+
+    if (this->shape_A_type_ == ShapeType::kHalfSpace &&
+        this->shape_B_type_ == ShapeType::kHalfSpace)
+      return;
+
+    // The distance from the world origin to the surface of shape A. In other
+    // words, a point at Wo needs to be moved distance to lie on the surface of
+    // A.
+    double dist_WoA{std::numeric_limits<double>::infinity()};
+    if (this->shape_A_type_ == ShapeType::kSphere) {
+      dist_WoA = kRadius;
+    } else {
+      dist_WoA = 0;
+      X_WGs_[id_A_] = RigidTransform<T>{AngleAxis<T>{M_PI, Vector3<T>::UnitX()},
+                                        Vector3<T>{0, 0, 0}};
+    }
+
+    // Similarly, the distance to the surface of B (see dist_WoA).
+    const double dist_WoB =
+        this->shape_B_type_ == ShapeType::kSphere ? kRadius : 0;
+    const double z_offset =
+        -(dist_WoA + dist_WoB) + (are_colliding ? 0.125 : -0.125);
     X_WGs_[id_B_] = RigidTransform<T>(Vector3<T>{0, 0, z_offset});
   }
 
   // Filters contact between the two spheres.
   void FilterContact() {
-    EncodedData data_A(*sphere_A_);
+    EncodedData data_A(*shape_A_);
     EncodedData data_B(*shape_B_);
     collision_filter_.AddToCollisionClique(data_A.encoding(), 1);
     collision_filter_.AddToCollisionClique(data_B.encoding(), 1);
@@ -196,7 +245,7 @@ class TestScene {
 
   // Note: these are non const because the callback takes non-const pointers
   // (due to FCL's API).
-  CollisionObjectd& sphere_A() { return *sphere_A_; }
+  CollisionObjectd& shape_A() { return *shape_A_; }
   CollisionObjectd& shape_B() { return *shape_B_; }
   CallbackData<T>& data() { return data_; }
   const vector<ContactSurface<T>>& surfaces() const { return surfaces_; }
@@ -215,9 +264,10 @@ class TestScene {
   unordered_map<GeometryId, RigidTransform<T>> X_WGs_;
   GeometryId id_A_{};
   GeometryId id_B_{};
-  const double radius_{0.25};
-  unique_ptr<CollisionObjectd> sphere_A_;
-  const bool B_is_sphere_;
+  static constexpr double kRadius{0.25};
+  const ShapeType shape_A_type_;
+  const ShapeType shape_B_type_;
+  unique_ptr<CollisionObjectd> shape_A_;
   unique_ptr<CollisionObjectd> shape_B_;
   vector<ContactSurface<T>> surfaces_;
   CallbackData<T> data_;
@@ -236,7 +286,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
   using T = TypeParam;
   const bool colliding{true};
 
-  TestScene<T> scene{true /* B is sphere */};
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   const Geometries& geometries = scene.hydroelastic_geometries();
   const GeometryId id_A = scene.id_A();
   const GeometryId id_B = scene.id_B();
@@ -272,7 +322,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   using T = TypeParam;
   const bool colliding{true};
 
-  TestScene<T> scene{false /* B is sphere */};
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kHalfSpace};
   const Geometries& geometries = scene.hydroelastic_geometries();
   const GeometryId id_A = scene.id_A();
   const GeometryId id_B = scene.id_B();
@@ -303,6 +353,41 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   }
 }
 
+TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
+  using T = TypeParam;
+  const bool colliding{true};
+
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kHalfSpace};
+  const Geometries& geometries = scene.hydroelastic_geometries();
+  const GeometryId id_A = scene.id_A();
+  const GeometryId id_B = scene.id_B();
+  // Sphere A has a fixed position.
+  const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
+  scene.AddGeometry(HydroelasticType::kRigid, HydroelasticType::kSoft);
+
+  {
+    // Case 1: Intersecting geometry.
+    scene.PoseGeometry(colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_B), X_WB, id_A,
+        geometries.rigid_geometry(id_A), X_WA, id_B);
+    EXPECT_NE(surface, nullptr);
+  }
+
+  {
+    // Case 2: Separated geometry.
+    scene.PoseGeometry(!colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_B), X_WB, id_A,
+        geometries.rigid_geometry(id_A), X_WA, id_B);
+    EXPECT_EQ(surface, nullptr);
+  }
+}
+
 TYPED_TEST_SUITE(MaybeCalcContactSurfaceTests, ScalarTypes);
 
 // Test suite for exercising MaybeCalcContactSurface with different scalar
@@ -316,18 +401,18 @@ class MaybeCalcContactSurfaceTests : public ::testing::Test {};
 TYPED_TEST(MaybeCalcContactSurfaceTests, UndefinedGeometry) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kUndefined);
 
   // Case: second is undefined.
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.sphere_A(), &scene.shape_B(), &scene.data());
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
   ASSERT_EQ(result, CalcContactSurfaceResult::kUnsupported);
   ASSERT_EQ(scene.surfaces().size(), 0u);
 
   // Case: first is undefined.
   result = MaybeCalcContactSurface<T>(
-      &scene.shape_B(), &scene.sphere_A(), &scene.data());
+      &scene.shape_B(), &scene.shape_A(), &scene.data());
   ASSERT_EQ(result, CalcContactSurfaceResult::kUnsupported);
   ASSERT_EQ(scene.surfaces().size(), 0u);
 
@@ -342,11 +427,11 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, UndefinedGeometry) {
 TYPED_TEST(MaybeCalcContactSurfaceTests, BothRigid) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kRigid);
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.sphere_A(), &scene.shape_B(), &scene.data());
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kSameCompliance);
   EXPECT_EQ(scene.surfaces().size(), 0u);
 }
@@ -355,12 +440,28 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothRigid) {
 TYPED_TEST(MaybeCalcContactSurfaceTests, BothSoft) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.sphere_A(), &scene.shape_B(), &scene.data());
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kSameCompliance);
+  EXPECT_EQ(scene.surfaces().size(), 0u);
+}
+
+// Confirms that colliding two half spaces is detected and reported.
+TYPED_TEST(MaybeCalcContactSurfaceTests, TwoHalfSpaces) {
+  using T = TypeParam;
+
+  TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kHalfSpace};
+  // They must have different compliance types in order to get past the same
+  // compliance type condition.
+  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid,
+                       false /* are_colliding */);
+
+  CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
+  EXPECT_EQ(result, CalcContactSurfaceResult::kHalfSpaceHalfSpace);
   EXPECT_EQ(scene.surfaces().size(), 0u);
 }
 
@@ -369,12 +470,12 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothSoft) {
 TYPED_TEST(MaybeCalcContactSurfaceTests, NonColliding) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid,
                        false /* are_colliding */);
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.sphere_A(), &scene.shape_B(), &scene.data());
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
   EXPECT_EQ(scene.surfaces().size(), 0u);
 }
@@ -385,12 +486,12 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, NonColliding) {
 TYPED_TEST(MaybeCalcContactSurfaceTests, HandleSoftMeshRigidMesh) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft,
                        true /* are_colliding */);
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.sphere_A(), &scene.shape_B(), &scene.data());
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
   EXPECT_EQ(scene.surfaces().size(), 1u);
 }
@@ -401,10 +502,10 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, HandleSoftMeshRigidMesh) {
 TYPED_TEST(MaybeCalcContactSurfaceTests, HandleSoftMeshRigidHalfspace) {
   using T = TypeParam;
 
-  TestScene<T> scene(false /* B_is_sphere */);  // Make B a half space.
+  TestScene<T> scene(ShapeType::kSphere, ShapeType::kHalfSpace);
   scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid);
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.sphere_A(), &scene.shape_B(), &scene.data());
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
   EXPECT_EQ(scene.surfaces().size(), 1u);
 }
@@ -430,7 +531,7 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
            ThrowForMissingHydroelasticRepresentation) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kUndefined);
 
   // We test only a single "underrepresented" configuration (rigid, undefined)
@@ -438,7 +539,7 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
   // all the ways that the kUnsupported calculation result is returned. This
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<T>(&scene.sphere_A(), &scene.shape_B(), &scene.data()),
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
       std::logic_error,
       "Requested a contact surface between a pair of geometries without "
       "hydroelastic representation .+ rigid .+ undefined .+");
@@ -451,7 +552,7 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
 TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kRigid);
 
   // We test only a single "same-compliance" configuration (rigid, rigid)
@@ -459,9 +560,25 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
   // all the ways that the kSameCompliance calculation result is returned. This
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<T>(&scene.sphere_A(), &scene.shape_B(), &scene.data()),
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
       std::logic_error,
       "Requested contact between two rigid objects .+");
+}
+
+// Confirms that if the intersecting pair consists of two half spaces that an
+// exception is thrown.
+TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForTwoHalfSpaces) {
+  using T = TypeParam;
+
+  TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kHalfSpace};
+  // They must have different compliance types in order to get past the same
+  // compliance type condition.
+  scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
+      std::logic_error,
+      "Requested contact between two half spaces .+");
 }
 
 // Confirms that if the pair contains unsupported geometry, as long as they are
@@ -470,16 +587,16 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
 TYPED_TEST(StrictHydroelasticCallbackTyped, RespectsCollisionFilter) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   // Note: a configuration that would cause an exception to be thrown if
   // unfiltered and the confirmation of that assumption.
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kRigid);
-  EXPECT_THROW(Callback<T>(&scene.sphere_A(), &scene.shape_B(), &scene.data()),
+  EXPECT_THROW(Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
                std::logic_error);
 
   scene.FilterContact();
   DRAKE_EXPECT_NO_THROW(
-      Callback<T>(&scene.sphere_A(), &scene.shape_B(), &scene.data()));
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()));
   EXPECT_EQ(scene.surfaces().size(), 0u);
 }
 
@@ -492,11 +609,11 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, RespectsCollisionFilter) {
 TYPED_TEST(StrictHydroelasticCallbackTyped, ValidPairProducesResult) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
 
   DRAKE_EXPECT_NO_THROW(
-      Callback<T>(&scene.sphere_A(), &scene.shape_B(), &scene.data()));
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()));
   EXPECT_EQ(scene.surfaces().size(), 1u);
 }
 
@@ -522,7 +639,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped,
            PointPairForMissingHydroelasticRepresentation) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kUndefined);
 
   // We test only a single "underrepresented" configuration (rigid, undefined)
@@ -532,7 +649,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped,
   vector<PenetrationAsPointPair<T>> point_pairs;
   CallbackWithFallbackData<T> data{scene.data(), &point_pairs};
   DRAKE_EXPECT_NO_THROW(
-      CallbackWithFallback<T>(&scene.sphere_A(), &scene.shape_B(), &data));
+      CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 0u);
   EXPECT_EQ(point_pairs.size(), 1u);
 }
@@ -544,7 +661,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped,
 TYPED_TEST(HydroelasticCallbackFallbackTyped, PointPairForSameComplianceType) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kRigid);
 
   // We test only a single "same-compliance" configuration (rigid, rigid)
@@ -554,7 +671,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, PointPairForSameComplianceType) {
   vector<PenetrationAsPointPair<T>> point_pairs;
   CallbackWithFallbackData<T> data{scene.data(), &point_pairs};
   DRAKE_EXPECT_NO_THROW(
-      CallbackWithFallback<T>(&scene.sphere_A(), &scene.shape_B(), &data));
+      CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 0u);
   EXPECT_EQ(point_pairs.size(), 1u);
 }
@@ -564,7 +681,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, PointPairForSameComplianceType) {
 TYPED_TEST(HydroelasticCallbackFallbackTyped, RespectsCollisionFilter) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   // Note: a configuration that would cause an exception to be thrown if
   // unfiltered and the confirmation of that assumption.
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kRigid);
@@ -573,7 +690,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, RespectsCollisionFilter) {
   CallbackWithFallbackData<T> data{scene.data(), &point_pairs};
   // Confirm collision state.
   DRAKE_EXPECT_NO_THROW(
-      CallbackWithFallback<T>(&scene.sphere_A(), &scene.shape_B(), &data));
+      CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 0u);
   EXPECT_EQ(point_pairs.size(), 1u);
 
@@ -582,7 +699,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, RespectsCollisionFilter) {
   scene.FilterContact();
 
   DRAKE_EXPECT_NO_THROW(
-      CallbackWithFallback<T>(&scene.sphere_A(), &scene.shape_B(), &data));
+      CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 0u);
   EXPECT_EQ(point_pairs.size(), 0u);
 }
@@ -596,14 +713,14 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, RespectsCollisionFilter) {
 TYPED_TEST(HydroelasticCallbackFallbackTyped, ValidPairProducesResult) {
   using T = TypeParam;
 
-  TestScene<T> scene;
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
   scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
 
   vector<PenetrationAsPointPair<T>> point_pairs;
   CallbackWithFallbackData<T> data{scene.data(), &point_pairs};
 
   DRAKE_EXPECT_NO_THROW(
-      CallbackWithFallback<T>(&scene.sphere_A(), &scene.shape_B(), &data));
+      CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 1u);
   EXPECT_EQ(point_pairs.size(), 0u);
 }
