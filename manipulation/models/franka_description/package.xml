@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>franka_description</name>
+  <version>0.7.0</version>
+  <description>franka_description contains URDF files and meshes of Franka Emika robots</description>
+  <maintainer email="support@franka.de">Franka Emika GmbH</maintainer>
+  <license>Apache 2.0</license>
+
+  <url type="website">http://wiki.ros.org/franka_description</url>
+  <url type="repository">https://github.com/frankaemika/franka_ros</url>
+  <url type="bugtracker">https://github.com/frankaemika/franka_ros/issues</url>
+  <author>Franka Emika GmbH</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>xacro</exec_depend>
+</package>
