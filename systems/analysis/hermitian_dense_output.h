@@ -19,13 +19,14 @@ namespace systems {
 
 namespace internal {
 
-/// Converts a matrix with scalar type `S` elements to a matrix with double
-/// type elements, failing at runtime if the type cannot be converted.
+/// Returns @p input_matrix as an Eigen::Matrix<double, ...> with the same size
+/// allocation as @p input_matrix.  Calls ExtractDoubleOrThrow on each element
+/// of the matrix, and therefore throws if any one of the extractions fail.
 /// @see ExtractDoubleOrThrow(const T&)
-/// @tparam S A valid Eigen scalar type.
-template <typename S>
-MatrixX<double> ExtractDoublesOrThrow(const MatrixX<S>& input_matrix) {
-  return input_matrix.unaryExpr([] (const S& value) {
+template <typename Derived>
+MatrixX<double> ExtractDoublesOrThrow(
+    const Eigen::MatrixBase<Derived>& input_matrix) {
+  return input_matrix.unaryExpr([] (const typename Derived::Scalar& value) {
       return ExtractDoubleOrThrow(value);
   });
 }
@@ -241,10 +242,30 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   /// Initialize the DenseOutput with an existing trajectory.
   explicit HermitianDenseOutput(
-      const trajectories::PiecewisePolynomial<double>& trajectory)
+      const trajectories::PiecewisePolynomial<T>& trajectory)
       : start_time_(trajectory.start_time()),
-        end_time_(trajectory.end_time()),
-        continuous_trajectory_(trajectory) {}
+        end_time_(trajectory.end_time()) {
+    if constexpr (std::is_same<T, double>::value) {
+      continuous_trajectory_ = trajectory;
+      return;
+    }
+
+    // Create continuous_trajectory_ by converting all the segments to double.
+    using trajectories::PiecewisePolynomial;
+    const std::vector<T>& breaks = trajectory.get_segment_times();
+    for (int i = 0; i < trajectory.get_number_of_segments(); i++) {
+      const typename PiecewisePolynomial<T>::PolynomialMatrix& poly =
+          trajectory.getPolynomialMatrix(i);
+      MatrixX<Polynomiald> polyd = poly.unaryExpr([](const Polynomial<T>& p) {
+        return Polynomiald(
+            internal::ExtractDoublesOrThrow(p.GetCoefficients()));
+      });
+      continuous_trajectory_.ConcatenateInTime(
+          PiecewisePolynomial<double>({polyd},
+                                      {ExtractDoubleOrThrow(breaks[i]),
+                                       ExtractDoubleOrThrow(breaks[i + 1])}));
+    }
+  }
 
   /// Update output with the given @p step.
   ///
@@ -401,7 +422,8 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   // TODO(hidmic): When PiecewisePolynomial supports scalar types other than
   // doubles, pass in the template parameter T to it too and remove all scalar
-  // type conversions.
+  // type conversions.  UPDATE(russt): New plan is to deprecate this class, as
+  // PiecewisePolynomial can serve the intended role by itself.
 
   // The underlying PiecewisePolynomial continuous trajectory.
   trajectories::PiecewisePolynomial<double> continuous_trajectory_{};
