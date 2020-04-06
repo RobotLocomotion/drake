@@ -17,21 +17,75 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 1.57079632679 0" xyz="-0.075 0 0.06"/>
+      <origin rpy="0 0 0" xyz="0.02 0 0.04"/>
       <geometry>
-        <cylinder length="0.03" radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.01 0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.01 -0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.06 0 0.06"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.06 0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.03 0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.03 -0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.06 -0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.09 -0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-0.09 0 0.06"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.09 0.05 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.12 0 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
   </link>
@@ -48,21 +102,39 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.1915"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.13"/>
       <geometry>
-        <cylinder length="0.2830" radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.333"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.16"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.05"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.19"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.22"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.25"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.04 -0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
   </link>
@@ -87,21 +159,33 @@
       </geometry>
     </visual>
     <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.075"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.035"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.12" radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.06"/>
+      <origin rpy="0 0 0" xyz="0 0 0.035"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.06"/>
+      <origin rpy="0 0 0" xyz="0 0 0.075"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
   </link>
@@ -126,21 +210,39 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.145"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.11"/>
       <geometry>
-        <cylinder length="0.15" radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.22"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.145"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.18"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.015 -0.22"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.035 -0.26"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.07"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
   </link>
@@ -160,26 +262,56 @@
     </inertial>
     <visual>
       <origin rpy="1.57079632679 0 0"/>
-     <geometry>
+      <geometry>
         <mesh filename="package://franka_description/meshes/visual/link4.obj"/>
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0.06"/>
       <geometry>
-        <cylinder length="0.12" radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.06"/>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.035 0.03 0.04"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.05 0.04 0.01"/>
+      <geometry>
+        <sphere radius="0.055"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.00"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.06"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.05 -0.03"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
   </link>
@@ -204,37 +336,79 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.26"/>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.32"/>
       <geometry>
-        <cylinder length="0.1" radius="0.09"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.31"/>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.28"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.24"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.21"/>
       <geometry>
-        <sphere radius="0.09"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.09 -0.055"/>
+      <geometry>
+        <sphere radius="0.035"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.085 -0.08"/>
+      <geometry>
+        <sphere radius="0.035"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.085 -0.11"/>
+      <geometry>
+        <sphere radius="0.035"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.08 -0.13"/>
       <geometry>
-        <cylinder length="0.14" radius="0.055"/>
+        <sphere radius="0.035"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.08 -0.06"/>
+      <origin rpy="0 0 0" xyz="0 0.08 -0.15"/>
+      <geometry>
+        <sphere radius="0.035"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.07 -0.16"/>
+      <geometry>
+        <sphere radius="0.04"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.08 -0.02"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.08 -0.00"/>
       <geometry>
         <sphere radius="0.055"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.08 -0.20"/>
+      <origin rpy="0 0 0" xyz="0 0.05 -0.20"/>
       <geometry>
         <sphere radius="0.055"/>
       </geometry>
@@ -261,21 +435,39 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <origin rpy="0 0 0" xyz="0.08 0.03 0.0"/>
       <geometry>
-        <cylinder length="0.08" radius="0.08"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.04 0.01 0.0"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.04 0.0 0.0"/>
+      <geometry>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.01"/>
       <geometry>
-        <sphere radius="0.08"/>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
+      <geometry>
+        <sphere radius="0.05"/>
       </geometry>
     </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.07"/>
       <geometry>
-        <sphere radius="0.08"/>
+        <sphere radius="0.06"/>
       </geometry>
     </collision>
   </link>
@@ -300,21 +492,15 @@
       </geometry>
     </visual>
     <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.06"/>
+      <geometry>
+        <sphere radius="0.06"/>
+      </geometry>
+    </collision>
+    <collision>
       <origin rpy="0 0 0" xyz="0 0 0.01"/>
       <geometry>
-        <cylinder length="0.14" radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.08"/>
-      <geometry>
-        <sphere radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.06"/>
-      <geometry>
-        <sphere radius="0.07"/>
+        <sphere radius="0.05"/>
       </geometry>
     </collision>
   </link>
@@ -328,21 +514,9 @@
   </joint>
   <link name="panda_link8">
     <collision>
-      <origin rpy="3.14159265359 1.57079632679 1.57079632679" xyz="0.0424 0.0424 -0.0250"/>
+      <origin rpy="0 0 0" xyz="0.042 0.042 -0.02"/>
       <geometry>
-        <cylinder length="0.01" radius="0.06"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.0424 0.0424 -0.02"/>
-      <geometry>
-        <sphere radius="0.06"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.0424 0.0424 -0.03"/>
-      <geometry>
-        <sphere radius="0.06"/>
+        <sphere radius="0.04"/>
       </geometry>
     </collision>
   </link>
@@ -439,37 +613,25 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 1.57079632679 1.57079632679" xyz="0 0 0.04"/>
-      <geometry>
-        <cylinder length="0.1" radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 -0.05 0.04"/>
-      <geometry>
-        <sphere radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0.05 0.04"/>
-      <geometry>
-        <sphere radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 1.57079632679 1.57079632679" xyz="0 0 0.1"/>
-      <geometry>
-        <cylinder length="0.1" radius="0.05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 -0.05 0.1"/>
+      <origin rpy="0 0 0" xyz="0 -0.06 0.0"/>
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.05 0.1"/>
+      <origin rpy="0 0 0" xyz="0 -0.06 0.03"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.06 0.03"/>
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
@@ -487,6 +649,18 @@
         <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.007 0.045"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.015 0.03"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
   </link>
   <link name="panda_rightfinger">
     <inertial>
@@ -500,6 +674,18 @@
         <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.007 0.045"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.015 0.03"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
   </link>
   <joint name="panda_finger_joint1" type="prismatic">
     <parent link="panda_hand"/>
@@ -536,4 +722,11 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+
+  <drake:collision_filter_group name="group_link57">
+    <drake:member link="panda_link5" />
+    <drake:member link="panda_link7" />
+    <drake:ignored_collision_filter_group name="group_link57" />
+  </drake:collision_filter_group>
+
 </robot>

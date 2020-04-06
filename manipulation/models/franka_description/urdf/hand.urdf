@@ -17,37 +17,25 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 1.57079632679 1.57079632679" xyz="0 0 0.04"/>
-      <geometry>
-        <cylinder length="0.1" radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 -0.05 0.04"/>
-      <geometry>
-        <sphere radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0.05 0.04"/>
-      <geometry>
-        <sphere radius="0.07"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 1.57079632679 1.57079632679" xyz="0 0 0.1"/>
-      <geometry>
-        <cylinder length="0.1" radius="0.05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 -0.05 0.1"/>
+      <origin rpy="0 0 0" xyz="0 -0.06 0.0"/>
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.05 0.1"/>
+      <origin rpy="0 0 0" xyz="0 -0.06 0.03"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.06 0.03"/>
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
@@ -65,7 +53,19 @@
         <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
-  </link>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.007 0.045"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.015 0.03"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
+ </link>
   <link name="panda_rightfinger">
     <inertial>
       <mass value="0.1" />
@@ -78,6 +78,18 @@
         <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.007 0.045"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.015 0.03"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
   </link>
   <joint name="panda_finger_joint1" type="prismatic">
     <parent link="panda_hand"/>
