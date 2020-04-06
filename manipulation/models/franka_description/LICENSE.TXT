@@ -1,0 +1,10 @@
+This folder contains a model of the Franka Emika Panda arm.
+
+This model was originally taken from the Franka ROS package, which is
+available at:
+https://github.com/frankaemika/franka_ros/tree/kinetic-devel/franka_description
+SHA d7cd447344.
+
+The license for these files is the Apache 2.0 license
+https://github.com/frankaemika/franka_ros/blob/kinetic-devel/LICENSE
+(also see package.xml).
