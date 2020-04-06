@@ -62,7 +62,6 @@ std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
 }  // namespace
 
 void Constraint::check(int num_constraints) const {
-  static_cast<void>(num_constraints);
   if (lower_bound_.size() != num_constraints ||
       upper_bound_.size() != num_constraints) {
     throw std::invalid_argument(
