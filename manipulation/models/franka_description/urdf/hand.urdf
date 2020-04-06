@@ -6,8 +6,9 @@
 <robot name="hand">
   <link name="panda_hand">
     <visual>
+      <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://franka_description/meshes/visual/hand.dae"/>
+        <mesh filename="package://franka_description/meshes/visual/hand.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -49,16 +50,17 @@
   </link>
   <link name="panda_leftfinger">
     <visual>
+      <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://franka_description/meshes/visual/finger.dae"/>
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
   </link>
   <link name="panda_rightfinger">
     <visual>
-      <origin rpy="0 0 3.14159265359" xyz="0 0 0"/>
+      <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://franka_description/meshes/visual/finger.dae"/>
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
   </link>
