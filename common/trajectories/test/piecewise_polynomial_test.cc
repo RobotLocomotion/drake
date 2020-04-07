@@ -1,6 +1,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Core>
@@ -422,6 +423,44 @@ GTEST_TEST(PiecewiseTrajectoryTest, ScalarTypes) {
   TestScalarType<double>();
   TestScalarType<AutoDiffXd>();
   TestScalarType<symbolic::Expression>();
+}
+
+// Confirm the expected behavior of PiecewisePolynomial<Expression>.
+GTEST_TEST(PiecewiseTrajectoryTest, SymbolicValues) {
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  const Vector3<Expression> breaks(0, .5, 1.);
+  const RowVector3<Expression> samples(6, 5, 4);
+  const PiecewisePolynomial<Expression> foh =
+      PiecewisePolynomial<Expression>::FirstOrderHold(breaks, samples);
+
+  // value() works if breaks and coefficients are Expressions holding double
+  // values, evaluated at a double-valued time.
+  EXPECT_NEAR(ExtractDoubleOrThrow(foh.value(0.25)(0)), 5.5, 1e-14);
+
+  // Symbolic time throws (because GetSegmentIndex returns an int in the middle
+  // of the evaluation stack, breaking the Expression pipeline),
+  EXPECT_THROW(foh.value(Variable("t")), std::runtime_error);
+
+  // Symbolic breaks causes the construction methods to throw.
+  const Vector3<Expression> symbolic_breaks(Variable("t0"), Variable("t1"),
+                                            Variable("t2"));
+  EXPECT_THROW(
+      PiecewisePolynomial<Expression>::FirstOrderHold(symbolic_breaks, samples),
+      std::runtime_error);
+
+  // Symbolic samples (and therefore coefficient) returns the symbolic form only
+  // inside the current segment.  This admittedly bad behavior is documented as
+  // a warning in the PiecewisePolynomial::value() documentation.
+  const Variable x0("x0");
+  const Variable x1("x1");
+  const Variable x2("x2");
+  const RowVector3<Expression> symbolic_samples(x0, x1, x2);
+  const PiecewisePolynomial<Expression> foh_w_symbolic_coeffs =
+      PiecewisePolynomial<Expression>::FirstOrderHold(breaks, symbolic_samples);
+  EXPECT_TRUE(foh_w_symbolic_coeffs.value(0.25)(0).Expand().EqualTo(0.5 * x0 +
+                                                                    0.5 * x1));
 }
 
 }  // namespace
