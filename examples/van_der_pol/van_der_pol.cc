@@ -25,8 +25,8 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
                                 &VanDerPolOscillator::CopyFullStateToOutput);
 
-  // Single parameter, μ, with default μ=1.
-  this->DeclareNumericParameter(systems::BasicVector<T>(Vector1<T>(1.0)));
+  // Single parameter, μ, with default μ=0.2.
+  this->DeclareNumericParameter(systems::BasicVector<T>(Vector1<T>(0.2)));
 
   // Declare μ≥0 constraint.
   systems::ContextConstraintCalc<T> mu = [](const systems::Context<T>& context,
@@ -71,7 +71,6 @@ void VanDerPolOscillator<T>::DoCalcTimeDerivatives(
       context.get_continuous_state().get_generalized_velocity().GetAtIndex(0);
   const T mu = context.get_numeric_parameter(0).GetAtIndex(0);
 
-  using std::pow;
   const T qddot = -mu * (q * q - 1) * qdot - q;
 
   derivatives->get_mutable_generalized_position().SetAtIndex(0, qdot);
