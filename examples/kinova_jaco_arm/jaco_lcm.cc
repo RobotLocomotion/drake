@@ -207,10 +207,12 @@ lcmt_jaco_status JacoStatusSender::MakeOutputStatus() const {
   msg.joint_position.resize(msg.num_joints, 0);
   msg.joint_velocity.resize(msg.num_joints, 0);
   msg.joint_torque.resize(msg.num_joints, 0);
+  msg.joint_torque_external.resize(msg.num_joints, 0);
   msg.joint_current.resize(msg.num_joints, 0);
   msg.finger_position.resize(msg.num_fingers, 0);
   msg.finger_velocity.resize(msg.num_fingers, 0);
   msg.finger_torque.resize(msg.num_fingers, 0);
+  msg.finger_torque_external.resize(msg.num_fingers, 0);
   msg.finger_current.resize(msg.num_fingers, 0);
   return msg;
 }
